@@ -1,31 +1,10 @@
-/*
- * Copyright 2018 Red Hat, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-package io.quarkus.undertow.deployment.devmode;
+package io.quarkus.deployment.devmode;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-
 /**
- * Generates an error page with a stack trace
- *
- * @author Stuart Douglas
+ * Generates an error page with a stack trace.
  */
 public class ReplacementDebugPage {
 
@@ -118,15 +97,7 @@ public class ReplacementDebugPage {
             "    line-height: 1.5;\n" +
             "}\n";
 
-    public static void handleRequest(HttpServerExchange exchange, final Throwable exception) {
-        String bodyText = generateHtml(exception);
-
-        exchange.setStatusCode(500);
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/html; charset=UTF-8");
-        exchange.getResponseSender().send(bodyText);
-    }
-
-    private static String generateHtml(final Throwable exception) {
+    public static String generateHtml(final Throwable exception) {
         String headerMessage = generateHeaderMessage(exception);
         String stackTrace = generateStackTrace(exception);
 

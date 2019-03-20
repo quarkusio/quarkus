@@ -5,6 +5,8 @@ import static io.quarkus.deployment.util.ReflectUtil.toError;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -116,8 +118,12 @@ public class ConfigurationSetup {
             "getImplicitConverter", Converter.class, Class.class);
     private static final MethodDescriptor CPR_SET_INSTANCE = MethodDescriptor.ofMethod(ConfigProviderResolver.class,
             "setInstance", void.class, ConfigProviderResolver.class);
+    private static final MethodDescriptor CPR_REGISTER_CONFIG = MethodDescriptor.ofMethod(ConfigProviderResolver.class,
+            "registerConfig", void.class, Config.class, ClassLoader.class);
+    private static final MethodDescriptor CPR_INSTANCE = MethodDescriptor.ofMethod(ConfigProviderResolver.class,
+            "instance", ConfigProviderResolver.class);
     private static final MethodDescriptor SCPR_CONSTRUCT = MethodDescriptor
-            .ofConstructor(SimpleConfigurationProviderResolver.class, Config.class);
+            .ofConstructor(SimpleConfigurationProviderResolver.class);
     private static final MethodDescriptor SRCB_BUILD = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "build",
             Config.class);
     private static final MethodDescriptor SRCB_WITH_CONVERTER = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
@@ -278,12 +284,26 @@ public class ConfigurationSetup {
     private static <T> void withConverterHelper(final SmallRyeConfigBuilder builder, final Class<T> type, final int priority,
             final Class<? extends Converter<?>> converterClass) {
         try {
-            builder.withConverter(type, priority, ((Class<? extends Converter<T>>) converterClass).newInstance());
+            builder.withConverter(type, priority,
+                    ((Class<? extends Converter<T>>) converterClass).getDeclaredConstructor().newInstance());
         } catch (InstantiationException e) {
             throw toError(e);
         } catch (IllegalAccessException e) {
             throw toError(e);
+        } catch (NoSuchMethodException e) {
+            throw toError(e);
+        } catch (InvocationTargetException e) {
+            try {
+                throw e.getCause();
+            } catch (RuntimeException | Error e2) {
+                throw e2;
+            } catch (Throwable t) {
+                throw new UndeclaredThrowableException(t);
+            }
         }
+        // Constructor.newInstance() can also throw an IllegalArgumentException,
+        // or a SecurityException, both of which already are RuntimeException,
+        // so we do not catch those and just let them propagate.
     }
 
     /**
@@ -506,8 +526,12 @@ public class ConfigurationSetup {
                 // Build the config
 
                 final ResultHandle config = carc.checkCast(carc.invokeVirtualMethod(SRCB_BUILD, builder), SmallRyeConfig.class);
-                final ResultHandle providerResolver = carc.newInstance(SCPR_CONSTRUCT, config);
-                carc.invokeStaticMethod(CPR_SET_INSTANCE, providerResolver);
+
+                // IMPL NOTE: we do invoke ConfigProviderResolver.setInstance() in RUNTIME_INIT when an app starts, but ConfigProvider only obtains the
+                // resolver once when initializing ConfigProvider.INSTANCE. That is why we store the current Config as a static field on the
+                // SimpleConfigurationProviderResolver
+                carc.invokeStaticMethod(CPR_SET_INSTANCE, carc.newInstance(SCPR_CONSTRUCT));
+                carc.invokeVirtualMethod(CPR_REGISTER_CONFIG, carc.invokeStaticMethod(CPR_INSTANCE), config, carc.loadNull());
 
                 // create the config root
                 carc.writeStaticField(RUN_TIME_CONFIG_FIELD,
@@ -592,8 +616,9 @@ public class ConfigurationSetup {
             final StringBuilder methodName, final Map<String, MethodDescriptor> parseMethodCache) {
         final String methodNameStr = methodName.toString();
         final MethodDescriptor existing = parseMethodCache.get(methodNameStr);
-        if (existing != null)
+        if (existing != null) {
             return existing;
+        }
         try (MethodCreator body = cc.getMethodCreator(methodName.toString(), void.class, SmallRyeConfig.class,
                 NameIterator.class)) {
             body.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);

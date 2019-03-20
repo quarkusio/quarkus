@@ -2,10 +2,12 @@ package io.quarkus.undertow.deployment.devmode;
 
 import io.quarkus.deployment.devmode.HotReplacementContext;
 import io.quarkus.deployment.devmode.HotReplacementSetup;
+import io.quarkus.deployment.devmode.ReplacementDebugPage;
 import io.quarkus.undertow.runtime.UndertowDeploymentTemplate;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
 public class UndertowHotReplacementSetup implements HotReplacementSetup {
 
@@ -43,7 +45,7 @@ public class UndertowHotReplacementSetup implements HotReplacementSetup {
 
         if (nextUpdate > System.currentTimeMillis()) {
             if (context.getDeploymentProblem() != null) {
-                ReplacementDebugPage.handleRequest(exchange, context.getDeploymentProblem());
+                handleDeploymentProblem(exchange, context.getDeploymentProblem());
                 return;
             }
             next.handleRequest(exchange);
@@ -52,15 +54,22 @@ public class UndertowHotReplacementSetup implements HotReplacementSetup {
         synchronized (this) {
             if (nextUpdate < System.currentTimeMillis()) {
                 context.doScan();
-                //we update at most once every 2s
+                // we update at most once every 2s
                 nextUpdate = System.currentTimeMillis() + TWO_SECONDS;
 
             }
         }
         if (context.getDeploymentProblem() != null) {
-            ReplacementDebugPage.handleRequest(exchange, context.getDeploymentProblem());
+            handleDeploymentProblem(exchange, context.getDeploymentProblem());
             return;
         }
         next.handleRequest(exchange);
+    }
+
+    private void handleDeploymentProblem(HttpServerExchange exchange, final Throwable exception) {
+        String bodyText = ReplacementDebugPage.generateHtml(exception);
+        exchange.setStatusCode(500);
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/html; charset=UTF-8");
+        exchange.getResponseSender().send(bodyText);
     }
 }

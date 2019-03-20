@@ -111,7 +111,23 @@ public class VertxProducer {
     @PreDestroy
     public void destroy() {
         if (vertx != null) {
-            vertx.close();
+            CountDownLatch latch = new CountDownLatch(1);
+            AtomicReference<Throwable> problem = new AtomicReference<>();
+            vertx.close(ar -> {
+                if (ar.failed()) {
+                    problem.set(ar.cause());
+                }
+                latch.countDown();
+            });
+            try {
+                latch.await();
+                if (problem.get() != null) {
+                    throw new IllegalStateException("Error when closing Vertx instance", problem.get());
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted when closing Vertx instance", e);
+            }
         }
     }
 

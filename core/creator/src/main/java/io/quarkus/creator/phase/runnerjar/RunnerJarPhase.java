@@ -325,16 +325,10 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             }
         });
 
-        final Manifest manifest = new Manifest();
-        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-        manifest.getMainAttributes().put(Attributes.Name.CLASS_PATH, classPath.toString());
-        manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, mainClass);
-        try (OutputStream os = Files.newOutputStream(runnerZipFs.getPath("META-INF", "MANIFEST.MF"))) {
-            manifest.write(os);
-        }
-
         copyFiles(augmentOutcome.getAppClassesDir(), runnerZipFs);
         copyFiles(augmentOutcome.getTransformedClassesDir(), runnerZipFs);
+
+        generateManifest(runnerZipFs, classPath.toString());
 
         for (Map.Entry<String, List<byte[]>> entry : services.entrySet()) {
             try (OutputStream os = Files.newOutputStream(runnerZipFs.getPath(entry.getKey()))) {
@@ -343,6 +337,41 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                     os.write('\n');
                 }
             }
+        }
+    }
+
+    /**
+     * Manifest generation is quite simple : we just have to push some attributes in manifest.
+     * However, it gets a little more complex if the manifest preexists.
+     * So we first try to see if a manifest exists, and otherwise create a new one.
+     *
+     * <b>BEWARE</b> this method should be invoked after file copy from target/classes and so on.
+     * Otherwise this manifest manipulation will be useless.
+     */
+    private void generateManifest(FileSystem runnerZipFs, final String classPath) throws IOException {
+        final Path manifestPath = runnerZipFs.getPath("META-INF", "MANIFEST.MF");
+        final Manifest manifest = new Manifest();
+        if (Files.exists(manifestPath)) {
+            try (InputStream is = Files.newInputStream(manifestPath)) {
+                manifest.read(is);
+            }
+        }
+        Attributes attributes = manifest.getMainAttributes();
+        attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        if (attributes.containsKey(Attributes.Name.CLASS_PATH)) {
+            log.warn(
+                    "Your MANIFEST.MF already defined a CLASS_PATH entry. Quarkus has overwritten this existing entry.");
+        }
+        attributes.put(Attributes.Name.CLASS_PATH, classPath);
+        if (attributes.containsKey(Attributes.Name.MAIN_CLASS)) {
+            String existingMainClass = attributes.getValue(Attributes.Name.MAIN_CLASS);
+            if (!mainClass.equals(existingMainClass)) {
+                log.warn("Your MANIFEST.MF already defined a MAIN_CLASS entry. Quarkus has overwritten your existing entry.");
+            }
+        }
+        attributes.put(Attributes.Name.MAIN_CLASS, mainClass);
+        try (OutputStream os = Files.newOutputStream(manifestPath)) {
+            manifest.write(os);
         }
     }
 

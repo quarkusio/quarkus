@@ -59,8 +59,7 @@ public class NativeImageLauncher implements Closeable {
         args.add(path);
         args.add("-Dquarkus.http.port=" + port);
         args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
-        //args.add("-Dquarkus.log.file.path=target/quarkus.log");
-        PropertyTestUtil.setLogFileProperty();
+        args.add("-Dquarkus.log.file.path=" + PropertyTestUtil.getLogFileLocation());
 
         System.out.println("Executing " + args);
 
@@ -81,9 +80,18 @@ public class NativeImageLauncher implements Closeable {
             URL[] urls = ((URLClassLoader) cl).getURLs();
             for (URL url : urls) {
                 if (url.getProtocol().equals("file") && url.getPath().endsWith("test-classes/")) {
-                    //we have the test classes dir
+                    //we have the maven test classes dir
                     File testClasses = new File(url.getPath());
                     for (File file : testClasses.getParentFile().listFiles()) {
+                        if (file.getName().endsWith("-runner")) {
+                            logGuessedPath(file.getAbsolutePath());
+                            return file.getAbsolutePath();
+                        }
+                    }
+                } else if (url.getProtocol().equals("file") && url.getPath().endsWith("test/")) {
+                    //we have the gradle test classes dir, build/classes/java/test
+                    File testClasses = new File(url.getPath());
+                    for (File file : testClasses.getParentFile().getParentFile().getParentFile().listFiles()) {
                         if (file.getName().endsWith("-runner")) {
                             logGuessedPath(file.getAbsolutePath());
                             return file.getAbsolutePath();

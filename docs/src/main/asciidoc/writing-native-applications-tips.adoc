@@ -1,0 +1,154 @@
+include::./attributes.adoc[]
+= {project-name} - Tips for writing native applications
+
+This guide contains various tips and tricks for getting around problems that might arise when attempting to run java applications as native executables.
+
+== Register reflection
+
+Due to the fact that when building a native executable GraalVM operates with a closed world assumption (which enables it to remove all unused code, which in turns yields multiple benefits), reflection targets need to be explicitly declared.
+
+An example of failing to explicitly specify reflection is the following:
+
+[source]
+----
+Caused by: org.xml.sax.SAXException: SAX2 driver class com.sun.org.apache.xerces.internal.parsers.SAXParser not found
+java.lang.ClassNotFoundException: com.sun.org.apache.xerces.internal.parsers.SAXParser
+at org.xml.sax.helpers.XMLReaderFactory.loadClass(XMLReaderFactory.java:230)
+----
+
+If one were to execute the native executable generation process manually, the `-H:ReflectionConfigurationFiles=` flag would be used to point to a JSON configuration file that specifies the program elements that would be accessed reflectively.
+
+Quarkus however makes registration of reflection a breeze by using the `ReflectiveClassBuildItem`, thus eliminating the need for such a JSON configuration file.
+
+To solve the problem shown in the example above one would need to create a Quarkus processor class and add a build step that registers reflection.
+A simple example could like the following:
+
+[source,java]
+----
+public class SaxParserProcessor {
+
+    @BuildStep
+    ReflectiveClassBuildItem reflection() {
+        // since we only need reflection to the constructor of the class, we can specify `false` for both the methods and the fields arguments.
+        return new ReflectiveClassBuildItem(false, false, "com.sun.org.apache.xerces.internal.parsers.SAXParser");
+    }
+
+}
+----
+
+More information about reflection in GraalVM can be found https://github.com/oracle/graal/blob/master/substratevm/REFLECTION.md[here].
+
+=== Alternative with @RegisterForReflection
+
+In application code it is often needed to pass classes to libraries that use reflection to figure out the methods/fields of those classes.
+One such example is using http://json-b.net/[JSON-B] like so:
+
+[source,java]
+----
+    public class Person {
+        private String first;
+        private String last;
+
+        public String getFirst() {
+            return first;
+        }
+
+        public void setFirst(String first) {
+            this.first = first;
+        }
+
+        public String getLast() {
+            return last;
+        }
+
+        public void setValue(String last) {
+            this.last = last;
+        }
+    }
+
+    @Path("/person")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public class PersonResource {
+
+        private final Jsonb jsonb;
+
+        public PersonResource() {
+            jsonb = JsonbBuilder.create(new JsonbConfig());
+        }
+
+        @GET
+        public Response list() {
+            return Response.ok(jsonb.fromJson("{\"first\":  \"foo\", \"last\":  \"bar\"}", Person.class)).build();
+        }
+    }
+----
+
+If we were to use the code above, we would get an exception like the following when using the native executable:
+
+[source]
+----
+ Exception handling request to /person: org.jboss.resteasy.spi.UnhandledException: javax.json.bind.JsonbException: Can't create instance of a class: class org.acme.jsonb.Person, No default constructor found
+----
+
+An even nastier possible outcome could be for no exception to be thrown, but instead the JSON result would be completely empty.
+
+To get around such problems, simply annotate `Person` with `@RegisterForReflection` so Quarkus will register the class as using reflection.
+
+== Including resources
+
+By default when building a native executable, GraalVM will not include any of the resources which are on the classpath into the native executable it creates. Such resources that are meant to be part of the native executable need to be specified explicitly.
+
+If one were to execute the native executable generation process manually, the `-H:IncludeResources=` flag would be used to point to a JSON configuration file that specifies which resources are to be included.
+
+Quarkus eliminates the need for such a JSON configuration file by allowing extension authors to specify a `SubstrateResourceBuildItem`.
+
+An example use could look like the following:
+
+[source,java]
+----
+public class ResourcesProcessor {
+
+    @BuildStep
+    SubstrateResourceBuildItem substrateResourceBuildItem() {
+        return new SubstrateResourceBuildItem("META-INF/extra.properties");
+    }
+
+}
+----
+
+For more information about GraalVM's resource handling in native executables please see https://github.com/oracle/graal/blob/master/substratevm/RESOURCES.md[this].
+
+
+== Delay class initialization
+
+There are cases where the initialization of certain classes is done in a static block (which means by default that GraalVM performs the initialization at image build time) needs to be postponed to runtime.
+Typically omitting such configuration would result in a runtime exception like the following:
+
+[source]
+----
+Error: No instances are allowed in the image heap for a class that is initialized or reinitialized at image runtime: sun.security.provider.NativePRNG
+Trace: object java.security.SecureRandom
+method com.amazonaws.services.s3.model.CryptoConfiguration.<init>(CryptoMode)
+Call path from entry point to com.amazonaws.services.s3.model.CryptoConfiguration.<init>(CryptoMode):
+----
+
+If one were to execute the native executable generation process manually, the `--delay-class-initialization-to-runtime=com.amazonaws.services.s3.model.CryptoConfiguration` flag would need to be passed to `native-image` to configure runtime initialization for `CryptoConfiguration`.
+
+Quarkus simplifies things by allowing extensions authors to simply register a `RuntimeInitializedClassBuildItem`. A simple example of doing so could be:
+
+[source,java]
+----
+public class S3Processor {
+
+    @BuildStep
+    RuntimeInitializedClassBuildItem cryptoConfiguration() {
+        return new RuntimeInitializedClassBuildItem(CryptoConfiguration.class.getCanonicalName());
+    }
+
+}
+----
+
+Using such a construct means that a `--delay-class-initialization-to-runtime` option will automatically be added to the `native-image` command line
+
+For more information about `--delay-class-initialization-to-runtime`, please read https://medium.com/graalvm/understanding-class-initialization-in-graalvm-native-image-generation-d765b7e4d6ed[this blog post].

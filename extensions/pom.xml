@@ -33,7 +33,11 @@
         <!-- Plumbing -->
         <module>arc</module>
         <module>scheduler</module>
+
+        <!-- Formats -->
         <module>jaxb</module>
+        <module>jsonp</module>
+        <module>jsonb</module>
 
         <!-- HTTP -->
         <module>undertow</module>
@@ -55,6 +59,7 @@
 
         <!-- Reactive -->
         <module>vertx</module>
+        <module>vertx-web</module>
         <module>netty</module>
         <module>reactive-streams-operators</module>
         <module>smallrye-reactive-messaging</module>
@@ -82,10 +87,13 @@
         <!-- Caching -->
         <module>caffeine</module>
 
+        <!-- Integrations -->
         <module>amazon-lambda</module>
+
         <!-- Camel -->
         <module>camel</module>
 
+        <!-- Additional languages -->
         <module>kotlin</module>
 
         <module>flyway</module>

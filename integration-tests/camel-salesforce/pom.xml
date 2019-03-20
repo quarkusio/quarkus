@@ -133,7 +133,7 @@
             <id>native-image</id>
             <activation>
                 <property>
-                    <name>native</name>
+                    <name>native-camel</name>
                 </property>
             </activation>
             <build>

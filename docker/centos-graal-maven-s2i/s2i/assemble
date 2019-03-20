@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# This POC script is based on the openshift/source-to-image project documentation,
+# and loosely inspired by fabric8io-images/s2i's assemble script, but **MUCH** simplified;
+# a TODO future PRODUCTION version of this would probably want to re-use that script...
+
+set -ex
+
+cd /tmp/src/
+mvn package -Pnative -e -B \
+    -DskipTests -Dmaven.javadoc.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true \
+    -Djacoco.skip=true -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true -Dfabric8.skip=true
+cp -v target/*-runner ${QUARKUS_HOME}
+

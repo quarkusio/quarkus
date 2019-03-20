@@ -32,10 +32,12 @@ public class ExpandingConfigSource extends AbstractDelegatingConfigSource {
         super(delegate);
     }
 
+    @Override
     public Set<String> getPropertyNames() {
         return delegate.getPropertyNames();
     }
 
+    @Override
     public String getValue(final String propertyName) {
         final String delegateValue = delegate.getValue(propertyName);
         return isExpanding() ? expand(delegateValue) : delegateValue;
@@ -45,7 +47,7 @@ public class ExpandingConfigSource extends AbstractDelegatingConfigSource {
         if (value == null)
             return null;
         final Expression compiled = exprCache.computeIfAbsent(value,
-                str -> Expression.compile(str, Expression.Flag.ESCAPES, Expression.Flag.LENIENT_SYNTAX));
+                str -> Expression.compile(str, Expression.Flag.LENIENT_SYNTAX));
         return compiled.evaluate(ConfigExpander.INSTANCE);
     }
 

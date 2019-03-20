@@ -21,8 +21,8 @@ public class LogCleanupFilter implements Filter {
 
     @Override
     public boolean isLoggable(LogRecord record) {
-        if (record.getLevel().intValue() != Level.INFO.intValue()
-                && record.getLevel().intValue() != Level.WARNING.intValue()) {
+        // Only allow filtering messages of warning level and lower
+        if (record.getLevel().intValue() > Level.WARNING.intValue()) {
             return true;
         }
         LogCleanupFilterElement filterElement = filterElements.get(record.getLoggerName());
@@ -34,8 +34,6 @@ public class LogCleanupFilter implements Filter {
                 }
             }
         }
-        //            System.err.println("isLoggable: "+record.getLoggerName());
-        //            System.err.println("isLoggable: "+record.getMessage());
         return true;
     }
 

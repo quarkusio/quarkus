@@ -41,8 +41,6 @@ public class QuarkusBuild extends QuarkusTask {
 
     private String wiringClassesDirectory;
 
-    private String buildDir;
-
     private String libDir;
 
     private String mainClass = "io.quarkus.runner.GeneratedMain";
@@ -79,19 +77,6 @@ public class QuarkusBuild extends QuarkusTask {
     @Optional
     public void setWiringClassesDirectory(String wiringClassesDirectory) {
         this.wiringClassesDirectory = wiringClassesDirectory;
-    }
-
-    public File getBuildDir() {
-        if (buildDir == null)
-            return extension().buildDir();
-        else
-            return new File(buildDir);
-    }
-
-    @Option(description = "The directory where built classes are stored", option = "build-dir")
-    @Optional
-    public void setBuildDir(String buildDir) {
-        this.buildDir = buildDir;
     }
 
     public File getLibDir() {

@@ -9,6 +9,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -87,12 +89,13 @@ class CamelProcessor {
     }
 
     @BuildStep
-    HotDeploymentConfigFileBuildItem configFile() {
-        String routesUri = buildTimeConfig.routesUri;
-        if (routesUri != null && routesUri.startsWith("file:")) {
-            return new HotDeploymentConfigFileBuildItem(routesUri.substring("file:".length()));
-        }
-        return null;
+    List<HotDeploymentConfigFileBuildItem> configFile() {
+        return buildTimeConfig.routesUris.stream()
+                    .map(String::trim)
+                    .filter(s -> s.startsWith("file:"))
+                    .map(s -> s.substring("file:".length()))
+                    .map(HotDeploymentConfigFileBuildItem::new)
+                    .collect(Collectors.toList());
     }
 
     @BuildStep(applicationArchiveMarkers = { CamelSupport.CAMEL_SERVICE_BASE_PATH, CamelSupport.CAMEL_ROOT_PACKAGE_DIRECTORY })

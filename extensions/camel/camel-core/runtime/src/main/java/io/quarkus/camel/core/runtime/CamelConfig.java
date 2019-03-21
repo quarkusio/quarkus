@@ -1,5 +1,7 @@
 package io.quarkus.camel.core.runtime;
 
+import java.util.List;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -12,8 +14,8 @@ public class CamelConfig {
         /**
          * Uri to an xml containing camel routes to be loaded and initialized at build time.
          */
-        @ConfigItem(defaultValue = "file:./camel-routes.xml")
-        public String routesUri;
+        @ConfigItem
+        public List<String> routesUris;
 
         /**
          * Defer Camel context initialization phase until runtime.

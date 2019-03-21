@@ -67,6 +67,8 @@ public class BasicRest implements QuarkusTemplate {
                 File testPackageDir = new File(testMain, packageName.replace('.', '/'));
                 srcMain = mkdirs(packageDir);
                 testMain = mkdirs(testPackageDir);
+            } else {
+                throw new NullPointerException("Need a non-null package name");
             }
         }
     }

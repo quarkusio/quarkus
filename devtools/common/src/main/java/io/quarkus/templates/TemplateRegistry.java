@@ -7,6 +7,7 @@
 package io.quarkus.templates;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,10 +27,10 @@ public class TemplateRegistry {
         return INSTANCE;
     }
 
-    public static QuarkusTemplate createTemplateWith(String name) throws IllegalArgumentException {
+    public static QuarkusTemplate createTemplateWith(String name) throws NoSuchElementException {
         final QuarkusTemplate template = templates.get(name);
         if (template == null) {
-            throw new IllegalArgumentException("Unknown template: " + name);
+            throw new NoSuchElementException("Unknown template: " + name);
         }
 
         return template;
@@ -38,6 +39,8 @@ public class TemplateRegistry {
     private static void register(QuarkusTemplate template) {
         if (template != null) {
             templates.put(template.getName(), template);
+        } else {
+            throw new NullPointerException("Cannot register null templates");
         }
     }
 

@@ -230,6 +230,20 @@ public class TestResource {
     }
 
     @GET
+    @APIResponses({ @APIResponse(responseCode = "204", description = "APIResponses with a no content response") })
+    @Path("/openapi/no-content/api-responses")
+    public Response apiResponsesNoContent() {
+        return Response.noContent().build();
+    }
+
+    @GET
+    @APIResponse(responseCode = "204", description = "APIResponse with no content response")
+    @Path("/openapi/no-content/api-response")
+    public Response apiResponseNoContent() {
+        return Response.noContent().build();
+    }
+
+    @GET
     @Path("/fooprovider")
     @Produces("application/foo")
     public String fooProvider() {

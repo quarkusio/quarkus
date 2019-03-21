@@ -33,7 +33,7 @@ To complete this guide, you need:
 == Architecture
 
 In this guide, we create a straightforward application serving a `hello` endpoint. To demonstrate
-dependency injection this endpoint uses a `greeting` bean.
+dependency injection, this endpoint uses a `greeting` bean.
 
 image::getting-started-architecture.png[alt=Architecture]
 
@@ -71,7 +71,7 @@ It generates:
 * the application configuration file
 
 Once generated, look at the `pom.xml`.
-You will find the import of the Quarkus BOM, allowing to omit the version on the different {project-name} dependencies.
+You will find the import of the Quarkus BOM, allowing you to omit the version on the different {project-name} dependencies.
 In addition, you can see the `quarkus-maven-plugin` responsible of the packaging of the application and also providing the development mode.
 
 [source,xml,subs=attributes+]
@@ -155,7 +155,7 @@ It's a very simple REST endpoint, returning "hello" to requests on "/hello".
 [TIP]
 .Differences with vanilla Jax-RS
 ====
-With Quarkus there is no need to create an `Application` class. It's supported but not required. In addition, only one instance
+With Quarkus, there is no need to create an `Application` class. It's supported, but not required. In addition, only one instance
 of the resource is created and not one per request. You can configure this using the different `*Scoped` annotations (`ApplicationScoped`, `RequestScoped`, etc).
 ====
 
@@ -256,9 +256,9 @@ Then check that http://localhost:8080/hello/greeting/quarkus returns `hello quar
 == Development Mode
 
 `quarkus:dev` runs Quarkus in development mode. This enables hot deployment with background compilation, which means
-that when you modify your Java files your resource files and refresh your browser these changes will automatically take effect.
+that when you modify your Java files and/or your resource files and refresh your browser, these changes will automatically take effect.
 This works too for resource files like the configuration property file.
-Refreshing the browser triggers a scan of the workspace, and if any changes are detected the Java files are recompiled
+Refreshing the browser triggers a scan of the workspace, and if any changes are detected, the Java files are recompiled
 and the application is redeployed; your request is then serviced by the redeployed application. If there are any issues
 with compilation or deployment an error page will let you know.
 
@@ -354,10 +354,10 @@ These tests use http://rest-assured.io/[RestAssured], but feel free to use your 
 
 You can run the test from your IDE directly (be sure you stopped the application first), or from Maven using: `./mvnw test`.
 
-By default tests will run on port `8081` so as not to conflict with the running application. We automatically
+By default, tests will run on port `8081` so as not to conflict with the running application. We automatically
 configure RestAssured to use this port. If you want to use a different client you should use the `@TestHTTPResource`
 annotation to directly inject the URL of the test into a field on the test class. This field can be of the type
-`String`, `URL` or `URI`. This annotation can also be given a value for the test path. For example if I want to test
+`String`, `URL` or `URI`. This annotation can also be given a value for the test path. For example, if I want to test
 a Servlet mapped to `/myservlet` I would just add the following to my test:
 
 
@@ -413,7 +413,7 @@ We recommend continuing the journey with the link:building-native-image-guide.ht
 
 In addition, the link:tooling.html[tooling guide] document explains how to:
 
-* scaffold a project in a single command line,
+* scaffold a project in a single command line
 * enable the _development mode_ (hot reload)
 * import the project in your favorite IDE
 * and more

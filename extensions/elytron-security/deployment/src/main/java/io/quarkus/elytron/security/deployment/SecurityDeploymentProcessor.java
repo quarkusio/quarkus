@@ -291,6 +291,7 @@ class SecurityDeploymentProcessor {
 
     /**
      * Register the classes for reflection in the requested named providers
+     * 
      * @param classes - ReflectiveClassBuildItem producer
      * @param jcaProviders - JCAProviderBuildItem for requested providers
      */
@@ -308,6 +309,7 @@ class SecurityDeploymentProcessor {
 
     /**
      * Determine the classes that make up the provider and its services
+     * 
      * @param providerName - JCA provider name
      * @return class names that make up the provider and its services
      */

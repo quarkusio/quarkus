@@ -262,6 +262,15 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
             throw new ClassNotFoundException(name);
         }
         try {
+            final String pkgName = getPackageNameFromClassName(name);
+            if ((pkgName != null) && getPackage(pkgName) == null) {
+                synchronized (getClassLoadingLock(pkgName)) {
+                    if (getPackage(pkgName) == null) {
+                        // this could certainly be improved to use the actual manifest
+                        definePackage(pkgName, null, null, null, null, null, null, null);
+                    }
+                }
+            }
             return defineClass(name, bytes, 0, bytes.length);
         } catch (Error e) {
             //potential race conditions if another thread is loading the same class
@@ -271,6 +280,17 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
             }
             throw e;
         }
+    }
+
+    private String getPackageNameFromClassName(String className) {
+        final int index = className.lastIndexOf('.');
+        if (index == -1) {
+            // we return null here since in this case no package is defined
+            // this is same behavior as Package.getPackage(clazz) exhibits
+            // when the class is in the default package
+            return null;
+        }
+        return className.substring(0, index);
     }
 
     @Override

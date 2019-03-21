@@ -27,4 +27,16 @@ public class HelloResource {
     public String greeting() {
         return greeting;
     }
+
+    @GET
+    @Path("/package")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String pkg() {
+        return Blah.class.getPackage().getName();
+    }
+
+
+    public static class Blah {
+        
+    }
 }

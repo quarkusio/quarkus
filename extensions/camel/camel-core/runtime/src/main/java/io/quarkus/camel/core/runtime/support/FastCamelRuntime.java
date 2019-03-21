@@ -1,6 +1,5 @@
 package io.quarkus.camel.core.runtime.support;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.List;
@@ -122,15 +121,18 @@ public class FastCamelRuntime extends ServiceSupport implements CamelRuntime {
             context.addRoutes(b);
         }
 
-        String routesUri = buildTimeConfig.routesUri;
-        if (ObjectHelper.isNotEmpty(routesUri)) {
-            log.info("routesUri: {}", routesUri);
-            log.info("cur dir: {}", new File(".").getCanonicalFile().toString());
-
+        if (ObjectHelper.isNotEmpty(buildTimeConfig.routesUris)) {
+            log.info("Loading xml routes from {}", buildTimeConfig.routesUris);
             ModelCamelContext mcc = context.adapt(ModelCamelContext.class);
-            try (InputStream is = ResourceHelper.resolveMandatoryResourceAsInputStream(mcc, routesUri)) {
-                mcc.addRouteDefinitions(is);
+            for (String routesUri : buildTimeConfig.routesUris) {
+                // TODO: if pointing to a directory, we should load all xmls in it
+                //   (maybe with glob support in it to be complete)
+                try (InputStream is = ResourceHelper.resolveMandatoryResourceAsInputStream(mcc, routesUri.trim())) {
+                    mcc.addRouteDefinitions(is);
+                }
             }
+        } else {
+            log.info("No xml routes configured");
         }
     }
 

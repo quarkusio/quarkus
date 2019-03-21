@@ -91,11 +91,11 @@ class CamelProcessor {
     @BuildStep
     List<HotDeploymentConfigFileBuildItem> configFile() {
         return buildTimeConfig.routesUris.stream()
-                    .map(String::trim)
-                    .filter(s -> s.startsWith("file:"))
-                    .map(s -> s.substring("file:".length()))
-                    .map(HotDeploymentConfigFileBuildItem::new)
-                    .collect(Collectors.toList());
+                .map(String::trim)
+                .filter(s -> s.startsWith("file:"))
+                .map(s -> s.substring("file:".length()))
+                .map(HotDeploymentConfigFileBuildItem::new)
+                .collect(Collectors.toList());
     }
 
     @BuildStep(applicationArchiveMarkers = { CamelSupport.CAMEL_SERVICE_BASE_PATH, CamelSupport.CAMEL_ROOT_PACKAGE_DIRECTORY })

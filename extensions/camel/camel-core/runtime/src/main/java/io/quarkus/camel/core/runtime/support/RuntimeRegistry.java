@@ -14,18 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.quarkus.camel.core.runtime;
+package io.quarkus.camel.core.runtime.support;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+
+import javax.enterprise.inject.spi.Bean;
 
 import org.apache.camel.NoSuchBeanException;
 import org.apache.camel.spi.Registry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
@@ -48,6 +54,10 @@ public class RuntimeRegistry extends HashMap<String, Map<Class<?>, Object>> impl
     }
 
     public <T> T lookupByNameAndType(String name, Class<T> type) {
+        Optional<T> t = BeanManagerHelper.getReferenceByName(name, type);
+        if (t.isPresent()) {
+            return t.get();
+        }
         Map<Class<?>, Object> map = this.get(name);
         if (map == null) {
             return null;
@@ -86,6 +96,7 @@ public class RuntimeRegistry extends HashMap<String, Map<Class<?>, Object>> impl
                 }
             }
         }
+        result.putAll(BeanManagerHelper.getReferencesByTypeWithName(type));
         return result;
     }
 
@@ -101,6 +112,7 @@ public class RuntimeRegistry extends HashMap<String, Map<Class<?>, Object>> impl
                 }
             }
         }
+        result.addAll(BeanManagerHelper.getReferencesByType(type));
         return result;
     }
 

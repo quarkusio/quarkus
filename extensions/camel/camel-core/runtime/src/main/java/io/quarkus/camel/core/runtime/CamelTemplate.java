@@ -5,9 +5,11 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.apache.camel.RoutesBuilder;
+import org.apache.camel.spi.Registry;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.camel.core.runtime.support.FastCamelRuntime;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Template;
@@ -15,27 +17,38 @@ import io.quarkus.runtime.annotations.Template;
 @Template
 public class CamelTemplate {
 
-    public CamelRuntime init(
-            RuntimeValue<?> iruntime,
-            RuntimeRegistry registry,
+    public CamelRuntime create(
+            Registry registry,
             Properties properties,
-            List<RuntimeValue<?>> builders,
-            String routesUri) {
+            List<RuntimeValue<?>> builders) {
 
-        CamelRuntime runtime = CamelRuntime.class.cast(iruntime.getValue());
+        FastCamelRuntime runtime = new FastCamelRuntime();
+
         runtime.setRegistry(registry);
         runtime.setProperties(properties);
         runtime.setBuilders(builders.stream()
                 .map(RuntimeValue::getValue)
                 .map(RoutesBuilder.class::cast)
                 .collect(Collectors.toList()));
-        runtime.setRoutesUri(routesUri);
-        runtime.init();
+
         return runtime;
     }
 
-    public void start(final ShutdownContext shutdown, final CamelRuntime runtime) throws Exception {
-        runtime.start();
+    public void init(
+            BeanContainer beanContainer,
+            CamelRuntime runtime,
+            CamelConfig.BuildTime buildTimeConfig) throws Exception {
+
+        ((FastCamelRuntime) runtime).setBeanContainer(beanContainer);
+        runtime.init(buildTimeConfig);
+    }
+
+    public void start(
+            ShutdownContext shutdown,
+            CamelRuntime runtime,
+            CamelConfig.Runtime runtimeConfig) throws Exception {
+
+        runtime.start(runtimeConfig);
 
         //in development mode undertow is started eagerly
         shutdown.addShutdownTask(new Runnable() {
@@ -54,7 +67,7 @@ public class CamelTemplate {
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer container) {
-                container.instance(CamelRuntimeProducer.class).setCamelRuntime(runtime);
+                container.instance(CamelProducers.class).setCamelRuntime(runtime);
             }
         };
     }

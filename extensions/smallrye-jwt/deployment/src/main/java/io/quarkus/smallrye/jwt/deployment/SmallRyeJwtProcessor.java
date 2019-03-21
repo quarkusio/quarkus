@@ -94,6 +94,7 @@ class SmallRyeJwtProcessor {
 
     /**
      * If the configuration specified a deployment local key resource, register it with substrate
+     * 
      * @return SubstrateResourceBuildItem
      */
     @BuildStep

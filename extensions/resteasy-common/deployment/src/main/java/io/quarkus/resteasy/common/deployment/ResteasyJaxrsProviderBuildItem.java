@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package io.quarkus.resteasy.deployment;
+package io.quarkus.resteasy.common.deployment;
 
 import org.jboss.builder.item.MultiBuildItem;
 
 /**
- * A build item that represents a JAX-RS provider class, these items will be merged
- * into the 'resteasy.providers' context param.
+ * A build item that represents a JAX-RS provider class.
  */
 public final class ResteasyJaxrsProviderBuildItem extends MultiBuildItem {
 

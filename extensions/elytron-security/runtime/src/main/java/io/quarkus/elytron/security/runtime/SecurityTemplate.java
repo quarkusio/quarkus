@@ -19,7 +19,6 @@ package io.quarkus.elytron.security.runtime;
 import java.net.URL;
 import java.security.Permission;
 import java.security.Provider;
-import java.security.Security;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -298,17 +297,5 @@ public class SecurityTemplate {
                 }
             }
         };
-    }
-
-    public RuntimeValue<Provider> registerProvider(String name) throws Exception {
-        Class<Provider> providerClass = (Class<Provider>) Class.forName(name);
-        Provider provider = providerClass.newInstance();
-        if (Security.addProvider(provider) > 0) {
-            log.infof("Registered the SunRsaSign provider");
-            for (Provider.Service service : provider.getServices()) {
-                service.getProvider();
-            }
-        }
-        return new RuntimeValue<>(provider);
     }
 }

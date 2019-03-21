@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
@@ -114,6 +113,9 @@ public class DevMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${session}")
     private MavenSession session;
+
+    @Parameter(defaultValue = "TRUE")
+    private boolean deleteDevJar;
 
     @Component
     private MavenVersionEnforcer mavenVersionEnforcer;
@@ -251,11 +253,12 @@ public class DevMojo extends AbstractMojo {
                 String jarPath = classFile.getPath().substring(0, classFile.getPath().lastIndexOf('!'));
                 if (jarPath.startsWith("file:"))
                     jarPath = jarPath.substring(5);
-                path = new File(jarPath);
+                // The resource will be URL encoded, so decode is so when addToClassPaths is called the encoding is correct
+                path = new File(URLDecoder.decode(jarPath, StandardCharsets.UTF_8.name()));
             } else if (classFile.getProtocol().equals("file")) {
                 String filePath = classFile.getPath().substring(0,
                         classFile.getPath().lastIndexOf(DevModeMain.class.getName().replace('.', '/')));
-                path = new File(filePath);
+                path = new File(URLDecoder.decode(filePath, StandardCharsets.UTF_8.name()));
             } else {
                 throw new MojoFailureException("Unsupported DevModeMain artifact URL:" + classFile);
             }
@@ -265,7 +268,11 @@ public class DevMojo extends AbstractMojo {
 
             File tempFile = new File(buildDir, project.getArtifactId() + "-dev.jar");
             tempFile.delete();
-            tempFile.deleteOnExit();
+            // Only delete the -dev.jar on exit if requested
+            if (deleteDevJar) {
+                tempFile.deleteOnExit();
+            }
+            getLog().debug("Executable jar: " + tempFile.getAbsolutePath());
 
             try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(tempFile))) {
                 out.putNextEntry(new ZipEntry("META-INF/"));
@@ -298,6 +305,8 @@ public class DevMojo extends AbstractMojo {
             args.add(outputDirectory.getAbsolutePath());
             args.add(wiringClassesDirectory.getAbsolutePath());
             args.add(new File(buildDir, "transformer-cache").getAbsolutePath());
+            // Display the launch command line in debug mode
+            getLog().debug("Launching JVM with comand line: " + args.toString());
             ProcessBuilder pb = new ProcessBuilder(args.toArray(new String[0]));
             pb.redirectError(ProcessBuilder.Redirect.INHERIT);
             pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
@@ -380,10 +389,10 @@ public class DevMojo extends AbstractMojo {
         return java;
     }
 
-    private void addToClassPaths(StringBuilder classPathManifest, StringBuilder classPath, File file)
-            throws MalformedURLException {
+    private void addToClassPaths(StringBuilder classPathManifest, StringBuilder classPath, File file) {
         URI uri = file.toPath().toAbsolutePath().toUri();
-        classPathManifest.append(uri.getRawPath());
+        String path = uri.getRawPath();
+        classPathManifest.append(path);
         classPath.append(uri.toString());
         if (file.isDirectory()) {
             classPathManifest.append("/");

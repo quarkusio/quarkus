@@ -1,6 +1,7 @@
 package io.quarkus.example;
 
 import java.security.KeyFactory;
+import java.security.Provider;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.spec.X509EncodedKeySpec;
@@ -12,9 +13,24 @@ import javax.ws.rs.QueryParam;
 
 import org.jboss.logging.Logger;
 
+import sun.security.jca.ProviderList;
+import sun.security.jca.Providers;
+
 @Path("/jca")
 public class KeyFactoryEndpoint {
     private static final Logger log = Logger.getLogger(KeyFactoryEndpoint.class);
+
+    @GET
+    @Path("listProviders")
+    public String listProviders() {
+        StringBuilder result = new StringBuilder();
+        ProviderList providerList = Providers.getFullProviderList();
+        for (Provider provider : providerList.providers()) {
+            result.append(provider.getName());
+        }
+        log.infof("Found providers: %s", result);
+        return result.toString();
+    }
 
     @GET
     @Path("decodeRSAKey")

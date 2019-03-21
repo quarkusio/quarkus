@@ -16,7 +16,9 @@
 
 package io.quarkus.elytron.security.deployment;
 
+import java.security.Provider;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -41,6 +43,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.servlet.ServletExtension;
+import sun.security.jca.Providers;
 
 /**
  * The build time process for the security aspects of the deployment. This creates {@linkplain BuildStep}s for integration
@@ -56,7 +59,6 @@ import io.undertow.servlet.ServletExtension;
  * TODO: The handling of the configuration to SecurityRealm instance creation/loading is clumsy to not being able to
  * have a config object annotated with @ConfigGroup inherit from another object with MP config annotated properties.
  *
- * TODO: What additional features would be needed for Keycloak adaptor integration
  */
 class SecurityDeploymentProcessor {
     private static final Logger log = Logger.getLogger(SecurityDeploymentProcessor.class.getName());
@@ -83,21 +85,19 @@ class SecurityDeploymentProcessor {
      * @param classes producer factory for ReflectiveClassBuildItems
      */
     @BuildStep
-    void services(BuildProducer<ReflectiveClassBuildItem> classes) {
+    void services(BuildProducer<ReflectiveClassBuildItem> classes, BuildProducer<JCAProviderBuildItem> jcaProviders) {
         String[] allClasses = {
                 "org.wildfly.security.password.impl.PasswordFactorySpiImpl",
-                "sun.security.rsa.SunRsaSign",
-                "sun.security.rsa.RSASignature$MD5withRS",
-                "sun.security.rsa.RSASignature$SHA224withRSA",
-                "sun.security.rsa.RSASignature$SHA512withRSA",
-                "sun.security.rsa.RSASignature$SHA256withRSA",
-                "sun.security.rsa.RSASignature$MD2withRSA",
-                "sun.security.rsa.RSAKeyFactory",
-                "sun.security.rsa.RSAKeyPairGenerator",
-                "sun.security.rsa.RSASignature$SHA1withRSA",
-                "sun.security.rsa.RSASignature$SHA384withRSA"
         };
         classes.produce(new ReflectiveClassBuildItem(true, false, allClasses));
+
+        // Create JCAProviderBuildItems for any configured provider names
+        if (security.securityProviders != null) {
+            for (String providerName : security.securityProviders) {
+                jcaProviders.produce(new JCAProviderBuildItem(providerName));
+                log.debugf("Added providerName: %s", providerName);
+            }
+        }
     }
 
     /**
@@ -290,6 +290,46 @@ class SecurityDeploymentProcessor {
     }
 
     /**
+     * Register the classes for reflection in the requested named providers
+     * @param classes - ReflectiveClassBuildItem producer
+     * @param jcaProviders - JCAProviderBuildItem for requested providers
+     */
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void registerJCAProviders(BuildProducer<ReflectiveClassBuildItem> classes, List<JCAProviderBuildItem> jcaProviders) {
+        for (JCAProviderBuildItem provider : jcaProviders) {
+            List<String> providerClasses = registerProvider(provider.getProviderName());
+            for (String className : providerClasses) {
+                classes.produce(new ReflectiveClassBuildItem(true, true, className));
+                log.debugf("Register JCA class: %s", className);
+            }
+        }
+    }
+
+    /**
+     * Determine the classes that make up the provider and its services
+     * @param providerName - JCA provider name
+     * @return class names that make up the provider and its services
+     */
+    private List<String> registerProvider(String providerName) {
+        ArrayList<String> providerClasses = new ArrayList<>();
+        Provider provider = Providers.getFullProviderList().getProvider(providerName);
+        providerClasses.add(provider.getClass().getName());
+        Set<Provider.Service> services = provider.getServices();
+        for (Provider.Service service : services) {
+            String serviceClass = service.getClassName();
+            providerClasses.add(serviceClass);
+            // Need to pull in the key classes
+            String supportedKeyClasses = service.getAttribute("SupportedKeyClasses");
+            if (supportedKeyClasses != null) {
+                String[] keyClasses = supportedKeyClasses.split("\\|");
+                providerClasses.addAll(Arrays.asList(keyClasses));
+            }
+        }
+        return providerClasses;
+    }
+
+    /**
      * For each SecurityRealm, load it's runtime state. This is currently a little strange due to how the AuthConfig is
      * downcast to the type of SecurityRealm configuration instance.
      *
@@ -311,15 +351,6 @@ class SecurityDeploymentProcessor {
                 }
             }
         }
-        // Trying to get the SunRsaSign working without substrate substitutions
-        /*
-         * try {
-         * template.registerProvider("sun.security.rsa.SunRsaSign");
-         * log.infof("Registered the SunRsaSign provider");
-         * } catch (Exception e) {
-         * e.printStackTrace();
-         * }
-         */
     }
 
 }

@@ -34,6 +34,7 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.elytron.security.deployment.AuthConfigBuildItem;
 import io.quarkus.elytron.security.deployment.IdentityManagerBuildItem;
+import io.quarkus.elytron.security.deployment.JCAProviderBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityDomainBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.runtime.AuthConfig;
@@ -173,5 +174,16 @@ class SmallRyeJwtProcessor {
         ServletExtension authExt = template.createAuthExtension(config.authMechanism, container.getValue());
         ServletExtensionBuildItem sebi = new ServletExtensionBuildItem(authExt);
         return sebi;
+    }
+
+    /**
+     * Register the SHA256withRSA signature provider
+     * 
+     * @return JCAProviderBuildItem for SHA256withRSA signature provider
+     */
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    JCAProviderBuildItem registerRSASigProvider() {
+        return new JCAProviderBuildItem(config.rsaSigProvider);
     }
 }

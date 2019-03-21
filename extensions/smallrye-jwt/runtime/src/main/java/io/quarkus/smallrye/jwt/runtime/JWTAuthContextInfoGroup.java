@@ -27,4 +27,10 @@ public class JWTAuthContextInfoGroup {
      */
     @ConfigItem(defaultValue = "true")
     public boolean enabled = true;
+
+    /**
+     * The name of the {@linkplain java.security.Provider} that supports SHA256withRSA signatures
+     */
+    @ConfigItem(defaultValue = "SunRsaSign")
+    public String rsaSigProvider;
 }

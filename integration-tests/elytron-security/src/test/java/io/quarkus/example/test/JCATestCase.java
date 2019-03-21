@@ -1,5 +1,6 @@
 package io.quarkus.example.test;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import java.security.KeyPair;
@@ -14,6 +15,17 @@ import io.restassured.RestAssured;
 
 @QuarkusTest
 public class JCATestCase {
+
+    @Test
+    public void testListProviders() {
+        RestAssured.given()
+                .when()
+                .get("/jca/listProviders")
+                .then()
+                .statusCode(200)
+                .body(containsString("SunRsaSign"));
+    }
+
     @Test
     public void testDecodeRSAKey() throws Exception {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");

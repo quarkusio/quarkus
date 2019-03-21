@@ -40,11 +40,6 @@
             <artifactId>quarkus-elytron-security</artifactId>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-elytron-security</artifactId>
-            <scope>provided</scope>
-        </dependency>
 
         <!-- JAX-RS -->
         <dependency>

@@ -1,0 +1,237 @@
+include::./attributes.adoc[]
+= {project-name} - Going Reactive with Eclipse Vert.x
+:config-file: application.properties
+
+Eclipse https://vertx.io[Vert.x] is a toolkit for building reactive applications.
+It is designed to be lightweight and embeddable.
+
+{project-name} uses Vert.x as its reactive engine.
+It embeds Vert.x and relies on its ecosystem to implement reactive programming and reactive systems paradigms.
+
+== Getting started
+
+=== Installing
+
+The `vertx` extension can be added to an existing {project-name} project with the `add-extension` command.
+On a Maven-based project, run the following goal:
+
+[source]
+----
+mvn quarkus:add-extension -Dextensions="vertx"
+----
+
+Otherwise, you can manually add this to the dependencies section of your `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-vertx</artifactId>
+</dependency>
+----
+
+=== Reactive web resources
+
+{project-name} web resources support asynchronous processing and streaming results over https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events[server-sent events].
+
+==== Asynchronous processing
+
+Most programming guides start easy with a greeting service and this one makes no exception.
+
+To asynchronously greet a client, the endpoint method must return a `java.util.concurrent.CompletionStage`:
+
+[source,java]
+----
+@Path("/hello")
+public class GreetingResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("{name}")
+    public CompletionStage<String> greeting(@PathParam("name") String name) {
+        // When complete, return the content to the client
+        CompletableFuture<String> future = new CompletableFuture<>();
+
+        long start = System.nanoTime();
+
+        // TODO: asynchronous greeting
+
+        return future;
+    }
+}
+----
+
+So far so good.
+Now let's use the Vert.x API to implement the delayed reply with `setTimer`:
+
+[source,java]
+----
+// Delay reply by 10ms
+vertx.setTimer(10, l -> {
+    // Compute elapsed time in milliseconds
+    long duration = MILLISECONDS.convert(System.nanoTime() - start, NANOSECONDS);
+
+    // Format message
+    String message = String.format("Hello %s! (%d ms)%n", name, duration);
+
+    // Complete
+    future.complete(message);
+});
+----
+
+Nothing fancy.
+But you may wonder how to get the `io.vertx.core.Vertx` instance?
+After the `vertx` extension is installed, you can `@Inject` one in any {project-name} bean:
+
+[source,java]
+----
+@Inject
+Vertx vertx;
+----
+
+That's it.
+Now start {project-name} in `dev` mode with:
+
+[source]
+----
+mvn compile quarkus:dev
+----
+
+Eventually, open your browser and navigate to http://localhost:8080/hello/Tim, you should see:
+
+[source]
+----
+Hello Tim! (10 ms)
+----
+
+==== Server-Sent Events
+
+{project-name} web resources that need to send content as https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events[server-sent events] must have a method:
+
+- declaring the `text/event-stream` response content type
+- returning a https://www.reactive-streams.org/[Reactive Streams] `Publisher`
+
+In practice, a streaming greeting service would look like:
+
+[source,java]
+----
+@Path("/hello")
+public class StreamingResource {
+
+    @GET
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    @Path("{name}/streaming")
+    public Publisher<String> greeting(@PathParam("name") String name) {
+        // TODO: create a Reactive Streams publisher
+        return publisher;
+    }
+}
+----
+
+How to create a Reactive Streams publisher?
+There are a few ways to do this, but Vert.x is often used with https://github.com/ReactiveX/RxJava[RxJava].
+In fact, Vert.x provides an _Rxified_ API that makes it easy to compose sources of events and data.
+
+The {project-name} `vertx` extension is able to `@Inject` an _Rxified_ Vert.x instance:
+
+[source,java]
+----
+@Inject
+io.vertx.reactivex.core.Vertx vertx;
+----
+
+With this shim, any Vert.x stream can be converted to an RxJava `Flowable`, which implements the `Publisher` interface.
+
+Putting this all together, let's create a Vert.x periodic stream and transform each tick into a greeting for the client:
+
+[source,java]
+----
+// Create a stream of ticks (new tick every 2 seconds)
+Flowable<Long> ticks = vertx.periodicStream(2000).toFlowable();
+
+// Transform ticks into greeting messages
+Publisher<String> publisher = ticks.map(l -> String.format("Hello %s! (%s)%n", name, new Date()));
+----
+
+The server side is ready.
+In order to see the result in the browser, we need a web page.
+
+[source,html]
+.META-INF/resources/streaming.html
+----
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>SSE with Vert.x - Quarkus</title>
+    <script type="application/javascript" src="streaming.js"></script>
+</head>
+<body>
+<div id="container"></div>
+</body>
+</html>
+----
+
+Our web page just has an empty `<div>` container.
+The magic, as always, lies in the Javascript code:
+
+[source,javascript]
+.META-INF/resources/streaming.js
+----
+var eventSource = new EventSource("/hello/Tim/streaming");
+eventSource.onmessage = function (event) {
+    var container = document.getElementById("container");
+    var paragraph = document.createElement("p");
+    paragraph.innerHTML = event.data;
+    container.appendChild(paragraph);
+};
+----
+
+IMPORTANT: Most browsers support SSE but some don't.
+More about this in  Mozilla's https://developer.mozilla.org/en-US/docs/Web/API/EventSource#Browser_compatibility[SSE browser-compatibility list].
+
+Navigate to http://localhost:8080/streaming.html.
+A new greeting should show-up every 2 seconds.
+
+[source]
+----
+Hello Tim! (Thu Mar 21 17:26:12 CET 2019)
+
+Hello Tim! (Thu Mar 21 17:26:14 CET 2019)
+
+Hello Tim! (Thu Mar 21 17:26:16 CET 2019)
+
+...
+----
+
+==== JSON results
+
+TODO
+
+== Lightweight messaging with the EventBus
+
+TODO (example ready)
+
+== Using the Vert.x clients
+
+TODO: talk about the existing clients, in particular the Axle shims
+
+=== Web Client
+
+TODO
+
+=== Reactive Postgres Client
+
+TODO
+
+=== Mongo Client
+
+TODO
+
+== HTTP servers with Vert.x Web
+
+TODO: full control of the server side with Vert.x Web
+
+== Customizing the Vert.x instance
+
+TODO: howto configure via application.properties file

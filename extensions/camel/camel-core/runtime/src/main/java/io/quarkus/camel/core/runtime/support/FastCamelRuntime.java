@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Route;
@@ -121,10 +122,13 @@ public class FastCamelRuntime extends ServiceSupport implements CamelRuntime {
             context.addRoutes(b);
         }
 
-        if (ObjectHelper.isNotEmpty(buildTimeConfig.routesUris)) {
-            log.info("Loading xml routes from {}", buildTimeConfig.routesUris);
+        List<String> routesUris = buildTimeConfig.routesUris.stream()
+                .filter(ObjectHelper::isNotEmpty)
+                .collect(Collectors.toList());
+        if (ObjectHelper.isNotEmpty(routesUris)) {
+            log.info("Loading xml routes from {}", routesUris);
             ModelCamelContext mcc = context.adapt(ModelCamelContext.class);
-            for (String routesUri : buildTimeConfig.routesUris) {
+            for (String routesUri : routesUris) {
                 // TODO: if pointing to a directory, we should load all xmls in it
                 //   (maybe with glob support in it to be complete)
                 try (InputStream is = ResourceHelper.resolveMandatoryResourceAsInputStream(mcc, routesUri.trim())) {

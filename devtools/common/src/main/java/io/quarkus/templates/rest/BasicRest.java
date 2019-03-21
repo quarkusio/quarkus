@@ -74,14 +74,14 @@ public class BasicRest implements QuarkusTemplate {
     }
 
     private void createClasses() throws IOException {
-        final Object className = context.get(CLASS_NAME);
+        Object className = context.get(CLASS_NAME);
         // If className is null we disable the generation of the Jax-RS resource.
         if (className != null) {
-            final String extension = type.getExtension();
+            String extension = type.getExtension();
             File classFile = new File(srcMain, className + extension);
             File testClassFile = new File(testMain, className + "Test" + extension);
             File itTestClassFile = new File(testMain, "Native" + className + "IT" + extension);
-            final String name = getName();
+            String name = getName();
             generate(type.getSrcResourceTemplate(name), context, classFile, "resource code");
             generate(type.getTestResourceTemplate(name), context, testClassFile, "test code");
             generate(type.getNativeTestResourceTemplate(name), context, itTestClassFile, "IT code");

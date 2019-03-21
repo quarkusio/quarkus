@@ -19,6 +19,7 @@ package io.quarkus.arc.runtime;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.enterprise.inject.spi.DeploymentException;
 
@@ -33,16 +34,19 @@ import io.quarkus.runtime.annotations.Template;
 @Template
 public class ConfigDeploymentTemplate {
 
-    public void validateConfigProperties(Map<String, Class<?>> properties) {
+    public void validateConfigProperties(Map<String, Set<Class<?>>> properties) {
         Config config = ConfigProvider.getConfig();
-        for (Entry<String, Class<?>> entry : properties.entrySet()) {
-            Class<?> propertyType = entry.getValue();
-            // Copy SmallRye logic - for collections, we only check if the property config exists without trying to convert it
-            if (Collection.class.isAssignableFrom(propertyType)) {
-                propertyType = String.class;
-            }
-            if (!config.getOptionalValue(entry.getKey(), propertyType).isPresent()) {
-                throw new DeploymentException("No config value of type " + entry.getValue() + " exists for: " + entry.getKey());
+        for (Entry<String, Set<Class<?>>> entry : properties.entrySet()) {
+            Set<Class<?>> propertyTypes = entry.getValue();
+            for (Class<?> propertyType : propertyTypes) {
+                // Copy SmallRye logic - for collections, we only check if the property config exists without trying to convert it
+                if (Collection.class.isAssignableFrom(propertyType)) {
+                    propertyType = String.class;
+                }
+                if (!config.getOptionalValue(entry.getKey(), propertyType).isPresent()) {
+                    throw new DeploymentException(
+                            "No config value of type " + entry.getValue() + " exists for: " + entry.getKey());
+                }
             }
         }
     }

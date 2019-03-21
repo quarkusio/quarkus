@@ -1,9 +1,13 @@
 package io.quarkus.arc.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toSet;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -142,9 +146,11 @@ public class ConfigBuildStep {
     void validateConfigProperties(ConfigDeploymentTemplate template, List<ConfigPropertyBuildItem> configProperties,
             BeanContainerBuildItem beanContainer) {
         // IMPL NOTE: we do depend on BeanContainerBuildItem to make sure that the BeanDeploymentValidator finished its processing
-        template.validateConfigProperties(
-                configProperties.stream().collect(
-                        Collectors.toMap(ConfigPropertyBuildItem::getPropertyName, ConfigPropertyBuildItem::getPropertyType)));
+
+        Map<String, Set<Class<?>>> propNamesToClasses = configProperties.stream().collect(
+                groupingBy(ConfigPropertyBuildItem::getPropertyName,
+                        mapping(ConfigPropertyBuildItem::getPropertyType, toSet())));
+        template.validateConfigProperties(propNamesToClasses);
     }
 
 }

@@ -278,7 +278,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             //TODO: use an 'official' image
             String image;
             if (dockerBuild.toLowerCase().equals("true")) {
-                image = "swd847/centos-graal-native-image-rc13";
+                image = "quay.io/quarkus/centos-quarkus-native-image:graalvm-1.0.0-rc13";
             } else {
                 //allow the use of a custom image
                 image = dockerBuild;

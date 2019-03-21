@@ -64,6 +64,7 @@ import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -233,6 +234,28 @@ public class SchedulerProcessor {
             scheduleConfigurations.add(config);
         }
         template.registerSchedules(scheduleConfigurations, beanContainer.getValue());
+    }
+
+    @BuildStep
+    public void logCleanup(BuildProducer<LogCleanupFilterBuildItem> logCleanupFilter) {
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem("org.quartz.impl.StdSchedulerFactory",
+                "Quartz scheduler version:",
+                // no need to log if it's the default
+                "Using default implementation for",
+                "Quartz scheduler 'DefaultQuartzScheduler'"));
+
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem("org.quartz.core.QuartzScheduler",
+                "Quartz Scheduler v",
+                "JobFactory set to:",
+                "Scheduler meta-data:",
+                // no need to log if it's the default
+                "Scheduler DefaultQuartzScheduler"));
+
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem("org.quartz.simpl.RAMJobStore",
+                "RAMJobStore initialized."));
+
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem("org.quartz.core.SchedulerSignalerImpl",
+                "Initialized Scheduler Signaller of type"));
     }
 
     private String generateInvoker(BeanInfo bean, MethodInfo method, ClassOutput classOutput) {

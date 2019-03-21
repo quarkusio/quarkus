@@ -46,6 +46,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
 import io.smallrye.faulttolerance.DefaultCommandListenersProvider;
@@ -136,4 +137,17 @@ public class SmallRyeFaultToleranceProcessor {
                 MetricsCollectorFactory.class));
     }
 
+    @BuildStep
+    public void logCleanup(BuildProducer<LogCleanupFilterBuildItem> logCleanupFilter) {
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem("io.smallrye.faulttolerance.HystrixInitializer",
+                "### Init Hystrix ###",
+                // no need to log the strategy if it is the default
+                "Hystrix concurrency strategy used: DefaultHystrixConcurrencyStrategy"));
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem("io.smallrye.faulttolerance.DefaultHystrixConcurrencyStrategy",
+                "### Privilleged Thread Factory used ###"));
+
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem("com.netflix.config.sources.URLConfigurationSource",
+                "No URLs will be polled as dynamic configuration sources.",
+                "To enable URLs as dynamic configuration sources"));
+    }
 }

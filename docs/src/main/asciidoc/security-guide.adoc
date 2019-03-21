@@ -194,6 +194,19 @@ quarkus.security.embedded.roles.noadmin=user
 <1> User `scott` has roles `Admin`, `admin`, `Tester`, and `user`
 <2> User `stuart` has roles `admin` and `user`
 
+#### Registering Security Providers
+When running in native mode the default behavior for Graal native image generation is to only include the main "SUN" provider
+unless you have enabled SSL, in which case all security providers are registered. If you are not using SSL, then you can selectively
+register security providers by name using the `quarkus.security.security-providers` property. The following example illustrates
+configuration to register the "SunRsaSign" and "SunJCE" security providers:
+
+.Example Security Providers Configuration
+[source,properties]
+----
+quarkus.security-providers=SunRsaSign,SunJCE
+...
+----
+
 ## Augmenting the Elytron Security Extension __Advanced Topic__
 [TIP]
 ====

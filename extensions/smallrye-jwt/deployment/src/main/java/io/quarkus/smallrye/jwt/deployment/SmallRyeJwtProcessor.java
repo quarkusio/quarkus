@@ -85,16 +85,19 @@ class SmallRyeJwtProcessor {
     /**
      * Register this extension as a MP-JWT feature
      *
-     * @return
+     * @return FeatureBuildItem
      */
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.SMALLRYE_JWT);
     }
 
+    /**
+     * If the configuration specified a deployment local key resource, register it with substrate
+     * @return SubstrateResourceBuildItem
+     */
     @BuildStep
     SubstrateResourceBuildItem registerSubstrateResources() {
-        // If the
         String publicKeyLocation = QuarkusConfig.getString("mp.jwt.verify.publickey.location", null, true);
         if (publicKeyLocation != null) {
             if (publicKeyLocation.indexOf(':') < 0 || publicKeyLocation.startsWith("classpath:")) {

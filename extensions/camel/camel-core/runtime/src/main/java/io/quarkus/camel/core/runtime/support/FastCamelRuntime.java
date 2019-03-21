@@ -12,7 +12,6 @@ import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.ShutdownableService;
 import org.apache.camel.component.properties.PropertiesComponent;
 import org.apache.camel.model.ModelCamelContext;
-import org.apache.camel.model.ModelHelper;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.spi.Registry;
 import org.apache.camel.support.ResourceHelper;
@@ -59,10 +58,6 @@ public class FastCamelRuntime extends ServiceSupport implements CamelRuntime {
     public void doInit() {
         try {
             this.context = createContext();
-
-            StringWriter sw = new StringWriter();
-            this.properties.store(sw, "");
-            log.warn("Properties: " + sw.toString());
 
             // Configure the camel context using properties in the form:
             //
@@ -136,10 +131,6 @@ public class FastCamelRuntime extends ServiceSupport implements CamelRuntime {
         }
     }
 
-    protected String getProperty(String name) throws Exception {
-        return context.resolvePropertyPlaceholders(context.getPropertyPrefixToken() + name + context.getPropertySuffixToken());
-    }
-
     protected CamelContext createContext() {
         FastCamelContext context = new FastCamelContext();
         context.setRegistry(registry);
@@ -195,23 +186,16 @@ public class FastCamelRuntime extends ServiceSupport implements CamelRuntime {
     }
 
     protected void dumpRoutes() {
-        long t0 = System.nanoTime();
-        try {
-            for (Route route : getContext().getRoutes()) {
+        List<Route> routes = getContext().getRoutes();
+        if (routes.isEmpty()) {
+            log.info("No route definitions");
+        } else {
+            log.info("Route definitions:");
+            for (Route route : routes) {
                 RouteDefinition def = (RouteDefinition) route.getRouteContext().getRoute();
-                System.err.println("Route: " + def);
-                String xml = ModelHelper.dumpModelAsXml(getContext(), def);
-                System.err.println("Xml: " + xml);
-            }
-        } catch (Throwable t) {
-            // ignore
-            System.err.println("Error dumping route xml: " + t.getClass().getName() + ": " + t.getMessage());
-            for (StackTraceElement e : t.getStackTrace()) {
-                System.err.println("    " + e.getClassName() + " " + e.getMethodName() + " " + e.getLineNumber());
+                log.info(def.toString());
             }
         }
-        long t1 = System.nanoTime();
-        System.err.println("Dump routes: " + (t1 - t0) + " ns");
     }
 
 }

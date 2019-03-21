@@ -278,7 +278,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             //TODO: use an 'official' image
             String image;
             if (dockerBuild.toLowerCase().equals("true")) {
-                image = "quay.io/quarkus/centos-quarkus-native-image:graalvm-1.0.0-rc13";
+                image = "quay.io/quarkus/centos-quarkus-native-image:graalvm-1.0.0-rc14";
             } else {
                 //allow the use of a custom image
                 image = dockerBuild;
@@ -466,8 +466,10 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
     private boolean isThisGraalVMRCObsolete() {
         final String vmName = System.getProperty("java.vm.name");
         log.info("Running Quarkus native-image plugin on " + vmName);
-        if (vmName.contains("-rc9") || vmName.contains("-rc10") || vmName.contains("-rc11") || vmName.contains("-rc12")) {
-            log.error("Out of date RC build of GraalVM detected! Please upgrade to RC13");
+        final List<String> obsoleteGraalVmVersions = Arrays.asList("-rc9", "-rc10", "-rc11", "-rc12", "-rc13");
+        final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(vmName::contains);
+        if (vmVersionIsObsolete) {
+            log.error("Out of date RC build of GraalVM detected! Please upgrade to RC14");
             return true;
         }
         return false;

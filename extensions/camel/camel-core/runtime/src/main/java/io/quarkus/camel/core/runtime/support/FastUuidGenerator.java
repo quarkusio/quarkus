@@ -1,4 +1,4 @@
-package io.quarkus.camel.core.runtime;
+package io.quarkus.camel.core.runtime.support;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;

@@ -1,4 +1,4 @@
-package io.quarkus.camel.core.runtime;
+package io.quarkus.camel.core.runtime.support;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;

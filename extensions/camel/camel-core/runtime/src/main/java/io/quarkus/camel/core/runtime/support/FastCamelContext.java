@@ -1,4 +1,4 @@
-package io.quarkus.camel.core.runtime;
+package io.quarkus.camel.core.runtime.support;
 
 import java.util.Properties;
 
@@ -18,6 +18,8 @@ import org.apache.camel.spi.PropertiesComponent;
 import org.apache.camel.spi.Registry;
 import org.apache.camel.spi.ShutdownStrategy;
 import org.apache.camel.spi.UuidGenerator;
+
+import io.quarkus.camel.core.runtime.CamelRuntime;
 
 public class FastCamelContext extends DefaultCamelContext {
 
@@ -82,7 +84,7 @@ public class FastCamelContext extends DefaultCamelContext {
             ((CamelContextAware) result).setCamelContext(context);
         }
         PropertiesComponent comp = getPropertiesComponent();
-        if (comp != null && comp instanceof org.apache.camel.component.properties.PropertiesComponent) {
+        if (comp instanceof org.apache.camel.component.properties.PropertiesComponent) {
             Properties props = ((org.apache.camel.component.properties.PropertiesComponent) comp).getInitialProperties();
             if (props != null) {
                 String pfx = CamelRuntime.PFX_CAMEL + type + "." + name;

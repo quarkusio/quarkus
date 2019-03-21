@@ -27,7 +27,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
-import io.quarkus.camel.core.runtime.CamelBuildTimeConfig;
+import io.quarkus.camel.core.runtime.CamelConfig.BuildTime;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -42,6 +42,7 @@ import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildIte
 import io.quarkus.jaxb.deployment.JaxbFileRootBuildItem;
 
 class CamelProcessor {
+
     private static final List<Class<?>> CAMEL_REFLECTIVE_CLASSES = Arrays.asList(
             Endpoint.class,
             Consumer.class,
@@ -49,6 +50,7 @@ class CamelProcessor {
             TypeConverter.class,
             ExchangeFormatter.class,
             GenericFileProcessStrategy.class);
+
     private static final List<Class<? extends Annotation>> CAMEL_REFLECTIVE_ANNOTATIONS = Arrays.asList(
             Converter.class);
 
@@ -65,7 +67,7 @@ class CamelProcessor {
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
     @Inject
-    CamelBuildTimeConfig buildTimeConfig;
+    BuildTime buildTimeConfig;
 
     @BuildStep
     JaxbFileRootBuildItem fileRoot() {
@@ -86,11 +88,9 @@ class CamelProcessor {
 
     @BuildStep
     HotDeploymentConfigFileBuildItem configFile() {
-        if (buildTimeConfig != null && buildTimeConfig.routesUri.isPresent()) {
-            String routesUri = buildTimeConfig.routesUri.get();
-            if (routesUri.startsWith("file:")) {
-                return new HotDeploymentConfigFileBuildItem(routesUri.substring("file:".length()));
-            }
+        String routesUri = buildTimeConfig.routesUri;
+        if (routesUri != null && routesUri.startsWith("file:")) {
+            return new HotDeploymentConfigFileBuildItem(routesUri.substring("file:".length()));
         }
         return null;
     }

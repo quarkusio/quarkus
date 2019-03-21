@@ -256,7 +256,7 @@ Then check that http://localhost:8080/hello/greeting/quarkus returns `hello quar
 == Development Mode
 
 `quarkus:dev` runs Quarkus in development mode. This enables hot deployment with background compilation, which means
-that when you modify your Java files and or your resource files and refresh your browser, these changes will automatically take effect.
+that when you modify your Java files and/or your resource files and refresh your browser, these changes will automatically take effect.
 This works too for resource files like the configuration property file.
 Refreshing the browser triggers a scan of the workspace, and if any changes are detected, the Java files are recompiled
 and the application is redeployed; your request is then serviced by the redeployed application. If there are any issues

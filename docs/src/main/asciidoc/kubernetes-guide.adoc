@@ -55,7 +55,7 @@ The application is now exposed as an internal service. If you are using `minikub
 
 [source,shell]
 ----
-curl $(minikube service quarkus-quickstart --url)/hello/greeting/quarkus
+curl $(minikube service quarkus-quickstart --url)/hello/quarkus
 ----
 
 == Deploying the application in OpenShift
@@ -77,7 +77,7 @@ oc expose service quarkus-quickstart
 
 # Get the route URL
 export URL="http://$(oc get route | grep quarkus-quickstart | awk '{print $2}')"
-curl $URL/hello/greeting/quarkus
+curl $URL/hello/quarkus
 ----
 
 Your application is accessible at the printed URL.

@@ -9,7 +9,7 @@ This guide covers:
 
 For this guide you need:
 
-* roughly 10 minutes
+* roughly 5 minutes
 * having access to an OpenShift cluster. Minishift is a valid option.
 
 == Solution
@@ -19,7 +19,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `getting-started-openshift-s2i` directory.
+The solution is located in the `getting-started` directory.
 
 == Deploying the application in OpenShift
 
@@ -31,7 +31,7 @@ We are going to create an OpenShift `build` executing it:
 [source,shell]
 ----
 # To build the image on OpenShift
-oc new-app registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift~https://github.com/quarkusio/quarkus-quickstarts --context-dir=getting-started-openshift-s2i --name=quarkus-quickstart
+oc new-app registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift~{quickstarts-clone-url} --context-dir=getting-started --name=quarkus-quickstart
 oc logs -f bc/quarkus-quickstart
 
 # To create the route
@@ -44,8 +44,12 @@ curl $URL/hello/greeting/quarkus
 
 Your application is accessible at the printed URL.
 
+== Background
+
+The `.s2i/environment` file sets required variables for the S2I Builder image to find the Quarkus `runner` JAR, and copy the JARs from the `lib/` directory.  The `pom.xml` contains `<build><finalName>${project.artifactId}`, because `JAVA_APP_JAR` and `ARTIFACT_COPY_ARGS` in `.s2i/environment` of the S2I Builder do not support `*` wildcards to match changing versions in the file name.
+
 == Going further
 
-This guide covered the deployment of a Quarkus application on OpenShift.
+This guide covered the deployment of a Quarkus application on OpenShift using S2I.
 However, there is much more, and the integration with these environments has been tailored to make Quarkus applications execution very smooth.
 For instance, the health extension can be used for health check; the configuration support allows mounting the application configuration using config map, the metric extension produces data _scrappable_ by Prometheus and so on.

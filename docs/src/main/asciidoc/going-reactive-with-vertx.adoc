@@ -252,7 +252,91 @@ Needless to say, this works equally well when the JSON result is wrapped in a `C
 
 == Lightweight messaging with the EventBus
 
-TODO (example ready)
+The Vert.x EventBus allows use to loosely couple the different parts of your application.
+It implements different messaging paradigms:
+
+- fire and forget
+- publish/subscribe
+- request/reply
+
+Let's revisit our greeting HTTP endpoint.
+Instead of implementing the business logic inside the web resource, we will move it to a separate service.
+The web resource and the service will communicate over the EventBus, following the request/reply paradigm.
+
+First, the receiver side.
+In {project-name} applications, methods receiving messages should be annotated with `@ConsumeEvent`:
+
+[source,java]
+----
+@ApplicationScoped
+public class GreetingService {
+
+    @Inject
+    Vertx vertx; // <1>
+
+    @ConsumeEvent("greeting") // <2>
+    CompletionStage<String> greet(String name) {
+        // When complete, return the content to the sender
+        CompletableFuture<String> future = new CompletableFuture<>();
+
+        long start = System.nanoTime();
+
+        // Delay reply by 10ms
+        vertx.setTimer(10, l -> {
+            // Compute elapsed time in milliseconds
+            long duration = MILLISECONDS.convert(System.nanoTime() - start, NANOSECONDS);
+
+            // Format message
+            String message = String.format("Hello %s! (%d ms)%n", name, duration);
+
+            // Complete
+            future.complete(message);
+        });
+
+        return future;
+    }
+}
+----
+<1> We need a Vert.x instance to create the artifical delay with `setTimer`.
+<2> The `greet` method will listen to messages sent on the `greeting` address.
+
+The `greet` method returns a `CompletionStage`.
+This is how you let {project-name} know that it replies asynchronously.
+
+On the sender side, the web resource code can be greatly simplified:
+
+[source,java]
+----
+@Path("/hello")
+public class MessagingResource {
+
+    @Inject
+    io.vertx.axle.core.eventbus.EventBus eventBus; // <1>
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("{name}/messaging")
+    public CompletionStage<String> greeting(@PathParam("name") String name) {
+        CompletionStage<Message<String>> greeting = eventBus.send("greeting", name); // <2>
+        return greeting.thenApply(Message::body); // <3>
+    }
+}
+----
+<1> We need an `EventBus` instance to be able to send messages to the greeting service
+<2> The `EventBus#send` call returns a `CompletionStage` that will be completed when the service replies
+<3> The `EventBus` returns a `Message` object but in our simple case we're only interested in the message body (the greeting).
+
+The eagle eyes among you might have noticed the `EventBus` instance here is neither plain Vert.x nor _Rxified_.
+It comes from another Vert.x shim, _Axle_, similar to the _Rxified_ one, but that uses the `CompletionStage` type for single results and `Publisher` for streams.
+
+TIP: You may inject any of the 3 flavors of `Vertx` or `EventBus` in your {project-name} application beans: `core`, `Axle`, `RxJava`.
+They are just shims and rely on a single Vert.x instance.
+
+You will pick one or the other depending on your use cases.
+
+- `core`: for advanced usage or if you have existing Vert.x code you want to reuse in your {project-name} application
+- `Axle`: works well with {project-name} and Microprofile APIs (`CompletionStage` for single results and `Publisher` for streams)
+- `RxJava`: when you need support for a wide range of data transformation operators on your streams
 
 == Using the Vert.x clients
 
@@ -261,19 +345,3 @@ TODO: talk about the existing clients, in particular the Axle shims
 === Web Client
 
 TODO
-
-=== Reactive Postgres Client
-
-TODO
-
-=== Mongo Client
-
-TODO
-
-== HTTP servers with Vert.x Web
-
-TODO: full control of the server side with Vert.x Web
-
-== Customizing the Vert.x instance
-
-TODO: howto configure via application.properties file

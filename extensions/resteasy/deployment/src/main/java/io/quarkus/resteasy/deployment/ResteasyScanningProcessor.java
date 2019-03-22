@@ -37,6 +37,7 @@ import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
+import io.quarkus.jaxb.deployment.JaxbEnabledBuildItem;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -415,6 +416,15 @@ public class ResteasyScanningProcessor {
     @BuildStep
     void setupFilter(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
         providers.produce(new ResteasyJaxrsProviderBuildItem(RolesFilterRegistrar.class.getName()));
+    }
+
+    /**
+     * Indicates that JAXB support should be enabled
+     * @return
+     */
+    @BuildStep
+    JaxbEnabledBuildItem enableJaxb() {
+        return new JaxbEnabledBuildItem();
     }
 
     private void registerReflectionForSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,

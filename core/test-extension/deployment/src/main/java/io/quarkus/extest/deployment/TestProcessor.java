@@ -3,6 +3,7 @@ package io.quarkus.extest.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -13,9 +14,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
-import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -23,7 +22,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.extest.runtime.IConfigConsumer;
 import io.quarkus.extest.runtime.ObjectOfValue;
 import io.quarkus.extest.runtime.ObjectValueOf;
@@ -32,7 +30,6 @@ import io.quarkus.extest.runtime.TestBuildAndRunTimeConfig;
 import io.quarkus.extest.runtime.TestBuildTimeConfig;
 import io.quarkus.extest.runtime.TestRunTimeConfig;
 import io.quarkus.extest.runtime.TestTemplate;
-import io.quarkus.runtime.RuntimeValue;
 
 /**
  * A test extension deployment processor
@@ -197,6 +194,32 @@ public final class TestProcessor {
             Class<IConfigConsumer> beanClass = testBeanBuildItem.getConfigConsumer();
             template.configureBeans(beanContainer.getValue(), beanClass, buildAndRunTimeConfig, runTimeConfig);
         }
+    }
+
+    /**
+     * Test for https://github.com/quarkusio/quarkus/issues/1633
+     * 
+     * @param template - runtime template
+     */
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void referencePrimitiveTypeClasses(TestTemplate template) {
+        HashSet<Class<?>> allPrimitiveTypes = new HashSet<>();
+        allPrimitiveTypes.add(byte.class);
+        allPrimitiveTypes.add(char.class);
+        allPrimitiveTypes.add(short.class);
+        allPrimitiveTypes.add(int.class);
+        allPrimitiveTypes.add(long.class);
+        allPrimitiveTypes.add(float.class);
+        allPrimitiveTypes.add(double.class);
+        allPrimitiveTypes.add(byte[].class);
+        allPrimitiveTypes.add(char[].class);
+        allPrimitiveTypes.add(short[].class);
+        allPrimitiveTypes.add(int[].class);
+        allPrimitiveTypes.add(long[].class);
+        allPrimitiveTypes.add(float[].class);
+        allPrimitiveTypes.add(double[].class);
+        template.validateTypes(allPrimitiveTypes);
     }
 
     @BuildStep

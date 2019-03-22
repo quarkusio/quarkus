@@ -650,10 +650,6 @@
                     <groupId>${project.groupId}</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
                     <version>${project.version}</version>
-                    <configuration>
-                        <!-- Disable PrintAnalysisCallTree reports for native image building by default -->
-                        <disableReports>true</disableReports>
-                    </configuration>
                 </plugin>
                 <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>

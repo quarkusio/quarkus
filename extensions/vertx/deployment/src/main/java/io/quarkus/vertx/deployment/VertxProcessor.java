@@ -88,6 +88,8 @@ class VertxProcessor {
 
     private static final DotName CONSUME_EVENT = DotName.createSimple(ConsumeEvent.class.getName());
     private static final DotName MESSAGE = DotName.createSimple(Message.class.getName());
+    private static final DotName RX_MESSAGE = DotName.createSimple(io.vertx.reactivex.core.eventbus.Message.class.getName());
+    private static final DotName AXLE_MESSAGE = DotName.createSimple(io.vertx.axle.core.eventbus.Message.class.getName());
     private static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
     private static final String INVOKER_SUFFIX = "_VertxInvoker";
 
@@ -108,6 +110,12 @@ class VertxProcessor {
             "complete", void.class, Object.class);
     private static final MethodDescriptor FUTURE_FAIL = MethodDescriptor.ofMethod(Future.class,
             "fail", void.class, Throwable.class);
+    private static final MethodDescriptor RX_MESSAGE_NEW_INSTANCE = MethodDescriptor.ofMethod(
+            io.vertx.reactivex.core.eventbus.Message.class,
+            "newInstance", io.vertx.reactivex.core.eventbus.Message.class, Message.class);
+    private static final MethodDescriptor AXLE_MESSAGE_NEW_INSTANCE = MethodDescriptor.ofMethod(
+            io.vertx.axle.core.eventbus.Message.class,
+            "newInstance", io.vertx.axle.core.eventbus.Message.class, Message.class);
 
     @Inject
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
@@ -280,10 +288,24 @@ class VertxProcessor {
 
         Type paramType = method.parameters().get(0);
         if (paramType.name().equals(MESSAGE)) {
-            // Parameter is io.vertx.core.eventbus.Message
+            // io.vertx.core.eventbus.Message
             invoke.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class, Message.class),
                     beanInstanceHandle, messageHandle);
+        } else if (paramType.name().equals(RX_MESSAGE)) {
+            // io.vertx.reactivex.core.eventbus.Message
+            ResultHandle rxMessageHandle = invoke.invokeStaticMethod(RX_MESSAGE_NEW_INSTANCE, messageHandle);
+            invoke.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class,
+                            io.vertx.reactivex.core.eventbus.Message.class),
+                    beanInstanceHandle, rxMessageHandle);
+        } else if (paramType.name().equals(AXLE_MESSAGE)) {
+            // io.vertx.axle.core.eventbus.Message
+            ResultHandle axleMessageHandle = invoke.invokeStaticMethod(AXLE_MESSAGE_NEW_INSTANCE, messageHandle);
+            invoke.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class,
+                            io.vertx.axle.core.eventbus.Message.class),
+                    beanInstanceHandle, axleMessageHandle);
         } else {
             // Parameter is payload
             ResultHandle bodyHandle = invoke.invokeInterfaceMethod(

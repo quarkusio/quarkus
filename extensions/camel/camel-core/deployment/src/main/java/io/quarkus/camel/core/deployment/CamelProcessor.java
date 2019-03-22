@@ -41,6 +41,7 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
+import io.quarkus.jaxb.deployment.JaxbEnabledBuildItem;
 import io.quarkus.jaxb.deployment.JaxbFileRootBuildItem;
 
 class CamelProcessor {
@@ -74,6 +75,11 @@ class CamelProcessor {
     @BuildStep
     JaxbFileRootBuildItem fileRoot() {
         return new JaxbFileRootBuildItem(CamelSupport.CAMEL_ROOT_PACKAGE_DIRECTORY);
+    }
+
+    @BuildStep
+    JaxbEnabledBuildItem enableJaxb() {
+        return buildTimeConfig.disableJaxb ? null : new JaxbEnabledBuildItem();
     }
 
     @BuildStep

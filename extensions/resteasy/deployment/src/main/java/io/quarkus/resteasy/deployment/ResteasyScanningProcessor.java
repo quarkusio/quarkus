@@ -66,6 +66,7 @@ import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildIte
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.jaxb.deployment.JaxbEnabledBuildItem;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.runtime.QuarkusInjectorFactory;
@@ -415,6 +416,16 @@ public class ResteasyScanningProcessor {
     @BuildStep
     void setupFilter(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
         providers.produce(new ResteasyJaxrsProviderBuildItem(RolesFilterRegistrar.class.getName()));
+    }
+
+    /**
+     * Indicates that JAXB support should be enabled
+     * 
+     * @return
+     */
+    @BuildStep
+    JaxbEnabledBuildItem enableJaxb() {
+        return new JaxbEnabledBuildItem();
     }
 
     private void registerReflectionForSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,

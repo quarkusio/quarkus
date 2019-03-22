@@ -23,6 +23,14 @@ public class CamelConfig {
         @ConfigItem(defaultValue = "false")
         public boolean deferInitPhase;
 
+        /**
+         * Camel jaxb support is enabled by default, but in order to trim
+         * down the size of applications, it is possible to disable jaxb support
+         * at runtime. This is useful when routes at loaded at build time and
+         * thus the camel route model is not used at runtime anymore.
+         */
+        @ConfigItem
+        public boolean disableJaxb;
     }
 
     @ConfigRoot(name = "camel", phase = ConfigPhase.RUN_TIME)

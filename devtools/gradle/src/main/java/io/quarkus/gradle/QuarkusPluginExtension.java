@@ -29,8 +29,6 @@ public class QuarkusPluginExtension {
 
     private final Project project;
 
-    private File buildDir;
-
     private String transformedClassesDirectory = "transformed-classes";
 
     private String wiringClassesDirectory = "wiring-classes";
@@ -45,17 +43,6 @@ public class QuarkusPluginExtension {
 
     public QuarkusPluginExtension(Project project) {
         this.project = project;
-    }
-
-    public File buildDir() {
-        if (buildDir == null)
-            return project.getBuildDir();
-        else
-            return buildDir;
-    }
-
-    public void setBuildDir(File buildDir) {
-        this.buildDir = buildDir;
     }
 
     public File transformedClassesDirectory() {

@@ -5,19 +5,18 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.util.concurrent.CompletionStage;
-
-import io.vertx.core.eventbus.EventBus;
-import io.vertx.core.eventbus.Message;
 
 /**
  * Marks a business method to be automatically registered as a Vertx message consumer.
  * <p>
- * The method must accept exactly one parameter. If it accepts {@link Message} then the return type must be void. For any other
- * type the {@link Message#body()}
- * is passed as the parameter value and the method may return an object that is passed to {@link Message#reply(Object)}, either
+ * The method must accept exactly one parameter. If it accepts {@link io.vertx.core.eventbus.Message} then the return type must
+ * be void. For any other
+ * type the {@link io.vertx.core.eventbus.Message#body()}
+ * is passed as the parameter value and the method may return an object that is passed to
+ * {@link io.vertx.core.eventbus.Message#reply(Object)}, either
  * directly or via
- * {@link CompletionStage#thenAccept(java.util.function.Consumer)} in case of the method returns a completion stage.
+ * {@link java.util.concurrent.CompletionStage#thenAccept(java.util.function.Consumer)} in case of the method returns a
+ * completion stage.
  * 
  * <pre>
  * &#64;ApplicationScoped
@@ -28,21 +27,26 @@ import io.vertx.core.eventbus.Message;
  *         return msg.toUpperCase();
  *     }
  * 
- *     &#64;ConsumeEvent("echo")
+ *     &#64;ConsumeEvent("echoMessage")
  *     void echoMessage(Message<String> msg) {
+ *         msg.reply(msg.body().toUpperCase());
+ *     }
+ * 
+ *     &#64;ConsumeEvent(value = "echoMessageBlocking", blocking = true)
+ *     void echoMessageBlocking(Message<String> msg) {
  *         msg.reply(msg.body().toUpperCase());
  *     }
  * }
  * </pre>
  * 
- * @see EventBus
+ * @see io.vertx.core.eventbus.EventBus
  */
 @Target({ METHOD })
 @Retention(RUNTIME)
 public @interface ConsumeEvent {
 
     /**
-     * The address a consumer will be registered to. By default, the fully qualified name of the declaring bean class is
+     * The address the consumer will be registered to. By default, the fully qualified name of the declaring bean class is
      * assumed.
      *
      * @return the address
@@ -52,8 +56,15 @@ public @interface ConsumeEvent {
     /**
      * 
      * @return {@code true} if the address should not be propagated across the cluster
-     * @see EventBus#localConsumer(String)
+     * @see io.vertx.core.eventbus.EventBus#localConsumer(String)
      */
     boolean local() default false;
+
+    /**
+     * 
+     * @return {@code true} if the consumer should be invoked as a blocking operation using a worker thread
+     * @see io.vertx.core.Vertx#executeBlocking(io.vertx.core.Handler, boolean, io.vertx.core.Handler)
+     */
+    boolean blocking() default false;
 
 }

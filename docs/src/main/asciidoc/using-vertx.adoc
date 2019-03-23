@@ -67,6 +67,15 @@ For instance _bare_ Vert.x uses callbacks, the RX Java 2 version uses `Single`, 
 
 |===
 
+TIP: You may inject any of the 3 flavors of `Vertx` as well as the `EventBus` in your {project-name} application beans: `bare`, `Axle`, `RxJava2`.
+They are just shims and rely on a single _managed_ Vert.x instance.
+
+You will pick one or the other depending on your use cases.
+
+- `bare`: for advanced usage or if you have existing Vert.x code you want to reuse in your {project-name} application
+- `Axle`: works well with {project-name} and MicroProfile APIs (`CompletionStage` for single results and `Publisher` for streams)
+- `Rx Java 2`: when you need support for a wide range of data transformation operators on your streams
+
 The following snippets illustrate the difference between these 3 APIs:
 
 [source, java]

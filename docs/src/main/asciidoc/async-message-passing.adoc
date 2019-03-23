@@ -48,14 +48,14 @@ To consume events, use the `io.quarkus.vertx.ConsumeEvent` annotation:
 
 [source, java]
 ----
-package org.acme;
+package org.acme.vertx;
 
 import io.quarkus.vertx.ConsumeEvent;
 
 import javax.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-public class NameService {
+public class GreetingService {
 
     @ConsumeEvent                           // <1>
     public String consume(String name) {    // <2>
@@ -75,11 +75,12 @@ The `@ConsumeEvent` annotation can be configured to set the address:
 
 [source, java]
 ----
-@ConsumeEvent("my-address")
+@ConsumeEvent("greeting")               // <1>
 public String consume(String name) {
     return name.toUpperCase();
 }
 ----
+<1> Receive the messages sent on the `greeting` address
 
 === Consuming without replying
 
@@ -87,7 +88,7 @@ In the previous examples, the consumer returns a result, but it's not necessary:
 
 [source,java]
 ----
-@ConsumeEvent("my-address")
+@ConsumeEvent("greeting")
 public void consume(String event) {
     // Do something with the event
 }
@@ -100,7 +101,7 @@ For instance, in the following snippet, the returned `String` is the response.
 
 [source, java]
 ----
-@ConsumeEvent("my-address")
+@ConsumeEvent("greeting")
 public String consume(String name) {
     return name.toUpperCase();
 }
@@ -110,7 +111,7 @@ You can also return a `CompletionStage<T>` to handle asynchronous reply:
 
 [source, java]
 ----
-@ConsumeEvent("my-address")
+@ConsumeEvent("greeting")
 public CompletionStage<String> consume2(String name) {
     return CompletableFuture.supplyAsync(name::toUpperCase);
 }
@@ -122,7 +123,7 @@ As said above, this mechanism is based on the Vert.x event bus. So, you can also
 
 [source, java]
 ----
-@ConsumeEvent("my-address")
+@ConsumeEvent("greeting")
 public void consume(Message<String> msg) {
     System.out.println(msg.address());
     System.out.println(msg.body());
@@ -150,18 +151,19 @@ import java.util.concurrent.CompletionStage;
 @Path("/async")
 public class EventResource {
 
-  @Inject EventBus bus;                                                        // <1>
+  @Inject
+  EventBus bus;                                                        // <1>
 
   @GET
   @Path("/{name}")
   public CompletionStage<String> hello(@PathParam("name") String name) {
-      return bus.<String>send("my-address", name)                             // <2>
+      return bus.<String>send("greeting", name)                             // <2>
               .thenApply(Message::body);
   }
 }
 ----
 <1> Inject the Event bus
-<2> Send a message to the address `my-address`. Message payload is `name`
+<2> Send a message to the address `greeting`. Message payload is `name`
 
 The `EventBus` object provides methods to:
 
@@ -185,15 +187,27 @@ bus.send("address", "hello, how are you?").thenAccept(message -> {
 
 Let's revisit a greeting HTTP endpoint and use asynchronous message passing to delegate the call to a separated bean.
 It uses the request/reply dispatching mechanism.
-
 Instead of implementing the business logic inside the JAX-RS endpoint, we are sending a message.
 This message is consumed by another bean and the response is sent using the _reply_ mechanism.
 
-Let's implement this. Creates a new JAX-RS resource with the following content:
+First create a new project using:
+
+[source, subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=vertx-quickstart \
+    -Dextensions="vertx"
+----
+
+You can already start the application in _dev mode_ using `mvn compile quarkus:dev`.
+
+Then, creates a new JAX-RS resource with the following content:
 
 [source,java]
+.src/main/java/org/acme/vertx/EventResource.java
 ----
-package org.acme;
+package org.acme.vertx;
 
 import io.vertx.axle.core.eventbus.EventBus;
 import io.vertx.axle.core.eventbus.Message;
@@ -212,17 +226,21 @@ public class EventResource {
     @GET
     @Path("/async/{name}")
     public CompletionStage<String> hello(@PathParam("name") String name) {
-        return bus.<String>send("my-address", name)
-                .thenApply(Message::body);
+        return bus.<String>send("greeting", name)                           // <1>
+                .thenApply(Message::body);                                  // <2>
     }
 }
 ----
+<1> send the `name` to the `greeting` address
+<2> when we get the reply, extract the body and send this as response to the user
 
-Now we need a consumer listening on the `my-address` address. Create a `GreetingService` bean with the following content:
+If you call this endpoint, you will wait and get a timeout. Indeed, no one is listening.
+So, we need a consumer listening on the `greeting` address. Create a `GreetingService` bean with the following content:
 
 [source, java]
+.src/main/java/org/acme/vertx/GreetingService.java
 ----
-package org.acme;
+package org.acme.vertx;
 
 import io.quarkus.vertx.ConsumeEvent;
 
@@ -231,8 +249,8 @@ import javax.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class GreetingService {
 
-    @ConsumeEvent("my-address")
-    public String hello(String name) {
+    @ConsumeEvent("greeting")
+    public String greeting(String name) {
         return "Hello " + name;
     }
 
@@ -240,3 +258,33 @@ public class GreetingService {
 ----
 
 This bean receives the name, and return the greeting message.
+
+Now, open your browser to http://localhost:8080/async/Quarkus, and you should see:
+
+[source,text]
+----
+Hello Quarkus
+----
+
+To better understand, let's detail how the HTTP request/response has been handled:
+
+1. The request is received by the `hello` method
+2. a message containing the _name_ is sent on the event bus
+3. Another bean receives this message and computes the response
+4. This response is sent back using the reply mechanism
+5. Once the reply is received by the sender, the content is written to the HTTP response
+
+This application can be packaged using:
+
+[source,shell]
+----
+mvn clean package
+----
+
+You can also compile it as a native executable with:
+
+[source, shell]
+----
+mvn clean package -Pnative
+----
+

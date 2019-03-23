@@ -49,7 +49,7 @@ Once the extension added, you can access the _managed_ Vert.x instance using `@I
 @Inject Vertx vertx;
 ----
 
-If you are familar with Vert.x, you know that Vert.x provides different API models.
+If you are familiar with Vert.x, you know that Vert.x provides different API models.
 For instance _bare_ Vert.x uses callbacks, the RX Java 2 version uses `Single`, `Maybe`, `Completable`, `Observable` and `Flowable`.
 
 {project-name} provides 3 Vert.x APIs:
@@ -119,7 +119,8 @@ To asynchronously greet a client, the endpoint method must return a `java.util.c
 @Path("/hello")
 public class GreetingResource {
 
-    @Inject Vertx vertx;
+    @Inject
+    Vertx vertx;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -211,9 +212,9 @@ The first approach can be implemented as follows:
 @Produces(MediaType.SERVER_SENT_EVENTS)
 @Path("{name}/streaming")
 public Publisher<String> greeting(@PathParam("name") String name) {
-    return Flowable
-            .fromPublisher(vertx.periodicStream(2000).toPublisher())
-            .map(l -> String.format("Hello %s! (%s)%n", name, new Date()));
+    return ReactiveStreams.fromPublisher(vertx.periodicStream(2000).toPublisher())
+            .map(l -> String.format("Hello %s! (%s)%n", name, new Date()))
+            .buildRs();
 }
 ----
 
@@ -340,4 +341,9 @@ This part is covered in the link:async-message-passing.html[Async Message Passin
 //=== Web Client
 //
 //TODO
+
+//// TODO - Declarative route and hot-reload (in another guide)
+//// TODO - Using Vert.x clients - example with Web client and PG client
+///// TODO - Configuring Vert.x
+
 

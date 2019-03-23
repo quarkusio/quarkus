@@ -325,12 +325,12 @@ import static org.hamcrest.CoreMatchers.is;
 @QuarkusTest
 public class GreetingResourceTest {
 
-    @Test    // <1>
+    @Test    // (1)
     public void testHelloEndpoint() {
         given()
           .when().get("/hello")
           .then()
-             .statusCode(200)    // <2>
+             .statusCode(200)    // (2)
              .body(is("hello"));
     }
 

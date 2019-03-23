@@ -3,9 +3,10 @@ include::./attributes.adoc[]
 
 Eclipse https://vertx.io[Vert.x] is a toolkit for building reactive applications.
 It is designed to be lightweight and embeddable.
-Quarkus integrates Vert.x to implement different forms of reactive features.
+Vert.x defines a reactive execution model and provides a large ecosystem.
+Quarkus integrates Vert.x to implement different forms of reactive.
 Basically, {project-name} uses Vert.x as its reactive engine.
-While lots of reactive feature from {project-name} don't _show_ Vert.x, it's used underneath.
+While lots of reactive features from {project-name} don't _show_ Vert.x, it's used underneath.
 But you can also access the managed Vert.x instance and benefits from the Vert.x ecosystem.
 
 == Installing
@@ -13,7 +14,7 @@ But you can also access the managed Vert.x instance and benefits from the Vert.x
 To access Vert.x, well, you need to enable the `vertx` extension to use this feature.
 If you are creating a new project, set the `extensions` parameter are follows:
 
-[source, subs=attributes+]
+[source, shell, subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -24,7 +25,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 If you have an already created project, the `vertx` extension can be added to an existing {project-name} project with
 the `add-extension` command:
 
-[source]
+[source,shell]
 ----
 mvn quarkus:add-extension -Dextensions="vertx"
 ----
@@ -39,11 +40,66 @@ Otherwise, you can manually add this to the dependencies section of your `pom.xm
 </dependency>
 ----
 
-=== Reactive web resources
+== Accessing Vert.x
+
+Once the extension added, you can access the _managed_ Vert.x instance using `@Inject`:
+
+[source, java]
+----
+@Inject Vertx vertx;
+----
+
+If you are familar with Vert.x, you know that Vert.x provides different API models.
+For instance _bare_ Vert.x uses callbacks, the RX Java 2 version uses `Single`, `Maybe`, `Completable`, `Observable` and `Flowable`.
+
+{project-name} provides 3 Vert.x APIs:
+
+[options="header"]
+|===
+
+| Name | Code | Description
+
+| _bare_ | `@Inject io.vertx.core.Vertx vertx` | _bare_ Vert.x instance, the API uses callbacks.
+
+| RX Java 2 | `@Inject io.vertx.reactivex.core.Vertx vertx` | RX Java 2 Vert.x, the API uses RX Java 2 types.
+
+| _Axle_ | `@Inject io.vertx.axle.core.Vertx vertx` | Axle Vert.x, the API uses `CompletionStage` and `Reactive Streams`.
+
+|===
+
+The following snippets illustrate the difference between these 3 APIs:
+
+[source, java]
+----
+// Bare Vert.x:
+vertx.fileSystem().readFile("lorem-ipsum.txt", ar -> {
+    if (ar.succeeded()) {
+        System.out.println("Content:" + ar.result().toString("UTF-8"));
+    } else {
+        System.out.println("Cannot read the file: " + ar.cause().getMessage());
+    }
+});
+
+// Rx Java 2 Vert.x
+vertx.fileSystem().rxReadFile("lorem-ipsum.txt")
+    .map(buffer -> buffer.toString("UTF-8"))
+    .subscribe(
+            content -> System.out.println("Content: " + content),
+            err -> System.out.println("Cannot read the file: " + err.getMessage())
+    );
+
+// Axle API:
+vertx.fileSystem().readFile("lorem-ipsum.txt")
+    .thenApply(buffer -> "Content: " + buffer.toString("UTF-8"))
+    .exceptionally(err -> "Cannot read the file: " + err.getMessage())
+    .thenAccept(s -> System.out.println(s));
+----
+
+== Using Vert.x in Reactive Jax-RS resources
 
 {project-name} web resources support asynchronous processing and streaming results over https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events[server-sent events].
 
-==== Asynchronous processing
+=== Asynchronous processing
 
 Most programming guides start easy with a greeting service and this one makes no exception.
 
@@ -53,6 +109,8 @@ To asynchronously greet a client, the endpoint method must return a `java.util.c
 ----
 @Path("/hello")
 public class GreetingResource {
+
+    @Inject Vertx vertx;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -71,7 +129,7 @@ public class GreetingResource {
 ----
 
 So far so good.
-Now let's use the Vert.x API to implement the delayed reply with the `setTimer` provided by Vert.x:
+Now let's use the Vert.x API to implement the artificially delayed reply with the `setTimer` provided by Vert.x:
 
 [source,java]
 ----
@@ -88,40 +146,27 @@ vertx.setTimer(10, l -> {
 });
 ----
 
-Nothing fancy.
-But you may wonder how to get the `io.vertx.axle.core.Vertx` instance?
-After the `vertx` extension is installed, you can `@Inject` one in any {project-name} bean:
-
-[source,java]
-----
-@Inject
-Vertx vertx;
-----
-
-NOTE: If you are a Vert.x user you may wonder about this `io.vertx.axle.core.Vertx`.
-We are going to cover this later in this guide. You can also have a bare `io.vertx.core.Vertx` instance or an RX Java 2 instance `io.vertx.reactivex.core.Vertx`.
-
 That's it.
 Now start {project-name} in `dev` mode with:
 
-[source]
+[source, shell]
 ----
 mvn compile quarkus:dev
 ----
 
 Eventually, open your browser and navigate to http://localhost:8080/hello/Quarkus, you should see:
 
-[source]
+[source, shell]
 ----
 Hello Quarkus! (10 ms)
 ----
 
-==== Streaming using Server-Sent Events
+=== Streaming using Server-Sent Events
 
 {project-name} web resources that need to send content as https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events[server-sent events] must have a method:
 
-- declaring the `text/event-stream` response content type
-- returning a https://www.reactive-streams.org/[Reactive Streams] `Publisher`
+* declaring the `text/event-stream` response content type
+* returning a https://www.reactive-streams.org/[Reactive Streams] `Publisher`
 
 In practice, a streaming greeting service would look like:
 
@@ -163,7 +208,7 @@ public Publisher<String> greeting(@PathParam("name") String name) {
 }
 ----
 
-The second approach uses a different "injected" type:
+The second approach slightly differs:
 
 [source,java]
 ----
@@ -219,7 +264,7 @@ More about this in  Mozilla's https://developer.mozilla.org/en-US/docs/Web/API/E
 Navigate to http://localhost:8080/streaming.html.
 A new greeting should show-up every 2 seconds.
 
-[source]
+[source, text]
 ----
 Hello Quarkus! (Thu Mar 21 17:26:12 CET 2019)
 
@@ -230,7 +275,7 @@ Hello Quarkus! (Thu Mar 21 17:26:16 CET 2019)
 ...
 ----
 
-==== Using JSON results
+=== Using JSON results
 
 Vert.x API heavily relies on JSON, namely the `io.vertx.core.json.JsonObject` and `io.vertx.core.json.JsonArray` types.
 They are both supported as {project-name} web resource return types.
@@ -259,38 +304,31 @@ public class VertxJsonResource {
 
 In your browser, navigate to http://localhost:8080/hello/Quarkus/object. You should see:
 
-[source]
+[source, text]
 ----
 {"Hello":"Quarkus"}
 ----
 
 Then, navigate to http://localhost:8080/hello/Quarkus/array:
 
-[source]
+[source, text]
 ----
 ["Hello","Quarkus"]
 ----
 
 Needless to say, this works equally well when the JSON result is wrapped in a `CompletionStage` or a `Publisher`.
 
-== Using the Reactive clients
+== Using the event bus
 
-TODO: talk about the existing clients, in particular the Axle shims
+The event bus is the connecting tissue of Vert.x application.
+{project-name} integrates it so different beans can interact asynchronous messages.
+This part is covered in the link:async-message-passing.html[Async Message Passing documentation].
 
-=== Web Client
+//== Using the Reactive clients
+//
+//TODO: talk about the existing clients, in particular the Axle shims
+//
+//=== Web Client
+//
+//TODO
 
-TODO
-
-
-//////
-It comes from another Vert.x shim, _Axle_, similar to the _Rxified_ one, but that uses the `CompletionStage` type for single results and `Publisher` for streams.
-
-TIP: You may inject any of the 3 flavors of `Vertx` or `EventBus` in your {project-name} application beans: `core`, `Axle`, `RxJava`.
-They are just shims and rely on a single Vert.x instance.
-
-You will pick one or the other depending on your use cases.
-
-- `core`: for advanced usage or if you have existing Vert.x code you want to reuse in your {project-name} application
-- `Axle`: works well with {project-name} and Microprofile APIs (`CompletionStage` for single results and `Publisher` for streams)
-- `RxJava`: when you need support for a wide range of data transformation operators on your streams
-//////

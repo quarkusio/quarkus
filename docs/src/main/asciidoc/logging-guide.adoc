@@ -29,7 +29,7 @@ Logging to a file is also supported and enabled by default.  To configure or dis
 |Property Name|Default|Description
 |quarkus.log.file.enable|false|Determine whether file logging is enabled.
 |quarkus.log.file.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{3.}] (%t) %s%e%n|The format pattern to use for logging to a file; see <<format_string>>.
-|quarkus.log.file.level|INFO|The minimum log level to write to the log file.
+|quarkus.log.file.level|ALL|The minimum log level to write to the log file.
 |quarkus.log.file.path|quarkus.log|The path of the log file.
 |===
 

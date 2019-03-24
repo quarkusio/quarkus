@@ -1,5 +1,7 @@
 package io.quarkus.elytron.security.runtime;
 
+import java.util.List;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -19,4 +21,10 @@ public final class SecurityConfig {
      */
     @ConfigItem
     public MPRealmConfig embedded;
+
+    /**
+     * List of security providers to enable for reflection
+     */
+    @ConfigItem
+    public List<String> securityProviders;
 }

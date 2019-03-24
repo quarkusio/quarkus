@@ -23,6 +23,7 @@ import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -30,8 +31,10 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.elytron.security.deployment.AuthConfigBuildItem;
 import io.quarkus.elytron.security.deployment.IdentityManagerBuildItem;
+import io.quarkus.elytron.security.deployment.JCAProviderBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityDomainBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.runtime.AuthConfig;
@@ -82,11 +85,28 @@ class SmallRyeJwtProcessor {
     /**
      * Register this extension as a MP-JWT feature
      *
-     * @return
+     * @return FeatureBuildItem
      */
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.SMALLRYE_JWT);
+    }
+
+    /**
+     * If the configuration specified a deployment local key resource, register it with substrate
+     * 
+     * @return SubstrateResourceBuildItem
+     */
+    @BuildStep
+    SubstrateResourceBuildItem registerSubstrateResources() {
+        String publicKeyLocation = QuarkusConfig.getString("mp.jwt.verify.publickey.location", null, true);
+        if (publicKeyLocation != null) {
+            if (publicKeyLocation.indexOf(':') < 0 || publicKeyLocation.startsWith("classpath:")) {
+                log.infof("Adding %s to native image", publicKeyLocation);
+                return new SubstrateResourceBuildItem(publicKeyLocation);
+            }
+        }
+        return null;
     }
 
     /**
@@ -158,5 +178,16 @@ class SmallRyeJwtProcessor {
         ServletExtension authExt = template.createAuthExtension(config.authMechanism, container.getValue());
         ServletExtensionBuildItem sebi = new ServletExtensionBuildItem(authExt);
         return sebi;
+    }
+
+    /**
+     * Register the SHA256withRSA signature provider
+     * 
+     * @return JCAProviderBuildItem for SHA256withRSA signature provider
+     */
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    JCAProviderBuildItem registerRSASigProvider() {
+        return new JCAProviderBuildItem(config.rsaSigProvider);
     }
 }

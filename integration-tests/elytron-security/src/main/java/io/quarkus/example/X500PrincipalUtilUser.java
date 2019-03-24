@@ -21,7 +21,9 @@ public class X500PrincipalUtilUser {
                 return "O=Fake X500Principal";
             }
         };
+        System.out.printf("@Produces X500Principal called\n");
         X500Principal principal = X500PrincipalUtil.asX500Principal(dummy, true);
+        System.out.printf("@Produces X500Principal created: %s\n", principal);
         return principal;
     }
 }

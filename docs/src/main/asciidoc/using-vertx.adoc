@@ -328,22 +328,156 @@ Then, navigate to http://localhost:8080/hello/Quarkus/array:
 
 Needless to say, this works equally well when the JSON result is wrapped in a `CompletionStage` or a `Publisher`.
 
-== Using the event bus
+== Using Vert.x Clients
 
-The event bus is the connecting tissue of Vert.x application.
+As you can inject a Vert.x instance, you can use Vert.x clients in a {project-name} application.
+This section gives an example with the `WebClient`.
+
+=== Picking the right dependency
+
+Depending on the API model you want to use you need to add the right dependency to your `pom.xml` file:
+
+[source, xml, subs=attributes+]
+----
+<!-- bare API -->
+<dependency>
+  <groupId>io.vertx</groupId>
+  <artifactId>vertx-web-client</artifactId>
+  <version>{vertx-version}</version>
+</dependency>
+
+<!-- Axle API -->
+<dependency>
+  <groupId>io.smallrye.reactive</groupId>
+  <artifactId>smallrye-axle-web-client</artifactId>
+  <version>{axle-version}</version>
+</dependency>
+
+<!-- RX Java 2 API -->
+<dependency>
+  <groupId>io.vertx</groupId>
+  <artifactId>vertx-rx-java2</artifactId>
+  <version>{vertx-version}</version>
+</dependency>
+----
+
+In this guide, we are going to use the Axle API, so:
+
+[source, xml, subs=attributes+]
+----
+<dependency>
+  <groupId>io.smallrye.reactive</groupId>
+  <artifactId>smallrye-axle-web-client</artifactId>
+  <version>{axle-version}</version>
+</dependency>
+----
+
+As we are going to invoke a `https` service, also configure the quarkus-maven-plugin from the _native_ profile with:
+
+[source, xml]
+----
+<executions>
+    <execution>
+        <goals>
+            <goal>native-image</goal>
+        </goals>
+        <configuration>
+            <enableHttpUrlHandler>true</enableHttpUrlHandler>
+            <enableHttpsUrlHandler>true</enableHttpsUrlHandler> <!-- Add this line -->
+        </configuration>
+    </execution>
+</executions>
+----
+
+Now, create a new resource in your project with the following content:
+
+[source, java]
+.src/main/java/org/acme/vertx/ResourceUsingWebClient.java
+----
+package org.acme.vertx;
+
+import io.vertx.axle.core.Vertx;
+import io.vertx.axle.ext.web.client.WebClient;
+import io.vertx.axle.ext.web.codec.BodyCodec;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.WebClientOptions;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import java.util.concurrent.CompletionStage;
+
+@Path("/swapi")
+public class ResourceUsingWebClient {
+
+
+    @Inject
+    Vertx vertx;
+
+    private WebClient client;
+
+    @PostConstruct
+    void initialize() {
+        this.client = WebClient.create(vertx,
+                new WebClientOptions().setDefaultHost("swapi.co").setDefaultPort(443).setSsl(true));
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/{id}")
+    public CompletionStage<JsonObject> getStarWarsCharacter(@PathParam("id") int id) {
+        return client.get("/api/people/" + id)
+                .send()
+                .thenApply(resp -> {
+                    if (resp.statusCode() == 200) {
+                        return resp.bodyAsJsonObject();
+                    } else {
+                        return new JsonObject()
+                                .put("code", resp.statusCode())
+                                .put("message", resp.bodyAsString());
+                    }
+                });
+    }
+
+}
+----
+
+This resource creates a `WebClient` and upon request use this client to invoke the https://swapi.co/ API.
+Depending on the result the response is forwarded as it's received, or a new JSON object is created with the status and body.
+The `WebClient` is obviously asynchronous (and non-blocking), to the endpoint returns a `CompletionStage`.
+
+Run the application with:
+
+[source, shell]
+----
+mvn compile quarkus:dev
+----
+
+And then, open a browser to: http://localhost:8080/swapi/1. You should get Luke Skywalker.
+
+This application can be compiled and run as a native executable with:
+
+[source, shell]
+----
+mvn package -Pnative
+----
+
+///// TODO - Configuring Vert.x
+
+== Going further
+
+There are many other facets of {project-name} using Vert.x underneath:
+
+* The event bus is the connecting tissue of Vert.x application.
 {project-name} integrates it so different beans can interact asynchronous messages.
 This part is covered in the link:async-message-passing.html[Async Message Passing documentation].
 
-//== Using the Reactive clients
-//
-//TODO: talk about the existing clients, in particular the Axle shims
-//
-//=== Web Client
-//
-//TODO
-
-//// TODO - Declarative route and hot-reload (in another guide)
-//// TODO - Using Vert.x clients - example with Web client and PG client
-///// TODO - Configuring Vert.x
+* Data streaming and Apache Kafka are a important parts of modern systems.
+{project-name} integrates data streaming using Reactive Messaging.
+More details on link:kafka-guide.html[Interacting with Kafka].
 
 

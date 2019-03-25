@@ -12,9 +12,9 @@ public class QuarkusPluginTest {
     @Test
     public void shouldCreateTasks() {
         Project project = ProjectBuilder.builder().build();
-        project.getPluginManager().apply("io.quarkus.gradle.plugin");
+        project.getPluginManager().apply("io.quarkus");
 
-        assertTrue(project.getPluginManager().hasPlugin("io.quarkus.gradle.plugin"));
+        assertTrue(project.getPluginManager().hasPlugin("io.quarkus"));
 
         TaskContainer tasks = project.getTasks();
         assertNotNull(tasks.getByName("quarkusBuild"));
@@ -27,7 +27,7 @@ public class QuarkusPluginTest {
     @Test
     public void shouldMakeAssembleDependOnQuarkusBuild() {
         Project project = ProjectBuilder.builder().build();
-        project.getPluginManager().apply("io.quarkus.gradle.plugin");
+        project.getPluginManager().apply("io.quarkus");
         project.getPluginManager().apply("base");
 
         TaskContainer tasks = project.getTasks();
@@ -38,7 +38,7 @@ public class QuarkusPluginTest {
     @Test
     public void shouldMakeQuarkusDevAndQuarkusBuildDependOnClassesTask() {
         Project project = ProjectBuilder.builder().build();
-        project.getPluginManager().apply("io.quarkus.gradle.plugin");
+        project.getPluginManager().apply("io.quarkus");
         project.getPluginManager().apply("java");
 
         TaskContainer tasks = project.getTasks();

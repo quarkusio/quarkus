@@ -13,7 +13,7 @@ pluginManagement {
     }
     resolutionStrategy {
         eachPlugin {
-            if (requested.id.id == 'io.quarkus.gradle.plugin') {
+            if (requested.id.id == 'io.quarkus') {
                 useModule("io.quarkus:quarkus-gradle-plugin:${requested.version}")
             }
         }
@@ -31,7 +31,7 @@ pluginManagement {
     }
     resolutionStrategy {
         eachPlugin {
-            if (requested.id.id == "io.quarkus.gradle.plugin") {
+            if (requested.id.id == "io.quarkus") {
                 useModule("io.quarkus:quarkus-gradle-plugin:${requested.version}")
             }
         }

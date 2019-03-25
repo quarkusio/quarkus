@@ -12,7 +12,7 @@ luckily setting up a {project-name} project with Gradle is very simple. You only
 ----
 plugins {
     id 'java'
-    id 'io.quarkus.gradle.plugin' version '{quarkus-version}'
+    id 'io.quarkus' version '{quarkus-version}'
 }
 ----
 
@@ -22,7 +22,7 @@ or, if you use the Gradle Kotlin DSL:
 ----
 plugins {
     java
-    id("io.quarkus.gradle.plugin") version "{quarkus-version}"
+    id("io.quarkus") version "{quarkus-version}"
 }
 ----
 
@@ -36,7 +36,7 @@ Here is a complete sample file for a simple REST project:
 ----
 plugins {
     id 'java'
-    id 'io.quarkus.gradle.plugin' version '{quarkus-version}' <1>
+    id 'io.quarkus.' version '{quarkus-version}' <1>
 }
 
 repositories {
@@ -58,7 +58,7 @@ Here's the same build script, using the Gradle Kotlin DSL:
 ----
 plugins {
     java
-    id("io.quarkus.gradle.plugin") version "{quarkus-version}"
+    id("io.quarkus") version "{quarkus-version}"
 }
 
 repositories {

@@ -16,12 +16,15 @@
 
 package io.quarkus.deployment.steps;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
@@ -88,16 +91,16 @@ class SubstrateConfigBuildStep {
 
             if (graalVmHome != null) {
                 Path graalVmLibDirectory = Paths.get(graalVmHome, "jre", "lib");
-                Path linuxLibDirectory = graalVmLibDirectory.resolve("amd64");
+                Path amd64LibDirectory = graalVmLibDirectory.resolve("amd64");
 
                 // We add . as it might be useful in a containerized world
                 // FIXME: it seems GraalVM does not support having multiple paths in java.library.path
                 //javaLibraryPathAdditionalPath.produce(new JavaLibraryPathAdditionalPathBuildItem("."));
-                if (Files.exists(linuxLibDirectory)) {
+                if (existsAndDoesNotContainOnlyTheAgent(amd64LibDirectory)) {
                     // On Linux, the SunEC library is in jre/lib/amd64/
                     // This is useful for testing or if you have a similar environment in production
                     javaLibraryPathAdditionalPath
-                            .produce(new JavaLibraryPathAdditionalPathBuildItem(linuxLibDirectory.toString()));
+                            .produce(new JavaLibraryPathAdditionalPathBuildItem(amd64LibDirectory.toString()));
                 } else {
                     // On MacOS, the SunEC library is directly in jre/lib/
                     // This is useful for testing or if you have a similar environment in production
@@ -118,6 +121,32 @@ class SubstrateConfigBuildStep {
         }
 
         nativeImage.produce(new SubstrateSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));
+    }
+
+    /**
+     * In GrallVM 1.0.0-rc14 a new amd64 directory has been added on Mac OS X. This directory was already existing on
+     * Linux, but not on Mac OS X. This directory contains the {@code libnative-image-agent.dylib}. So the check
+     * on the existence of the directory is not enough anymore. So, we need to check that the directory exist AND
+     * contains more than 1 file (the agent).
+     *
+     * @param path the {@code amd64} path
+     * @return whether or not the {@code amd64} path exists AND contains more than 1 file.
+     */
+    private boolean existsAndDoesNotContainOnlyTheAgent(Path path) {
+        if (!Files.exists(path)) {
+            return false;
+        }
+
+        try (Stream<Path> children = Files.list(path)) {
+            return children
+                    .map(Path::getFileName)
+                    .filter(fileName -> !fileName.toFile().getName().startsWith(".")) // Skip hidden files (.DS_Store)
+                    .count() > 1;
+            // If we get more than 1, it means that we have other files in this directory.
+            // So we should use that directory for `java.library.path`.
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     private Boolean isSslNativeEnabled(SslNativeConfigBuildItem sslNativeConfig,

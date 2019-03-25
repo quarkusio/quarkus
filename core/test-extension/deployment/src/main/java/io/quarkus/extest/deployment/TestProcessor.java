@@ -3,10 +3,6 @@ package io.quarkus.extest.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.interfaces.DSAPublicKey;
@@ -16,9 +12,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
-import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
-import io.quarkus.extest.runtime.subst.DSAPublicKeyObjectSubstitution;
-import io.quarkus.extest.runtime.subst.KeyProxy;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -30,10 +23,10 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.extest.runtime.IConfigConsumer;
 import io.quarkus.extest.runtime.ObjectOfValue;
@@ -43,6 +36,8 @@ import io.quarkus.extest.runtime.TestBuildAndRunTimeConfig;
 import io.quarkus.extest.runtime.TestBuildTimeConfig;
 import io.quarkus.extest.runtime.TestRunTimeConfig;
 import io.quarkus.extest.runtime.TestTemplate;
+import io.quarkus.extest.runtime.subst.DSAPublicKeyObjectSubstitution;
+import io.quarkus.extest.runtime.subst.KeyProxy;
 
 /**
  * A test extension deployment processor

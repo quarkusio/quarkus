@@ -11,21 +11,21 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-amazon-lambda</artifactId>
+    <artifactId>quarkus-amazon-lambda-deployment</artifactId>
     <name>Quarkus - Amazon Lambda - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
+            <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-amazon-lambda-runtime</artifactId>
+            <artifactId>quarkus-amazon-lambda</artifactId>
         </dependency>
 
         <dependency>
@@ -41,7 +41,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow</artifactId>
+            <artifactId>quarkus-undertow-deployment</artifactId>
         </dependency>
     </dependencies>
 

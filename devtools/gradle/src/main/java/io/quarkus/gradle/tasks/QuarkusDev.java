@@ -38,6 +38,11 @@ import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppDependency;
+import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.dev.ClassLoaderCompiler;
 import io.quarkus.dev.DevModeMain;
 import io.quarkus.gradle.QuarkusPluginExtension;
@@ -80,11 +85,11 @@ public class QuarkusDev extends QuarkusTask {
     }
 
     @OutputDirectory
+    @Optional
     public File getBuildDir() {
         return buildDir;
     }
 
-    @Optional
     public void setBuildDir(File buildDir) {
         this.buildDir = buildDir;
     }
@@ -133,8 +138,7 @@ public class QuarkusDev extends QuarkusTask {
             throw new GradleException("The `src/main/java` directory is required, please create it.");
         }
 
-        if (!getBuildDir().isDirectory() ||
-                !new File(getBuildDir(), "classes").isDirectory()) {
+        if (!extension().outputDirectory().isDirectory()) {
             throw new GradleException("The project has no output yet, " +
                     "this should not happen as build should have been executed first. " +
                     "Do the project have any source files?");
@@ -142,7 +146,7 @@ public class QuarkusDev extends QuarkusTask {
 
         try {
             List<String> args = new ArrayList<>();
-            args.add("java");
+            args.add(findJavaTool());
             if (getDebug() == null) {
                 // debug mode not specified
                 // make sure 5005 is not used, we don't want to just fail if something else is using it
@@ -197,13 +201,24 @@ public class QuarkusDev extends QuarkusTask {
             // Do not include URIs in the manifest, because some JVMs do not like that
             StringBuilder classPathManifest = new StringBuilder();
             StringBuilder classPath = new StringBuilder();
-            for (File f : extension.dependencyFiles()) {
-                addToClassPaths(classPathManifest, classPath, f);
+
+            final AppModel appModel;
+            final AppModelResolver modelResolver = extension().resolveAppModel();
+            try {
+                final AppArtifact appArtifact = extension.getAppArtifact();
+                appArtifact.setPath(extension.outputDirectory().toPath());
+                appModel = modelResolver.resolveModel(appArtifact);
+            } catch (AppModelResolverException e) {
+                throw new GradleException("Failed to resolve application model " + extension.getAppArtifact() + " dependencies",
+                        e);
             }
+            for (AppDependency appDep : appModel.getAllDependencies()) {
+                addToClassPaths(classPathManifest, classPath, appDep.getArtifact().getPath().toFile());
+            }
+
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
             File wiringClassesDirectory = new File(getBuildDir(), "wiring-classes");
             wiringClassesDirectory.mkdirs();
-
             addToClassPaths(classPathManifest, classPath, wiringClassesDirectory);
 
             //we also want to add the maven plugin jar to the class path
@@ -292,6 +307,45 @@ public class QuarkusDev extends QuarkusTask {
         }
     }
 
+    /**
+     * Search for the java command in the order:
+     * 1. maven-toolchains plugin configuration
+     * 2. java.home location
+     * 3. java[.exe] on the system path
+     *
+     * @return the java command to use
+     */
+    protected String findJavaTool() {
+        // use the same JVM as the one used to run Maven (the "java.home" one)
+        String java = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
+        File javaCheck = new File(java);
+        if (!javaCheck.canExecute()) {
+
+            java = null;
+            // Try executable extensions if windows
+            if (OS.determineOS() == OS.WINDOWS && System.getenv().containsKey("PATHEXT")) {
+                String extpath = System.getenv("PATHEXT");
+                String[] exts = extpath.split(";");
+                for (String ext : exts) {
+                    File winExe = new File(javaCheck.getAbsolutePath() + ext);
+                    if (winExe.canExecute()) {
+                        java = winExe.getAbsolutePath();
+                        break;
+                    }
+                }
+            }
+            // Fallback to java on the path
+            if (java == null) {
+                if (OS.determineOS() == OS.WINDOWS) {
+                    java = "java.exe";
+                } else {
+                    java = "java";
+                }
+            }
+        }
+        return java;
+    }
+
     private void addToClassPaths(StringBuilder classPathManifest, StringBuilder classPath, File file)
             throws MalformedURLException {
         URI uri = file.toPath().toAbsolutePath().toUri();
@@ -305,4 +359,43 @@ public class QuarkusDev extends QuarkusTask {
         classPath.append(" ");
     }
 
+    /**
+     * Enum to classify the os.name system property
+     */
+    static enum OS {
+        WINDOWS, LINUX, MAC, OTHER;
+
+        private String version;
+
+        public String getVersion() {
+            return version;
+        }
+
+        public void setVersion(String version) {
+            this.version = version;
+        }
+
+        static OS determineOS() {
+            OS os = OS.OTHER;
+            String osName = System.getProperty("os.name");
+            osName = osName.toLowerCase();
+            if (osName.contains("windows")) {
+                os = OS.WINDOWS;
+            } else if (osName.contains("linux")
+                    || osName.contains("freebsd")
+                    || osName.contains("unix")
+                    || osName.contains("sunos")
+                    || osName.contains("solaris")
+                    || osName.contains("aix")) {
+                os = OS.LINUX;
+            } else if (osName.contains("mac os")) {
+                os = OS.MAC;
+            } else {
+                os = OS.OTHER;
+            }
+
+            os.setVersion(System.getProperty("os.version"));
+            return os;
+        }
+    }
 }

@@ -10,7 +10,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-camel-salesforce-runtime</artifactId>
+    <artifactId>quarkus-camel-salesforce</artifactId>
     <name>Quarkus - Camel - Salesforce - Runtime</name>
 
     <dependencies>
@@ -18,11 +18,11 @@
         <!-- quarkus -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc-runtime</artifactId>
+            <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-runtime</artifactId>
+            <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.oracle.substratevm</groupId>
@@ -40,7 +40,8 @@
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
+                <groupId>io.quarkus.bootstrap</groupId>
+                <artifactId>bootstrap-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

@@ -26,17 +26,17 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-vertx-web-runtime</artifactId>
+    <artifactId>quarkus-vertx-web</artifactId>
     <name>Quarkus - Vert.x Web - Runtime</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-runtime</artifactId>
+            <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-runtime</artifactId>
+            <artifactId>quarkus-vertx</artifactId>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
@@ -58,7 +58,8 @@
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
+                <groupId>io.quarkus.bootstrap</groupId>
+                <artifactId>bootstrap-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

@@ -10,29 +10,29 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+    <artifactId>quarkus-smallrye-reactive-messaging-kafka-deployment</artifactId>
     <name>Quarkus - SmallRye Reactive Messaging - Kafka - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
+            <artifactId>quarkus-smallrye-reactive-messaging-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kafka-client</artifactId>
+            <artifactId>quarkus-kafka-client-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-kafka-runtime</artifactId>
+            <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx</artifactId>
+            <artifactId>quarkus-vertx-deployment</artifactId>
         </dependency>
 
         <dependency>

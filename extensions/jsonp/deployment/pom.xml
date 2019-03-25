@@ -10,17 +10,17 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-jsonp</artifactId>
+    <artifactId>quarkus-jsonp-deployment</artifactId>
     <name>Quarkus - JSON-P - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jsonp-runtime</artifactId>
+            <artifactId>quarkus-jsonp</artifactId>
         </dependency>
     </dependencies>
 

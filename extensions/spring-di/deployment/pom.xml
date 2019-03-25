@@ -26,17 +26,21 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-spring-di</artifactId>
+    <artifactId>quarkus-spring-di-deployment</artifactId>
     <name>Quarkus - Spring - DI - Deployment</name>
 
     <dependencies>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>quarkus-spring-di</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
 
         <dependency>

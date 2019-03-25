@@ -26,24 +26,25 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>quarkus-arc-runtime</artifactId>
+  <artifactId>quarkus-arc</artifactId>
   <name>Quarkus - ArC - Runtime</name>
 
   <dependencies>
     <dependency>
       <groupId>io.quarkus.arc</groupId>
-      <artifactId>arc-runtime</artifactId>
+      <artifactId>arc</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-core-runtime</artifactId>
+      <artifactId>quarkus-core</artifactId>
     </dependency>
   </dependencies>
 
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
+        <groupId>io.quarkus.bootstrap</groupId>
+        <artifactId>bootstrap-maven-plugin</artifactId>
       </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>

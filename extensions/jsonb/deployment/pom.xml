@@ -10,21 +10,21 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-jsonb</artifactId>
+    <artifactId>quarkus-jsonb-deployment</artifactId>
     <name>Quarkus - JSON-B - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jsonp</artifactId>
+            <artifactId>quarkus-jsonp-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jsonb-runtime</artifactId>
+            <artifactId>quarkus-jsonb</artifactId>
         </dependency>
     </dependencies>
 

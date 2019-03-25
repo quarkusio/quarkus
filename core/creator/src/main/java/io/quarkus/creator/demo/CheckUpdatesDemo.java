@@ -19,8 +19,8 @@ package io.quarkus.creator.demo;
 
 import java.util.Properties;
 
+import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.creator.AppCreator;
-import io.quarkus.creator.AppDependency;
 import io.quarkus.creator.phase.curate.CurateOutcome;
 import io.quarkus.creator.phase.curate.CuratePhase;
 import io.quarkus.creator.phase.curate.VersionUpdate;

@@ -26,21 +26,21 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-undertow-websockets</artifactId>
+    <artifactId>quarkus-undertow-websockets-deployment</artifactId>
     <name>Quarkus - Undertow - WebSockets - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow</artifactId>
+            <artifactId>quarkus-undertow-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow-websockets-runtime</artifactId>
+            <artifactId>quarkus-undertow-websockets</artifactId>
         </dependency>
     </dependencies>
 

@@ -26,7 +26,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-smallrye-metrics-runtime</artifactId>
+    <artifactId>quarkus-smallrye-metrics</artifactId>
     <name>Quarkus - SmallRye Metrics - Runtime</name>
 
     <dependencies>
@@ -37,19 +37,19 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-runtime</artifactId>
+            <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow-runtime</artifactId>
+            <artifactId>quarkus-undertow</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc-runtime</artifactId>
+            <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jsonp-runtime</artifactId>
+            <artifactId>quarkus-jsonp</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.spec.javax.servlet</groupId>
@@ -60,7 +60,8 @@
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
+                <groupId>io.quarkus.bootstrap</groupId>
+                <artifactId>bootstrap-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

@@ -26,17 +26,17 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-vertx-web</artifactId>
+    <artifactId>quarkus-vertx-web-deployment</artifactId>
     <name>Quarkus - Vert.x Web - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx</artifactId>
+            <artifactId>quarkus-vertx-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-web-runtime</artifactId>
+            <artifactId>quarkus-vertx-web</artifactId>
         </dependency>
         <!-- Test dependencies -->
         <dependency>
@@ -51,9 +51,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>

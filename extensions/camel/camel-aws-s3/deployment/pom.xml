@@ -10,7 +10,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-camel-aws-s3</artifactId>
+    <artifactId>quarkus-camel-aws-s3-deployment</artifactId>
     <name>Quarkus - Camel - AWS S3 - Deployment</name>
 
     <dependencies>
@@ -18,17 +18,17 @@
         <!-- quarkus -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
+            <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
 
         <!-- camel -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-camel-aws-s3-runtime</artifactId>
+            <artifactId>quarkus-camel-aws-s3</artifactId>
         </dependency>
 
     </dependencies>

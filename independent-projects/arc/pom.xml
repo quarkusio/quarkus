@@ -73,7 +73,7 @@
 
             <dependency>
                 <groupId>io.quarkus.arc</groupId>
-                <artifactId>arc-runtime</artifactId>
+                <artifactId>arc</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

@@ -32,6 +32,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.quarkus.bootstrap</groupId>
+            <artifactId>bootstrap-core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-common</artifactId>
         </dependency>

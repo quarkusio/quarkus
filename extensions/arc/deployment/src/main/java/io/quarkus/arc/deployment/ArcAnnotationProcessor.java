@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -44,6 +45,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanDeployment;
+import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanProcessor;
 import io.quarkus.arc.processor.BeanProcessor.Builder;
 import io.quarkus.arc.processor.ReflectionRegistration;
@@ -61,6 +63,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
@@ -109,6 +112,9 @@ public class ArcAnnotationProcessor {
 
     @Inject
     List<UnremovableBeanBuildItem> removalExclusions;
+
+    @Inject
+    Optional<TestClassPredicateBuildItem> testClassPredicate;
 
     /**
      * The configuration for ArC, the CDI-based injection facility.
@@ -231,6 +237,14 @@ public class ArcAnnotationProcessor {
         }
         for (UnremovableBeanBuildItem exclusion : removalExclusions) {
             builder.addRemovalExclusion(exclusion.getPredicate());
+        }
+        if (testClassPredicate.isPresent()) {
+            builder.addRemovalExclusion(new Predicate<BeanInfo>() {
+                @Override
+                public boolean test(BeanInfo bean) {
+                    return testClassPredicate.get().getPredicate().test(bean.getBeanClass().toString());
+                }
+            });
         }
 
         BeanProcessor beanProcessor = builder.build();

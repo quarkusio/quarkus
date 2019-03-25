@@ -20,7 +20,6 @@ import static io.quarkus.test.common.PathTestHelper.getAppClassLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +33,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
+import org.jboss.builder.BuildChainBuilder;
+import org.jboss.builder.BuildContext;
+import org.jboss.builder.BuildStep;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -48,11 +52,13 @@ import org.objectweb.asm.ClassWriter;
 
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.QuarkusClassWriter;
+import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.runner.RuntimeRunner;
 import io.quarkus.runner.TransformerTarget;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.NativeImageLauncher;
+import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestInjectionManager;
@@ -94,6 +100,8 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
 
         Path appClassLocation = getAppClassLocation(context.getRequiredTestClass());
         Path testClassLocation = getTestClassesLocation(context.getRequiredTestClass());
+        ClassLoader testClassLoader = context.getRequiredTestClass().getClassLoader();
+
         RuntimeRunner runtimeRunner = RuntimeRunner.builder()
                 .setLaunchMode(LaunchMode.TEST)
                 .setClassLoader(getClass().getClassLoader())
@@ -190,6 +198,23 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
                                 ex.printStackTrace();
                             }
                         }
+                    }
+                })
+                .addChainCustomizer(new Consumer<BuildChainBuilder>() {
+                    @Override
+                    public void accept(BuildChainBuilder buildChainBuilder) {
+                        buildChainBuilder.addBuildStep(new BuildStep() {
+                            @Override
+                            public void execute(BuildContext context) {
+                                context.produce(new TestClassPredicateBuildItem(new Predicate<String>() {
+                                    @Override
+                                    public boolean test(String className) {
+                                        return PathTestHelper.isTestClass(className, testClassLoader);
+                                    }
+                                }));
+                            }
+                        }).produces(TestClassPredicateBuildItem.class)
+                                .build();
                     }
                 })
                 .build();

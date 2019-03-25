@@ -38,6 +38,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
+import io.vertx.core.Context;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 
@@ -106,11 +107,44 @@ public class MessageConsumerMethodTest {
 
     @Test
     public void testPublish() throws InterruptedException {
+        SimpleBean.MESSAGES.clear();
         EventBus eventBus = Arc.container().instance(EventBus.class).get();
         SimpleBean.latch = new CountDownLatch(2);
         eventBus.publish("pub", "Hello");
         SimpleBean.latch.await(2, TimeUnit.SECONDS);
         assertTrue(SimpleBean.MESSAGES.contains("hello"));
+        assertTrue(SimpleBean.MESSAGES.contains("HELLO"));
+    }
+
+    @Test
+    public void testBlockingConsumer() throws InterruptedException {
+        SimpleBean.MESSAGES.clear();
+        EventBus eventBus = Arc.container().instance(EventBus.class).get();
+        SimpleBean.latch = new CountDownLatch(1);
+        eventBus.publish("blocking", "Hello");
+        SimpleBean.latch.await(2, TimeUnit.SECONDS);
+        assertEquals(1, SimpleBean.MESSAGES.size());
+        String message = SimpleBean.MESSAGES.get(0);
+        assertTrue(message.contains("hello::true"));
+    }
+
+    @Test
+    public void testPublishRx() throws InterruptedException {
+        SimpleBean.MESSAGES.clear();
+        EventBus eventBus = Arc.container().instance(EventBus.class).get();
+        SimpleBean.latch = new CountDownLatch(1);
+        eventBus.publish("pub-rx", "Hello");
+        SimpleBean.latch.await(2, TimeUnit.SECONDS);
+        assertTrue(SimpleBean.MESSAGES.contains("HELLO"));
+    }
+
+    @Test
+    public void testPublishAxle() throws InterruptedException {
+        SimpleBean.MESSAGES.clear();
+        EventBus eventBus = Arc.container().instance(EventBus.class).get();
+        SimpleBean.latch = new CountDownLatch(1);
+        eventBus.publish("pub-axle", "Hello");
+        SimpleBean.latch.await(2, TimeUnit.SECONDS);
         assertTrue(SimpleBean.MESSAGES.contains("HELLO"));
     }
 
@@ -145,6 +179,24 @@ public class MessageConsumerMethodTest {
         @ConsumeEvent("foo-async")
         CompletionStage<String> replyAsync(String message) {
             return CompletableFuture.completedFuture(new StringBuilder(message).reverse().toString());
+        }
+
+        @ConsumeEvent(value = "blocking", blocking = true)
+        void consumeBlocking(String message) {
+            MESSAGES.add(message.toLowerCase() + "::" + Context.isOnWorkerThread());
+            latch.countDown();
+        }
+
+        @ConsumeEvent("pub-axle")
+        void consume(io.vertx.axle.core.eventbus.Message<String> message) {
+            MESSAGES.add(message.body().toUpperCase());
+            latch.countDown();
+        }
+
+        @ConsumeEvent("pub-rx")
+        void consume(io.vertx.reactivex.core.eventbus.Message<String> message) {
+            MESSAGES.add(message.body().toUpperCase());
+            latch.countDown();
         }
     }
 

@@ -18,4 +18,6 @@ public interface HotReplacementContext {
      * @throws Exception
      */
     boolean doScan() throws Exception;
+
+    void addPreScanStep(Runnable runnable);
 }

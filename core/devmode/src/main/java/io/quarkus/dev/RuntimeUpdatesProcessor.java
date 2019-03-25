@@ -24,11 +24,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -49,6 +51,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     private final Map<String, Long> configFileTimestamps = new ConcurrentHashMap<>();
 
     private static final Logger log = Logger.getLogger(RuntimeUpdatesProcessor.class.getPackage().getName());
+    private final List<Runnable> preScanSteps = new CopyOnWriteArrayList<>();
 
     public RuntimeUpdatesProcessor(Path classesDir, Path sourcesDir, Path resourcesDir, ClassLoaderCompiler compiler) {
         this.classesDir = classesDir;
@@ -79,6 +82,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
 
     public boolean doScan() throws IOException {
         final long startNanoseconds = System.nanoTime();
+        for (Runnable i : preScanSteps) {
+            try {
+                i.run();
+            } catch (Throwable t) {
+                log.error("Pre Scan step failed", t);
+            }
+        }
 
         boolean classChanged = checkForChangedClasses();
         boolean configFileChanged = checkForConfigFileChange();
@@ -89,6 +99,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void addPreScanStep(Runnable runnable) {
+        preScanSteps.add(runnable);
     }
 
     boolean checkForChangedClasses() throws IOException {

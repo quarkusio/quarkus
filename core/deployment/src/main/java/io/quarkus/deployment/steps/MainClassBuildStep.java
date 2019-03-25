@@ -195,6 +195,11 @@ class MainClassBuildStep {
         for (MainBytecodeRecorderBuildItem holder : mainMethod) {
             final BytecodeRecorderImpl recorder = holder.getBytecodeRecorder();
             if (!recorder.isEmpty()) {
+                // Register substitutions in all recorders
+                for (ObjectSubstitutionBuildItem sub : substitutions) {
+                    ObjectSubstitutionBuildItem.Holder holder1 = sub.holder;
+                    recorder.registerSubstitution(holder1.from, holder1.to, holder1.substitution);
+                }
                 for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
                     recorder.registerObjectLoader(item.getObjectLoader());
                 }

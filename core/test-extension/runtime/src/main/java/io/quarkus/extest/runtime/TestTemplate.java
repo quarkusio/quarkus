@@ -1,5 +1,6 @@
 package io.quarkus.extest.runtime;
 
+import java.security.interfaces.DSAPublicKey;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
@@ -31,6 +32,10 @@ public class TestTemplate {
         IConfigConsumer instance = beanContainer.instance(beanClass);
         instance.loadConfig(buildTimeConfig, runTimeConfig);
         log.infof("configureBeans, instance=%s\n", instance);
+    }
+
+    public void loadDSAPublicKeyProducer(DSAPublicKey publicKey, BeanContainer value) {
+        publicKey.getAlgorithm();
     }
 
     /**

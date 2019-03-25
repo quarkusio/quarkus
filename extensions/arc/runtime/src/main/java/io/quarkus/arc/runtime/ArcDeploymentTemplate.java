@@ -20,6 +20,7 @@ import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -37,6 +38,11 @@ import io.quarkus.runtime.annotations.Template;
 @Template
 public class ArcDeploymentTemplate {
 
+    /**
+     * Used to hold the Supplier instances used for synthetic bean declarations.
+     */
+    public static volatile Map<String, Supplier<Object>> supplierMap;
+
     private static final Logger LOGGER = Logger.getLogger(ArcDeploymentTemplate.class.getName());
 
     public ArcContainer getContainer(ShutdownContext shutdown) throws Exception {
@@ -48,6 +54,10 @@ public class ArcDeploymentTemplate {
             }
         });
         return container;
+    }
+
+    public void initSupplierBeans(Map<String, Supplier<Object>> beans) {
+        supplierMap = beans;
     }
 
     public BeanContainer initBeanContainer(ArcContainer container, List<BeanContainerListener> listeners,

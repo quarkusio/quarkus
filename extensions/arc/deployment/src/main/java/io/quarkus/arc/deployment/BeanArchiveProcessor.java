@@ -75,7 +75,6 @@ public class BeanArchiveProcessor {
             additionalBeans.addAll(i.getBeanClasses());
         }
         additionalBeans.add(LifecycleEventRunner.class.getName());
-        additionalBeans.add(ActivateRequestContextInterceptor.class.getName());
         Set<DotName> additionalIndex = new HashSet<>();
         for (String beanClass : additionalBeans) {
             IndexingUtil.indexClass(beanClass, additionalBeanIndexer, applicationIndex, additionalIndex,

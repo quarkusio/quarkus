@@ -67,7 +67,7 @@ public interface ArcContainer {
      * @return a new instance handle
      */
     <T> InstanceHandle<T> instance(TypeLiteral<T> type, Annotation... qualifiers);
-    
+
     /**
      * Never returns null. However, the handle is empty if no bean matches/multiple beans match the specified type and
      * qualifiers.

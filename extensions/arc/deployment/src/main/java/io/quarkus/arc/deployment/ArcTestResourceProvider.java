@@ -30,7 +30,8 @@ public class ArcTestResourceProvider implements TestResourceProvider {
                                 qualifiers.add(a);
                             }
                         }
-                        Object instance = container.instance(f.getGenericType(), qualifiers.toArray(EMPTY_ANNOTATION_ARRAY)).get();
+                        Object instance = container.instance(f.getGenericType(), qualifiers.toArray(EMPTY_ANNOTATION_ARRAY))
+                                .get();
                         f.setAccessible(true);
                         try {
                             f.set(test, instance);

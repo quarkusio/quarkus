@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import io.quarkus.arc.ActivateRequestContextInterceptor;
+import io.quarkus.arc.InjectableRequestContextController;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
@@ -39,23 +40,9 @@ public final class BeanArchives {
     public static IndexView buildBeanArchiveIndex(IndexView... applicationIndexes) {
         List<IndexView> indexes = new ArrayList<>();
         Collections.addAll(indexes, applicationIndexes);
-        // Add CDI API builtin annotations if needed
-        if (!contains(DotNames.ANY, applicationIndexes)) {
-            indexes.add(buildCdiApiIndex());
-        }
-        if (!contains(DotName.createSimple(ActivateRequestContextInterceptor.class.getName()), applicationIndexes)) {
-            indexes.add(buildBuiltinIndex());
-        }
+        indexes.add(buildCdiApiIndex());
+        indexes.add(buildBuiltinIndex());
         return new IndexWrapper(CompositeIndex.create(indexes));
-    }
-
-    private static boolean contains(DotName className, IndexView... indexes) {
-        for (IndexView index : indexes) {
-            if (index.getClassByName(className) != null) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static IndexView buildCdiApiIndex() {
@@ -73,6 +60,7 @@ public final class BeanArchives {
     private static IndexView buildBuiltinIndex() {
         Indexer indexer = new Indexer();
         index(indexer, ActivateRequestContextInterceptor.class.getName());
+        index(indexer, InjectableRequestContextController.class.getName());
         return indexer.complete();
     }
 

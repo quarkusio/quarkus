@@ -183,7 +183,10 @@ public class ClientProxyGenerator extends AbstractGenerator {
         ResultHandle context = creator.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
                 container, scope);
         BytecodeCreator inactiveBranch = creator.ifNull(context).trueBranch();
-        inactiveBranch.throwException(ContextNotActiveException.class, "");
+        ResultHandle exception = inactiveBranch.newInstance(
+                MethodDescriptor.ofConstructor(ContextNotActiveException.class, String.class),
+                inactiveBranch.invokeVirtualMethod(MethodDescriptors.OBJECT_TO_STRING, scope));
+        inactiveBranch.throwException(exception);
         AssignableResultHandle ret = creator.createVariable(Object.class);
         creator.assign(ret, creator.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET_IF_PRESENT, context, bean));
         BytecodeCreator isNullBranch = creator.ifNull(ret).trueBranch();

@@ -41,7 +41,7 @@ import org.jboss.jandex.Type;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ProxyBuilderImpl;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ResteasyClientProxy;
-import org.jboss.resteasy.core.ResteasyProviderFactoryImpl;
+import org.jboss.resteasy.core.providerfactory.ResteasyProviderFactoryImpl;
 import org.jboss.resteasy.spi.ResteasyConfiguration;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;

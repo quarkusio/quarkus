@@ -1,4 +1,4 @@
-package io.quarkus;
+package io.quarkus.templates.rest;
 
 import static java.lang.String.format;
 
@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -18,31 +19,39 @@ import java.util.stream.Collectors;
 import org.apache.maven.model.Model;
 
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.templates.QuarkusTemplate;
+import io.quarkus.templates.SourceType;
 
-public class BasicRest extends QuarkusTemplate {
+public class BasicRest implements QuarkusTemplate {
+
+    public static final String TEMPLATE_NAME = "basic-rest";
+
     private Map<String, Object> context;
-    private String className;
     private String path = "/hello";
     private File projectRoot;
     private File srcMain;
     private File testMain;
+    private SourceType type;
+
+    public BasicRest() {
+    }
 
     @Override
     public String getName() {
-        return "basic-rest";
+        return TEMPLATE_NAME;
     }
 
     @Override
     public void generate(final File projectRoot, Map<String, Object> parameters) throws IOException {
         this.projectRoot = projectRoot;
-        this.context = parameters;
+        this.context = parameters == null ? Collections.emptyMap() : parameters;
+        this.type = (SourceType) context.get(SOURCE_TYPE);
 
         initProject();
         setupContext();
 
-        if (className != null) {
-            createClasses();
-        }
+        createClasses();
+
         createIndexPage();
         createDockerFiles();
         createDockerIgnore();
@@ -50,58 +59,33 @@ public class BasicRest extends QuarkusTemplate {
     }
 
     private void setupContext() {
-        MojoUtils.getAllProperties().forEach((k, v) -> context.put(k.replace("-", "_"), v));
-
-        if (className != null) {
+        if (context.get(CLASS_NAME) != null) {
             String packageName = (String) context.get(PACKAGE_NAME);
-
-            if (className.endsWith(MojoUtils.JAVA_EXTENSION)) {
-                className = className.substring(0, className.length() - MojoUtils.JAVA_EXTENSION.length());
-            } else if (className.endsWith(MojoUtils.KOTLIN_EXTENSION)) {
-                className = className.substring(0, className.length() - MojoUtils.KOTLIN_EXTENSION.length());
-            }
-
-            if (className.contains(".")) {
-                int idx = className.lastIndexOf('.');
-                packageName = className.substring(0, idx);
-                className = className.substring(idx + 1);
-            }
 
             if (packageName != null) {
                 File packageDir = new File(srcMain, packageName.replace('.', '/'));
                 File testPackageDir = new File(testMain, packageName.replace('.', '/'));
                 srcMain = mkdirs(packageDir);
                 testMain = mkdirs(testPackageDir);
-            }
-
-            context.put(CLASS_NAME, className);
-            context.put(RESOURCE_PATH, path);
-
-            if (packageName != null) {
-                context.put(PACKAGE_NAME, packageName);
+            } else {
+                throw new NullPointerException("Need a non-null package name");
             }
         }
     }
 
     private void createClasses() throws IOException {
-        File classFile = new File(srcMain, className + getProperSourceExtension());
-        File testClassFile = new File(testMain, className + "Test" + getProperSourceExtension());
-        File itTestClassFile = new File(testMain, "Native" + className + "IT" + getProperSourceExtension());
-        generate(
-                getSourceType() == SourceType.JAVA
-                        ? "templates/resource-template.ftl"
-                        : "templates/resource-template-kotlin.ftl",
-                context, classFile, "resource code");
-        generate(
-                getSourceType() == SourceType.JAVA
-                        ? "templates/test-resource-template.ftl"
-                        : "templates/test-resource-template-kotlin.ftl",
-                context, testClassFile, "test code");
-        generate(
-                getSourceType() == SourceType.JAVA
-                        ? "templates/native-test-resource-template.ftl"
-                        : "templates/native-test-resource-template-kotlin.ftl",
-                context, itTestClassFile, "IT code");
+        Object className = context.get(CLASS_NAME);
+        // If className is null we disable the generation of the Jax-RS resource.
+        if (className != null) {
+            String extension = type.getExtension();
+            File classFile = new File(srcMain, className + extension);
+            File testClassFile = new File(testMain, className + "Test" + extension);
+            File itTestClassFile = new File(testMain, "Native" + className + "IT" + extension);
+            String name = getName();
+            generate(type.getSrcResourceTemplate(name), context, classFile, "resource code");
+            generate(type.getTestResourceTemplate(name), context, testClassFile, "test code");
+            generate(type.getNativeTestResourceTemplate(name), context, itTestClassFile, "IT code");
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -113,21 +97,17 @@ public class BasicRest extends QuarkusTemplate {
         final File pomFile = new File(projectRoot, "pom.xml");
         boolean newProject = !pomFile.exists();
         if (newProject) {
-            final String templateName = getSourceType() == SourceType.JAVA ? "templates/pom-template.ftl"
-                    : "templates/pom-template-kotlin.ftl";
-            generate(templateName, context, pomFile, "Unable to generate pom.xml");
+            generate(type.getPomResourceTemplate(getName()), context, pomFile, "pom.xml");
         } else {
             final Model model = MojoUtils.readPom(pomFile);
             context.put(PROJECT_GROUP_ID, model.getGroupId());
             context.put(PROJECT_ARTIFACT_ID, model.getArtifactId());
         }
 
-        // If className is null we disable the generation of the Jax-RS resource.
-        className = get("className", null);
         path = get(RESOURCE_PATH, path);
 
-        srcMain = mkdirs(new File(projectRoot, getSourceType() == SourceType.JAVA ? "src/main/java" : "src/main/kotlin"));
-        testMain = mkdirs(new File(projectRoot, getSourceType() == SourceType.JAVA ? "src/test/java" : "src/test/kotlin"));
+        srcMain = mkdirs(new File(projectRoot, type.getSrcDir()));
+        testMain = mkdirs(new File(projectRoot, type.getTestSrcDir()));
 
         return newProject;
     }
@@ -188,13 +168,5 @@ public class BasicRest extends QuarkusTemplate {
             dir.mkdirs();
         }
         return dir;
-    }
-
-    private SourceType getSourceType() {
-        return (SourceType) context.get(SOURCE_TYPE);
-    }
-
-    private String getProperSourceExtension() {
-        return getSourceType() == SourceType.JAVA ? MojoUtils.JAVA_EXTENSION : MojoUtils.KOTLIN_EXTENSION;
     }
 }

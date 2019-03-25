@@ -30,6 +30,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jaxb-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-caffeine-deployment</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

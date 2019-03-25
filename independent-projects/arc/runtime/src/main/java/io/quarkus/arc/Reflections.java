@@ -109,8 +109,13 @@ public final class Reflections {
                 method.setAccessible(true);
             }
             return method.invoke(instance, args);
-        } catch (NoSuchMethodException | SecurityException | IllegalArgumentException | IllegalAccessException
-                | InvocationTargetException e) {
+        } catch (InvocationTargetException e) {
+            Throwable t = e.getTargetException();
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            }
+            throw new RuntimeException("Cannot invoke method: " + clazz.getName() + "#" + name + " on " + instance, e);
+        } catch (NoSuchMethodException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
             throw new RuntimeException("Cannot invoke method: " + clazz.getName() + "#" + name + " on " + instance, e);
         }
     }

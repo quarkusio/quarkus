@@ -81,8 +81,10 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
     private Path outputDir;
     private Path appClassesDir;
     private Path transformedClassesDir;
+    private Path baseDir;
     private Path wiringClassesDir;
     private Path configDir;
+    private String finalName;
 
     /**
      * Output directory for the outcome of this phase.
@@ -124,6 +126,17 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
     }
 
     /**
+     * The base directory where the whole project resides
+     *
+     * @param baseDir base directory of project
+     * @return this phase instance
+     */
+    public AugmentPhase setBaseDir(Path baseDir) {
+        this.baseDir = baseDir;
+        return this;
+    }
+
+    /**
      * The directory for generated classes. If none is set by the user,
      * wiring-classes directory will be created in the work directory of the creator.
      *
@@ -143,6 +156,17 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
      */
     public AugmentPhase setConfigDir(Path configDir) {
         this.configDir = configDir;
+        return this;
+    }
+
+    /**
+     * The final name of the artifact (without the runner classifier or the jar file type)
+     *
+     * @param finalName the final artifact name
+     * @return this phase instance
+     */
+    public AugmentPhase setFinalName(String finalName) {
+        this.finalName = finalName;
         return this;
     }
 
@@ -192,7 +216,8 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
             IoUtils.recursiveDelete(metaInf.resolve(APPLICATION_INFO_PROPERTIES));
         }
 
-        ApplicationInfoUtil.writeApplicationInfoProperties(appState.getAppArtifact(), appClassesDir);
+        ApplicationInfoUtil.writeApplicationInfoProperties(
+                appState.getAppArtifact(), baseDir, appClassesDir, wiringClassesDir, finalName);
 
         //lets default to appClassesDir for now
         if (configDir == null)

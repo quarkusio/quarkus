@@ -328,7 +328,9 @@ public class DevMojo extends AbstractMojo {
             }
 
             outputDirectory.mkdirs();
-            ApplicationInfoUtil.writeApplicationInfoProperties(appModel.getAppArtifact(), outputDirectory.toPath());
+            ApplicationInfoUtil.writeApplicationInfoProperties(
+                    appModel.getAppArtifact(), project.getBasedir().toPath(),
+                    outputDirectory.toPath(), null, null);
 
             args.add("-Dquarkus-internal.runner.classes=" + outputDirectory.getAbsolutePath());
             args.add("-Dquarkus-internal.runner.sources=" + sourceDir.getAbsolutePath());

@@ -268,7 +268,9 @@ public class QuarkusDev extends QuarkusTask {
             }
 
             extension.outputDirectory().mkdirs();
-            ApplicationInfoUtil.writeApplicationInfoProperties(appModel.getAppArtifact(), extension.outputDirectory().toPath());
+            ApplicationInfoUtil.writeApplicationInfoProperties(
+                    appModel.getAppArtifact(), extension.sourceDir().toPath(), extension().outputDirectory().toPath(), null,
+                    null);
 
             args.add("-Dquarkus-internal.runner.classes=" + extension.outputDirectory().getAbsolutePath());
             args.add("-Dquarkus-internal.runner.sources=" + getSourceDir().getAbsolutePath());

@@ -109,8 +109,8 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.undertow.runtime.HttpConfig;
 import io.quarkus.undertow.runtime.HttpSessionContext;
 import io.quarkus.undertow.runtime.ServletProducer;
@@ -219,6 +219,11 @@ public class UndertowBuildStep {
             result = new WebMetaData();
         }
         return new WebMetadataBuildItem(result);
+    }
+
+    @BuildStep
+    public void kubernetes(HttpConfig config, BuildProducer<KubernetesPortBuildItem> portProducer) {
+        portProducer.produce(new KubernetesPortBuildItem(config.port, "http"));
     }
 
     @Record(STATIC_INIT)

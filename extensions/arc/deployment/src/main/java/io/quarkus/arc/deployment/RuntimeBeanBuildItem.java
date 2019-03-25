@@ -19,13 +19,15 @@ public final class RuntimeBeanBuildItem extends MultiBuildItem {
     final String type;
     final Supplier<Object> supplier;
     final NavigableMap<String, NavigableMap<String, Object>> qualifiers;
+    final boolean removable;
 
     RuntimeBeanBuildItem(String scope, String type, Supplier<Object> supplier,
-            NavigableMap<String, NavigableMap<String, Object>> qualifiers) {
+            NavigableMap<String, NavigableMap<String, Object>> qualifiers, boolean removable) {
         this.scope = scope;
         this.type = type;
         this.supplier = supplier;
         this.qualifiers = qualifiers;
+        this.removable = removable;
     }
 
     public String getScope() {
@@ -44,6 +46,10 @@ public final class RuntimeBeanBuildItem extends MultiBuildItem {
         return qualifiers;
     }
 
+    public static Builder builder(Class<?> type, Supplier<Object> supplier) {
+        return builder(type.getName(), supplier);
+    }
+
     public static Builder builder(String type, Supplier<Object> supplier) {
         Objects.requireNonNull(type);
         Objects.requireNonNull(supplier);
@@ -53,6 +59,7 @@ public final class RuntimeBeanBuildItem extends MultiBuildItem {
     public static class Builder {
 
         String scope = Dependent.class.getName();
+        boolean removable = true;
         final String type;
         final Supplier<Object> supplier;
         final NavigableMap<String, NavigableMap<String, Object>> qualifiers = new TreeMap<>();
@@ -90,8 +97,13 @@ public final class RuntimeBeanBuildItem extends MultiBuildItem {
             return addQualifier(type.getName(), values);
         }
 
+        public Builder setRemovable(boolean removable) {
+            this.removable = removable;
+            return this;
+        }
+
         public RuntimeBeanBuildItem build() {
-            return new RuntimeBeanBuildItem(scope, type, supplier, qualifiers);
+            return new RuntimeBeanBuildItem(scope, type, supplier, qualifiers, removable);
         }
     }
 }

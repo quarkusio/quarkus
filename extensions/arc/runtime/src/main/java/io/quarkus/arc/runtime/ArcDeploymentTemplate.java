@@ -33,7 +33,6 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Template;
 
 /**
- * @author Martin Kouba
  */
 @Template
 public class ArcDeploymentTemplate {
@@ -64,7 +63,6 @@ public class ArcDeploymentTemplate {
             Collection<String> removedBeanTypes)
             throws Exception {
         BeanContainer beanContainer = new BeanContainer() {
-            @SuppressWarnings("unchecked")
             @Override
             public <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers) {
                 Supplier<InstanceHandle<T>> handleSupplier = container.instanceSupplier(type, qualifiers);

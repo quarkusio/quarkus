@@ -2,12 +2,11 @@ package io.quarkus.camel.core.runtime;
 
 import java.util.List;
 import java.util.Properties;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.camel.RoutesBuilder;
 
-import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Template;
@@ -47,12 +46,13 @@ public class CamelTemplate {
         });
     }
 
-    public BeanContainerListener initRuntimeInjection(CamelRuntime runtime) {
-        return new BeanContainerListener() {
+    public Supplier<Object> camelRuntimeSupplier(CamelRuntime runtime) {
+        return new Supplier<Object>() {
             @Override
-            public void created(BeanContainer container) {
-                container.instance(CamelRuntimeProducer.class).setCamelRuntime(runtime);
+            public CamelRuntime get() {
+                return runtime;
             }
         };
     }
+
 }

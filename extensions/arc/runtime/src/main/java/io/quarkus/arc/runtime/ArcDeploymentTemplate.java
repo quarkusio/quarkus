@@ -29,6 +29,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Template;
 
@@ -118,6 +119,15 @@ public class ArcDeploymentTemplate {
                 instance.fireShutdownEvent();
             }
         });
+    }
+
+    public Supplier<Object> createSupplier(RuntimeValue<?> value) {
+        return new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return value.getValue();
+            }
+        };
     }
 
     private static final class DefaultInstanceFactory<T> implements BeanContainer.Factory<T> {

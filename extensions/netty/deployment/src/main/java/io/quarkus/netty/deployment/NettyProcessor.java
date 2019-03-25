@@ -76,11 +76,13 @@ class NettyProcessor {
         Supplier<Object> boss = template.createEventLoop(1);
         Supplier<Object> worker = template.createEventLoop(0);
 
-        runtimeBeanBuildItemBuildProducer.produce(RuntimeBeanBuildItem.builder(EventLoopGroup.class.getName(), boss)
+        runtimeBeanBuildItemBuildProducer.produce(RuntimeBeanBuildItem.builder(EventLoopGroup.class)
+                .setSupplier(boss)
                 .setScope(ApplicationScoped.class)
                 .addQualifier(BossGroup.class)
                 .build());
-        runtimeBeanBuildItemBuildProducer.produce(RuntimeBeanBuildItem.builder(EventLoopGroup.class.getName(), worker)
+        runtimeBeanBuildItemBuildProducer.produce(RuntimeBeanBuildItem.builder(EventLoopGroup.class)
+                .setSupplier(worker)
                 .setScope(ApplicationScoped.class)
                 .build());
     }

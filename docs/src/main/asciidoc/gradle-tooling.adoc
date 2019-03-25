@@ -41,11 +41,6 @@ plugins {
 
 repositories {
     mavenCentral()
-
-    // this is temporary, all dependencies should be in central soon
-    maven {
-        url = 'http://repository.jboss.org/nexus/content/groups/public'
-    }
 }
 
 dependencies { <2>
@@ -68,9 +63,6 @@ plugins {
 
 repositories {
     mavenCentral()
-
-    // this is temporary, all dependencies should be in central soon
-    maven(url = uri("http://repository.jboss.org/nexus/content/groups/public"))
 }
 
 dependencies {

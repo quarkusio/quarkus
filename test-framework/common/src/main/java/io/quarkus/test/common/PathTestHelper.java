@@ -67,17 +67,13 @@ public final class PathTestHelper {
     public static boolean isTestClass(String className, ClassLoader classLoader) {
         String classFileName = className.replace('.', File.separatorChar) + ".class";
         URL resource = classLoader.getResource(classFileName);
-        if (!resource.getProtocol().startsWith("file")) {
+        if (resource == null || !resource.getProtocol().startsWith("file")) {
             return false;
         }
         try {
             Path path = Paths.get(resource.toURI());
-            if (path.toString().contains(TEST_CLASSES_FRAGMENT_MAVEN) ||
-                    path.toString().contains(TEST_CLASSES_FRAGMENT_GRADLE)) {
-                return true;
-            } else {
-                return false;
-            }
+            return path.toString().contains(TEST_CLASSES_FRAGMENT_MAVEN) ||
+                    path.toString().contains(TEST_CLASSES_FRAGMENT_GRADLE);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }

@@ -28,7 +28,6 @@ import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.test.ArcTestContainer;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.control.RequestContextController;
-
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -83,7 +82,7 @@ public class RequestContextTest {
         assertNotEquals(controller2Id, client.getControllerId());
         assertTrue(Controller.DESTROYED.get());
     }
-    
+
     @Test
     public void testRequestContextController() {
         Controller.DESTROYED.set(false);

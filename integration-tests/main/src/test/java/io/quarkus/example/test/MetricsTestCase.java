@@ -138,6 +138,15 @@ public class MetricsTestCase {
                 .body(containsString("vendor:memory_max_non_heap_bytes "));
     }
 
+    /**
+     * A REST method with metrics is throwing a NotFoundException, so the client should receive 404.
+     */
+    @Test
+    public void testEndpointWithMetricsThrowingException() {
+        RestAssured.when().get("/metricsresource/counter-throwing-not-found-exception").then()
+                .statusCode(404);
+    }
+
     private void assertMetricExactValue(String name, String val) {
         RestAssured.when().get("/metrics").then()
                 .body(containsString(name + " " + val));

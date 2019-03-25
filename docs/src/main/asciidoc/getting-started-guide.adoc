@@ -106,7 +106,7 @@ In addition, you can see the `quarkus-maven-plugin` responsible of the packaging
 </build>
 ----
 
-If we focus on the dependencies section, you can see one of the 2 extensions allowing the development of REST applications:
+If we focus on the dependencies section, you can see the extension allowing the development of REST applications:
 
 [source,xml]
 ----
@@ -187,8 +187,10 @@ Hit `CTRL+C` to stop the application, but you can also keep it running and enjoy
 
 == Using injection
 
-In order to use dependency injection, we can use ArC which is a CDI-based dependency injection solution tailored for Quarkus architecture - see also link:cdi-reference.html[Contexts and Dependency Injection].
-The `quarkus-arc`, dependecy of the `quarkus-resteasy`, is used for this purpose.
+Dependency injection in Quarkus is based on ArC which is a CDI-based dependency injection solution tailored for Quarkus' architecture.
+You can learn more about it in the link:cdi-reference.html[Contexts and Dependency Injection guide].
+
+ArC comes as a dependency of `quarkus-resteasy` so you already have it handy.
 
 Let's modify the application and add a companion bean.
 Create the `src/main/java/org/acme/quickstart/GreetingService.java` file with the following content:

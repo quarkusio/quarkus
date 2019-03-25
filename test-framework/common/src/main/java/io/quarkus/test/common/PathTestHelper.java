@@ -63,4 +63,19 @@ public final class PathTestHelper {
             return Paths.get(getTestClassesLocation(testClass).toString()
                     .replace(TEST_CLASSES_FRAGMENT_GRADLE, CLASSES_FRAGMENT_GRADLE));
     }
+
+    public static boolean isTestClass(String className, ClassLoader classLoader) {
+        String classFileName = className.replace('.', File.separatorChar) + ".class";
+        URL resource = classLoader.getResource(classFileName);
+        if (resource == null || !resource.getProtocol().startsWith("file")) {
+            return false;
+        }
+        try {
+            Path path = Paths.get(resource.toURI());
+            return path.toString().contains(TEST_CLASSES_FRAGMENT_MAVEN) ||
+                    path.toString().contains(TEST_CLASSES_FRAGMENT_GRADLE);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

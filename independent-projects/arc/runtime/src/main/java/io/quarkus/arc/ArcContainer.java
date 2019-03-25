@@ -17,6 +17,7 @@
 package io.quarkus.arc;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.util.Set;
 import java.util.function.Supplier;
 import javax.enterprise.context.ContextNotActiveException;
@@ -66,6 +67,16 @@ public interface ArcContainer {
      * @return a new instance handle
      */
     <T> InstanceHandle<T> instance(TypeLiteral<T> type, Annotation... qualifiers);
+
+    /**
+     * Never returns null. However, the handle is empty if no bean matches/multiple beans match the specified type and
+     * qualifiers.
+     *
+     * @param type
+     * @param qualifiers
+     * @return a new instance handle
+     */
+    <X> InstanceHandle<X> instance(Type type, Annotation... qualifiers);
 
     /**
      * Never returns null. However, the handle is empty if no bean matches/multiple beans match the specified name.

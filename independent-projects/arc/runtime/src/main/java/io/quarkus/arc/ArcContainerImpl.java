@@ -182,6 +182,12 @@ class ArcContainerImpl implements ArcContainer {
     }
 
     @Override
+    public <X> InstanceHandle<X> instance(Type type, Annotation... qualifiers) {
+        requireRunning();
+        return instanceHandle(type, qualifiers);
+    }
+
+    @Override
     public <T> Supplier<InstanceHandle<T>> instanceSupplier(Class<T> type, Annotation... qualifiers) {
         requireRunning();
 

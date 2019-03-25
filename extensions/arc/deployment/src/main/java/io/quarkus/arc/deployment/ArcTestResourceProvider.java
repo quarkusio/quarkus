@@ -4,38 +4,34 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
 import javax.inject.Inject;
 import javax.inject.Qualifier;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.deployment.test.TestResourceProvider;
 
 public class ArcTestResourceProvider implements TestResourceProvider {
 
+    public static final Annotation[] EMPTY_ANNOTATION_ARRAY = new Annotation[0];
+
     @Override
     public void inject(Object test) {
         Class<?> c = test.getClass();
+        ArcContainer container = Arc.container();
         while (c != Object.class) {
             for (Field f : c.getDeclaredFields()) {
                 if (f.isAnnotationPresent(Inject.class)) {
                     try {
-                        BeanManager beanManager = Arc.container().beanManager();
                         List<Annotation> qualifiers = new ArrayList<>();
                         for (Annotation a : f.getAnnotations()) {
                             if (a.annotationType().isAnnotationPresent(Qualifier.class)) {
                                 qualifiers.add(a);
                             }
                         }
-                        Set<Bean<?>> beans = beanManager.getBeans(f.getType(),
-                                qualifiers.toArray(new Annotation[qualifiers.size()]));
-                        Bean<?> bean = beanManager.resolve(beans);
-                        CreationalContext<?> ctx = beanManager.createCreationalContext(bean);
-                        Object instance = beanManager.getReference(bean, f.getType(), ctx);
+                        Object instance = container.instance(f.getGenericType(), qualifiers.toArray(EMPTY_ANNOTATION_ARRAY))
+                                .get();
                         f.setAccessible(true);
                         try {
                             f.set(test, instance);

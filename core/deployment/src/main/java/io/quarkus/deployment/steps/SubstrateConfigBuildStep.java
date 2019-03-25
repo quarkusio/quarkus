@@ -45,6 +45,8 @@ class SubstrateConfigBuildStep {
 
     private static final Logger log = Logger.getLogger(SubstrateConfigBuildStep.class);
 
+    private static final String LIB_SUN_EC = "libsunec.so";
+
     @BuildStep
     void build(List<SubstrateConfigBuildItem> substrateConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
@@ -89,11 +91,12 @@ class SubstrateConfigBuildStep {
             if (graalVmHome != null) {
                 Path graalVmLibDirectory = Paths.get(graalVmHome, "jre", "lib");
                 Path linuxLibDirectory = graalVmLibDirectory.resolve("amd64");
+                Path linuxPath = linuxLibDirectory.resolve(LIB_SUN_EC);
 
                 // We add . as it might be useful in a containerized world
                 // FIXME: it seems GraalVM does not support having multiple paths in java.library.path
                 //javaLibraryPathAdditionalPath.produce(new JavaLibraryPathAdditionalPathBuildItem("."));
-                if (Files.exists(linuxLibDirectory)) {
+                if (Files.exists(linuxPath)) {
                     // On Linux, the SunEC library is in jre/lib/amd64/
                     // This is useful for testing or if you have a similar environment in production
                     javaLibraryPathAdditionalPath

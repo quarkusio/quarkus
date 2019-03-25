@@ -152,3 +152,33 @@ public class S3Processor {
 Using such a construct means that a `--delay-class-initialization-to-runtime` option will automatically be added to the `native-image` command line
 
 For more information about `--delay-class-initialization-to-runtime`, please read https://medium.com/graalvm/understanding-class-initialization-in-graalvm-native-image-generation-d765b7e4d6ed[this blog post].
+
+== Proxy Classes management
+
+While writing native application you'll need to define proxy classes at image build time by specifying the list of interfaces that they implement.
+
+In such a situation the error you might encounter is:
+
+[source]
+----
+com.oracle.svm.core.jdk.UnsupportedFeatureError: Proxy class defined by interfaces [interface org.apache.http.conn.HttpClientConnectionManager, interface org.apache.http.pool.ConnPoolControl, interface com.amazonaws.http.conn.Wrapped] not found. Generating proxy classes at runtime is not supported. Proxy classes need to be defined at image build time by specifying the list of interfaces that they implement. To define proxy classes use -H:DynamicProxyConfigurationFiles=<comma-separated-config-files> and -H:DynamicProxyConfigurationResources=<comma-separated-config-resources> options.
+----
+
+Quarkus allows extensions authors to register a `SubstrateProxyDefinitionBuildItem`. An example of doing so is:
+
+[source,java]
+----
+public class S3Processor {
+
+    @BuildStep
+    SubstrateProxyDefinitionBuildItem httpProxies() {
+        return new SubstrateProxyDefinitionBuildItem("org.apache.http.conn.HttpClientConnectionManager",
+                "org.apache.http.pool.ConnPoolControl", "com.amazonaws.http.conn.Wrapped");
+    }
+
+}
+----
+
+Using such a construct means that a `-H:DynamicProxyConfigurationResources=<comma-separated-config-resources>` option will automatically be added to the `native-image` command line.
+
+For more information about Proxy Classes you can read the following https://github.com/oracle/graal/blob/master/substratevm/DYNAMIC_PROXY.md[documentation] 

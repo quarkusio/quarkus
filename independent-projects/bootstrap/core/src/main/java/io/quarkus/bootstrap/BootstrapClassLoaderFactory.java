@@ -226,7 +226,7 @@ public class BootstrapClassLoaderFactory {
                         writer.newLine();
                     }
                 }
-                debug("Deployment classloader cached for ", localProject.getAppArtifact());
+                debug("Deployment classloader cached for %s", localProject.getAppArtifact());
             } catch (IOException e) {
                 e.printStackTrace();
             }

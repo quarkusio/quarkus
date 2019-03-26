@@ -16,7 +16,7 @@
 
 package io.quarkus.hibernate.orm.runtime.boot.registry;
 
-import java.util.LinkedHashSet;
+import java.util.Collection;
 
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.integrator.spi.IntegratorService;
@@ -35,10 +35,10 @@ import org.hibernate.integrator.spi.IntegratorService;
  */
 final class MirroringIntegratorService implements IntegratorService {
 
-    private final LinkedHashSet<Integrator> integrators = new LinkedHashSet<Integrator>();
+    private final Collection<Integrator> integrators;
 
-    void addIntegrator(Integrator integrator) {
-        integrators.add(integrator);
+    MirroringIntegratorService(Collection<Integrator> integrators) {
+        this.integrators = integrators;
     }
 
     @Override

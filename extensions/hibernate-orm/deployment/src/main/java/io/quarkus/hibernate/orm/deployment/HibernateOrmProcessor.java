@@ -25,8 +25,10 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,9 +46,11 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.H2Dialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.PostgreSQL95Dialect;
+import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 import org.hibernate.loader.BatchFetchStyle;
+import org.hibernate.service.spi.ServiceContributor;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.CompositeIndex;
@@ -81,6 +85,9 @@ import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.IoUtil;
+import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationBuildItem;
+import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerFactoryProducer;
 import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerProducer;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmTemplate;
@@ -117,6 +124,7 @@ public final class HibernateOrmProcessor {
         return new HotDeploymentConfigFileBuildItem("META-INF/persistence.xml");
     }
 
+    @SuppressWarnings("unchecked")
     @BuildStep
     @Record(STATIC_INIT)
     public void build(RecorderContext recorder, HibernateOrmTemplate template,
@@ -134,7 +142,8 @@ public final class HibernateOrmProcessor {
             BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<JpaEntitiesBuildItem> domainObjectsProducer,
-            BuildProducer<BeanContainerListenerBuildItem> beanContainerListener) throws Exception {
+            BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
+            List<HibernateOrmIntegrationBuildItem> integrations) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_ORM));
 
@@ -195,7 +204,25 @@ public final class HibernateOrmProcessor {
         //now we serialize the XML and class list to bytecode, to remove the need to re-parse the XML on JVM startup
         recorder.registerNonDefaultConstructor(ParsedPersistenceXmlDescriptor.class.getDeclaredConstructor(URL.class),
                 (i) -> Collections.singletonList(i.getPersistenceUnitRootUrl()));
-        beanContainerListener.produce(new BeanContainerListenerBuildItem(template.initMetadata(allDescriptors, scanner)));
+
+        // inspect service files for additional integrators
+        Collection<Class<? extends Integrator>> integratorClasses = new LinkedHashSet<>();
+        for (String integratorClassName : ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+                "META-INF/services/org.hibernate.integrator.spi.Integrator")) {
+            integratorClasses.add((Class<? extends Integrator>) recorder.classProxy(integratorClassName));
+        }
+
+        // inspect service files for service contributors
+        Collection<Class<? extends ServiceContributor>> serviceContributorClasses = new LinkedHashSet<>();
+        for (String serviceContributorClassName : ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+                "META-INF/services/org.hibernate.service.spi.ServiceContributor")) {
+            serviceContributorClasses
+                    .add((Class<? extends ServiceContributor>) recorder.classProxy(serviceContributorClassName));
+        }
+
+        beanContainerListener
+                .produce(new BeanContainerListenerBuildItem(
+                        template.initMetadata(allDescriptors, scanner, integratorClasses, serviceContributorClasses)));
     }
 
     @BuildStep
@@ -291,7 +318,8 @@ public final class HibernateOrmProcessor {
     @Record(RUNTIME_INIT)
     public void startPersistenceUnits(HibernateOrmTemplate template, BeanContainerBuildItem beanContainer,
             Optional<DataSourceInitializedBuildItem> dataSourceInitialized,
-            JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) throws Exception {
+            JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels,
+            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationsRuntimeConfigured) throws Exception {
         if (!hasEntities(jpaEntities, nonJpaModels)) {
             return;
         }

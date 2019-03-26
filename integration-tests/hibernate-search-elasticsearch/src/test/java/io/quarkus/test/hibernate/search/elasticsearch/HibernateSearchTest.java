@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.test.elasticsearch.test;
+package io.quarkus.test.hibernate.search.elasticsearch;
 
 import static org.hamcrest.Matchers.is;
 
@@ -24,25 +24,18 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-public class ElasticsearchClientTest {
+public class HibernateSearchTest {
 
     @Test
-    public void testConnection() throws Exception {
-        RestAssured.when().get("/test/elasticsearch-client/connection").then()
+    public void testSearch() throws Exception {
+        RestAssured.when().put("/test/hibernate-search/init-data").then()
+                .statusCode(204);
+
+        RestAssured.when().get("/test/hibernate-search/search").then()
                 .statusCode(200)
                 .body(is("OK"));
-    }
 
-    @Test
-    public void testFullCycle() throws Exception {
-        RestAssured.when().get("/test/elasticsearch-client/full-cycle").then()
-                .statusCode(200)
-                .body(is("OK"));
-    }
-
-    @Test
-    public void testSniffer() throws Exception {
-        RestAssured.when().get("/test/elasticsearch-client/sniffer").then()
+        RestAssured.when().put("/test/hibernate-search/mass-indexer").then()
                 .statusCode(200)
                 .body(is("OK"));
     }

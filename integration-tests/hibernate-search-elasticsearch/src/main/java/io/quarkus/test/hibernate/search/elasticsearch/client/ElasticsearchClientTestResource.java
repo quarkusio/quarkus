@@ -1,4 +1,4 @@
-package io.quarkus.test.elasticsearch;
+package io.quarkus.test.hibernate.search.elasticsearch.client;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

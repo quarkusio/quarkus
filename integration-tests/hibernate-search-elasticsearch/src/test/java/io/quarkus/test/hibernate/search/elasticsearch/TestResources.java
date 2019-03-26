@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package io.quarkus.test.elasticsearch.test;
+package io.quarkus.test.hibernate.search.elasticsearch;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.h2.H2DatabaseTestResource;
 
-@SubstrateTest
-public class ElasticsearchClientTestInGraalIT extends ElasticsearchClientTest {
-
+@QuarkusTestResource(H2DatabaseTestResource.class)
+public class TestResources {
 }

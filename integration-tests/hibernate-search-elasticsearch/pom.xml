@@ -35,13 +35,27 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-elasticsearch-rest-client</artifactId>
+            <artifactId>quarkus-hibernate-search-elasticsearch</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-h2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>compile</scope>
         </dependency>
 
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-h2</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -116,10 +130,7 @@
                     <plugin>
                         <groupId>com.github.alexcojocaru</groupId>
                         <artifactId>elasticsearch-maven-plugin</artifactId>
-                        <version>${elasticsearch-maven-plugin.version}</version>
                         <configuration>
-                            <!-- Use the same server version as the client -->
-                            <version>${elasticsearch-server.version}</version>
                             <timeout>90</timeout>
                             <pathConf>${project.build.directory}/test-classes/elasticsearch-maven-plugin/configuration/</pathConf>
                             <pathInitScript>${project.build.directory}/test-classes/elasticsearch-maven-plugin/init/init.script</pathInitScript>

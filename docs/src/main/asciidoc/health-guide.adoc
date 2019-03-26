@@ -1,3 +1,9 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+
 include::./attributes.adoc[]
 = {project-name} - MicroProfile Health
 

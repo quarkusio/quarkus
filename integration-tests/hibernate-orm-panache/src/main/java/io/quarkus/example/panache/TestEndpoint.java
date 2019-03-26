@@ -29,6 +29,7 @@ import javax.transaction.Transactional;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
+import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.junit.jupiter.api.Assertions;
 
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
@@ -271,7 +272,6 @@ public class TestEndpoint {
         Dog dog = new Dog("octave", "dalmatian");
         dog.owner = person;
         dog.persist();
-        person.dogs.add(dog);
 
         return person;
     }
@@ -554,7 +554,6 @@ public class TestEndpoint {
         Dog dog = new Dog("octave", "dalmatian");
         dog.owner = person;
         dogDao.persist(dog);
-        person.dogs.add(dog);
 
         return person;
     }
@@ -698,5 +697,56 @@ public class TestEndpoint {
             throws NoSuchMethodException, SecurityException {
         Method method = klass.getMethod(name, params);
         Assertions.assertEquals(returnType, method.getReturnType());
+    }
+
+    @GET
+    @Path("model1")
+    @Transactional
+    public String testModel1() {
+        Assertions.assertEquals(0, Person.count());
+
+        Person person = makeSavedPerson();
+        SelfDirtinessTracker trackingPerson = (SelfDirtinessTracker) person;
+
+        String[] dirtyAttributes = trackingPerson.$$_hibernate_getDirtyAttributes();
+        Assertions.assertEquals(0, dirtyAttributes.length);
+
+        person.name = "1";
+
+        dirtyAttributes = trackingPerson.$$_hibernate_getDirtyAttributes();
+        Assertions.assertEquals(1, dirtyAttributes.length);
+
+        Assertions.assertEquals(1, Person.count());
+        return "OK";
+    }
+
+    @GET
+    @Path("model2")
+    @Transactional
+    public String testModel2() {
+        Assertions.assertEquals(1, Person.count());
+
+        Person person = Person.findAll().firstResult();
+        Assertions.assertEquals("1", person.name);
+
+        person.name = "2";
+        return "OK";
+    }
+
+    @GET
+    @Path("model3")
+    @Transactional
+    public String testModel3() {
+        Assertions.assertEquals(1, Person.count());
+
+        Person person = Person.findAll().firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        Dog.deleteAll();
+        Person.deleteAll();
+        Address.deleteAll();
+        Assertions.assertEquals(0, Person.count());
+
+        return "OK";
     }
 }

@@ -9,6 +9,7 @@ import java.util.function.BiFunction;
 
 import javax.persistence.Transient;
 
+import org.hibernate.bytecode.enhance.spi.EnhancerConstants;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -312,7 +313,16 @@ public class PanacheJpaEntityEnhancer implements BiFunction<String, ClassVisitor
                             getterName, getterDescriptor, null, null);
                     mv.visitCode();
                     mv.visitIntInsn(Opcodes.ALOAD, 0);
-                    mv.visitFieldInsn(Opcodes.GETFIELD, thisClass.getInternalName(), field.name, field.descriptor);
+                    // Due to https://github.com/quarkusio/quarkus/issues/1376 we generate Hibernate read/write calls
+                    // directly rather than rely on Hibernate to see our generated accessor because it does not
+                    mv.visitMethodInsn(
+                            Opcodes.INVOKEVIRTUAL,
+                            thisClass.getInternalName(),
+                            EnhancerConstants.PERSISTENT_FIELD_READER_PREFIX + field.name,
+                            Type.getMethodDescriptor(Type.getType(field.descriptor)),
+                            false);
+                    // instead of:
+                    //                    mv.visitFieldInsn(Opcodes.GETFIELD, thisClass.getInternalName(), field.name, field.descriptor);
                     int returnCode;
                     switch (field.descriptor) {
                         case "Z":
@@ -371,7 +381,16 @@ public class PanacheJpaEntityEnhancer implements BiFunction<String, ClassVisitor
                             break;
                     }
                     mv.visitIntInsn(loadCode, 1);
-                    mv.visitFieldInsn(Opcodes.PUTFIELD, thisClass.getInternalName(), field.name, field.descriptor);
+                    // Due to https://github.com/quarkusio/quarkus/issues/1376 we generate Hibernate read/write calls
+                    // directly rather than rely on Hibernate to see our generated accessor because it does not
+                    mv.visitMethodInsn(
+                            Opcodes.INVOKEVIRTUAL,
+                            thisClass.getInternalName(),
+                            EnhancerConstants.PERSISTENT_FIELD_WRITER_PREFIX + field.name,
+                            Type.getMethodDescriptor(Type.getType(void.class), Type.getType(field.descriptor)),
+                            false);
+                    // instead of:
+                    //                    mv.visitFieldInsn(Opcodes.PUTFIELD, thisClass.getInternalName(), field.name, field.descriptor);
                     mv.visitInsn(Opcodes.RETURN);
                     mv.visitMaxs(0, 0);
                     mv.visitEnd();

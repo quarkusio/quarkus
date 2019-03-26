@@ -25,6 +25,9 @@ public class Address extends PanacheEntity {
 
     public String street;
 
+    public Address() {
+    }
+
     public Address(String street) {
         this.street = street;
     }

@@ -2,14 +2,15 @@ package io.quarkus.jdbc.mariadb.runtime.graal;
 
 import java.sql.SQLException;
 
-import org.mariadb.jdbc.internal.com.send.InterfaceAuthSwitchSendResponsePacket;
-import org.mariadb.jdbc.internal.com.send.SendClearPasswordAuthPacket;
-import org.mariadb.jdbc.internal.com.send.SendEd25519PasswordAuthPacket;
-import org.mariadb.jdbc.internal.com.send.SendGssApiAuthPacket;
-import org.mariadb.jdbc.internal.com.send.SendNativePasswordAuthPacket;
-import org.mariadb.jdbc.internal.com.send.SendOldPasswordAuthPacket;
-import org.mariadb.jdbc.internal.io.input.PacketInputStream;
+import org.mariadb.jdbc.internal.com.send.authentication.AuthenticationPlugin;
+import org.mariadb.jdbc.internal.com.send.authentication.ClearPasswordPlugin;
+import org.mariadb.jdbc.internal.com.send.authentication.Ed25519PasswordPlugin;
+import org.mariadb.jdbc.internal.com.send.authentication.NativePasswordPlugin;
+import org.mariadb.jdbc.internal.com.send.authentication.OldPasswordPlugin;
+import org.mariadb.jdbc.internal.com.send.authentication.SendGssApiAuthPacket;
+// import org.mariadb.jdbc.internal.com.send.authentication.SendPamAuthPacket;
 import org.mariadb.jdbc.internal.protocol.authentication.DefaultAuthenticationProvider;
+import org.mariadb.jdbc.internal.util.Options;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
@@ -26,27 +27,25 @@ public final class DefaultAuthenticationProvider_Substitutions {
     private static final String DIALOG = "dialog";
 
     @Substitute
-    public static InterfaceAuthSwitchSendResponsePacket processAuthPlugin(PacketInputStream reader,
-            String plugin, String password,
-            byte[] authData, int seqNo, String passwordCharacterEncoding)
+    public static AuthenticationPlugin processAuthPlugin(String plugin,
+            String password,
+            byte[] authData,
+            Options options)
             throws SQLException {
         switch (plugin) {
             case MYSQL_NATIVE_PASSWORD:
-                return new SendNativePasswordAuthPacket(password, authData, seqNo,
-                        passwordCharacterEncoding);
+                return new NativePasswordPlugin(password, authData, options.passwordCharacterEncoding);
             case MYSQL_OLD_PASSWORD:
-                return new SendOldPasswordAuthPacket(password, authData, seqNo, passwordCharacterEncoding);
+                return new OldPasswordPlugin(password, authData);
             case MYSQL_CLEAR_PASSWORD:
-                return new SendClearPasswordAuthPacket(password, authData, seqNo,
-                        passwordCharacterEncoding);
+                return new ClearPasswordPlugin(password, options.passwordCharacterEncoding);
             case DIALOG:
                 throw new UnsupportedOperationException("Authentication strategy 'dialog' is not supported in GraalVM");
+                //return new SendPamAuthPacket(password, authData, options.passwordCharacterEncoding);
             case GSSAPI_CLIENT:
-                return new SendGssApiAuthPacket(reader, password, authData, seqNo,
-                        passwordCharacterEncoding);
+                return new SendGssApiAuthPacket(authData, options.servicePrincipalName);
             case MYSQL_ED25519_PASSWORD:
-                return new SendEd25519PasswordAuthPacket(password, authData, seqNo,
-                        passwordCharacterEncoding);
+                return new Ed25519PasswordPlugin(password, authData, options.passwordCharacterEncoding);
 
             default:
                 throw new SQLException(

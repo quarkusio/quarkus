@@ -20,7 +20,7 @@ public class UndertowHotReplacementSetup implements HotReplacementSetup {
     public void setupHotDeployment(HotReplacementContext context) {
         this.context = context;
         HandlerWrapper wrapper = createHandlerWrapper();
-        UndertowDeploymentTemplate.setHotDeployment(wrapper);
+        UndertowDeploymentTemplate.addHotDeploymentWrapper(wrapper);
     }
 
     private HandlerWrapper createHandlerWrapper() {

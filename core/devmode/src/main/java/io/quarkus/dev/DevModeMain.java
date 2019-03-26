@@ -93,12 +93,13 @@ public class DevModeMain {
             //we can potentially throw away this class loader, and reload the app
             try {
                 Thread.currentThread().setContextClassLoader(runtimeCl);
-                RuntimeRunner runner = RuntimeRunner.builder()
+                RuntimeRunner.Builder builder = RuntimeRunner.builder()
                         .setLaunchMode(LaunchMode.DEVELOPMENT)
                         .setClassLoader(runtimeCl)
                         .setTarget(classesRoot.toPath())
                         .setFrameworkClassesPath(wiringDir.toPath())
-                        .setTransformerCache(cacheDir.toPath())
+                        .setTransformerCache(cacheDir.toPath());
+                RuntimeRunner runner = builder
                         .build();
                 runner.run();
                 closeable = runner;

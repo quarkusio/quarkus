@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -143,7 +142,7 @@ public class MojoTestBase {
         });
     }
 
-    static String getHttpResponse() {
+    String getHttpResponse() {
         AtomicReference<String> resp = new AtomicReference<>();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
@@ -151,6 +150,12 @@ public class MojoTestBase {
                 //some, such as org.jetbrains.kotlin:kotlin-compiler, are huge and will take more than a minute.
                 .atMost(20, TimeUnit.MINUTES).until(() -> {
                     try {
+                        String broken = getBrokenReason();
+                        if (broken != null) {
+                            //try and avoid waiting 20m
+                            resp.set("BROKEN: " + broken);
+                            return true;
+                        }
                         String content = get();
                         resp.set(content);
                         return true;
@@ -159,6 +164,10 @@ public class MojoTestBase {
                     }
                 });
         return resp.get();
+    }
+
+    protected String getBrokenReason() {
+        return null;
     }
 
     static String getHttpResponse(String path) {

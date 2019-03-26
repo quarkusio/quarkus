@@ -87,7 +87,7 @@ public class ResteasyScanningProcessor {
     private static final String JAVAX_WS_RS_APPLICATION = Application.class.getName();
     private static final String JAX_RS_FILTER_NAME = JAVAX_WS_RS_APPLICATION;
     private static final String JAX_RS_SERVLET_NAME = JAVAX_WS_RS_APPLICATION;
-    private static final String JAX_RS_APPLICATION_PARAMETER_NAME = JAVAX_WS_RS_APPLICATION;
+    private static final String JAX_RS_APPLICATION_PARAMETER_NAME = "javax.ws.rs.Application";
 
     private static final DotName APPLICATION_PATH = DotName.createSimple(ApplicationPath.class.getName());
 

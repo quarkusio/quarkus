@@ -88,4 +88,8 @@ public class RunningInvoker extends MavenProcessInvoker {
     public String log() throws IOException {
         return FileUtils.readFileToString(log, "UTF-8");
     }
+
+    public MavenProcessInvocationResult getResult() {
+        return result;
+    }
 }

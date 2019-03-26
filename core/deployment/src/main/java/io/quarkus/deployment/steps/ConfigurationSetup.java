@@ -140,9 +140,9 @@ public class ConfigurationSetup {
 
     private static final MethodDescriptor BTCF_GET_CONFIG_SOURCE = MethodDescriptor.ofMethod(BuildTimeConfigFactory.class,
             "getBuildTimeConfigSource", ConfigSource.class);
+    private static final MethodDescriptor ECS_CACHE_CONSTRUCT = MethodDescriptor.ofConstructor(ExpandingConfigSource.Cache.class);
+    private static final MethodDescriptor ECS_WRAPPER = MethodDescriptor.ofMethod(ExpandingConfigSource.class, "wrapper", UnaryOperator.class, ExpandingConfigSource.Cache.class);
 
-    private static final FieldDescriptor ECS_WRAPPER = FieldDescriptor.of(ExpandingConfigSource.class, "WRAPPER",
-            UnaryOperator.class);
     private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
 
     public ConfigurationSetup() {
@@ -228,7 +228,8 @@ public class ConfigurationSetup {
         // now prepare & load the build configuration
         SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
         // expand properties
-        builder.withWrapper(ExpandingConfigSource::new);
+        final ExpandingConfigSource.Cache cache = new ExpandingConfigSource.Cache();
+        builder.withWrapper(ExpandingConfigSource.wrapper(cache));
         builder.addDefaultSources();
         final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
         builder.withSources(inJar);
@@ -506,7 +507,8 @@ public class ConfigurationSetup {
                 }
 
                 // property expansion
-                final ResultHandle wrapper = carc.readStaticField(ECS_WRAPPER);
+                final ResultHandle cache = carc.newInstance(ECS_CACHE_CONSTRUCT);
+                final ResultHandle wrapper = carc.invokeStaticMethod(ECS_WRAPPER, cache);
                 carc.invokeVirtualMethod(SRCB_WITH_WRAPPER, builder, wrapper);
 
                 // write out loader for converter types

@@ -1,5 +1,5 @@
 apply plugin: 'java'
-apply plugin: 'io.quarkus.gradle.plugin'
+apply plugin: 'io.quarkus'
 
 buildscript {
     repositories {

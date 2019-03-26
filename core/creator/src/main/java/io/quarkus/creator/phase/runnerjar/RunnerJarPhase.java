@@ -233,9 +233,6 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         final List<AppDependency> appDeps = curateOutcome.getEffectiveModel().getUserDependencies();
         for (AppDependency appDep : appDeps) {
             final AppArtifact depArtifact = appDep.getArtifact();
-            if (depArtifact.getArtifactId().equals("svm") && depArtifact.getGroupId().equals("com.oracle.substratevm")) {
-                throw new IllegalStateException("Dependency on com.oracle.substratevm:svm");
-            }
             final Path resolvedDep = depResolver.resolve(depArtifact);
             if (uberJar) {
                 try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep)) {

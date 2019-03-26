@@ -675,6 +675,7 @@
                             <goals>
                                 <goal>extension-descriptor</goal>
                             </goals>
+                            <phase>compile</phase>
                             <configuration>
                                 <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}</deployment>
                             </configuration>

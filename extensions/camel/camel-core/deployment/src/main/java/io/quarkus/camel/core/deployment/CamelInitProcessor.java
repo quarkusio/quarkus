@@ -21,6 +21,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.slf4j.LoggerFactory;
 
 import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -76,8 +77,11 @@ class CamelInitProcessor {
         List<RuntimeValue<?>> builders = getBuildTimeRouteBuilderClasses().map(recorderContext::newInstance)
                 .collect(Collectors.toList());
 
-        visitServices((name, type) -> registry.bind(name, type,
-                recorderContext.newInstance(type.getName())));
+        visitServices((name, type) -> {
+            LoggerFactory.getLogger(CamelInitProcessor.class).warn("Binding camel service {} with type {}", name, type);
+            registry.bind(name, type,
+                    recorderContext.newInstance(type.getName()));
+        });
 
         RuntimeValue<CamelRuntime> camelRuntime = template.create(registry, properties, builders);
 

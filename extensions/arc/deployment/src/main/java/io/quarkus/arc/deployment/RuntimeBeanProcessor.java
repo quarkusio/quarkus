@@ -4,11 +4,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 
+import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.runtime.ArcDeploymentTemplate;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -29,7 +31,8 @@ public class RuntimeBeanProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void build(List<RuntimeBeanBuildItem> beans,
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
-            ArcDeploymentTemplate template) {
+            ArcDeploymentTemplate template,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         String beanName = "io.quarkus.arc.runtimebean.RuntimeBeanProducers";
 
         ClassCreator c = new ClassCreator(new ClassOutput() {
@@ -41,20 +44,33 @@ public class RuntimeBeanProcessor {
 
         c.addAnnotation(ApplicationScoped.class);
         Map<String, Supplier<Object>> map = new HashMap<>();
-        for (RuntimeBeanBuildItem b : beans) {
+        for (RuntimeBeanBuildItem bean : beans) {
             //deterministic name
             //as we know the maps are sorted this will result in the same hash for the same bean
-            String name = b.type.replace(".", "_") + "_" + HashUtil.sha1(b.qualifiers.toString());
-            map.put(name, b.supplier);
+            String name = bean.type.replace(".", "_") + "_" + HashUtil.sha1(bean.qualifiers.toString());
+            if (bean.runtimeValue != null) {
+                map.put(name, template.createSupplier(bean.runtimeValue));
+            } else {
+                map.put(name, bean.supplier);
+            }
 
-            MethodCreator producer = c.getMethodCreator("produce_" + name, b.type);
+            MethodCreator producer = c.getMethodCreator("produce_" + name, bean.type);
             producer.addAnnotation(Produces.class);
-            producer.addAnnotation(b.scope);
-            for (Map.Entry<String, NavigableMap<String, Object>> i : b.qualifiers.entrySet()) {
-                AnnotationCreator builder = producer.addAnnotation(i.getKey());
-                for (Map.Entry<String, Object> j : i.getValue().entrySet()) {
-                    builder.addValue(i.getKey(), i.getValue());
+            producer.addAnnotation(bean.scope);
+            for (Map.Entry<String, NavigableMap<String, Object>> qualifierEntry : bean.qualifiers.entrySet()) {
+                AnnotationCreator builder = producer.addAnnotation(qualifierEntry.getKey());
+                for (Map.Entry<String, Object> valueEntry : qualifierEntry.getValue().entrySet()) {
+                    builder.addValue(valueEntry.getKey(), valueEntry.getValue());
                 }
+            }
+
+            if (!bean.removable) {
+                unremovableBeans.produce(new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
+                    @Override
+                    public boolean test(BeanInfo bean) {
+                        return bean.isProducerMethod() && bean.getTarget().get().asMethod().name().equals(name);
+                    }
+                }));
             }
 
             ResultHandle staticMap = producer

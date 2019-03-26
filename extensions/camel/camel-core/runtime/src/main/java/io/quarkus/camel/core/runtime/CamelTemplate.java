@@ -6,8 +6,6 @@ import java.util.stream.Collectors;
 
 import org.apache.camel.RoutesBuilder;
 
-import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Template;
@@ -15,7 +13,7 @@ import io.quarkus.runtime.annotations.Template;
 @Template
 public class CamelTemplate {
 
-    public CamelRuntime init(
+    public RuntimeValue<CamelRuntime> init(
             RuntimeValue<?> iruntime,
             RuntimeRegistry registry,
             Properties properties,
@@ -28,18 +26,18 @@ public class CamelTemplate {
                 .map(RoutesBuilder.class::cast)
                 .collect(Collectors.toList()));
         runtime.init();
-        return runtime;
+        return new RuntimeValue<>(runtime);
     }
 
-    public void start(final ShutdownContext shutdown, final CamelRuntime runtime) throws Exception {
-        runtime.start();
+    public void start(final ShutdownContext shutdown, final RuntimeValue<CamelRuntime> runtime) throws Exception {
+        runtime.getValue().start();
 
         //in development mode undertow is started eagerly
         shutdown.addShutdownTask(new Runnable() {
             @Override
             public void run() {
                 try {
-                    runtime.stop();
+                    runtime.getValue().stop();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -47,12 +45,4 @@ public class CamelTemplate {
         });
     }
 
-    public BeanContainerListener initRuntimeInjection(CamelRuntime runtime) {
-        return new BeanContainerListener() {
-            @Override
-            public void created(BeanContainer container) {
-                container.instance(CamelRuntimeProducer.class).setCamelRuntime(runtime);
-            }
-        };
-    }
 }

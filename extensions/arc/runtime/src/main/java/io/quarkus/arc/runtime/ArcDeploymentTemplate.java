@@ -29,11 +29,11 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Template;
 
 /**
- * @author Martin Kouba
  */
 @Template
 public class ArcDeploymentTemplate {
@@ -64,7 +64,6 @@ public class ArcDeploymentTemplate {
             Collection<String> removedBeanTypes)
             throws Exception {
         BeanContainer beanContainer = new BeanContainer() {
-            @SuppressWarnings("unchecked")
             @Override
             public <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers) {
                 Supplier<InstanceHandle<T>> handleSupplier = container.instanceSupplier(type, qualifiers);
@@ -120,6 +119,15 @@ public class ArcDeploymentTemplate {
                 instance.fireShutdownEvent();
             }
         });
+    }
+
+    public Supplier<Object> createSupplier(RuntimeValue<?> value) {
+        return new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return value.getValue();
+            }
+        };
     }
 
     private static final class DefaultInstanceFactory<T> implements BeanContainer.Factory<T> {

@@ -255,7 +255,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         return "Runtime proxy of " + returnType + " with id " + key;
                     }
                     throw new RuntimeException(
-                            "You cannot invoke directly on an object returned from the bytecode recorded, you can only pass is back into the recorder as a parameter");
+                            "You cannot invoke " + method.getName()
+                                    + "() directly on an object returned from the bytecode recorder, you can only pass it back into the recorder as a parameter");
                 }
             });
             ProxyInstance instance = new ProxyInstance(proxyInstance, key);

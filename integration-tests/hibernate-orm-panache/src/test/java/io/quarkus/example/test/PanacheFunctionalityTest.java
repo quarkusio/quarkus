@@ -34,6 +34,10 @@ public class PanacheFunctionalityTest {
         RestAssured.when().get("/test/model-dao").then().body(is("OK"));
         RestAssured.when().get("/test/model").then().body(is("OK"));
         RestAssured.when().get("/test/accessors").then().body(is("OK"));
+
+        RestAssured.when().get("/test/model1").then().body(is("OK"));
+        RestAssured.when().get("/test/model2").then().body(is("OK"));
+        RestAssured.when().get("/test/model3").then().body(is("OK"));
     }
 
 }

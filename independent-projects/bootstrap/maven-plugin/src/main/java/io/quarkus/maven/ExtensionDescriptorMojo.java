@@ -89,7 +89,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     private String deployment;
 
     @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
+    public void execute() throws MojoExecutionException {
 
         final Properties props = new Properties();
         props.setProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment);

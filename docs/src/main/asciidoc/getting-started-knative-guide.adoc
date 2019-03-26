@@ -5,7 +5,7 @@ include::./attributes.adoc[]
 
 This guide covers:
 
-* The deployment of the application to Kubernetes
+* The deployment of the Knative serverless application to Kubernetes 
 
 This guide takes as input the application developed in the link:building-native-image-guide.html[native application guide].
 So, you should have been able to package your application as a binary executable, copied it in a Docker image and run this image.
@@ -17,12 +17,12 @@ The OpenShift section leverages OpenShift build and route features which are not
 
 For this guide you need:
 
-* roughly 20 minutes
-* having access to a Kubernetes and/or OpenShift cluster. Minikube and Minishift are valid options.
-* having deployed Knative components on https://github.com/knative/docs/blob/master/install/Knative-with-Minikube.md[Minikube]
+- roughly 20 minutes
+- having access to a Kubernetes and/or OpenShift cluster. Minikube and Minishift are valid options.
+- having deployed Knative components on https://github.com/knative/docs/blob/master/install/Knative-with-Minikube.md[Minikube]
 or https://github.com/openshift-cloud-functions/Documentation/blob/master/con_knative-minishift.adoc[Minishift]
-
-
+- https://www.docker.com[Docker] installed and running on your local machine,  and a Docker Hub account configured (we'll use it for a container registry).
+- You have installed  https://www.eclipse.org/openj9/[Java SE 8 or later JDK].
 
 == Solution
 
@@ -39,39 +39,58 @@ Before we deploy the application to Knative in Minikube or Minishift we need to 
 
 - https://github.com/knative/docs/tree/master/serving/samples/build-private-repo-go#creating-a-dockerhub-push-credential[Container registry secrets] :-
 This is required to for the built container image to be pushed to the container registry of your choice
-- https://developer.github.com/v3/guides/managing-deploy-keys/#deploy-keys[Deploy Key] :-
-This is required only if you are going to pull the sources from private repository.
 - https://github.com/knative/docs/tree/master/serving/samples/build-private-repo-go#setting-up-our-build-service-account[Build Service Account] :-
-The Kubernetes Service Account that will have access to Container Registry secret and Deploy Key secret
+The Kubernetes Service Account that will have access to Container Registry secret
 
-[NOTE]
-====
-If you are not using private GitHub repo then you dont need the `Deploy Key` created and added to the Build Service Account
-====
-
-Run the following commands to kick start https://github.com/knative/build[Knative Build] which will build the quarkus application container image
-using Dockerfile and https://github.com/GoogleContainerTools/kaniko[Kaniko].  After a successful build you will have the
-Knative serving application deployed with the built container image.  You can watch the application build pods using the
-command `kubectl get pods -w`. You can terminate the watch using the command kbd:[CTRL + c]
+Run the following commands to kick start https://github.com/knative/build[Knative Build] which will build the Quarkus application container image
+using Dockerfile or https://buildah.io[buiildah].
 
 Since there are some parameters that you need to pass to the builds, which are right now configurable via maven properties,
 you need to run the following maven command to make them passed to the Knative resource yamls.
+
+== Building the quickstart 
+
+We will be using https://hub.docker.com[hub.docker.com] as the container registry, if you dont have an account yet have one created before proceeding further.
+
+=== Using Docker build to deploy the service 
+
+Use Docker to build the sample code into a container. To build and push with
+Docker Hub, run these commands replacing `{username}` with your Docker Hub
+username:
+
+[source, shell, subs="attributes"]
+----
+
+#We will use the docker daemon of the minikube
+eval $(minikube docker-env)
+
+#Build the container on your local machine
+docker build -t {username}/getting-started-knative .
+
+#Push the container to docker registry
+docker push {username}/getting-started-knative 
+
+----
+
+After the build has completed and the container is pushed to docker hub, you
+can deploy the app into your cluster. Ensure that the container image value
+in `service.yaml` matches the container you built in the previous step. Apply
+the configuration using `kubectl`:
+
+[source, shell, subs="attributes"]
+====
+ kubectl apply --filename service.yaml
+====
+
+=== Using Knative build to deploy the service 
 
 .Maven Parameters
 |===
 |Name |Use |Example
 
-| github.deploy.key
-| the base64 encoded private key that is configured to be used as the GitHub private repo Deploy key
-| `cat ~/.ssh/quarkus-quickstarts \| base64 -w 0`
-
-| github.keyscan
-| the base64 encoded value of `ssh-keyscan github.com`
-| `ssh-keyscan github.com \| base64 -w 0`
-
 | container.registry.url
 | the container registry url, NOTE: this should be a v2 container registry
-| https://index.docker.io/v1/
+| 
 
 | container.registry.user
 | The user name to authenticate with the container registry
@@ -92,24 +111,47 @@ you need to run the following maven command to make them passed to the Knative r
 | app.container.image
 | The fully qualified name of the container image that will be pushed to the container registry after build
 | docker.io/demo/quarkus-knative-quickstart
-|===
 
+| app.context.dir
+| The directory within the github source repository from where the build will be started i.e. Docker context
+| getting-started-knative
+
+|===
 
 The following is the example command to generate the need knative resource files
 
 [source, shell, subs="attributes"]
 ----
-mvn -Dgithub.deploy.key=$(cat ~/.ssh/quarkus-quickstarts | base64 -w 0) \
-    -Dgithub.keyscan=$(ssh-keyscan github.com | base64 -w 0) \
-    -Dcontainer.registry.url='https://quay.io/v2' \
-    -Dcontainer.registry.user='demo' \
-    -Dcontainer.registry.password='password' \
+mvn -Dcontainer.registry.url='https://index.docker.io' \
+    -Dcontainer.registry.user='{username}' \
+    -Dcontainer.registry.password='{password}' \
     -Dgit.source.revision='master' \
-    -Dgit.source.repo.url='{quickstarts-clone-url}' \ # <1>
-    -Dapp.container.image='docker.io/demo/getting-started-knative' \
+    -Dgit.source.repo.url='https://github.com/quarkusio/quarkus-quickstarts' \
+    -Dapp.container.image='docker.io/${container.registry.user}/getting-started-knative' \
+    -Dapp.context.dir='getting-started-knative' \
     clean process-resources
 ----
-<1> If your are using a private repo then you might need to use git ssh url
+
+Deploy the created resources 
+
+[source, shell, subs="attributes"]
+----
+# deploy the created resources
+oc apply -f target/knative
+----
+
+.(OR)
+
+[source, shell, subs="attributes"]
+----
+# deploy the created resources
+kubectl apply -f target/knative
+----
+
+[NOTE]
+====
+It will take some time for the build
+====
 
 The above command will apply the property values to the Knative resources found in `${project.basedir}/src/main/knative`
 and copy them to `${project.build.directory}/knative`

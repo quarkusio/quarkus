@@ -48,6 +48,7 @@ import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.engines.URLConnectionEngine;
+import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyUriBuilder;
 
 import io.smallrye.restclient.*;
@@ -68,12 +69,16 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     public static final ClientHeadersRequestFilter HEADERS_REQUEST_FILTER = new ClientHeadersRequestFilter();
 
     public static boolean SSL_ENABLED = false;
+    public static boolean REGISTER_BUILTIN_PROVIDERS = true;
+    public static String PROVIDERS_TO_REGISTER = "";
 
     RestClientBuilderImpl() {
         ClientBuilder availableBuilder = ClientBuilder.newBuilder();
 
         if (availableBuilder instanceof ResteasyClientBuilder) {
             builderDelegate = (ResteasyClientBuilder) availableBuilder;
+            builderDelegate.property(ResteasyContextParameters.RESTEASY_USE_BUILTIN_PROVIDERS, REGISTER_BUILTIN_PROVIDERS);
+            builderDelegate.property(ResteasyContextParameters.RESTEASY_PROVIDERS, PROVIDERS_TO_REGISTER);
             configurationWrapper = new ConfigurationWrapper(builderDelegate.getConfiguration());
             config = ConfigProvider.getConfig();
         } else {

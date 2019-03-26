@@ -192,11 +192,11 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
             IoUtils.recursiveDelete(metaInf.resolve(APPLICATION_INFO_PROPERTIES));
         }
 
-        ApplicationInfoUtil.writeApplicationInfoProperties(appState.getAppArtifact(), appClassesDir);
-
         //lets default to appClassesDir for now
         if (configDir == null)
             configDir = appClassesDir;
+
+        ApplicationInfoUtil.writeApplicationInfoProperties(appState.getAppArtifact(), configDir);
 
         transformedClassesDir = IoUtils
                 .mkdirs(transformedClassesDir == null ? outputDir.resolve("transformed-classes") : transformedClassesDir);

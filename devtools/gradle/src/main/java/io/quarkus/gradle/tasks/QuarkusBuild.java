@@ -140,6 +140,7 @@ public class QuarkusBuild extends QuarkusTask {
                 // configure the build phases we want the app to go through
                 .addPhase(new AugmentPhase()
                         .setAppClassesDir(extension().outputDirectory().toPath())
+                        .setConfigDir(extension().outputConfigDirectory().toPath())
                         .setTransformedClassesDir(getTransformedClassesDirectory().toPath())
                         .setWiringClassesDir(getWiringClassesDirectory().toPath()))
                 .addPhase(new RunnerJarPhase()

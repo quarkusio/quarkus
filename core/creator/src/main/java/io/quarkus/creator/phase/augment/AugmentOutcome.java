@@ -47,4 +47,11 @@ public interface AugmentOutcome {
      * @return directory containing generated classes
      */
     Path getWiringClassesDir();
+
+    /**
+     * Directory containing config files used by the application
+     *
+     * @return directory containing config files
+     */
+    Path getConfigDir();
 }

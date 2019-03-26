@@ -357,6 +357,11 @@ public class QuarkusNative extends QuarkusTask {
                     // not relevant for this mojo
                     throw new UnsupportedOperationException();
                 }
+
+                @Override
+                public Path getConfigDir() {
+                    return extension().outputConfigDirectory().toPath();
+                }
             }).pushOutcome(RunnerJarOutcome.class, new RunnerJarOutcome() {
                 final Path runnerJar = getProject().getBuildDir().toPath().resolve(extension().finalName() + "-runner.jar");
 

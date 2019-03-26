@@ -272,7 +272,6 @@ public class TestEndpoint {
         Dog dog = new Dog("octave", "dalmatian");
         dog.owner = person;
         dog.persist();
-        person.dogs.add(dog);
 
         return person;
     }
@@ -555,7 +554,6 @@ public class TestEndpoint {
         Dog dog = new Dog("octave", "dalmatian");
         dog.owner = person;
         dogDao.persist(dog);
-        person.dogs.add(dog);
 
         return person;
     }

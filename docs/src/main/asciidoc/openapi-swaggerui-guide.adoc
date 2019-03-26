@@ -1,0 +1,306 @@
+include::./attributes.adoc[]
+= {project-name} - Using OpenAPI and Swagger UI
+
+This guide explains how your Quarkus application can expose its API description through an OpenAPI specification and
+how you can test it via a user-friendly UI named Swagger UI.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.5.3+
+
+== Architecture
+
+In this guide, we create a straightforward REST application to demonstrate how fast you can expose your API
+specification and benefit from a user interface to test it.
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can skip right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `using-openapi-swaggerui` {quickstarts-tree-url}/using-openapi-swaggerui[directory].
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source, subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=using-openapi-swaggerui \
+    -DclassName="org.acme.openapi.swaggerui.FruitResource" \
+    -Dpath="/fruits" \
+    -Dextensions="resteasy-jsonb"
+----
+
+This command generates the Maven project with a `/fruits` REST endpoint.
+
+== Expose a REST Resource
+
+We will create a `Fruit` bean and a `FruitResouce` REST resource
+(feel free to take a look to the link:rest-json-guide.html[Writing JSON REST services guide] if your want more details on how to build a REST API with Quarkus).
+
+[source,java]
+----
+package org.acme.openapi.swaggerui;
+
+import java.util.Objects;
+
+public class Fruit {
+
+    private String name;
+
+    private String description;
+
+    public Fruit() {
+    }
+
+    public Fruit(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Fruit)) {
+            return false;
+        }
+
+        Fruit other = (Fruit) obj;
+
+        return Objects.equals(other.name, this.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.name);
+    }
+}
+----
+
+[source,java]
+----
+package org.acme.openapi.swaggerui;
+
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Set;
+
+@Path("/fruits")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public class FruitResource {
+
+    private Set<Fruit> fruits = Collections.newSetFromMap(Collections.synchronizedMap(new LinkedHashMap<>()));
+
+    public FruitResource() {
+        fruits.add(new Fruit("Apple", "Winter fruit"));
+        fruits.add(new Fruit("Pineapple", "Tropical fruit"));
+    }
+
+    @GET
+    public Set<Fruit> list() {
+        return fruits;
+    }
+
+    @POST
+    public Set<Fruit> add(Fruit fruit) {
+        fruits.add(fruit);
+        return fruits;
+    }
+
+    @DELETE
+    public Set<Fruit> delete(Fruit fruit) {
+        fruits.remove(fruit);
+        return fruits;
+    }
+}
+----
+
+As we changed the API, we also need to update the test:
+
+[source,java]
+----
+package org.acme.openapi.swaggerui;
+
+import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.Test;
+
+import javax.ws.rs.core.MediaType;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+
+@QuarkusTest
+public class FruitResourceTest {
+
+    @Test
+    public void testList() {
+        given()
+                .when().get("/fruits")
+                .then()
+                .statusCode(200)
+                .body("$.size()", is(2),
+                        "name", containsInAnyOrder("Apple", "Pineapple"),
+                        "description", containsInAnyOrder("Winter fruit", "Tropical fruit"));
+    }
+
+    @Test
+    public void testAdd() {
+        given()
+                .body("{\"name\": \"Pear\", \"description\": \"Winter fruit\"}")
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .when()
+                .post("/fruits")
+                .then()
+                .statusCode(200)
+                .body("$.size()", is(3),
+                        "name", containsInAnyOrder("Apple", "Pineapple", "Pear"),
+                        "description", containsInAnyOrder("Winter fruit", "Tropical fruit", "Winter fruit"));
+
+        given()
+                .body("{\"name\": \"Pear\", \"description\": \"Winter fruit\"}")
+                .header("Content-Type", MediaType.APPLICATION_JSON)
+                .when()
+                .delete("/fruits")
+                .then()
+                .statusCode(200)
+                .body("$.size()", is(2),
+                        "name", containsInAnyOrder("Apple", "Pineapple"),
+                        "description", containsInAnyOrder("Winter fruit", "Tropical fruit"));
+    }
+}
+----
+
+== Expose OpenAPI Specifications
+
+Quarkus proposes a `smallrye-openapi` extension compliant with the https://github.com/eclipse/microprofile-open-api/[Eclipse MicroProfile OpenAPI]
+specification in order to generate your API https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md[OpenAPI v3 specification].
+
+The first and unique step to do so is to add the `smallrye-openapi` extension to your Quarkus application:
+----
+./mvnw quarkus:add-extension -Dextensions="smallrye-openapi"
+----
+
+Now we are ready to run our application:
+----
+./mvnw compile quarkus:dev
+----
+
+Once your application is started, you can make a request to the default `/openapi` endpoint:
+----
+$ curl http://localhost:8080/openapi
+openapi: 3.0.1
+info:
+  title: Generated API
+  version: "1.0"
+paths:
+  /fruits:
+    get:
+      responses:
+        200:
+          description: OK
+          content:
+            application/json: {}
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Fruit'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json: {}
+    delete:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Fruit'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json: {}
+components:
+  schemas:
+    Fruit:
+      properties:
+        description:
+          type: string
+        name:
+          type: string
+----
+
+Hit `CTRL+C` to stop the application.
+
+== Use Swagger UI for development
+
+When building APIs, developers want to test them quickly. https://swagger.io/tools/swagger-ui/[Swagger UI] is a great tool
+permitting to visualize and interact with your APIs.
+The UI is automatically generated from your OpenAPI specification.
+
+Quarkus comes with a `swagger-ui` extension embedding a properly configured Swagger UI page.
+
+NOTE: Swagger UI is only available when Quarkus is started in dev or test mode.
+
+For this feature to be available, you need to add the `swagger-ui` extension to your Quarkus application:
+----
+./mvnw quarkus:add-extension -Dextensions="swagger-ui"
+----
+
+By default, Swagger UI is accessible at `/swagger-ui`.
+
+You can update this path by setting the `quarkus.swagger-ui.path` property in your `application.properties`:
+----
+quarkus.swagger-ui.path=/my-custom-path
+----
+
+Now, we are ready to run our application:
+----
+./mvnw compile quarkus:dev
+----
+
+You can check the Swagger UI path in your application's log:
+----
+00:00:00,000 INFO  [io.qua.swa.run.SwaggerUiServletExtension] Swagger UI available at /swagger-ui
+----
+
+Once your application is started, you can go to http://localhost:8080/swagger-ui and play with your API.
+
+You can visualize your API's operations and schemas.
+image:openapi-swaggerui-guide-screenshot01.png[alt=Visualize your API]
+
+You can also interact with your API in order to quickly test it.
+image:openapi-swaggerui-guide-screenshot02.png[alt=Interact with your API]
+
+Hit `CTRL+C` to stop the application.

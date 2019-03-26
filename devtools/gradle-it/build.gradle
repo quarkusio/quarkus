@@ -1,6 +1,9 @@
 apply plugin: 'java'
 apply plugin: 'io.quarkus.gradle.plugin'
 
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+
 buildscript {
     repositories {
         mavenCentral()

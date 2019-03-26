@@ -2,6 +2,9 @@ plugins {
     id 'java'
 }
 
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+
 repositories {
     mavenCentral()
 }
@@ -31,7 +34,9 @@ task sourcesJar(type: Jar) {
     classifier = 'sources'
     from sourceSets.main.allSource
 }
-
+javadoc {
+    options.addStringOption('encoding', 'UTF-8')
+}
 task javadocJar(type: Jar) {
     classifier = "javadoc"
     from javadoc

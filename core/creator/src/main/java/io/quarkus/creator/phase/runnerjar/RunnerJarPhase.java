@@ -323,6 +323,8 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         });
 
         copyFiles(augmentOutcome.getAppClassesDir(), runnerZipFs);
+        if (Files.exists(augmentOutcome.getConfigDir()))
+            copyFiles(augmentOutcome.getConfigDir(), runnerZipFs);
         copyFiles(augmentOutcome.getTransformedClassesDir(), runnerZipFs);
 
         generateManifest(runnerZipFs, classPath.toString());

@@ -186,6 +186,11 @@ public class NativeImageMojo extends AbstractMojo {
                             // not relevant for this mojo
                             throw new UnsupportedOperationException();
                         }
+
+                        @Override
+                        public Path getConfigDir() {
+                            return classesDir;
+                        }
                     })
                     .pushOutcome(RunnerJarOutcome.class, new RunnerJarOutcome() {
                         final Path runnerJar = buildDir.toPath().resolve(finalName + "-runner.jar");

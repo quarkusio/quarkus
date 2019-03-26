@@ -79,6 +79,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
     private Path appClassesDir;
     private Path transformedClassesDir;
     private Path wiringClassesDir;
+    private Path configDir;
 
     /**
      * Output directory for the outcome of this phase.
@@ -131,6 +132,17 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         return this;
     }
 
+    /**
+     * Directory containing the configuration files.
+     *
+     * @param configDir directory the configuration files (application.properties)
+     * @return this phase instance
+     */
+    public AugmentPhase setConfigDir(Path configDir) {
+        this.configDir = configDir;
+        return this;
+    }
+
     @Override
     public Path getAppClassesDir() {
         return appClassesDir;
@@ -144,6 +156,11 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
     @Override
     public Path getWiringClassesDir() {
         return wiringClassesDir;
+    }
+
+    @Override
+    public Path getConfigDir() {
+        return configDir;
     }
 
     @Override
@@ -171,6 +188,10 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
             IoUtils.recursiveDelete(metaInf.resolve("MANIFEST.MF"));
         }
 
+        //lets default to appClassesDir for now
+        if (configDir == null)
+            configDir = appClassesDir;
+
         transformedClassesDir = IoUtils
                 .mkdirs(transformedClassesDir == null ? outputDir.resolve("transformed-classes") : transformedClassesDir);
         wiringClassesDir = IoUtils.mkdirs(wiringClassesDir == null ? outputDir.resolve("wiring-classes") : wiringClassesDir);
@@ -183,7 +204,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
     private void doProcess(CurateOutcome appState) throws AppCreatorException {
         //first lets look for some config, as it is not on the current class path
         //and we need to load it to run the build process
-        Path config = appClassesDir.resolve("application.properties");
+        Path config = configDir.resolve("application.properties");
         if (Files.exists(config)) {
             try {
                 Config built = SmallRyeConfigProviderResolver.instance().getBuilder()
@@ -370,6 +391,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                 .map("output", (AugmentPhase t, String value) -> t.setOutputDir(Paths.get(value)))
                 .map("classes", (AugmentPhase t, String value) -> t.setAppClassesDir(Paths.get(value)))
                 .map("transformed-classes", (AugmentPhase t, String value) -> t.setTransformedClassesDir(Paths.get(value)))
-                .map("wiring-classes", (AugmentPhase t, String value) -> t.setWiringClassesDir(Paths.get(value)));
+                .map("wiring-classes", (AugmentPhase t, String value) -> t.setWiringClassesDir(Paths.get(value)))
+                .map("config", (AugmentPhase t, String value) -> t.setConfigDir(Paths.get(value)));
     }
 }

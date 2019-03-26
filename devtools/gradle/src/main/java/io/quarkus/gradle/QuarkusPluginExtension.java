@@ -45,6 +45,8 @@ public class QuarkusPluginExtension {
 
     private String sourceDir;
 
+    private String outputConfigDirectory;
+
     public QuarkusPluginExtension(Project project) {
         this.project = project;
     }
@@ -67,6 +69,18 @@ public class QuarkusPluginExtension {
 
     public void setOutputDirectory(String outputDirectory) {
         this.outputDirectory = outputDirectory;
+    }
+
+    public File outputConfigDirectory() {
+        if (outputConfigDirectory == null)
+            outputConfigDirectory = project.getConvention().getPlugin(JavaPluginConvention.class)
+                    .getSourceSets().getByName("main").getOutput().getResourcesDir().getAbsolutePath();
+
+        return new File(outputConfigDirectory);
+    }
+
+    public void setConfigOutputDirectory(String outputDirectory) {
+        this.outputConfigDirectory = outputDirectory;
     }
 
     public File sourceDir() {

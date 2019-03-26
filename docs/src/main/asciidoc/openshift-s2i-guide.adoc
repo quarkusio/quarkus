@@ -46,7 +46,7 @@ Your application is accessible at the printed URL.
 
 == Background
 
-The `.s2i/environment` file sets required variables for the S2I Builder image to find the Quarkus `runner` JAR, and copy the JARs from the `lib/` directory.  The `pom.xml` contains `<build><finalName>${project.artifactId}`, because `JAVA_APP_JAR` and `ARTIFACT_COPY_ARGS` in `.s2i/environment` of the S2I Builder do not support `*` wildcards to match changing versions in the file name.
+The `.s2i/environment` file sets required variables for the S2I Builder image to find the Quarkus `runner` JAR, and copy the JARs from the `lib/` directory.
 
 == Going further
 

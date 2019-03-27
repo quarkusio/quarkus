@@ -13,14 +13,19 @@ public final class ApplicationInfoUtil {
     public static final String APPLICATION_INFO_PROPERTIES = "application-info.properties";
     public static final String META_INF = "META-INF";
 
+    public static final String ARTIFACT_ID_KEY = "artifactId";
+    public static final String VERSION_KEY = "version";
+
     private ApplicationInfoUtil() {
     }
 
     // these properties are used as default values for ApplicationInfoBuildItem
     public static void writeApplicationInfoProperties(AppArtifact appArtifact, Path appClassesDir) {
         Properties properties = new Properties();
-        properties.setProperty("artifactId", appArtifact.getArtifactId());
-        properties.setProperty("version", appArtifact.getVersion());
+        if (appArtifact != null) {
+            properties.setProperty("artifactId", appArtifact.getArtifactId());
+            properties.setProperty("version", appArtifact.getVersion());
+        }
         try {
             appClassesDir.resolve(META_INF).toFile().mkdir();
             File file = appClassesDir.resolve(META_INF).resolve(APPLICATION_INFO_PROPERTIES).toFile();

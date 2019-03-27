@@ -10,6 +10,7 @@ import org.jboss.builder.item.MultiBuildItem;
 public final class FeatureBuildItem extends MultiBuildItem {
 
     public static final String AGROAL = "agroal";
+    public static final String KUBERNETES = "kubernetes";
     public static final String CAMEL_CORE = "camel-core";
     public static final String CAMEL_INFINISPAN = "camel-infinispan";
     public static final String CAMEL_AWS_S3 = "camel-aws-s3";

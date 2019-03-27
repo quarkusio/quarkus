@@ -1,0 +1,125 @@
+= {project-name} - Deploying an Application to Kubernetes and OpenShift
+
+This guide covers:
+
+* The deployment of the application to Kubernetes
+* The deployment of the application to OpenShift (TODO)
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* roughly 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.5.3+
+* access to a Kubernetes or OpenShift cluster (Minikube and Minishift are both viable options)
+* have the following binaries on your PATH: `docker` (for building and pushing images), `kubectl` (for deploying to Kubernetes) and `oc` (for deploying to OpenShift)
+
+== Creating the Maven project
+
+First, we need a new project that contains the kubernetes extension. This can be done using the following command:
+
+[source, subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:${quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=test \
+    -DclassName="org.acme.rest.GreetingResource" \
+    -Dpath="/greeting" \
+    -Dextensions="kubernetes"
+----
+
+== Enable Kubernetes support
+
+{project-name} offers the ability to automatically generate Kubernetes resources based on sane defaults and user supplied configuration. The implementation that takes care
+of generating the actual Kubernetes resources is provided by https://github.com/ap4k/ap4k/[ap4k].
+
+When we added the `kubernetes` extension to the command line invocation above, the following dependency was added to the `pom.xml`
+
+[source,xml]
+----
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-kubernetes</artifactId>
+    </dependency>
+----
+
+By adding this dependency, we now have the ability to configure the Kubernetes resource generation and application using the usual `application.properties` approach that {project-name} provides.
+The configuration items that are available can be found in: `io.quarkus.kubernetes.deployment.KubernetesConfig` class.
+Furthermore, the items provided by `io.quarkus.deployment.ApplicationConfig` affect the Kubernetes resources.
+
+By using the following configuration for example:
+
+[source]
+----
+quarkus.kubernetes.group=yourDockerUsername # this is optional and defaults to your username if not set
+quarkus.application.name=test-quarkus-app # this is also optional and defaults to the project name if not set
+----
+
+and following the execution of `mvn package` you will notice amongst the other files that are created, two files named
+`kubernetes.json` and `kubernetes.yaml` in the `target/wiring-classes/META-INF/kubernetes/` directory.
+
+If you look at either file you will see that it contains both a Kubernetes `Deployment` and a `Service`.
+
+The full source of the `kubernetes.json` file looks something like this:
+
+[source,json]
+----
+{
+  "apiVersion" : "v1",
+  "kind" : "List",
+  "items" : [ {
+    "apiVersion" : "apps/v1",
+    "kind" : "Deployment",
+    "metadata" : {
+      "labels" : {
+        "app" : "test-quarkus-app",
+        "version" : "1.0-SNAPSHOT",
+        "group" : "yourDockerUsername"
+      },
+      "name" : "test-quarkus-app"
+    },
+    "spec" : {
+      "replicas" : 1,
+      "selector" : {
+        "matchLabels" : {
+          "app" : "test-quarkus-app",
+          "version" : "1.0-SNAPSHOT",
+          "group" : "yourDockerUsername"
+        }
+      },
+      "template" : {
+        "metadata" : {
+          "labels" : {
+            "app" : "test-quarkus-app",
+            "version" : "1.0-SNAPSHOT",
+            "group" : "yourDockerUsername"
+          }
+        },
+        "spec" : {
+          "containers" : [ {
+            "env" : [ {
+              "name" : "KUBERNETES_NAMESPACE",
+              "valueFrom" : {
+                "fieldRef" : {
+                  "fieldPath" : "metadata.namespace"
+                }
+              }
+            } ],
+            "image" : "yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT",
+            "imagePullPolicy" : "IfNotPresent",
+            "name" : "test-quarkus-app"
+          } ]
+        }
+      }
+    }
+  } ]
+}
+----
+
+An important thing to note about the `Deployment` is that is uses `yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT` as the Docker image of the `Pod`.
+
+Also the `Service` is configured to use container port `8080` (which is automatically picked up by the standard Quarkus configuration).
+
+An important thing to keep in mind is that so far, all {project-name} has done is generate the `Kubernetes` resources, it has not applied them. The next section will walk you through how this can be done.

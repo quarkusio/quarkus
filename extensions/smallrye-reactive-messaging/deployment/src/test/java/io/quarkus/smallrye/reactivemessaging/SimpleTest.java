@@ -19,10 +19,13 @@ public class SimpleTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(SimpleBean.class, StreamConsumer.class));
+                    .addClasses(SimpleBean.class, StreamConsumer.class, StreamEmitter.class));
 
     @Inject
     StreamConsumer streamConsumer;
+
+    @Inject
+    StreamEmitter streamEmitter;
 
     @Test
     public void testSimpleBean() {
@@ -42,5 +45,15 @@ public class SimpleTest {
         assertEquals("SmallRye", consumed.get(2));
         assertEquals("reactive", consumed.get(3));
         assertEquals("message", consumed.get(4));
+    }
+
+    @Test
+    public void testStreamEmitter() {
+        streamEmitter.run();
+        List<String> list = streamEmitter.list();
+        assertEquals(3, list.size());
+        assertEquals("a", list.get(0));
+        assertEquals("b", list.get(1));
+        assertEquals("c", list.get(2));
     }
 }

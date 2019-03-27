@@ -25,6 +25,12 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.camel.core.runtime.CamelConfig.BuildTime;
 import io.quarkus.camel.core.runtime.CamelConfig.Runtime;
 import io.quarkus.camel.core.runtime.CamelRuntime;
+import io.quarkus.camel.core.runtime.InitializedEvent;
+import io.quarkus.camel.core.runtime.InitializingEvent;
+import io.quarkus.camel.core.runtime.StartedEvent;
+import io.quarkus.camel.core.runtime.StartingEvent;
+import io.quarkus.camel.core.runtime.StoppedEvent;
+import io.quarkus.camel.core.runtime.StoppingEvent;
 
 public class FastCamelRuntime extends ServiceSupport implements CamelRuntime {
 
@@ -73,8 +79,10 @@ public class FastCamelRuntime extends ServiceSupport implements CamelRuntime {
             RuntimeSupport.bindProperties(pc.getInitialProperties(), pc, PFX_CAMEL_PROPERTIES);
             context.addComponent("properties", pc);
 
+            fireEvent(InitializingEvent.class, new InitializingEvent());
             this.context.getTypeConverterRegistry().setInjector(this.context.getInjector());
             this.context.init();
+            fireEvent(InitializedEvent.class, new InitializedEvent());
 
             loadRoutes(context);
         } catch (Exception e) {
@@ -85,7 +93,9 @@ public class FastCamelRuntime extends ServiceSupport implements CamelRuntime {
     public void doStart() throws Exception {
         log.info("Apache Camel {} (CamelContext: {}) is starting", context.getVersion(), context.getName());
 
+        fireEvent(StartingEvent.class, new StartingEvent());
         context.start();
+        fireEvent(StartedEvent.class, new StartedEvent());
 
         if (runtimeConfig.dumpRoutes) {
             dumpRoutes();
@@ -94,7 +104,9 @@ public class FastCamelRuntime extends ServiceSupport implements CamelRuntime {
 
     @Override
     protected void doStop() throws Exception {
+        fireEvent(StoppingEvent.class, new StoppingEvent());
         context.stop();
+        fireEvent(StoppedEvent.class, new StoppedEvent());
         if (context instanceof ShutdownableService) {
             ((ShutdownableService) context).shutdown();
         }
@@ -127,6 +139,10 @@ public class FastCamelRuntime extends ServiceSupport implements CamelRuntime {
         FastCamelContext context = new FastCamelContext();
         context.setRegistry(registry);
         return context;
+    }
+
+    protected <T> void fireEvent(Class<T> clazz, T event) {
+        Arc.container().beanManager().getEvent().select(clazz).fire(event);
     }
 
     public void setBeanContainer(BeanContainer beanContainer) {

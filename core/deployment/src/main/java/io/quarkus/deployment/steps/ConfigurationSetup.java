@@ -25,7 +25,6 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
-import io.quarkus.deployment.configuration.DefaultValuesConfigurationSource;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -56,6 +55,7 @@ import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildIte
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigDefinition;
 import io.quarkus.deployment.configuration.ConfigPatternMap;
+import io.quarkus.deployment.configuration.DefaultValuesConfigurationSource;
 import io.quarkus.deployment.configuration.LeafConfigType;
 import io.quarkus.deployment.recording.ObjectLoader;
 import io.quarkus.deployment.util.ServiceUtil;
@@ -69,6 +69,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.configuration.AbstractRawDefaultConfigSource;
 import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSource;
 import io.quarkus.runtime.configuration.BuildTimeConfigFactory;
 import io.quarkus.runtime.configuration.CidrAddressConverter;
@@ -98,6 +99,7 @@ public class ConfigurationSetup {
     public static final String BUILD_TIME_CONFIG_ROOT = "io.quarkus.runtime.generated.BuildTimeConfigRoot";
     public static final String RUN_TIME_CONFIG = "io.quarkus.runtime.generated.RunTimeConfig";
     public static final String RUN_TIME_CONFIG_ROOT = "io.quarkus.runtime.generated.RunTimeConfigRoot";
+    public static final String RUN_TIME_DEFAULTS = "io.quarkus.runtime.generated.RunTimeDefaultConfigSource";
 
     public static final MethodDescriptor CREATE_RUN_TIME_CONFIG = MethodDescriptor.ofMethod(RUN_TIME_CONFIG,
             "getRunTimeConfiguration", void.class);
@@ -143,6 +145,10 @@ public class ConfigurationSetup {
             "getBuildTimeConfigSource", ConfigSource.class);
     private static final MethodDescriptor ECS_CACHE_CONSTRUCT = MethodDescriptor.ofConstructor(ExpandingConfigSource.Cache.class);
     private static final MethodDescriptor ECS_WRAPPER = MethodDescriptor.ofMethod(ExpandingConfigSource.class, "wrapper", UnaryOperator.class, ExpandingConfigSource.Cache.class);
+
+    private static final MethodDescriptor RTD_CTOR = MethodDescriptor.ofConstructor(RUN_TIME_DEFAULTS);
+    private static final MethodDescriptor RTD_GET_VALUE = MethodDescriptor.ofMethod(RUN_TIME_DEFAULTS, "getValue", String.class, NameIterator.class);
+    private static final MethodDescriptor ARDCS_CTOR = MethodDescriptor.ofConstructor(AbstractRawDefaultConfigSource.class);
 
     private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
 
@@ -497,6 +503,10 @@ public class ConfigurationSetup {
                             builder,
                             arrayHandle);
                 }
+                // default value source
+                final ResultHandle defaultSourceArray = carc.newArray(ConfigSource[].class, carc.load(1));
+                carc.writeArrayValue(defaultSourceArray, 0, carc.newInstance(RTD_CTOR));
+                carc.invokeVirtualMethod(SRCB_WITH_SOURCES, builder, defaultSourceArray);
 
                 // custom run time converters
                 for (ConfigurationCustomConverterBuildItem converter : converters) {
@@ -548,6 +558,35 @@ public class ConfigurationSetup {
             }
         }
 
+        // now construct the default values class
+        try (ClassCreator cc = ClassCreator
+                .builder()
+                .classOutput(classOutput)
+                .className(RUN_TIME_DEFAULTS)
+                .superClass(AbstractRawDefaultConfigSource.class)
+                .build()) {
+
+            // constructor
+            try (MethodCreator ctor = cc.getMethodCreator(RTD_CTOR)) {
+                ctor.setModifiers(Opcodes.ACC_PUBLIC);
+                ctor.invokeSpecialMethod(ARDCS_CTOR, ctor.getThis());
+                ctor.returnValue(null);
+            }
+
+            try (MethodCreator gv = cc.getMethodCreator(RTD_GET_VALUE)) {
+                final ResultHandle nameIter = gv.getMethodParam(0);
+                // if (! nameIter.hasNext()) return null;
+                gv.ifNonZero(gv.invokeVirtualMethod(NI_HAS_NEXT, nameIter)).falseBranch().returnValue(gv.loadNull());
+                // if (! nameIter.nextSegmentEquals("quarkus")) return null;
+                gv.ifNonZero(gv.invokeVirtualMethod(NI_NEXT_EQUALS, nameIter, gv.load("quarkus"))).falseBranch()
+                        .returnValue(gv.loadNull());
+                // nameIter.next(); // skip "quarkus"
+                gv.invokeVirtualMethod(NI_NEXT, nameIter);
+                // return getValue_xx(nameIter);
+                gv.returnValue(gv.invokeVirtualMethod(generateGetValue(cc, runTimePatterns, new StringBuilder("getValue"), new HashMap<>()), nameIter));
+            }
+        }
+
         objectLoaderConsumer.accept(new BytecodeRecorderObjectLoaderBuildItem(new ObjectLoader() {
             public ResultHandle load(final BytecodeCreator body, final Object obj, final boolean staticInit) {
                 boolean buildTime = false;
@@ -575,6 +614,79 @@ public class ConfigurationSetup {
         }));
 
         runTimeInitConsumer.accept(new RuntimeInitializedClassBuildItem(RUN_TIME_CONFIG));
+    }
+
+    private MethodDescriptor generateGetValue(final ClassCreator cc, final ConfigPatternMap<LeafConfigType> keyMap,
+            final StringBuilder methodName, final Map<String, MethodDescriptor> cache) {
+        final String methodNameStr = methodName.toString();
+        final MethodDescriptor existing = cache.get(methodNameStr);
+        if (existing != null) {
+            return existing;
+        }
+        try (MethodCreator body = cc.getMethodCreator(methodNameStr, String.class, NameIterator.class)) {
+            body.setModifiers(Opcodes.ACC_PROTECTED);
+            final ResultHandle nameIter = body.getMethodParam(0);
+            final LeafConfigType matched = keyMap.getMatched();
+            // if (! keyIter.hasNext()) {
+            try (BytecodeCreator matchedBody = body.ifNonZero(body.invokeVirtualMethod(NI_HAS_NEXT, nameIter)).falseBranch()) {
+                if (matched != null) {
+                    // (exact match generated code)
+                    matchedBody.returnValue(matchedBody.load(matched.getDefaultValueString()));
+                } else {
+                    // return;
+                    matchedBody.returnValue(null);
+                }
+            }
+            // }
+            // branches for each next-string
+            boolean hasWildCard = false;
+            final Iterable<String> names = keyMap.childNames();
+            for (String name : names) {
+                if (name.equals(ConfigPatternMap.WILD_CARD)) {
+                    hasWildCard = true;
+                } else {
+                    // TODO: string switch
+                    // if (keyIter.nextSegmentEquals(name)) {
+                    try (BytecodeCreator nameMatched = body
+                            .ifNonZero(body.invokeVirtualMethod(NI_NEXT_EQUALS, nameIter, body.load(name))).trueBranch()) {
+                        // keyIter.next();
+                        nameMatched.invokeVirtualMethod(NI_NEXT, nameIter);
+                        // (generated recursive)
+                        final int length = methodName.length();
+                        methodName.append('_').append(name);
+                        // result = this.getValue_xxx(nameIter);
+                        final ResultHandle result = nameMatched.invokeVirtualMethod(
+                                generateGetValue(cc, keyMap.getChild(name), methodName, cache), nameMatched.getThis(), nameIter);
+                        methodName.setLength(length);
+                        // return result;
+                        nameMatched.returnValue(result);
+                    }
+                    // }
+                }
+            }
+            if (hasWildCard) {
+                // consume and parse
+                try (BytecodeCreator matchedBody = body.ifNonZero(body.invokeVirtualMethod(NI_HAS_NEXT, nameIter))
+                        .trueBranch()) {
+                    // keyIter.next();
+                    matchedBody.invokeVirtualMethod(NI_NEXT, nameIter);
+                    // (generated recursive)
+                    final int length = methodName.length();
+                    methodName.append('_').append("wildcard");
+                    matchedBody.invokeStaticMethod(
+                            generateParserBody(cc, keyMap.getChild(ConfigPatternMap.WILD_CARD), methodName, cache),
+                            nameIter);
+                    methodName.setLength(length);
+                    // return;
+                    matchedBody.returnValue(null);
+                }
+            }
+            // it's not found
+            body.returnValue(null);
+            final MethodDescriptor md = body.getMethodDescriptor();
+            cache.put(methodNameStr, md);
+            return md;
+        }
     }
 
     private void writeParsing(final ClassCreator cc, final BytecodeCreator body, final ResultHandle config,

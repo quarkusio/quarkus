@@ -53,7 +53,7 @@ By using the following configuration for example:
 
 [source]
 ----
-quarkus.application.group=yourDockerUsername # this is optional and defaults to the project group if not set
+quarkus.kubernetes.group=yourDockerUsername # this is optional and defaults to your username if not set
 quarkus.application.name=test-quarkus-app # this is also optional and defaults to the project name if not set
 ----
 
@@ -123,37 +123,3 @@ An important thing to note about the `Deployment` is that is uses `yourDockerUse
 Also the `Service` is configured to use container port `8080` (which is automatically picked up by the standard Quarkus configuration).
 
 An important thing to keep in mind is that so far, all {project-name} has done is generate the `Kubernetes` resources, it has not applied them. The next section will walk you through how this can be done.
-
-== Closing the Kubernetes / Docker loop
-
-For this section of the guide it is assumed that both `docker` and `kubectl` binaries are present on the PATH, that you have logged into `docker.io` with `yourDockerUsername` using `docker login` and finally that
-`kubectl` can properly interact with the Kubernetes cluster you are using.
-
-Note that when the project was first created, a Dockerfile named `Dockerfile.jvm` was created at `src/main/docker`. This Dockerfile is automatically used to build the docker image.
-
-If you start out by simply executing `mvn clean package -Dquarkus.kubernetes.docker.build=true` then at the end of the build you have a `yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT` image built locally that can be run like so:
-
-`docker run --rm -p 8080:8080 yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT`
-
-To actually deploy your application onto your Kubernetes cluster, you need to execute `mvn clean package -Dquarkus.kubernetes.docker.push=true -Dquarkus.kubernetes.deploy=true`.
-
-In addition to what the previous command did, this command also pushes the image to the registry and applies the Kubernetes resources. At the end of the process the application will be deployed onto the cluster.
-
-When you are done with using the application, you can remove it from the Kubernetes cluster by simply executing `kubectl delete -f target/wiring-classes/META-INF/ap4k/kubernetes.json`
-
-
-
-[NOTE]
-====
-The configutation items used above (`quarkus.kubernetes.docker.build`, `quarkus.kubernetes.docker.push` and `quarkus.kubernetes.deploy`) can of course be added to `application.properties`.
-Overriding them during build time as we have shown above works the same as any other {project-name} property.
-====
-
-
-== Using Gradle
-
-In order to be able to utilize the full capabilities of ap4k when using the {project-name} Gradle plugin instead of the Maven plugin,
-all tasks executions need to be performed using the `--no-daemon` flag.
-The reason this is needed is because ap4k invokes the `docker`, `kubectl` and `oc` binaries as part of JVM shutdown hooks (which in turn is done
-because ap4k needs to have access to the final `*-runner` jar that is constructed when the build process completes).
-When running Gradle without the `--no-daemon` flag, Gradle does not shutdown the JVM thus preventing the hooks from executing.

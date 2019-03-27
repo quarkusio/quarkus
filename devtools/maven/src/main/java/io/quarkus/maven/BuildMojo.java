@@ -151,12 +151,10 @@ public class BuildMojo extends AbstractMojo {
         try (AppCreator appCreator = AppCreator.builder()
                 // configure the build phases we want the app to go through
                 .addPhase(new AugmentPhase()
-                        .setBaseDir(project.getBasedir().toPath())
                         .setAppClassesDir(outputDirectory.toPath())
                         .setConfigDir(outputDirectory.toPath())
                         .setTransformedClassesDir(transformedClassesDirectory.toPath())
-                        .setWiringClassesDir(wiringClassesDirectory.toPath())
-                        .setFinalName(finalName))
+                        .setWiringClassesDir(wiringClassesDirectory.toPath()))
                 .addPhase(new RunnerJarPhase()
                         .setLibDir(libDir.toPath())
                         .setFinalName(finalName)

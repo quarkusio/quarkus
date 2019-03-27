@@ -509,12 +509,6 @@
                 <version>${ap4k.version}</version>
                 <classifier>noapt</classifier>
             </dependency>
-            <dependency>
-                <groupId>io.ap4k</groupId>
-                <artifactId>docker-annotations</artifactId>
-                <version>${ap4k.version}</version>
-                <classifier>noapt</classifier>
-            </dependency>
 
             <dependency>
                 <groupId>org.jboss.logging</groupId>

@@ -1,9 +1,8 @@
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.deployment.builditem.ApplicationInfoBuildItem.UNSET_VALUE;
-
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,8 +14,6 @@ import javax.inject.Inject;
 
 import io.ap4k.Session;
 import io.ap4k.SessionWriter;
-import io.ap4k.docker.annotation.EnableDockerBuild;
-import io.ap4k.docker.generator.DefaultEnableDockerBuildGenerator;
 import io.ap4k.kubernetes.annotation.KubernetesApplication;
 import io.ap4k.kubernetes.generator.DefaultKubernetesApplicationGenerator;
 import io.ap4k.processor.SimpleFileWriter;
@@ -45,31 +42,23 @@ class KubernetesProcessor {
             return;
         }
 
-        //this is done to prevent ap4k from failing when the necessary input has not been provided (during tests or devmode for example)
-        if (UNSET_VALUE.equals(applicationInfo.getWiringClassesDir()) || UNSET_VALUE.equals(applicationInfo.getFinalName())) {
-            return;
-        }
-
         // The resources that ap4k's execution will result in, will later-on be written
         // by quarkus in the 'wiring-classes' directory
         // The location is needed in order to properly support s2i build triggering
-        final Path rootPath = Paths.get(applicationInfo.getWiringClassesDir());
-        if (rootPath.toString().isEmpty()) {
-            return;
-        }
-        final Path ap4kRoot = rootPath.resolve("META-INF/ap4k");
 
         // by passing false to SimpleFileWriter, we ensure that no files are actually written during this phase
-        final SessionWriter sessionWriter = new SimpleFileWriter(ap4kRoot, false);
-        final String packaging = "jar";
-        sessionWriter.setProject(new Project(Paths.get(applicationInfo.getBaseDir()),
-                new io.ap4k.project.BuildInfo(
-                        applicationInfo.getName(), applicationInfo.getVersion(), packaging,
-                        rootPath.getParent().resolve(applicationInfo.getFinalName() + "-runner." + packaging), rootPath)));
+        final Path root;
+        try {
+            root = Files.createTempDirectory("quarkus-kubernetes");
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to setup environment for generating Kubernetes resources", e);
+        }
+
+        final SessionWriter sessionWriter = new SimpleFileWriter(root, false);
+        sessionWriter.setProject(new Project());
         final Session session = Session.getSession();
         session.setWriter(sessionWriter);
 
-        enableDocker(kubernetesConfig);
         final Map<String, Integer> ports = verifyPorts(kubernetesPortBuildItems);
         enableKubernetes(applicationInfo, kubernetesConfig, ports);
 
@@ -79,7 +68,7 @@ class KubernetesProcessor {
             generatedResourceProducer.produce(
                     new GeneratedResourceBuildItem(
                             // we need to make sure we are only passing the relative path to the build item
-                            generatedResourceFullPath.replace(rootPath.toString() + "/", ""),
+                            generatedResourceFullPath.replace(root.toAbsolutePath() + "/", "META-INF/ap4k/"),
                             generatedResourcesMap.get(generatedResourceFullPath).getBytes()));
         }
 
@@ -106,26 +95,12 @@ class KubernetesProcessor {
         return result;
     }
 
-    private void enableDocker(KubernetesConfig kubernetesConfig) {
-        final Map<String, Object> dockerProperties = new HashMap<>();
-        dockerProperties.put("dockerFile", "src/main/docker/Dockerfile.jvm");
-        dockerProperties.put("registry", kubernetesConfig.docker.registry);
-        dockerProperties.put("autoBuildEnabled", kubernetesConfig.docker.build);
-        dockerProperties.put("autoPushEnabled", kubernetesConfig.docker.push);
-
-        final DefaultEnableDockerBuildGenerator generator = new DefaultEnableDockerBuildGenerator();
-        final Map<String, Object> generatorInput = new HashMap<>();
-        generatorInput.put(EnableDockerBuild.class.getName(), dockerProperties);
-        generator.add(generatorInput);
-    }
-
     private void enableKubernetes(ApplicationInfoBuildItem applicationInfo, KubernetesConfig kubernetesConfig,
             Map<String, Integer> portsMap) {
         final Map<String, Object> kubernetesProperties = new HashMap<>();
-        kubernetesProperties.put("group", applicationInfo.getGroup());
+        kubernetesProperties.put("group", kubernetesConfig.group);
         kubernetesProperties.put("name", applicationInfo.getName());
         kubernetesProperties.put("version", applicationInfo.getVersion());
-        kubernetesProperties.put("autoDeployEnabled", kubernetesConfig.deploy);
 
         final List<Map<String, Object>> ports = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : portsMap.entrySet()) {

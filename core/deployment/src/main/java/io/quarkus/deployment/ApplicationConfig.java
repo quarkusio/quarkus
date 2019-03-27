@@ -8,13 +8,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class ApplicationConfig {
 
     /**
-     * The group of the application.
-     * If not set, defaults to the group of the project.
-     */
-    @ConfigItem
-    public String group;
-
-    /**
      * The name of the application.
      * If not set, defaults to the name of the project.
      */

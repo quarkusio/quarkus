@@ -1,5 +1,6 @@
 package io.quarkus.kubernetes.deployment;
 
+import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -7,12 +8,17 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class KubernetesConfig {
 
     /**
-     * Controls whether or not the generated Kubernetes resources should be applied to the cluster or not
+     * The group of the application.
+     * This value will be use as:
+     * - docker image repo
+     * - labeling resources
      */
-    public boolean deploy = false;
+    @ConfigItem
+    public String group;
 
     /**
      * Configuration that is relevant to docker images
      */
+    @ConfigItem
     public DockerConfig docker;
 }

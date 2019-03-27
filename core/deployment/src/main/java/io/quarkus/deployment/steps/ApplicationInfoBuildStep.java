@@ -2,13 +2,9 @@ package io.quarkus.deployment.steps;
 
 import static io.quarkus.deployment.ApplicationInfoUtil.APPLICATION_INFO_PROPERTIES;
 import static io.quarkus.deployment.ApplicationInfoUtil.ARTIFACT_ID_KEY;
-import static io.quarkus.deployment.ApplicationInfoUtil.BASE_DIR_KEY;
-import static io.quarkus.deployment.ApplicationInfoUtil.FINAL_NAME_KEY;
-import static io.quarkus.deployment.ApplicationInfoUtil.GROUP_ID_KEY;
 import static io.quarkus.deployment.ApplicationInfoUtil.META_INF;
 import static io.quarkus.deployment.ApplicationInfoUtil.VERSION_KEY;
-import static io.quarkus.deployment.ApplicationInfoUtil.WIRING_CLASSES_DIR_KEY;
-import static io.quarkus.deployment.builditem.ApplicationInfoBuildItem.*;
+import static io.quarkus.deployment.builditem.ApplicationInfoBuildItem.UNSET_VALUE;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,19 +25,14 @@ public class ApplicationInfoBuildStep {
 
     @BuildStep
     public ApplicationInfoBuildItem create(ApplicationConfig applicationConfig) {
-        final String userConfiguredGroup = applicationConfig.group;
         final String userConfiguredName = applicationConfig.name;
         final String userConfiguredVersion = applicationConfig.version;
 
         final Properties applicationInfoProperties = getApplicationInfoProperties();
 
         return new ApplicationInfoBuildItem(
-                useIfNotEmpty(userConfiguredGroup, applicationInfoProperties, GROUP_ID_KEY),
                 useIfNotEmpty(userConfiguredName, applicationInfoProperties, ARTIFACT_ID_KEY),
-                useIfNotEmpty(userConfiguredVersion, applicationInfoProperties, VERSION_KEY),
-                applicationInfoProperties.getProperty(FINAL_NAME_KEY, UNSET_VALUE),
-                applicationInfoProperties.getProperty(BASE_DIR_KEY, UNSET_VALUE),
-                applicationInfoProperties.getProperty(WIRING_CLASSES_DIR_KEY, UNSET_VALUE));
+                useIfNotEmpty(userConfiguredVersion, applicationInfoProperties, VERSION_KEY));
     }
 
     private Properties getApplicationInfoProperties() {

@@ -24,13 +24,11 @@ import org.jboss.jandex.DotName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
 import io.quarkus.camel.core.runtime.CamelConfig;
 import io.quarkus.camel.core.runtime.CamelConfig.BuildTime;
-import io.quarkus.camel.core.runtime.CamelProducers;
+import io.quarkus.camel.core.runtime.CamelRuntime;
 import io.quarkus.camel.core.runtime.CamelTemplate;
 import io.quarkus.camel.core.runtime.support.RuntimeRegistry;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -52,17 +50,10 @@ class CamelInitProcessor {
     @Inject
     BuildTime buildTimeConfig;
 
-    @BuildStep
-    AdditionalBeanBuildItem camelRuntimeProducer(BuildProducer<BeanContainerListenerBuildItem> listener, CamelTemplate template,
-            CamelRuntimeBuildItem runtimeBuildItem) {
-        listener.produce(new BeanContainerListenerBuildItem(template.initRuntimeInjection(runtimeBuildItem.getRuntime())));
-        return new AdditionalBeanBuildItem(CamelProducers.class);
-    }
-
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep(applicationArchiveMarkers = { CamelSupport.CAMEL_SERVICE_BASE_PATH, CamelSupport.CAMEL_ROOT_PACKAGE_DIRECTORY })
     CamelRuntimeBuildItem createInitTask(RecorderContext recorderContext, CamelTemplate template,
-                BuildProducer<RuntimeBeanBuildItem> runtimeBeans) {
+            BuildProducer<RuntimeBeanBuildItem> runtimeBeans) {
         Properties properties = new Properties();
         Config configProvider = ConfigProvider.getConfig();
         for (String property : configProvider.getPropertyNames()) {

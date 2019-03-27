@@ -81,4 +81,3 @@ final class Target_org_apache_camel_impl_converter_CoreStaticTypeConverterLoader
         throw new UnsupportedOperationException();
     }
 }
-

@@ -8,7 +8,6 @@ import org.apache.camel.RoutesBuilder;
 import org.apache.camel.spi.Registry;
 
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.camel.core.runtime.support.FastCamelRuntime;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
@@ -50,26 +49,17 @@ public class CamelTemplate {
 
         runtime.getValue().start(runtimeConfig);
 
-            //in development mode undertow is started eagerly
-            shutdown.addShutdownTask(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        runtime.getValue().stop();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
-        }
-
-    public BeanContainerListener initRuntimeInjection(RuntimeValue<CamelRuntime> runtime) {
-        return new BeanContainerListener() {
+        //in development mode undertow is started eagerly
+        shutdown.addShutdownTask(new Runnable() {
             @Override
-            public void created(BeanContainer container) {
-                container.instance(CamelProducers.class).setCamelRuntime(runtime.getValue());
+            public void run() {
+                try {
+                    runtime.getValue().stop();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
-        };
+        });
     }
 
 }

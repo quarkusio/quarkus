@@ -98,7 +98,11 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private String nativeImageXmx;
 
-    private String dockerBuild;
+    private String builderImage = "quay.io/quarkus/centos-quarkus-native-image:graalvm-1.0.0-rc14";
+
+    private String containerRuntime = "";
+
+    private List<String> containerRuntimeOptions = new ArrayList<>();
 
     private boolean enableVMInspection;
 
@@ -201,7 +205,41 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
     }
 
     public NativeImagePhase setDockerBuild(String dockerBuild) {
-        this.dockerBuild = dockerBuild;
+        if (dockerBuild == null) {
+            return this;
+        }
+
+        if ("false".equals(dockerBuild.toLowerCase())) {
+            this.containerRuntime = "";
+        } else {
+            this.containerRuntime = "docker";
+
+            // TODO: use an 'official' image
+            if (!"true".equals(dockerBuild.toLowerCase())) {
+                this.builderImage = dockerBuild;
+            }
+        }
+
+        return this;
+    }
+
+    public NativeImagePhase setContainerRuntime(String containerRuntime) {
+        if (containerRuntime == null) {
+            return this;
+        }
+        if ("podman".equals(containerRuntime) || "docker".equals(containerRuntime)) {
+            this.containerRuntime = containerRuntime;
+        } else {
+            log.warn("container runtime is not docker or podman. fallback to docker");
+            this.containerRuntime = "docker";
+        }
+        return this;
+    }
+
+    public NativeImagePhase setContainerRuntimeOptions(String containerRuntimeOptions) {
+        if (containerRuntimeOptions != null) {
+            this.containerRuntimeOptions = Arrays.asList(containerRuntimeOptions.split(","));
+        }
         return this;
     }
 
@@ -271,19 +309,12 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
         String noPIE = "";
 
-        if (dockerBuild != null && !dockerBuild.toLowerCase().equals("false")) {
-
+        if (!"".equals(containerRuntime)) {
             // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm quarkus/graalvm-native-image"
             nativeImage = new ArrayList<>();
-            //TODO: use an 'official' image
-            String image;
-            if (dockerBuild.toLowerCase().equals("true")) {
-                image = "quay.io/quarkus/centos-quarkus-native-image:graalvm-1.0.0-rc14";
-            } else {
-                //allow the use of a custom image
-                image = dockerBuild;
-            }
-            Collections.addAll(nativeImage, "docker", "run", "-v", outputDir.toAbsolutePath() + ":/project:z", "--rm", image);
+            Collections.addAll(nativeImage, containerRuntime, "run", "-v", outputDir.toAbsolutePath() + ":/project:z", "--rm");
+            nativeImage.addAll(containerRuntimeOptions);
+            nativeImage.add(this.builderImage);
         } else {
             if (IS_LINUX) {
                 noPIE = detectNoPIE();

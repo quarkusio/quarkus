@@ -1,7 +1,6 @@
 package io.quarkus.camel.core.runtime.support;
 
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -16,9 +15,10 @@ import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.spi.Registry;
 import org.apache.camel.support.ResourceHelper;
-import org.apache.camel.support.service.ServiceSupport;
 import org.apache.camel.util.ObjectHelper;
 import org.graalvm.nativeimage.ImageInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -32,7 +32,9 @@ import io.quarkus.camel.core.runtime.StartingEvent;
 import io.quarkus.camel.core.runtime.StoppedEvent;
 import io.quarkus.camel.core.runtime.StoppingEvent;
 
-public class FastCamelRuntime extends ServiceSupport implements CamelRuntime {
+public class FastCamelRuntime implements CamelRuntime {
+
+    private static final Logger log = LoggerFactory.getLogger(FastCamelRuntime.class);
 
     protected CamelContext context;
     protected BeanContainer beanContainer;
@@ -46,14 +48,19 @@ public class FastCamelRuntime extends ServiceSupport implements CamelRuntime {
     public void init(BuildTime buildTimeConfig) {
         this.buildTimeConfig = buildTimeConfig;
         if (!buildTimeConfig.deferInitPhase) {
-            init();
+            doInit();
         }
     }
 
     @Override
     public void start(Runtime runtimeConfig) throws Exception {
         this.runtimeConfig = runtimeConfig;
-        start();
+        doStart();
+    }
+
+    @Override
+    public void stop() throws Exception {
+        doStop();
     }
 
     public void doInit() {
@@ -68,19 +75,24 @@ public class FastCamelRuntime extends ServiceSupport implements CamelRuntime {
 
             context.setLoadTypeConverters(false);
 
-            // The creation of the JAXB context is very time consuming, so always prepare it
-            // when running in native mode, but lazy create it in java mode so that we don't
-            // waste time if using java routes
-            if (ImageInfo.inImageBuildtimeCode()) {
-                context.adapt(ModelCamelContext.class).getModelJAXBContextFactory().newJAXBContext();
-            }
-
             PropertiesComponent pc = createPropertiesComponent(properties);
             RuntimeSupport.bindProperties(pc.getInitialProperties(), pc, PFX_CAMEL_PROPERTIES);
             context.addComponent("properties", pc);
 
             fireEvent(InitializingEvent.class, new InitializingEvent());
             this.context.getTypeConverterRegistry().setInjector(this.context.getInjector());
+            if (buildTimeConfig.disableJaxb) {
+                this.context.setModelJAXBContextFactory(() -> {
+                    throw new UnsupportedOperationException();
+                });
+            } else {
+                // The creation of the JAXB context is very time consuming, so always prepare it
+                // when running in native mode, but lazy create it in java mode so that we don't
+                // waste time if using java routes
+                if (ImageInfo.inImageBuildtimeCode()) {
+                    context.adapt(ModelCamelContext.class).getModelJAXBContextFactory().newJAXBContext();
+                }
+            }
             this.context.init();
             fireEvent(InitializedEvent.class, new InitializedEvent());
 
@@ -102,7 +114,6 @@ public class FastCamelRuntime extends ServiceSupport implements CamelRuntime {
         }
     }
 
-    @Override
     protected void doStop() throws Exception {
         fireEvent(StoppingEvent.class, new StoppingEvent());
         context.stop();
@@ -133,6 +144,8 @@ public class FastCamelRuntime extends ServiceSupport implements CamelRuntime {
         } else {
             log.info("No xml routes configured");
         }
+
+        context.adapt(FastCamelContext.class).reifyRoutes();
     }
 
     protected CamelContext createContext() {

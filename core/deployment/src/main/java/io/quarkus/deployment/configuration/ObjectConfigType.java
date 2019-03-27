@@ -94,7 +94,7 @@ public class ObjectConfigType extends LeafConfigType {
     }
 
     private <T> T getValue(final NameIterator name, final SmallRyeConfig config, Class<T> expectedType) {
-        return config.getOptionalValue(name.toString(), expectedType).orElse(config.convert(defaultValue, expectedType));
+        return config.getOptionalValue(name.toString(), expectedType).orElse(null);
     }
 
     private ResultHandle generateGetValue(final BytecodeCreator body, final ResultHandle name, final ResultHandle config) {
@@ -105,8 +105,6 @@ public class ObjectConfigType extends LeafConfigType {
                         OBJ_TO_STRING_METHOD,
                         name),
                 body.loadClass(expectedType));
-        final ResultHandle defaultValue = body.invokeVirtualMethod(SRC_CONVERT_METHOD, config, body.load(this.defaultValue),
-                body.loadClass(expectedType));
-        return body.invokeVirtualMethod(OPT_OR_ELSE_METHOD, optionalValue, defaultValue);
+        return body.invokeVirtualMethod(OPT_OR_ELSE_METHOD, optionalValue, body.loadNull());
     }
 }

@@ -52,8 +52,7 @@ public class FloatConfigType extends LeafConfigType {
             final SmallRyeConfig config) {
         try {
             final Float floatValue = config.getValue(name.toString(), Float.class);
-            final float f = floatValue != null ? floatValue.floatValue()
-                    : config.convert(defaultValue, Float.class).floatValue();
+            final float f = floatValue != null ? floatValue.floatValue() : 0f;
             field.setFloat(enclosing, f);
         } catch (IllegalAccessException e) {
             throw toError(e);
@@ -63,7 +62,7 @@ public class FloatConfigType extends LeafConfigType {
     public void generateAcceptConfigurationValueIntoGroup(final BytecodeCreator body, final ResultHandle enclosing,
             final MethodDescriptor setter, final ResultHandle name, final ResultHandle config) {
         // final Float floatValue = config.getValue(name.toString(), Float.class);
-        // final float f = floatValue != null ? floatValue.floatValue() : config.convert(defaultValue, Float.class).floatValue();
+        // final float f = floatValue != null ? floatValue.floatValue() : 0f;
         final AssignableResultHandle result = body.createVariable(float.class);
         final ResultHandle floatValue = body.checkCast(body.invokeVirtualMethod(
                 SRC_GET_VALUE,
@@ -74,12 +73,7 @@ public class FloatConfigType extends LeafConfigType {
                 body.loadClass(Float.class)), Float.class);
         final BranchResult ifNull = body.ifNull(floatValue);
         final BytecodeCreator isNull = ifNull.trueBranch();
-        isNull.assign(result,
-                isNull.checkCast(isNull.invokeVirtualMethod(
-                        FLOAT_VALUE_METHOD,
-                        floatValue,
-                        getConvertedDefault(isNull, config)),
-                        Float.class));
+        isNull.assign(result, isNull.load(0f));
         final BytecodeCreator isNotNull = ifNull.falseBranch();
         isNotNull.assign(result,
                 isNotNull.invokeVirtualMethod(

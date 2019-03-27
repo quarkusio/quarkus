@@ -51,8 +51,7 @@ public class LongConfigType extends LeafConfigType {
     public void acceptConfigurationValueIntoGroup(final Object enclosing, final Field field, final NameIterator name,
             final SmallRyeConfig config) {
         try {
-            field.setLong(enclosing, config.getValue(name.toString(), OptionalLong.class)
-                    .orElse(config.convert(defaultValue, Long.class).longValue()));
+            field.setLong(enclosing, config.getValue(name.toString(), OptionalLong.class).orElse(0L));
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -60,7 +59,7 @@ public class LongConfigType extends LeafConfigType {
 
     public void generateAcceptConfigurationValueIntoGroup(final BytecodeCreator body, final ResultHandle enclosing,
             final MethodDescriptor setter, final ResultHandle name, final ResultHandle config) {
-        // config.getValue(name.toString(), OptionalLong.class).orElse(config.convert(defaultValue, Long.class).longValue())
+        // config.getValue(name.toString(), OptionalLong.class).orElse(0L)
         final ResultHandle optionalValue = body.checkCast(body.invokeVirtualMethod(
                 SRC_GET_VALUE,
                 config,
@@ -68,12 +67,10 @@ public class LongConfigType extends LeafConfigType {
                         OBJ_TO_STRING_METHOD,
                         name),
                 body.loadClass(OptionalLong.class)), OptionalLong.class);
-        final ResultHandle convertedDefault = getConvertedDefault(body, config);
-        final ResultHandle defaultedValue = body.checkCast(body.invokeVirtualMethod(
+        final ResultHandle longValue = body.invokeVirtualMethod(
                 OPTLONG_OR_ELSE_METHOD,
                 optionalValue,
-                convertedDefault), Long.class);
-        final ResultHandle longValue = body.invokeVirtualMethod(LONG_VALUE_METHOD, defaultedValue);
+                body.load(0L));
         body.invokeStaticMethod(setter, enclosing, longValue);
     }
 

@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.configuration.NameIterator;
@@ -47,7 +48,7 @@ public class BooleanConfigType extends LeafConfigType {
             final SmallRyeConfig config) {
         try {
             field.setBoolean(enclosing, config.getOptionalValue(name.toString(), Boolean.class)
-                    .orElse(config.convert(defaultValue, Boolean.class)).booleanValue());
+                    .orElse(Boolean.FALSE).booleanValue());
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -55,7 +56,7 @@ public class BooleanConfigType extends LeafConfigType {
 
     public void generateAcceptConfigurationValueIntoGroup(final BytecodeCreator body, final ResultHandle enclosing,
             final MethodDescriptor setter, final ResultHandle name, final ResultHandle config) {
-        // config.getOptionalValue(name.toString(), Boolean.class).orElse(config.convert(defaultValue, Boolean.class)).booleanValue()
+        // config.getOptionalValue(name.toString(), Boolean.class).orElse(Boolean.FALSE).booleanValue()
         final ResultHandle optionalValue = body.checkCast(body.invokeVirtualMethod(
                 SRC_GET_OPT_METHOD,
                 config,
@@ -63,7 +64,7 @@ public class BooleanConfigType extends LeafConfigType {
                         OBJ_TO_STRING_METHOD,
                         name),
                 body.loadClass(Boolean.class)), Optional.class);
-        final ResultHandle convertedDefault = getConvertedDefault(body, config);
+        final ResultHandle convertedDefault = body.readStaticField(FieldDescriptor.of(Boolean.class, "FALSE", Boolean.class));
         final ResultHandle defaultedValue = body.checkCast(body.invokeVirtualMethod(
                 OPT_OR_ELSE_METHOD,
                 optionalValue,

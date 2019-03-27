@@ -47,11 +47,6 @@ public class ObjectConfigType extends LeafConfigType {
                 body.loadClass(expectedType)), expectedType);
     }
 
-    void checkLoaded() {
-        if (expectedType == null)
-            throw notLoadedException();
-    }
-
     public void acceptConfigurationValue(final NameIterator name, final SmallRyeConfig config) {
         if (isConsumeSegment())
             name.previous();

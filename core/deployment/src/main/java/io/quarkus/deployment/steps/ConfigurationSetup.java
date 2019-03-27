@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
+import io.quarkus.deployment.configuration.DefaultValuesConfigurationSource;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -232,7 +233,8 @@ public class ConfigurationSetup {
         builder.withWrapper(ExpandingConfigSource.wrapper(cache));
         builder.addDefaultSources();
         final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
-        builder.withSources(inJar);
+        final DefaultValuesConfigurationSource defaultSource = new DefaultValuesConfigurationSource(buildTimeConfig.getLeafPatterns());
+        builder.withSources(inJar, defaultSource);
         for (ConfigurationCustomConverterBuildItem converter : converters) {
             withConverterHelper(builder, converter.getType(), converter.getPriority(), converter.getConverter());
         }

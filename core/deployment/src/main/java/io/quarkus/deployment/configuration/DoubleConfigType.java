@@ -78,6 +78,10 @@ public class DoubleConfigType extends LeafConfigType {
         body.invokeStaticMethod(setter, enclosing, doubleValue);
     }
 
+    public String getDefaultValueString() {
+        return defaultValue;
+    }
+
     public Class<?> getItemClass() {
         return double.class;
     }

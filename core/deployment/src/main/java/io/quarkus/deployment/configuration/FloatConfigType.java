@@ -88,6 +88,10 @@ public class FloatConfigType extends LeafConfigType {
         body.invokeStaticMethod(setter, enclosing, result);
     }
 
+    public String getDefaultValueString() {
+        return defaultValue;
+    }
+
     public Class<?> getItemClass() {
         return float.class;
     }

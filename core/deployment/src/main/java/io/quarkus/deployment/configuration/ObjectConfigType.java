@@ -94,6 +94,10 @@ public class ObjectConfigType extends LeafConfigType {
                 generateGetValue(body, name, config));
     }
 
+    public String getDefaultValueString() {
+        return defaultValue;
+    }
+
     private <T> T getValue(final NameIterator name, final SmallRyeConfig config, Class<T> expectedType) {
         return config.getOptionalValue(name.toString(), expectedType).orElse(config.convert(defaultValue, expectedType));
     }

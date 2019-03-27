@@ -55,4 +55,6 @@ public abstract class LeafConfigType extends ConfigType {
             ResultHandle name, ResultHandle config) {
         throw Assert.unsupported();
     }
+
+    public abstract String getDefaultValueString();
 }

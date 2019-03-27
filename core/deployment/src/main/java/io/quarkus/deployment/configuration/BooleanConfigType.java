@@ -72,6 +72,10 @@ public class BooleanConfigType extends LeafConfigType {
         body.invokeStaticMethod(setter, enclosing, booleanValue);
     }
 
+    public String getDefaultValueString() {
+        return defaultValue;
+    }
+
     public Class<?> getItemClass() {
         return boolean.class;
     }

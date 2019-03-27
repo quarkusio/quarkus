@@ -77,6 +77,10 @@ public class IntConfigType extends LeafConfigType {
         body.invokeStaticMethod(setter, enclosing, intValue);
     }
 
+    public String getDefaultValueString() {
+        return defaultValue;
+    }
+
     public Class<?> getItemClass() {
         return int.class;
     }

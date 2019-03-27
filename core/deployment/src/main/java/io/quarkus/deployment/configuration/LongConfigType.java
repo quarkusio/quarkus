@@ -77,6 +77,10 @@ public class LongConfigType extends LeafConfigType {
         body.invokeStaticMethod(setter, enclosing, longValue);
     }
 
+    public String getDefaultValueString() {
+        return defaultValue;
+    }
+
     public Class<?> getItemClass() {
         return long.class;
     }

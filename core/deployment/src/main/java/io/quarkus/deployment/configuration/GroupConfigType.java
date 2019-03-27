@@ -4,6 +4,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
@@ -128,7 +129,13 @@ public class GroupConfigType extends CompoundConfigType {
         } catch (IllegalAccessException e) {
             throw toError(e);
         } catch (InvocationTargetException e) {
-            throw new IllegalStateException(e.getCause());
+            try {
+                throw e.getCause();
+            } catch (RuntimeException | Error e2) {
+                throw e2;
+            } catch (Throwable t) {
+                throw new UndeclaredThrowableException(t);
+            }
         }
         for (Map.Entry<String, ConfigType> entry : fields.entrySet()) {
             entry.getValue().getDefaultValueIntoEnclosingGroup(self, config, findField(entry.getKey()));

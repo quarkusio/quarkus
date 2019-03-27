@@ -18,14 +18,20 @@ package io.quarkus.arc;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.ContextNotActiveException;
+import javax.enterprise.context.Destroyed;
+import javax.enterprise.context.Initialized;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.inject.Any;
 
 /**
  * The built-in context for {@link RequestScoped}.
@@ -36,6 +42,22 @@ class RequestContext implements ManagedContext {
 
     // It's a normal scope so there may be no more than one mapped instance per contextual type per thread
     private final ThreadLocal<Map<Contextual<?>, ContextInstanceHandle<?>>> currentContext = new ThreadLocal<>();
+
+    private final LazyValue<EventImpl.Notifier<Object>> initializedNotifier;
+    private final LazyValue<EventImpl.Notifier<Object>> beforeDestroyedNotifier;
+    private final LazyValue<EventImpl.Notifier<Object>> destroyedNotifier;
+
+    public RequestContext() {
+        this.initializedNotifier = new LazyValue<>(() -> EventImpl.createNotifier(Object.class, Object.class,
+                new HashSet<>(Arrays.asList(Initialized.Literal.REQUEST, Any.Literal.INSTANCE)),
+                ArcContainerImpl.instance()));
+        this.beforeDestroyedNotifier = new LazyValue<>(() -> EventImpl.createNotifier(Object.class, Object.class,
+                new HashSet<>(Arrays.asList(BeforeDestroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
+                ArcContainerImpl.instance()));
+        this.destroyedNotifier = new LazyValue<>(() -> EventImpl.createNotifier(Object.class, Object.class,
+                new HashSet<>(Arrays.asList(Destroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
+                ArcContainerImpl.instance()));
+    }
 
     @Override
     public Class<? extends Annotation> getScope() {
@@ -92,6 +114,18 @@ class RequestContext implements ManagedContext {
         }
     }
 
+    private void fireIfNotEmpty(LazyValue<EventImpl.Notifier<Object>> value) {
+        EventImpl.Notifier notifier = value.get();
+        if (!notifier.isEmpty()) {
+            notifier.notify(toString());
+        }
+    }
+
+    @Override
+    public void deactivate() {
+        currentContext.remove();
+    }
+
     @Override
     public void activate(Collection<ContextInstanceHandle<?>> initialState) {
         Map<Contextual<?>, ContextInstanceHandle<?>> state = new HashMap<>();
@@ -104,11 +138,8 @@ class RequestContext implements ManagedContext {
             }
         }
         currentContext.set(state);
-    }
-
-    @Override
-    public void deactivate() {
-        currentContext.remove();
+        // Fire an event with qualifier @Initialized(RequestScoped.class) if there are any observers for it
+        fireIfNotEmpty(initializedNotifier);
     }
 
     @Override
@@ -118,7 +149,11 @@ class RequestContext implements ManagedContext {
             synchronized (ctx) {
                 for (InstanceHandle<?> instance : ctx.values()) {
                     try {
+                        // Fire an event with qualifier @BeforeDestroyed(RequestScoped.class) if there are any observers for it
+                        fireIfNotEmpty(beforeDestroyedNotifier);
                         instance.destroy();
+                        // Fire an event with qualifier @Destroyed(RequestScoped.class) if there are any observers for it
+                        fireIfNotEmpty(destroyedNotifier);
                     } catch (Exception e) {
                         throw new IllegalStateException("Unable to destroy instance" + instance.get(), e);
                     }
@@ -127,5 +162,4 @@ class RequestContext implements ManagedContext {
             }
         }
     }
-
 }

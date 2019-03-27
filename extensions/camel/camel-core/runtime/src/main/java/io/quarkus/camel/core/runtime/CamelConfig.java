@@ -31,6 +31,15 @@ public class CamelConfig {
          */
         @ConfigItem
         public boolean disableJaxb;
+
+        /**
+         * Disable XML support in various parts of Camel.
+         * Because xml parsing using xerces/xalan libraries can consume
+         * a lot of code space in the native binary (and a lot of cpu resources
+         * when building), this allows to disable both libraries.
+         */
+        @ConfigItem
+        public boolean disableXml;
     }
 
     @ConfigRoot(name = "camel", phase = ConfigPhase.RUN_TIME)

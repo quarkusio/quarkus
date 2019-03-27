@@ -1,16 +1,16 @@
 package io.quarkus.camel.core.runtime.support;
 
+import java.util.Collection;
 import java.util.Properties;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.CamelContextAware;
 import org.apache.camel.Component;
-import org.apache.camel.component.headersmap.FastHeadersMapFactory;
 import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.spi.ComponentResolver;
 import org.apache.camel.spi.DataFormat;
 import org.apache.camel.spi.DataFormatResolver;
-import org.apache.camel.spi.HeadersMapFactory;
 import org.apache.camel.spi.Language;
 import org.apache.camel.spi.LanguageResolver;
 import org.apache.camel.spi.ManagementNameStrategy;
@@ -46,11 +46,6 @@ public class FastCamelContext extends DefaultCamelContext {
     @Override
     protected UuidGenerator createUuidGenerator() {
         return new FastUuidGenerator();
-    }
-
-    @Override
-    protected HeadersMapFactory createHeadersMapFactory() {
-        return new FastHeadersMapFactory();
     }
 
     @Override
@@ -93,5 +88,21 @@ public class FastCamelContext extends DefaultCamelContext {
             }
         }
         return result;
+    }
+
+    public void reifyRoutes() throws Exception {
+        for (RouteDefinition rd : getRouteDefinitions()) {
+            startRoute(rd);
+        }
+    }
+
+    protected void startRouteDefinitions(Collection<RouteDefinition> list) throws Exception {
+    }
+
+    @Override
+    public void doInit() {
+        super.doInit();
+
+        forceLazyInitialization();
     }
 }

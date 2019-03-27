@@ -21,6 +21,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
@@ -30,7 +31,6 @@ import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.camel.core.runtime.CamelConfig;
 import io.quarkus.camel.core.runtime.CamelConfig.BuildTime;
 import io.quarkus.camel.core.runtime.CamelProducers;
-import io.quarkus.camel.core.runtime.CamelRuntime;
 import io.quarkus.camel.core.runtime.CamelTemplate;
 import io.quarkus.camel.core.runtime.support.RuntimeRegistry;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -44,6 +44,7 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.runtime.RuntimeValue;
 
 class CamelInitProcessor {
+
     @Inject
     ApplicationArchivesBuildItem applicationArchivesBuildItem;
     @Inject
@@ -78,7 +79,8 @@ class CamelInitProcessor {
                 .collect(Collectors.toList());
 
         visitServices((name, type) -> {
-            LoggerFactory.getLogger(CamelInitProcessor.class).warn("Binding camel service {} with type {}", name, type);
+            Logger log = LoggerFactory.getLogger(CamelInitProcessor.class);
+            log.debug("Binding camel service {} with type {}", name, type);
             registry.bind(name, type,
                     recorderContext.newInstance(type.getName()));
         });

@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -22,12 +21,16 @@ import org.apache.camel.TypeConverter;
 import org.apache.camel.component.file.GenericFile;
 import org.apache.camel.component.file.GenericFileProcessStrategy;
 import org.apache.camel.component.file.strategy.GenericFileProcessStrategyFactory;
-import org.apache.camel.converter.jaxp.XmlConverter;
 import org.apache.camel.spi.ExchangeFormatter;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.quarkus.camel.core.runtime.CamelConfig.BuildTime;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -54,8 +57,9 @@ class CamelProcessor {
             ExchangeFormatter.class,
             GenericFileProcessStrategy.class);
 
-    private static final List<Class<? extends Annotation>> CAMEL_REFLECTIVE_ANNOTATIONS = Arrays.asList(
-            Converter.class);
+    private static final List<Class<? extends Annotation>> CAMEL_REFLECTIVE_ANNOTATIONS = Arrays.asList();
+
+    private static final Class<? extends Annotation> CAMEL_CONVERTER_ANNOTATION = Converter.class;
 
     @Inject
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
@@ -78,8 +82,22 @@ class CamelProcessor {
     }
 
     @BuildStep
-    JaxbEnabledBuildItem enableJaxb() {
+    JaxbEnabledBuildItem handleJaxbSupport() {
         return buildTimeConfig.disableJaxb ? null : new JaxbEnabledBuildItem();
+    }
+
+    @BuildStep
+    List<ReflectiveClassBuildItem> handleXmlSupport() {
+        if (buildTimeConfig.disableXml) {
+            return null;
+        } else {
+            return Arrays.asList(
+                    new ReflectiveClassBuildItem(false, false,
+                            "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl"),
+                    new ReflectiveClassBuildItem(false, false,
+                            "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl"),
+                    new ReflectiveClassBuildItem(false, false, "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl"));
+        }
     }
 
     @BuildStep
@@ -130,9 +148,41 @@ class CamelProcessor {
                     }
                 });
 
+        Logger log = LoggerFactory.getLogger(CamelProcessor.class);
+        DotName converter = DotName.createSimple(Converter.class.getName());
+        List<ClassInfo> converterClasses = view.getAnnotations(converter)
+                .stream()
+                .filter(ai -> ai.target().kind() == Kind.CLASS)
+                .filter(ai -> {
+                    AnnotationValue av = ai.value("loader");
+                    boolean isLoader = av != null && av.asBoolean();
+                    // filter out camel-base converters which are automatically inlined in the CoreStaticTypeConverterLoader
+                    // need to revisit with Camel 3.0.0-M3 which should improve this area
+                    if (ai.target().asClass().name().toString().startsWith("org.apache.camel.converter.")) {
+                        log.debug("Ignoring core " + ai + " " + ai.target().asClass().name());
+                        return false;
+                    } else if (isLoader) {
+                        log.debug("Ignoring " + ai + " " + ai.target().asClass().name());
+                        return false;
+                    } else {
+                        log.debug("Accepting " + ai + " " + ai.target().asClass().name());
+                        return true;
+                    }
+                })
+                .map(ai -> ai.target().asClass())
+                .collect(Collectors.toList());
+        log.debug("Converter classes: " + converterClasses);
+        converterClasses.forEach(ci -> addReflectiveClass(false, ci.name().toString()));
+
+        view.getAnnotations(converter)
+                .stream()
+                .filter(ai -> ai.target().kind() == Kind.METHOD)
+                .filter(ai -> converterClasses.contains(ai.target().asMethod().declaringClass()))
+                .map(ai -> ai.target().asMethod())
+                .forEach(this::addReflectiveMethod);
+
         addReflectiveClass(false, GenericFile.class.getName());
         addReflectiveClass(true, GenericFileProcessStrategyFactory.class.getName());
-        addReflectiveClass(true, XmlConverter.class.getName());
 
         addCamelServices();
     }

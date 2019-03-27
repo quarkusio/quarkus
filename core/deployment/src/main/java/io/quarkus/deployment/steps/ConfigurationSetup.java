@@ -103,6 +103,9 @@ public class ConfigurationSetup {
 
     public static final MethodDescriptor CREATE_RUN_TIME_CONFIG = MethodDescriptor.ofMethod(RUN_TIME_CONFIG,
             "getRunTimeConfiguration", void.class);
+    public static final MethodDescriptor ECS_EXPAND_VALUE = MethodDescriptor.ofMethod(ExpandingConfigSource.class,
+            "expandValue",
+            String.class, String.class, ExpandingConfigSource.Cache.class);
 
     private static final FieldDescriptor RUN_TIME_CONFIG_FIELD = FieldDescriptor.of(RUN_TIME_CONFIG, "runConfig",
             RUN_TIME_CONFIG_ROOT);
@@ -143,11 +146,14 @@ public class ConfigurationSetup {
 
     private static final MethodDescriptor BTCF_GET_CONFIG_SOURCE = MethodDescriptor.ofMethod(BuildTimeConfigFactory.class,
             "getBuildTimeConfigSource", ConfigSource.class);
-    private static final MethodDescriptor ECS_CACHE_CONSTRUCT = MethodDescriptor.ofConstructor(ExpandingConfigSource.Cache.class);
-    private static final MethodDescriptor ECS_WRAPPER = MethodDescriptor.ofMethod(ExpandingConfigSource.class, "wrapper", UnaryOperator.class, ExpandingConfigSource.Cache.class);
+    private static final MethodDescriptor ECS_CACHE_CONSTRUCT = MethodDescriptor
+            .ofConstructor(ExpandingConfigSource.Cache.class);
+    private static final MethodDescriptor ECS_WRAPPER = MethodDescriptor.ofMethod(ExpandingConfigSource.class, "wrapper",
+            UnaryOperator.class, ExpandingConfigSource.Cache.class);
 
     private static final MethodDescriptor RTD_CTOR = MethodDescriptor.ofConstructor(RUN_TIME_DEFAULTS);
-    private static final MethodDescriptor RTD_GET_VALUE = MethodDescriptor.ofMethod(RUN_TIME_DEFAULTS, "getValue", String.class, NameIterator.class);
+    private static final MethodDescriptor RTD_GET_VALUE = MethodDescriptor.ofMethod(RUN_TIME_DEFAULTS, "getValue", String.class,
+            NameIterator.class);
     private static final MethodDescriptor ARDCS_CTOR = MethodDescriptor.ofConstructor(AbstractRawDefaultConfigSource.class);
 
     private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
@@ -239,7 +245,8 @@ public class ConfigurationSetup {
         builder.withWrapper(ExpandingConfigSource.wrapper(cache));
         builder.addDefaultSources();
         final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
-        final DefaultValuesConfigurationSource defaultSource = new DefaultValuesConfigurationSource(buildTimeConfig.getLeafPatterns());
+        final DefaultValuesConfigurationSource defaultSource = new DefaultValuesConfigurationSource(
+                buildTimeConfig.getLeafPatterns());
         builder.withSources(inJar, defaultSource);
         for (ConfigurationCustomConverterBuildItem converter : converters) {
             withConverterHelper(builder, converter.getType(), converter.getPriority(), converter.getConverter());
@@ -248,7 +255,7 @@ public class ConfigurationSetup {
                 .addDiscoveredSources().addDiscoveredConverters().build();
         SmallRyeConfigProviderResolver.instance().registerConfig(src, Thread.currentThread().getContextClassLoader());
         final Set<String> unmatched = new HashSet<>();
-        ConfigDefinition.loadConfiguration(src, unmatched,
+        ConfigDefinition.loadConfiguration(cache, src, unmatched,
                 buildTimeConfig,
                 buildTimeRunTimeConfig, // this one is only for generating a default-values config source
                 runTimeConfig);
@@ -462,7 +469,7 @@ public class ConfigurationSetup {
                         .newInstance(MethodDescriptor.ofConstructor(BUILD_TIME_CONFIG_ROOT, SmallRyeConfig.class), config));
 
                 // write out the parsing for the stored build time config
-                writeParsing(cc, clinit, config, buildTimePatterns);
+                writeParsing(cc, clinit, config, null, buildTimePatterns);
 
                 clinit.returnValue(null);
             }
@@ -552,7 +559,7 @@ public class ConfigurationSetup {
                 carc.writeStaticField(RUN_TIME_CONFIG_FIELD,
                         carc.newInstance(MethodDescriptor.ofConstructor(RUN_TIME_CONFIG_ROOT, SmallRyeConfig.class), config));
 
-                writeParsing(cc, carc, config, runTimePatterns);
+                writeParsing(cc, carc, config, cache, runTimePatterns);
 
                 carc.returnValue(null);
             }
@@ -583,7 +590,9 @@ public class ConfigurationSetup {
                 // nameIter.next(); // skip "quarkus"
                 gv.invokeVirtualMethod(NI_NEXT, nameIter);
                 // return getValue_xx(nameIter);
-                gv.returnValue(gv.invokeVirtualMethod(generateGetValue(cc, runTimePatterns, new StringBuilder("getValue"), new HashMap<>()), nameIter));
+                gv.returnValue(gv.invokeVirtualMethod(
+                        generateGetValue(cc, runTimePatterns, new StringBuilder("getValue"), new HashMap<>()), gv.getThis(),
+                        nameIter));
             }
         }
 
@@ -631,10 +640,11 @@ public class ConfigurationSetup {
             try (BytecodeCreator matchedBody = body.ifNonZero(body.invokeVirtualMethod(NI_HAS_NEXT, nameIter)).falseBranch()) {
                 if (matched != null) {
                     // (exact match generated code)
-                    matchedBody.returnValue(matchedBody.load(matched.getDefaultValueString()));
+                    matchedBody.returnValue(
+                            matchedBody.load(matched.getDefaultValueString()));
                 } else {
                     // return;
-                    matchedBody.returnValue(null);
+                    matchedBody.returnValue(matchedBody.loadNull());
                 }
             }
             // }
@@ -656,7 +666,8 @@ public class ConfigurationSetup {
                         methodName.append('_').append(name);
                         // result = this.getValue_xxx(nameIter);
                         final ResultHandle result = nameMatched.invokeVirtualMethod(
-                                generateGetValue(cc, keyMap.getChild(name), methodName, cache), nameMatched.getThis(), nameIter);
+                                generateGetValue(cc, keyMap.getChild(name), methodName, cache), nameMatched.getThis(),
+                                nameIter);
                         methodName.setLength(length);
                         // return result;
                         nameMatched.returnValue(result);
@@ -673,16 +684,17 @@ public class ConfigurationSetup {
                     // (generated recursive)
                     final int length = methodName.length();
                     methodName.append('_').append("wildcard");
-                    matchedBody.invokeStaticMethod(
-                            generateParserBody(cc, keyMap.getChild(ConfigPatternMap.WILD_CARD), methodName, cache),
-                            nameIter);
+                    // result = this.getValue_xxx(nameIter);
+                    final ResultHandle result = matchedBody.invokeVirtualMethod(
+                            generateGetValue(cc, keyMap.getChild(ConfigPatternMap.WILD_CARD), methodName, cache),
+                            matchedBody.getThis(), nameIter);
                     methodName.setLength(length);
-                    // return;
-                    matchedBody.returnValue(null);
+                    // return result;
+                    matchedBody.returnValue(result);
                 }
             }
             // it's not found
-            body.returnValue(null);
+            body.returnValue(body.loadNull());
             final MethodDescriptor md = body.getMethodDescriptor();
             cache.put(methodNameStr, md);
             return md;
@@ -690,7 +702,7 @@ public class ConfigurationSetup {
     }
 
     private void writeParsing(final ClassCreator cc, final BytecodeCreator body, final ResultHandle config,
-            final ConfigPatternMap<LeafConfigType> keyMap) {
+            final ResultHandle cache, final ConfigPatternMap<LeafConfigType> keyMap) {
         // setup
         // Iterable iterable = config.getPropertyNames();
         final ResultHandle iterable = body.invokeVirtualMethod(
@@ -717,9 +729,17 @@ public class ConfigurationSetup {
                         .continueScope(loop);
                 // keyIter.next(); // skip "quarkus"
                 hasNext.invokeVirtualMethod(NI_NEXT, keyIter);
-                // parse(config, keyIter);
-                hasNext.invokeStaticMethod(generateParserBody(cc, keyMap, new StringBuilder("parseKey"), new HashMap<>()),
-                        config, keyIter);
+                // parse(config, cache, keyIter); - or - parse(config, keyIter);
+                final ResultHandle[] args;
+                final boolean expand = cache != null;
+                if (expand) {
+                    args = new ResultHandle[] { config, cache, keyIter };
+                } else {
+                    args = new ResultHandle[] { config, keyIter };
+                }
+                hasNext.invokeStaticMethod(
+                        generateParserBody(cc, keyMap, new StringBuilder("parseKey"), new HashMap<>(), expand),
+                        args);
                 // continue loop;
                 hasNext.continueScope(loop);
             }
@@ -730,23 +750,30 @@ public class ConfigurationSetup {
     }
 
     private MethodDescriptor generateParserBody(final ClassCreator cc, final ConfigPatternMap<LeafConfigType> keyMap,
-            final StringBuilder methodName, final Map<String, MethodDescriptor> parseMethodCache) {
+            final StringBuilder methodName, final Map<String, MethodDescriptor> parseMethodCache, final boolean expand) {
         final String methodNameStr = methodName.toString();
         final MethodDescriptor existing = parseMethodCache.get(methodNameStr);
         if (existing != null) {
             return existing;
         }
-        try (MethodCreator body = cc.getMethodCreator(methodName.toString(), void.class, SmallRyeConfig.class,
-                NameIterator.class)) {
+        final Class<?>[] argTypes;
+        if (expand) {
+            argTypes = new Class<?>[] { SmallRyeConfig.class, ExpandingConfigSource.Cache.class, NameIterator.class };
+        } else {
+            argTypes = new Class<?>[] { SmallRyeConfig.class, NameIterator.class };
+        }
+        try (MethodCreator body = cc.getMethodCreator(methodName.toString(), void.class,
+                argTypes)) {
             body.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);
             final ResultHandle config = body.getMethodParam(0);
-            final ResultHandle keyIter = body.getMethodParam(1);
+            final ResultHandle cache = expand ? body.getMethodParam(1) : null;
+            final ResultHandle keyIter = expand ? body.getMethodParam(2) : body.getMethodParam(1);
             final LeafConfigType matched = keyMap.getMatched();
             // if (! keyIter.hasNext()) {
             try (BytecodeCreator matchedBody = body.ifNonZero(body.invokeVirtualMethod(NI_HAS_NEXT, keyIter)).falseBranch()) {
                 if (matched != null) {
                     // (exact match generated code)
-                    matched.generateAcceptConfigurationValue(matchedBody, keyIter, config);
+                    matched.generateAcceptConfigurationValue(matchedBody, keyIter, cache, config);
                 } else {
                     // todo: unknown name warning goes here
                 }
@@ -770,8 +797,15 @@ public class ConfigurationSetup {
                         // (generated recursive)
                         final int length = methodName.length();
                         methodName.append('_').append(name);
+                        final ResultHandle[] args;
+                        if (expand) {
+                            args = new ResultHandle[] { config, cache, keyIter };
+                        } else {
+                            args = new ResultHandle[] { config, keyIter };
+                        }
                         nameMatched.invokeStaticMethod(
-                                generateParserBody(cc, keyMap.getChild(name), methodName, parseMethodCache), config, keyIter);
+                                generateParserBody(cc, keyMap.getChild(name), methodName, parseMethodCache, expand),
+                                args);
                         methodName.setLength(length);
                         // return;
                         nameMatched.returnValue(null);
@@ -788,9 +822,16 @@ public class ConfigurationSetup {
                     // (generated recursive)
                     final int length = methodName.length();
                     methodName.append('_').append("wildcard");
+                    final ResultHandle[] args;
+                    if (expand) {
+                        args = new ResultHandle[] { config, cache, keyIter };
+                    } else {
+                        args = new ResultHandle[] { config, keyIter };
+                    }
                     matchedBody.invokeStaticMethod(
-                            generateParserBody(cc, keyMap.getChild(ConfigPatternMap.WILD_CARD), methodName, parseMethodCache),
-                            config, keyIter);
+                            generateParserBody(cc, keyMap.getChild(ConfigPatternMap.WILD_CARD), methodName, parseMethodCache,
+                                    expand),
+                            args);
                     methodName.setLength(length);
                     // return;
                     matchedBody.returnValue(null);

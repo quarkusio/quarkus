@@ -21,7 +21,14 @@ public class DefaultValuesConfigurationSource implements ConfigSource {
 
     public String getValue(final String propertyName) {
         final LeafConfigType match = leafs.match(propertyName);
-        return match == null ? null : match.getDefaultValueString();
+        if (match == null) {
+            return null;
+        }
+        final String defaultValueString = match.getDefaultValueString();
+        if (defaultValueString == null || defaultValueString.isEmpty()) {
+            return null;
+        }
+        return defaultValueString;
     }
 
     public String getName() {

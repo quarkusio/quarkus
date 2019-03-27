@@ -45,7 +45,7 @@ public class ExpandingConfigSource extends AbstractDelegatingConfigSource {
     }
 
     String expand(final String value) {
-        return expandValue(cache, value);
+        return expandValue(value, cache);
     }
 
     public void flush() {
@@ -68,7 +68,7 @@ public class ExpandingConfigSource extends AbstractDelegatingConfigSource {
         }
     }
 
-    public static String expandValue(Cache cache, String value) {
+    public static String expandValue(String value, Cache cache) {
         if (value == null)
             return null;
         final Expression compiled = cache.exprCache.computeIfAbsent(value,
@@ -83,7 +83,8 @@ public class ExpandingConfigSource extends AbstractDelegatingConfigSource {
         // this is a cache of compiled expressions, NOT a cache of expanded values
         final ConcurrentHashMap<String, Expression> exprCache = new ConcurrentHashMap<>();
 
-        public Cache() {}
+        public Cache() {
+        }
 
         public void flush() {
             exprCache.clear();

@@ -106,8 +106,12 @@ quarkus.log.console.enable=true
 quarkus.log.console.format=%d{HH:mm:ss} %-5p [%c{2.}]] (%t) %s%e%n
 quarkus.log.console.level=DEBUG
 quarkus.log.console.color=false
+
+quarkus.log.category."io.quarkus".level=DEBUG
 ----
 
+NOTE: If you are adding these properties via command line make sure `"` is escaped.
+For example `-Dquarkus.log.category.\"io.quarkus\".level=DEBUG`.
 
 [#category-example]
 .File TRACE Logging Configuration

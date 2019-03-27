@@ -68,7 +68,7 @@ class KubernetesProcessor {
             generatedResourceProducer.produce(
                     new GeneratedResourceBuildItem(
                             // we need to make sure we are only passing the relative path to the build item
-                            generatedResourceFullPath.replace(root.toAbsolutePath() + "/", "META-INF/ap4k/"),
+                            generatedResourceFullPath.replace(root.toAbsolutePath() + "/", "META-INF/kubernetes/"),
                             generatedResourcesMap.get(generatedResourceFullPath).getBytes()));
         }
 

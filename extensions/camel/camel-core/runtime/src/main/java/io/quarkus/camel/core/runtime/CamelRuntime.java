@@ -17,6 +17,8 @@
 
 package io.quarkus.camel.core.runtime;
 
+import java.util.Properties;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.spi.Registry;
 
@@ -39,5 +41,9 @@ public interface CamelRuntime {
     void start(CamelConfig.Runtime runtimeConfig) throws Exception;
 
     void stop() throws Exception;
+
+    void addProperties(Properties properties);
+
+    void addProperty(String key, Object value);
 
 }

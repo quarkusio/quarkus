@@ -173,6 +173,16 @@ public class FastCamelRuntime implements CamelRuntime {
         this.properties = properties;
     }
 
+    @Override
+    public void addProperties(Properties properties) {
+        this.properties.putAll(properties);
+    }
+
+    @Override
+    public void addProperty(String key, Object value) {
+        this.properties.put(key, value);
+    }
+
     public void setBuilders(List<RoutesBuilder> builders) {
         this.builders = builders;
     }

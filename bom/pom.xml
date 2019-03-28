@@ -276,7 +276,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-jdbc-mssql-deployment</artifactId>
+                <artifactId>quarkus-jdbc-mssql</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

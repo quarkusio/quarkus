@@ -181,11 +181,12 @@ public abstract class Application {
                 final SignalHandler handler = new SignalHandler() {
                     @Override
                     public void handle(final Signal signal) {
-                        System.exit(0);
+                        System.exit(signal.getNumber() + 0x80);
                     }
                 };
                 Signal.handle(new Signal("INT"), handler);
                 Signal.handle(new Signal("TERM"), handler);
+                Signal.handle(new Signal("HUP"), handler);
                 Signal.handle(new Signal("QUIT"), new SignalHandler() {
                     @Override
                     public void handle(final Signal signal) {

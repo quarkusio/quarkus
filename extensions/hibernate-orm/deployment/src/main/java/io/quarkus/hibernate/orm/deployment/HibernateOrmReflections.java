@@ -54,6 +54,15 @@ public final class HibernateOrmReflections {
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.HqlToken.class);
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.tree.Node.class);
 
+        //Add all the IdentifierGenerator implementations not picked out by the GenerationType enum
+        simpleConstructor(reflectiveClass, org.hibernate.id.CompositeNestedGeneratedValueGenerator.class);
+        simpleConstructor(reflectiveClass, org.hibernate.id.ForeignGenerator.class);
+        simpleConstructor(reflectiveClass, org.hibernate.id.GUIDGenerator.class);
+        simpleConstructor(reflectiveClass, org.hibernate.id.IncrementGenerator.class);
+        simpleConstructor(reflectiveClass, org.hibernate.id.SelectGenerator.class);
+        simpleConstructor(reflectiveClass, org.hibernate.id.UUIDGenerator.class);
+        simpleConstructor(reflectiveClass, org.hibernate.id.UUIDHexGenerator.class);
+
         //ANTLR tokens:
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.tree.SelectClause.class);
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.tree.HqlSqlWalkerNode.class);

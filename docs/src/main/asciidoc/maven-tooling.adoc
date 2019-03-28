@@ -72,12 +72,16 @@ Instructions to build the image and run the container are written in the `Docker
 From inside a {project-name} project, you can obtain a list of the available extensions with:
 
 [source,shell]
+----
 ./mvnw quarkus:list-extensions
+----
 
 You can enable an extension using:
 
 [source,shell]
+----
 ./mvnw quarkus:add-extension -Dextensions="hibernate-validator"
+----
 
 Extensions are passed using a comma-separated list.
 
@@ -87,7 +91,9 @@ Extensions are passed using a comma-separated list.
 Run your application with:
 
 [source,shell]
+----
 ./mvnw compile quarkus:dev
+----
 
 You can then update the application sources, resources and configurations.
 The changes are automatically reflected in your running application.
@@ -111,7 +117,9 @@ and have changes made to your local files become immediately visible.
 To do this you must have the `quarkus-undertow-websockets` extension installed:
 
 [source,shell]
+----
 ./mvnw quarkus:add-extension -Dextensions="undertow-websockets"
+----
 
 You must also have the following config properties set:
 
@@ -123,7 +131,10 @@ password must be set on both the local and remote processes, while the url only 
 
 Start Quarkus in dev mode on the remote host. Now you need to connect your local agent to the remote host:
 
-`mvn quarkus:remote-dev -Dquarkus.hot-reload.url=http://my-remote-host:8080`
+[source,shell]
+----
+./mvnw quarkus:remote-dev -Dquarkus.hot-reload.url=http://my-remote-host:8080
+----
 
 Now every time you refresh the browser you should see any changes you have made locally immediately visible in the remote
 app.
@@ -133,7 +144,9 @@ app.
 You can run a {project-name} application in debug mode using:
 
 [source,shell]
+----
 ./mvnw compile quarkus:dev -Ddebug=true
+----
 
 Then, attach your debugger to `localhost:5005`.
 

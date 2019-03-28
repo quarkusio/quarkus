@@ -62,4 +62,17 @@ public enum BuildTool {
                 return new MavenBuildFile(projectDirPath, platformDescriptor);
         }
     }
+
+    public static BuildTool resolveExistingProject(Path path) {
+        return QuarkusProject.resolveExistingProjectBuildTool(path);
+    }
+
+    public static BuildTool findTool(String tool) {
+        if ("GRADLE".equalsIgnoreCase(tool))
+            return GRADLE;
+        else if ("MAVEN".equalsIgnoreCase(tool))
+            return MAVEN;
+        else
+            return null;
+    }
 }

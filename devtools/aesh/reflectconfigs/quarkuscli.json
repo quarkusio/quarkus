@@ -6,7 +6,8 @@
     "allDeclaredMethods" : true,
     "allPublicMethods" : true,
     "fields" : [
-        { "name" : "help" }
+        { "name" : "extensions" },
+        { "name" : "path" }
     ]
   },
   {
@@ -16,10 +17,13 @@
     "allDeclaredMethods" : true,
     "allPublicMethods" : true,
     "fields" : [
-        { "name" : "help" },
-        { "name" : "artifactid" },
-        { "name" : "groupid" },
+        { "name" : "artifactId" },
+        { "name" : "groupId" },
         { "name" : "version" },
+        { "name" : "className" },
+        { "name" : "resourcePath" },
+        { "name" : "buildTool" },
+        { "name" : "extensions" },
         { "name" : "path" }
     ]
   },
@@ -30,19 +34,22 @@
     "allDeclaredMethods" : true,
     "allPublicMethods" : true,
     "fields" : [
-        { "name" : "help" }
+        { "name" : "all" },
+        { "name" : "format" },
+        { "name" : "searchPattern" },
+        { "name" : "path" }
     ]
   },
   {
-    "name" : "io.quarkus.cli.commands.QuarkusCommand",
+    "name" : "io.quarkus.cli.commands.QuarkusBaseCommand",
     "allDeclaredConstructors" : true,
     "allPublicConstructors" : true,
     "allDeclaredMethods" : true,
     "allPublicMethods" : true,
     "fields" : [
-        { "name" : "help" }
+        { "name" : "interactive" }
     ]
-  },
+   },
   {
     "name" : "org.aesh.command.impl.completer.BooleanOptionCompleter",
     "allDeclaredConstructors" : true,

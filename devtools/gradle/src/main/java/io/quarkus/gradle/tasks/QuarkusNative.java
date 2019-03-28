@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import org.gradle.api.GradleException;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
@@ -83,116 +84,129 @@ public class QuarkusNative extends QuarkusTask {
         super("Building a native image");
     }
 
+    @Optional
+    @Input
     public boolean isAddAllCharsets() {
         return addAllCharsets;
     }
 
     @Option(description = "Should all Charsets supported by the host environment be included in the native image", option = "add-all-charsets")
-    @Optional
     public void setAddAllCharsets(final boolean addAllCharsets) {
         this.addAllCharsets = addAllCharsets;
     }
 
+    @Optional
+    @Input
     public boolean isReportErrorsAtRuntime() {
         return reportErrorsAtRuntime;
     }
 
     @Option(description = "Report errors at runtime", option = "report-errors-runtime")
-    @Optional
     public void setReportErrorsAtRuntime(boolean reportErrorsAtRuntime) {
         this.reportErrorsAtRuntime = reportErrorsAtRuntime;
     }
 
+    @Optional
+    @Input
     public boolean isDebugSymbols() {
         return debugSymbols;
     }
 
     @Option(description = "Specify if debug symbols should be set", option = "debug-symbols")
-    @Optional
     public void setDebugSymbols(boolean debugSymbols) {
         this.debugSymbols = debugSymbols;
     }
 
+    @Optional
+    @Input
     public boolean isDebugBuildProcess() {
         return debugBuildProcess;
     }
 
     @Option(description = "Specify if debug is set during build process", option = "debug-build-process")
-    @Optional
     public void setDebugBuildProcess(boolean debugBuildProcess) {
         this.debugBuildProcess = debugBuildProcess;
     }
 
+    @Optional
+    @Input
     public boolean isCleanupServer() {
         return cleanupServer;
     }
 
     @Option(description = "Cleanup server", option = "cleanup-server")
-    @Optional
     public void setCleanupServer(boolean cleanupServer) {
         this.cleanupServer = cleanupServer;
     }
 
+    @Optional
+    @Input
     public boolean isEnableHttpUrlHandler() {
         return enableHttpUrlHandler;
     }
 
     @Option(description = "Specify if http url handler is enabled", option = "enable-http-url-handler")
-    @Optional
     public void setEnableHttpUrlHandler(boolean enableHttpUrlHandler) {
         this.enableHttpUrlHandler = enableHttpUrlHandler;
     }
 
+    @Optional
+    @Input
     public boolean isEnableHttpsUrlHandler() {
         return enableHttpsUrlHandler;
     }
 
     @Option(description = "Specify if https url handler is enabled", option = "enable-https-url-handler")
-    @Optional
     public void setEnableHttpsUrlHandler(boolean enableHttpsUrlHandler) {
         this.enableHttpsUrlHandler = enableHttpsUrlHandler;
     }
 
+    @Optional
+    @Input
     public boolean isEnableAllSecurityServices() {
         return enableAllSecurityServices;
     }
 
     @Option(description = "Enable all security services", option = "enable-all-security-services")
-    @Optional
     public void setEnableAllSecurityServices(boolean enableAllSecurityServices) {
         this.enableAllSecurityServices = enableAllSecurityServices;
     }
 
+    @Optional
+    @Input
     public boolean isEnableRetainedHeapReporting() {
         return enableRetainedHeapReporting;
     }
 
     @Option(description = "Specify if retained heap reporting should be enabled", option = "enable-retained-heap-reporting")
-    @Optional
     public void setEnableRetainedHeapReporting(boolean enableRetainedHeapReporting) {
         this.enableRetainedHeapReporting = enableRetainedHeapReporting;
     }
 
+    @Optional
+    @Input
     public boolean isEnableIsolates() {
         return enableIsolates;
     }
 
     @Option(description = "Report errors at runtime", option = "enable-isolates")
-    @Optional
     public void setEnableIsolates(boolean enableIsolates) {
         this.enableIsolates = enableIsolates;
     }
 
+    @Optional
+    @Input
     public boolean isEnableCodeSizeReporting() {
         return enableCodeSizeReporting;
     }
 
     @Option(description = "Report errors at runtime", option = "enable-code-size-reporting")
-    @Optional
     public void setEnableCodeSizeReporting(boolean enableCodeSizeReporting) {
         this.enableCodeSizeReporting = enableCodeSizeReporting;
     }
 
+    @Optional
+    @Input
     public String getGraalvmHome() {
         if (graalvmHome == null || graalvmHome.length() < 1)
             throw new GradleException(
@@ -201,107 +215,116 @@ public class QuarkusNative extends QuarkusTask {
     }
 
     @Option(description = "Specify the GraalVM directory (default to $GRAALVM_HOME)", option = "graalvm")
-    @Optional
     public void setGraalvmHome(String graalvmHome) {
         this.graalvmHome = graalvmHome;
     }
 
+    @Optional
+    @Input
     public boolean isEnableServer() {
         return enableServer;
     }
 
     @Option(description = "Enable server", option = "enable-server")
-    @Optional
     public void setEnableServer(boolean enableServer) {
         this.enableServer = enableServer;
     }
 
+    @Optional
+    @Input
     public boolean isEnableJni() {
         return enableJni;
     }
 
     @Option(description = "Enable jni", option = "enable-jni")
-    @Optional
     public void setEnableJni(boolean enableJni) {
         this.enableJni = enableJni;
     }
 
+    @Optional
+    @Input
     public boolean isAutoServiceLoaderRegistration() {
         return autoServiceLoaderRegistration;
     }
 
     @Option(description = "Auto ServiceLoader registration", option = "auto-serviceloader-registration")
-    @Optional
     public void setAutoServiceLoaderRegistration(boolean autoServiceLoaderRegistration) {
         this.autoServiceLoaderRegistration = autoServiceLoaderRegistration;
     }
 
+    @Optional
+    @Input
     public boolean isDumpProxies() {
         return dumpProxies;
     }
 
     @Option(description = "Dump proxies", option = "dump-proxies")
-    @Optional
     public void setDumpProxies(boolean dumpProxies) {
         this.dumpProxies = dumpProxies;
     }
 
+    @Optional
+    @Input
     public String getNativeImageXmx() {
         return nativeImageXmx;
     }
 
     @Option(description = "Specify the native image maximum heap size", option = "native-image-xmx")
-    @Optional
     public void setNativeImageXmx(String nativeImageXmx) {
         this.nativeImageXmx = nativeImageXmx;
     }
 
+    @Optional
+    @Input
     public String getDockerBuild() {
         return dockerBuild;
     }
 
     @Option(description = "Docker build", option = "docker-build")
-    @Optional
     public void setDockerBuild(String dockerBuild) {
         this.dockerBuild = dockerBuild;
     }
 
+    @Optional
+    @Input
     public boolean isEnableVMInspection() {
         return enableVMInspection;
     }
 
     @Option(description = "Enable VM inspection", option = "enable-vm-inspection")
-    @Optional
     public void setEnableVMInspection(boolean enableVMInspection) {
         this.enableVMInspection = enableVMInspection;
     }
 
+    @Optional
+    @Input
     public boolean isFullStackTraces() {
         return fullStackTraces;
     }
 
     @Option(description = "Specify full stacktraces", option = "full-stacktraces")
-    @Optional
     public void setFullStackTraces(boolean fullStackTraces) {
         this.fullStackTraces = fullStackTraces;
     }
 
+    @Optional
+    @Input
     public boolean isDisableReports() {
         return disableReports;
     }
 
     @Option(description = "Disable reports", option = "disable-reports")
-    @Optional
     public void setDisableReports(boolean disableReports) {
         this.disableReports = disableReports;
     }
 
+    @Optional
+    @Input
     public List<String> getAdditionalBuildArgs() {
         return additionalBuildArgs;
     }
 
     @Option(description = "Additional build arguments", option = "additional-build-args")
-    @Optional
     public void setAdditionalBuildArgs(List<String> additionalBuildArgs) {
         this.additionalBuildArgs = additionalBuildArgs;
     }

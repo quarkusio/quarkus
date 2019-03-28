@@ -214,7 +214,7 @@ public class UndertowBuildStep {
                 }
             }
             additionalBeanBuildItemConsumer
-                    .accept(new AdditionalBeanBuildItem(false, additionalBeans.toArray(new String[additionalBeans.size()])));
+                    .accept(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(additionalBeans).build());
         } else {
             result = new WebMetaData();
         }

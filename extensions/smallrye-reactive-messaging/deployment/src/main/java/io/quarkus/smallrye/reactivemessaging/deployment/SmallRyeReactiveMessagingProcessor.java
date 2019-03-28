@@ -57,10 +57,8 @@ public class SmallRyeReactiveMessagingProcessor {
     static final DotName NAME_OUTGOING = DotName.createSimple(Outgoing.class.getName());
 
     @BuildStep
-    List<AdditionalBeanBuildItem> beans() {
-        List<AdditionalBeanBuildItem> beans = new ArrayList<>();
-        beans.add(new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class));
-        return beans;
+    AdditionalBeanBuildItem beans() {
+        return new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class);
     }
 
     @BuildStep

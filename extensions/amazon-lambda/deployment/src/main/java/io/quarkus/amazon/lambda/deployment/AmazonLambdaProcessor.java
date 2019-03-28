@@ -56,12 +56,12 @@ public final class AmazonLambdaProcessor {
     }
 
     @BuildStep
-    List<AdditionalBeanBuildItem> beans(List<AmazonLambdaBuildItem> lambdas) {
-        List<AdditionalBeanBuildItem> ret = new ArrayList<>();
+    AdditionalBeanBuildItem beans(List<AmazonLambdaBuildItem> lambdas) {
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
         for (AmazonLambdaBuildItem i : lambdas) {
-            ret.add(new AdditionalBeanBuildItem(false, i.getClassName()));
+            builder.addBeanClass(i.getClassName());
         }
-        return ret;
+        return builder.build();
     }
 
     @BuildStep

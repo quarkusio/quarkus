@@ -127,7 +127,7 @@ class VertxProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem registerBean() {
-        return new AdditionalBeanBuildItem(false, VertxProducer.class);
+        return AdditionalBeanBuildItem.unremovableOf(VertxProducer.class);
     }
 
     @BuildStep

@@ -237,7 +237,7 @@ public class CreateProjectMojo extends AbstractMojo {
             }
 
             if (StringUtils.isBlank(projectVersion)) {
-                projectVersion = prompter.promptWithDefaultValue("Set the Quarkus version",
+                projectVersion = prompter.promptWithDefaultValue("Set the project version",
                         "1.0-SNAPSHOT");
             }
 

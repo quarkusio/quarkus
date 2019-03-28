@@ -39,7 +39,7 @@ public class VertxHttpConfiguration {
     /**
      * The HTTP host
      */
-    @ConfigItem(defaultValue = "localhost")
+    @ConfigItem(defaultValue = "0.0.0.0")
     public String host;
 
     public int determinePort(LaunchMode launchMode) {

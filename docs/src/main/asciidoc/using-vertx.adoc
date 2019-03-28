@@ -361,6 +361,8 @@ Depending on the API model you want to use you need to add the right dependency 
 </dependency>
 ----
 
+NOTE: The `vertx-rx-java2` provides the RX Java 2 API for the whole Vert.x stack, not only the web client.
+
 In this guide, we are going to use the Axle API, so:
 
 [source, xml, subs=attributes+]
@@ -370,23 +372,6 @@ In this guide, we are going to use the Axle API, so:
   <artifactId>smallrye-axle-web-client</artifactId>
   <version>{axle-version}</version>
 </dependency>
-----
-
-As we are going to invoke a `https` service, also configure the quarkus-maven-plugin from the _native_ profile with:
-
-[source, xml]
-----
-<executions>
-    <execution>
-        <goals>
-            <goal>native-image</goal>
-        </goals>
-        <configuration>
-            <enableHttpUrlHandler>true</enableHttpUrlHandler>
-            <enableHttpsUrlHandler>true</enableHttpsUrlHandler> <!-- Add this line -->
-        </configuration>
-    </execution>
-</executions>
 ----
 
 Now, create a new resource in your project with the following content:
@@ -457,16 +442,23 @@ Run the application with:
 mvn compile quarkus:dev
 ----
 
-And then, open a browser to: http://localhost:8080/swapi/1. You should get Luke Skywalker.
+And then, open a browser to: http://localhost:8080/swapi/1. You should get _Luke Skywalker_.
 
-This application can be compiled and run as a native executable with:
+The application can also run as a native executable.
+But, first, we need to instruct Quarkus to enable _ssl_.
+Open the `src/main/resources/application.properties` and add:
+
+[source]
+----
+quarkus.ssl.native=true
+----
+
+Then, create the native executable with:
 
 [source, shell]
 ----
 mvn package -Pnative
 ----
-
-///// TODO - Configuring Vert.x
 
 == Going further
 

@@ -63,11 +63,11 @@ public class GreetingService {
     }
 }
 ----
-<1> If not set, the address is the fully qualified name of the bean, for instance, in this snippet it's `org.acme.NameService`
+<1> If not set, the address is the fully qualified name of the bean, for instance, in this snippet it's `org.acme.vertx.GreetingService`.
 <2> The method parameter is the message body. If the method returns _something_ it's the message response.
 
 // TODO Revisit this once the blocking PR is integrated - https://github.com/quarkusio/quarkus/pull/1646
-IMPORTANT: the code consuming the event must be _non-blocking_, as it's called on the Vert.x event loop.
+IMPORTANT: The code consuming the event must be _non-blocking_, as it's called on the Vert.x event loop.
 
 === Configuring the address
 
@@ -80,11 +80,11 @@ public String consume(String name) {
     return name.toUpperCase();
 }
 ----
-<1> Receive the messages sent on the `greeting` address
+<1> Receive the messages sent to the `greeting` address
 
-=== Consuming without replying
+=== Consuming messages
 
-In the previous examples, the consumer returns a result, but it's not necessary:
+Consuming messages is done as follows:
 
 [source,java]
 ----
@@ -269,7 +269,7 @@ Hello Quarkus
 To better understand, let's detail how the HTTP request/response has been handled:
 
 1. The request is received by the `hello` method
-2. a message containing the _name_ is sent on the event bus
+2. a message containing the _name_ is sent to the event bus
 3. Another bean receives this message and computes the response
 4. This response is sent back using the reply mechanism
 5. Once the reply is received by the sender, the content is written to the HTTP response

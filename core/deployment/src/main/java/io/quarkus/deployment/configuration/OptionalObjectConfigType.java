@@ -7,9 +7,11 @@ import java.util.Optional;
 import org.wildfly.common.Assert;
 
 import io.quarkus.deployment.AccessorFinder;
+import io.quarkus.deployment.steps.ConfigurationSetup;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
 
@@ -22,31 +24,35 @@ public class OptionalObjectConfigType extends ObjectConfigType {
         super(containingName, container, consumeSegment, defaultValue, expectedType);
     }
 
-    public void acceptConfigurationValue(final NameIterator name, final SmallRyeConfig config) {
+    public void acceptConfigurationValue(final NameIterator name, final ExpandingConfigSource.Cache cache,
+            final SmallRyeConfig config) {
         final CompoundConfigType container = getContainer();
         if (isConsumeSegment())
             name.previous();
-        container.acceptConfigurationValueIntoLeaf(this, name, config);
+        container.acceptConfigurationValueIntoLeaf(this, name, cache, config);
         // the iterator is not used after this point
         // if (isConsumeSegment()) name.next();
     }
 
     public void generateAcceptConfigurationValue(final BytecodeCreator body, final ResultHandle name,
-            final ResultHandle config) {
+            final ResultHandle cache, final ResultHandle config) {
         final CompoundConfigType container = getContainer();
         if (isConsumeSegment())
             body.invokeVirtualMethod(NI_PREV_METHOD, name);
-        container.generateAcceptConfigurationValueIntoLeaf(body, this, name, config);
+        container.generateAcceptConfigurationValueIntoLeaf(body, this, name, cache, config);
         // the iterator is not used after this point
         // if (isConsumeSegment()) body.invokeVirtualMethod(NI_NEXT_METHOD, name);
     }
 
-    void getDefaultValueIntoEnclosingGroup(final Object enclosing, final SmallRyeConfig config, final Field field) {
+    void getDefaultValueIntoEnclosingGroup(final Object enclosing, final ExpandingConfigSource.Cache cache,
+            final SmallRyeConfig config, final Field field) {
         try {
             if (defaultValue.isEmpty()) {
                 field.set(enclosing, Optional.empty());
             } else {
-                field.set(enclosing, Optional.ofNullable(config.convert(defaultValue, expectedType)));
+                field.set(enclosing, Optional.ofNullable(config.convert(
+                        ExpandingConfigSource.expandValue(defaultValue, cache),
+                        expectedType)));
             }
         } catch (IllegalAccessException e) {
             throw toError(e);
@@ -54,7 +60,7 @@ public class OptionalObjectConfigType extends ObjectConfigType {
     }
 
     void generateGetDefaultValueIntoEnclosingGroup(final BytecodeCreator body, final ResultHandle enclosing,
-            final MethodDescriptor setter, final ResultHandle config) {
+            final MethodDescriptor setter, final ResultHandle cache, final ResultHandle config) {
         ResultHandle optValue;
         if (defaultValue.isEmpty()) {
             optValue = body.invokeStaticMethod(OPT_EMPTY_METHOD);
@@ -97,12 +103,17 @@ public class OptionalObjectConfigType extends ObjectConfigType {
     }
 
     public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder,
-            final ResultHandle config) {
+            final ResultHandle cache, final ResultHandle config) {
         if (defaultValue.isEmpty()) {
             return body.invokeStaticMethod(OPT_EMPTY_METHOD);
         } else {
             return body.invokeStaticMethod(OPT_OF_NULLABLE_METHOD, body.invokeVirtualMethod(SRC_CONVERT_METHOD, config,
-                    body.load(defaultValue), body.loadClass(expectedType)));
+                    cache == null ? body.load(defaultValue)
+                            : body.invokeStaticMethod(
+                                    ConfigurationSetup.ECS_EXPAND_VALUE,
+                                    body.load(defaultValue),
+                                    cache),
+                    body.loadClass(expectedType)));
         }
     }
 }

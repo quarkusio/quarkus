@@ -9,6 +9,7 @@ import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
 
@@ -30,11 +31,13 @@ public class MapConfigType extends CompoundConfigType {
     }
 
     @SuppressWarnings("unchecked")
-    Object getChildObject(final NameIterator name, final SmallRyeConfig config, final Object self, final String childName) {
+    Object getChildObject(final NameIterator name, final ExpandingConfigSource.Cache cache, final SmallRyeConfig config,
+            final Object self, final String childName) {
         return ((TreeMap<String, Object>) self).get(name.getNextSegment());
     }
 
-    ResultHandle generateGetChildObject(final BytecodeCreator body, final ResultHandle name, final ResultHandle config,
+    ResultHandle generateGetChildObject(final BytecodeCreator body, final ResultHandle name, final ResultHandle cache,
+            final ResultHandle config,
             final ResultHandle self, final String childName) {
         return body.invokeInterfaceMethod(MAP_GET_METHOD, body.checkCast(self, Map.class),
                 body.invokeVirtualMethod(NI_GET_NEXT_SEGMENT, name));
@@ -51,14 +54,15 @@ public class MapConfigType extends CompoundConfigType {
                 body.invokeVirtualMethod(NI_GET_NEXT_SEGMENT, name), value);
     }
 
-    TreeMap<String, Object> getOrCreate(final NameIterator name, final SmallRyeConfig config) {
+    TreeMap<String, Object> getOrCreate(final NameIterator name, final ExpandingConfigSource.Cache cache,
+            final SmallRyeConfig config) {
         final CompoundConfigType container = getContainer();
         TreeMap<String, Object> self;
         if (container != null) {
             if (isConsumeSegment())
                 name.previous();
-            final Object enclosing = container.getOrCreate(name, config);
-            self = (TreeMap<String, Object>) container.getChildObject(name, config, enclosing, getContainingName());
+            final Object enclosing = container.getOrCreate(name, cache, config);
+            self = (TreeMap<String, Object>) container.getChildObject(name, cache, config, enclosing, getContainingName());
             if (self == null) {
                 self = new TreeMap<>();
                 container.setChildObject(name, enclosing, getContainingName(), self);
@@ -71,15 +75,16 @@ public class MapConfigType extends CompoundConfigType {
         return self;
     }
 
-    ResultHandle generateGetOrCreate(final BytecodeCreator body, final ResultHandle name, final ResultHandle config) {
+    ResultHandle generateGetOrCreate(final BytecodeCreator body, final ResultHandle name, final ResultHandle cache,
+            final ResultHandle config) {
         final CompoundConfigType container = getContainer();
         if (container != null) {
             if (isConsumeSegment())
                 body.invokeVirtualMethod(NI_PREV_METHOD, name);
-            final ResultHandle enclosing = container.generateGetOrCreate(body, name, config);
+            final ResultHandle enclosing = container.generateGetOrCreate(body, name, cache, config);
             final AssignableResultHandle self = body.createVariable(TreeMap.class);
             body.assign(self, body.checkCast(
-                    container.generateGetChildObject(body, name, config, enclosing, getContainingName()), Map.class));
+                    container.generateGetChildObject(body, name, cache, config, enclosing, getContainingName()), Map.class));
             try (BytecodeCreator selfIsNull = body.ifNull(self).trueBranch()) {
                 selfIsNull.assign(self, selfIsNull.newInstance(TREE_MAP_CTOR));
                 container.generateSetChildObject(selfIsNull, name, enclosing, getContainingName(), self);
@@ -92,21 +97,23 @@ public class MapConfigType extends CompoundConfigType {
         }
     }
 
-    void acceptConfigurationValueIntoLeaf(final LeafConfigType leafType, final NameIterator name, final SmallRyeConfig config) {
-        leafType.acceptConfigurationValueIntoMap(getOrCreate(name, config), name, config);
+    void acceptConfigurationValueIntoLeaf(final LeafConfigType leafType, final NameIterator name,
+            final ExpandingConfigSource.Cache cache, final SmallRyeConfig config) {
+        leafType.acceptConfigurationValueIntoMap(getOrCreate(name, cache, config), name, config);
     }
 
     void generateAcceptConfigurationValueIntoLeaf(final BytecodeCreator body, final LeafConfigType leafType,
-            final ResultHandle name, final ResultHandle config) {
-        leafType.generateAcceptConfigurationValueIntoMap(body, generateGetOrCreate(body, name, config), name, config);
+            final ResultHandle name, final ResultHandle cache, final ResultHandle config) {
+        leafType.generateAcceptConfigurationValueIntoMap(body, generateGetOrCreate(body, name, cache, config), name, config);
     }
 
     public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder,
-            final ResultHandle smallRyeConfig) {
+            final ResultHandle cache, final ResultHandle smallRyeConfig) {
         return body.newInstance(TREE_MAP_CTOR);
     }
 
-    void getDefaultValueIntoEnclosingGroup(final Object enclosing, final SmallRyeConfig config, final Field field) {
+    void getDefaultValueIntoEnclosingGroup(final Object enclosing, final ExpandingConfigSource.Cache cache,
+            final SmallRyeConfig config, final Field field) {
         try {
             field.set(enclosing, new TreeMap<>());
         } catch (IllegalAccessException e) {
@@ -115,7 +122,7 @@ public class MapConfigType extends CompoundConfigType {
     }
 
     void generateGetDefaultValueIntoEnclosingGroup(final BytecodeCreator body, final ResultHandle enclosing,
-            final MethodDescriptor setter, final ResultHandle config) {
+            final MethodDescriptor setter, final ResultHandle cache, final ResultHandle config) {
         body.invokeStaticMethod(setter, enclosing, body.newInstance(TREE_MAP_CTOR));
     }
 }

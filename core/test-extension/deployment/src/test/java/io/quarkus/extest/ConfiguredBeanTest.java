@@ -105,6 +105,8 @@ public class ConfiguredBeanTest {
             throw new IllegalStateException(
                     "buildTimeConfig.allValues.simpleMap.size != 2; " + buildTimeConfig.allValues.nestedConfigMap.size());
         }
+        Assertions.assertNotEquals("${java.vm.version}", buildTimeConfig.allValues.expandedDefault);
+        Assertions.assertFalse(buildTimeConfig.allValues.expandedDefault.isEmpty());
     }
 
     /**
@@ -149,6 +151,8 @@ public class ConfiguredBeanTest {
         Assertions.assertEquals(1, runTimeConfig.allValues.longList.get(0).longValue());
         Assertions.assertEquals(2, runTimeConfig.allValues.longList.get(1).longValue());
         Assertions.assertEquals(3, runTimeConfig.allValues.longList.get(2).longValue());
+        Assertions.assertNotEquals("${java.vm.version}", runTimeConfig.allValues.expandedDefault);
+        Assertions.assertFalse(runTimeConfig.allValues.expandedDefault.isEmpty());
     }
 
     /**

@@ -56,6 +56,9 @@ public class AllValuesConfig {
     /** A List of long values */
     @ConfigItem
     public List<Long> longList;
+    /** A configuration item that has a default value that is an expression */
+    @ConfigItem(defaultValue = "${java.vm.version}")
+    public String expandedDefault;
 
     @Override
     public String toString() {

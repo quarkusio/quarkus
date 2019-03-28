@@ -2,6 +2,7 @@ package io.quarkus.deployment.configuration;
 
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
 
@@ -17,14 +18,17 @@ public abstract class CompoundConfigType extends ConfigType {
      * Get or create a child instance of this node.
      *
      * @param name the property name of the child instance (must not be {@code null})
+     * @param cache
      * @param config the configuration (must not be {@code null})
      * @param self the instance of this node (must not be {@code null})
      * @param childName the static child name, or {@code null} if the child name is dynamic
      * @return the child instance
      */
-    abstract Object getChildObject(NameIterator name, SmallRyeConfig config, Object self, String childName);
+    abstract Object getChildObject(NameIterator name, final ExpandingConfigSource.Cache cache, SmallRyeConfig config,
+            Object self, String childName);
 
-    abstract ResultHandle generateGetChildObject(BytecodeCreator body, ResultHandle name, ResultHandle config,
+    abstract ResultHandle generateGetChildObject(BytecodeCreator body, ResultHandle name, final ResultHandle cache,
+            ResultHandle config,
             ResultHandle self, String childName);
 
     /**
@@ -44,15 +48,18 @@ public abstract class CompoundConfigType extends ConfigType {
      * Get or create the instance of this root, recursively adding it to its parent if necessary.
      *
      * @param name the name of this property node (must not be {@code null})
+     * @param cache
      * @param config the configuration (must not be {@code null})
      * @return the possibly new object instance
      */
-    abstract Object getOrCreate(NameIterator name, SmallRyeConfig config);
+    abstract Object getOrCreate(NameIterator name, final ExpandingConfigSource.Cache cache, SmallRyeConfig config);
 
-    abstract ResultHandle generateGetOrCreate(BytecodeCreator body, ResultHandle name, ResultHandle config);
+    abstract ResultHandle generateGetOrCreate(BytecodeCreator body, ResultHandle name, final ResultHandle cache,
+            ResultHandle config);
 
-    abstract void acceptConfigurationValueIntoLeaf(LeafConfigType leafType, NameIterator name, SmallRyeConfig config);
+    abstract void acceptConfigurationValueIntoLeaf(LeafConfigType leafType, NameIterator name,
+            final ExpandingConfigSource.Cache cache, SmallRyeConfig config);
 
     abstract void generateAcceptConfigurationValueIntoLeaf(BytecodeCreator body, LeafConfigType leafType, ResultHandle name,
-            ResultHandle config);
+            final ResultHandle cache, ResultHandle config);
 }

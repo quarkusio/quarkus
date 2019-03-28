@@ -1,0 +1,55 @@
+include::./attributes.adoc[]
+= {project-name} - Deploying on OpenShift with S2I
+
+This guide covers:
+
+* The deployment of the application to OpenShift using S2I to build
+
+== Prerequisites
+
+For this guide you need:
+
+* roughly 5 minutes
+* having access to an OpenShift cluster. Minishift is a valid option.
+
+== Solution
+
+We recommend to follow the instructions in the next sections and build the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `getting-started` directory.
+
+== Deploying the application in OpenShift
+
+In this section, we are going to leverage the S2I build mechanism of OpenShift.
+We use a Java S2I Builder, and therefore do not need a `Dockerfile` in this approach.
+You do not need to locally clone the Git repository, as it will be directly built since OpenShift.
+We are going to create an OpenShift `build` executing it:
+
+[source,shell]
+----
+# To build the image on OpenShift
+oc new-app registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift~{quickstarts-clone-url} --context-dir=getting-started --name=quarkus-quickstart
+oc logs -f bc/quarkus-quickstart
+
+# To create the route
+oc expose svc/quarkus-quickstart
+
+# Get the route URL
+export URL="http://$(oc get route | grep quarkus-quickstart | awk '{print $2}')"
+curl $URL/hello/greeting/quarkus
+----
+
+Your application is accessible at the printed URL.
+
+== Background
+
+The `.s2i/environment` file sets required variables for the S2I Builder image to find the Quarkus `runner` JAR, and copy the JARs from the `lib/` directory.
+
+== Going further
+
+This guide covered the deployment of a Quarkus application on OpenShift using S2I.
+However, there is much more, and the integration with these environments has been tailored to make Quarkus applications execution very smooth.
+For instance, the health extension can be used for health check; the configuration support allows mounting the application configuration using config map, the metric extension produces data _scrappable_ by Prometheus and so on.

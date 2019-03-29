@@ -405,18 +405,21 @@ public final class HibernateOrmProcessor {
 
                 // sql-load-script
                 // explicit file or default one
-                String file = hibernateConfig.sqlLoadScript.orElse("import.sql"); //default Hibernate ORM file imported
+                String importFile = hibernateConfig.sqlLoadScript.orElse("import.sql"); //default Hibernate ORM file imported
 
                 Optional<Path> loadScriptPath = Optional
-                        .ofNullable(applicationArchivesBuildItem.getRootArchive().getChildPath(file));
+                        .ofNullable(applicationArchivesBuildItem.getRootArchive().getChildPath(importFile));
+
+                // we enroll for hot deployment even if the file does not exist
+                hotDeploymentProducer.produce(new HotDeploymentConfigFileBuildItem(importFile));
+
                 // enlist resource if present
                 loadScriptPath
                         .filter(path -> !Files.isDirectory(path))
                         .ifPresent(path -> {
                             String resourceAsString = root.getPath().relativize(loadScriptPath.get()).toString();
                             resourceProducer.produce(new SubstrateResourceBuildItem(resourceAsString));
-                            hotDeploymentProducer.produce(new HotDeploymentConfigFileBuildItem(resourceAsString));
-                            desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, file);
+                            desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, importFile);
                         });
 
                 //raise exception if explicit file is not present (i.e. not the default)

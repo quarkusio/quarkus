@@ -19,7 +19,7 @@ public class QuarkusPluginTest {
         TaskContainer tasks = project.getTasks();
         assertNotNull(tasks.getByName("quarkusBuild"));
         assertNotNull(tasks.getByName("quarkusDev"));
-        assertNotNull(tasks.getByName("quarkusNative"));
+        assertNotNull(tasks.getByName("buildNative"));
         assertNotNull(tasks.getByName("listExtensions"));
         assertNotNull(tasks.getByName("addExtension"));
     }

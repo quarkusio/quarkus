@@ -63,7 +63,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                     quarkusBuild.dependsOn(classesTask);
                 });
 
-        tasks.create("quarkusNative", QuarkusNative.class).dependsOn(quarkusBuild);
+        tasks.create("buildNative", QuarkusNative.class).dependsOn(quarkusBuild);
     }
 
     private void verifyGradleVersion() {

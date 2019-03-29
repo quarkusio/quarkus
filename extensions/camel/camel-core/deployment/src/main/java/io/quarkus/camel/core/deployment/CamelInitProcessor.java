@@ -96,7 +96,7 @@ class CamelInitProcessor {
         listeners
                 .produce(new BeanContainerListenerBuildItem(template.initRuntimeInjection(runtime.getRuntime())));
 
-        return new AdditionalBeanBuildItem(CamelProducers.class);
+        return new AdditionalBeanBuildItem(false, CamelProducers.class);
     }
 
     @Record(ExecutionTime.STATIC_INIT)

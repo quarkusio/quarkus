@@ -9,14 +9,20 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
+import java.security.Provider;
+import java.security.Security;
 import java.security.interfaces.DSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -40,6 +46,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
 import io.quarkus.extest.runtime.IConfigConsumer;
@@ -59,6 +66,7 @@ import io.quarkus.extest.runtime.subst.DSAPublicKeyObjectSubstitution;
 import io.quarkus.extest.runtime.subst.KeyProxy;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.deployment.ServletBuildItem;
+import sun.security.jca.Providers;
 
 /**
  * A test extension deployment processor
@@ -226,6 +234,10 @@ public final class TestProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     void checkConfig() {
+        if (!configRoot.validateBuildConfig) {
+            return;
+        }
+
         // Deployment time configuration
         if (!buildTimeConfig.btSBV.getValue().equals("StringBasedValue")) {
             throw new IllegalStateException("buildTimeConfig.btSBV != StringBasedValue; " + buildTimeConfig.btSBV.getValue());
@@ -393,5 +405,28 @@ public final class TestProcessor {
     ServiceStartBuildItem boot(LaunchModeBuildItem launchMode) {
         log.infof("boot, launchMode=%s", launchMode.getLaunchMode());
         return new ServiceStartBuildItem("test-service");
+    }
+
+    @BuildStep
+    @Record(STATIC_INIT)
+    void registerSUNProvider(BuildProducer<ReflectiveClassBuildItem> classes) {
+        Provider provider = Security.getProvider("SUN");
+        ArrayList<String> providerClasses = new ArrayList<>();
+        providerClasses.add(provider.getClass().getName());
+        Set<Provider.Service> services = provider.getServices();
+        for (Provider.Service service : services) {
+            String serviceClass = service.getClassName();
+            providerClasses.add(serviceClass);
+            // Need to pull in the key classes
+            String supportedKeyClasses = service.getAttribute("SupportedKeyClasses");
+            if (supportedKeyClasses != null) {
+                String[] keyClasses = supportedKeyClasses.split("\\|");
+                providerClasses.addAll(Arrays.asList(keyClasses));
+            }
+        }
+        for (String className : providerClasses) {
+            classes.produce(new ReflectiveClassBuildItem(true, true, className));
+            log.debugf("Register SUN.provider class: %s", className);
+        }
     }
 }

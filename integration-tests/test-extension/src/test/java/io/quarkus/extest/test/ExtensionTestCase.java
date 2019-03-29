@@ -1,4 +1,4 @@
-package io.quarkus.extest;
+package io.quarkus.extest.test;
 
 import static org.hamcrest.Matchers.is;
 
@@ -10,15 +10,11 @@ import java.net.Socket;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
-/**
- * Native image tests
- */
-@SubstrateTest
-public class NativeImageIT {
-
+@QuarkusTest
+public class ExtensionTestCase {
     /**
      * Test the RuntimeXmlConfigService using old school sockets
      */
@@ -41,4 +37,5 @@ public class NativeImageIT {
         RestAssured.when().get("/commands/ping").then()
                 .body(is("/ping-ack"));
     }
+
 }

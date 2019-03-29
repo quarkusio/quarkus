@@ -12,4 +12,10 @@ public class TestConfigRoot {
      */
     @ConfigProperty
     public String dsaKeyLocation;
+
+    /**
+     * Should the TestProcessor#checkConfig method validate the buildTimeConfig
+     */
+    @ConfigProperty(defaultValue = "false")
+    public boolean validateBuildConfig;
 }

@@ -341,7 +341,7 @@ public class DevMojo extends AbstractMojo {
             args.add(wiringClassesDirectory.getAbsolutePath());
             args.add(new File(buildDir, "transformer-cache").getAbsolutePath());
             // Display the launch command line in debug mode
-            getLog().debug("Launching JVM with comand line: " + args.toString());
+            getLog().debug("Launching JVM with command line: " + args.toString());
             ProcessBuilder pb = new ProcessBuilder(args.toArray(new String[0]));
             pb.redirectError(ProcessBuilder.Redirect.INHERIT);
             pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);

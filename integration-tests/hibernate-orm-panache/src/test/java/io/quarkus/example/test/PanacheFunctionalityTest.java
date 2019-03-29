@@ -18,8 +18,11 @@ package io.quarkus.example.test;
 
 import static org.hamcrest.Matchers.is;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.example.panache.Person;
+import io.quarkus.test.junit.DisabledOnSubstrate;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
@@ -40,4 +43,9 @@ public class PanacheFunctionalityTest {
         RestAssured.when().get("/test/model3").then().body(is("OK"));
     }
 
+    @DisabledOnSubstrate
+    @Test
+    public void testPanacheInTest() {
+        Assertions.assertEquals(0, Person.count());
+    }
 }

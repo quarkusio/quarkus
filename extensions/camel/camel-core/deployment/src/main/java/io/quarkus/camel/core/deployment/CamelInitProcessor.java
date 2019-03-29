@@ -3,6 +3,7 @@ package io.quarkus.camel.core.deployment;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -96,7 +97,7 @@ class CamelInitProcessor {
         listeners
                 .produce(new BeanContainerListenerBuildItem(template.initRuntimeInjection(runtime.getRuntime())));
 
-        return new AdditionalBeanBuildItem(false, CamelProducers.class);
+        return AdditionalBeanBuildItem.unremovableOf(CamelProducers.class);
     }
 
     @Record(ExecutionTime.STATIC_INIT)

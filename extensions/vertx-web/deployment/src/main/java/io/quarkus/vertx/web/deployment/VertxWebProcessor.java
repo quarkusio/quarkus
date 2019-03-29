@@ -75,7 +75,7 @@ class VertxWebProcessor {
             BuildProducer<RouteHandlerBuildItem> routeHandlerBusinessMethods,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
 
-        additionalBean.produce(new AdditionalBeanBuildItem(false, RouterProducer.class));
+        additionalBean.produce(AdditionalBeanBuildItem.unremovableOf(RouterProducer.class));
         feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX_WEB));
         unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(ROUTE)));
         unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(ROUTES)));

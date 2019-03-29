@@ -55,6 +55,7 @@ import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildIte
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigDefinition;
 import io.quarkus.deployment.configuration.ConfigPatternMap;
+import io.quarkus.deployment.configuration.DefaultValuesConfigurationSource;
 import io.quarkus.deployment.configuration.LeafConfigType;
 import io.quarkus.deployment.recording.ObjectLoader;
 import io.quarkus.deployment.util.ServiceUtil;
@@ -68,6 +69,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.configuration.AbstractRawDefaultConfigSource;
 import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSource;
 import io.quarkus.runtime.configuration.BuildTimeConfigFactory;
 import io.quarkus.runtime.configuration.CidrAddressConverter;
@@ -97,9 +99,13 @@ public class ConfigurationSetup {
     public static final String BUILD_TIME_CONFIG_ROOT = "io.quarkus.runtime.generated.BuildTimeConfigRoot";
     public static final String RUN_TIME_CONFIG = "io.quarkus.runtime.generated.RunTimeConfig";
     public static final String RUN_TIME_CONFIG_ROOT = "io.quarkus.runtime.generated.RunTimeConfigRoot";
+    public static final String RUN_TIME_DEFAULTS = "io.quarkus.runtime.generated.RunTimeDefaultConfigSource";
 
     public static final MethodDescriptor CREATE_RUN_TIME_CONFIG = MethodDescriptor.ofMethod(RUN_TIME_CONFIG,
             "getRunTimeConfiguration", void.class);
+    public static final MethodDescriptor ECS_EXPAND_VALUE = MethodDescriptor.ofMethod(ExpandingConfigSource.class,
+            "expandValue",
+            String.class, String.class, ExpandingConfigSource.Cache.class);
 
     private static final FieldDescriptor RUN_TIME_CONFIG_FIELD = FieldDescriptor.of(RUN_TIME_CONFIG, "runConfig",
             RUN_TIME_CONFIG_ROOT);
@@ -140,9 +146,16 @@ public class ConfigurationSetup {
 
     private static final MethodDescriptor BTCF_GET_CONFIG_SOURCE = MethodDescriptor.ofMethod(BuildTimeConfigFactory.class,
             "getBuildTimeConfigSource", ConfigSource.class);
+    private static final MethodDescriptor ECS_CACHE_CONSTRUCT = MethodDescriptor
+            .ofConstructor(ExpandingConfigSource.Cache.class);
+    private static final MethodDescriptor ECS_WRAPPER = MethodDescriptor.ofMethod(ExpandingConfigSource.class, "wrapper",
+            UnaryOperator.class, ExpandingConfigSource.Cache.class);
 
-    private static final FieldDescriptor ECS_WRAPPER = FieldDescriptor.of(ExpandingConfigSource.class, "WRAPPER",
-            UnaryOperator.class);
+    private static final MethodDescriptor RTD_CTOR = MethodDescriptor.ofConstructor(RUN_TIME_DEFAULTS);
+    private static final MethodDescriptor RTD_GET_VALUE = MethodDescriptor.ofMethod(RUN_TIME_DEFAULTS, "getValue", String.class,
+            NameIterator.class);
+    private static final MethodDescriptor ARDCS_CTOR = MethodDescriptor.ofConstructor(AbstractRawDefaultConfigSource.class);
+
     private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
 
     public ConfigurationSetup() {
@@ -228,10 +241,13 @@ public class ConfigurationSetup {
         // now prepare & load the build configuration
         SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
         // expand properties
-        builder.withWrapper(ExpandingConfigSource::new);
+        final ExpandingConfigSource.Cache cache = new ExpandingConfigSource.Cache();
+        builder.withWrapper(ExpandingConfigSource.wrapper(cache));
         builder.addDefaultSources();
         final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
-        builder.withSources(inJar);
+        final DefaultValuesConfigurationSource defaultSource = new DefaultValuesConfigurationSource(
+                buildTimeConfig.getLeafPatterns());
+        builder.withSources(inJar, defaultSource);
         for (ConfigurationCustomConverterBuildItem converter : converters) {
             withConverterHelper(builder, converter.getType(), converter.getPriority(), converter.getConverter());
         }
@@ -239,7 +255,7 @@ public class ConfigurationSetup {
                 .addDiscoveredSources().addDiscoveredConverters().build();
         SmallRyeConfigProviderResolver.instance().registerConfig(src, Thread.currentThread().getContextClassLoader());
         final Set<String> unmatched = new HashSet<>();
-        ConfigDefinition.loadConfiguration(src, unmatched,
+        ConfigDefinition.loadConfiguration(cache, src, unmatched,
                 buildTimeConfig,
                 buildTimeRunTimeConfig, // this one is only for generating a default-values config source
                 runTimeConfig);
@@ -453,7 +469,7 @@ public class ConfigurationSetup {
                         .newInstance(MethodDescriptor.ofConstructor(BUILD_TIME_CONFIG_ROOT, SmallRyeConfig.class), config));
 
                 // write out the parsing for the stored build time config
-                writeParsing(cc, clinit, config, buildTimePatterns);
+                writeParsing(cc, clinit, config, null, buildTimePatterns);
 
                 clinit.returnValue(null);
             }
@@ -494,6 +510,10 @@ public class ConfigurationSetup {
                             builder,
                             arrayHandle);
                 }
+                // default value source
+                final ResultHandle defaultSourceArray = carc.newArray(ConfigSource[].class, carc.load(1));
+                carc.writeArrayValue(defaultSourceArray, 0, carc.newInstance(RTD_CTOR));
+                carc.invokeVirtualMethod(SRCB_WITH_SOURCES, builder, defaultSourceArray);
 
                 // custom run time converters
                 for (ConfigurationCustomConverterBuildItem converter : converters) {
@@ -506,7 +526,8 @@ public class ConfigurationSetup {
                 }
 
                 // property expansion
-                final ResultHandle wrapper = carc.readStaticField(ECS_WRAPPER);
+                final ResultHandle cache = carc.newInstance(ECS_CACHE_CONSTRUCT);
+                final ResultHandle wrapper = carc.invokeStaticMethod(ECS_WRAPPER, cache);
                 carc.invokeVirtualMethod(SRCB_WITH_WRAPPER, builder, wrapper);
 
                 // write out loader for converter types
@@ -538,9 +559,40 @@ public class ConfigurationSetup {
                 carc.writeStaticField(RUN_TIME_CONFIG_FIELD,
                         carc.newInstance(MethodDescriptor.ofConstructor(RUN_TIME_CONFIG_ROOT, SmallRyeConfig.class), config));
 
-                writeParsing(cc, carc, config, runTimePatterns);
+                writeParsing(cc, carc, config, cache, runTimePatterns);
 
                 carc.returnValue(null);
+            }
+        }
+
+        // now construct the default values class
+        try (ClassCreator cc = ClassCreator
+                .builder()
+                .classOutput(classOutput)
+                .className(RUN_TIME_DEFAULTS)
+                .superClass(AbstractRawDefaultConfigSource.class)
+                .build()) {
+
+            // constructor
+            try (MethodCreator ctor = cc.getMethodCreator(RTD_CTOR)) {
+                ctor.setModifiers(Opcodes.ACC_PUBLIC);
+                ctor.invokeSpecialMethod(ARDCS_CTOR, ctor.getThis());
+                ctor.returnValue(null);
+            }
+
+            try (MethodCreator gv = cc.getMethodCreator(RTD_GET_VALUE)) {
+                final ResultHandle nameIter = gv.getMethodParam(0);
+                // if (! nameIter.hasNext()) return null;
+                gv.ifNonZero(gv.invokeVirtualMethod(NI_HAS_NEXT, nameIter)).falseBranch().returnValue(gv.loadNull());
+                // if (! nameIter.nextSegmentEquals("quarkus")) return null;
+                gv.ifNonZero(gv.invokeVirtualMethod(NI_NEXT_EQUALS, nameIter, gv.load("quarkus"))).falseBranch()
+                        .returnValue(gv.loadNull());
+                // nameIter.next(); // skip "quarkus"
+                gv.invokeVirtualMethod(NI_NEXT, nameIter);
+                // return getValue_xx(nameIter);
+                gv.returnValue(gv.invokeVirtualMethod(
+                        generateGetValue(cc, runTimePatterns, new StringBuilder("getValue"), new HashMap<>()), gv.getThis(),
+                        nameIter));
             }
         }
 
@@ -573,8 +625,84 @@ public class ConfigurationSetup {
         runTimeInitConsumer.accept(new RuntimeInitializedClassBuildItem(RUN_TIME_CONFIG));
     }
 
+    private MethodDescriptor generateGetValue(final ClassCreator cc, final ConfigPatternMap<LeafConfigType> keyMap,
+            final StringBuilder methodName, final Map<String, MethodDescriptor> cache) {
+        final String methodNameStr = methodName.toString();
+        final MethodDescriptor existing = cache.get(methodNameStr);
+        if (existing != null) {
+            return existing;
+        }
+        try (MethodCreator body = cc.getMethodCreator(methodNameStr, String.class, NameIterator.class)) {
+            body.setModifiers(Opcodes.ACC_PROTECTED);
+            final ResultHandle nameIter = body.getMethodParam(0);
+            final LeafConfigType matched = keyMap.getMatched();
+            // if (! keyIter.hasNext()) {
+            try (BytecodeCreator matchedBody = body.ifNonZero(body.invokeVirtualMethod(NI_HAS_NEXT, nameIter)).falseBranch()) {
+                if (matched != null) {
+                    // (exact match generated code)
+                    matchedBody.returnValue(
+                            matchedBody.load(matched.getDefaultValueString()));
+                } else {
+                    // return;
+                    matchedBody.returnValue(matchedBody.loadNull());
+                }
+            }
+            // }
+            // branches for each next-string
+            boolean hasWildCard = false;
+            final Iterable<String> names = keyMap.childNames();
+            for (String name : names) {
+                if (name.equals(ConfigPatternMap.WILD_CARD)) {
+                    hasWildCard = true;
+                } else {
+                    // TODO: string switch
+                    // if (keyIter.nextSegmentEquals(name)) {
+                    try (BytecodeCreator nameMatched = body
+                            .ifNonZero(body.invokeVirtualMethod(NI_NEXT_EQUALS, nameIter, body.load(name))).trueBranch()) {
+                        // keyIter.next();
+                        nameMatched.invokeVirtualMethod(NI_NEXT, nameIter);
+                        // (generated recursive)
+                        final int length = methodName.length();
+                        methodName.append('_').append(name);
+                        // result = this.getValue_xxx(nameIter);
+                        final ResultHandle result = nameMatched.invokeVirtualMethod(
+                                generateGetValue(cc, keyMap.getChild(name), methodName, cache), nameMatched.getThis(),
+                                nameIter);
+                        methodName.setLength(length);
+                        // return result;
+                        nameMatched.returnValue(result);
+                    }
+                    // }
+                }
+            }
+            if (hasWildCard) {
+                // consume and parse
+                try (BytecodeCreator matchedBody = body.ifNonZero(body.invokeVirtualMethod(NI_HAS_NEXT, nameIter))
+                        .trueBranch()) {
+                    // keyIter.next();
+                    matchedBody.invokeVirtualMethod(NI_NEXT, nameIter);
+                    // (generated recursive)
+                    final int length = methodName.length();
+                    methodName.append('_').append("wildcard");
+                    // result = this.getValue_xxx(nameIter);
+                    final ResultHandle result = matchedBody.invokeVirtualMethod(
+                            generateGetValue(cc, keyMap.getChild(ConfigPatternMap.WILD_CARD), methodName, cache),
+                            matchedBody.getThis(), nameIter);
+                    methodName.setLength(length);
+                    // return result;
+                    matchedBody.returnValue(result);
+                }
+            }
+            // it's not found
+            body.returnValue(body.loadNull());
+            final MethodDescriptor md = body.getMethodDescriptor();
+            cache.put(methodNameStr, md);
+            return md;
+        }
+    }
+
     private void writeParsing(final ClassCreator cc, final BytecodeCreator body, final ResultHandle config,
-            final ConfigPatternMap<LeafConfigType> keyMap) {
+            final ResultHandle cache, final ConfigPatternMap<LeafConfigType> keyMap) {
         // setup
         // Iterable iterable = config.getPropertyNames();
         final ResultHandle iterable = body.invokeVirtualMethod(
@@ -601,9 +729,17 @@ public class ConfigurationSetup {
                         .continueScope(loop);
                 // keyIter.next(); // skip "quarkus"
                 hasNext.invokeVirtualMethod(NI_NEXT, keyIter);
-                // parse(config, keyIter);
-                hasNext.invokeStaticMethod(generateParserBody(cc, keyMap, new StringBuilder("parseKey"), new HashMap<>()),
-                        config, keyIter);
+                // parse(config, cache, keyIter); - or - parse(config, keyIter);
+                final ResultHandle[] args;
+                final boolean expand = cache != null;
+                if (expand) {
+                    args = new ResultHandle[] { config, cache, keyIter };
+                } else {
+                    args = new ResultHandle[] { config, keyIter };
+                }
+                hasNext.invokeStaticMethod(
+                        generateParserBody(cc, keyMap, new StringBuilder("parseKey"), new HashMap<>(), expand),
+                        args);
                 // continue loop;
                 hasNext.continueScope(loop);
             }
@@ -614,23 +750,30 @@ public class ConfigurationSetup {
     }
 
     private MethodDescriptor generateParserBody(final ClassCreator cc, final ConfigPatternMap<LeafConfigType> keyMap,
-            final StringBuilder methodName, final Map<String, MethodDescriptor> parseMethodCache) {
+            final StringBuilder methodName, final Map<String, MethodDescriptor> parseMethodCache, final boolean expand) {
         final String methodNameStr = methodName.toString();
         final MethodDescriptor existing = parseMethodCache.get(methodNameStr);
         if (existing != null) {
             return existing;
         }
-        try (MethodCreator body = cc.getMethodCreator(methodName.toString(), void.class, SmallRyeConfig.class,
-                NameIterator.class)) {
+        final Class<?>[] argTypes;
+        if (expand) {
+            argTypes = new Class<?>[] { SmallRyeConfig.class, ExpandingConfigSource.Cache.class, NameIterator.class };
+        } else {
+            argTypes = new Class<?>[] { SmallRyeConfig.class, NameIterator.class };
+        }
+        try (MethodCreator body = cc.getMethodCreator(methodName.toString(), void.class,
+                argTypes)) {
             body.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);
             final ResultHandle config = body.getMethodParam(0);
-            final ResultHandle keyIter = body.getMethodParam(1);
+            final ResultHandle cache = expand ? body.getMethodParam(1) : null;
+            final ResultHandle keyIter = expand ? body.getMethodParam(2) : body.getMethodParam(1);
             final LeafConfigType matched = keyMap.getMatched();
             // if (! keyIter.hasNext()) {
             try (BytecodeCreator matchedBody = body.ifNonZero(body.invokeVirtualMethod(NI_HAS_NEXT, keyIter)).falseBranch()) {
                 if (matched != null) {
                     // (exact match generated code)
-                    matched.generateAcceptConfigurationValue(matchedBody, keyIter, config);
+                    matched.generateAcceptConfigurationValue(matchedBody, keyIter, cache, config);
                 } else {
                     // todo: unknown name warning goes here
                 }
@@ -654,8 +797,15 @@ public class ConfigurationSetup {
                         // (generated recursive)
                         final int length = methodName.length();
                         methodName.append('_').append(name);
+                        final ResultHandle[] args;
+                        if (expand) {
+                            args = new ResultHandle[] { config, cache, keyIter };
+                        } else {
+                            args = new ResultHandle[] { config, keyIter };
+                        }
                         nameMatched.invokeStaticMethod(
-                                generateParserBody(cc, keyMap.getChild(name), methodName, parseMethodCache), config, keyIter);
+                                generateParserBody(cc, keyMap.getChild(name), methodName, parseMethodCache, expand),
+                                args);
                         methodName.setLength(length);
                         // return;
                         nameMatched.returnValue(null);
@@ -672,9 +822,16 @@ public class ConfigurationSetup {
                     // (generated recursive)
                     final int length = methodName.length();
                     methodName.append('_').append("wildcard");
+                    final ResultHandle[] args;
+                    if (expand) {
+                        args = new ResultHandle[] { config, cache, keyIter };
+                    } else {
+                        args = new ResultHandle[] { config, keyIter };
+                    }
                     matchedBody.invokeStaticMethod(
-                            generateParserBody(cc, keyMap.getChild(ConfigPatternMap.WILD_CARD), methodName, parseMethodCache),
-                            config, keyIter);
+                            generateParserBody(cc, keyMap.getChild(ConfigPatternMap.WILD_CARD), methodName, parseMethodCache,
+                                    expand),
+                            args);
                     methodName.setLength(length);
                     // return;
                     matchedBody.returnValue(null);

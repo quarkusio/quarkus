@@ -50,8 +50,6 @@ public class AddExtensionMojo extends AbstractMojo {
             ext.add(extension);
         }
 
-        getLog().info("FOO " + ext);
-
         try {
             Model model = project.getOriginalModel().clone();
             new AddExtensions(model.getPomFile())

@@ -37,7 +37,7 @@ public class ConfigBuildStep {
 
     @BuildStep
     AdditionalBeanBuildItem bean() {
-        return new AdditionalBeanBuildItem(ConfigProducer.class.getName());
+        return new AdditionalBeanBuildItem(ConfigProducer.class);
     }
 
     @BuildStep

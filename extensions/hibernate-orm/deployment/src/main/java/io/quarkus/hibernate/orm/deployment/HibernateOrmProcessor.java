@@ -236,8 +236,10 @@ public final class HibernateOrmProcessor {
             return;
         }
 
-        additionalBeans.produce(new AdditionalBeanBuildItem(false, JPAConfig.class, TransactionEntityManagers.class,
-                RequestScopedEntityManagerHolder.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                .addBeanClasses(JPAConfig.class, TransactionEntityManagers.class,
+                        RequestScopedEntityManagerHolder.class)
+                .build());
 
         if (descriptors.size() == 1) {
             // There is only one persistence unit - register CDI beans for EM and EMF if no

@@ -22,7 +22,7 @@ What we're doing in Panache is allow you to write your Hibernate ORM entities li
 public class Person extends PanacheEntity {
     public String name;
     public LocalDate birth;
-    public PersonStatus status;
+    public Status status;
     
     public static Person findByName(String name){
       return find("name", name).firstResult();
@@ -102,7 +102,7 @@ columns as public fields:
 public class Person extends PanacheEntity {
     public String name;
     public LocalDate birth;
-    public PersonStatus status;
+    public Status status;
 }
 --
 
@@ -115,7 +115,7 @@ You can put all your JPA column annotations on the public fields. If you need a 
 public class Person extends PanacheEntity {
     public String name;
     public LocalDate birth;
-    public PersonStatus status;
+    public Status status;
     
     // this will store all names in lowercase in the DB,
     // and make them uppercase in the model
@@ -167,10 +167,10 @@ person = Person.findById(personId);
 List<Person> livingPersons = Person.list("status", Status.Alive);
 
 // counting all persons
-int countAll = Person.count();
+long countAll = Person.count();
 
 // counting all living persons
-int countAlive = Person.count("status", Status.Alive);
+long countAlive = Person.count("status", Status.Alive);
 
 // delete all living persons
 Person.delete("status", Status.Alive);
@@ -259,7 +259,7 @@ in your entity class:
 public class Person extends PanacheEntity {
     public String name;
     public LocalDate birth;
-    public PersonStatus status;
+    public Status status;
     
     public static Person findByName(String name){
       return find("name", name).firstResult();

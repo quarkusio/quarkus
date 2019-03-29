@@ -67,6 +67,7 @@ import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestInjectionManager;
 import io.quarkus.test.common.TestResourceManager;
+import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
@@ -270,11 +271,13 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         RestAssuredURLManager.clearURL();
+        TestScopeManager.setup();
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
         RestAssuredURLManager.setURL();
+        TestScopeManager.tearDown();
     }
 
     @Override

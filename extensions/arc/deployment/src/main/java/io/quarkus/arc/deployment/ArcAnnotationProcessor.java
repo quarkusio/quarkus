@@ -47,7 +47,6 @@ import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanDeployment;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanProcessor;
-import io.quarkus.arc.processor.BeanProcessor.Builder;
 import io.quarkus.arc.processor.ReflectionRegistration;
 import io.quarkus.arc.processor.ResourceOutput;
 import io.quarkus.arc.runtime.AdditionalBean;
@@ -137,7 +136,7 @@ public class ArcAnnotationProcessor {
         List<String> additionalBeans = beanArchiveIndex.getAdditionalBeans();
         Set<DotName> generatedClassNames = beanArchiveIndex.getGeneratedClassNames();
         IndexView index = beanArchiveIndex.getIndex();
-        Builder builder = BeanProcessor.builder();
+        BeanProcessor.Builder builder = BeanProcessor.builder();
         builder.setApplicationClassPredicate(new Predicate<DotName>() {
             @Override
             public boolean test(DotName dotName) {
@@ -159,10 +158,19 @@ public class ArcAnnotationProcessor {
 
             @Override
             public void transform(TransformationContext transformationContext) {
-                ClassInfo target = transformationContext.getTarget().asClass();
-                if (additionalBeans.contains(target.name().toString()) && !target.annotations().containsKey(ADDITIONAL_BEAN)) {
-                    // Add special stereotype so that @Dependent is automatically used even if no scope is declared
-                    transformationContext.transform().add(ADDITIONAL_BEAN).done();
+                ClassInfo beanClass = transformationContext.getTarget().asClass();
+                String beanClassName = beanClass.name().toString();
+                if (additionalBeans.contains(beanClassName)) {
+                    // This is an additional bean - try to determine the default scope
+                    DotName defaultScope = ArcAnnotationProcessor.this.additionalBeans.stream()
+                            .filter(ab -> ab.contains(beanClassName)).findFirst().map(AdditionalBeanBuildItem::getDefaultScope)
+                            .orElse(null);
+                    if (defaultScope == null && !beanClass.annotations().containsKey(ADDITIONAL_BEAN)) {
+                        // Add special stereotype so that @Dependent is automatically used even if no scope is declared
+                        transformationContext.transform().add(ADDITIONAL_BEAN).done();
+                    } else {
+                        transformationContext.transform().add(defaultScope).done();
+                    }
                 }
             }
         });

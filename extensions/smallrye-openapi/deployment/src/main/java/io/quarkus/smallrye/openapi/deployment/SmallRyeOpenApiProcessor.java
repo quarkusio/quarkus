@@ -116,9 +116,8 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    List<AdditionalBeanBuildItem> beans() {
-        return Arrays.asList(new AdditionalBeanBuildItem(OpenApiServlet.class),
-                new AdditionalBeanBuildItem(OpenApiDocumentProducer.class));
+    AdditionalBeanBuildItem beans() {
+        return new AdditionalBeanBuildItem(OpenApiServlet.class, OpenApiDocumentProducer.class);
     }
 
     @BuildStep

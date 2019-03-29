@@ -10,6 +10,7 @@ import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
 
@@ -41,6 +42,8 @@ public abstract class ConfigType {
 
     static final MethodDescriptor MAP_PUT_METHOD = MethodDescriptor.ofMethod(Map.class, "put", Object.class, Object.class,
             Object.class);
+
+    static final MethodDescriptor ECS_CACHE_CTOR = MethodDescriptor.ofConstructor(ExpandingConfigSource.Cache.class);
 
     /**
      * Containing name. This is a field name or a map key, <em>not</em> a configuration key segment; as such, it is
@@ -114,18 +117,20 @@ public abstract class ConfigType {
 
     /**
      * Get the default value of this type into the enclosing element.
-     *
+     * 
      * @param enclosing the instance of the enclosing type (must not be {@code null})
+     * @param cache
      * @param config the configuration (must not be {@code null})
      * @param field the field to read the value into
      */
-    abstract void getDefaultValueIntoEnclosingGroup(final Object enclosing, final SmallRyeConfig config, final Field field);
+    abstract void getDefaultValueIntoEnclosingGroup(final Object enclosing, final ExpandingConfigSource.Cache cache,
+            final SmallRyeConfig config, final Field field);
 
     abstract void generateGetDefaultValueIntoEnclosingGroup(final BytecodeCreator body, final ResultHandle enclosing,
-            final MethodDescriptor setter, final ResultHandle config);
+            final MethodDescriptor setter, final ResultHandle cache, final ResultHandle config);
 
     public abstract ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder,
-            final ResultHandle smallRyeConfig);
+            final ResultHandle cache, final ResultHandle smallRyeConfig);
 
     public ConfigDefinition getConfigDefinition() {
         return container.getConfigDefinition();

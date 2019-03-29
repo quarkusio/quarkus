@@ -39,7 +39,7 @@ public class ConfigExpanderTestCase {
 
     private SmallRyeConfig buildConfig(Map<String, String> configMap) {
         final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
-        builder.withWrapper(ExpandingConfigSource.WRAPPER);
+        builder.withWrapper(ExpandingConfigSource.wrapper(new ExpandingConfigSource.Cache()));
         builder.withSources(new PropertiesConfigSource(configMap, "test input", 500));
         final SmallRyeConfig config = (SmallRyeConfig) builder.build();
         cpr.registerConfig(config, classLoader);

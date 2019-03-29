@@ -99,7 +99,7 @@ Note: {project-name} do not allow both link:getting-started-testing.html[Quarkus
 SubstrateTests should be seen as integration tests and moved to a different folder
 as recommended here:
 https://docs.gradle.org/current/userguide/java_testing.html#sec:configuring_java_integration_tests[Configuring integration tests].
-{project-name} supports running Substrate tests with Gradle, but the `quarkusNative` task is required to be completed first.
+{project-name} supports running Substrate tests with Gradle, but the `buildNative` task is required to be completed first.
 
 == Dealing with extensions
 
@@ -192,7 +192,7 @@ Native executables make {project-name} applications ideal for containers and ser
 
 Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
 
-Create a native executable using: `./gradlew quarkusNative`.
+Create a native executable using: `./gradlew buildNative`.
 A native executable will be present in `build/`.
 
 === Build a container friendly executable
@@ -202,7 +202,7 @@ To create an executable that will run in a container, use the following:
 
 [source,shell]
 ----
-./gradlew quarkusNative --docker-build=true
+./gradlew buildNative --docker-build=true
 ----
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system

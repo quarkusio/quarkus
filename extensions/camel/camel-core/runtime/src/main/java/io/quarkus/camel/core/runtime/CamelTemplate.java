@@ -8,6 +8,7 @@ import org.apache.camel.RoutesBuilder;
 import org.apache.camel.spi.Registry;
 
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.camel.core.runtime.support.FastCamelRuntime;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
@@ -60,6 +61,10 @@ public class CamelTemplate {
                 }
             }
         });
+    }
+
+    public BeanContainerListener initRuntimeInjection(RuntimeValue<CamelRuntime> runtime) {
+        return container -> container.instance(CamelProducers.class).setCamelRuntime(runtime.getValue());
     }
 
 }

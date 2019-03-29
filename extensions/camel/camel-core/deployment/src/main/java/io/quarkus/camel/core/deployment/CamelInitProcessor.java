@@ -21,13 +21,15 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
 import io.quarkus.camel.core.runtime.CamelConfig;
 import io.quarkus.camel.core.runtime.CamelConfig.BuildTime;
+import io.quarkus.camel.core.runtime.CamelProducers;
 import io.quarkus.camel.core.runtime.CamelRuntime;
 import io.quarkus.camel.core.runtime.CamelTemplate;
 import io.quarkus.camel.core.runtime.support.RuntimeRegistry;
@@ -81,6 +83,20 @@ class CamelInitProcessor {
                 .produce(RuntimeBeanBuildItem.builder(CamelRuntime.class).setRuntimeValue(camelRuntime).build());
 
         return new CamelRuntimeBuildItem(camelRuntime);
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep(applicationArchiveMarkers = { CamelSupport.CAMEL_SERVICE_BASE_PATH, CamelSupport.CAMEL_ROOT_PACKAGE_DIRECTORY })
+    AdditionalBeanBuildItem createCamelProducers(
+            RecorderContext recorderContext,
+            CamelRuntimeBuildItem runtime,
+            CamelTemplate template,
+            BuildProducer<BeanContainerListenerBuildItem> listeners) {
+
+        listeners
+                .produce(new BeanContainerListenerBuildItem(template.initRuntimeInjection(runtime.getRuntime())));
+
+        return new AdditionalBeanBuildItem(CamelProducers.class);
     }
 
     @Record(ExecutionTime.STATIC_INIT)

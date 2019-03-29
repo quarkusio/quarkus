@@ -34,7 +34,7 @@ import org.junit.Test;
 public class RequestContextTest {
 
     @Rule
-    public ArcTestContainer container = new ArcTestContainer(Controller.class, ControllerClient.class);
+    public ArcTestContainer container = new ArcTestContainer(Controller.class, ControllerClient.class, ContextObserver.class);
 
     @Test
     public void testRequestContext() {
@@ -128,6 +128,74 @@ public class RequestContextTest {
         ControllerClient client = arc.instance(ControllerClient.class).get();
         assertNotEquals(controller2Id, client.getControllerId());
         assertTrue(Controller.DESTROYED.get());
+    }
+
+    @Test
+    public void testRequestContextEvents() {
+        // reset counters since other tests might have triggered it already
+        ContextObserver.reset();
+
+        // firstly test manual activation
+        ArcContainer arc = Arc.container();
+        ManagedContext requestContext = arc.requestContext();
+
+        try {
+            arc.instance(Controller.class).get().getId();
+            fail();
+        } catch (ContextNotActiveException expected) {
+        }
+
+        requestContext.activate();
+        assertEquals(1, ContextObserver.initializedObserved);
+        assertEquals(0, ContextObserver.beforeDestroyedObserved);
+        assertEquals(0, ContextObserver.destroyedObserved);
+
+        // dummy check that bean is available
+        arc.instance(Controller.class).get().getId();
+
+        requestContext.terminate();
+        assertEquals(1, ContextObserver.initializedObserved);
+        assertEquals(1, ContextObserver.beforeDestroyedObserved);
+        assertEquals(1, ContextObserver.destroyedObserved);
+
+        try {
+            arc.instance(Controller.class).get().getId();
+            fail();
+        } catch (ContextNotActiveException expected) {
+        }
+
+        // now test the same but activate context via interceptor (@ActivateRequestContext)
+        arc.instance(ControllerClient.class).get().getControllerId();
+        assertEquals(2, ContextObserver.initializedObserved);
+        assertEquals(2, ContextObserver.beforeDestroyedObserved);
+        assertEquals(2, ContextObserver.destroyedObserved);
+
+        // lastly, use RequestContextController bean to handle the context
+        try {
+            arc.instance(Controller.class).get().getId();
+            fail();
+        } catch (ContextNotActiveException expected) {
+        }
+
+        RequestContextController controller = arc.instance(RequestContextController.class).get();
+        controller.activate();
+        assertEquals(3, ContextObserver.initializedObserved);
+        assertEquals(2, ContextObserver.beforeDestroyedObserved);
+        assertEquals(2, ContextObserver.destroyedObserved);
+
+        // dummy check that bean is available
+        arc.instance(Controller.class).get().getId();
+
+        controller.deactivate();
+        assertEquals(3, ContextObserver.initializedObserved);
+        assertEquals(3, ContextObserver.beforeDestroyedObserved);
+        assertEquals(3, ContextObserver.destroyedObserved);
+
+        try {
+            arc.instance(Controller.class).get().getId();
+            fail();
+        } catch (ContextNotActiveException expected) {
+        }
     }
 
 }

@@ -3,7 +3,7 @@
   "jti": "a-123.2",
   "sub": "24400320#2",
   "upn": "jdoe2@example.com",
-  "preferred_username": "jdoe",
+  "preferred_username": "jdoe2",
   "aud": "s6BhdRkqt3.2",
   "exp": 1311281970,
   "iat": 1311280970,

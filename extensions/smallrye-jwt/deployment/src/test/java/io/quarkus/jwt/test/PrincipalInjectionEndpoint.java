@@ -1,19 +1,24 @@
 package io.quarkus.jwt.test;
 
 import java.security.Principal;
+import java.util.Optional;
 
 import javax.annotation.security.RolesAllowed;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
+import javax.json.JsonString;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
 
+import org.eclipse.microprofile.jwt.Claim;
+import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 /**
@@ -27,8 +32,13 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 @RequestScoped
 @RolesAllowed("Tester")
 public class PrincipalInjectionEndpoint {
+    private static final JsonString ANOYNMOUS = Json.createValue("anonymous");
+
     @Inject
     Principal principal;
+    @Inject
+    @Claim(standard = Claims.preferred_username)
+    Optional<JsonString> currentUsername;
     @Context
     private SecurityContext context;
 
@@ -68,4 +78,26 @@ public class PrincipalInjectionEndpoint {
         return result;
     }
 
+    @GET
+    @Path("/validateUsername")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed("user")
+    public JsonObject validateUsername(@QueryParam("username") String username) {
+        boolean pass = false;
+        String msg;
+        if (!currentUsername.isPresent()) {
+            msg = "Injected preferred_username value is null, FAIL";
+        } else if (currentUsername.get().getString().equals(username)) {
+            msg = "\nInjected Principal#getName matches, PASS";
+            pass = true;
+        } else {
+            msg = String.format("Injected preferred_username %s != %s, FAIL", currentUsername.get().getString(), username);
+        }
+
+        JsonObject result = Json.createObjectBuilder()
+                .add("pass", pass)
+                .add("msg", msg)
+                .build();
+        return result;
+    }
 }

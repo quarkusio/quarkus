@@ -170,7 +170,7 @@ public final class HibernateOrmProcessor {
         Set<String> strategies = new HashSet<>();
         for (AnnotationInstance annotation : index.getIndex().getAnnotations(GENERIC_GENERATOR)) {
             String strategy = annotation.value("strategy").asString();
-            if (strategy.contains(".")) {
+            if (strategy != null) {
                 strategies.add(strategy);
             }
         }

@@ -1,5 +1,7 @@
-package io.quarkus.extest.runtime;
+package io.quarkus.extest.runtime.config;
 
+import io.quarkus.extest.runtime.config.AllValuesConfig;
+import io.quarkus.extest.runtime.config.StringBasedValue;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;

@@ -1,4 +1,4 @@
-package io.quarkus.extest.runtime;
+package io.quarkus.extest.runtime.config;
 
 import java.util.List;
 import java.util.Map;

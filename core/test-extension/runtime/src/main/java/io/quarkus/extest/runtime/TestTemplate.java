@@ -1,11 +1,18 @@
 package io.quarkus.extest.runtime;
 
+import java.io.IOException;
 import java.security.interfaces.DSAPublicKey;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.extest.runtime.beans.PublicKeyProducer;
+import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
+import io.quarkus.extest.runtime.config.TestRunTimeConfig;
+import io.quarkus.extest.runtime.config.XmlConfig;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Template;
 
 /**
@@ -34,18 +41,50 @@ public class TestTemplate {
         log.infof("configureBeans, instance=%s\n", instance);
     }
 
-    public void loadDSAPublicKeyProducer(DSAPublicKey publicKey, BeanContainer value) {
-        publicKey.getAlgorithm();
+    /**
+     * Create a non-CDI based RuntimeXmlConfigService from the XmlConfig
+     * 
+     * @param config - parse XML configuration
+     * @return RuntimeValue<RuntimeXmlConfigService>
+     */
+    public RuntimeValue<RuntimeXmlConfigService> initRuntimeService(XmlConfig config) {
+        RuntimeXmlConfigService service = new RuntimeXmlConfigService(config);
+        return new RuntimeValue<>(service);
+    }
+
+    /**
+     * Invoke the RuntimeXmlConfigService#startService method and register a stopService call with the shutdown context.
+     *
+     * @param shutdownContext - context for adding shutdown hooks
+     * @param runtimeValue - service value
+     * @throws IOException - on startup failure
+     */
+    public void startRuntimeService(ShutdownContext shutdownContext, RuntimeValue<RuntimeXmlConfigService> runtimeValue)
+            throws IOException {
+        RuntimeXmlConfigService service = runtimeValue.getValue();
+        service.startService();
+        shutdownContext.addShutdownTask(service::stopService);
+    }
+
+    /**
+     * Passes the public ket to the PublicKeyProducer for injection into CDI beans at runtime
+     * 
+     * @param publicKey - public key
+     * @param beanContainer - CDI bean container
+     */
+    public void loadDSAPublicKeyProducer(DSAPublicKey publicKey, BeanContainer beanContainer) {
+        PublicKeyProducer keyProducer = beanContainer.instance(PublicKeyProducer.class);
+        keyProducer.setPublicKey(publicKey);
     }
 
     /**
      * Access the primitive class types at runtime to validate the build step generated deploy method
      * 
-     * @param typesSet
+     * @param typesSet - primitive classes set
      */
     public void validateTypes(Set<Class<?>> typesSet) {
         for (Class<?> type : typesSet) {
-            log.infof("Checking type: %s", type.getName());
+            log.debugf("Checking type: %s", type.getName());
         }
     }
 }

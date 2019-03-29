@@ -17,8 +17,11 @@
 package io.quarkus.smallrye.restclient.deployment;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,6 +32,8 @@ import javax.ws.rs.ext.Providers;
 
 import org.apache.commons.logging.impl.Jdk14Logger;
 import org.apache.commons.logging.impl.LogFactoryImpl;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProviders;
 import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.jandex.AnnotationInstance;
@@ -73,6 +78,9 @@ class SmallRyeRestClientProcessor {
     private static final DotName REST_CLIENT = DotName.createSimple(RestClient.class.getName());
 
     private static final DotName PATH = DotName.createSimple(Path.class.getName());
+
+    private static final DotName REGISTER_PROVIDER = DotName.createSimple(RegisterProvider.class.getName());
+    private static final DotName REGISTER_PROVIDERS = DotName.createSimple(RegisterProviders.class.getName());
 
     private static final String PROVIDERS_SERVICE_FILE = "META-INF/services/" + Providers.class.getName();
 
@@ -216,13 +224,26 @@ class SmallRyeRestClientProcessor {
 
     @BuildStep
     void registerProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem) {
+            JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
+            CombinedIndexBuildItem combinedIndexBuildItem) {
         RestClientBuilderImpl.REGISTER_BUILTIN_PROVIDERS = jaxrsProvidersToRegisterBuildItem.useBuiltIn();
         RestClientBuilderImpl.PROVIDERS_TO_REGISTER = String.join(",", jaxrsProvidersToRegisterBuildItem.getProviders());
 
         // register the providers for reflection
         for (String providerToRegister : jaxrsProvidersToRegisterBuildItem.getProviders()) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerToRegister));
+        }
+
+        // now we register all values of @RegisterProvider for constructor reflection
+
+        IndexView index = combinedIndexBuildItem.getIndex();
+        List<AnnotationInstance> allInstances = new ArrayList<>(index.getAnnotations(REGISTER_PROVIDER));
+        for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDERS)) {
+            allInstances.addAll(Arrays.asList(annotation.value().asNestedArray()));
+        }
+        for (AnnotationInstance annotationInstance : allInstances) {
+            reflectiveClass
+                    .produce(new ReflectiveClassBuildItem(false, false, annotationInstance.value().asClass().toString()));
         }
     }
 

@@ -108,6 +108,12 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "${native-image.docker-build}")
     private String dockerBuild;
 
+    @Parameter(defaultValue = "${native-image.container-runtime}")
+    private String containerRuntime;
+
+    @Parameter(defaultValue = "${native-image.container-runtime-options}")
+    private String containerRuntimeOptions;
+
     @Parameter(defaultValue = "false")
     private boolean enableVMInspection;
 
@@ -147,6 +153,8 @@ public class NativeImageMojo extends AbstractMojo {
                         .setDebugSymbols(debugSymbols)
                         .setDisableReports(disableReports)
                         .setDockerBuild(dockerBuild)
+                        .setContainerRuntime(containerRuntime)
+                        .setContainerRuntimeOptions(containerRuntimeOptions)
                         .setDumpProxies(dumpProxies)
                         .setEnableAllSecurityServices(enableAllSecurityServices)
                         .setEnableCodeSizeReporting(enableCodeSizeReporting)

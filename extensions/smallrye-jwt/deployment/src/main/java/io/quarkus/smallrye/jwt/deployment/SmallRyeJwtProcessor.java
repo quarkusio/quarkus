@@ -72,14 +72,18 @@ class SmallRyeJwtProcessor {
      */
     @BuildStep
     void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalBeans.produce(new AdditionalBeanBuildItem(JWTAuthContextInfoProvider.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(false, MpJwtValidator.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(false, JWTAuthMethodExtension.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(CommonJwtProducer.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(RawClaimTypeProducer.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(PrincipalProducer.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(ClaimValueProducer.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(JsonValueProducer.class));
+        AdditionalBeanBuildItem.Builder unremovable = AdditionalBeanBuildItem.builder().setUnremovable();
+        unremovable.addBeanClass(MpJwtValidator.class);
+        unremovable.addBeanClass(JWTAuthMethodExtension.class);
+        additionalBeans.produce(unremovable.build());
+        AdditionalBeanBuildItem.Builder removable = AdditionalBeanBuildItem.builder();
+        removable.addBeanClass(JWTAuthContextInfoProvider.class);
+        removable.addBeanClass(CommonJwtProducer.class);
+        removable.addBeanClass(RawClaimTypeProducer.class);
+        removable.addBeanClass(PrincipalProducer.class);
+        removable.addBeanClass(ClaimValueProducer.class);
+        removable.addBeanClass(JsonValueProducer.class);
+        additionalBeans.produce(removable.build());
     }
 
     /**

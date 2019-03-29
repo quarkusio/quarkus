@@ -17,8 +17,6 @@
 package io.quarkus.smallrye.opentracing.deployment;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.List;
 
 import javax.enterprise.inject.spi.ObserverMethod;
 import javax.servlet.DispatcherType;
@@ -38,8 +36,8 @@ import io.quarkus.undertow.deployment.FilterBuildItem;
 public class SmallRyeOpenTracingProcessor {
 
     @BuildStep
-    List<AdditionalBeanBuildItem> registerBeans() {
-        return Arrays.asList(new AdditionalBeanBuildItem(OpenTracingInterceptor.class, TracerProducer.class));
+    AdditionalBeanBuildItem registerBeans() {
+        return new AdditionalBeanBuildItem(OpenTracingInterceptor.class, TracerProducer.class);
     }
 
     @BuildStep

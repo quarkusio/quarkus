@@ -76,12 +76,14 @@ class NarayanaJtaProcessor {
                 TransactionManagerImple.class.getName(),
                 TransactionSynchronizationRegistryImple.class.getName()));
 
-        additionalBeans.produce(new AdditionalBeanBuildItem(TransactionalInterceptorSupports.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(TransactionalInterceptorNever.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(TransactionalInterceptorRequired.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(TransactionalInterceptorRequiresNew.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(TransactionalInterceptorMandatory.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(TransactionalInterceptorNotSupported.class));
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
+        builder.addBeanClass(TransactionalInterceptorSupports.class);
+        builder.addBeanClass(TransactionalInterceptorNever.class);
+        builder.addBeanClass(TransactionalInterceptorRequired.class);
+        builder.addBeanClass(TransactionalInterceptorRequiresNew.class);
+        builder.addBeanClass(TransactionalInterceptorMandatory.class);
+        builder.addBeanClass(TransactionalInterceptorNotSupported.class);
+        additionalBeans.produce(builder.build());
 
         //we want to force Arjuna to init at static init time
         Properties defaultProperties = PropertiesFactory.getDefaultProperties();

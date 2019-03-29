@@ -94,11 +94,8 @@ public class SchedulerProcessor {
     static final String INVOKER_SUFFIX = "_ScheduledInvoker";
 
     @BuildStep
-    List<AdditionalBeanBuildItem> beans() {
-        List<AdditionalBeanBuildItem> beans = new ArrayList<>();
-        beans.add(new AdditionalBeanBuildItem(SchedulerConfiguration.class));
-        beans.add(new AdditionalBeanBuildItem(QuartzScheduler.class));
-        return beans;
+    AdditionalBeanBuildItem beans() {
+        return new AdditionalBeanBuildItem(SchedulerConfiguration.class, QuartzScheduler.class);
     }
 
     @BuildStep

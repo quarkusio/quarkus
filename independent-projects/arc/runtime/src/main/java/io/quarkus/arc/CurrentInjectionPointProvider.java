@@ -45,7 +45,8 @@ import javax.enterprise.inject.spi.InjectionPoint;
  */
 public class CurrentInjectionPointProvider<T> implements InjectableReferenceProvider<T> {
 
-    static final InjectionPoint EMPTY = new InjectionPointImpl(Object.class, Collections.emptySet(), null, null, null, -1);
+    static final InjectionPoint EMPTY = new InjectionPointImpl(Object.class, Object.class, Collections.emptySet(), null, null,
+            null, -1);
 
     private final InjectableReferenceProvider<T> delegate;
 
@@ -54,7 +55,8 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
     public CurrentInjectionPointProvider(InjectableBean<?> bean, InjectableReferenceProvider<T> delegate, Type requiredType,
             Set<Annotation> qualifiers, Set<Annotation> annotations, Member javaMember, int position) {
         this.delegate = delegate;
-        this.injectionPoint = new InjectionPointImpl(requiredType, qualifiers, bean, annotations, javaMember, position);
+        this.injectionPoint = new InjectionPointImpl(requiredType, requiredType, qualifiers, bean, annotations, javaMember,
+                position);
     }
 
     @Override
@@ -72,7 +74,7 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
         }
     }
 
-    private static class InjectionPointImpl implements InjectionPoint {
+    static class InjectionPointImpl implements InjectionPoint {
 
         private final Type requiredType;
         private final Set<Annotation> qualifiers;
@@ -80,15 +82,17 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
         private final Annotated annotated;
         private final Member member;
 
-        InjectionPointImpl(Type requiredType, Set<Annotation> qualifiers, InjectableBean<?> bean, Set<Annotation> annotations,
+        InjectionPointImpl(Type injectionPointType, Type requiredType, Set<Annotation> qualifiers, InjectableBean<?> bean,
+                Set<Annotation> annotations,
                 Member javaMember, int position) {
             this.requiredType = requiredType;
             this.qualifiers = qualifiers;
             this.bean = bean;
             if (javaMember instanceof Executable) {
-                this.annotated = new AnnotatedParameterImpl<>(requiredType, annotations, position, (Executable) javaMember);
+                this.annotated = new AnnotatedParameterImpl<>(injectionPointType, annotations, position,
+                        (Executable) javaMember);
             } else {
-                this.annotated = new AnnotatedFieldImpl<>(requiredType, annotations, (Field) javaMember);
+                this.annotated = new AnnotatedFieldImpl<>(injectionPointType, annotations, (Field) javaMember);
             }
             this.member = javaMember;
         }

@@ -1437,36 +1437,31 @@ public class BeanGenerator extends AbstractGenerator {
 
     private ResultHandle wrapCurrentInjectionPoint(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean,
             MethodCreator constructor, InjectionPointInfo injectionPoint, int paramIdx) {
-        // Collect qualifiers
-        ResultHandle requiredQualifiersHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-        for (AnnotationInstance qualifierAnnotation : injectionPoint.getRequiredQualifiers()) {
-            BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
-            if (qualifier != null) {
-                constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, requiredQualifiersHandle,
-                        qualifier.getLiteralInstance(constructor));
-            } else {
-                // Create annotation literal if needed
-                ClassInfo qualifierClass = bean.getDeployment().getQualifier(qualifierAnnotation.name());
-                constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, requiredQualifiersHandle,
-                        annotationLiterals.process(constructor,
-                                classOutput, qualifierClass, qualifierAnnotation,
-                                Types.getPackageName(beanCreator.getClassName())));
-            }
-        }
-        // Collect all annotations
-        ResultHandle annotationsHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+        ResultHandle requiredQualifiersHandle = collectQualifiers(classOutput, beanCreator, bean.getDeployment(), constructor,
+                injectionPoint,
+                annotationLiterals);
+        ResultHandle annotationsHandle = collectAnnotations(classOutput, beanCreator, bean.getDeployment(), constructor,
+                injectionPoint, annotationLiterals);
+        ResultHandle javaMemberHandle = getJavaMemberHandle(constructor, injectionPoint);
+        return constructor.newInstance(
+                MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class,
+                        InjectableReferenceProvider.class, java.lang.reflect.Type.class,
+                        Set.class, Set.class, Member.class, int.class),
+                constructor.getThis(), constructor.getMethodParam(paramIdx),
+                Types.getTypeHandle(constructor, injectionPoint.getRequiredType()),
+                requiredQualifiersHandle, annotationsHandle, javaMemberHandle, constructor.load(injectionPoint.getPosition()));
+    }
+
+    static ResultHandle getJavaMemberHandle(MethodCreator constructor,
+            InjectionPointInfo injectionPoint) {
         ResultHandle javaMemberHandle;
-        Collection<AnnotationInstance> annotations;
         if (Kind.FIELD.equals(injectionPoint.getTarget().kind())) {
             FieldInfo field = injectionPoint.getTarget().asField();
-            annotations = bean.getDeployment().getAnnotations(field);
             javaMemberHandle = constructor.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_FIELD,
                     constructor.loadClass(field.declaringClass().name().toString()),
                     constructor.load(field.name()));
         } else {
             MethodInfo method = injectionPoint.getTarget().asMethod();
-            annotations = InjectionPointInfo.getParameterAnnotations(bean.getDeployment(),
-                    method, injectionPoint.getPosition());
             if (method.name().equals(Methods.INIT)) {
                 // Reflections.findConstructor(org.foo.SimpleBean.class,java.lang.String.class)                
                 ResultHandle[] paramsHandles = new ResultHandle[2];
@@ -1493,26 +1488,57 @@ public class BeanGenerator extends AbstractGenerator {
                 javaMemberHandle = constructor.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_METHOD, paramsHandles);
             }
         }
+        return javaMemberHandle;
+    }
+
+    static ResultHandle collectAnnotations(ClassOutput classOutput, ClassCreator beanCreator, BeanDeployment beanDeployment,
+            MethodCreator constructor,
+            InjectionPointInfo injectionPoint, AnnotationLiteralProcessor annotationLiterals) {
+        ResultHandle annotationsHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+        Collection<AnnotationInstance> annotations;
+        if (Kind.FIELD.equals(injectionPoint.getTarget().kind())) {
+            FieldInfo field = injectionPoint.getTarget().asField();
+            annotations = beanDeployment.getAnnotations(field);
+        } else {
+            MethodInfo method = injectionPoint.getTarget().asMethod();
+            annotations = InjectionPointInfo.getParameterAnnotations(beanDeployment,
+                    method, injectionPoint.getPosition());
+        }
         for (AnnotationInstance annotation : annotations) {
             if (DotNames.INJECT.equals(annotation.name())) {
                 constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotationsHandle,
                         constructor.readStaticField(FieldDescriptor.of(InjectLiteral.class, "INSTANCE", InjectLiteral.class)));
             } else {
                 // Create annotation literal if needed
-                ClassInfo literalClass = bean.getDeployment().getIndex().getClassByName(annotation.name());
+                ClassInfo literalClass = beanDeployment.getIndex().getClassByName(annotation.name());
                 constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotationsHandle,
                         annotationLiterals.process(constructor,
                                 classOutput, literalClass, annotation,
                                 Types.getPackageName(beanCreator.getClassName())));
             }
         }
-        return constructor.newInstance(
-                MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class,
-                        InjectableReferenceProvider.class, java.lang.reflect.Type.class,
-                        Set.class, Set.class, Member.class, int.class),
-                constructor.getThis(), constructor.getMethodParam(paramIdx),
-                Types.getTypeHandle(constructor, injectionPoint.getRequiredType()),
-                requiredQualifiersHandle, annotationsHandle, javaMemberHandle, constructor.load(injectionPoint.getPosition()));
+        return annotationsHandle;
+    }
+
+    static ResultHandle collectQualifiers(ClassOutput classOutput, ClassCreator beanCreator, BeanDeployment beanDeployment,
+            MethodCreator constructor,
+            InjectionPointInfo injectionPoint, AnnotationLiteralProcessor annotationLiterals) {
+        ResultHandle requiredQualifiersHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+        for (AnnotationInstance qualifierAnnotation : injectionPoint.getRequiredQualifiers()) {
+            BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
+            if (qualifier != null) {
+                constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, requiredQualifiersHandle,
+                        qualifier.getLiteralInstance(constructor));
+            } else {
+                // Create annotation literal if needed
+                ClassInfo qualifierClass = beanDeployment.getQualifier(qualifierAnnotation.name());
+                constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, requiredQualifiersHandle,
+                        annotationLiterals.process(constructor,
+                                classOutput, qualifierClass, qualifierAnnotation,
+                                Types.getPackageName(beanCreator.getClassName())));
+            }
+        }
+        return requiredQualifiersHandle;
     }
 
 }

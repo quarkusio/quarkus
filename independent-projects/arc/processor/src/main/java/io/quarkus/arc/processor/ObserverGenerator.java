@@ -35,6 +35,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import java.lang.reflect.Member;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -306,29 +307,23 @@ public class ObserverGenerator extends AbstractGenerator {
                         .anyMatch(ip -> BuiltinBean.INJECTION_POINT.getRawTypeDotName().equals(ip.getRequiredType().name()))) {
                     // IMPL NOTE: Injection point resolves to a dependent bean that injects InjectionPoint metadata and so we need to wrap the injectable
                     // reference provider
-                    ResultHandle requiredQualifiersHandle = constructor
-                            .newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-                    for (AnnotationInstance qualifierAnnotation : injectionPoint.getRequiredQualifiers()) {
-                        BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
-                        if (qualifier != null) {
-                            constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, requiredQualifiersHandle,
-                                    qualifier.getLiteralInstance(constructor));
-                        } else {
-                            // Create annotation literal first
-                            ClassInfo qualifierClass = observer.getDeclaringBean().getDeployment()
-                                    .getQualifier(qualifierAnnotation.name());
-                            constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, requiredQualifiersHandle,
-                                    annotationLiterals.process(constructor,
-                                            classOutput, qualifierClass, qualifierAnnotation,
-                                            Types.getPackageName(observerCreator.getClassName())));
-                        }
-                    }
+                    ResultHandle requiredQualifiersHandle = BeanGenerator.collectQualifiers(classOutput, observerCreator,
+                            observer.getDeclaringBean().getDeployment(), constructor,
+                            injectionPoint,
+                            annotationLiterals);
+                    ResultHandle annotationsHandle = BeanGenerator.collectAnnotations(classOutput, observerCreator,
+                            observer.getDeclaringBean().getDeployment(), constructor,
+                            injectionPoint, annotationLiterals);
+                    ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(constructor, injectionPoint);
                     ResultHandle wrapHandle = constructor.newInstance(
-                            MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class,
+                            MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class,
                                     InjectableReferenceProvider.class, java.lang.reflect.Type.class,
-                                    Set.class),
-                            constructor.getMethodParam(paramIdx++),
-                            Types.getTypeHandle(constructor, injectionPoint.getRequiredType()), requiredQualifiersHandle);
+                                    Set.class, Set.class, Member.class, int.class),
+                            constructor.getThis(), constructor.getMethodParam(paramIdx++),
+                            Types.getTypeHandle(constructor, injectionPoint.getRequiredType()),
+                            requiredQualifiersHandle, annotationsHandle, javaMemberHandle,
+                            constructor.load(injectionPoint.getPosition()));
+
                     constructor.writeInstanceField(FieldDescriptor.of(observerCreator.getClassName(),
                             injectionPointToProviderField.get(injectionPoint),
                             InjectableReferenceProvider.class.getName()), constructor.getThis(), wrapHandle);

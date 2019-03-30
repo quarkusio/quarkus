@@ -15,7 +15,7 @@ public class StreamConsumer {
 
     @Inject
     @Stream("source")
-    private Flowable<Message<String>> sourceStream;
+    Flowable<Message<String>> sourceStream;
 
     public List<String> consume() {
         return Flowable.fromPublisher(sourceStream)

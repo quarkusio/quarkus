@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.concurrent.locks.LockSupport;
 
 import org.jboss.logging.Logger;
 
@@ -83,6 +84,8 @@ public class DevModeMain {
                 }
             }
         }, "Quarkus Shutdown Thread"));
+
+        LockSupport.park();
     }
 
     private static synchronized void doStart() {

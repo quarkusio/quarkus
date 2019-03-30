@@ -113,7 +113,12 @@ class JaxbProcessor {
     @BuildStep
     void process(BuildProducer<SubstrateSystemPropertyBuildItem> substrateProps,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            List<JaxbFileRootBuildItem> fileRoots) {
+            List<JaxbFileRootBuildItem> fileRoots,
+            List<JaxbEnabledBuildItem> enabled) {
+
+        if (enabled.isEmpty()) {
+            return;
+        }
 
         Collection<AnnotationInstance> xmlRoot = combinedIndexBuildItem.getIndex().getAnnotations(XML_ROOT);
         for (AnnotationInstance i : xmlRoot) {

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.quarkus.camel.core.runtime;
+package io.quarkus.camel.core.runtime.support;
 
 import java.util.Properties;
 

@@ -17,9 +17,9 @@ secured access to the JAX-RS endpoints.
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|quarkus.smalllrye-jwt.enabled|true|Determine if the jwt extension is enabled. Enabled by default if you include the smallrye-jwt dependency, so this would be used to disable it.
-|quarkus.smalllrye-jwt.realm-name|Quarkus-JWT|Name to use for security realm.
-|quarkus.smalllrye-jwt.auth-mechanism|MP-JWT|Name to use for authentication mechanism
+|quarkus.smallrye-jwt.enabled|true|Determine if the jwt extension is enabled. Enabled by default if you include the smallrye-jwt dependency, so this would be used to disable it.
+|quarkus.smallrye-jwt.realm-name|Quarkus-JWT|Name to use for security realm.
+|quarkus.smallrye-jwt.auth-mechanism|MP-JWT|Name to use for authentication mechanism
 |mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in section <<Supported Public Key Formats>>.
 |mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL.
 |mp.jwt.verify.issuer|none|Config property specifies the value of the `iss` (issuer)
@@ -283,8 +283,8 @@ In the <<Configuration>> section we introduce the `application.properties` file 
 mp.jwt.verify.publickey.location=publicKey.pem #<1>
 mp.jwt.verify.issuer=https://quarkus.io/using-jwt-rbac #<2>
 
-quarkus.smalllrye-jwt.auth-mechanism=MP-JWT # <3>
-quarkus.smalllrye-jwt.enabled=true # <4>
+quarkus.smallrye-jwt.auth-mechanism=MP-JWT # <3>
+quarkus.smallrye-jwt.enabled=true # <4>
 ----
 <1> We are setting public key location to point to a classpath publicKey.pem resource location. We will add this key in part B, <<Adding a Public Key>>.
 <2> We are setting the issuer to the URL string `https://quarkus.io/using-jwt-rbac`.

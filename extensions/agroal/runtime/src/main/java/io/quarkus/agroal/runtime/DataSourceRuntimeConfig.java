@@ -85,4 +85,10 @@ public class DataSourceRuntimeConfig {
     @ConfigItem(defaultValue = "PT5M")
     public Optional<Duration> idleRemovalInterval;
 
+    /**
+     * The transaction isolation level.
+     */
+    @ConfigItem
+    public Optional<TransactionIsolationLevel> transactionIsolationLevel;
+
 }

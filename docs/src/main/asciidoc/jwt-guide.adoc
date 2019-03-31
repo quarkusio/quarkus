@@ -280,7 +280,7 @@ In the <<Configuration>> section we introduce the `application.properties` file 
 .application.properties for TokenSecuredResource
 [source, properties]
 ----
-mp.jwt.verify.publickey.location=publicKey.pem #<1>
+mp.jwt.verify.publickey.location=META-INF/resources/publicKey.pem #<1>
 mp.jwt.verify.issuer=https://quarkus.io/using-jwt-rbac #<2>
 
 quarkus.smalllrye-jwt.auth-mechanism=MP-JWT # <3>

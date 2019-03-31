@@ -61,6 +61,7 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.deployment.ApplicationInfoUtil;
 import io.quarkus.dev.ClassLoaderCompiler;
 import io.quarkus.dev.DevModeMain;
+import io.quarkus.dev.RuntimeCompilationSetup;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
 
@@ -330,10 +331,10 @@ public class DevMojo extends AbstractMojo {
             outputDirectory.mkdirs();
             ApplicationInfoUtil.writeApplicationInfoProperties(appModel.getAppArtifact(), outputDirectory.toPath());
 
-            args.add("-Dquarkus-internal.runner.classes=" + outputDirectory.getAbsolutePath());
-            args.add("-Dquarkus-internal.runner.sources=" + sourceDir.getAbsolutePath());
+            addProperty(args, RuntimeCompilationSetup.PROP_RUNNER_CLASSES, outputDirectory.getAbsolutePath());
+            addProperty(args, RuntimeCompilationSetup.PROP_RUNNER_SOURCES, sourceDir.getAbsolutePath());
             if (resources != null) {
-                args.add("-Dquarkus-internal.runner.resources=" + new File(resources).getAbsolutePath());
+                addProperty(args, RuntimeCompilationSetup.PROP_RUNNER_RESOURCES, new File(resources).getAbsolutePath());
             }
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
@@ -366,6 +367,10 @@ public class DevMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }
+    }
+
+    private static void addProperty(List<String> args, String name, Object value) {
+        args.add("-D" + name + "=" + value);
     }
 
     /**

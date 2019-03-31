@@ -86,7 +86,12 @@ public class ClassLoaderCompiler {
             if (!parsedFiles.contains(s)) {
                 parsedFiles.add(s);
                 File file = new File(s);
-                if (file.exists() && file.getName().endsWith(".jar")) {
+                if (!file.exists()) {
+                    continue;
+                }
+                if (file.isDirectory()) {
+                    classPathElements.add(file);
+                } else if (file.getName().endsWith(".jar")) {
                     classPathElements.add(file);
                     if (!file.isDirectory() && file.getName().endsWith(".jar")) {
                         try (JarFile jar = new JarFile(file)) {

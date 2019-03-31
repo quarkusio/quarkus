@@ -200,7 +200,8 @@ public class PreconfiguredServiceRegistryBuilder {
         serviceInitiators.add(RefCursorSupportInitiator.INSTANCE);
 
         serviceInitiators.add(QueryTranslatorFactoryInitiator.INSTANCE);
-        serviceInitiators.add(MutableIdentifierGeneratorFactoryInitiator.INSTANCE);
+        serviceInitiators
+                .add(new QuarkusIdentifierGeneratorFactoryInitiator(rs.getDialect(), rs.getStrategyToIdGeneratorMap()));
 
         // Replaces JtaPlatformResolverInitiator.INSTANCE );
         serviceInitiators.add(new QuarkusJtaPlatformResolver(rs.getJtaPlatform()));

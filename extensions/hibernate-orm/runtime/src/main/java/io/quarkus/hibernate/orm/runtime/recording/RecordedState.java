@@ -16,9 +16,12 @@
 
 package io.quarkus.hibernate.orm.runtime.recording;
 
+import java.util.Map;
+
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
+import org.hibernate.id.IdentifierGenerator;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 
@@ -28,13 +31,15 @@ public final class RecordedState {
     private final MetadataImplementor metadata;
     private final JtaPlatform jtaPlatform;
     private final BuildTimeSettings settings;
+    private final Map<String, IdentifierGenerator> strategyToIdGeneratorMap;
 
     public RecordedState(Dialect dialect, JtaPlatform jtaPlatform, MetadataImplementor metadata,
-            BuildTimeSettings settings) {
+            BuildTimeSettings settings, Map<String, IdentifierGenerator> strategyToIdGeneratorMap) {
         this.dialect = dialect;
         this.jtaPlatform = jtaPlatform;
         this.metadata = metadata;
         this.settings = settings;
+        this.strategyToIdGeneratorMap = strategyToIdGeneratorMap;
     }
 
     public Dialect getDialect() {
@@ -51,5 +56,9 @@ public final class RecordedState {
 
     public JtaPlatform getJtaPlatform() {
         return jtaPlatform;
+    }
+
+    public Map<String, IdentifierGenerator> getStrategyToIdGeneratorMap() {
+        return strategyToIdGeneratorMap;
     }
 }

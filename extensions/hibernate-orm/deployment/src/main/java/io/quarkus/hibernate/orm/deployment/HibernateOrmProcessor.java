@@ -37,7 +37,6 @@ import javax.persistence.PersistenceUnit;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.H2Dialect;
@@ -105,7 +104,6 @@ public final class HibernateOrmProcessor {
     private static final DotName PERSISTENCE_CONTEXT = DotName.createSimple(PersistenceContext.class.getName());
     private static final DotName PERSISTENCE_UNIT = DotName.createSimple(PersistenceUnit.class.getName());
     private static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
-    private static final DotName GENERIC_GENERATOR = DotName.createSimple(GenericGenerator.class.getName());
 
     /**
      * Hibernate ORM configuration
@@ -165,18 +163,6 @@ public final class HibernateOrmProcessor {
                 .collect(Collectors.toSet());
         JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, descriptors, compositeIndex, nonJpaModelClasses);
         final JpaEntitiesBuildItem domainObjects = scavenger.discoverModelAndRegisterForReflection();
-
-        // register the strategies of @GenericGenerator for reflection
-        Set<String> strategies = new HashSet<>();
-        for (AnnotationInstance annotation : index.getIndex().getAnnotations(GENERIC_GENERATOR)) {
-            String strategy = annotation.value("strategy").asString();
-            if (strategy != null) {
-                strategies.add(strategy);
-            }
-        }
-        for (String strategy : strategies) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, strategy));
-        }
 
         // remember how to run the enhancers later
         domainObjectsProducer.produce(domainObjects);

@@ -40,6 +40,8 @@ import static org.hibernate.jpa.AvailableSettings.COLLECTION_CACHE_PREFIX;
 import static org.hibernate.jpa.AvailableSettings.PERSISTENCE_UNIT_NAME;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +58,7 @@ import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.archive.scan.internal.StandardScanOptions;
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.boot.internal.MetadataImpl;
+import org.hibernate.boot.model.IdentifierGeneratorDefinition;
 import org.hibernate.boot.model.process.spi.ManagedResources;
 import org.hibernate.boot.model.process.spi.MetadataBuildingProcess;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
@@ -74,6 +77,7 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.engine.transaction.jta.platform.internal.JBossStandAloneJtaPlatform;
 import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
+import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
 import org.hibernate.internal.EntityManagerMessageLogger;
 import org.hibernate.internal.util.StringHelper;
@@ -300,11 +304,12 @@ public class FastBootMetadataBuilder {
                 metamodelBuilder.getBootstrapContext(),
                 metamodelBuilder.getMetadataBuildingOptions() //INTERCEPT & DESTROY :)
         );
+        Map<String, IdentifierGenerator> strategyToIdGeneratorMap = extractStrategyToIdGeneratorMap(fullMeta);
         Dialect dialect = extractDialect();
         JtaPlatform jtaPlatform = extractJtaPlatform();
         destroyServiceRegistry(fullMeta);
         MetadataImplementor storeableMetadata = trimBootstrapMetadata(fullMeta);
-        return new RecordedState(dialect, jtaPlatform, storeableMetadata, buildTimeSettings);
+        return new RecordedState(dialect, jtaPlatform, storeableMetadata, buildTimeSettings, strategyToIdGeneratorMap);
     }
 
     private void destroyServiceRegistry(MetadataImplementor fullMeta) {
@@ -338,6 +343,25 @@ public class FastBootMetadataBuilder {
         );
 
         return replacement;
+    }
+
+    private Map<String, IdentifierGenerator> extractStrategyToIdGeneratorMap(MetadataImpl fullMeta) {
+        final ClassLoaderService classLoaderService = standardServiceRegistry.getService(ClassLoaderService.class);
+        final Map<String, IdentifierGenerator> result = new HashMap<>();
+        for (Map.Entry<String, IdentifierGeneratorDefinition> entry : fullMeta.getIdGeneratorDefinitionMap().entrySet()) {
+            final String idGeneratorClass = entry.getValue().getStrategy();
+            try {
+                result.put(entry.getKey(),
+                        (IdentifierGenerator) (classLoaderService.classForName(idGeneratorClass).newInstance()));
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new IllegalArgumentException("The IdentifierGenerator class ["
+                        + idGeneratorClass + "] could not be instantiated!", e);
+            } catch (ClassCastException e) {
+                throw new IllegalArgumentException("Class ["
+                        + idGeneratorClass + "] could not be cast to IdentifierGenerator!", e);
+            }
+        }
+        return Collections.unmodifiableMap(result);
     }
 
     private JtaPlatform extractJtaPlatform() {

@@ -339,6 +339,7 @@ import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.Date;
 import java.util.Map;
 
 import org.eclipse.microprofile.jwt.Claims;
@@ -404,19 +405,14 @@ public class TokenUtils {
         JSONObject jwtContent = parser.parse(content, JSONObject.class);
         long currentTimeInSecs = currentTimeInSecs();
         long exp = currentTimeInSecs + 300;
+        // If exp was passed in, use it
+        if (timeClaims.containsKey(Claims.exp.name())) {
+            exp = timeClaims.get(Claims.exp.name());
+        }
+        System.out.printf("Setting exp: %d / %s\n", exp, new Date(1000*exp));
         long iat = currentTimeInSecs;
         long authTime = currentTimeInSecs;
-        boolean expWasInput = false;
-        // Check for an input exp to override the default of now + 300 seconds
-        if (timeClaims != null && timeClaims.containsKey(Claims.exp.name())) {
-            exp = timeClaims.get(Claims.exp.name());
-            expWasInput = true;
-        }
-        // iat and auth_time should be before any input exp value
-        if (expWasInput) {
-            iat = exp - 5;
-            authTime = exp - 5;
-        }
+        jwtContent.put(Claims.exp.name(), exp);
         jwtContent.put(Claims.iat.name(), iat);
         jwtContent.put(Claims.auth_time.name(), authTime);
         // Return the token time values if requested
@@ -429,6 +425,10 @@ public class TokenUtils {
         // Create RSA-signer with the private key
         JWSSigner signer = new RSASSASigner(pk);
         JWTClaimsSet claimsSet = JWTClaimsSet.parse(jwtContent);
+        for (String claim : claimsSet.getClaims().keySet()) {
+            Object claimValue = claimsSet.getClaim(claim);
+            System.out.printf("\tAdded claim: %s, value: %s\n", claim, claimValue);
+        }
         JWSAlgorithm alg = JWSAlgorithm.RS256;
         JWSHeader jwtHeader = new JWSHeader.Builder(alg)
                 .keyID(kid)

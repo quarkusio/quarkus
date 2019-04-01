@@ -4,10 +4,10 @@ include::./attributes.adoc[]
 Eclipse https://vertx.io[Vert.x] is a toolkit for building reactive applications.
 It is designed to be lightweight and embeddable.
 Vert.x defines a reactive execution model and provides a large ecosystem.
-Quarkus integrates Vert.x to implement different forms of reactive.
+Quarkus integrates Vert.x to implement different reactive features, such as asynchronous message passing, and non-blocking HTTP client.
 Basically, {project-name} uses Vert.x as its reactive engine.
 While lots of reactive features from {project-name} don't _show_ Vert.x, it's used underneath.
-But you can also access the managed Vert.x instance and benefits from the Vert.x ecosystem.
+But you can also access the managed Vert.x instance and benefit from the Vert.x ecosystem.
 
 == Installing
 
@@ -42,7 +42,7 @@ Otherwise, you can manually add this to the dependencies section of your `pom.xm
 
 == Accessing Vert.x
 
-Once the extension added, you can access the _managed_ Vert.x instance using `@Inject`:
+Once the extension has been added, you can access the _managed_ Vert.x instance using `@Inject`:
 
 [source, java]
 ----
@@ -99,12 +99,17 @@ vertx.fileSystem().rxReadFile("lorem-ipsum.txt")
 
 // Axle API:
 vertx.fileSystem().readFile("lorem-ipsum.txt")
-    .thenApply(buffer -> "Content: " + buffer.toString("UTF-8"))
-    .exceptionally(err -> "Cannot read the file: " + err.getMessage())
-    .thenAccept(s -> System.out.println(s));
+    .thenApply(buffer -> buffer.toString("UTF-8"))
+    .whenComplete((res, err) -> {
+        if (err != null) {
+            System.out.println("Cannot read the file: " + err.getMessage());
+        } else {
+            System.out.println("Content: " + content);
+        }
+    });
 ----
 
-== Using Vert.x in Reactive Jax-RS resources
+== Using Vert.x in Reactive JAX-RS resources
 
 {project-name} web resources support asynchronous processing and streaming results over https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events[server-sent events].
 
@@ -176,7 +181,7 @@ Hello Quarkus! (10 ms)
 {project-name} web resources that need to send content as https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events[server-sent events] must have a method:
 
 * declaring the `text/event-stream` response content type
-* returning a https://www.reactive-streams.org/[Reactive Streams] `Publisher`
+* returning a https://www.reactive-streams.org/[Reactive Streams] `Publisher` or an RX Java 2 `Observable` or `Flowable`
 
 In practice, a streaming greeting service would look like:
 
@@ -188,7 +193,7 @@ public class StreamingResource {
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @Path("{name}/streaming")
-    public Publisher<String> greeting(@PathParam("name") String name) {
+    public Publisher<String> greeting(@PathParam String name) {
         // TODO: create a Reactive Streams publisher
         return publisher;
     }

@@ -32,7 +32,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus.bootstrap</groupId>
-            <artifactId>bootstrap-core</artifactId>
+            <artifactId>quarkus-bootstrap-core</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

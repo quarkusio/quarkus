@@ -71,7 +71,7 @@
 
             <dependency>
                 <groupId>io.quarkus.bootstrap</groupId>
-                <artifactId>bootstrap-core</artifactId>
+                <artifactId>quarkus-bootstrap-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -688,7 +688,7 @@
                 </plugin>
                 <plugin>
                     <groupId>io.quarkus.bootstrap</groupId>
-                    <artifactId>bootstrap-maven-plugin</artifactId>
+                    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
                     <version>${project.version}</version>
                     <executions>
                         <execution>

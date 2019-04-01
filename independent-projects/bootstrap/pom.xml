@@ -25,8 +25,8 @@
     <version>31</version>
   </parent>
   <groupId>io.quarkus.bootstrap</groupId>
-  <artifactId>bootstrap-parent</artifactId>
-  <name>Quarkus Bootstrap Parent</name>
+  <artifactId>quarkus-bootstrap-parent</artifactId>
+  <name>Quarkus - Bootstrap - Parent</name>
   <packaging>pom</packaging>
   <version>999-SNAPSHOT</version>
 
@@ -61,12 +61,12 @@
     <dependencies>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>bootstrap-core</artifactId>
+        <artifactId>quarkus-bootstrap-core</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>bootstrap-maven-plugin</artifactId>
+        <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
         <version>${project.version}</version>
       </dependency>
 

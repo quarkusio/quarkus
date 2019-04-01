@@ -33,14 +33,12 @@ In your `pom.xml`, add the following dependencies:
     <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-hibernate-orm</artifactId>
-        <scope>provided</scope>
     </dependency>
 
     <!-- JDBC driver dependencies -->
     <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-jdbc-postgresql</artifactId>
-        <scope>provided</scope>
     </dependency>
 </dependencies>
 --

@@ -51,7 +51,6 @@
         <module>vertx</module>
         <module>spring-di</module>
         <module>infinispan-cache-jpa</module>
-        <module>infinispan-cache-jpa-stress</module>
         <module>elytron-security</module>
         <module>camel-core</module>
         <module>camel-salesforce</module>

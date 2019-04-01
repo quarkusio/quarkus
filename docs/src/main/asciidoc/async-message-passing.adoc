@@ -87,7 +87,7 @@ public String consume(String name) {
 
 === Replying
 
-The _return_ of a method annotated with `@ConsumeEvent` is used as response to the incoming message.
+The _return_ value of a method annotated with `@ConsumeEvent` is used as response to the incoming message.
 For instance, in the following snippet, the returned `String` is the response.
 
 [source, java]

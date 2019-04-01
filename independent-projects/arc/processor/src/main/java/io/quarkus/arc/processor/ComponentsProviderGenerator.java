@@ -229,12 +229,10 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 paramTypes.add(Type.getDescriptor(InjectableReferenceProvider.class));
             }
         }
-        if (!bean.getInterceptedMethods().isEmpty()) {
-            for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
-                ResultHandle resultHandle = beanToResultHandle.get(interceptor);
-                params.add(resultHandle);
-                paramTypes.add(Type.getDescriptor(InjectableInterceptor.class));
-            }
+        for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
+            ResultHandle resultHandle = beanToResultHandle.get(interceptor);
+            params.add(resultHandle);
+            paramTypes.add(Type.getDescriptor(InjectableInterceptor.class));
         }
         // Foo_Bean bean2 = new Foo_Bean(bean2)
         ResultHandle beanInstance = getComponents.newInstance(

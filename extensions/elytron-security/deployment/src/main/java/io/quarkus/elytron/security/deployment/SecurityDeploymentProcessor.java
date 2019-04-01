@@ -17,6 +17,7 @@
 package io.quarkus.elytron.security.deployment;
 
 import java.security.Provider;
+import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,7 +44,6 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.servlet.ServletExtension;
-import sun.security.jca.Providers;
 
 /**
  * The build time process for the security aspects of the deployment. This creates {@linkplain BuildStep}s for integration
@@ -315,7 +315,7 @@ class SecurityDeploymentProcessor {
      */
     private List<String> registerProvider(String providerName) {
         ArrayList<String> providerClasses = new ArrayList<>();
-        Provider provider = Providers.getFullProviderList().getProvider(providerName);
+        Provider provider = Security.getProvider(providerName);
         providerClasses.add(provider.getClass().getName());
         Set<Provider.Service> services = provider.getServices();
         for (Provider.Service service : services) {

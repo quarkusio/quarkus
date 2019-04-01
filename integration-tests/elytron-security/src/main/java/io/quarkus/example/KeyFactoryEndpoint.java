@@ -3,6 +3,7 @@ package io.quarkus.example;
 import java.security.KeyFactory;
 import java.security.Provider;
 import java.security.PublicKey;
+import java.security.Security;
 import java.security.Signature;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
@@ -13,9 +14,6 @@ import javax.ws.rs.QueryParam;
 
 import org.jboss.logging.Logger;
 
-import sun.security.jca.ProviderList;
-import sun.security.jca.Providers;
-
 @Path("/jca")
 public class KeyFactoryEndpoint {
     private static final Logger log = Logger.getLogger(KeyFactoryEndpoint.class);
@@ -24,8 +22,8 @@ public class KeyFactoryEndpoint {
     @Path("listProviders")
     public String listProviders() {
         StringBuilder result = new StringBuilder();
-        ProviderList providerList = Providers.getFullProviderList();
-        for (Provider provider : providerList.providers()) {
+        final Provider[] providerList = Security.getProviders();
+        for (Provider provider : providerList) {
             result.append(provider.getName());
         }
         log.infof("Found providers: %s", result);

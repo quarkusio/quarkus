@@ -556,7 +556,8 @@ The only particular aspect of writing {project-name} extensions in Eclipse is th
 
 - Install `m2e-apt` from https://marketplace.eclipse.org/content/m2e-apt
 - Define this property in your `pom.xml`: `<m2e.apt.activation>jdt_apt</m2e.apt.activation>`, although if you rely on `io.quarkus:quarkus-build-parent` you will get it for free.
-- If you have the `io.quarkus:quarkus-extension-processor` open at the same time in your IDE (for example, if you have the {project-name} sources checked out and open in your IDE) you will need to close that project. Otherwise, Eclipse will not invoke the APT plugin that it contains.
+- If you have the `io.quarkus:quarkus-extension-processor` project open at the same time in your IDE (for example, if you have the {project-name} sources checked out and open in your IDE) you will need to close that project. Otherwise, Eclipse will not invoke the APT plugin that it contains.
+- If you just closed the extension processor project, be sure to do `Maven > Update Project` on the other projects in order for Eclipse to pick up the extension processor from the Maven repository.
 
 == Troubleshooting / Debugging Tips
 

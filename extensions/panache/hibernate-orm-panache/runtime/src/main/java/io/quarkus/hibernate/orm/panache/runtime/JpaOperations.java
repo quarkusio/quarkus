@@ -327,7 +327,7 @@ public class JpaOperations {
 
     public static IllegalStateException implementationInjectionMissing() {
         return new IllegalStateException(
-                "This method is normally automatically overridden in subclasses: did you forget to annotated your entity with @Entity?");
+                "This method is normally automatically overridden in subclasses: did you forget to annotate your entity with @Entity?");
     }
 
     public static int executeUpdate(String query, Object... params) {

@@ -80,7 +80,7 @@ public class InterceptorGenerator extends BeanGenerator {
         ClassInfo providerClass = interceptor.getDeployment().getIndex().getClassByName(providerType.name());
         String providerTypeName = providerClass.name().toString();
         String targetPackage = DotNames.packageName(providerType.name());
-        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
+        String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
 
         boolean isApplicationClass = applicationClassPredicate.test(interceptor.getBeanClass());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,

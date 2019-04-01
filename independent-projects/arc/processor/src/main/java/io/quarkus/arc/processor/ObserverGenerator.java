@@ -98,9 +98,16 @@ public class ObserverGenerator extends AbstractGenerator {
         for (org.jboss.jandex.Type paramType : observer.getObserverMethod().parameters()) {
             sigBuilder.append(paramType.name().toString());
         }
-        String baseName = declaringClassBase + OBSERVER_SUFFIX + "_" + observer.getObserverMethod().name() + "_"
-                + Hashes.sha1(sigBuilder.toString());
-        String generatedName = DotNames.packageName(declaringClass.name()).replace('.', '/') + "/" + baseName;
+
+        String baseName = declaringClassBase + OBSERVER_SUFFIX
+                + "_" + observer.getObserverMethod().name()
+                + "_" + Hashes.sha1(sigBuilder.toString());
+
+        // No suffix added at the end of generated name because it's already
+        // included in a baseName, e.g. Foo_Observer_fooMethod_hash
+
+        String targetPackage = DotNames.packageName(declaringClass.name());
+        String generatedName = generatedNameFromTarget(targetPackage, baseName, "");
 
         boolean isApplicationClass = applicationClassPredicate.test(observer.getObserverMethod().declaringClass().name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,

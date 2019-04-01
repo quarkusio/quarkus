@@ -25,6 +25,33 @@ abstract class AbstractGenerator {
 
     static final String DEFAULT_PACKAGE = Arc.class.getPackage().getName() + ".generator";
 
+    /**
+     * Create a generated bean name from a bean package. When bean is located
+     * in a default package (i.e. a classpath root), the target package name
+     * is empty string. This need to be taken into account when creating
+     * generated bean name because it is later used to build class file path
+     * and we do not want it to start from a slash because it will point root
+     * directory instead of a relative one. This method will address this
+     * problem.<br>
+     * <br>
+     * Example generated bean names (without quotes):
+     * <ol>
+     * <li>a <i>"io/quarcus/foo/FooService_Bean"</i>, when in io.quarcus.foo package,</li>
+     * <li>a <i>"BarService_Bean"</i>, when in default package.</li>
+     * </ol>
+     *
+     * @param baseName a bean name (class name)
+     * @param targetPackage a package where bean is located
+     * @return Generated name
+     */
+    static String generatedNameFromTarget(String targetPackage, String baseName, String suffix) {
+        if (targetPackage == null || targetPackage.isEmpty()) {
+            return baseName + suffix;
+        } else {
+            return targetPackage.replace('.', '/') + "/" + baseName + suffix;
+        }
+    }
+
     protected String getBaseName(BeanInfo bean, String beanClassName) {
         String name = Types.getSimpleName(beanClassName);
         return name.substring(0, name.lastIndexOf(BeanGenerator.BEAN_SUFFIX));

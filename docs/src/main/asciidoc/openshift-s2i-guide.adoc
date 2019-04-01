@@ -21,11 +21,35 @@ Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {q
 
 The solution is located in the `getting-started` directory.
 
-== Deploying the application in OpenShift
+== Deploying the application as GraalVM native executable in OpenShift
+
+In this section, we are going to leverage the S2I build mechanism of OpenShift.
+We use Quarkus' GraalVM Native S2I Builder, and therefore do not need a `Dockerfile` in this approach.
+You do not need to locally clone the Git repository, as it will be directly built inside OpenShift.
+We are going to create an OpenShift `build` executing it:
+
+[source,shell]
+----
+# To build the image on OpenShift
+oc new-app quay.io/quarkus/centos-quarkus-native-s2i~{quickstarts-clone-url} --context-dir=getting-started --name=quarkus-quickstart-native
+oc logs -f bc/quarkus-quickstart-native
+
+# To create the route
+oc expose svc/quarkus-quickstart-native
+
+# Get the route URL
+export URL="http://$(oc get route | grep quarkus-quickstart-native | awk '{print $2}')"
+curl $URL/hello/greeting/quarkus
+----
+
+Your application is accessible at the printed URL.
+
+
+== Deploying the application as Java application in OpenShift
 
 In this section, we are going to leverage the S2I build mechanism of OpenShift.
 We use a Java S2I Builder, and therefore do not need a `Dockerfile` in this approach.
-You do not need to locally clone the Git repository, as it will be directly built since OpenShift.
+You do not need to locally clone the Git repository, as it will be directly built inside OpenShift.
 We are going to create an OpenShift `build` executing it:
 
 [source,shell]
@@ -44,9 +68,7 @@ curl $URL/hello/greeting/quarkus
 
 Your application is accessible at the printed URL.
 
-== Background
-
-The `.s2i/environment` file sets required variables for the S2I Builder image to find the Quarkus `runner` JAR, and copy the JARs from the `lib/` directory.
+The `.s2i/environment` file in the quickstart sets required variables for the S2I Builder image to find the Quarkus `runner` JAR, and copy the JARs from the `lib/` directory.
 
 == Going further
 

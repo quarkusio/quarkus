@@ -68,6 +68,10 @@ public class QuarkusNative extends QuarkusTask {
 
     private String nativeImageXmx;
 
+    private String containerRuntime = "docker";
+
+    private String containerRuntimeOptions;
+
     private String dockerBuild;
 
     private boolean enableVMInspection = false;
@@ -276,8 +280,32 @@ public class QuarkusNative extends QuarkusTask {
 
     @Optional
     @Input
+    public String getContainerRuntime() {
+        return containerRuntime;
+    }
+
+    @Optional
+    @Input
+    public String getContainerRuntimeOptions() {
+        return containerRuntimeOptions;
+    }
+
+    @Optional
+    @Input
     public String getDockerBuild() {
         return dockerBuild;
+    }
+
+    @Option(description = "Container runtime", option = "container-runtime")
+    @Optional
+    public void setContainerRuntime(String containerRuntime) {
+        this.containerRuntime = containerRuntime;
+    }
+
+    @Option(description = "Container runtime options", option = "container-runtime-options")
+    @Optional
+    public void setContainerRuntimeOptions(String containerRuntimeOptions) {
+        this.containerRuntimeOptions = containerRuntimeOptions;
     }
 
     @Option(description = "Docker build", option = "docker-build")
@@ -343,6 +371,8 @@ public class QuarkusNative extends QuarkusTask {
                         .setDebugBuildProcess(isDebugBuildProcess())
                         .setDebugSymbols(isDebugSymbols())
                         .setDisableReports(isDisableReports())
+                        .setContainerRuntime(getContainerRuntime())
+                        .setContainerRuntimeOptions(getContainerRuntimeOptions())
                         .setDockerBuild(getDockerBuild())
                         .setDumpProxies(isDumpProxies())
                         .setEnableAllSecurityServices(isEnableAllSecurityServices())

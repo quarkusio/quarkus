@@ -1,38 +1,42 @@
 package io.quarkus.example.jpah2;
 
+import java.util.UUID;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
+
+import org.hibernate.annotations.GenericGenerator;
 
 @Entity
 @NamedQuery(name = "get_person_by_name", query = "select p from Person p where name = :name")
 public class Person {
 
-    private long id;
+    private UUID id;
     private String name;
     private SequencedAddress address;
 
     public Person() {
     }
 
-    public Person(long id, String name, SequencedAddress address) {
+    public Person(UUID id, String name, SequencedAddress address) {
         this.id = id;
         this.name = name;
         this.address = address;
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "personSeq")
-    public long getId() {
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    public UUID getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

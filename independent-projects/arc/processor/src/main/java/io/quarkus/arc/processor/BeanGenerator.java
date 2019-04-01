@@ -148,7 +148,7 @@ public class BeanGenerator extends AbstractGenerator {
         ClassInfo providerClass = bean.getDeployment().getIndex().getClassByName(providerType.name());
         String providerTypeName = providerClass.name().toString();
         String targetPackage = getPackageName(bean);
-        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
+        String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
 
         boolean isApplicationClass = applicationClassPredicate.test(bean.getImplClazz().name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
@@ -247,7 +247,7 @@ public class BeanGenerator extends AbstractGenerator {
         ClassInfo providerClass = bean.getDeployment().getIndex().getClassByName(providerType.name());
         String providerTypeName = providerClass.name().toString();
         String targetPackage = DotNames.packageName(providerType.name());
-        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
+        String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
 
         boolean isApplicationClass = applicationClassPredicate.test(beanClass.name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
@@ -337,7 +337,7 @@ public class BeanGenerator extends AbstractGenerator {
                 + Hashes.sha1(sigBuilder.toString());
         String providerTypeName = providerType.name().toString();
         String targetPackage = DotNames.packageName(declaringClass.name());
-        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
+        String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
 
         boolean isApplicationClass = applicationClassPredicate.test(declaringClass.name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
@@ -415,7 +415,7 @@ public class BeanGenerator extends AbstractGenerator {
         String baseName = declaringClassBase + PRODUCER_FIELD_SUFFIX + "_" + producerField.name();
         String providerTypeName = providerType.name().toString();
         String targetPackage = DotNames.packageName(declaringClass.name());
-        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
+        String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
 
         boolean isApplicationClass = applicationClassPredicate.test(declaringClass.name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,

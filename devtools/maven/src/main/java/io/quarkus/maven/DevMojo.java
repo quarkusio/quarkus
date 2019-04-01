@@ -262,7 +262,6 @@ public class DevMojo extends AbstractMojo {
                         .setRepositorySystem(repoSystem)
                         .setRepositorySystemSession(repoSession)
                         .setRemoteRepositories(repos)
-                        .setOffline(false)
                         .setWorkspace(localProject.getWorkspace())
                         .build())
                                 .resolveModel(localProject.getAppArtifact());

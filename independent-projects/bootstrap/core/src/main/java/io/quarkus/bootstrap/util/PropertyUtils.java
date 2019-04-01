@@ -73,6 +73,11 @@ public class PropertyUtils {
        }
    }
 
+   public static final Boolean getBooleanOrNull(String name) {
+	   final String value = getProperty(name);
+	   return value == null ? null : Boolean.parseBoolean(value);
+   }
+
    public static final boolean getBoolean(String name, boolean notFoundValue) {
        final String value = getProperty(name, (notFoundValue ? TRUE : FALSE));
        return value.isEmpty() ? true : Boolean.parseBoolean(value);

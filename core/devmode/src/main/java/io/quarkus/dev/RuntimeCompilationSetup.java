@@ -28,12 +28,16 @@ import io.quarkus.deployment.devmode.HotReplacementSetup;
 
 public class RuntimeCompilationSetup {
 
+    public static final String PROP_RUNNER_CLASSES = "quarkus-internal.runner.classes";
+    public static final String PROP_RUNNER_SOURCES = "quarkus-internal.runner.sources";
+    public static final String PROP_RUNNER_RESOURCES = "quarkus-internal.runner.resources";
+
     private static Logger log = Logger.getLogger(RuntimeCompilationSetup.class.getName());
 
     public static RuntimeUpdatesProcessor setup() throws Exception {
-        String classesDir = System.getProperty("quarkus-internal.runner.classes");
-        String sourcesDir = System.getProperty("quarkus-internal.runner.sources");
-        String resourcesDir = System.getProperty("quarkus-internal.runner.resources");
+        String classesDir = System.getProperty(PROP_RUNNER_CLASSES);
+        String sourcesDir = System.getProperty(PROP_RUNNER_SOURCES);
+        String resourcesDir = System.getProperty(PROP_RUNNER_RESOURCES);
         if (classesDir != null) {
             ServiceLoader<CompilationProvider> serviceLoader = ServiceLoader.load(CompilationProvider.class);
             List<CompilationProvider> compilationProviders = new ArrayList<>();

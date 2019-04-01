@@ -30,7 +30,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.InterceptionType;
 import org.jboss.jandex.AnnotationInstance;
@@ -289,15 +288,26 @@ public class BeanInfo {
      * @return an ordered list of all interceptors associated with the bean
      */
     List<InterceptorInfo> getBoundInterceptors() {
+        if (lifecycleInterceptors.isEmpty() && interceptedMethods.isEmpty()) {
+            return Collections.emptyList();
+        }
         List<InterceptorInfo> bound = new ArrayList<>();
         for (InterceptionInfo interception : lifecycleInterceptors.values()) {
-            bound.addAll(interception.interceptors);
+            for (InterceptorInfo interceptor : interception.interceptors) {
+                if (!bound.contains(interceptor)) {
+                    bound.add(interceptor);
+                }
+            }
         }
-        if (!interceptedMethods.isEmpty()) {
-            bound.addAll(
-                    interceptedMethods.values().stream().flatMap(ii -> ii.interceptors.stream()).collect(Collectors.toList()));
+        for (InterceptionInfo interception : interceptedMethods.values()) {
+            for (InterceptorInfo interceptor : interception.interceptors) {
+                if (!bound.contains(interceptor)) {
+                    bound.add(interceptor);
+                }
+            }
         }
-        return bound.isEmpty() ? Collections.emptyList() : bound.stream().distinct().sorted().collect(Collectors.toList());
+        Collections.sort(bound);
+        return bound;
     }
 
     public DisposerInfo getDisposer() {

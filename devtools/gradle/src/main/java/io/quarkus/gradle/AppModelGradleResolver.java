@@ -107,10 +107,10 @@ public class AppModelGradleResolver implements AppModelResolver {
             final File f = a.getFile();
             final Dependency dep;
             if (f.isDirectory()) {
-                dep = processQuarkusDir(a, f.toPath().resolve(BootstrapConstants.QUARKUS));
+                dep = processQuarkusDir(a, f.toPath().resolve(BootstrapConstants.META_INF));
             } else {
                 try (FileSystem artifactFs = FileSystems.newFileSystem(f.toPath(), null)) {
-                    dep = processQuarkusDir(a, artifactFs.getPath(BootstrapConstants.QUARKUS));
+                    dep = processQuarkusDir(a, artifactFs.getPath(BootstrapConstants.META_INF));
                 } catch (IOException e) {
                     throw new GradleException("Failed to process " + f, e);
                 }

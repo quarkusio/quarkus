@@ -65,7 +65,7 @@ Your extension project should be setup as a multi-module project with two submod
 2. A runtime submodule that contains the runtime behavior that will provide the extension behavior in the native executable or runtime JVM.
 
 Your runtime artifact should depend on `io.quarkus:quarkus-core`, and possibly the runtime artifacts of other Quarkus
-modules if you want to use functionality provided by them. You will also need to include the `io.quarkus.bootstrap:bootstrap-maven-plugin`
+modules if you want to use functionality provided by them. You will also need to include the `io.quarkus.bootstrap:quarkus-bootstrap-maven-plugin`
 to generate the Quarkus extension descriptor included into the runtime artifact, if you are using the Quarkus parent pom it will automatically inherit the correct configuration.
 
 NOTE: By convention the deployment time artifact has the `-deployment` suffix, and the runtime artifact
@@ -85,7 +85,7 @@ has no suffix (and is what the end user adds to their project).
     <plugins>
         <plugin>
             <groupId>io.quarkus.bootstrap</groupId>
-            <artifactId>bootstrap-maven-plugin</artifactId>
+            <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
         </plugin>
     </plugins>
 </build>

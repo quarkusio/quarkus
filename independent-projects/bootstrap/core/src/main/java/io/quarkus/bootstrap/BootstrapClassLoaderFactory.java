@@ -94,7 +94,7 @@ public class BootstrapClassLoaderFactory {
     private Path appClasses;
     private List<Path> appCp = new ArrayList<>(1);
     private boolean localProjectsDiscovery;
-    private boolean offline = true;
+    private Boolean offline;
     private boolean enableClasspathCache;
 
     private BootstrapClassLoaderFactory() {
@@ -121,7 +121,7 @@ public class BootstrapClassLoaderFactory {
         return this;
     }
 
-    public BootstrapClassLoaderFactory setOffline(boolean offline) {
+    public BootstrapClassLoaderFactory setOffline(Boolean offline) {
         this.offline = offline;
         return this;
     }
@@ -146,7 +146,10 @@ public class BootstrapClassLoaderFactory {
             throw new IllegalArgumentException("Application classes path has not been set");
         }
         try {
-            final MavenArtifactResolver.Builder mvnBuilder = MavenArtifactResolver.builder().setOffline(offline);
+            final MavenArtifactResolver.Builder mvnBuilder = MavenArtifactResolver.builder();
+            if(offline != null) {
+                mvnBuilder.setOffline(offline);
+            }
             final LocalProject localProject;
             if (localProjectsDiscovery) {
                 localProject = LocalProject.resolveLocalProjectWithWorkspace(LocalProject.locateCurrentProjectDir(appClasses));
@@ -209,8 +212,10 @@ public class BootstrapClassLoaderFactory {
                 }
             }
             final MavenArtifactResolver.Builder mvn = MavenArtifactResolver.builder()
-                    .setOffline(offline)
                     .setWorkspace(localProject.getWorkspace());
+            if (offline != null) {
+                mvn.setOffline(offline);
+            }
             ucl = newClassLoader(parent, new BootstrapAppModelResolver(mvn.build()).resolveModel(localProject.getAppArtifact()).getDeploymentDependencies(), Collections.emptyList());
         } catch (AppModelResolverException e) {
             throw new BootstrapException("Failed to init application classloader", e);

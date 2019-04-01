@@ -116,7 +116,7 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
                     .setAppClasses(appClassLocation)
                     .addToClassPath(testClassLocation)
                     .setParent(getClass().getClassLoader())
-                    .setOffline(PropertyUtils.getBoolean(BootstrapClassLoaderFactory.PROP_OFFLINE, true))
+                    .setOffline(PropertyUtils.getBooleanOrNull(BootstrapClassLoaderFactory.PROP_OFFLINE))
                     .setLocalProjectsDiscovery(
                             PropertyUtils.getBoolean(BootstrapClassLoaderFactory.PROP_PROJECT_DISCOVERY, true))
                     .setClasspathCache(PropertyUtils.getBoolean(BootstrapClassLoaderFactory.PROP_CP_CACHE, true))

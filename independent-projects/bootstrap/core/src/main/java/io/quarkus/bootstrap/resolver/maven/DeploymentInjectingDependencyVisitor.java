@@ -75,10 +75,10 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
         final Path path = resolve(artifact);
         try {
             if (Files.isDirectory(path)) {
-                processChildren = !processQuarkusDir(path.resolve(BootstrapConstants.QUARKUS));
+                processChildren = !processMetaInfDir(path.resolve(BootstrapConstants.META_INF));
             } else {
                 try (FileSystem artifactFs = ZipUtils.newFileSystem(path)) {
-                    processChildren = !processQuarkusDir(artifactFs.getPath(BootstrapConstants.QUARKUS));
+                    processChildren = !processMetaInfDir(artifactFs.getPath(BootstrapConstants.META_INF));
                 }
             }
         } catch (Throwable t) {
@@ -87,14 +87,14 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
         return processChildren;
     }
 
-    private boolean processQuarkusDir(Path quarkusDir) throws BootstrapDependencyProcessingException {
-        if (Files.exists(quarkusDir)) {
-            Path p = quarkusDir.resolve(BootstrapConstants.DEPLOYMENT_DEPENDENCY_GRAPH);
+    private boolean processMetaInfDir(Path metaInfDir) throws BootstrapDependencyProcessingException {
+        if (Files.exists(metaInfDir)) {
+            Path p = metaInfDir.resolve(BootstrapConstants.DEPLOYMENT_DEPENDENCY_GRAPH);
             if (Files.exists(p)) {
                 processDeploymentDependencyGraph(p);
                 return true;
             }
-            p = quarkusDir.resolve(BootstrapConstants.DESCRIPTOR_PATH);
+            p = metaInfDir.resolve(BootstrapConstants.DESCRIPTOR_PATH);
             if (Files.exists(p)) {
                 processPlatformArtifact(p);
                 return true;

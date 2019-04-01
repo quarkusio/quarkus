@@ -37,7 +37,7 @@ public class SimpleReplacedDependencyTestCase extends CollectDependenciesBase {
                 extension,
                 newJar().addFile(
                         PropsBuilder.init(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment.toString()).build(),
-                        BootstrapConstants.QUARKUS, BootstrapConstants.DESCRIPTOR_PATH)
+                        BootstrapConstants.META_INF, BootstrapConstants.DESCRIPTOR_PATH)
                 .getPath(),
                 true);
 

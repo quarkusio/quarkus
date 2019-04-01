@@ -87,10 +87,6 @@
             <name>Maven Repository Switchboard</name>
             <url>http://repo.maven.apache.org/maven2</url>
         </repository>
-        <repository>
-            <id>orgapachecamel-1124</id>
-            <url>https://repository.apache.org/content/repositories/orgapachecamel-1124/</url>
-        </repository>
    </repositories>
 
     <distributionManagement>

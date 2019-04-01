@@ -64,6 +64,8 @@ class VertxWebProcessor {
     private static final DotName ROUTE = DotName.createSimple(Route.class.getName());
     private static final DotName ROUTES = DotName.createSimple(Route.Routes.class.getName());
     private static final DotName ROUTING_CONTEXT = DotName.createSimple(RoutingContext.class.getName());
+    private static final DotName RX_ROUTING_CONTEXT = DotName
+            .createSimple(io.vertx.reactivex.ext.web.RoutingContext.class.getName());
     private static final DotName ROUTING_EXCHANGE = DotName.createSimple(RoutingExchange.class.getName());
     private static final String HANDLER_SUFFIX = "_RouteHandler";
 
@@ -93,13 +95,13 @@ class VertxWebProcessor {
                             List<AnnotationInstance> routes = new LinkedList<>();
                             AnnotationInstance routeAnnotation = annotationStore.getAnnotation(method, ROUTE);
                             if (routeAnnotation != null) {
-                                validateMethodParameters(bean, method);
+                                validateMethod(bean, method);
                                 routes.add(routeAnnotation);
                             }
                             if (routes.isEmpty()) {
                                 AnnotationInstance routesAnnotation = annotationStore.getAnnotation(method, ROUTES);
                                 if (routesAnnotation != null) {
-                                    validateMethodParameters(bean, method);
+                                    validateMethod(bean, method);
                                     Collections.addAll(routes, routesAnnotation.value().asNestedArray());
                                 }
                             }
@@ -169,12 +171,23 @@ class VertxWebProcessor {
         });
     }
 
-    private void validateMethodParameters(BeanInfo bean, MethodInfo method) {
+    private void validateMethod(BeanInfo bean, MethodInfo method) {
+        if (!method.returnType().kind().equals(Type.Kind.VOID)) {
+            throw new IllegalStateException(
+                    String.format("Route handler business method must return void [method: %s, bean: %s]", method, bean));
+        }
         List<Type> params = method.parameters();
-        if (params.size() != 1
-                || !(params.get(0).name().equals(ROUTING_CONTEXT) || params.get(0).name().equals(ROUTING_EXCHANGE))) {
+        boolean hasInvalidParam = true;
+        if (params.size() == 1) {
+            DotName paramTypeName = params.get(0).name();
+            if (ROUTING_CONTEXT.equals(paramTypeName) || RX_ROUTING_CONTEXT.equals(paramTypeName)
+                    || ROUTING_EXCHANGE.equals(paramTypeName)) {
+                hasInvalidParam = false;
+            }
+        }
+        if (hasInvalidParam) {
             throw new IllegalStateException(String.format(
-                    "Route handler business method must accept exactly one parameter of type RoutingContext/RoutingExchange: %s [method: %s, bean:%s",
+                    "Route handler business method must accept exactly one parameter of type RoutingContext/RoutingExchange: %s [method: %s, bean: %s]",
                     params, method, bean));
         }
     }
@@ -223,6 +236,12 @@ class VertxWebProcessor {
             paramHandle = invoke.getMethodParam(0);
             methodDescriptor = MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class,
                     RoutingContext.class);
+        } else if (method.parameters().get(0).name().equals(RX_ROUTING_CONTEXT)) {
+            paramHandle = invoke.newInstance(
+                    MethodDescriptor.ofConstructor(io.vertx.reactivex.ext.web.RoutingContext.class, RoutingContext.class),
+                    invoke.getMethodParam(0));
+            methodDescriptor = MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class,
+                    io.vertx.reactivex.ext.web.RoutingContext.class);
         } else {
             paramHandle = invoke.newInstance(MethodDescriptor.ofConstructor(RoutingExchangeImpl.class, RoutingContext.class),
                     invoke.getMethodParam(0));

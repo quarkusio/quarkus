@@ -14,8 +14,8 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * Annotation used to configure a {@link io.quarkus.vertx.web.Route} in a declarative way.
- * 
- * The target business method must accept exacly one argument of type {@link RoutingContext}.
+ * <p>
+ * The target business method must return {@code void} and accept exacly one argument of type {@link RoutingContext}.
  */
 @Repeatable(Routes.class)
 @Retention(RetentionPolicy.RUNTIME)

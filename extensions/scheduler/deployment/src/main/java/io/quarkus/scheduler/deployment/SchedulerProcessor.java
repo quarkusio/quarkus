@@ -171,13 +171,13 @@ public class SchedulerProcessor {
                                 if (params.size() > 1
                                         || (params.size() == 1 && !params.get(0).equals(SCHEDULED_EXECUTION_TYPE))) {
                                     throw new IllegalStateException(String.format(
-                                            "Invalid scheduled business method parameters %s [method: %s, bean:%s", params,
+                                            "Invalid scheduled business method parameters %s [method: %s, bean: %s]", params,
                                             method, bean));
                                 }
                                 if (!method.returnType().kind().equals(Type.Kind.VOID)) {
                                     throw new IllegalStateException(
-                                            String.format("Scheduled business method must return void [method: %s, bean:%s",
-                                                    method.returnType(), method, bean));
+                                            String.format("Scheduled business method must return void [method: %s, bean: %s]",
+                                                    method, bean));
                                 }
                                 // Validate cron() and every() expressions
                                 for (AnnotationInstance scheduled : schedules) {

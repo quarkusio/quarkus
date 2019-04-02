@@ -101,6 +101,9 @@
 
         <!-- Kubernetes -->
         <module>kubernetes</module>
+
+        <!-- Database migrations -->
+        <module>flyway</module>
     </modules>
 
 </project>

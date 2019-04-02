@@ -33,25 +33,25 @@ public class JsonWriterTest {
 
     @Test
     public void testJsonSync() {
-        RestAssured.when().get("/vertx-test/body-writers/json/sync").then()
+        RestAssured.when().get("/vertx-test/json-bodies/json/sync").then()
                 .statusCode(200).body("Hello", equalTo("World"));
     }
 
     @Test
     public void testArraySync() {
-        RestAssured.when().get("/vertx-test/body-writers/array/sync").then()
+        RestAssured.when().get("/vertx-test/json-bodies/array/sync").then()
                 .statusCode(200).body("", equalTo(Arrays.asList("Hello", "World")));
     }
 
     @Test
     public void testJsonAsync() {
-        RestAssured.when().get("/vertx-test/body-writers/json/async").then()
+        RestAssured.when().get("/vertx-test/json-bodies/json/async").then()
                 .statusCode(200).body("Hello", equalTo("World"));
     }
 
     @Test
     public void testArrayAsync() {
-        RestAssured.when().get("/vertx-test/body-writers/array/async").then()
+        RestAssured.when().get("/vertx-test/json-bodies/array/async").then()
                 .statusCode(200).body("", equalTo(Arrays.asList("Hello", "World")));
     }
 }

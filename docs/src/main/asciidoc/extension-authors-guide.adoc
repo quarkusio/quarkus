@@ -666,8 +666,8 @@ public class ConfiguredBean implements IConfigConsumer {
 
 ...
 ----
-<1> Register the annotation class and CDI default scope using the Jandex DotName class.
-<2> ConfiguredBean will be processed by the CDI layer the same as a bean annotated with the CDI standard @ApplicationScoped.
+<1> Register the annotation class and CDI default scope using the Jandex `DotName` class.
+<2> `ConfiguredBean` will be processed by the CDI layer the same as a bean annotated with the CDI standard @ApplicationScoped.
 
 === Parsing Config to Objects
 One of the main things an extension is likely to do is completely separate the configuration phase of behavior from the runtime phase. Frameworks often do parsing/load of configuration on startup that can be done during build time to both reduce the runtime dependencies on frameworks like xml parsers as well as reducing the startup time the parsing incurs.
@@ -710,9 +710,9 @@ If you look at the XmlConfig code you will see that it does carry around the JAX
 ====
 
 === Scanning Deployments Using Jandex
-If your extension defines annotations or interfaces that mark beans needing to be processed, you can locate these beans using the Jandex API, a Java annotation indexer and offline reflection library. The following `TestProcessor#scanForBeans` method showns how to find the beans annotated with our `@TestAnnotation` tha also implement the `IConfigConsumer` interface:
+If your extension defines annotations or interfaces that mark beans needing to be processed, you can locate these beans using the Jandex API, a Java annotation indexer and offline reflection library. The following `TestProcessor#scanForBeans` method shows how to find the beans annotated with our `@TestAnnotation` that also implement the `IConfigConsumer` interface:
 
-.x
+.Example Jandex Usage
 [source,java]
 ----
     static DotName TEST_ANNOTATION = DotName.createSimple(TestAnnotation.class.getName());
@@ -748,7 +748,7 @@ If your extension defines annotations or interfaces that mark beans needing to b
 <5> Save the bean class in a `TestBeanBuildItem` for use in a latter RUNTIME_INIT build step that will interact with the bean instances.
 
 === Interacting With Extension Beans
-You can use the `io.quarkus.arc.runtime.BeanContainer` interface to interace with your extension beans. The following `configureBeans` methods illustrate interacting with the beans scanned for in the previous section:
+You can use the `io.quarkus.arc.runtime.BeanContainer` interface to interact with your extension beans. The following `configureBeans` methods illustrate interacting with the beans scanned for in the previous section:
 
 .Using CDI BeanContainer Interface
 [source,java]
@@ -826,7 +826,7 @@ A common purpose for an extension is to integrate a non-CDI aware service into t
 }
 ----
 <1> Call into the runtime template to record the creation of the service.
-<2> Using the parsed `XmlConfig` instance, create a instance of `RuntimeXmlConfigService` and wrap it in a `RuntimeValue`. Use a `RuntimeValue` wrapper for non-interface objects that are non-proxiable.
+<2> Using the parsed `XmlConfig` instance, create an instance of `RuntimeXmlConfigService` and wrap it in a `RuntimeValue`. Use a `RuntimeValue` wrapper for non-interface objects that are non-proxiable.
 <3> Wrap the return service value in a `RuntimeServiceBuildItem` for use in a RUNTIME_INIT build step that will start the service.
 
 ==== Starting a Service
@@ -854,7 +854,7 @@ Now that you have recorded the creation of a service during the build phase, you
 <1> We consume a ShutdownContextBuildItem to register the service shutdown.
 <2> We consume the previously initialized service captured in `RuntimeServiceBuildItem`.
 <3> Call the runtime template to record the service start invocation.
-<4> Runtime template retrieves the service instance reference and calls it's `startService` method.
+<4> Runtime template retrieves the service instance reference and calls its `startService` method.
 <5> Runtime template registers an invocation of the service instance `stopService` method with the {project-name} `ShutdownContext`.
 
 The code for the `RuntimeXmlConfigService` can be viewed here:

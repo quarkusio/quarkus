@@ -445,7 +445,10 @@ public class DevMojo extends AbstractMojo {
      * Enum to classify the os.name system property
      */
     static enum OS {
-        WINDOWS, LINUX, MAC, OTHER;
+        WINDOWS,
+        LINUX,
+        MAC,
+        OTHER;
 
         private String version;
 

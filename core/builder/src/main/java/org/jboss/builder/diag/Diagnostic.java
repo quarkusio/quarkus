@@ -88,7 +88,9 @@ public final class Diagnostic {
     }
 
     public enum Level {
-        ERROR("error"), WARN("warning"), NOTE("note"),
+        ERROR("error"),
+        WARN("warning"),
+        NOTE("note"),
         ;
 
         private final String name;

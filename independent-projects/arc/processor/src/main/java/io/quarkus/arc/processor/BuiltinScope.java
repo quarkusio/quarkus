@@ -9,8 +9,10 @@ import org.jboss.jandex.DotName;
 
 public enum BuiltinScope {
 
-    DEPENDENT(Dependent.class, false), SINGLETON(Singleton.class, false), APPLICATION(ApplicationScoped.class,
-            true), REQUEST(RequestScoped.class, true);
+    DEPENDENT(Dependent.class, false),
+    SINGLETON(Singleton.class, false),
+    APPLICATION(ApplicationScoped.class, true),
+    REQUEST(RequestScoped.class, true);
 
     private ScopeInfo info;
 

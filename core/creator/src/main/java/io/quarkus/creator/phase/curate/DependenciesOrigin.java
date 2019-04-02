@@ -23,7 +23,9 @@ package io.quarkus.creator.phase.curate;
  */
 public enum DependenciesOrigin {
 
-    APPLICATION("application"), LAST_UPDATE("last-update"), UNKNOWN(null);
+    APPLICATION("application"),
+    LAST_UPDATE("last-update"),
+    UNKNOWN(null);
 
     private final String name;
 

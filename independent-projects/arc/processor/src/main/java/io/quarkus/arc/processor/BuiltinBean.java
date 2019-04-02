@@ -69,7 +69,8 @@ enum BuiltinBean {
                     constructor.getThis(), instanceProvider);
 
         }
-    }, BuiltinBean::isInstanceInjectionPoint), INJECTION_POINT(DotNames.INJECTION_POINT,
+    }, BuiltinBean::isInstanceInjectionPoint),
+    INJECTION_POINT(DotNames.INJECTION_POINT,
             new Generator() {
                 @Override
                 void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
@@ -82,94 +83,98 @@ enum BuiltinBean {
                             constructor.getThis(),
                             constructor.newInstance(MethodDescriptor.ofConstructor(InjectionPointProvider.class)));
                 }
-            }), BEAN(DotNames.BEAN, new Generator() {
-                @Override
-                void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
-                        ClassCreator clazzCreator,
-                        MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
-                    // this.beanProvider1 = new BeanMetadataProvider<>();
-                    constructor.writeInstanceField(
-                            FieldDescriptor.of(clazzCreator.getClassName(), providerName,
-                                    InjectableReferenceProvider.class.getName()),
-                            constructor.getThis(),
-                            constructor.newInstance(MethodDescriptor.ofConstructor(BeanMetadataProvider.class)));
-                }
-            }), BEAN_MANAGER(DotNames.BEAN_MANAGER, new Generator() {
-                @Override
-                void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
-                        ClassCreator clazzCreator,
-                        MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
-                    constructor.writeInstanceField(
-                            FieldDescriptor.of(clazzCreator.getClassName(), providerName,
-                                    InjectableReferenceProvider.class.getName()),
-                            constructor.getThis(),
-                            constructor.newInstance(MethodDescriptor.ofConstructor(BeanManagerProvider.class)));
-                }
-            }), EVENT(DotNames.EVENT, new Generator() {
-                @Override
-                void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
-                        ClassCreator clazzCreator,
-                        MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
+            }),
+    BEAN(DotNames.BEAN, new Generator() {
+        @Override
+        void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
+                ClassCreator clazzCreator,
+                MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
+            // this.beanProvider1 = new BeanMetadataProvider<>();
+            constructor.writeInstanceField(
+                    FieldDescriptor.of(clazzCreator.getClassName(), providerName,
+                            InjectableReferenceProvider.class.getName()),
+                    constructor.getThis(),
+                    constructor.newInstance(MethodDescriptor.ofConstructor(BeanMetadataProvider.class)));
+        }
+    }),
+    BEAN_MANAGER(DotNames.BEAN_MANAGER, new Generator() {
+        @Override
+        void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
+                ClassCreator clazzCreator,
+                MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
+            constructor.writeInstanceField(
+                    FieldDescriptor.of(clazzCreator.getClassName(), providerName,
+                            InjectableReferenceProvider.class.getName()),
+                    constructor.getThis(),
+                    constructor.newInstance(MethodDescriptor.ofConstructor(BeanManagerProvider.class)));
+        }
+    }),
+    EVENT(DotNames.EVENT, new Generator() {
+        @Override
+        void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
+                ClassCreator clazzCreator,
+                MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
 
-                    ResultHandle qualifiers = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-                    if (!injectionPoint.getRequiredQualifiers().isEmpty()) {
-                        // Set<Annotation> instanceProvider1Qualifiers = new HashSet<>()
-                        // instanceProvider1Qualifiers.add(javax.enterprise.inject.Default.Literal.INSTANCE)
+            ResultHandle qualifiers = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            if (!injectionPoint.getRequiredQualifiers().isEmpty()) {
+                // Set<Annotation> instanceProvider1Qualifiers = new HashSet<>()
+                // instanceProvider1Qualifiers.add(javax.enterprise.inject.Default.Literal.INSTANCE)
 
-                        for (AnnotationInstance qualifierAnnotation : injectionPoint.getRequiredQualifiers()) {
-                            BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
-                            if (qualifier != null) {
-                                constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers,
-                                        qualifier.getLiteralInstance(constructor));
-                            } else {
-                                // Create annotation literal first
-                                ClassInfo qualifierClass = beanDeployment.getQualifier(qualifierAnnotation.name());
-                                constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers,
-                                        annotationLiterals.process(constructor, classOutput,
-                                                qualifierClass, qualifierAnnotation,
-                                                Types.getPackageName(clazzCreator.getClassName())));
-                            }
-                        }
+                for (AnnotationInstance qualifierAnnotation : injectionPoint.getRequiredQualifiers()) {
+                    BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
+                    if (qualifier != null) {
+                        constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers,
+                                qualifier.getLiteralInstance(constructor));
+                    } else {
+                        // Create annotation literal first
+                        ClassInfo qualifierClass = beanDeployment.getQualifier(qualifierAnnotation.name());
+                        constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers,
+                                annotationLiterals.process(constructor, classOutput,
+                                        qualifierClass, qualifierAnnotation,
+                                        Types.getPackageName(clazzCreator.getClassName())));
                     }
-                    ResultHandle parameterizedType = Types.getTypeHandle(constructor, injectionPoint.getRequiredType());
-                    ResultHandle eventProvider = constructor.newInstance(
-                            MethodDescriptor.ofConstructor(EventProvider.class, java.lang.reflect.Type.class,
-                                    Set.class),
-                            parameterizedType, qualifiers);
-                    constructor.writeInstanceField(
-                            FieldDescriptor.of(clazzCreator.getClassName(), providerName,
-                                    InjectableReferenceProvider.class.getName()),
-                            constructor.getThis(), eventProvider);
                 }
-            }), RESOURCE(DotNames.OBJECT, new Generator() {
-                @Override
-                void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
-                        ClassCreator clazzCreator,
-                        MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
+            }
+            ResultHandle parameterizedType = Types.getTypeHandle(constructor, injectionPoint.getRequiredType());
+            ResultHandle eventProvider = constructor.newInstance(
+                    MethodDescriptor.ofConstructor(EventProvider.class, java.lang.reflect.Type.class,
+                            Set.class),
+                    parameterizedType, qualifiers);
+            constructor.writeInstanceField(
+                    FieldDescriptor.of(clazzCreator.getClassName(), providerName,
+                            InjectableReferenceProvider.class.getName()),
+                    constructor.getThis(), eventProvider);
+        }
+    }),
+    RESOURCE(DotNames.OBJECT, new Generator() {
+        @Override
+        void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
+                ClassCreator clazzCreator,
+                MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
 
-                    ResultHandle annotations = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-                    // For a resource field the required qualifiers contain all annotations declared on the field
-                    if (!injectionPoint.getRequiredQualifiers().isEmpty()) {
-                        for (AnnotationInstance annotation : injectionPoint.getRequiredQualifiers()) {
-                            // Create annotation literal first
-                            ClassInfo annotationClass = beanDeployment.getIndex().getClassByName(annotation.name());
-                            constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotations,
-                                    annotationLiterals.process(constructor, classOutput,
-                                            annotationClass, annotation,
-                                            Types.getPackageName(clazzCreator.getClassName())));
-                        }
-                    }
-                    ResultHandle parameterizedType = Types.getTypeHandle(constructor, injectionPoint.getRequiredType());
-                    ResultHandle resourceProvider = constructor.newInstance(
-                            MethodDescriptor.ofConstructor(ResourceProvider.class, java.lang.reflect.Type.class,
-                                    Set.class),
-                            parameterizedType, annotations);
-                    constructor.writeInstanceField(
-                            FieldDescriptor.of(clazzCreator.getClassName(), providerName,
-                                    InjectableReferenceProvider.class.getName()),
-                            constructor.getThis(), resourceProvider);
+            ResultHandle annotations = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            // For a resource field the required qualifiers contain all annotations declared on the field
+            if (!injectionPoint.getRequiredQualifiers().isEmpty()) {
+                for (AnnotationInstance annotation : injectionPoint.getRequiredQualifiers()) {
+                    // Create annotation literal first
+                    ClassInfo annotationClass = beanDeployment.getIndex().getClassByName(annotation.name());
+                    constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotations,
+                            annotationLiterals.process(constructor, classOutput,
+                                    annotationClass, annotation,
+                                    Types.getPackageName(clazzCreator.getClassName())));
                 }
-            }, ip -> ip.getKind() == InjectionPointKind.RESOURCE);
+            }
+            ResultHandle parameterizedType = Types.getTypeHandle(constructor, injectionPoint.getRequiredType());
+            ResultHandle resourceProvider = constructor.newInstance(
+                    MethodDescriptor.ofConstructor(ResourceProvider.class, java.lang.reflect.Type.class,
+                            Set.class),
+                    parameterizedType, annotations);
+            constructor.writeInstanceField(
+                    FieldDescriptor.of(clazzCreator.getClassName(), providerName,
+                            InjectableReferenceProvider.class.getName()),
+                    constructor.getThis(), resourceProvider);
+        }
+    }, ip -> ip.getKind() == InjectionPointKind.RESOURCE);
 
     private final DotName rawTypeDotName;
 

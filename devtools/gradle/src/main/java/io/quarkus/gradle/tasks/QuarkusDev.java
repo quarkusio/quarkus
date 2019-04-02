@@ -372,7 +372,10 @@ public class QuarkusDev extends QuarkusTask {
      * Enum to classify the os.name system property
      */
     static enum OS {
-        WINDOWS, LINUX, MAC, OTHER;
+        WINDOWS,
+        LINUX,
+        MAC,
+        OTHER;
 
         private String version;
 

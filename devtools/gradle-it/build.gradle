@@ -15,7 +15,9 @@ buildscript {
 }
 
 repositories {
-     mavenCentral()
+    //Needs latest from local snapshots too:
+    mavenLocal()
+    mavenCentral()
 }
 
 test {

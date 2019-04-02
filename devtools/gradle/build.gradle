@@ -16,6 +16,7 @@ compileJava   {
 }
 
 repositories {
+    //Needs latest from local snapshots too:
     mavenLocal()
     mavenCentral()
     jcenter()

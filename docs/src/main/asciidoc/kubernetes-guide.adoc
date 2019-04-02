@@ -84,7 +84,7 @@ oc expose service quarkus-quickstart
 # Get the route URL
 export URL="http://$(oc get route | grep quarkus-quickstart | awk '{print $2}')"
 echo "Application URL: $URL"
-curl $URL/hello/greeting/quarkus
+curl $URL/hello/greeting/quarkus && echo
 ----
 
 Your application is accessible at the printed URL.

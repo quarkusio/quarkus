@@ -23,7 +23,10 @@ package io.quarkus.creator.phase.curate;
  */
 public enum VersionUpdateNumber {
 
-    MAJOR("major"), MINOR("minor"), MICRO("micro"), UNKNOWN(null);
+    MAJOR("major"),
+    MINOR("minor"),
+    MICRO("micro"),
+    UNKNOWN(null);
 
     private final String name;
 

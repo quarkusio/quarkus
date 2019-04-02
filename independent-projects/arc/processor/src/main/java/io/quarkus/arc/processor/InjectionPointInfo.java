@@ -180,7 +180,8 @@ public class InjectionPointInfo {
     }
 
     enum InjectionPointKind {
-        CDI, RESOURCE
+        CDI,
+        RESOURCE
     }
 
     static class TypeAndQualifiers {

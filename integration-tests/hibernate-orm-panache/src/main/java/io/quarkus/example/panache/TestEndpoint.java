@@ -511,7 +511,9 @@ public class TestEndpoint {
     }
 
     enum PersistTest {
-        Iterable, Variadic, Stream;
+        Iterable,
+        Variadic,
+        Stream;
     }
 
     private void testPersistDao(PersistTest persistTest) {

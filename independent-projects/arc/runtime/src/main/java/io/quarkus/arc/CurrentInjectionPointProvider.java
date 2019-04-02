@@ -61,20 +61,15 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
 
     @Override
     public T get(CreationalContext<T> creationalContext) {
-        InjectionPoint prev = InjectionPointProvider.CURRENT.get();
-        InjectionPointProvider.CURRENT.set(injectionPoint);
+        InjectionPoint prev = InjectionPointProvider.set(injectionPoint);
         try {
             return delegate.get(creationalContext);
         } finally {
-            if (prev != null) {
-                InjectionPointProvider.CURRENT.set(prev);
-            } else {
-                InjectionPointProvider.CURRENT.remove();
-            }
+            InjectionPointProvider.set(prev);
         }
     }
 
-    static class InjectionPointImpl implements InjectionPoint {
+    public static class InjectionPointImpl implements InjectionPoint {
 
         private final Type requiredType;
         private final Set<Annotation> qualifiers;
@@ -82,7 +77,8 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
         private final Annotated annotated;
         private final Member member;
 
-        InjectionPointImpl(Type injectionPointType, Type requiredType, Set<Annotation> qualifiers, InjectableBean<?> bean,
+        public InjectionPointImpl(Type injectionPointType, Type requiredType, Set<Annotation> qualifiers,
+                InjectableBean<?> bean,
                 Set<Annotation> annotations,
                 Member javaMember, int position) {
             this.requiredType = requiredType;

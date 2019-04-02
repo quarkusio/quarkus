@@ -20,7 +20,8 @@ package io.quarkus.creator.phase.nativeimage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -313,6 +314,14 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm quarkus/graalvm-native-image"
             nativeImage = new ArrayList<>();
             Collections.addAll(nativeImage, containerRuntime, "run", "-v", outputDir.toAbsolutePath() + ":/project:z", "--rm");
+
+            if (IS_LINUX & "docker".equals(containerRuntime)) {
+                String uid = getLinuxID("-ur");
+                String gid = getLinuxID("-gr");
+                if (uid != null & gid != null & !"".equals(uid) & !"".equals(gid)) {
+                    Collections.addAll(nativeImage, "--user", uid.concat(":").concat(gid));
+                }
+            }
             nativeImage.addAll(containerRuntimeOptions);
             nativeImage.add(this.builderImage);
         } else {
@@ -504,6 +513,50 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             return true;
         }
         return false;
+    }
+
+    private static String getLinuxID(String option) {
+        Process process;
+
+        try {
+            StringBuilder responseBuilder = new StringBuilder();
+            String line;
+
+            ProcessBuilder idPB = new ProcessBuilder().command("id", option);
+            idPB.redirectError(new File("/dev/null"));
+            idPB.redirectOutput(new File("/dev/null"));
+
+            process = idPB.start();
+            try(InputStream inputStream = process.getInputStream()) {
+                try( BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))){
+                    while ((line = reader.readLine()) != null) {
+                        responseBuilder.append(line);
+                    }
+                    safeWaitFor(process);
+                    return responseBuilder.toString();
+                }
+            } catch (Throwable t) {
+                safeWaitFor(process);
+                throw t;
+            }
+        } catch (IOException e) { //from process.start()
+            //swallow and return null id
+            return null;
+        }
+    }
+
+    static void safeWaitFor(Process process) {
+        boolean intr = false;
+        try {
+            for (;;) try {
+                process.waitFor();
+                return;
+            } catch (InterruptedException ex) {
+                intr = true;
+            }
+        } finally {
+            if (intr) Thread.currentThread().interrupt();
+        }
     }
 
     private static String detectNoPIE() {

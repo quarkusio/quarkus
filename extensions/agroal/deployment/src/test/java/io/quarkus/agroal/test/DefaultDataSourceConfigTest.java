@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
+import io.agroal.api.configuration.AgroalConnectionFactoryConfiguration;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -38,9 +39,11 @@ public class DefaultDataSourceConfigTest {
             int initialSize, Duration backgroundValidationInterval, Duration acquisitionTimeout, Duration leakDetectionInterval,
             Duration idleRemovalInterval) throws SQLException {
         AgroalConnectionPoolConfiguration configuration = dataSource.getConfiguration().connectionPoolConfiguration();
+        AgroalConnectionFactoryConfiguration agroalConnectionFactoryConfiguration = configuration
+                .connectionFactoryConfiguration();
 
-        assertEquals("jdbc:h2:tcp://localhost/mem:default", configuration.connectionFactoryConfiguration().jdbcUrl());
-        assertEquals(username, configuration.connectionFactoryConfiguration().principal().getName());
+        assertEquals("jdbc:h2:tcp://localhost/mem:default", agroalConnectionFactoryConfiguration.jdbcUrl());
+        assertEquals(username, agroalConnectionFactoryConfiguration.principal().getName());
         assertEquals(minSize, configuration.minSize());
         assertEquals(maxSize, configuration.maxSize());
         assertEquals(initialSize, configuration.initialSize());
@@ -48,6 +51,8 @@ public class DefaultDataSourceConfigTest {
         assertEquals(acquisitionTimeout, configuration.acquisitionTimeout());
         assertEquals(leakDetectionInterval, configuration.leakTimeout());
         assertEquals(idleRemovalInterval, configuration.reapTimeout());
+        assertEquals(AgroalConnectionFactoryConfiguration.TransactionIsolation.SERIALIZABLE,
+                agroalConnectionFactoryConfiguration.jdbcTransactionIsolation());
 
         try (Connection connection = dataSource.getConnection()) {
         }

@@ -32,8 +32,12 @@ public class ThreadPoolSetup {
     @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
     public ExecutorBuildItem createExecutor(ExecutorTemplate setupTemplate, ShutdownContextBuildItem shutdownContextBuildItem) {
         return new ExecutorBuildItem(setupTemplate.setupRunTime(shutdownContextBuildItem,
-        // build time default config constants - static method calls are not proxied
-        ExecutorTemplate.getIntConfigVal(ExecutorTemplate.CORE_POOL_SIZE,-1),ExecutorTemplate.getIntConfigVal(ExecutorTemplate.MAX_POOL_SIZE,-1),ExecutorTemplate.getIntConfigVal(ExecutorTemplate.QUEUE_SIZE,Integer.MAX_VALUE),ExecutorTemplate.getFloatConfigVal(ExecutorTemplate.GROWTH_RESISTANCE,0f),ExecutorTemplate.getIntConfigVal(ExecutorTemplate.KEEP_ALIVE_MILLIS,60_000)));
+                // build time default config constants - static method calls are not proxied
+                ExecutorTemplate.getIntConfigVal(ExecutorTemplate.CORE_POOL_SIZE, -1),
+                ExecutorTemplate.getIntConfigVal(ExecutorTemplate.MAX_POOL_SIZE, -1),
+                ExecutorTemplate.getIntConfigVal(ExecutorTemplate.QUEUE_SIZE, Integer.MAX_VALUE),
+                ExecutorTemplate.getFloatConfigVal(ExecutorTemplate.GROWTH_RESISTANCE, 0f),
+                ExecutorTemplate.getIntConfigVal(ExecutorTemplate.KEEP_ALIVE_MILLIS, 60_000)));
     }
 
     @BuildStep

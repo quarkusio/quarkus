@@ -28,7 +28,7 @@ import java.util.List;
 public class OutcomeProviderDescription<C> {
 
     static final int PROCESSING = 0b00001;
-    static final int PROCESSED  = 0b00010;
+    static final int PROCESSED = 0b00010;
 
     protected final int id;
     protected final OutcomeProvider<C> provider;
@@ -41,7 +41,7 @@ public class OutcomeProviderDescription<C> {
     }
 
     protected void addProvidedType(Class<?> providedType) {
-        if(providedTypes.isEmpty()) {
+        if (providedTypes.isEmpty()) {
             providedTypes = new ArrayList<>(1);
         }
         providedTypes.add(providedType);
@@ -52,7 +52,7 @@ public class OutcomeProviderDescription<C> {
     }
 
     boolean setFlag(int flag) {
-        if((flags & flag) > 0) {
+        if ((flags & flag) > 0) {
             return false;
         }
         flags ^= flag;
@@ -60,7 +60,7 @@ public class OutcomeProviderDescription<C> {
     }
 
     void clearFlag(int flag) {
-        if((flags & flag) > 0) {
+        if ((flags & flag) > 0) {
             flags ^= flag;
         }
     }

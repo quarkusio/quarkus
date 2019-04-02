@@ -1,23 +1,20 @@
 package io.quarkus.arc.deployment;
 
+import java.util.List;
+
 import org.jboss.jandex.DotName;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.runtime.LaunchMode;
+import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 
 public class TestsAsBeanDefiningAnnotationsProcessor {
 
     @BuildStep
-    public void testsAsBeanDefiningAnnotations(LaunchModeBuildItem launchMode,
-            BuildProducer<BeanDefiningAnnotationBuildItem> producer) {
-        if (launchMode.getLaunchMode() != LaunchMode.TEST) {
-            return;
+    public void produce(List<TestAnnotationBuildItem> items, BuildProducer<BeanDefiningAnnotationBuildItem> producer) {
+        for (TestAnnotationBuildItem item : items) {
+            producer.produce(new BeanDefiningAnnotationBuildItem(DotName.createSimple(item.getAnnotationClassName())));
         }
-
-        producer.produce(new BeanDefiningAnnotationBuildItem(DotName.createSimple("io.quarkus.test.junit.QuarkusTest")));
-        producer.produce(new BeanDefiningAnnotationBuildItem(DotName.createSimple("org.junit.runner.RunWith")));
     }
 
 }

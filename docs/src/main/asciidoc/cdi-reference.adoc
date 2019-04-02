@@ -101,7 +101,7 @@ public class CounterBean {
 ** Type-safe resolution 
 ** Programmatic lookup via `javax.enterprise.inject.Instance`
 ** Client proxies
-** Injection point metadata footnote:[`InjectionPoint.getMember()` is currently not supported.]
+** Injection point metadata
 * Scopes and contexts
 ** `@Dependent`, `@ApplicationScoped`, `@Singleton`, `@RequestScoped` and `@SessionScoped`
 ** Custom scopes and contexts

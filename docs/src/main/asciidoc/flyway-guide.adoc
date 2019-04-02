@@ -1,0 +1,103 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+
+include::./attributes.adoc[]
+= {project-name} - Using Flyway
+:migrations-path: src/main/resources/db/migration
+:config-file: application.properties
+
+https://flywaydb.org/[Flyway] is a popular database migration tool that is commonly used in JVM environments.
+
+{project-name} provides first class support for using Flyway in native mode as will be explained in this guide.
+
+[NOTE]
+--
+You only need to add this extension if your are doing native compilation with {project-name}.
+Otherwise, you can use Flyway by just adding it as a dependency in the `pom.xml` and run the {project-name} app in JVM mode.
+--
+
+== Setting up native compilation support for Flyway
+
+To get native compilation working in {project-name} with Flyway, you just need to:
+
+* add your migrations to the `{migrations-path}` folder as you usually do with Flyway
+
+NOTE: The migrations location is not configurable in native mode. The Flyway extension will always look for migrations in the default path.
+
+* create your `Flyway` object and run your migration as you normally do
+
+In your `pom.xml`, add the following dependencies:
+
+* the Flyway extension
+* your JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
+
+[source,xml]
+--
+<dependencies>
+    <!-- Flyway specific dependencies -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-flyway</artifactId>
+    </dependency>
+
+    <!-- JDBC driver dependencies -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-jdbc-postgresql</artifactId>
+    </dependency>
+</dependencies>
+--
+
+You can use MP-config to get any relevant configuration properties you may need by adding them to the `{config-file}` file.
+
+[source,properties]
+--
+# configure your datasource
+datasource.url: jdbc:postgresql://localhost:5432/mydatabase
+datasource.username: sarah
+datasource.password: connor
+--
+
+Note that you can use any name for these configuration properties.
+
+Add a SQL migration to the default folder following the Flyway naming conventions: `{migrations-path}/V1.0.0__Quarkus.sql`
+
+[source,sql]
+--
+CREATE TABLE quarkus
+(
+  id   INT,
+  name VARCHAR(20)
+);
+INSERT INTO quarkus(id, name)
+VALUES (1, 'QUARKED');
+--
+
+Now you can create your `Flyway` object as you usually do:
+
+[source,java]
+--
+@ApplicationScoped
+public class MigrationService {
+
+    @ConfigProperty(name = "datasource.url") <1>
+    String dbURL;
+    @ConfigProperty(name = "datasource.username")
+    String dbUser;
+    @ConfigProperty(name = "datasource.password")
+    String dbPassword;
+
+    public void migrate() {
+        Flyway flyway = Flyway.configure()
+                        .dataSource(dbURL, dbUser, dbPassword)
+                        .load(); <2>
+        flyway.migrate();
+    }
+}
+--
+
+<1> Inject your config properties as needed
+<2> Create the `Flyway` object and enjoy

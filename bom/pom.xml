@@ -147,6 +147,7 @@
         <jprocesses.version>1.6.5</jprocesses.version>
         <jboss-logmanager.version>1.0.2</jboss-logmanager.version>
         <jetty.version>9.4.15.v20190215</jetty.version>
+        <flyway.version>5.2.4</flyway.version>
         <yasson.version>1.0.3</yasson.version>
     </properties>
 
@@ -248,6 +249,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-elytron-security</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-flyway</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1695,6 +1701,11 @@
                 <version>${swagger-ui.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-core</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

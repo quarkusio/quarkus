@@ -21,6 +21,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 
 import org.graalvm.nativeimage.ImageInfo;
+import org.jboss.logging.Logger;
 import org.jboss.threads.Locks;
 import org.wildfly.common.Assert;
 
@@ -34,6 +35,8 @@ import sun.misc.SignalHandler;
  */
 @SuppressWarnings("restriction")
 public abstract class Application {
+    private static final Logger LOG = Logger.getLogger(Application.class);
+
     private static final int ST_INITIAL = 0;
     private static final int ST_STARTING = 1;
     private static final int ST_STARTED = 2;
@@ -177,7 +180,8 @@ public abstract class Application {
      */
     public final void run(String[] args) {
         try {
-            if (ImageInfo.inImageRuntimeCode()) {
+            final String property = "DISABLE_SIGNAL_HANDLERS";
+            if (ImageInfo.inImageRuntimeCode() && System.getenv(property) == null) {
                 final SignalHandler handler = new SignalHandler() {
                     @Override
                     public void handle(final Signal signal) {
@@ -193,6 +197,8 @@ public abstract class Application {
                         DiagnosticPrinter.printDiagnostics(System.out);
                     }
                 });
+            } else {
+                LOG.warn("Installation of signal handlers disabled by the presence of the environment variable: " + property);
             }
             final ShutdownHookThread shutdownHookThread = new ShutdownHookThread(Thread.currentThread());
             Runtime.getRuntime().addShutdownHook(shutdownHookThread);

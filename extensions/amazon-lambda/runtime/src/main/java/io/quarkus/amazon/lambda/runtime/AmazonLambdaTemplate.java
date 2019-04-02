@@ -20,7 +20,7 @@ public class AmazonLambdaTemplate {
         Objects.requireNonNull(paramType, "Unable to discover parameter type");
         return new InstanceFactory<AmazonLambdaServlet>() {
             @Override
-            public InstanceHandle<AmazonLambdaServlet> createInstance() throws InstantiationException {
+            public InstanceHandle<AmazonLambdaServlet> createInstance() {
                 BeanContainer.Instance<? extends RequestHandler> instance = factory.create();
                 AmazonLambdaServlet servlet = new AmazonLambdaServlet(instance, paramType);
                 return new InstanceHandle<AmazonLambdaServlet>() {

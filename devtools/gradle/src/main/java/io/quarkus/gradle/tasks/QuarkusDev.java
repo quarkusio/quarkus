@@ -90,6 +90,8 @@ public class QuarkusDev extends QuarkusTask {
     @InputDirectory
     @Optional
     public File getBuildDir() {
+        if (buildDir == null)
+            buildDir = getProject().getBuildDir();
         return buildDir;
     }
 

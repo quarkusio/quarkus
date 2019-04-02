@@ -56,6 +56,7 @@ import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.QuarkusClassWriter;
+import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.runner.RuntimeRunner;
@@ -240,6 +241,18 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
                                 }));
                             }
                         }).produces(TestClassPredicateBuildItem.class)
+                                .build();
+                    }
+                })
+                .addChainCustomizer(new Consumer<BuildChainBuilder>() {
+                    @Override
+                    public void accept(BuildChainBuilder buildChainBuilder) {
+                        buildChainBuilder.addBuildStep(new BuildStep() {
+                            @Override
+                            public void execute(BuildContext context) {
+                                context.produce(new TestAnnotationBuildItem(QuarkusTest.class.getName()));
+                            }
+                        }).produces(TestAnnotationBuildItem.class)
                                 .build();
                     }
                 })

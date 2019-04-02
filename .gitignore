@@ -30,3 +30,4 @@ build
 docker/distroless/bazel-*
 /.apt_generated_tests/
 quarkus.log
+replay_*.log

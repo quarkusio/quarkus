@@ -22,8 +22,6 @@ package io.quarkus.bootstrap;
  */
 public interface BootstrapConstants {
 
-    String DEPLOYMENT_DEPENDENCY_GRAPH = "quarkus-deployment-dependency.graph";
-
     String DESCRIPTOR_FILE_NAME = "quarkus-extension.properties";
 
     String DESCRIPTOR_PATH = DESCRIPTOR_FILE_NAME;

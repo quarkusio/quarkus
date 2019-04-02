@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
 import org.jboss.logging.Logger;
@@ -42,8 +43,6 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
     private static final Logger log = Logger.getLogger(DeploymentInjectingDependencyVisitor.class);
 
     static final String INJECTED_DEPENDENCY = "injected.dep";
-
-    private static final DependencyGraphParser graphParser = new DependencyGraphParser();
 
     public static Artifact getInjectedDependency(DependencyNode dep) {
         return (Artifact) dep.getData().get(DeploymentInjectingDependencyVisitor.INJECTED_DEPENDENCY);
@@ -88,19 +87,15 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
     }
 
     private boolean processMetaInfDir(Path metaInfDir) throws BootstrapDependencyProcessingException {
-        if (Files.exists(metaInfDir)) {
-            Path p = metaInfDir.resolve(BootstrapConstants.DEPLOYMENT_DEPENDENCY_GRAPH);
-            if (Files.exists(p)) {
-                processDeploymentDependencyGraph(p);
-                return true;
-            }
-            p = metaInfDir.resolve(BootstrapConstants.DESCRIPTOR_PATH);
-            if (Files.exists(p)) {
-                processPlatformArtifact(p);
-                return true;
-            }
+        if (!Files.exists(metaInfDir)) {
+            return false;
         }
-        return false;
+        final Path p = metaInfDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
+        if (!Files.exists(p)) {
+            return false;
+        }
+        processPlatformArtifact(p);
+        return true;
     }
 
     private void processPlatformArtifact(Path descriptor) throws BootstrapDependencyProcessingException {
@@ -112,15 +107,8 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
 
         String value = rtProps.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
         if(value != null) {
-            replaceWith(collectDependencies(DependencyGraphParser.toArtifact(value)));
+            replaceWith(collectDependencies(toArtifact(value)));
         }
-    }
-
-    private void processDeploymentDependencyGraph(Path graphPath) throws BootstrapDependencyProcessingException {
-        final DependencyNode parsedGraph = graphParser.parse(graphPath);
-        //BootstrapDependencyGraphTransformer.log("Parsed graph", parsedGraph);
-        //BootstrapDependencyGraphTransformer.log("Resolved graph", collectDependencies(parsedGraph.getArtifact()));
-        replaceWith(parsedGraph);
     }
 
     private void replaceWith(DependencyNode depNode) throws BootstrapDependencyProcessingException {
@@ -173,5 +161,62 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
     @Override
     public boolean visitLeave(DependencyNode node) {
         return true;
+    }
+
+    public static Artifact toArtifact(String str) {
+        return toArtifact(str, 0);
+    }
+
+    private static Artifact toArtifact(String str, int offset) {
+        String groupId = null;
+        String artifactId = null;
+        String classifier = "";
+        String type = "jar";
+        String version = null;
+
+        int colon = str.indexOf(':', offset);
+        final int length = str.length();
+        if(colon < offset + 1 || colon == length - 1) {
+            illegalDependencyFormat(str);
+        }
+        groupId = str.substring(offset, colon);
+        offset = colon + 1;
+        colon = str.indexOf(':', offset);
+        if(colon < 0) {
+            artifactId = str.substring(offset, length);
+        } else {
+            if(colon == length - 1) {
+                illegalDependencyFormat(str);
+            }
+            artifactId = str.substring(offset, colon);
+            offset = colon + 1;
+            colon = str.indexOf(':', offset);
+            if(colon < 0) {
+                version = str.substring(offset, length);
+            } else {
+                if(colon == length - 1) {
+                    illegalDependencyFormat(str);
+                }
+                type = str.substring(offset, colon);
+                offset = colon + 1;
+                colon = str.indexOf(':', offset);
+                if(colon < 0) {
+                    version = str.substring(offset, length);
+                } else {
+                    if (colon == length - 1) {
+                        illegalDependencyFormat(str);
+                    }
+                    classifier = type;
+                    type = str.substring(offset, colon);
+                    version = str.substring(colon + 1);
+                }
+            }
+        }
+        return new DefaultArtifact(groupId, artifactId, classifier, type, version);
+    }
+
+    private static void illegalDependencyFormat(String str) {
+        throw new IllegalArgumentException("Bad artifact coordinates " + str
+                + ", expected format is <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>");
     }
 }

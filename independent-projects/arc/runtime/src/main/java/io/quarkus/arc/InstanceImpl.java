@@ -143,19 +143,14 @@ class InstanceImpl<T> implements Instance<T> {
 
     private T getBeanInstance(InjectableBean<T> bean) {
         CreationalContextImpl<T> ctx = creationalContext.child();
-        InjectionPoint prev = InjectionPointProvider.CURRENT.get();
-        InjectionPointProvider.CURRENT
+        InjectionPoint prev = InjectionPointProvider
                 .set(new InjectionPointImpl(injectionPointType, requiredType, requiredQualifiers, targetBean, annotations,
                         javaMember, position));
         T instance;
         try {
             instance = bean.get(ctx);
         } finally {
-            if (prev != null) {
-                InjectionPointProvider.CURRENT.set(prev);
-            } else {
-                InjectionPointProvider.CURRENT.remove();
-            }
+            InjectionPointProvider.set(prev);
         }
         return instance;
     }

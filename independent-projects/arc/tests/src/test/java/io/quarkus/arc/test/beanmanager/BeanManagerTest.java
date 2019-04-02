@@ -21,14 +21,19 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.test.ArcTestContainer;
+import java.lang.annotation.Annotation;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.lang.reflect.Member;
+import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -40,8 +45,11 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Alternative;
+import javax.enterprise.inject.Any;
+import javax.enterprise.inject.spi.Annotated;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
+import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.inject.spi.InterceptionType;
 import javax.enterprise.util.AnnotationLiteral;
 import javax.enterprise.util.Nonbinding;
@@ -58,7 +66,7 @@ public class BeanManagerTest {
     @Rule
     public ArcTestContainer container = new ArcTestContainer(Legacy.class, AlternativeLegacy.class, Fool.class,
             DummyInterceptor.class, DummyBinding.class,
-            LowPriorityInterceptor.class);
+            LowPriorityInterceptor.class, WithInjectionPointMetadata.class);
 
     @Test
     public void testGetBeans() {
@@ -97,6 +105,56 @@ public class BeanManagerTest {
         assertNotNull(legacy.getBeanManager());
         ctx.release();
         assertTrue(Legacy.DESTROYED.get());
+    }
+
+    @Test
+    public void testGetInjectableReference() {
+        BeanManager beanManager = Arc.container().beanManager();
+        Set<Bean<?>> beans = beanManager.getBeans(WithInjectionPointMetadata.class);
+        assertEquals(1, beans.size());
+        @SuppressWarnings("unchecked")
+        Bean<WithInjectionPointMetadata> bean = (Bean<WithInjectionPointMetadata>) beans.iterator().next();
+        WithInjectionPointMetadata injectableReference = (WithInjectionPointMetadata) beanManager
+                .getInjectableReference(new InjectionPoint() {
+
+                    @Override
+                    public boolean isTransient() {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean isDelegate() {
+                        return false;
+                    }
+
+                    @Override
+                    public Type getType() {
+                        return WithInjectionPointMetadata.class;
+                    }
+
+                    @Override
+                    public Set<Annotation> getQualifiers() {
+                        return Collections.singleton(Any.Literal.INSTANCE);
+                    }
+
+                    @Override
+                    public Member getMember() {
+                        return null;
+                    }
+
+                    @Override
+                    public Bean<?> getBean() {
+                        return null;
+                    }
+
+                    @Override
+                    public Annotated getAnnotated() {
+                        return null;
+                    }
+                }, beanManager.createCreationalContext(bean));
+        assertNotNull(injectableReference.injectionPoint);
+        assertEquals(WithInjectionPointMetadata.class, injectableReference.injectionPoint.getType());
+        assertNull(injectableReference.injectionPoint.getBean());
     }
 
     @Test
@@ -218,6 +276,14 @@ public class BeanManagerTest {
         Object intercept(InvocationContext ctx) throws Exception {
             return ctx.proceed();
         }
+    }
+
+    @Dependent
+    static class WithInjectionPointMetadata {
+
+        @Inject
+        InjectionPoint injectionPoint;
+
     }
 
 }

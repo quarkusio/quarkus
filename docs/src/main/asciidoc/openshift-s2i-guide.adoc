@@ -21,11 +21,62 @@ Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {q
 
 The solution is located in the `getting-started` directory.
 
-== Deploying the application in OpenShift
+== Deploying the application as GraalVM native executable in OpenShift
+
+In this section, we are going to leverage the S2I build mechanism of OpenShift.
+We use Quarkus' GraalVM Native S2I Builder, and therefore do not need a `Dockerfile` in this approach.
+You do not need to locally clone the Git repository, as it will be directly built inside OpenShift.
+We are going to create an OpenShift `build` executing it:
+
+[source,shell]
+----
+# To build the image on OpenShift
+oc new-app quay.io/quarkus/centos-quarkus-native-s2i~{quickstarts-clone-url} --context-dir=getting-started --name=quarkus-quickstart-native
+oc logs -f bc/quarkus-quickstart-native
+
+# To create the route
+oc expose svc/quarkus-quickstart-native
+
+# Get the route URL
+export URL="http://$(oc get route | grep quarkus-quickstart-native | awk '{print $2}')"
+echo $URL
+curl $URL/hello/greeting/quarkus
+----
+
+Your application is accessible at the printed URL.
+
+Note that GraalVM-based native build are more memory & CPU intensive than regular pure Java builds.
+https://docs.openshift.com/container-platform/3.11/dev_guide/builds/advanced_build_operations.html[By default, builds are completed by pods using unbound resources, such as memory and CPU],
+but note that https://docs.openshift.com/container-platform/3.11/admin_guide/limits.html#admin-guide-limits[your OpenShift Project may have limit ranges defined].
+
+Testing indicates that the "hello, world" getting-started demo application builds in around 2 minutes on typical hardware when the build is given 4 GB of RAM and 4 (virtual) CPUs for concurrency. You therefore may need to increase the respective limits for OpenShift's S2I build containers like so:
+
+[source,yaml]
+----
+apiVersion: "v1"
+kind: "BuildConfig"
+metadata:
+    name: "getting-started-native"
+spec:
+    resources:
+    limits:
+        cpu: '4'
+        memory: 4Gi
+----
+
+The following `oc patch` command does this:
+
+[source,shell]
+----
+oc patch bc/getting-started-native -p '{"spec":{"resources":{"limits":{"cpu":"4", "memory":"4Gi"}}}}'
+----
+
+
+== Deploying the application as Java application in OpenShift
 
 In this section, we are going to leverage the S2I build mechanism of OpenShift.
 We use a Java S2I Builder, and therefore do not need a `Dockerfile` in this approach.
-You do not need to locally clone the Git repository, as it will be directly built since OpenShift.
+You do not need to locally clone the Git repository, as it will be directly built inside OpenShift.
 We are going to create an OpenShift `build` executing it:
 
 [source,shell]
@@ -44,9 +95,7 @@ curl $URL/hello/greeting/quarkus
 
 Your application is accessible at the printed URL.
 
-== Background
-
-The `.s2i/environment` file sets required variables for the S2I Builder image to find the Quarkus `runner` JAR, and copy the JARs from the `lib/` directory.
+The `.s2i/environment` file in the quickstart sets required variables for the S2I Builder image to find the Quarkus `runner` JAR, and copy the JARs from the `lib/` directory.
 
 == Going further
 

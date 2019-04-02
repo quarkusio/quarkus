@@ -592,7 +592,8 @@ When you start a {project-name} instance, you will see a line like the one highl
 ----
 <1> A list of features installed in the runtime image
 
-The features listed reflect the types of extensions that are installed. An extension declares its features using a <<Build Step Processors>> method that produces a `FeatureBuildItem` like this TestProcessor#featureBuildItem() method example:
+The features listed reflect the types of extensions that are installed. An extension declares its display name
+ using a <<Build Step Processors>> method that produces a `FeatureBuildItem` like this TestProcessor#featureBuildItem() method example:
 
 
 .TestProcessor#featureBuildItem()
@@ -609,7 +610,9 @@ The features listed reflect the types of extensions that are installed. An exten
     }
 ----
 
-The feature name can be used to select the extension when creating a project using the {project-name} maven plugin as shown in this example taken from the Writing JSON REST Services guide where the "resteasy-jsonb" feature is referenced:
+The feature name should map to a label in the extension's devtools/common/src/main/filtered/extensions.json entry so that
+the feature name displayed by the startup line matches a label that one can used to select the extension when creating a project
+using the {project-name} maven plugin as shown in this example taken from the Writing JSON REST Services guide where the "resteasy-jsonb" feature is referenced:
 
 [source,shell,subs=attributes+]
 ----

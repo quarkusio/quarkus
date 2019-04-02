@@ -23,16 +23,6 @@ public class LambdaCounter implements Counter {
     }
 
     @Override
-    public void dec() {
-        throw new IllegalStateException(MUST_NOT_BE_CALLED);
-    }
-
-    @Override
-    public void dec(long n) {
-        throw new IllegalStateException(MUST_NOT_BE_CALLED);
-    }
-
-    @Override
     public long getCount() {
         try {
             return this.callable.call();

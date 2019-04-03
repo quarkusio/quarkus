@@ -3,8 +3,8 @@ package io.quarkus.extest;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
+import java.security.Security;
 import java.security.interfaces.DSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
@@ -15,9 +15,9 @@ import java.util.Base64;
  */
 public class DSAKeyUtil {
     public static void main(String[] args) throws Exception {
-        Provider x = sun.security.jca.Providers.getSunProvider();
-        System.out.println(x.getInfo());
-        for (Provider.Service service : x.getServices()) {
+        Provider provider = Security.getProvider("SUN");
+        System.out.println(provider.getInfo());
+        for (Provider.Service service : provider.getServices()) {
             System.out.println(service);
         }
 

@@ -72,7 +72,7 @@ import io.quarkus.maven.utilities.MojoUtils;
 @Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class DevMojo extends AbstractMojo {
 
-    private static final String RESOURCES_PROP = "quarkus.undertow.resources";
+    private static final String RESOURCES_PROP = "quarkus-internal.undertow.resources";
 
     /**
      * The directory for compiled classes.
@@ -190,7 +190,7 @@ public class DevMojo extends AbstractMojo {
         try {
             List<String> args = new ArrayList<>();
             String javaTool = findJavaTool();
-            getLog().info("Using javaTool: " + javaTool);
+            getLog().debug("Using javaTool: " + javaTool);
             args.add(javaTool);
             if (debug == null) {
                 // debug mode not specified
@@ -229,15 +229,13 @@ public class DevMojo extends AbstractMojo {
                     args.add("-D" + i.getKey() + "=" + i.getValue());
                 }
             }
-            //Add env to enable quarkus dev mode logging
-            args.add("-Dquarkus-internal.devMode");
 
             for (Resource r : project.getBuild().getResources()) {
                 File f = new File(r.getDirectory());
                 File servletRes = new File(f, "META-INF/resources");
                 if (servletRes.exists()) {
                     args.add("-D" + RESOURCES_PROP + "=" + servletRes.getAbsolutePath());
-                    getLog().info("Using servlet resources " + servletRes.getAbsolutePath());
+                    getLog().debug("Using servlet resources: " + servletRes.getAbsolutePath());
                     break;
                 }
             }
@@ -388,7 +386,7 @@ public class DevMojo extends AbstractMojo {
             Toolchain toolchain = getToolchainManager().getToolchainFromBuildContext("jdk", getSession());
             if (toolchain != null) {
                 java = toolchain.findTool("java");
-                getLog().info("JVM from toolchain: " + java);
+                getLog().debug("JVM from toolchain: " + java);
             }
         }
         if (java == null) {

@@ -64,7 +64,7 @@ public class QuarkusDev extends QuarkusTask {
 
     private boolean preventnoverify = false;
 
-    private static final String RESOURCES_PROP = "quarkus.undertow.resources";
+    private static final String RESOURCES_PROP = "quarkus-internal.undertow.resources";
 
     public QuarkusDev() {
         super("Creates a native image");
@@ -186,8 +186,6 @@ public class QuarkusDev extends QuarkusTask {
             if (getJvmArgs() != null) {
                 args.addAll(Arrays.asList(getJvmArgs().split(" ")));
             }
-            //Add env to enable quarkus dev mode logging
-            args.add("-Dquarkus-internal.devMode");
 
             for (File f : extension.resourcesDir()) {
                 File servletRes = new File(f, "META-INF/resources");

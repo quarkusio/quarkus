@@ -1,26 +1,27 @@
-package io.quarkus.extest.runtime;
+package io.quarkus.extest.runtime.config;
+
+import java.util.Objects;
 
 /**
- * A configuration type that has a static {@linkplain ObjectValueOf#valueOf(String)} conversion method
+ * A configuration type that has a static {@linkplain ObjectOfValue#of(String)} conversion method
  */
-public class ObjectValueOf {
+public class ObjectOfValue {
     private String part1;
     private String part2;
 
-    public static ObjectValueOf valueOf(String serial) {
+    public static ObjectOfValue of(String serial) {
         if (serial.isEmpty())
             return null;
 
         String[] parts = serial.split("\\+");
-        return new ObjectValueOf(parts[0], parts[1]);
+        return new ObjectOfValue(parts[0], parts[1]);
+    }
+
+    public ObjectOfValue() {
 
     }
 
-    public ObjectValueOf() {
-
-    }
-
-    public ObjectValueOf(String part1, String part2) {
+    public ObjectOfValue(String part1, String part2) {
         this.part1 = part1;
         this.part2 = part2;
     }
@@ -34,8 +35,8 @@ public class ObjectValueOf {
     }
 
     public boolean equals(Object obj) {
-        ObjectValueOf oov = (ObjectValueOf) obj;
-        return part1.equals(oov.part1) && part2.equals(oov.part2);
+        ObjectOfValue oov = (ObjectOfValue) obj;
+        return oov == this || oov != null && Objects.equals(part1, oov.part1) && Objects.equals(part2, oov.part2);
     }
 
     @Override

@@ -1,4 +1,4 @@
-package io.quarkus.extest;
+package io.quarkus.example;
 
 import javax.enterprise.event.Observes;
 
@@ -9,21 +9,18 @@ import io.quarkus.extest.runtime.config.TestRunTimeConfig;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 
-/**
- * A sample bean
- */
 @TestAnnotation
-public class ConfiguredBean implements IConfigConsumer {
+public class NativeBean implements IConfigConsumer {
     TestRunTimeConfig runTimeConfig;
     TestBuildAndRunTimeConfig buildTimeConfig;
 
-    public ConfiguredBean() {
-        System.out.printf("ConfiguredBean.ctor, %s\n", super.toString());
+    public NativeBean() {
+        System.out.printf("NativeBean.ctor, %s\n", super.toString());
     }
 
     /**
      * Called by runtime with the runtime config object
-     * 
+     *
      * @param runTimeConfig
      */
     @Override
@@ -35,7 +32,7 @@ public class ConfiguredBean implements IConfigConsumer {
 
     /**
      * Called when the runtime has started
-     * 
+     *
      * @param event
      */
     void onStart(@Observes StartupEvent event) {
@@ -46,18 +43,4 @@ public class ConfiguredBean implements IConfigConsumer {
         System.out.printf("onStop, event=%s\n", event);
     }
 
-    public TestRunTimeConfig getRunTimeConfig() {
-        return runTimeConfig;
-    }
-
-    public TestBuildAndRunTimeConfig getBuildTimeConfig() {
-        return buildTimeConfig;
-    }
-
-    @Override
-    public String toString() {
-        return "ConfiguredBean{" +
-                "runTimeConfig=" + runTimeConfig +
-                '}';
-    }
 }

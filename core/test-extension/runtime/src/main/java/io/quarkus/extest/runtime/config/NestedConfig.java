@@ -1,4 +1,4 @@
-package io.quarkus.extest.runtime;
+package io.quarkus.extest.runtime.config;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;

@@ -1,8 +1,9 @@
-package io.quarkus.extest.runtime;
+package io.quarkus.extest.runtime.config;
 
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.extest.runtime.config.AllValuesConfig;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;

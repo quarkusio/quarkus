@@ -35,6 +35,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-undertow-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
@@ -48,7 +52,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-extension</artifactId>
-            <version>999-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- test dependencies -->
@@ -58,9 +62,20 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
@@ -80,5 +95,5 @@
             </plugin>
         </plugins>
     </build>
-</project>
 
+</project>

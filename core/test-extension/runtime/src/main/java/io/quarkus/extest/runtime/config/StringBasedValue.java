@@ -1,4 +1,4 @@
-package io.quarkus.extest.runtime;
+package io.quarkus.extest.runtime.config;
 
 public class StringBasedValue {
     private String value;

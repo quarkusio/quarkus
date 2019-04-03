@@ -4,12 +4,13 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
 
-include::./attributes.adoc[]
 = {project-name} - Writing Your Own Extension
-
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:toc:
+
+include::./attributes.adoc[]
 
 Quarkus extensions add a new developer focused behavior to the core offering, and consist of two distinct parts, buildtime augmentation and runtime container. The augmentation part is responsible for all metadata processing, such as reading annotations, XML descriptors etc. The output of this augmentation phase is recorded bytecode which is responsible for directly instantiating the relevant runtime services.
 
@@ -65,7 +66,7 @@ Your extension project should be setup as a multi-module project with two submod
 2. A runtime submodule that contains the runtime behavior that will provide the extension behavior in the native executable or runtime JVM.
 
 Your runtime artifact should depend on `io.quarkus:quarkus-core`, and possibly the runtime artifacts of other Quarkus
-modules if you want to use functionality provided by them. You will also need to include the `io.quarkus.bootstrap:quarkus-bootstrap-maven-plugin`
+modules if you want to use functionality provided by them. You will also need to include the `io.quarkus:quarkus-bootstrap-maven-plugin`
 to generate the Quarkus extension descriptor included into the runtime artifact, if you are using the Quarkus parent pom it will automatically inherit the correct configuration.
 
 NOTE: By convention the deployment time artifact has the `-deployment` suffix, and the runtime artifact
@@ -84,7 +85,7 @@ has no suffix (and is what the end user adds to their project).
 <build>
     <plugins>
         <plugin>
-            <groupId>io.quarkus.bootstrap</groupId>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
         </plugin>
     </plugins>
@@ -405,6 +406,8 @@ convenience to avoid the need to explicitly load classes in the templates.
 
 TODO: config integration
 
+== CDI Extension Points
+As a CDI based runtime, {project-name} extensions often make CDI beans available as part of the extension behavior. The link:cdi-reference.html[Build Time Extension Points] describes the `BuildItems` you can make use of in your extension build steps to achieve this.
 
 == Testing Extensions
 
@@ -571,4 +574,487 @@ memory in a runtime class loader. To have these classes written out to disk for 
 [source,shell]
 ----
 ./mvnw clean install -Dquarkus.debug.generated-classes-dir=./target/app-generated-classes
+----
+
+
+== Sample Test Extension
+We have an extension that is used to test for regressions in the extension processing. It is located in {quarkus-tree-url}/core/test-extension directory. In this section we touch on some of the tasks an extension
+author will typically need to perform using the test-extension code to illustrate how the task could be done.
+
+=== Features and Capabilities
+When you start a {project-name} instance, you will see a line like the one highlighted in this example:
+
+.Example Startup Lines
+[source, bash]
+----
+2019-03-22 14:02:37,884 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 0.061s.
+2019-03-22 14:02:37,884 INFO  [io.quarkus] (main) Installed features: [cdi, test-extension] <1>
+----
+<1> A list of features installed in the runtime image
+
+The features listed reflect the types of extensions that are installed. An extension declares its display name
+ using a <<Build Step Processors>> method that produces a `FeatureBuildItem` like this TestProcessor#featureBuildItem() method example:
+
+
+.TestProcessor#featureBuildItem()
+[source,java]
+----
+    /**
+     * Register a extension capability and feature
+     *
+     * @return test-extension feature build item
+     */
+    @BuildStep(providesCapabilities = "io.quarkus.test-extension")
+    FeatureBuildItem featureBuildItem() {
+        return new FeatureBuildItem("test-extension");
+    }
+----
+
+The feature name should map to a label in the extension's devtools/common/src/main/filtered/extensions.json entry so that
+the feature name displayed by the startup line matches a label that one can used to select the extension when creating a project
+using the {project-name} maven plugin as shown in this example taken from the Writing JSON REST Services guide where the "resteasy-jsonb" feature is referenced:
+
+[source,shell,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=rest-json \
+    -DclassName="org.acme.rest.json.FruitResource" \
+    -Dpath="/fruits" \
+    -Dextensions="resteasy-jsonb"
+----
+
+=== Bean Defining Annotations
+The CDI layer processes CDI beans that are either explicitly registered or that it discovers based on bean defining annotations as defined in http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations">[2.5.1. Bean defining annotations]. You can expand this set of annotations to include annotations your extension processes using a `BeanDefiningAnnotationBuildItem` as shown in this `TestProcessor#registerBeanDefinningAnnotations` example:
+
+.Register a Bean Definining Annotation
+[source,java]
+----
+import javax.enterprise.context.ApplicationScoped;
+import org.jboss.jandex.DotName;
+import io.quarkus.extest.runtime.TestAnnotation;
+
+public final class TestProcessor {
+    static DotName TEST_ANNOTATION = DotName.createSimple(TestAnnotation.class.getName());
+    static DotName TEST_ANNOTATION_SCOPE = DotName.createSimple(ApplicationScoped.class.getName());
+
+...
+
+    @BuildStep
+    BeanDefiningAnnotationBuildItem registerX() {
+        <1>
+        return new BeanDefiningAnnotationBuildItem(TEST_ANNOTATION, TEST_ANNOTATION_SCOPE);
+    }
+...
+}
+
+/**
+ * Marker annotation for test configuration target beans
+ */
+@Target({ TYPE })
+@Retention(RUNTIME)
+@Documented
+@Inherited
+public @interface TestAnnotation {
+}
+
+/**
+ * A sample bean
+ */
+@TestAnnotation <2>
+public class ConfiguredBean implements IConfigConsumer {
+
+...
+----
+<1> Register the annotation class and CDI default scope using the Jandex `DotName` class.
+<2> `ConfiguredBean` will be processed by the CDI layer the same as a bean annotated with the CDI standard @ApplicationScoped.
+
+=== Parsing Config to Objects
+One of the main things an extension is likely to do is completely separate the configuration phase of behavior from the runtime phase. Frameworks often do parsing/load of configuration on startup that can be done during build time to both reduce the runtime dependencies on frameworks like xml parsers as well as reducing the startup time the parsing incurs.
+
+An example of parsing a XML config file using JAXB is shown in the `TestProcessor#parseServiceXmlConfig` method:
+.Parsing an XML Configuration into Runtime XmlConfig Instance
+[source,java]
+----
+    @BuildStep
+    @Record(STATIC_INIT)
+    RuntimeServiceBuildItem parseServiceXmlConfig(TestTemplate template) throws JAXBException {
+        RuntimeServiceBuildItem serviceBuildItem = null;
+        JAXBContext context = JAXBContext.newInstance(XmlConfig.class);
+        Unmarshaller unmarshaller = context.createUnmarshaller();
+        InputStream is = getClass().getResourceAsStream("/config.xml"); <1>
+        if (is != null) {
+            log.infof("Have XmlConfig, loading");
+            XmlConfig config = (XmlConfig) unmarshaller.unmarshal(is); <2>
+...
+        }
+        return serviceBuildItem;
+    }
+
+----
+<1> Look for a config.xml classpath resource
+<2> If found, parse using JAXB context for `XmlConfig.class`
+
+[NOTE]
+====
+If there was no /config.xml resource available in the build environment, then a null `RuntimeServiceBuildItem` would be returned and no subsequent logic based on a `RuntimeServiceBuildItem` being produced would execute.
+====
+
+Typically one is loading a configuration to create some runtime component/service as `parseServiceXmlConfig` is doing. We will come back to the rest of the behavior in `parseServiceXmlConfig` in the following <<Manage Non-CDI Service>> section.
+
+If for some reason you need to parse the config and use it in other build steps in an extension processor, you would need to create an `XmlConfigBuildItem` to pass the parsed XmlConfig instance around.
+
+[TIP]
+====
+If you look at the XmlConfig code you will see that it does carry around the JAXB annotations. If you don't want these in the runtime image, you could clone the XmlConfig instance into some POJO object graph and then replace XmlConfig with the POJO class. We will do this in <<Replacing Classes in the Native Image>>.
+====
+
+=== Scanning Deployments Using Jandex
+If your extension defines annotations or interfaces that mark beans needing to be processed, you can locate these beans using the Jandex API, a Java annotation indexer and offline reflection library. The following `TestProcessor#scanForBeans` method shows how to find the beans annotated with our `@TestAnnotation` that also implement the `IConfigConsumer` interface:
+
+.Example Jandex Usage
+[source,java]
+----
+    static DotName TEST_ANNOTATION = DotName.createSimple(TestAnnotation.class.getName());
+...
+
+    @BuildStep
+    @Record(STATIC_INIT)
+    void scanForBeans(TestTemplate template, BeanArchiveIndexBuildItem beanArchiveIndex, <1>
+            BuildProducer<TestBeanBuildItem> testBeanProducer) {
+        IndexView indexView = beanArchiveIndex.getIndex(); <2>
+        Collection<AnnotationInstance> testBeans = indexView.getAnnotations(TEST_ANNOTATION); <3>
+        for (AnnotationInstance ann : testBeans) {
+            ClassInfo beanClassInfo = ann.target().asClass();
+            try {
+                boolean isConfigConsumer = beanClassInfo.interfaceNames()
+                        .stream()
+                        .anyMatch(dotName -> dotName.equals(DotName.createSimple(IConfigConsumer.class.getName()))); <4>
+                if (isConfigConsumer) {
+                    Class<IConfigConsumer> beanClass = (Class<IConfigConsumer>) Class.forName(beanClassInfo.name().toString());
+                    testBeanProducer.produce(new TestBeanBuildItem(beanClass)); <5>
+                    log.infof("Configured bean: %s", beanClass);
+                }
+            } catch (ClassNotFoundException e) {
+                log.warn("Failed to load bean class", e);
+            }
+        }
+    }
+----
+<1> Depend on a `BeanArchiveIndexBuildItem` to have the build step be run after the deployment has been indexed.
+<2> Retrieve the index.
+<3> Find all beans annotated with `@TestAnnotation`.
+<4> Determine which of these beans also has the `IConfigConsumer` interface.
+<5> Save the bean class in a `TestBeanBuildItem` for use in a latter RUNTIME_INIT build step that will interact with the bean instances.
+
+=== Interacting With Extension Beans
+You can use the `io.quarkus.arc.runtime.BeanContainer` interface to interact with your extension beans. The following `configureBeans` methods illustrate interacting with the beans scanned for in the previous section:
+
+.Using CDI BeanContainer Interface
+[source,java]
+----
+// TestProcessor#configureBeans
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void configureBeans(TestTemplate template, List<TestBeanBuildItem> testBeans, <1>
+            BeanContainerBuildItem beanContainer, <2>
+            TestRunTimeConfig runTimeConfig) {
+
+        for (TestBeanBuildItem testBeanBuildItem : testBeans) {
+            Class<IConfigConsumer> beanClass = testBeanBuildItem.getConfigConsumer();
+            template.configureBeans(beanContainer.getValue(), beanClass, buildAndRunTimeConfig, runTimeConfig); <3>
+        }
+    }
+
+// TestTemplate#configureBeans
+    public void configureBeans(BeanContainer beanContainer, Class<IConfigConsumer> beanClass,
+            TestBuildAndRunTimeConfig buildTimeConfig,
+            TestRunTimeConfig runTimeConfig) {
+        log.infof("Begin BeanContainerListener callback\n");
+        IConfigConsumer instance = beanContainer.instance(beanClass); <4>
+        instance.loadConfig(buildTimeConfig, runTimeConfig); <5>
+        log.infof("configureBeans, instance=%s\n", instance);
+    }
+----
+<1> Consume the `TestBeanBuildItem`s produced from the scanning build step.
+<2> Consume the `BeanContainerBuildItem` to order this build step to run after the CDI bean container has been created.
+<3> Call the runtime template to record the bean interactions.
+<4> Runtime template retrieves the bean using its type.
+<5> Runtime template invokes the `IConfigConsumer#loadConfig(...)` method passing in the configuration objects with runtime information.
+
+=== Manage Non-CDI Service
+A common purpose for an extension is to integrate a non-CDI aware service into the CDI based {project-name} runtime. Step 1 of this task is to load any configuration needed in a STATIC_INIT build step as we did in <<Parsing Config to Objects>>. Now we need to create an instance of the service using the configuration. Let's return to the `TestProcessor#parseServiceXmlConfig` method to see how this can be done.
+
+.Creating a Non-CDI Service
+[source,java]
+----
+// TestProcessor#parseServiceXmlConfig
+    @BuildStep
+    @Record(STATIC_INIT)
+    RuntimeServiceBuildItem parseServiceXmlConfig(TestTemplate template) throws JAXBException {
+        RuntimeServiceBuildItem serviceBuildItem = null;
+        JAXBContext context = JAXBContext.newInstance(XmlConfig.class);
+        Unmarshaller unmarshaller = context.createUnmarshaller();
+        InputStream is = getClass().getResourceAsStream("/config.xml");
+        if (is != null) {
+            log.infof("Have XmlConfig, loading");
+            XmlConfig config = (XmlConfig) unmarshaller.unmarshal(is);
+            log.infof("Loaded XmlConfig, creating service");
+            RuntimeValue<RuntimeXmlConfigService> service = template.initRuntimeService(config); <1>
+            serviceBuildItem = new RuntimeServiceBuildItem(service); <3>
+        }
+        return serviceBuildItem;
+    }
+
+// TestTemplate#initRuntimeService
+    public RuntimeValue<RuntimeXmlConfigService> initRuntimeService(XmlConfig config) {
+        RuntimeXmlConfigService service = new RuntimeXmlConfigService(config); <2>
+        return new RuntimeValue<>(service);
+    }
+
+// RuntimeServiceBuildItem
+    final public class RuntimeServiceBuildItem extends SimpleBuildItem {
+    private RuntimeValue<RuntimeXmlConfigService> service;
+
+    public RuntimeServiceBuildItem(RuntimeValue<RuntimeXmlConfigService> service) {
+        this.service = service;
+    }
+
+    public RuntimeValue<RuntimeXmlConfigService> getService() {
+        return service;
+    }
+}
+----
+<1> Call into the runtime template to record the creation of the service.
+<2> Using the parsed `XmlConfig` instance, create an instance of `RuntimeXmlConfigService` and wrap it in a `RuntimeValue`. Use a `RuntimeValue` wrapper for non-interface objects that are non-proxiable.
+<3> Wrap the return service value in a `RuntimeServiceBuildItem` for use in a RUNTIME_INIT build step that will start the service.
+
+==== Starting a Service
+Now that you have recorded the creation of a service during the build phase, you need to record how to start the service at runtime during booting. You do this with a RUNTIME_INIT build step as shown in the `TestProcessor#startRuntimeService` method.
+
+.Starting/Stopping a Non-CDI Service
+[source,java]
+----
+// TestProcessor#startRuntimeService
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void startRuntimeService(TestTemplate template, ShutdownContextBuildItem shutdownContextBuildItem <1>, RuntimeServiceBuildItem serviceBuildItem <2>) throws IOException {
+        log.info("Registering service start");
+        template.startRuntimeService(shutdownContextBuildItem, serviceBuildItem.getService()); <3>
+    }
+
+// TestTemplate#startRuntimeService
+    public void startRuntimeService(ShutdownContext shutdownContext, RuntimeValue<RuntimeXmlConfigService> runtimeValue)
+            throws IOException {
+        RuntimeXmlConfigService service = runtimeValue.getValue();
+        service.startService(); <4>
+        shutdownContext.addShutdownTask(service::stopService); <5>
+    }
+----
+<1> We consume a ShutdownContextBuildItem to register the service shutdown.
+<2> We consume the previously initialized service captured in `RuntimeServiceBuildItem`.
+<3> Call the runtime template to record the service start invocation.
+<4> Runtime template retrieves the service instance reference and calls its `startService` method.
+<5> Runtime template registers an invocation of the service instance `stopService` method with the {project-name} `ShutdownContext`.
+
+The code for the `RuntimeXmlConfigService` can be viewed here:
+{quarkus-blob-url}/core/test-extension/runtime/src/main/java/io/quarkus/extest/runtime/RuntimeXmlConfigService.java[RuntimeXmlConfigService.java]
+
+The testcase for validating that the `RuntimeXmlConfigService` has started can be found in the `testRuntimeXmlConfigService` test of `ConfiguredBeanTest` and `NativeImageIT`.
+
+=== Register Resources for Use in Native Image
+Not all configuration or resources can be consumed at build time. If you have classpath resources that the runtime needs to access, you need to inform the build phase that these resources need to be copied into the native image. This is done by producing one or more `SubstrateResourceBuildItem` or `SubstrateResourceBundleBuildItem` in the case of resource bundles. Examples of this are shown in this sample `registerNativeImageReources` build step:
+
+.Registering Resources and ResourceBundles
+[source,java]
+----
+public final class MyExtProcessor {
+    @Inject
+    BuildProducer<SubstrateResourceBuildItem> resource;
+    @Inject
+    BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle;
+
+    @BuildStep
+    void registerNativeImageReources() {
+        resource.produce(new SubstrateResourceBuildItem("/security/runtime.keys")); <1>
+
+        resource.produce(new SubstrateResourceBuildItem(
+                "META-INF/services/" + io.quarkus.SomeService.class.getName())); <2>
+
+        resourceBundle.produce(new SubstrateResourceBuildItem("javax.xml.bind.Messages")); <3>
+    }
+}
+----
+<1> Indicate that the /security/runtime.keys classpath resource should be copied into native image.
+<2> Indicate that the `io.quarkus.SomeService` ServiceLoader resource should be copied into native image.
+<3> Indicate that the "javax.xml.bind.Messages" resource bundle should be copied into native image.
+
+=== Object Substitution
+Objects created during the build phase that are passed into the runtime need to have a default constructor in order for them to be created and configured at startup of the runtime from the build time state. If an object does not have a default constructor you will see an error similar to the following during generation of the augmented artifacts:
+
+.DSAPublicKey Serialization Error
+[source,bash]
+----
+	[error]: Build step io.quarkus.deployment.steps.MainClassBuildStep#build threw an exception: java.lang.RuntimeException: Unable to serialize objects of type class sun.security.provider.DSAPublicKeyImpl to bytecode as it has no default constructor
+	at org.jboss.builder.Execution.run(Execution.java:123)
+	at org.jboss.builder.BuildExecutionBuilder.execute(BuildExecutionBuilder.java:136)
+	at io.quarkus.deployment.QuarkusAugmentor.run(QuarkusAugmentor.java:110)
+	at io.quarkus.runner.RuntimeRunner.run(RuntimeRunner.java:99)
+	... 36 more
+----
+
+There is a `io.quarkus.runtime.ObjectSubstitution` interface that can be implemented to tell {project-name} how to handle such classes. An example implementation for the `DSAPublicKey` is shown here:
+
+.DSAPublicKeyObjectSubstitution Example
+[source,bash]
+----
+package io.quarkus.extest.runtime.subst;
+
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.DSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.logging.Logger;
+
+import io.quarkus.runtime.ObjectSubstitution;
+
+public class DSAPublicKeyObjectSubstitution implements ObjectSubstitution<DSAPublicKey, KeyProxy> {
+    private static final Logger log = Logger.getLogger("DSAPublicKeyObjectSubstitution");
+    @Override
+    public KeyProxy serialize(DSAPublicKey obj) { <1>
+        log.info("DSAPublicKeyObjectSubstitution.serialize");
+        byte[] encoded = obj.getEncoded();
+        KeyProxy proxy = new KeyProxy();
+        proxy.setContent(encoded);
+        return proxy;
+    }
+
+    @Override
+    public DSAPublicKey deserialize(KeyProxy obj) { <1>
+        log.info("DSAPublicKeyObjectSubstitution.deserialize");
+        byte[] encoded = obj.getContent();
+        X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(encoded);
+        DSAPublicKey dsaPublicKey = null;
+        try {
+            KeyFactory kf = KeyFactory.getInstance("DSA");
+            dsaPublicKey = (DSAPublicKey) kf.generatePublic(publicKeySpec);
+
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
+        return dsaPublicKey;
+    }
+}
+----
+<1> The serialize method takes the object without a default constructor and creates a `KeyProxy` that contains the information necessary to recreate the `DSAPublicKey`.
+<2> The deserialize method uses the `KeyProxy` to recreate the `DSAPublicKey` from its encoded form using the key factory.
+
+An extension registers this substitution by producing an `ObjectSubstitutionBuildItem` as shown in this `TestProcessor#loadDSAPublicKey` fragment:
+
+.Registering an Object Subtitution
+[source,java]
+----
+    @BuildStep
+    @Record(STATIC_INIT)
+    PublicKeyBuildItem loadDSAPublicKey(TestTemplate template,
+            BuildProducer<ObjectSubstitutionBuildItem> substitutions) throws IOException, GeneralSecurityException {
+...
+        // Register how to serialize DSAPublicKey
+        ObjectSubstitutionBuildItem.Holder<DSAPublicKey, KeyProxy> holder = new ObjectSubstitutionBuildItem.Holder(
+                DSAPublicKey.class, KeyProxy.class, DSAPublicKeyObjectSubstitution.class);
+        ObjectSubstitutionBuildItem keysub = new ObjectSubstitutionBuildItem(holder);
+        substitutions.produce(keysub);
+
+        log.infof("loadDSAPublicKey run");
+        return new PublicKeyBuildItem(publicKey);
+    }
+----
+
+=== Replacing Classes in the Native Image
+The Graal SDK supports substitutions of classes in the native image. An example of how one could replace the `XmlConfig/XmlData` classes with versions that have no JAXB annotation dependencies is shown in these example classes:
+
+.Substitution of XmlConfig/XmlData Classes Example
+[source,bash]
+----
+package io.quarkus.extest.runtime.graal;
+
+import java.util.Date;
+
+import com.oracle.svm.core.annotate.Substitute;
+import com.oracle.svm.core.annotate.TargetClass;
+
+import io.quarkus.extest.runtime.config.XmlData;
+@TargetClass(XmlConfig.class)
+@Substitute
+final public class Target_XmlConfig {
+    @Substitute
+    private String address;
+    @Substitute
+    private int port;
+    @Substitute
+    private ArrayList<XData> dataList;
+
+    @Substitute
+    public String getAddress() {
+        return address;
+    }
+
+    @Substitute
+    public int getPort() {
+        return port;
+    }
+
+    @Substitute
+    public ArrayList<XData> getDataList() {
+        return dataList;
+    }
+
+    @Substitute
+    @Override
+    public String toString() {
+        return "Target_XmlConfig{" +
+                "address='" + address + '\'' +
+                ", port=" + port +
+                ", dataList=" + dataList +
+                '}';
+    }
+}
+
+@TargetClass(XmlData.class)
+@Substitute
+final public class Target_XmlData {
+    @Substitute
+    private String name;
+    @Substitute
+    private String model;
+    @Substitute
+    private Date date;
+
+    @Substitute
+    public String getName() {
+        return name;
+    }
+
+    @Substitute
+    public String getModel() {
+        return model;
+    }
+
+    @Substitute
+    public Date getDate() {
+        return date;
+    }
+
+    @Substitute
+    @Override
+    public String toString() {
+        return "Target_XmlData{" +
+                "name='" + name + '\'' +
+                ", model='" + model + '\'' +
+                ", date='" + date + '\'' +
+                '}';
+    }
+
+}
 ----

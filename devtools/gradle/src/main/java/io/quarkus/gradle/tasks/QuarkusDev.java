@@ -64,7 +64,7 @@ public class QuarkusDev extends QuarkusTask {
 
     private boolean preventnoverify = false;
 
-    private static final String RESOURCES_PROP = "quarkus.undertow.resources";
+    private static final String RESOURCES_PROP = "quarkus-internal.undertow.resources";
 
     public QuarkusDev() {
         super("Creates a native image");

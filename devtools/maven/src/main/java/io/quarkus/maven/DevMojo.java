@@ -72,7 +72,7 @@ import io.quarkus.maven.utilities.MojoUtils;
 @Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class DevMojo extends AbstractMojo {
 
-    private static final String RESOURCES_PROP = "quarkus.undertow.resources";
+    private static final String RESOURCES_PROP = "quarkus-internal.undertow.resources";
 
     /**
      * The directory for compiled classes.

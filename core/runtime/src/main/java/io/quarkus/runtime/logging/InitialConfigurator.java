@@ -16,23 +16,23 @@ public final class InitialConfigurator implements EmbeddedConfigurator {
 
     public static final DelayedHandler DELAYED_HANDLER = new DelayedHandler();
 
+    @Override
     public Level getMinimumLevelOf(final String loggerName) {
         return Level.ALL;
     }
 
+    @Override
     public Level getLevelOf(final String loggerName) {
         return loggerName.isEmpty() ? Level.ALL : null;
     }
 
+    @Override
     public Handler[] getHandlersOf(final String loggerName) {
         if (loggerName.isEmpty()) {
-            if (ImageInfo.inImageBuildtimeCode() || System.getProperty("quarkus-internal.devMode") != null) {
-                final ConsoleHandler handler = new ConsoleHandler(new PatternFormatter(
-                        "%d{HH:mm:ss,SSS} %-5p [%c{3.}] %s%e%n"));
-                handler.setLevel(Level.INFO);
+            if (ImageInfo.inImageBuildtimeCode()) {
                 // we can't set a cleanup filter without the build items ready
                 return new Handler[] {
-                        handler
+                        createDefaultHandler()
                 };
             } else {
                 return new Handler[] { DELAYED_HANDLER };
@@ -40,5 +40,11 @@ public final class InitialConfigurator implements EmbeddedConfigurator {
         } else {
             return NO_HANDLERS;
         }
+    }
+
+    public static ConsoleHandler createDefaultHandler() {
+        ConsoleHandler handler = new ConsoleHandler(new PatternFormatter("%d{HH:mm:ss,SSS} %-5p [%c{3.}] %s%e%n"));
+        handler.setLevel(Level.INFO);
+        return handler;
     }
 }

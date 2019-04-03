@@ -186,8 +186,6 @@ public class QuarkusDev extends QuarkusTask {
             if (getJvmArgs() != null) {
                 args.addAll(Arrays.asList(getJvmArgs().split(" ")));
             }
-            //Add env to enable quarkus dev mode logging
-            args.add("-Dquarkus-internal.devMode");
 
             for (File f : extension.resourcesDir()) {
                 File servletRes = new File(f, "META-INF/resources");

@@ -1,0 +1,9 @@
+{
+  "realm": "quarkus",
+  "auth-server-url": "${keycloak.url}",
+  "resource": "quarkus-app",
+  "bearer-only" : true,
+  "credentials": {
+    "secret": "secret"
+  }
+}

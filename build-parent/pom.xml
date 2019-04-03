@@ -635,6 +635,16 @@
                 <artifactId>quarkus-flyway-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Miscellaneous -->
             <dependency>

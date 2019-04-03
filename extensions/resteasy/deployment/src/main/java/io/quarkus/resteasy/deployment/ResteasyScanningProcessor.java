@@ -123,9 +123,14 @@ public class ResteasyScanningProcessor {
             // javax.json
             DotName.createSimple("javax.json.JsonObject"),
             DotName.createSimple("javax.json.JsonArray"),
+
             // JAX-RS
             DotName.createSimple(Response.class.getName()),
-            DotName.createSimple(AsyncResponse.class.getName())));
+            DotName.createSimple(AsyncResponse.class.getName()),
+
+            // Vert-x
+            DotName.createSimple("io.vertx.core.json.JsonArray"),
+            DotName.createSimple("io.vertx.core.json.JsonObject")));
 
     private static final DotName[] METHOD_ANNOTATIONS = {
             GET,
@@ -420,7 +425,7 @@ public class ResteasyScanningProcessor {
 
     /**
      * Indicates that JAXB support should be enabled
-     * 
+     *
      * @return
      */
     @BuildStep

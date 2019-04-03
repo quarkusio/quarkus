@@ -9,7 +9,6 @@ import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
-import javax.json.JsonString;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jose4j.jwt.JwtClaims;
@@ -62,8 +61,8 @@ public class JwtCallerPrincipalUnitTest {
         Assertions.assertEquals(Json.createValue(4.4), customDoubleArray.getJsonNumber(4));
 
         // "customString": "customStringValue",
-        JsonString customString = principal.getClaim("customString");
-        Assertions.assertEquals(Json.createValue("customStringValue"), customString);
+        String customString = principal.getClaim("customString");
+        Assertions.assertEquals("customStringValue", customString);
         // "customInteger": 123456789,
         JsonNumber customInteger = principal.getClaim("customInteger");
         Assertions.assertEquals(Json.createValue(123456789), customInteger);

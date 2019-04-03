@@ -82,7 +82,7 @@ public final class AmazonLambdaProcessor {
                     .setInstanceFactory(template.lambdaServletInstanceFactory(
                             (Class<? extends RequestHandler>) context.classProxy(lambda.getClassName()),
                             beanContainerBuildItem.getValue()))
-                    .addMapping("/")
+                    .addMapping("/__lambda")
                     .build());
         }
         final File bootstrap = new File("target/bootstrap");

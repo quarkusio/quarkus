@@ -49,7 +49,7 @@ public class NativeImageLauncher implements Closeable {
         this.port = port;
     }
 
-    public void start() throws Exception {
+    public void start() throws IOException {
 
         String path = System.getProperty("native.image.path");
         if (path == null) {

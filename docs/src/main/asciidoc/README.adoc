@@ -36,6 +36,7 @@ complete list of externalized variables for use is given in the following table:
 |\{quarkus-blob-url}|{quarkus-blob-url}| {project-name} URL to master blob source tree; used for referencing source files.
 |\{quarkus-tree-url}|{quarkus-tree-url}| {project-name} URL to master source tree root; used for referencing directories.
 |\{quarkus-issues-url}|{quarkus-issues-url}| {project-name} URL to the issues page.
+|\{quarkus-images-url}|{quarkus-images-url}| {project-name} URL to set of container images delivered for Quarkus.
 
 |\{quarkus-chat-url}|{quarkus-chat-url} | URL of our chat.
 |\{quarkus-mailing-list-subscription-email}|{quarkus-mailing-list-subscription-email} | Email used to subscribe to our mailing list.

@@ -53,7 +53,7 @@
         <smallrye-jwt.version>1.1.1</smallrye-jwt.version>
         <smallrye-reactive-streams-operators.version>1.0.3</smallrye-reactive-streams-operators.version>
         <smallrye-converter-api.version>1.0.3</smallrye-converter-api.version>
-        <smallrye-reactive-messaging.version>0.0.5</smallrye-reactive-messaging.version>
+        <smallrye-reactive-messaging.version>0.0.7</smallrye-reactive-messaging.version>
         <smallrye-rest-client.version>1.2.2</smallrye-rest-client.version>
         <swagger-ui.version>3.20.9</swagger-ui.version>
         <javax.activation.version>1.1.1</javax.activation.version>
@@ -129,7 +129,7 @@
         <reactive-streams.version>1.0.2</reactive-streams.version>
         <test-containers.version>1.10.7</test-containers.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
-        <axle-client.version>0.0.3</axle-client.version>
+        <axle-client.version>0.0.4</axle-client.version>
         <kafka-clients.version>1.1.0</kafka-clients.version>
         <kafka2.version>1.1.0</kafka2.version>
         <debezium.version>0.9.2.Final</debezium.version>

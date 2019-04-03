@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.runtime;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -15,9 +16,10 @@ import io.smallrye.reactive.messaging.extension.MediatorManager;
 @Template
 public class SmallRyeReactiveMessagingTemplate {
 
-    public void registerMediators(Map<String, String> beanClassToBeanId, BeanContainer container) {
+    public void registerMediators(Map<String, String> beanClassToBeanId, BeanContainer container, List<String> emitters) {
         // Extract the configuration and register mediators
         MediatorManager mediatorManager = container.instance(MediatorManager.class);
+        mediatorManager.initializeEmitters(emitters);
         for (Entry<String, String> entry : beanClassToBeanId.entrySet()) {
             try {
                 Class<?> beanClass = Thread.currentThread()

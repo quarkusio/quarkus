@@ -89,7 +89,7 @@ class AnnotationLiteralProcessor {
                     value = method.defaultValue();
                 }
                 if (value == null) {
-                    throw new NullPointerException("Value not set for " + method);
+                    throw new NullPointerException("Value not set for " + method + " in " + method.declaringClass());
                 }
                 ResultHandle retValue = AnnotationLiteralGenerator.loadValue(bytecode, value, annotationClass, method);
                 constructorParams[iterator.previousIndex()] = retValue;

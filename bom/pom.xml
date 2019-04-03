@@ -1455,6 +1455,11 @@
                 </exclusions>
             </dependency>
             <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-axle-web-client</artifactId>
+                <version>${axle-client.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.vertx</groupId>
                 <artifactId>vertx-rx-java2</artifactId>
                 <version>${vertx.version}</version>

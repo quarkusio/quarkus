@@ -210,12 +210,12 @@ public class FruitResourceTest {
 Quarkus proposes a `smallrye-openapi` extension compliant with the https://github.com/eclipse/microprofile-open-api/[Eclipse MicroProfile OpenAPI]
 specification in order to generate your API https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md[OpenAPI v3 specification].
 
-The first and unique step to do so is to add the `smallrye-openapi` extension to your Quarkus application:
+You just need to add the `smallrye-openapi` extension to your Quarkus application:
 ----
 ./mvnw quarkus:add-extension -Dextensions="smallrye-openapi"
 ----
 
-Now we are ready to run our application:
+Now, we are ready to run our application:
 ----
 ./mvnw compile quarkus:dev
 ----
@@ -275,14 +275,9 @@ When building APIs, developers want to test them quickly. https://swagger.io/too
 permitting to visualize and interact with your APIs.
 The UI is automatically generated from your OpenAPI specification.
 
-Quarkus comes with a `swagger-ui` extension embedding a properly configured Swagger UI page.
+The Quarkus `smallrye-openapi` extension comes with a `swagger-ui` extension embedding a properly configured Swagger UI page.
 
 NOTE: Swagger UI is only available when Quarkus is started in dev or test mode.
-
-For this feature to be available, you need to add the `swagger-ui` extension to your Quarkus application:
-----
-./mvnw quarkus:add-extension -Dextensions="swagger-ui"
-----
 
 By default, Swagger UI is accessible at `/swagger-ui`.
 

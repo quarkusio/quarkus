@@ -115,29 +115,32 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
  * Version 1 of the TokenSecuredResource
  */
 @Path("/secured")
+@RequestScoped // <1>
 public class TokenSecuredResource {
 
     @Inject
-    JsonWebToken jwt; // <1>
+    JsonWebToken jwt; // <2>
 
     @GET()
     @Path("permit-all")
-    @PermitAll // <2>
+    @PermitAll // <3>
     @Produces(MediaType.TEXT_PLAIN)
-    public String hello(@Context SecurityContext ctx) { // <3>
-        Principal caller =  ctx.getUserPrincipal(); <4>
+    public String hello(@Context SecurityContext ctx) { // <4>
+        Principal caller =  ctx.getUserPrincipal(); <5>
         String name = caller == null ? "anonymous" : caller.getName();
         boolean hasJWT = jwt != null;
         String helloReply = String.format("hello + %s, isSecure: %s, authScheme: %s, hasJWT: %s", name, ctx.isSecure(), ctx.getAuthenticationScheme(), hasJWT);
-        return helloReply; // <5>
+        return helloReply; // <6>
     }
 }
 ----
-<1> Here we inject the JsonWebToken interface, and extension of the java.security.Principal interface that provides access to the claims associated with the current authenticated token.
-<2> @PermitAll is a JSR 250 common security annotation that indicates that the given endpoint is accessible by any caller, authenticated or not.
-<3> Here we inject the JAX-RS SecurityContext to inspect the security state of the call.
-<4> Here we obtain the current request user/caller `Principal`. For an unsecured call this will be null, so we build the user name by checking `caller` against null.
-<5> The reply we build up makes use of the caller name, the `isSecure()` and `getAuthenticationScheme()` states of the request `SecurityContext`, and whether a non-null `JsonWebToken` was injected.
+<1> Add a `RequestScoped` as {project-name} uses a default scoping of `ApplicationScoped` and this
+will produce undesirable behavior since JWT claims are naturally request scoped.
+<2> Here we inject the JsonWebToken interface, and extension of the java.security.Principal interface that provides access to the claims associated with the current authenticated token.
+<3> @PermitAll is a JSR 250 common security annotation that indicates that the given endpoint is accessible by any caller, authenticated or not.
+<4> Here we inject the JAX-RS SecurityContext to inspect the security state of the call.
+<5> Here we obtain the current request user/caller `Principal`. For an unsecured call this will be null, so we build the user name by checking `caller` against null.
+<6> The reply we build up makes use of the caller name, the `isSecure()` and `getAuthenticationScheme()` states of the request `SecurityContext`, and whether a non-null `JsonWebToken` was injected.
 
 == Run the application
 
@@ -211,6 +214,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
  * Version 2 of the TokenSecuredResource
  */
 @Path("/secured")
+@RequestScoped
 public class TokenSecuredResource {
 
     @Inject
@@ -824,7 +828,8 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
  * Version 3 of the TokenSecuredResource
  */
  @Path("/secured")
- public class TokenSecuredResourceV3 {
+ @RequestScoped
+public class TokenSecuredResourceV3 {
 
      @Inject
      JsonWebToken jwt;
@@ -916,6 +921,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
  * Version 4 of the TokenSecuredResource
  */
 @Path("/secured")
+@RequestScoped
 public class TokenSecuredResource {
 
     @Inject
@@ -971,6 +977,48 @@ curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8080/secured/winners
 ----
 $ curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjY3MzEzLCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY3MDkxMywiaWF0IjoxNTUxNjY3MzEzLCJqdGkiOiJhLTEyMyJ9.c2QJAK3a1VOYL6vOt40VSEAy9wXPBEjVbqApTTNG8V8UDkQZ6HiOR9-rKOFX3WmTtQVru3O9zDu2_T2_v8kTmCkT-ThxodqC4VxD_QVx1v6BaSJ9-MX1Q7nrkD0Mk1V6x0Cqd6jmHxtJy0Ep8IgeMw2Y5gL9a1NgWVeldXP6cdHrHcYKYGnZKmYp7VpqZBoONPIS_QmWXm-JerwVpwt0juEtZUQoGCJdp7-GZA31QyEN64gCMKfdhYNnLuWQaom3i0uF_LfXtlMHdRU0kzDnLrnGw99ynTAex7ah7zG10ZbanK-PI-nD6wcTbE9WqriwohHM9BFJoBmF81RRk5uMsw" http://localhost:8080/secured/winners2; echo
 [13, 38, 36, 38, 36, 22]
+----
+
+== Package and run the application
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file:
+.Runner jar Example
+[source,shell]
+----
+Scotts-iMacPro:using-jwt-rbac starksm$ ./mvnw clean package
+[INFO] Scanning for projects...
+...
+[INFO] [io.quarkus.creator.phase.runnerjar.RunnerJarPhase] Building jar: /Users/starksm/Dev/JBoss/Protean/starksm64-quarkus-quickstarts/using-jwt-rbac/target/using-jwt-rbac-runner.jar
+
+Scotts-iMacPro:using-jwt-rbac starksm$ java -jar target/using-jwt-rbac-runner.jar
+2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus 0.12.0 started in 0.796s. Listening on: http://[::]:8080
+2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, smallrye-jwt]
+----
+
+You can also generate the native executable with `./mvnw clean package -Pnative`.
+.Native Executable Example
+[source,shell]
+----
+Scotts-iMacPro:using-jwt-rbac starksm$ ./mvnw clean package -Pnative
+[INFO] Scanning for projects...
+...
+[using-jwt-rbac-runner:25602]     universe:     493.17 ms
+[using-jwt-rbac-runner:25602]      (parse):     660.41 ms
+[using-jwt-rbac-runner:25602]     (inline):   1,431.10 ms
+[using-jwt-rbac-runner:25602]    (compile):   7,301.78 ms
+[using-jwt-rbac-runner:25602]      compile:  10,542.16 ms
+[using-jwt-rbac-runner:25602]        image:   2,797.62 ms
+[using-jwt-rbac-runner:25602]        write:     988.24 ms
+[using-jwt-rbac-runner:25602]      [total]:  43,778.16 ms
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  51.500 s
+[INFO] Finished at: 2019-03-28T14:30:56-07:00
+[INFO] ------------------------------------------------------------------------
+
+Scotts-iMacPro:using-jwt-rbac starksm$ ./target/using-jwt-rbac-runner
+2019-03-28 14:31:37,315 INFO  [io.quarkus] (main) Quarkus 0.12.0 started in 0.006s. Listening on: http://[::]:8080
+2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, smallrye-jwt]
 ----
 
 == Explore the Solution

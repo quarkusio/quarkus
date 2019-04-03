@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -62,7 +61,7 @@ public class InjectionPointInfo {
         for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
             Type paramType = iterator.next();
             int position = iterator.previousIndex();
-            Set<AnnotationInstance> paramAnnotations = getParameterAnnotations(beanDeployment, method, position);
+            Set<AnnotationInstance> paramAnnotations = Annotations.getParameterAnnotations(beanDeployment, method, position);
             if (skipPredicate != null && skipPredicate.test(paramAnnotations)) {
                 // Skip parameter, e.g. @Disposes
                 continue;
@@ -76,17 +75,6 @@ public class InjectionPointInfo {
             injectionPoints.add(new InjectionPointInfo(paramType, paramQualifiers, method, position));
         }
         return injectionPoints;
-    }
-
-    static Set<AnnotationInstance> getParameterAnnotations(BeanDeployment beanDeployment, MethodInfo method, int position) {
-        Set<AnnotationInstance> annotations = new HashSet<>();
-        for (AnnotationInstance annotation : beanDeployment.getAnnotations(method)) {
-            if (Kind.METHOD_PARAMETER.equals(annotation.target().kind())
-                    && annotation.target().asMethodParameter().position() == position) {
-                annotations.add(annotation);
-            }
-        }
-        return annotations;
     }
 
     private final TypeAndQualifiers typeAndQualifiers;

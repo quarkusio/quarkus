@@ -20,7 +20,7 @@ The DCO text is also included verbatim in the [dco.txt](dco.txt) file in the roo
 This project uses GitHub issues to manage the issues. Open an issue directly in GitHub.
 
 If you believe you found a bug, and it's likely possible, please indicate a way to reproduce it, what you are seeing and what you would expect to see.
-Don't forget to indicate your Java, Maven and GraalVM version. 
+Don't forget to indicate your Quarkus, Java, Maven/Gradle and GraalVM version. 
 
 ## Before you contribute
 
@@ -72,7 +72,7 @@ On Linux, check [the post-installation guide](https://docs.docker.com/install/li
 Quarkus has a strictly enforced code style. Code formatting is done by the Eclipse code formatter, using the config files
 found in the `ide-config` directory. By default when you run `./mvnw install` the code will be formatted automatically.
 When submitting a pull request the CI build will fail if running the formatter results in any code changes, so it is
-recommended that you always run a full maven build before submitting a pull request.
+recommended that you always run a full Maven build before submitting a pull request.
 
 #### Eclipse Setup
 
@@ -105,8 +105,9 @@ cd quarkus
 # Wait... success!
 ```
 
-The default build will create two different native images, which is quite time consuming. You can skip this
-by disabling the `native-image` profile: `./mvnw install -Dno-native`.
+The default build does not create native images, which is quite time consuming.
+
+You can build and test native images in the integration tests supporting it by using `./mvnw install -Dnative`.
 
 By default the build will use the native image server. This speeds up the build, but can cause problems due to the cache
 not being invalidated correctly in some cases. To run a build with a new instance of the server you can use

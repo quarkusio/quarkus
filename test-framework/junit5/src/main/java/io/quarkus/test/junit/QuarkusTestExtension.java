@@ -46,7 +46,9 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
+import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.junit.jupiter.api.extension.TestInstantiationException;
+import org.junit.platform.commons.JUnitException;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -71,38 +73,11 @@ import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
-public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
+public class QuarkusTestExtension
+        implements BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
 
     private URLClassLoader appCl;
     private ClassLoader originalCl;
-
-    @Override
-    public void beforeAll(ExtensionContext context) throws Exception {
-
-        ExtensionContext root = context.getRoot();
-        ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
-        ExtensionState state = (ExtensionState) store.get(ExtensionState.class.getName());
-        PropertyTestUtil.setLogFileProperty();
-        boolean substrateTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
-        if (state == null) {
-            TestResourceManager testResourceManager = new TestResourceManager(context.getRequiredTestClass());
-            testResourceManager.start();
-
-            if (substrateTest) {
-                NativeImageLauncher launcher = new NativeImageLauncher(context.getRequiredTestClass());
-                launcher.start();
-                state = new ExtensionState(testResourceManager, launcher, true);
-            } else {
-                state = doJavaStart(context, testResourceManager);
-            }
-            store.put(ExtensionState.class.getName(), state);
-        } else {
-            if (substrateTest != state.isSubstrate()) {
-                throw new RuntimeException(
-                        "Attempted to mix @SubstrateTest and JVM mode tests in the same test run. This is not allowed.");
-            }
-        }
-    }
 
     private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
 
@@ -119,7 +94,7 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
                     .setParent(getClass().getClassLoader())
                     .setOffline(PropertyUtils.getBooleanOrNull(BootstrapClassLoaderFactory.PROP_OFFLINE))
                     .setLocalProjectsDiscovery(
-                            PropertyUtils.getBoolean(BootstrapClassLoaderFactory.PROP_PROJECT_DISCOVERY, true))
+                            PropertyUtils.getBoolean(BootstrapClassLoaderFactory.PROP_WS_DISCOVERY, true))
                     .setEnableClasspathCache(PropertyUtils.getBoolean(BootstrapClassLoaderFactory.PROP_CP_CACHE, true))
                     .newDeploymentClassLoader();
         } catch (BootstrapException e) {
@@ -296,6 +271,34 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
     @Override
     public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
             throws TestInstantiationException {
+        ExtensionContext root = extensionContext.getRoot();
+        ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
+        ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
+        PropertyTestUtil.setLogFileProperty();
+        boolean substrateTest = extensionContext.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
+        if (state == null) {
+            TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
+            testResourceManager.start();
+
+            if (substrateTest) {
+                NativeImageLauncher launcher = new NativeImageLauncher(extensionContext.getRequiredTestClass());
+                try {
+                    launcher.start();
+                } catch (IOException e) {
+                    throw new JUnitException("Quarkus native image start failed, original cause: " + e);
+                }
+                state = new ExtensionState(testResourceManager, launcher, true);
+            } else {
+                state = doJavaStart(extensionContext, testResourceManager);
+            }
+            store.put(ExtensionState.class.getName(), state);
+        } else {
+            if (substrateTest != state.isSubstrate()) {
+                throw new RuntimeException(
+                        "Attempted to mix @SubstrateTest and JVM mode tests in the same test run. This is not allowed.");
+            }
+        }
+
         try {
             Constructor<?> ctor = factoryContext.getTestClass().getDeclaredConstructor();
             ctor.setAccessible(true);

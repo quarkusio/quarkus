@@ -52,7 +52,7 @@ final class Beans {
     static BeanInfo createClassBean(ClassInfo beanClass, BeanDeployment beanDeployment) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         ScopeInfo scope = null;
-        Set<Type> types = Types.getTypeClosure(beanClass, Collections.emptyMap(), beanDeployment);
+        Set<Type> types = Types.getClassBeanTypeClosure(beanClass, Collections.emptyMap(), beanDeployment);
         Integer alternativePriority = null;
         boolean isAlternative = false;
         List<StereotypeInfo> stereotypes = new ArrayList<>();
@@ -115,7 +115,7 @@ final class Beans {
             DisposerInfo disposer) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         ScopeInfo scope = null;
-        Set<Type> types = Types.getTypeClosure(producerMethod, beanDeployment);
+        Set<Type> types = Types.getProducerMethodTypeClosure(producerMethod, beanDeployment);
         Integer alternativePriority = null;
         boolean isAlternative = false;
         List<StereotypeInfo> stereotypes = new ArrayList<>();
@@ -186,7 +186,7 @@ final class Beans {
             DisposerInfo disposer) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         ScopeInfo scope = null;
-        Set<Type> types = Types.getTypeClosure(producerField, beanDeployment);
+        Set<Type> types = Types.getProducerFieldTypeClosure(producerField, beanDeployment);
         Integer alternativePriority = null;
         boolean isAlternative = false;
         List<StereotypeInfo> stereotypes = new ArrayList<>();

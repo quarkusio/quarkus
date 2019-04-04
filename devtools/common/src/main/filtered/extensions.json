@@ -56,6 +56,16 @@
     "artifactId": "quarkus-camel-salesforce"
   },
   {
+    "name": "Flyway",
+    "labels": [
+      "flyway",
+      "database",
+      "data"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-flyway"
+  },
+  {
     "name": "Hibernate ORM",
     "labels": [
       "hibernate-orm",
@@ -393,15 +403,5 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-vertx"
-  },
-  {
-    "name": "Flyway",
-    "labels": [
-      "flyway",
-      "database",
-      "data"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-flyway"
   }
 ]

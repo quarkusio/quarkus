@@ -308,7 +308,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
                 <plugin> <4>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>${surefire.version}</version>
+                    <version>${surefire-plugin.version}</version>
                     <executions>
                         <execution>
                             <goals>

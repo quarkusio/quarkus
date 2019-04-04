@@ -29,7 +29,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -63,6 +62,9 @@ public class ApplicationArchiveBuildStep {
     private static final Logger LOGGER = Logger.getLogger(ApplicationArchiveBuildStep.class);
 
     private static final String JANDEX_INDEX = "META-INF/jandex.idx";
+
+    // At least Jandex 2.1 is needed
+    private static final int REQUIRED_INDEX_VERSION = 8;
 
     IndexDependencyConfiguration config;
 
@@ -162,7 +164,6 @@ public class ApplicationArchiveBuildStep {
                 ret.add(urlToPath(url));
             }
         }
-
         return ret;
     }
 
@@ -187,11 +188,19 @@ public class ApplicationArchiveBuildStep {
         Path existing = path.resolve(JANDEX_INDEX);
         if (Files.exists(existing)) {
             try (FileInputStream in = new FileInputStream(existing.toFile())) {
-                IndexReader r = new IndexReader(in);
-                return r.read();
+                IndexReader reader = new IndexReader(in);
+                if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
+                    LOGGER.warnf("Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency", path);
+                    return indexFilePath(path);
+                } else {
+                    return reader.read();
+                }
             }
         }
+        return indexFilePath(path);
+    }
 
+    private static Index indexFilePath(Path path) throws IOException {
         Indexer indexer = new Indexer();
         try (Stream<Path> stream = Files.walk(path)) {
             stream.forEach(path1 -> {
@@ -208,23 +217,32 @@ public class ApplicationArchiveBuildStep {
     }
 
     private static Index handleJarPath(Path path) throws IOException {
-        Indexer indexer = new Indexer();
         try (JarFile file = new JarFile(path.toFile())) {
             ZipEntry existing = file.getEntry(JANDEX_INDEX);
             if (existing != null) {
                 try (InputStream in = file.getInputStream(existing)) {
-                    IndexReader r = new IndexReader(in);
-                    return r.read();
+                    IndexReader reader = new IndexReader(in);
+                    if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
+                        LOGGER.warnf("Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency",
+                                path);
+                        return indexJar(file);
+                    } else {
+                        return reader.read();
+                    }
                 }
             }
+            return indexJar(file);
+        }
+    }
 
-            Enumeration<JarEntry> e = file.entries();
-            while (e.hasMoreElements()) {
-                JarEntry entry = e.nextElement();
-                if (entry.getName().endsWith(".class")) {
-                    try (InputStream inputStream = file.getInputStream(entry)) {
-                        indexer.index(inputStream);
-                    }
+    private static Index indexJar(JarFile file) throws IOException {
+        Indexer indexer = new Indexer();
+        Enumeration<JarEntry> e = file.entries();
+        while (e.hasMoreElements()) {
+            JarEntry entry = e.nextElement();
+            if (entry.getName().endsWith(".class")) {
+                try (InputStream inputStream = file.getInputStream(entry)) {
+                    indexer.index(inputStream);
                 }
             }
         }

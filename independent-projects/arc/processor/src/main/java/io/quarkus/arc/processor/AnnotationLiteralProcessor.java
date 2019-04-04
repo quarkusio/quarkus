@@ -89,7 +89,9 @@ class AnnotationLiteralProcessor {
                     value = method.defaultValue();
                 }
                 if (value == null) {
-                    throw new NullPointerException("Value not set for " + method);
+                    throw new IllegalStateException(String.format(
+                            "Value is not set for %s.%s(). Most probably an older version of Jandex was used to index an application dependency. Make sure that Jandex 2.1+ is used.",
+                            method.declaringClass().name(), method.name()));
                 }
                 ResultHandle retValue = AnnotationLiteralGenerator.loadValue(bytecode, value, annotationClass, method);
                 constructorParams[iterator.previousIndex()] = retValue;

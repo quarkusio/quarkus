@@ -1,7 +1,7 @@
 <settings>
   <profiles>
     <profile>
-      <id>google-mirror-jboss-nexus</id>
+      <id>google-mirror-jboss-proxy</id>
       <repositories>
         <repository>
           <id>google-maven-central</id>
@@ -9,9 +9,9 @@
           <url>https://maven-central-eu.storage-download.googleapis.com/repos/central/data/</url>
         </repository>
         <repository>
-          <id>jboss-public-repository-group</id>
-          <name>JBoss Public Repository Group</name>
-          <url>http://repository.jboss.org/nexus/content/groups/public/</url>
+          <id>jboss-maven-central-proxy</id>
+          <name>JBoss Maven Central proxy</name>
+          <url>https://repository.jboss.org/nexus/content/repositories/central/</url>
         </repository>
       </repositories>
       <pluginRepositories>
@@ -21,14 +21,14 @@
           <url>https://maven-central-eu.storage-download.googleapis.com/repos/central/data/</url>
         </pluginRepository>
         <pluginRepository>
-          <id>jboss-public-repository-group</id>
-          <name>JBoss Public Repository Group</name>
-          <url>http://repository.jboss.org/nexus/content/groups/public/</url>
+          <id>jboss-maven-central-proxy</id>
+          <name>JBoss Maven Central proxy</name>
+          <url>https://repository.jboss.org/nexus/content/repositories/central/</url>
         </pluginRepository>
       </pluginRepositories>
     </profile>
   </profiles>
   <activeProfiles>
-    <activeProfile>google-mirror-jboss-nexus</activeProfile>
+    <activeProfile>google-mirror-jboss-proxy</activeProfile>
   </activeProfiles>
 </settings>

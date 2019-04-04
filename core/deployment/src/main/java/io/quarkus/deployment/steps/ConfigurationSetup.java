@@ -12,10 +12,12 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
@@ -29,6 +31,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.ConfigSource;
+import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.eclipse.microprofile.config.spi.Converter;
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
@@ -38,8 +41,10 @@ import org.wildfly.security.ssl.CipherSuiteSelector;
 import org.wildfly.security.ssl.Protocol;
 
 import io.quarkus.deployment.AccessorFinder;
+import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.BuildTimeConfigurationBuildItem;
 import io.quarkus.deployment.builditem.BuildTimeRunTimeFixedConfigurationBuildItem;
@@ -52,6 +57,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigDefinition;
 import io.quarkus.deployment.configuration.ConfigPatternMap;
@@ -138,6 +144,8 @@ public class ConfigurationSetup {
             "withSources", ConfigBuilder.class, ConfigSource[].class);
     private static final MethodDescriptor SRCB_ADD_DEFAULT_SOURCES = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
             "addDefaultSources", ConfigBuilder.class);
+    private static final MethodDescriptor SRCB_ADD_DISCOVERED_SOURCES = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
+            "addDiscoveredSources", ConfigBuilder.class);
     private static final MethodDescriptor SRCB_CONSTRUCT = MethodDescriptor.ofConstructor(SmallRyeConfigBuilder.class);
     private static final MethodDescriptor II_IN_IMAGE_RUN = MethodDescriptor.ofMethod(ImageInfo.class, "inImageRuntimeCode",
             boolean.class);
@@ -157,6 +165,7 @@ public class ConfigurationSetup {
     private static final MethodDescriptor ARDCS_CTOR = MethodDescriptor.ofConstructor(AbstractRawDefaultConfigSource.class);
 
     private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
+    private static final String[] NO_STRINGS = new String[0];
 
     public ConfigurationSetup() {
     }
@@ -295,6 +304,30 @@ public class ConfigurationSetup {
         runTimeConfigConsumer.accept(new RunTimeConfigurationBuildItem(runTimeConfig));
         buildTimeRunTimeConfigConsumer.accept(new BuildTimeRunTimeFixedConfigurationBuildItem(buildTimeRunTimeConfig));
         buildTimeConfigConsumer.accept(new BuildTimeConfigurationBuildItem(buildTimeConfig));
+    }
+
+    @BuildStep
+    public void addDiscoveredSources(ApplicationArchivesBuildItem archives, Consumer<ServiceProviderBuildItem> providerConsumer)
+            throws IOException {
+        final Collection<String> sources = new LinkedHashSet<>();
+        final Collection<String> sourceProviders = new LinkedHashSet<>();
+        for (ApplicationArchive archive : archives.getAllApplicationArchives()) {
+            Path childPath = archive.getChildPath("META-INF/services/" + ConfigSource.class.getName());
+            if (childPath != null) {
+                sources.addAll(ServiceUtil.classNamesNamedIn(childPath));
+            }
+            childPath = archive.getChildPath("META-INF/services/" + ConfigSourceProvider.class.getName());
+            if (childPath != null) {
+                sourceProviders.addAll(ServiceUtil.classNamesNamedIn(childPath));
+            }
+        }
+        if (sources.size() > 0) {
+            providerConsumer.accept(new ServiceProviderBuildItem(ConfigSource.class.getName(), sources.toArray(NO_STRINGS)));
+        }
+        if (sourceProviders.size() > 0) {
+            providerConsumer.accept(
+                    new ServiceProviderBuildItem(ConfigSourceProvider.class.getName(), sourceProviders.toArray(NO_STRINGS)));
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -488,6 +521,9 @@ public class ConfigurationSetup {
                 // create run time configuration object
                 final ResultHandle builder = carc.newInstance(SRCB_CONSTRUCT);
                 carc.invokeVirtualMethod(SRCB_ADD_DEFAULT_SOURCES, builder);
+
+                // discovered sources
+                carc.invokeVirtualMethod(SRCB_ADD_DISCOVERED_SOURCES, builder);
 
                 // custom run time sources
                 final int size = runTimeSources.size();

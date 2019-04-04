@@ -691,15 +691,14 @@ public class BeanDeployment {
             if (disposer.getDeclaringBean().equals(declaringBean)) {
                 boolean hasQualifier = true;
                 for (AnnotationInstance qualifier : qualifiers) {
-                    if (!Beans.hasQualifier(getQualifier(qualifier.name()), qualifier, null)) {
+                    if (!Beans.hasQualifier(getQualifier(qualifier.name()), qualifier,
+                            disposer.getDisposedParameterQualifiers())) {
                         hasQualifier = false;
                     }
                 }
-                if (hasQualifier && beanResolver.matches(beanType,
-                        disposer.getDisposerMethod().parameters().get(disposer.getDisposedParameter().position()))) {
+                if (hasQualifier && beanResolver.matches(beanType, disposer.getDisposedParameterType())) {
                     found.add(disposer);
                 }
-
             }
         }
         if (found.size() > 1) {

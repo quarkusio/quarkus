@@ -225,9 +225,7 @@ public class DevMojo extends AbstractMojo {
             }
             //we don't want to just copy every system property, as a lot of them are set by the JVM
             for (Map.Entry<Object, Object> i : System.getProperties().entrySet()) {
-                if (i.getKey().toString().startsWith("quarkus.")) {
-                    args.add("-D" + i.getKey() + "=" + i.getValue());
-                }
+                args.add("-D" + i.getKey() + "=" + i.getValue());
             }
 
             for (Resource r : project.getBuild().getResources()) {

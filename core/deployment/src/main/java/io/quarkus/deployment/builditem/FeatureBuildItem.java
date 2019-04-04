@@ -17,6 +17,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String CAMEL_NETTY4_HTTP = "camel-netty4-http";
     public static final String CAMEL_SALESFORCE = "camel-salesforce";
     public static final String CDI = "cdi";
+    public static final String FLYWAY = "flyway";
     public static final String HIBERNATE_ORM = "hibernate-orm";
     public static final String HIBERNATE_VALIDATOR = "hibernate-validator";
     public static final String INFINISPAN_CLIENT = "infinispan-client";
@@ -47,7 +48,6 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String UNDERTOW_WEBSOCKETS = "undertow-websockets";
     public static final String VERTX = "vertx";
     public static final String VERTX_WEB = "vertx-web";
-    public static final String FLYWAY = "flyway";
 
     private final String info;
 

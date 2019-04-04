@@ -85,7 +85,7 @@
         <repository>
             <id>central</id>
             <name>Maven Repository Switchboard</name>
-            <url>http://repo.maven.apache.org/maven2</url>
+            <url>https://repo.maven.apache.org/maven2</url>
         </repository>
    </repositories>
 

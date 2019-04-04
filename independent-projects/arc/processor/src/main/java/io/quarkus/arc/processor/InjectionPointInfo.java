@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -136,6 +137,15 @@ public class InjectionPointInfo {
 
     public Set<AnnotationInstance> getRequiredQualifiers() {
         return typeAndQualifiers.qualifiers;
+    }
+
+    public AnnotationInstance getRequiredQualifier(DotName name) {
+        for (AnnotationInstance qualifier : typeAndQualifiers.qualifiers) {
+            if (qualifier.name().equals(name)) {
+                return qualifier;
+            }
+        }
+        return null;
     }
 
     public boolean hasDefaultedQualifier() {

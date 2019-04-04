@@ -16,6 +16,8 @@
 
 package io.quarkus.bootstrap.resolver;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,8 +32,16 @@ import io.quarkus.bootstrap.model.AppArtifact;
  */
 public class TsArtifact {
 
-    public static final String DEFAULT_GROUP_ID = "org.quarkus.creator.test";
+    public static final String DEFAULT_GROUP_ID = "io.quarkus.bootstrap.test";
     public static final String DEFAULT_VERSION = "1";
+
+    public static final String TYPE_JAR = "jar";
+    public static final String TYPE_POM = "pom";
+    public static final String TYPE_TXT = "txt";
+
+    public static final String EMPTY = "";
+
+    private static final String MODEL_VERSION = "4.0.0";
 
     public static TsArtifact ga(String artifactId) {
         return ga(DEFAULT_GROUP_ID, artifactId);
@@ -46,7 +56,11 @@ public class TsArtifact {
     }
 
     public static TsArtifact jar(String artifactId, String version) {
-        return new TsArtifact(DEFAULT_GROUP_ID, artifactId, "", "jar", version);
+        return new TsArtifact(DEFAULT_GROUP_ID, artifactId, EMPTY, TYPE_JAR, version);
+    }
+
+    interface ContentProvider {
+        Path getPath(Path workDir) throws IOException;
     }
 
     protected final String groupId;
@@ -56,17 +70,20 @@ public class TsArtifact {
     protected final String version;
 
     private List<TsDependency> deps = Collections.emptyList();
+    private List<TsQuarkusExt> extDeps = Collections.emptyList();
+
+    protected ContentProvider content;
 
     public TsArtifact(String artifactId) {
         this(artifactId, DEFAULT_VERSION);
     }
 
     public TsArtifact(String artifactId, String version) {
-        this(DEFAULT_GROUP_ID, artifactId, "", "txt", version);
+        this(DEFAULT_GROUP_ID, artifactId, EMPTY, TYPE_TXT, version);
     }
 
     public TsArtifact(String groupId, String artifactId, String version) {
-        this(groupId, artifactId, "", "txt", version);
+        this(groupId, artifactId, EMPTY, TYPE_TXT, version);
     }
 
     public TsArtifact(String groupId, String artifactId, String classifier, String type, String version) {
@@ -77,8 +94,21 @@ public class TsArtifact {
         this.version = version;
     }
 
+    public TsArtifact setContent(ContentProvider content) {
+        this.content = content;
+        return this;
+    }
+
     public TsArtifact addDependency(TsArtifact dep) {
         return addDependency(new TsDependency(dep));
+    }
+
+    public TsArtifact addDependency(TsQuarkusExt dep) {
+        if(extDeps.isEmpty()) {
+            extDeps = new ArrayList<>(1);
+        }
+        extDeps.add(dep);
+        return addDependency(new TsDependency(dep.getRuntime()));
     }
 
     public TsArtifact addDependency(TsDependency dep) {
@@ -109,12 +139,12 @@ public class TsArtifact {
     }
 
     public TsArtifact toPomArtifact() {
-        return new TsArtifact(groupId, artifactId, "", "pom", version);
+        return new TsArtifact(groupId, artifactId, EMPTY, TYPE_POM, version);
     }
 
     public Model getPomModel() {
         final Model model = new Model();
-        model.setModelVersion("4.0.0");
+        model.setModelVersion(MODEL_VERSION);
 
         model.setGroupId(groupId);
         model.setArtifactId(artifactId);
@@ -132,6 +162,29 @@ public class TsArtifact {
 
     public AppArtifact toAppArtifact() {
         return new AppArtifact(groupId, artifactId, classifier, type, version);
+    }
+
+    /**
+     * Installs the artifact including its dependencies.
+     *
+     * @param repoBuilder
+     */
+    public void install(TsRepoBuilder repoBuilder) {
+        if(!deps.isEmpty()) {
+            for(TsDependency dep : deps) {
+                dep.artifact.install(repoBuilder);
+            }
+        }
+        if(!extDeps.isEmpty()) {
+            for(TsQuarkusExt ext : extDeps) {
+                ext.deployment.install(repoBuilder);
+            }
+        }
+        try {
+            repoBuilder.install(this, content == null ? null : content.getPath(repoBuilder.workDir));
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to install " + this, e);
+        }
     }
 
     @Override

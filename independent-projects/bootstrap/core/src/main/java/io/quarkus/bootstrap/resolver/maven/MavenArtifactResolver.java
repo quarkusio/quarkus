@@ -138,8 +138,16 @@ public class MavenArtifactResolver {
         return localRepoManager;
     }
 
+    public RepositorySystem getSystem() {
+        return repoSystem;
+    }
+
     public RepositorySystemSession getSession() {
         return repoSession;
+    }
+
+    public List<RemoteRepository> getRepositories() {
+        return remoteRepos;
     }
 
     public void addRemoteRepositories(List<RemoteRepository> repos) {

@@ -24,8 +24,18 @@ import java.util.Properties;
  */
 public class PropsBuilder {
 
-    public static PropsBuilder init(String name, String value) {
-        return new PropsBuilder().set(name, value);
+    public static Properties build(String name, Object value) {
+        return build(name, value.toString());
+    }
+
+    public static Properties build(String name, String value) {
+        final Properties props = new Properties();
+        props.setProperty(name, value);
+        return props;
+    }
+
+    public static PropsBuilder newInstance() {
+        return new PropsBuilder();
     }
 
     private final Properties props = new Properties();

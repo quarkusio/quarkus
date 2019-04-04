@@ -24,9 +24,9 @@ public interface BootstrapConstants {
 
     String DESCRIPTOR_FILE_NAME = "quarkus-extension.properties";
 
-    String DESCRIPTOR_PATH = DESCRIPTOR_FILE_NAME;
-
     String META_INF = "META-INF";
+
+    String DESCRIPTOR_PATH = META_INF + '/' + DESCRIPTOR_FILE_NAME;
 
     String PROP_DEPLOYMENT_ARTIFACT = "deployment-artifact";
 }

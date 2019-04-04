@@ -60,7 +60,7 @@ final class BeanManagerHelper {
 
     static <T> Optional<T> getReferenceByName(BeanManager manager, String name, Class<T> type) {
         return Optional.of(manager.getBeans(name))
-                .map(manager::resolve)
+                .<Bean<?>> map(manager::resolve)
                 .map(bean -> getReference(manager, type, bean));
     }
 

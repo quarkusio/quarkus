@@ -55,7 +55,7 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.resteasy.deployment.ResteasyJaxrsConfig;
-import io.quarkus.resteasy.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
+import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
 import io.quarkus.smallrye.openapi.runtime.OpenApiServlet;
 import io.quarkus.smallrye.openapi.runtime.SmallRyeOpenApiTemplate;

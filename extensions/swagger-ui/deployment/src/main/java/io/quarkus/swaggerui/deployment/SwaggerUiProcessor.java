@@ -28,9 +28,9 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.index.ClassPathArtifactResolver;
 import io.quarkus.deployment.index.ResolvedArtifact;
 import io.quarkus.deployment.util.FileUtil;
-import io.quarkus.resteasy.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.swaggerui.runtime.SwaggerUiTemplate;
 import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
 

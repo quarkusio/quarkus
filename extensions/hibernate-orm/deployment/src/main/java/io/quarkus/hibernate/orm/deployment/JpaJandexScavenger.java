@@ -29,7 +29,6 @@ import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.MappedSuperclass;
 
-import org.graalvm.nativeimage.ImageInfo;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.jboss.jandex.AnnotationInstance;
@@ -63,17 +62,17 @@ final class JpaJandexScavenger {
 
     private static final DotName ENUM = DotName.createSimple(Enum.class.getName());
 
-    private final List<ParsedPersistenceXmlDescriptor> descriptors;
+    private final List<ParsedPersistenceXmlDescriptor> explicitDescriptors;
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
     private final IndexView indexView;
     private final Set<String> nonJpaModelClasses;
 
     JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            List<ParsedPersistenceXmlDescriptor> descriptors,
+            List<ParsedPersistenceXmlDescriptor> explicitDescriptors,
             IndexView indexView,
             Set<String> nonJpaModelClasses) {
         this.reflectiveClass = reflectiveClass;
-        this.descriptors = descriptors;
+        this.explicitDescriptors = explicitDescriptors;
         this.indexView = indexView;
         this.nonJpaModelClasses = nonJpaModelClasses;
     }
@@ -90,7 +89,7 @@ final class JpaJandexScavenger {
         enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, MAPPED_SUPERCLASS, unindexedClasses);
         enlistReturnType(indexView, domainObjectCollector, enumTypeCollector, unindexedClasses);
 
-        for (PersistenceUnitDescriptor pud : descriptors) {
+        for (PersistenceUnitDescriptor pud : explicitDescriptors) {
             enlistExplicitClasses(indexView, domainObjectCollector, enumTypeCollector, pud.getManagedClassNames(),
                     unindexedClasses);
         }
@@ -122,12 +121,11 @@ final class JpaJandexScavenger {
         for (String className : managedClassNames) {
             DotName dotName = DotName.createSimple(className);
             boolean isInIndex = index.getClassByName(dotName) != null;
-            if (isInIndex) {
-                addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, dotName, unindexedClasses);
-            } else {
+            if (!isInIndex) {
                 unindexedClasses.add(dotName);
-                domainObjectCollector.addEntity(className);
             }
+
+            addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, dotName, unindexedClasses);
         }
     }
 
@@ -175,7 +173,7 @@ final class JpaJandexScavenger {
             }
             addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, targetDotName,
                     unindexedClasses);
-            domainObjectCollector.addEntity(targetDotName.toString());
+            collectDomainObject(domainObjectCollector, klass);
         }
     }
 
@@ -208,7 +206,8 @@ final class JpaJandexScavenger {
         }
 
         //Capture this one (for various needs: Reflective access enablement, Hibernate enhancement, JPA Template)
-        domainObjectCollector.addEntity(className.toString());
+        collectDomainObject(domainObjectCollector, classInfo);
+
         // add superclass recursively
         addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, classInfo.superName(),
                 unindexedClasses);
@@ -216,6 +215,14 @@ final class JpaJandexScavenger {
         for (DotName interfaceDotName : classInfo.interfaceNames()) {
             addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, interfaceDotName,
                     unindexedClasses);
+        }
+    }
+
+    private static void collectDomainObject(JpaEntitiesBuildItem domainObjectCollector, ClassInfo modelClass) {
+        if (modelClass.classAnnotation(JPA_ENTITY) != null) {
+            domainObjectCollector.addEntityClass(modelClass.name().toString());
+        } else {
+            domainObjectCollector.addModelClass(modelClass.name().toString());
         }
     }
 }

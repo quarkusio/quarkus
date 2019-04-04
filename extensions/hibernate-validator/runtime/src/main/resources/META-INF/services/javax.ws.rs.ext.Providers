@@ -1,1 +1,1 @@
-io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyViolationExceptionMapper
+org.jboss.resteasy.api.validation.ResteasyViolationExceptionMapper

@@ -251,8 +251,7 @@ public class ConfigurationSetup {
         for (ConfigurationCustomConverterBuildItem converter : converters) {
             withConverterHelper(builder, converter.getType(), converter.getPriority(), converter.getConverter());
         }
-        final SmallRyeConfig src = (SmallRyeConfig) builder.addDefaultSources()
-                .addDiscoveredSources().addDiscoveredConverters().build();
+        final SmallRyeConfig src = (SmallRyeConfig) builder.build();
         SmallRyeConfigProviderResolver.instance().registerConfig(src, Thread.currentThread().getContextClassLoader());
         final Set<String> unmatched = new HashSet<>();
         ConfigDefinition.loadConfiguration(cache, src, unmatched,

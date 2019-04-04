@@ -217,7 +217,7 @@ The first approach can be implemented as follows:
 @Produces(MediaType.SERVER_SENT_EVENTS)
 @Path("{name}/streaming")
 public Publisher<String> greeting(@PathParam("name") String name) {
-    return ReactiveStreams.fromPublisher(vertx.periodicStream(2000).toPublisher())
+    return vertx.periodicStream(2000).toPublisherBuilder()
             .map(l -> String.format("Hello %s! (%s)%n", name, new Date()))
             .buildRs();
 }

@@ -23,24 +23,13 @@ import io.quarkus.arc.processor.BeanInfo;
 
 public final class EmitterBuildItem extends MultiBuildItem {
 
-    private final BeanInfo bean;
-
-    private final FieldInfo field;
-
+    /**
+     * The name of the stream the emitter is connected to.
+     */
     private final String name;
 
-    public EmitterBuildItem(BeanInfo bean, FieldInfo field, String name) {
-        this.bean = bean;
-        this.field = field;
+    public EmitterBuildItem(String name) {
         this.name = name;
-    }
-
-    public BeanInfo getBean() {
-        return bean;
-    }
-
-    public FieldInfo getField() {
-        return field;
     }
 
     public String getName() {

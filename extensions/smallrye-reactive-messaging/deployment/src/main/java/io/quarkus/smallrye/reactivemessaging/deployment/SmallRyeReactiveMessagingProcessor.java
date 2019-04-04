@@ -58,6 +58,7 @@ public class SmallRyeReactiveMessagingProcessor {
     static final DotName NAME_INCOMING = DotName.createSimple(Incoming.class.getName());
     static final DotName NAME_OUTGOING = DotName.createSimple(Outgoing.class.getName());
     static final DotName NAME_STREAM = DotName.createSimple(Stream.class.getName());
+    static final DotName NAME_EMITTER = DotName.createSimple(Emitter.class.getName());
 
     @BuildStep
     AdditionalBeanBuildItem beans() {
@@ -82,10 +83,9 @@ public class SmallRyeReactiveMessagingProcessor {
                 for (BeanInfo bean : validationContext.get(Key.BEANS)) {
                     if (bean.isClassBean()) {
                         // TODO: add support for inherited business methods
-                        for (MethodInfo method : bean.getTarget()
-                                .get()
-                                .asClass()
-                                .methods()) {
+                        ClassInfo ci = bean.getTarget()
+                                .orElseThrow(() -> new IllegalStateException("Target expected")).asClass();
+                        for (MethodInfo method : ci.methods()) {
                             if (annotationStore.hasAnnotation(method, NAME_INCOMING)
                                     || annotationStore.hasAnnotation(method, NAME_OUTGOING)) {
                                 // TODO: validate method params and return type?
@@ -94,13 +94,12 @@ public class SmallRyeReactiveMessagingProcessor {
                             }
                         }
 
-                        for (FieldInfo field : bean.getTarget().get().asClass().fields()) {
+                        for (FieldInfo field : ci.fields()) {
                             if (annotationStore.hasAnnotation(field, NAME_STREAM)) {
-                                if (field.type().name().equals(
-                                        DotName.createSimple(Emitter.class.getName()))) {
+                                if (field.type().name().equals(NAME_EMITTER)) {
                                     String name = annotationStore.getAnnotation(field, NAME_STREAM).value().asString();
                                     LOGGER.debugf("Emitter field '%s'  detected, stream name: '%s'", field.name(), name);
-                                    emitterFields.produce(new EmitterBuildItem(bean, field, name));
+                                    emitterFields.produce(new EmitterBuildItem(name));
                                 }
                             }
                         }

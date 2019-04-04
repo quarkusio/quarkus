@@ -3,7 +3,6 @@ package io.quarkus.smallrye.reactivemessaging;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;

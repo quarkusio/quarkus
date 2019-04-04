@@ -69,8 +69,19 @@ public class GreetingService {
 <1> If not set, the address is the fully qualified name of the bean, for instance, in this snippet it's `org.acme.vertx.GreetingService`.
 <2> The method parameter is the message body. If the method returns _something_ it's the message response.
 
-// TODO Revisit this once the blocking PR is integrated - https://github.com/quarkusio/quarkus/pull/1646
-IMPORTANT: The code consuming the event must be _non-blocking_, as it's called on the Vert.x event loop.
+[IMPORTANT]
+====
+By default, the code consuming the event must be _non-blocking_, as it's called on the Vert.x event loop.
+If your processing is blocking, use the `blocking` arttribute:
+
+[source, java]
+----
+@ConsumeEvent(value = "blocking-consumer", blocking = true)
+void consumeBlocking(String message) {
+    // Something blocking
+}
+----
+====
 
 === Configuring the address
 

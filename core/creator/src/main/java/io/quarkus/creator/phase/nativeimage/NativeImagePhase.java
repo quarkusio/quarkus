@@ -527,8 +527,8 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             idPB.redirectOutput(new File("/dev/null"));
 
             process = idPB.start();
-            try(InputStream inputStream = process.getInputStream()) {
-                try( BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))){
+            try (InputStream inputStream = process.getInputStream()) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
                     while ((line = reader.readLine()) != null) {
                         responseBuilder.append(line);
                     }
@@ -548,14 +548,16 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
     static void safeWaitFor(Process process) {
         boolean intr = false;
         try {
-            for (;;) try {
-                process.waitFor();
-                return;
-            } catch (InterruptedException ex) {
-                intr = true;
-            }
+            for (;;)
+                try {
+                    process.waitFor();
+                    return;
+                } catch (InterruptedException ex) {
+                    intr = true;
+                }
         } finally {
-            if (intr) Thread.currentThread().interrupt();
+            if (intr)
+                Thread.currentThread().interrupt();
         }
     }
 

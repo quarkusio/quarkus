@@ -692,11 +692,11 @@ public class BeanDeployment {
                 boolean hasQualifier = true;
                 for (AnnotationInstance qualifier : qualifiers) {
                     if (!Beans.hasQualifier(getQualifier(qualifier.name()), qualifier,
-                            disposer.getDisposedParameteterQualifiers())) {
+                            disposer.getDisposedParameterQualifiers())) {
                         hasQualifier = false;
                     }
                 }
-                if (hasQualifier && beanResolver.matches(beanType, disposer.getDiposedParameterType())) {
+                if (hasQualifier && beanResolver.matches(beanType, disposer.getDisposedParameterType())) {
                     found.add(disposer);
                 }
             }

@@ -74,7 +74,7 @@ public final class AmazonLambdaProcessor {
             BuildProducer<ServletBuildItem> servletProducer,
             BeanContainerBuildItem beanContainerBuildItem,
             AmazonLambdaTemplate template,
-            RecorderContext context) {
+            RecorderContext context) throws IOException {
 
         for (AmazonLambdaBuildItem lambda : lambdas) {
             servletProducer.produce(ServletBuildItem.builder(lambda.getClassName(), AmazonLambdaServlet.class.getName())
@@ -85,7 +85,7 @@ public final class AmazonLambdaProcessor {
                     .addMapping("/__lambda")
                     .build());
         }
-        final File bootstrap = new File("target/bootstrap");
+        final File bootstrap = new File("target/bundle/bootstrap");
         bootstrap.getParentFile().mkdirs();
         try (final InputStream stream = getClass().getResourceAsStream("/bootstrap");
                 final FileOutputStream outputStream = new FileOutputStream(bootstrap)) {
@@ -94,8 +94,6 @@ public final class AmazonLambdaProcessor {
             while ((read = stream.read(bytes)) != -1) {
                 outputStream.write(bytes, 0, read);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 }

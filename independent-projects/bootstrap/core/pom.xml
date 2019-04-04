@@ -19,7 +19,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>quarkus-bootstrap-parent</artifactId>
-        <groupId>io.quarkus.bootstrap</groupId>
+        <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>

@@ -22,12 +22,14 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.concurrent.locks.LockSupport;
+import java.util.logging.Handler;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.runner.RuntimeRunner;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.Timing;
+import io.quarkus.runtime.logging.InitialConfigurator;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
@@ -43,12 +45,11 @@ public class DevModeMain {
     private static File wiringDir;
     private static File cacheDir;
 
-    private static Closeable closeable;
+    private static Closeable runner;
     static volatile Throwable deploymentProblem;
     static RuntimeUpdatesProcessor runtimeUpdatesProcessor;
 
     public static void main(String... args) throws Exception {
-
         Timing.staticInitStarted();
 
         //the path that contains the compiled classes
@@ -67,9 +68,9 @@ public class DevModeMain {
             @Override
             public void run() {
                 synchronized (DevModeMain.class) {
-                    if (closeable != null) {
+                    if (runner != null) {
                         try {
-                            closeable.close();
+                            runner.close();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -105,7 +106,7 @@ public class DevModeMain {
                 RuntimeRunner runner = builder
                         .build();
                 runner.run();
-                closeable = runner;
+                DevModeMain.runner = runner;
                 deploymentProblem = null;
             } finally {
                 Thread.currentThread().setContextClassLoader(old);
@@ -113,15 +114,20 @@ public class DevModeMain {
         } catch (Throwable t) {
             deploymentProblem = t;
             log.error("Failed to start quarkus", t);
+
+            // if the log handler is not activated, activate it with a default configuration to flush the messages
+            if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
+                InitialConfigurator.DELAYED_HANDLER.setHandlers(new Handler[] { InitialConfigurator.createDefaultHandler() });
+            }
         }
     }
 
     public static synchronized void restartApp() {
-        if (closeable != null) {
+        if (runner != null) {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(runtimeCl);
             try {
-                closeable.close();
+                runner.close();
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
@@ -129,7 +135,7 @@ public class DevModeMain {
             }
         }
         SmallRyeConfigProviderResolver.instance().releaseConfig(SmallRyeConfigProviderResolver.instance().getConfig());
-        closeable = null;
+        DevModeMain.runner = null;
         Timing.restart();
         doStart();
     }

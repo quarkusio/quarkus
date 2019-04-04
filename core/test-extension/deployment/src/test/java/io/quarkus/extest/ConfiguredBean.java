@@ -1,20 +1,18 @@
 package io.quarkus.extest;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
-import javax.inject.Inject;
 
 import io.quarkus.extest.runtime.IConfigConsumer;
 import io.quarkus.extest.runtime.TestAnnotation;
-import io.quarkus.extest.runtime.TestBuildAndRunTimeConfig;
-import io.quarkus.extest.runtime.TestRunTimeConfig;
+import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
+import io.quarkus.extest.runtime.config.TestRunTimeConfig;
+import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 
 /**
  * A sample bean
  */
 @TestAnnotation
-@ApplicationScoped
 public class ConfiguredBean implements IConfigConsumer {
     TestRunTimeConfig runTimeConfig;
     TestBuildAndRunTimeConfig buildTimeConfig;
@@ -42,6 +40,10 @@ public class ConfiguredBean implements IConfigConsumer {
      */
     void onStart(@Observes StartupEvent event) {
         System.out.printf("onStart, event=%s\n", event);
+    }
+
+    void onStop(@Observes ShutdownEvent event) {
+        System.out.printf("onStop, event=%s\n", event);
     }
 
     public TestRunTimeConfig getRunTimeConfig() {

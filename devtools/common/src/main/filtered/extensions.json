@@ -393,5 +393,15 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-vertx"
+  },
+  {
+    "name": "Flyway",
+    "labels": [
+      "flyway",
+      "database",
+      "data"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-flyway"
   }
 ]

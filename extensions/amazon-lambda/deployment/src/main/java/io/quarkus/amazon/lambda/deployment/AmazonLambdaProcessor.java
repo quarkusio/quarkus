@@ -1,5 +1,9 @@
 package io.quarkus.amazon.lambda.deployment;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +26,7 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.undertow.deployment.ServletBuildItem;
 
+@SuppressWarnings("unchecked")
 public final class AmazonLambdaProcessor {
     private static final DotName REQUEST_HANDLER = DotName.createSimple(RequestHandler.class.getName());
 
@@ -34,8 +39,7 @@ public final class AmazonLambdaProcessor {
             final DotName name = info.name();
 
             final String lambda = name.toString();
-            final String mapping = name.local();
-            ret.add(new AmazonLambdaBuildItem(lambda, mapping));
+            ret.add(new AmazonLambdaBuildItem(lambda));
 
             ClassInfo current = info;
             boolean done = false;
@@ -72,14 +76,26 @@ public final class AmazonLambdaProcessor {
             AmazonLambdaTemplate template,
             RecorderContext context) {
 
-        for (AmazonLambdaBuildItem info : lambdas) {
-            servletProducer.produce(ServletBuildItem.builder(info.getClassName(), AmazonLambdaServlet.class.getName())
+        for (AmazonLambdaBuildItem lambda : lambdas) {
+            servletProducer.produce(ServletBuildItem.builder(lambda.getClassName(), AmazonLambdaServlet.class.getName())
                     .setLoadOnStartup(1)
                     .setInstanceFactory(template.lambdaServletInstanceFactory(
-                            (Class<? extends RequestHandler>) context.classProxy(info.getClassName()),
+                            (Class<? extends RequestHandler>) context.classProxy(lambda.getClassName()),
                             beanContainerBuildItem.getValue()))
-                    .addMapping("/" + info.getPath())
+                    .addMapping("/__lambda")
                     .build());
+        }
+        final File bootstrap = new File("target/bootstrap");
+        bootstrap.getParentFile().mkdirs();
+        try (final InputStream stream = getClass().getResourceAsStream("/bootstrap");
+                final FileOutputStream outputStream = new FileOutputStream(bootstrap)) {
+            byte[] bytes = new byte[4096];
+            int read;
+            while ((read = stream.read(bytes)) != -1) {
+                outputStream.write(bytes, 0, read);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

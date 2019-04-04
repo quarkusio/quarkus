@@ -89,7 +89,7 @@ public class UndertowDeploymentTemplate {
             currentRoot.handleRequest(exchange);
         }
     };
-    private static final String RESOURCES_PROP = "quarkus.undertow.resources";
+    private static final String RESOURCES_PROP = "quarkus-internal.undertow.resources";
 
     private static volatile Undertow undertow;
     private static final List<HandlerWrapper> hotDeploymentWrappers = new CopyOnWriteArrayList<>();

@@ -16,13 +16,14 @@
 
 package io.quarkus.vertx.tests;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.*;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -30,33 +31,49 @@ import io.vertx.core.json.JsonObject;
 /**
  * @author Thomas Ssegismont
  */
-@Path("/body-writers")
+@Path("/json-bodies")
 public class JsonTestResource {
 
     @GET
     @Path("/json/sync")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     public JsonObject jsonSync() {
         return new JsonObject().put("Hello", "World");
     }
 
+    @POST
+    @Path("/json/sync")
+    @Consumes(APPLICATION_JSON)
+    @Produces(TEXT_PLAIN)
+    public String jsonSync(JsonObject jsonObject) {
+        return "Hello " + jsonObject.getString("Hello");
+    }
+
     @GET
     @Path("/array/sync")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     public JsonArray arraySync() {
         return new JsonArray().add("Hello").add("World");
     }
 
+    @POST
+    @Path("/array/sync")
+    @Consumes(APPLICATION_JSON)
+    @Produces(TEXT_PLAIN)
+    public String arraySync(JsonArray jsonArray) {
+        return jsonArray.stream().map(String.class::cast).collect(Collectors.joining(" "));
+    }
+
     @GET
     @Path("/json/async")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     public CompletionStage<JsonObject> jsonAsync() {
         return CompletableFuture.completedFuture(new JsonObject().put("Hello", "World"));
     }
 
     @GET
     @Path("/array/async")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     public CompletionStage<JsonArray> arrayAsync() {
         return CompletableFuture.completedFuture(new JsonArray().add("Hello").add("World"));
     }

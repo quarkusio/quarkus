@@ -28,9 +28,9 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.index.ClassPathArtifactResolver;
 import io.quarkus.deployment.index.ResolvedArtifact;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.resteasy.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.smallrye.openapi.deployment.SmallRyeOpenApiProcessor;
 import io.quarkus.swaggerui.runtime.SwaggerUiTemplate;
 import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
 
@@ -46,11 +46,11 @@ public class SwaggerUiProcessor {
     private static final String TEMP_DIR_PREFIX = "quarkus-swagger-ui_" + System.nanoTime();
 
     /**
-     * The configuration for swagger-ui.
+     * The configuration for Swagger UI.
      */
-    private SwaggerUiConfig swaggerUiConfig;
+    SwaggerUiConfig swaggerUiConfig;
 
-    SmallRyeOpenApiProcessor.SmallRyeOpenApiConfig openapi;
+    SmallRyeOpenApiConfig openapi;
 
     private static String cachedOpenAPIPath;
     private static String cachedDirectory;

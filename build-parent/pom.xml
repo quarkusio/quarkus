@@ -72,7 +72,7 @@
             <!-- Quarkus core dependencies -->
 
             <dependency>
-                <groupId>io.quarkus.bootstrap</groupId>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -352,6 +352,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-openapi-common-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-openapi</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -562,6 +567,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-swagger-ui-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-elytron-security</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -613,6 +623,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kubernetes-spi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-flyway</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-flyway-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -689,7 +709,7 @@
                     <version>${project.version}</version>
                 </plugin>
                 <plugin>
-                    <groupId>io.quarkus.bootstrap</groupId>
+                    <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
                     <version>${project.version}</version>
                     <executions>
@@ -699,7 +719,8 @@
                             </goals>
                             <phase>compile</phase>
                             <configuration>
-                                <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}</deployment>
+                                <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}
+                                </deployment>
                             </configuration>
                         </execution>
                     </executions>
@@ -719,8 +740,10 @@
                                     <bannedDependencies>
                                         <excludes>
                                             <!-- Use javax.annotation-api -->
-                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec</exclude>
-                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec</exclude>
+                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec
+                                            </exclude>
+                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec
+                                            </exclude>
                                             <!-- use our jboss-logmanager -->
                                             <exclude>org.jboss.logging:jboss-logmanager</exclude>
                                             <!-- We don't want all the API's in one jar-->

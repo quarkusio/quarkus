@@ -161,8 +161,12 @@ public class LocalProject {
         return dir;
     }
 
+    public Path getOutputDir() {
+        return dir.resolve("target");
+    }
+
     public Path getClassesDir() {
-        return dir.resolve("target").resolve("classes");
+        return getOutputDir().resolve("classes");
     }
 
     public Model getRawModel() {

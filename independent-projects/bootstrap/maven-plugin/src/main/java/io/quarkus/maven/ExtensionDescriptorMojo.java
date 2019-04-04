@@ -33,18 +33,8 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.collection.CollectRequest;
-import org.eclipse.aether.collection.DependencyCollectionException;
-import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.ArtifactDescriptorException;
-import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
-import org.eclipse.aether.resolution.ArtifactDescriptorResult;
-
 import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.resolver.maven.DependencyGraphParser;
 
 /**
  *
@@ -102,69 +92,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             }
         } catch(IOException e) {
             throw new MojoExecutionException("Failed to persist extension descriptor " + output.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME), e);
-        }
-
-        persistDependencyGraph(output);
-    }
-
-    private void persistDependencyGraph(Path output) throws MojoExecutionException {
-
-        final Artifact artifact = DependencyGraphParser.toArtifact(deployment);
-
-        final ArtifactDescriptorRequest descrReq = new ArtifactDescriptorRequest();
-        descrReq.setArtifact(artifact);
-        final ArtifactDescriptorResult artDescr;
-        try {
-            artDescr = repoSystem.readArtifactDescriptor(repoSession, descrReq);
-        } catch (ArtifactDescriptorException e) {
-            throw new MojoExecutionException("Failed to read descriptor of " + artifact, e);
-        }
-
-        final CollectRequest collectRequest = new CollectRequest();
-        collectRequest.setRoot(new Dependency(artifact, "runtime"));
-        collectRequest.setRepositories(artDescr.getRepositories());
-        final DependencyNode root;
-        try {
-            root = repoSystem.collectDependencies(repoSession, collectRequest).getRoot();
-        } catch (DependencyCollectionException e) {
-            throw new MojoExecutionException("Failed to collect dependencies for " + artifact, e);
-        }
-
-        try(BufferedWriter writer = Files.newBufferedWriter(output.resolve(BootstrapConstants.DEPLOYMENT_DEPENDENCY_GRAPH))) {
-            persistNode(root, writer, 0);
-        } catch (IOException e) {
-            throw new MojoExecutionException("Failed to persist " + BootstrapConstants.DEPLOYMENT_DEPENDENCY_GRAPH, e);
-        }
-    }
-
-    private static void persistNode(DependencyNode node, BufferedWriter writer, int depth) throws IOException {
-        for(int i = 0; i < depth; ++i) {
-            writer.append(' ');
-        }
-        final Artifact artifact= node.getArtifact();
-        writer.write(artifact.getGroupId());
-        writer.write(':');
-        writer.write(artifact.getArtifactId());
-        writer.write(':');
-        final String classifier = artifact.getClassifier();
-        if(classifier != null && !classifier.isEmpty()) {
-            writer.write(classifier);
-            writer.write(':');
-        }
-        writer.write(artifact.getExtension());
-        writer.write(':');
-        writer.write(artifact.getVersion());
-        writer.write('(');
-        writer.write(node.getDependency().getScope());
-        writer.write(')');
-        writer.newLine();
-        final List<DependencyNode> children = node.getChildren();
-        if(children.isEmpty()) {
-            return;
-        }
-        ++depth;
-        for(DependencyNode child : children) {
-            persistNode(child, writer, depth);
         }
     }
 }

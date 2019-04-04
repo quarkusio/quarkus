@@ -242,7 +242,7 @@ And finally, run it with:
 docker run -i --rm -p 8080:8080 quarkus-quickstart/quickstart
 ----
 
-NOTE: Interested by tiny Docker images, check the {quarkus-tree-url}/docker/distroless[distroless] version.
+NOTE: Interested by tiny Docker images, check the {quarkus-images-url}/graalvm-{graalvm-version}/distroless[distroless] version.
 
 == What's next?
 

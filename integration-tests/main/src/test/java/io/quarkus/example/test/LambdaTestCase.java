@@ -29,7 +29,7 @@ public class LambdaTestCase {
     @Test
     public void testHelloLambda() {
         RestAssured.with().body("{\"firstName\":\"Stuart\",\"lastName\":\"Douglas\"}")
-                .when().post("/HelloLambda")
+                .when().post("/__lambda")
                 .then()
                 .body(is("\"Hello Stuart Douglas.\""));
     }

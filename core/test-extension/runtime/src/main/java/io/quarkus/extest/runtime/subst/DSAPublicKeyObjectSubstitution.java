@@ -5,6 +5,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.DSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.logging.Logger;
 
 import io.quarkus.runtime.ObjectSubstitution;
 
@@ -13,9 +14,11 @@ import io.quarkus.runtime.ObjectSubstitution;
  * The DSA key provider is the SUN provider enabled by default in Graal
  */
 public class DSAPublicKeyObjectSubstitution implements ObjectSubstitution<DSAPublicKey, KeyProxy> {
+    private static final Logger log = Logger.getLogger("DSAPublicKeyObjectSubstitution");
+
     @Override
     public KeyProxy serialize(DSAPublicKey obj) {
-        System.out.printf("DSAPublicKeyObjectSubstitution.serialize\n");
+        log.info("DSAPublicKeyObjectSubstitution.serialize");
         byte[] encoded = obj.getEncoded();
         KeyProxy proxy = new KeyProxy();
         proxy.setContent(encoded);
@@ -24,7 +27,7 @@ public class DSAPublicKeyObjectSubstitution implements ObjectSubstitution<DSAPub
 
     @Override
     public DSAPublicKey deserialize(KeyProxy obj) {
-        System.out.printf("DSAPublicKeyObjectSubstitution.deserialize\n");
+        log.info("DSAPublicKeyObjectSubstitution.deserialize");
         byte[] encoded = obj.getContent();
         X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(encoded);
         DSAPublicKey dsaPublicKey = null;

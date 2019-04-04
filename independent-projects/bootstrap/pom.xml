@@ -22,7 +22,7 @@
         <artifactId>jboss-parent</artifactId>
         <version>31</version>
     </parent>
-    <groupId>io.quarkus.bootstrap</groupId>
+    <groupId>io.quarkus</groupId>
     <artifactId>quarkus-bootstrap-parent</artifactId>
     <name>Quarkus - Bootstrap - Parent</name>
     <packaging>pom</packaging>

@@ -57,6 +57,10 @@
       <artifactId>quarkus-arc</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-swagger-ui</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
     </dependency>
@@ -65,7 +69,7 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>io.quarkus.bootstrap</groupId>
+        <groupId>io.quarkus</groupId>
         <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
       </plugin>
       <plugin>

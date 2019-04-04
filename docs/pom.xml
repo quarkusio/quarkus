@@ -87,6 +87,7 @@
                         <quarkus-tree-url>${quarkus-base-url}/tree/master</quarkus-tree-url>
                         <!-- Quarkus URL to issues -->
                         <quarkus-issues-url>${quarkus-base-url}/issues</quarkus-issues-url>
+                        <quarkus-images-url>https://github.com/quarkusio/quarkus-images/tree</quarkus-images-url>
 
                         <!-- === Quickstart settings === -->
                         <!-- Quickstart repository base URL -->

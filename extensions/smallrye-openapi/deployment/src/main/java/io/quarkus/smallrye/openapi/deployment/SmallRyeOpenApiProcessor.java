@@ -55,8 +55,7 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.resteasy.deployment.ResteasyJaxrsConfig;
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.resteasy.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
 import io.quarkus.smallrye.openapi.runtime.OpenApiServlet;
 import io.quarkus.smallrye.openapi.runtime.SmallRyeOpenApiTemplate;
@@ -92,15 +91,6 @@ public class SmallRyeOpenApiProcessor {
     private static final String OPENAPI_SCHEMA_IMPLEMENTATION = "implementation";
 
     SmallRyeOpenApiConfig openapi;
-
-    @ConfigRoot(name = "smallrye-openapi")
-    public static final class SmallRyeOpenApiConfig {
-        /**
-         * The path at which to register the OpenAPI Servlet.
-         */
-        @ConfigItem(defaultValue = "/openapi")
-        public String path;
-    }
 
     List<HotDeploymentConfigFileBuildItem> configFiles() {
         return Stream.of(META_INF_OPENAPI_YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YAML,

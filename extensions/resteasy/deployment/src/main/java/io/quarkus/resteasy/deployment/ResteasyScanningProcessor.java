@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import javax.servlet.DispatcherType;
@@ -48,6 +49,10 @@ import org.jboss.resteasy.microprofile.config.ServletConfigSource;
 import org.jboss.resteasy.microprofile.config.ServletContextConfigSource;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -59,6 +64,7 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ProxyUnwrapperBuildItem;
@@ -187,6 +193,7 @@ public class ResteasyScanningProcessor {
             BuildProducer<FilterBuildItem> filterProducer,
             BuildProducer<ServletBuildItem> servletProducer,
             BuildProducer<ServletInitParamBuildItem> servletContextParams,
+            BuildProducer<BytecodeTransformerBuildItem> transformers,
             CombinedIndexBuildItem combinedIndexBuildItem) throws Exception {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY));
 
@@ -284,6 +291,7 @@ public class ResteasyScanningProcessor {
 
             Set<String> resources = new HashSet<>();
             Set<DotName> pathInterfaces = new HashSet<>();
+            Set<ClassInfo> withoutDefaultCtor = new HashSet<>();
             for (AnnotationInstance annotation : paths) {
                 if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                     ClassInfo clazz = annotation.target().asClass();
@@ -291,6 +299,10 @@ public class ResteasyScanningProcessor {
                         String className = clazz.name().toString();
                         resources.add(className);
                         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
+
+                        if (!clazz.hasNoArgsConstructor()) {
+                            withoutDefaultCtor.add(clazz);
+                        }
                     } else {
                         pathInterfaces.add(clazz.name());
                     }
@@ -315,6 +327,53 @@ public class ResteasyScanningProcessor {
             servletContextParams.produce(new ServletInitParamBuildItem("resteasy.servlet.mapping.prefix", path));
             if (appClass != null) {
                 servletContextParams.produce(new ServletInitParamBuildItem(JAX_RS_APPLICATION_PARAMETER_NAME, appClass));
+            }
+
+            // generate default constructors for suitable concrete @Path classes that don't have them
+            // see https://issues.jboss.org/browse/RESTEASY-2183
+            for (ClassInfo classInfo : withoutDefaultCtor) {
+                // keep it super simple - only generate default constructor is the object is a direct descendant of Object
+                if (!(classInfo.superClassType() != null && classInfo.superClassType().name().equals(DotNames.OBJECT))) {
+                    return;
+                }
+
+                boolean hasNonJaxRSAnnotations = false;
+                for (AnnotationInstance instance : classInfo.classAnnotations()) {
+                    if (!instance.name().toString().startsWith("javax.ws.rs")) {
+                        hasNonJaxRSAnnotations = true;
+                        break;
+                    }
+                }
+
+                // again keep it very very simple, if there are any non JAX-RS annotations, we don't generate the constructor
+                if (hasNonJaxRSAnnotations) {
+                    continue;
+                }
+
+                final String name = classInfo.name().toString();
+                transformers
+                        .produce(new BytecodeTransformerBuildItem(name, new BiFunction<String, ClassVisitor, ClassVisitor>() {
+                            @Override
+                            public ClassVisitor apply(String className, ClassVisitor classVisitor) {
+                                ClassVisitor cv = new ClassVisitor(Opcodes.ASM6, classVisitor) {
+
+                                    @Override
+                                    public void visit(int version, int access, String name, String signature, String superName,
+                                            String[] interfaces) {
+                                        super.visit(version, access, name, signature, superName, interfaces);
+                                        MethodVisitor ctor = visitMethod(Modifier.PUBLIC, "<init>", "()V", null,
+                                                null);
+                                        ctor.visitCode();
+                                        ctor.visitVarInsn(Opcodes.ALOAD, 0);
+                                        ctor.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+                                        ctor.visitInsn(Opcodes.RETURN);
+                                        ctor.visitMaxs(1, 1);
+                                        ctor.visitEnd();
+                                    }
+                                };
+                                return cv;
+                            }
+                        }));
             }
         } else {
             // no @Application class and no detected @Path resources, bail out

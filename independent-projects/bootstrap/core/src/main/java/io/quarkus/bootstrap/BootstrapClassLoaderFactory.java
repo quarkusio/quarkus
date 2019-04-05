@@ -44,6 +44,7 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
  */
 public class BootstrapClassLoaderFactory {
 
+    private static final String QUARKUS = "quarkus";
     private static final String BOOTSTRAP = "bootstrap";
     private static final String DEPLOYMENT_CP = "deployment.cp";
 
@@ -80,7 +81,7 @@ public class BootstrapClassLoaderFactory {
     }
 
     private static Path resolveCachedCpPath(LocalProject project) {
-        return project.getOutputDir().resolve(BOOTSTRAP).resolve(DEPLOYMENT_CP);
+        return project.getOutputDir().resolve(QUARKUS).resolve(BOOTSTRAP).resolve(DEPLOYMENT_CP);
     }
 
     private static void persistCp(LocalProject project, URL[] urls, Path p) {

@@ -102,6 +102,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
@@ -151,8 +152,10 @@ public class UndertowBuildStep {
             ShutdownContextBuildItem shutdown,
             Consumer<UndertowBuildItem> undertowProducer,
             LaunchModeBuildItem launchMode,
+            ExecutorBuildItem executorBuildItem,
             HttpConfig config) throws Exception {
-        RuntimeValue<Undertow> ut = template.startUndertow(shutdown, servletDeploymentManagerBuildItem.getDeploymentManager(),
+        RuntimeValue<Undertow> ut = template.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
+                servletDeploymentManagerBuildItem.getDeploymentManager(),
                 config, wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()),
                 launchMode.getLaunchMode());
         undertowProducer.accept(new UndertowBuildItem(ut));

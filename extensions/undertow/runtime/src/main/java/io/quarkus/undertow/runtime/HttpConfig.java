@@ -60,13 +60,6 @@ public class HttpConfig {
     public String host;
 
     /**
-     * The number of worker threads used for blocking tasks, this will be automatically set to a reasonable value
-     * based on the number of CPU core if it is not provided
-     */
-    @ConfigItem
-    public OptionalInt workerThreads;
-
-    /**
      * The number if IO threads used to perform IO. This will be automatically set to a reasonable value based on
      * the number of CPU cores if it is not provided
      */

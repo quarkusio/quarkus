@@ -152,13 +152,13 @@ In a separate terminal, we start the timing application that we are testing, pri
 
 [source, shell]
 --
-$ date +"%H:%M:%S.%s" &&  ./target/quarkus-timing-runner
+$ date +"%T.%3N" &&  ./target/quarkus-timing-runner
 
-16:17:01.1551889021
-16:17:01.626
-2019-03-06 16:17:01,626 INFO  [io.quarkus] (main) Quarkus 0.11.0 started in 0.035s. Listening on: http://127.0.0.1:8080
-2019-03-06 16:17:01,626 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb]
-16:17:01.637
+10:57:32.508
+10:57:32.512
+2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Quarkus 0.11.0 started in 0.002s. Listening on: http://127.0.0.1:8080
+2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb]
+10:57:32.537
 --
 
 The difference between the final timestamp and the first timestamp is the total startup time for the application to serve the first request.

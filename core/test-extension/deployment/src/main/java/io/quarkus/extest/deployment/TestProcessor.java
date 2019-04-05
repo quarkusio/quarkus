@@ -153,11 +153,12 @@ public final class TestProcessor {
      * @param template - runtime template
      * @param shutdownContextBuildItem - ShutdownContext information
      * @param serviceBuildItem - previously created RuntimeXmlConfigService container
+     * @return ServiceStartBuildItem - build item indicating the RuntimeXmlConfigService startuup
      * @throws IOException - on failure
      */
     @BuildStep
     @Record(RUNTIME_INIT)
-    void startRuntimeService(TestTemplate template, ShutdownContextBuildItem shutdownContextBuildItem,
+    ServiceStartBuildItem startRuntimeService(TestTemplate template, ShutdownContextBuildItem shutdownContextBuildItem,
             RuntimeServiceBuildItem serviceBuildItem) throws IOException {
         if (serviceBuildItem != null) {
             log.info("Registering service start");
@@ -165,6 +166,7 @@ public final class TestProcessor {
         } else {
             log.info("No RuntimeServiceBuildItem seen, check config.xml");
         }
+        return new ServiceStartBuildItem("RuntimeXmlConfigService");
     }
 
     /**

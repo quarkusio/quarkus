@@ -146,7 +146,7 @@
         <maven-invoker.version>3.0.1</maven-invoker.version>
         <awaitility.version>3.1.6</awaitility.version>
         <jprocesses.version>1.6.5</jprocesses.version>
-        <jboss-logmanager.version>1.0.2</jboss-logmanager.version>
+        <jboss-logmanager.version>1.0.3</jboss-logmanager.version>
         <jetty.version>9.4.15.v20190215</jetty.version>
         <flyway.version>5.2.4</flyway.version>
         <yasson.version>1.0.3</yasson.version>

@@ -244,7 +244,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                                             throws IOException {
                                         final String relativePath = root.relativize(dir).toString();
                                         if (!relativePath.isEmpty()) {
-                                            addDir(runnerZipFs, dir, relativePath);
+                                            addDir(runnerZipFs, relativePath);
                                         }
                                         return FileVisitResult.CONTINUE;
                                     }
@@ -255,6 +255,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                                         final String relativePath = root.relativize(file).toString();
                                         if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
                                             services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(read(file));
+                                            return FileVisitResult.CONTINUE;
                                         } else if (!IGNORED_ENTRIES.contains(relativePath)) {
                                             duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>()).add(appDep);
                                             if (!seen.containsKey(relativePath)) {
@@ -300,7 +301,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                     if (Files.isDirectory(path)) {
                         if (!seen.containsKey(relativePath + "/") && !relativePath.isEmpty()) {
                             seen.put(relativePath + "/", "Current Application");
-                            addDir(runnerZipFs, path, relativePath);
+                            addDir(runnerZipFs, relativePath);
                         }
                         return;
                     }
@@ -319,10 +320,10 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             }
         });
 
-        copyFiles(augmentOutcome.getAppClassesDir(), runnerZipFs);
+        copyFiles(augmentOutcome.getAppClassesDir(), runnerZipFs, services);
         if (Files.exists(augmentOutcome.getConfigDir()))
-            copyFiles(augmentOutcome.getConfigDir(), runnerZipFs);
-        copyFiles(augmentOutcome.getTransformedClassesDir(), runnerZipFs);
+            copyFiles(augmentOutcome.getConfigDir(), runnerZipFs, services);
+        copyFiles(augmentOutcome.getTransformedClassesDir(), runnerZipFs, services);
 
         generateManifest(runnerZipFs, classPath.toString());
 
@@ -371,32 +372,59 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         }
     }
 
-    private void copyFiles(Path dir, FileSystem fs) throws IOException {
-        Files.walk(dir).forEach(new Consumer<Path>() {
-            @Override
-            public void accept(Path path) {
-                final String relativePath = dir.relativize(path).toString();
-                if (relativePath.isEmpty()) {
-                    return;
-                }
-                try {
-                    if (Files.isDirectory(path)) {
-                        addDir(fs, path, relativePath);
-                    } else {
-                        Files.copy(path, fs.getPath(relativePath), StandardCopyOption.REPLACE_EXISTING);
+    /**
+     * Copy files from {@code dir} to {@code fs}, filtering out service providers into the given map.
+     *
+     * @param dir the source directory
+     * @param fs the destination filesystem
+     * @param services the services map
+     * @throws IOException if an error occurs
+     */
+    private void copyFiles(Path dir, FileSystem fs, Map<String, List<byte[]>> services) throws IOException {
+        try {
+            Files.walk(dir).forEach(new Consumer<Path>() {
+                @Override
+                public void accept(Path path) {
+                    final Path file = dir.relativize(path);
+                    final String relativePath = file.toString();
+                    if (relativePath.isEmpty()) {
+                        return;
                     }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    try {
+                        if (Files.isDirectory(path)) {
+                            addDir(fs, relativePath);
+                        } else {
+                            if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
+                                final byte[] content;
+                                try {
+                                    content = Files.readAllBytes(path);
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                                services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(content);
+                            } else {
+                                Files.copy(path, fs.getPath(relativePath), StandardCopyOption.REPLACE_EXISTING);
+                            }
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
+            });
+        } catch (RuntimeException re) {
+            final Throwable cause = re.getCause();
+            if (cause instanceof IOException) {
+                throw (IOException) cause;
             }
-        });
+            throw re;
+        }
     }
 
-    private void addDir(FileSystem fs, Path dir, final String relativePath)
+    private void addDir(FileSystem fs, final String relativePath)
             throws IOException, FileAlreadyExistsException {
         final Path targetDir = fs.getPath(relativePath);
         try {
-            Files.copy(dir, targetDir);
+            Files.createDirectory(targetDir);
         } catch (FileAlreadyExistsException e) {
             if (!Files.isDirectory(targetDir)) {
                 throw e;

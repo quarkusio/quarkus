@@ -39,6 +39,7 @@ import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.HashUtil;
@@ -118,7 +119,7 @@ class VertxWebProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void build(VertxWebTemplate template, BeanContainerBuildItem beanContainer,
+    ServiceStartBuildItem build(VertxWebTemplate template, BeanContainerBuildItem beanContainer,
             List<RouteHandlerBuildItem> routeHandlerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass, AnnotationProxyBuildItem annotationProxy,
             LaunchModeBuildItem launchMode,
@@ -144,6 +145,7 @@ class VertxWebProcessor {
         template.configureRouter(vertx.getVertx(), beanContainer.getValue(), routeConfigs, vertxHttpConfiguration,
                 launchMode.getLaunchMode(),
                 shutdown);
+        return new ServiceStartBuildItem("vertx-web");
     }
 
     @BuildStep

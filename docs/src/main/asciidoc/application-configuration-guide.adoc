@@ -186,6 +186,14 @@ You can override these runtime properties with the following mechanisms (in decr
 
 NOTE: Environment variables names are following the conversion rules of link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[Eclipse MicroProfile]
 
+=== Custom configuration sources
+
+You can also introduce custom configuration sources in the standard MicroProfile Config manner.  To
+do this, you must provide a class which implements either `org.eclipse.microprofile.config.spi.ConfigSource`
+or `org.eclipse.microprofile.config.spi.ConfigSourceProvider`.  Create a
+https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html[service file] for the
+class and it will be detected and installed at application startup.
+
 == More info on how to configure
 
 {project-name} relies on Eclipse MicroProfile and inherit its features.

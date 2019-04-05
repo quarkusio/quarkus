@@ -37,7 +37,9 @@ import io.smallrye.openapi.runtime.io.OpenApiSerializer;
 public class OpenApiServlet extends HttpServlet {
 
     private static final String ALLOWED_METHODS = "GET, HEAD, OPTIONS";
-
+    
+    private static final String ORIGIN_HEADER = "Origin";
+    
     private static final String QUERY_PARAM_FORMAT = "format";
 
     @Inject
@@ -47,7 +49,7 @@ public class OpenApiServlet extends HttpServlet {
 
     @Override
     protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        addCorsResponseHeaders(resp);
+        addCorsResponseHeaders(req, resp);
         resp.addHeader("Allow", ALLOWED_METHODS);
     }
 
@@ -67,7 +69,7 @@ public class OpenApiServlet extends HttpServlet {
 
         String oai = getCachedOaiString(format);
 
-        addCorsResponseHeaders(resp);
+        addCorsResponseHeaders(req, resp);
         resp.addHeader("Content-Type", format.getMimeType());
         resp.getOutputStream().print(oai);
     }
@@ -88,8 +90,12 @@ public class OpenApiServlet extends HttpServlet {
         }
     }
 
-    private static void addCorsResponseHeaders(HttpServletResponse response) {
-        response.addHeader("Access-Control-Allow-Origin", "*");
+    private static void addCorsResponseHeaders(HttpServletRequest request, HttpServletResponse response) {
+        String origin = request.getHeader(ORIGIN_HEADER);
+        if (origin == null) {
+            origin = "*";
+        }
+        response.addHeader("Access-Control-Allow-Origin", origin);
         response.addHeader("Access-Control-Allow-Credentials", "true");
         response.addHeader("Access-Control-Allow-Methods", ALLOWED_METHODS);
         response.addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");

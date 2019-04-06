@@ -16,6 +16,8 @@
 
 package io.quarkus.deployment.builditem.substrate;
 
+import static java.util.Arrays.stream;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -41,7 +43,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this(constructors, methods, fields, false, className);
     }
 
-    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalIsWritable,
+    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalIsWritable,
             Class<?>... className) {
         List<String> names = new ArrayList<>();
         for (Class<?> i : className) {
@@ -65,7 +67,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this(constructors, methods, fields, false, className);
     }
 
-    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalIsWritable,
+    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalIsWritable,
             String... className) {
         for (String i : className) {
             if (i == null) {
@@ -97,5 +99,64 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
     public boolean isFinalWritable() {
         return finalIsWritable;
+    }
+
+    public static Builder builder(Class<?>... className) {
+        String[] classNameStrings = stream(className)
+                .map(aClass -> {
+                    if (aClass == null) {
+                        throw new NullPointerException();
+                    }
+                    return aClass.getName();
+                })
+                .toArray(String[]::new);
+
+        return new Builder()
+                .className(classNameStrings);
+    }
+
+    public static Builder builder(String... className) {
+        return new Builder()
+                .className(className);
+    }
+
+    public static class Builder {
+        private String[] className;
+        private boolean constructors = true;
+        private boolean methods;
+        private boolean fields;
+        private boolean finalIsWritable;
+
+        private Builder() {
+        }
+
+        public Builder className(String[] className) {
+            this.className = className;
+            return this;
+        }
+
+        public Builder constructors(boolean constructors) {
+            this.constructors = constructors;
+            return this;
+        }
+
+        public Builder methods(boolean methods) {
+            this.methods = methods;
+            return this;
+        }
+
+        public Builder fields(boolean fields) {
+            this.fields = fields;
+            return this;
+        }
+
+        public Builder finalIsWritable(boolean finalIsWritable) {
+            this.finalIsWritable = finalIsWritable;
+            return this;
+        }
+
+        public ReflectiveClassBuildItem build() {
+            return new ReflectiveClassBuildItem(constructors, methods, fields, finalIsWritable, className);
+        }
     }
 }

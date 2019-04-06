@@ -48,10 +48,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
-import io.quarkus.extest.runtime.IConfigConsumer;
-import io.quarkus.extest.runtime.RuntimeXmlConfigService;
-import io.quarkus.extest.runtime.TestAnnotation;
-import io.quarkus.extest.runtime.TestTemplate;
+import io.quarkus.extest.runtime.*;
 import io.quarkus.extest.runtime.beans.CommandServlet;
 import io.quarkus.extest.runtime.beans.PublicKeyProducer;
 import io.quarkus.extest.runtime.config.ObjectOfValue;
@@ -426,5 +423,16 @@ public final class TestProcessor {
             classes.produce(new ReflectiveClassBuildItem(true, true, className));
             log.debugf("Register SUN.provider class: %s", className);
         }
+    }
+
+    @BuildStep
+    void registerFinalFieldReflectionObject(BuildProducer<ReflectiveClassBuildItem> classes) {
+        ReflectiveClassBuildItem finalField = ReflectiveClassBuildItem
+                .builder(FinalFieldReflectionObject.class.getName())
+                .methods(true)
+                .fields(true)
+                .finalIsWritable(true)
+                .build();
+        classes.produce(finalField);
     }
 }

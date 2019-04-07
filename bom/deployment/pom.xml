@@ -461,6 +461,11 @@
                 <artifactId>quarkus-jgit-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-vault-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>io.quarkus</groupId>

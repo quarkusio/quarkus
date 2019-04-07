@@ -73,6 +73,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String SWAGGER_UI = "swagger-ui";
     public static final String TIKA = "tika";
     public static final String UNDERTOW_WEBSOCKETS = "undertow-websockets";
+    public static final String VAULT = "vault";
     public static final String VERTX = "vertx";
     public static final String VERTX_WEB = "vertx-web";
 

@@ -24,6 +24,9 @@ import io.agroal.api.security.NamePrincipal;
 import io.agroal.api.security.SimplePassword;
 import io.agroal.api.transaction.TransactionIntegration;
 import io.agroal.narayana.NarayanaTransactionIntegration;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.vault.CredentialsProvider;
 
 public abstract class AbstractDataSourceProducer {
 
@@ -131,6 +134,23 @@ public abstract class AbstractDataSourceProducer {
         if (dataSourceRuntimeConfig.password.isPresent()) {
             agroalConnectionFactoryConfigurationSupplier
                     .credential(new SimplePassword(dataSourceRuntimeConfig.password.get()));
+        }
+
+        // Vault credentials provider
+        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
+            ArcContainer container = Arc.container();
+            String type = dataSourceRuntimeConfig.credentialsProviderType.orElse(null);
+            CredentialsProvider credentialsProvider = type != null
+                    ? (CredentialsProvider) container.instance(type).get()
+                    : container.instance(CredentialsProvider.class).get();
+
+            if (credentialsProvider == null) {
+                throw new RuntimeException("unable to find credentials provider of type " + (type == null ? "default" : type));
+            }
+
+            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            agroalConnectionFactoryConfigurationSupplier
+                    .credential(new AgroalVaultCredentialsProviderPassword(name, credentialsProvider));
         }
 
         // Pool size configuration:

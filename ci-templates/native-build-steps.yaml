@@ -44,4 +44,4 @@ jobs:
       inputs:
         goals: 'install'
         mavenOptions: $(MAVEN_OPTS)
-        options: '-pl integration-tests/${{ join('',integration-tests/'', parameters.modules) }} -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dnative-image.xmx=6g -Dnative -Dno-format'
+        options: '-pl integration-tests/${{ join('',integration-tests/'', parameters.modules) }} -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-vault -Dnative-image.xmx=6g -Dnative -Dno-format'

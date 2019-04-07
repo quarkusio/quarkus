@@ -65,6 +65,17 @@
             <groupId>io.agroal</groupId>
             <artifactId>agroal-pool</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vault-spi</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>

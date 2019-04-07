@@ -29,6 +29,23 @@ public class DataSourceRuntimeConfig {
     public Optional<String> password;
 
     /**
+     * The credentials provider name
+     */
+    @ConfigItem
+    public Optional<String> credentialsProvider;
+
+    /**
+     * The credentials provider type.
+     * <p>
+     * It is the {@code &#64;Named} value of the credentials provider bean. It is used to discriminate if multiple
+     * CredentialsProvider beans are available.
+     * <p>
+     * For Vault it is: vault-credentials-provider. Not necessary if there is only one credentials provider available.
+     */
+    @ConfigItem
+    public Optional<String> credentialsProviderType;
+
+    /**
      * The initial size of the pool
      */
     @ConfigItem

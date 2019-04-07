@@ -1,0 +1,24 @@
+# kv engine default (v1 in non dev mode)
+path "secret/foo" {
+  capabilities = ["read"]
+}
+
+# vault config source kv engine v1
+path "secret/config" {
+  capabilities = ["read"]
+}
+
+# kv engine v2
+path "secret-v2/data/foo" {
+  capabilities = ["read"]
+}
+
+# vault config source kv engine v2
+path "secret-v2/data/config" {
+  capabilities = ["read"]
+}
+
+# dynamic secrets
+path "database/creds/mydbrole" {
+  capabilities = [ "read" ]
+}

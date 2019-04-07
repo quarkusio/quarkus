@@ -743,6 +743,15 @@
     "guide": "https://quarkus.io/guides/websocket-guide"
   },
   {
+    "name": "Vault",
+    "labels": [
+      "vault",
+      "security"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-vault"
+  },
+  {
     "name": "Eclipse Vert.x",
     "labels": [
       "eclipse-vert.x",

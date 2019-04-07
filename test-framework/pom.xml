@@ -23,6 +23,7 @@
         <module>amazon-lambda</module>
         <module>arquillian</module>
         <module>maven</module>
+        <module>vault</module>
     </modules>
 
 </project>

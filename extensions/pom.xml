@@ -122,6 +122,9 @@
 
         <!-- kogito -->
         <module>kogito</module>
+
+        <!-- vault -->
+        <module>vault</module>
     </modules>
 
     <build>

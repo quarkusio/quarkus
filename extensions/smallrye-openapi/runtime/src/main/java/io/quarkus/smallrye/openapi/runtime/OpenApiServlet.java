@@ -89,10 +89,10 @@ public class OpenApiServlet extends HttpServlet {
     }
 
     private static void addCorsResponseHeaders(HttpServletResponse response) {
-        response.addHeader("Access-Control-Allow-Origin", "*");
-        response.addHeader("Access-Control-Allow-Credentials", "true");
-        response.addHeader("Access-Control-Allow-Methods", ALLOWED_METHODS);
-        response.addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-        response.addHeader("Access-Control-Max-Age", "86400");
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Credentials", "true");
+        response.setHeader("Access-Control-Allow-Methods", ALLOWED_METHODS);
+        response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        response.setHeader("Access-Control-Max-Age", "86400");
     }
 }

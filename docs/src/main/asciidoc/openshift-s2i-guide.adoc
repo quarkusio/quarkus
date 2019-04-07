@@ -62,7 +62,7 @@ Testing indicates that the "hello, world" getting-started demo application build
 apiVersion: "v1"
 kind: "BuildConfig"
 metadata:
-    name: "getting-started-native"
+    name: "quarkus-quickstart-native"
 spec:
     resources:
     limits:
@@ -70,11 +70,13 @@ spec:
         memory: 4Gi
 ----
 
-The following `oc patch` command does this:
+The following `oc patch` command adds these `limits`, and `oc start-build` launches a new build:
 
 [source,shell]
 ----
-oc patch bc/getting-started-native -p '{"spec":{"resources":{"limits":{"cpu":"4", "memory":"4Gi"}}}}'
+oc patch bc/quarkus-quickstart-native -p '{"spec":{"resources":{"limits":{"cpu":"4", "memory":"4Gi"}}}}'
+
+oc start-build quarkus-quickstart-native
 ----
 
 

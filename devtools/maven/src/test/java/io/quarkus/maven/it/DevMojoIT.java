@@ -47,6 +47,9 @@ public class DevMojoIT extends MojoTestBase {
         //make sure that the Class.getPackage() works for app classes
         String pkg = getHttpResponse("/app/hello/package");
         assertThat(pkg).isEqualTo("org.acme");
+
+        //make sure webjars work
+        getHttpResponse("webjars/bootstrap/3.1.0/css/bootstrap.min.css");
     }
 
     @Test

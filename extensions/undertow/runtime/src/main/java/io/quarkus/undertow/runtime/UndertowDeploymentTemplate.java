@@ -19,8 +19,10 @@ package io.quarkus.undertow.runtime;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.URL;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
+import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
@@ -116,8 +118,10 @@ public class UndertowDeploymentTemplate {
             resourceManager = new KnownPathResourceManager(knownFile, knownDirectories,
                     new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
         } else {
-            resourceManager = new PathResourceManager(Paths.get(resourcesDir));
+            resourceManager = new DelegatingResourceManager(new PathResourceManager(Paths.get(resourcesDir)),
+                    new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
         }
+
         if (launchMode == LaunchMode.NORMAL) {
             //todo: cache configuration
             resourceManager = new CachingResourceManager(1000, 0, null, resourceManager, 2000);

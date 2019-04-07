@@ -23,17 +23,20 @@ import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.PERMIT;
 import static javax.servlet.DispatcherType.REQUEST;
 
 import java.io.FileInputStream;
-import java.io.IOException;
+import java.net.JarURLConnection;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.jar.JarEntry;
 import java.util.stream.Collectors;
 
 import javax.annotation.security.DeclareRoles;
@@ -98,7 +101,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -135,6 +137,7 @@ public class UndertowBuildStep {
     public static final DotName MULTIPART_CONFIG = DotName.createSimple(MultipartConfig.class.getName());
     public static final DotName SERVLET_SECURITY = DotName.createSimple(ServletSecurity.class.getName());
     public static final String WEB_XML = "META-INF/web.xml";
+    protected static final String META_INF_RESOURCES = "META-INF/resources";
 
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
@@ -241,7 +244,8 @@ public class UndertowBuildStep {
             BuildProducer<ObjectSubstitutionBuildItem> substitutions,
             Consumer<ReflectiveClassBuildItem> reflectiveClasses,
             LaunchModeBuildItem launchMode,
-            ShutdownContextBuildItem shutdownContext) throws Exception {
+            ShutdownContextBuildItem shutdownContext,
+            BuildProducer<SubstrateResourceBuildItem> substrateResourceBuildItemBuildProducer) throws Exception {
 
         ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(ServletSecurityInfo.class,
                 ServletSecurityInfoProxy.class, ServletSecurityInfoSubstitution.class);
@@ -254,7 +258,7 @@ public class UndertowBuildStep {
         Set<String> knownFiles = new HashSet<>();
         Set<String> knownDirectories = new HashSet<>();
         for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
-            Path resource = i.getChildPath("META-INF/resources");
+            Path resource = i.getChildPath(META_INF_RESOURCES);
             if (resource != null && Files.exists(resource)) {
                 Files.walk(resource).forEach(new Consumer<Path>() {
                     @Override
@@ -273,7 +277,30 @@ public class UndertowBuildStep {
                 });
             }
         }
-
+        Enumeration<URL> resources = getClass().getClassLoader().getResources(META_INF_RESOURCES);
+        while (resources.hasMoreElements()) {
+            URL url = resources.nextElement();
+            if (url.getProtocol().equals("jar")) {
+                JarURLConnection jar = (JarURLConnection) url.openConnection();
+                Enumeration<JarEntry> entries = jar.getJarFile().entries();
+                while (entries.hasMoreElements()) {
+                    JarEntry entry = entries.nextElement();
+                    if (entry.getName().startsWith(META_INF_RESOURCES)) {
+                        String sub = entry.getName().substring(META_INF_RESOURCES.length() + 1);
+                        if (!sub.isEmpty()) {
+                            if (entry.getName().endsWith("/")) {
+                                String dir = sub.substring(0, sub.length() - 1);
+                                knownDirectories.add(dir);
+                            } else {
+                                knownFiles.add(sub);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        substrateResourceBuildItemBuildProducer.produce(new SubstrateResourceBuildItem(
+                knownFiles.stream().map((s) -> META_INF_RESOURCES + "/" + s).collect(Collectors.toList())));
         RuntimeValue<DeploymentInfo> deployment = template.createDeployment("test", knownFiles, knownDirectories,
                 launchMode.getLaunchMode(), shutdownContext);
 
@@ -435,24 +462,6 @@ public class UndertowBuildStep {
         }
         return new ServletDeploymentManagerBuildItem(template.bootServletContainer(deployment, bc.getValue()));
 
-    }
-
-    @BuildStep
-    SubstrateResourceBuildItem registerSubstrateResources(ArchiveRootBuildItem root,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem) throws IOException {
-        List<String> res = new ArrayList<>();
-        Path resources = applicationArchivesBuildItem.getRootArchive().getChildPath("META-INF/resources");
-        if (resources != null) {
-            Files.walk(resources).forEach(new Consumer<Path>() {
-                @Override
-                public void accept(Path path) {
-                    if (!Files.isDirectory(path)) {
-                        res.add(root.getPath().relativize(path).toString());
-                    }
-                }
-            });
-        }
-        return new SubstrateResourceBuildItem(res);
     }
 
     /**

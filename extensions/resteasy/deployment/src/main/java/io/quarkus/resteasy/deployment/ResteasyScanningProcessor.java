@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import javax.inject.Singleton;
 import javax.servlet.DispatcherType;
@@ -54,6 +55,8 @@ import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -204,6 +207,7 @@ public class ResteasyScanningProcessor {
     @BuildStep
     public void build(
             BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeanBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition,
@@ -275,16 +279,17 @@ public class ResteasyScanningProcessor {
             throw new RuntimeException("Multiple classes ( " + sb.toString()
                     + ") have been annotated with @ApplicationPath which is currently not supported");
         }
-        String mappingPath;
-        String path = null;
-        String appClass = null;
+        final String path;
+        final String appClass;
         if (!app.isEmpty()) {
             AnnotationInstance appPath = app.iterator().next();
             path = appPath.value().asString();
             appClass = appPath.target().asClass().name().toString();
         } else {
             path = resteasyConfig.path;
+            appClass = null;
         }
+        final String mappingPath;
         if (path.endsWith("/")) {
             mappingPath = path + "*";
         } else {
@@ -340,6 +345,12 @@ public class ResteasyScanningProcessor {
             servletContextParams.produce(new ServletInitParamBuildItem("resteasy.servlet.mapping.prefix", path));
             if (appClass != null) {
                 servletContextParams.produce(new ServletInitParamBuildItem(JAX_RS_APPLICATION_PARAMETER_NAME, appClass));
+                unremovableBeanBuildItem.produce(new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
+                    @Override
+                    public boolean test(BeanInfo beanInfo) {
+                        return beanInfo.getBeanClass().toString().equals(appClass);
+                    }
+                }));
             }
         } else {
             // no @Application class and no detected @Path resources, bail out

@@ -1,30 +1,10 @@
-apply plugin: 'java'
-apply plugin: 'io.quarkus'
+plugins {
+    id 'java'
+    id 'io.quarkus' version '999-SNAPSHOT'
+}
 
 compileJava.options.encoding = "UTF-8"
 compileTestJava.options.encoding = "UTF-8"
-
-buildscript {
-    repositories {
-        maven { url '../gradle/target/dependencies/' }
-        mavenCentral()
-    }
-    dependencies {
-        classpath fileTree(dir: '../gradle/build/libs', include: 'quarkus-gradle-plugin-*.jar')
-
-        classpath 'io.quarkus:quarkus-bootstrap-core:999-SNAPSHOT'
-        classpath 'io.quarkus:quarkus-devtools-common:999-SNAPSHOT'
-        classpath 'io.quarkus:quarkus-devtools-common-core:999-SNAPSHOT'
-        classpath 'io.quarkus:quarkus-development-mode:999-SNAPSHOT'
-        classpath 'io.quarkus:quarkus-creator:999-SNAPSHOT'
-    }
-}
-
-repositories {
-    //Needs latest from local snapshots too:
-    mavenLocal()
-    mavenCentral()
-}
 
 test {
     useJUnitPlatform()

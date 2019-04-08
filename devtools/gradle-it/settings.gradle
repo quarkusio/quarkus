@@ -1,8 +1,5 @@
 pluginManagement {
     repositories {
-        // TODO ideally this, like build.gradle, should just read from ../gradle instead of mavenLocal(), but it's not clear how
-        // classpath fileTree(dir: '../gradle/build/libs', include: 'quarkus-gradle-plugin-*.jar')
-        // classpath fileTree(dir: '../gradle/target/dependencies/compile', include: '*.jar')
         mavenLocal()
 
         // target/dependencies is missing quarkus-gradle-plugin's dependencies; we need latest transitive dependencies from local SNAPSHOTs too:

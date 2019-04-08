@@ -1,0 +1,15 @@
+pluginManagement {
+    repositories {
+        // TODO ideally this, like build.gradle, should just read from ../gradle instead of mavenLocal(), but it's not clear how
+        // classpath fileTree(dir: '../gradle/build/libs', include: 'quarkus-gradle-plugin-*.jar')
+        // classpath fileTree(dir: '../gradle/target/dependencies/compile', include: '*.jar')
+        mavenLocal()
+    }
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == 'io.quarkus') {
+                useModule("io.quarkus:quarkus-gradle-plugin:${requested.version}")
+            }
+        }
+    }
+}

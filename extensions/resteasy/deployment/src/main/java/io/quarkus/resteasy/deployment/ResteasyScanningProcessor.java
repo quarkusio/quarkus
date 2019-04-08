@@ -49,6 +49,9 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.api.validation.ResteasyConstraintViolation;
 import org.jboss.resteasy.api.validation.ViolationReport;
+import org.jboss.resteasy.microprofile.config.FilterConfigSource;
+import org.jboss.resteasy.microprofile.config.ServletConfigSource;
+import org.jboss.resteasy.microprofile.config.ServletContextConfigSource;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 
@@ -388,6 +391,12 @@ public class ResteasyScanningProcessor {
         for (String providerToRegister : jaxrsProvidersToRegisterBuildItem.getProviders()) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerToRegister));
         }
+
+        // special case: our config providers
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
+                ServletConfigSource.class,
+                ServletContextConfigSource.class,
+                FilterConfigSource.class));
     }
 
     @Record(STATIC_INIT)

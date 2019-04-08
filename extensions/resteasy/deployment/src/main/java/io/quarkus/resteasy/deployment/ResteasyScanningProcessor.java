@@ -21,20 +21,14 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-import javax.inject.Singleton;
 import javax.servlet.DispatcherType;
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.Path;
 import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -55,8 +49,13 @@ import org.jboss.resteasy.microprofile.config.ServletContextConfigSource;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -71,6 +70,7 @@ import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildIt
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.jaxb.deployment.JaxbEnabledBuildItem;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
+import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
 import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.runtime.QuarkusInjectorFactory;
 import io.quarkus.resteasy.runtime.ResteasyFilter;
@@ -88,37 +88,11 @@ import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
  * @author Stuart Douglas
  */
 public class ResteasyScanningProcessor {
+
     private static final String JAVAX_WS_RS_APPLICATION = Application.class.getName();
     private static final String JAX_RS_FILTER_NAME = JAVAX_WS_RS_APPLICATION;
     private static final String JAX_RS_SERVLET_NAME = JAVAX_WS_RS_APPLICATION;
     private static final String JAX_RS_APPLICATION_PARAMETER_NAME = "javax.ws.rs.Application";
-
-    private static final DotName APPLICATION_PATH = DotName.createSimple(ApplicationPath.class.getName());
-
-    private static final DotName PATH = DotName.createSimple(Path.class.getName());
-    private static final DotName DYNAMIC_FEATURE = DotName.createSimple(DynamicFeature.class.getName());
-    private static final DotName CONTEXT = DotName.createSimple(Context.class.getName());
-
-    private static final DotName GET = DotName.createSimple(javax.ws.rs.GET.class.getName());
-    private static final DotName HEAD = DotName.createSimple(javax.ws.rs.HEAD.class.getName());
-    private static final DotName DELETE = DotName.createSimple(javax.ws.rs.DELETE.class.getName());
-    private static final DotName OPTIONS = DotName.createSimple(javax.ws.rs.OPTIONS.class.getName());
-    private static final DotName PATCH = DotName.createSimple(javax.ws.rs.PATCH.class.getName());
-    private static final DotName POST = DotName.createSimple(javax.ws.rs.POST.class.getName());
-    private static final DotName PUT = DotName.createSimple(javax.ws.rs.PUT.class.getName());
-
-    private static final DotName RESTEASY_QUERY_PARAM = DotName
-            .createSimple(org.jboss.resteasy.annotations.jaxrs.QueryParam.class.getName());
-    private static final DotName RESTEASY_FORM_PARAM = DotName
-            .createSimple(org.jboss.resteasy.annotations.jaxrs.FormParam.class.getName());
-    private static final DotName RESTEASY_COOKIE_PARAM = DotName
-            .createSimple(org.jboss.resteasy.annotations.jaxrs.CookieParam.class.getName());
-    private static final DotName RESTEASY_PATH_PARAM = DotName
-            .createSimple(org.jboss.resteasy.annotations.jaxrs.PathParam.class.getName());
-    private static final DotName RESTEASY_HEADER_PARAM = DotName
-            .createSimple(org.jboss.resteasy.annotations.jaxrs.HeaderParam.class.getName());
-    private static final DotName RESTEASY_MATRIX_PARAM = DotName
-            .createSimple(org.jboss.resteasy.annotations.jaxrs.MatrixParam.class.getName());
 
     private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
 
@@ -136,25 +110,23 @@ public class ResteasyScanningProcessor {
             DotName.createSimple("io.vertx.core.json.JsonObject")));
 
     private static final DotName[] METHOD_ANNOTATIONS = {
-            GET,
-            HEAD,
-            DELETE,
-            OPTIONS,
-            PATCH,
-            POST,
-            PUT,
+            ResteasyDotNames.GET,
+            ResteasyDotNames.HEAD,
+            ResteasyDotNames.DELETE,
+            ResteasyDotNames.OPTIONS,
+            ResteasyDotNames.PATCH,
+            ResteasyDotNames.POST,
+            ResteasyDotNames.PUT,
     };
 
     private static final DotName[] RESTEASY_PARAM_ANNOTATIONS = {
-            RESTEASY_QUERY_PARAM,
-            RESTEASY_FORM_PARAM,
-            RESTEASY_COOKIE_PARAM,
-            RESTEASY_PATH_PARAM,
-            RESTEASY_HEADER_PARAM,
-            RESTEASY_MATRIX_PARAM,
+            ResteasyDotNames.RESTEASY_QUERY_PARAM,
+            ResteasyDotNames.RESTEASY_FORM_PARAM,
+            ResteasyDotNames.RESTEASY_COOKIE_PARAM,
+            ResteasyDotNames.RESTEASY_PATH_PARAM,
+            ResteasyDotNames.RESTEASY_HEADER_PARAM,
+            ResteasyDotNames.RESTEASY_MATRIX_PARAM,
     };
-
-    private static final DotName SINGLETON_SCOPE = DotName.createSimple(Singleton.class.getName());
 
     /**
      * JAX-RS configuration.
@@ -222,9 +194,9 @@ public class ResteasyScanningProcessor {
 
         resource.produce(new SubstrateResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
 
-        Collection<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
+        Collection<AnnotationInstance> app = index.getAnnotations(ResteasyDotNames.APPLICATION_PATH);
         //@Context uses proxies for interface injection
-        for (AnnotationInstance annotation : index.getAnnotations(CONTEXT)) {
+        for (AnnotationInstance annotation : index.getAnnotations(ResteasyDotNames.CONTEXT)) {
             DotName typeName = null;
             if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
                 MethodInfo method = annotation.target().asMethod();
@@ -257,7 +229,7 @@ public class ResteasyScanningProcessor {
             }
         }
 
-        for (ClassInfo implementation : index.getAllKnownImplementors(DYNAMIC_FEATURE)) {
+        for (ClassInfo implementation : index.getAllKnownImplementors(ResteasyDotNames.DYNAMIC_FEATURE)) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, implementation.name().toString()));
         }
 
@@ -294,7 +266,7 @@ public class ResteasyScanningProcessor {
             mappingPath = path + "/*";
         }
 
-        Collection<AnnotationInstance> paths = index.getAnnotations(PATH);
+        Collection<AnnotationInstance> paths = index.getAnnotations(ResteasyDotNames.PATH);
         if (paths != null && !paths.isEmpty()) {
 
             //if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the whole mapped path
@@ -371,6 +343,7 @@ public class ResteasyScanningProcessor {
     @BuildStep
     void registerProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ServletInitParamBuildItem> servletContextParams,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem) {
 
         if (jaxrsProvidersToRegisterBuildItem.useBuiltIn()) {
@@ -397,6 +370,10 @@ public class ResteasyScanningProcessor {
                 ServletConfigSource.class,
                 ServletContextConfigSource.class,
                 FilterConfigSource.class));
+
+        // Providers that are also beans are unremovable
+        unremovableBeans.produce(new UnremovableBeanBuildItem(
+                b -> jaxrsProvidersToRegisterBuildItem.getProviders().contains(b.getBeanClass().toString())));
     }
 
     @Record(STATIC_INIT)
@@ -417,9 +394,34 @@ public class ResteasyScanningProcessor {
     }
 
     @BuildStep
-    List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations() {
-        return Collections.singletonList(
-                new BeanDefiningAnnotationBuildItem(PATH, resteasyConfig.singletonResources ? SINGLETON_SCOPE : null));
+    void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
+        beanDefiningAnnotations
+                .produce(new BeanDefiningAnnotationBuildItem(ResteasyDotNames.PATH,
+                        resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName() : null));
+        beanDefiningAnnotations
+                .produce(new BeanDefiningAnnotationBuildItem(ResteasyDotNames.APPLICATION_PATH,
+                        BuiltinScope.SINGLETON.getName()));
+    }
+
+    @BuildStep
+    AnnotationsTransformerBuildItem annotationTransformer() {
+        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+
+            @Override
+            public boolean appliesTo(Kind kind) {
+                return kind == Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext transformationContext) {
+                ClassInfo clazz = transformationContext.getTarget().asClass();
+                if (clazz.classAnnotation(ResteasyDotNames.PROVIDER) != null && clazz.annotations().containsKey(DotNames.INJECT)
+                        && !BuiltinScope.isIn(clazz.classAnnotations())) {
+                    // A provider with an injection point but no built-in scope is @Singleton
+                    transformationContext.transform().add(BuiltinScope.SINGLETON.getName()).done();
+                }
+            }
+        });
     }
 
     /**
@@ -471,7 +473,8 @@ public class ResteasyScanningProcessor {
                 }
                 for (short i = 0; i < method.parameters().size(); i++) {
                     Type parameterType = method.parameters().get(i);
-                    if (isReflectionDeclarationRequiredFor(parameterType) && !hasAnnotation(method, i, CONTEXT)) {
+                    if (isReflectionDeclarationRequiredFor(parameterType)
+                            && !hasAnnotation(method, i, ResteasyDotNames.CONTEXT)) {
                         reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(parameterType));
                     }
                 }

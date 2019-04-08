@@ -183,7 +183,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         libDir = IoUtils.mkdirs(libDir == null ? outputDir.resolve("lib") : libDir);
 
         if (finalName == null) {
-            final String name = appState.getAppArtifact().getPath().getFileName().toString();
+            final String name = toUri(appState.getAppArtifact().getPath().getFileName());
             int i = name.lastIndexOf('.');
             if (i > 0) {
                 finalName = name.substring(0, i);
@@ -242,7 +242,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                                     @Override
                                     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
                                             throws IOException {
-                                        final String relativePath = root.relativize(dir).toString();
+                                        final String relativePath = toUri(root.relativize(dir));
                                         if (!relativePath.isEmpty()) {
                                             addDir(runnerZipFs, relativePath);
                                         }
@@ -252,7 +252,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                                     @Override
                                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                                             throws IOException {
-                                        final String relativePath = root.relativize(file).toString();
+                                        final String relativePath = toUri(root.relativize(file));
                                         if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
                                             services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(read(file));
                                             return FileVisitResult.CONTINUE;
@@ -297,7 +297,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             @Override
             public void accept(Path path) {
                 try {
-                    final String relativePath = wiringClassesDir.relativize(path).toString();
+                    final String relativePath = toUri(wiringClassesDir.relativize(path));
                     if (Files.isDirectory(path)) {
                         if (!seen.containsKey(relativePath + "/") && !relativePath.isEmpty()) {
                             seen.put(relativePath + "/", "Current Application");
@@ -386,7 +386,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                 @Override
                 public void accept(Path path) {
                     final Path file = dir.relativize(path);
-                    final String relativePath = file.toString();
+                    final String relativePath = toUri(file);
                     if (relativePath.isEmpty()) {
                         return;
                     }
@@ -462,5 +462,24 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                 .map("final-name", RunnerJarPhase::setFinalName)
                 .map("main-class", RunnerJarPhase::setMainClass)
                 .map("uber-jar", (RunnerJarPhase t, String value) -> t.setUberJar(Boolean.parseBoolean(value)));
+    }
+
+    private static String toUri(Path path) {
+        if (path.isAbsolute()) {
+            return path.toUri().getPath();
+        } else if (path.getNameCount() == 0) {
+            return "";
+        } else {
+            return toUri(new StringBuilder(), path, 0).toString();
+        }
+    }
+
+    private static StringBuilder toUri(StringBuilder b, Path path, int seg) {
+        b.append(path.getName(seg));
+        if (seg < path.getNameCount() - 1) {
+            b.append('/');
+            toUri(b, path, seg + 1);
+        }
+        return b;
     }
 }

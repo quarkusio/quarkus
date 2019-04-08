@@ -95,31 +95,6 @@ public class SubstrateAutoFeatureStep {
             ResultHandle thisClass = overallCatch.loadClass(GRAAL_AUTOFEATURE);
             ResultHandle cl = overallCatch.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class),
                     thisClass);
-            // FIXME: probably those two hard-coded should be produced by some build step
-            {
-                TryBlock tc = overallCatch.tryBlock();
-                ResultHandle clazz = tc.invokeStaticMethod(
-                        ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
-                        tc.load("org.wildfly.common.net.HostName"), tc.load(false), cl);
-                tc.writeArrayValue(array, 0, clazz);
-                tc.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization",
-                        "rerunClassInitialization", void.class, Class[].class), array);
-
-                CatchBlockCreator cc = tc.addCatch(Throwable.class);
-                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
-            }
-            {
-                TryBlock tc = overallCatch.tryBlock();
-                ResultHandle clazz = tc.invokeStaticMethod(
-                        ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
-                        tc.load("org.wildfly.common.os.Process"), tc.load(false), cl);
-                tc.writeArrayValue(array, 0, clazz);
-                tc.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization",
-                        "rerunClassInitialization", void.class, Class[].class), array);
-
-                CatchBlockCreator cc = tc.addCatch(Throwable.class);
-                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
-            }
             for (String i : runtimeReinitializedClassBuildItems.stream().map(RuntimeReinitializedClassBuildItem::getClassName)
                     .collect(Collectors.toList())) {
                 TryBlock tc = overallCatch.tryBlock();

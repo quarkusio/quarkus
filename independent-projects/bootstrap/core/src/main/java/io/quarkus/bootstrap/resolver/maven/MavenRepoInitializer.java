@@ -19,8 +19,10 @@ package io.quarkus.bootstrap.resolver.maven;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.resolution.WorkspaceModelResolver;
@@ -38,6 +40,7 @@ import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
+import org.eclipse.aether.repository.ArtifactRepository;
 import org.eclipse.aether.repository.Authentication;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.Proxy;
@@ -59,6 +62,9 @@ import io.quarkus.bootstrap.util.PropertyUtils;
  * @author Alexey Loubyansky
  */
 public class MavenRepoInitializer {
+
+    private static final String DEFAULT_REMOTE_REPO_ID = "central";
+    private static final String DEFAULT_REMOTE_REPO_URL = "https://repo.maven.apache.org/maven2";
 
     private static final String MAVEN_CMD_LINE_ARGS = "MAVEN_CMD_LINE_ARGS";
     private static final String DOT_M2 = ".m2";
@@ -206,8 +212,11 @@ public class MavenRepoInitializer {
                 addProfileRepos(profilesMap.get(profileName), remotes);
             }
         }
-        if(remotes.isEmpty()) {
-            remotes.add(new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build());
+        if (remotes.isEmpty() || !getRepoIds(remotes).contains(DEFAULT_REMOTE_REPO_ID)) {
+            remotes.add(new RemoteRepository.Builder(DEFAULT_REMOTE_REPO_ID, "default", DEFAULT_REMOTE_REPO_URL)
+                    .setReleasePolicy(new RepositoryPolicy(true, RepositoryPolicy.UPDATE_POLICY_DAILY, RepositoryPolicy.CHECKSUM_POLICY_WARN))
+                    .setSnapshotPolicy(new RepositoryPolicy(false, RepositoryPolicy.UPDATE_POLICY_DAILY, RepositoryPolicy.CHECKSUM_POLICY_WARN))
+                    .build());
         }
         return remotes;
     }
@@ -288,5 +297,15 @@ public class MavenRepoInitializer {
 
     private static String getDefaultLocalRepo() {
         return new File(userMavenConfigurationHome, "repository").getAbsolutePath();
+    }
+
+    private static Set<String> getRepoIds(List<RemoteRepository> repositories) {
+        final Set<String> repoIds = new HashSet<>(repositories.size());
+        if (repositories != null) {
+            for (ArtifactRepository repository : repositories) {
+                repoIds.add(repository.getId());
+            }
+        }
+        return repoIds;
     }
 }

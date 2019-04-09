@@ -79,6 +79,42 @@ oc patch bc/quarkus-quickstart-native -p '{"spec":{"resources":{"limits":{"cpu":
 oc start-build quarkus-quickstart-native
 ----
 
+== Building a minimal runtime container
+
+As an alternative to creating an application from the S2I build process one can use chained builds to produce a runner image that is minimal in size and does not contain all the dependencies required to build the application.
+
+The following command will create a chained build that is triggered whenever the quarkus-quickstart-native is built.  
+
+[source,shell]
+----
+oc new-build --name=minimal-quarkus-quickstart-native \
+    --docker-image=registry.access.redhat.com/ubi7-dev-preview/ubi-minimal \
+    --source-image=quarkus-quickstart-native \
+    --source-image-path='/home/quarkus/quarkus-quickstart-1.0-SNAPSHOT-runner:.' \
+    --dockerfile=$'FROM registry.access.redhat.com/ubi7-dev-preview/ubi-minimal:latest\nCOPY *-runner /application\nCMD /application\nEXPOSE 8080' \
+----
+
+To create an service from the minimal build run the following command
+
+[source,shell]
+----
+oc new-app minimal-quarkus-quickstart-native
+
+oc expose svc minimal-quarkus-quickstart-native
+----
+
+The end result is an image that is less than 40 MB in size (compressed) and does not contain build dependencies like GraalVM, OpenJDK, Maven, etc.
+
+[TIP]
+.Creating build without config.
+====
+The minimal build is depending on the S2I build since it using the output (native runnable application) from the S2I build. However, you do not need to create an application with `oc new-app`. Instead you could use `oc new-build` like this:
+[source, shell]
+----
+oc new-build quay.io/quarkus/centos-quarkus-native-s2i~{quickstarts-clone-url} \
+    --context-dir=getting-started --name=quarkus-quickstart-native
+----
+====
 
 == Deploying the application as Java application in OpenShift
 

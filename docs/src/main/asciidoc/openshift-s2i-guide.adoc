@@ -109,7 +109,7 @@ The end result is an image that is less than 40 MB in size (compressed) and does
 .Creating build without config.
 ====
 The minimal build is depending on the S2I build since it using the output (native runnable application) from the S2I build. However, you do not need to create an application with `oc new-app`. Instead you could use `oc new-build` like this:
-[source, shell]
+[source, shell, subs="attributes"]
 ----
 oc new-build quay.io/quarkus/centos-quarkus-native-s2i~{quickstarts-clone-url} \
     --context-dir=getting-started --name=quarkus-quickstart-native

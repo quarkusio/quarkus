@@ -23,14 +23,18 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
+import javax.websocket.Session;
 
 public class AgentRunner extends QuarkusWebsocketProtocol {
 
@@ -60,13 +64,24 @@ public class AgentRunner extends QuarkusWebsocketProtocol {
     public void run() {
 
         try {
-            ContainerProvider.getWebSocketContainer().connectToServer(this,
+            Session session = ContainerProvider.getWebSocketContainer().connectToServer(this,
                     ClientEndpointConfig.Builder.create().configurator(new ClientEndpointConfig.Configurator() {
                         @Override
                         public void beforeRequest(Map<String, List<String>> headers) {
                             headers.put(REMOTE_PASSWORD, Collections.singletonList(password));
                         }
                     }).build(), new URI(uri));
+            Timer timer = new Timer("Websocket ping timer");
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    try {
+                        session.getAsyncRemote().sendPing(ByteBuffer.allocate(0));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, 10000, 10000);
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);

@@ -34,7 +34,7 @@ We use Quarkus' GraalVM Native S2I Builder, and therefore do not need a `Dockerf
 You do not need to locally clone the Git repository, as it will be directly built inside OpenShift.
 We are going to create an OpenShift `build` executing it:
 
-[source,shell]
+[source,shell, subs="attributes"]
 ----
 # To build the image on OpenShift
 oc new-app quay.io/quarkus/centos-quarkus-native-s2i~{quickstarts-clone-url} --context-dir=getting-started --name=quarkus-quickstart-native
@@ -87,7 +87,7 @@ We use a Java S2I Builder, and therefore do not need a `Dockerfile` in this appr
 You do not need to locally clone the Git repository, as it will be directly built inside OpenShift.
 We are going to create an OpenShift `build` executing it:
 
-[source,shell]
+[source,shell, subs="attributes"]
 ----
 # To build the image on OpenShift
 oc new-app registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift~{quickstarts-clone-url} --context-dir=getting-started --name=quarkus-quickstart

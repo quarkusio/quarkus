@@ -18,6 +18,8 @@
 package io.quarkus.maven;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.plugin.AbstractMojo;
@@ -128,6 +130,9 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(property = "uberJar", defaultValue = "false")
     private boolean uberJar;
 
+    @Parameter(property = "ignoredEntries")
+    private String[] ignoredEntries;
+
     public BuildMojo() {
         MojoLogger.logSupplier = this::getLog;
     }
@@ -159,7 +164,9 @@ public class BuildMojo extends AbstractMojo {
                         .setLibDir(libDir.toPath())
                         .setFinalName(finalName)
                         .setMainClass(mainClass)
-                        .setUberJar(uberJar))
+                        .setUberJar(uberJar)
+                        .setUserConfiguredIgnoredEntries(
+                                this.ignoredEntries == null ? Collections.EMPTY_SET : Arrays.asList(this.ignoredEntries)))
                 .setWorkDir(buildDir.toPath())
                 .build()) {
 

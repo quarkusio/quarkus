@@ -17,6 +17,8 @@
 
 package io.quarkus.creator.phase.runnerjar;
 
+import static java.util.stream.Collectors.toSet;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +35,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -43,6 +46,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
@@ -88,6 +92,8 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             "META-INF/quarkus-extension.properties",
             "META-INF/quarkus-deployment-dependency.graph",
             "LICENSE")));
+
+    private final Set<String> userConfiguredIgnoredEntries = new HashSet<>();
 
     private Path outputDir;
     private Path libDir;
@@ -156,6 +162,19 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
      */
     public RunnerJarPhase setUberJar(boolean uberJar) {
         this.uberJar = uberJar;
+        return this;
+    }
+
+    /**
+     * Entries that should be ignored when creating the runner JAR. The entries
+     * are relatives to the root of the JAR. I.e. "META-INF/README.MD".
+     *
+     * @param ignoredEntries the entries that should be ignored when creating
+     *        the runner JAR
+     * @return this phase instance
+     */
+    public RunnerJarPhase setUserConfiguredIgnoredEntries(Collection ignoredEntries) {
+        this.userConfiguredIgnoredEntries.addAll(ignoredEntries);
         return this;
     }
 
@@ -229,7 +248,9 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         final Map<String, Set<AppDependency>> duplicateCatcher = new HashMap<>();
         final StringBuilder classPath = new StringBuilder();
         final Map<String, List<byte[]>> services = new HashMap<>();
-
+        final Set<String> finalIgnoredEntries = Stream
+                .concat(IGNORED_ENTRIES.stream(), this.userConfiguredIgnoredEntries.stream())
+                .collect(toSet());
         final List<AppDependency> appDeps = curateOutcome.getEffectiveModel().getUserDependencies();
         for (AppDependency appDep : appDeps) {
             final AppArtifact depArtifact = appDep.getArtifact();
@@ -256,7 +277,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                                         if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
                                             services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(read(file));
                                             return FileVisitResult.CONTINUE;
-                                        } else if (!IGNORED_ENTRIES.contains(relativePath)) {
+                                        } else if (!finalIgnoredEntries.contains(relativePath)) {
                                             duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>()).add(appDep);
                                             if (!seen.containsKey(relativePath)) {
                                                 seen.put(relativePath, appDep.toString());

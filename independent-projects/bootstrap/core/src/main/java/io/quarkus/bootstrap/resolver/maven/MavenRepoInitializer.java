@@ -206,6 +206,9 @@ public class MavenRepoInitializer {
                 addProfileRepos(profilesMap.get(profileName), remotes);
             }
         }
+        if(remotes.isEmpty()) {
+            remotes.add(new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build());
+        }
         return remotes;
     }
 

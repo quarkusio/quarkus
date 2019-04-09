@@ -38,6 +38,7 @@
         <module>jaxb</module>
         <module>jsonp</module>
         <module>jsonb</module>
+        <module>tika</module>
 
         <!-- HTTP -->
         <module>undertow</module>

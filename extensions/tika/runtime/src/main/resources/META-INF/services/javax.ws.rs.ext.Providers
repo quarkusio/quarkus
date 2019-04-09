@@ -1,0 +1,1 @@
+io.quarkus.tika.runtime.jaxrs.TikaMessageBodyReader

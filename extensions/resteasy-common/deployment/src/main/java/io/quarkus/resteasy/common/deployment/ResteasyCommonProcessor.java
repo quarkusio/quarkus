@@ -26,26 +26,14 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 
 public class ResteasyCommonProcessor {
 
-    private static final DotName CONSUMES = DotName.createSimple(Consumes.class.getName());
-    private static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
-    private static final DotName PROVIDER = DotName.createSimple(Provider.class.getName());
-
-    private static final DotName GET = DotName.createSimple(javax.ws.rs.GET.class.getName());
-    private static final DotName HEAD = DotName.createSimple(javax.ws.rs.HEAD.class.getName());
-    private static final DotName DELETE = DotName.createSimple(javax.ws.rs.DELETE.class.getName());
-    private static final DotName OPTIONS = DotName.createSimple(javax.ws.rs.OPTIONS.class.getName());
-    private static final DotName PATCH = DotName.createSimple(javax.ws.rs.PATCH.class.getName());
-    private static final DotName POST = DotName.createSimple(javax.ws.rs.POST.class.getName());
-    private static final DotName PUT = DotName.createSimple(javax.ws.rs.PUT.class.getName());
-
     private static final ProviderDiscoverer[] PROVIDER_DISCOVERERS = {
-            new ProviderDiscoverer(GET, false, true),
-            new ProviderDiscoverer(HEAD, false, false),
-            new ProviderDiscoverer(DELETE, true, false),
-            new ProviderDiscoverer(OPTIONS, false, true),
-            new ProviderDiscoverer(PATCH, true, false),
-            new ProviderDiscoverer(POST, true, true),
-            new ProviderDiscoverer(PUT, true, false)
+            new ProviderDiscoverer(ResteasyDotNames.GET, false, true),
+            new ProviderDiscoverer(ResteasyDotNames.HEAD, false, false),
+            new ProviderDiscoverer(ResteasyDotNames.DELETE, true, false),
+            new ProviderDiscoverer(ResteasyDotNames.OPTIONS, false, true),
+            new ProviderDiscoverer(ResteasyDotNames.PATCH, true, false),
+            new ProviderDiscoverer(ResteasyDotNames.POST, true, true),
+            new ProviderDiscoverer(ResteasyDotNames.PUT, true, false)
     };
 
     private ResteasyCommonConfig resteasyCommonConfig;
@@ -78,7 +66,7 @@ public class ResteasyCommonProcessor {
         for (ResteasyJaxrsProviderBuildItem contributedProviderBuildItem : contributedProviderBuildItems) {
             contributedProviders.add(contributedProviderBuildItem.getName());
         }
-        for (AnnotationInstance i : indexBuildItem.getIndex().getAnnotations(PROVIDER)) {
+        for (AnnotationInstance i : indexBuildItem.getIndex().getAnnotations(ResteasyDotNames.PROVIDER)) {
             if (i.target().kind() == AnnotationTarget.Kind.CLASS) {
                 contributedProviders.add(i.target().asClass().name().toString());
             }
@@ -175,15 +163,15 @@ public class ResteasyCommonProcessor {
             for (AnnotationInstance getMethod : getMethods) {
                 MethodInfo methodTarget = getMethod.target().asMethod();
                 if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedReaders,
-                        methodTarget, CONSUMES, providerDiscoverer.noConsumesDefaultsToAll())) {
+                        methodTarget, ResteasyDotNames.CONSUMES, providerDiscoverer.noConsumesDefaultsToAll())) {
                     return true;
                 }
                 if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedWriters,
-                        methodTarget, PRODUCES, providerDiscoverer.noProducesDefaultsToAll())) {
+                        methodTarget, ResteasyDotNames.PRODUCES, providerDiscoverer.noProducesDefaultsToAll())) {
                     return true;
                 }
                 if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister,
-                        categorizedContextResolvers, methodTarget, PRODUCES,
+                        categorizedContextResolvers, methodTarget, ResteasyDotNames.PRODUCES,
                         providerDiscoverer.noProducesDefaultsToAll())) {
                     return true;
                 }

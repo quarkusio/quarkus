@@ -94,7 +94,7 @@ oc new-build --name=minimal-quarkus-quickstart-native \
     --dockerfile=$'FROM registry.access.redhat.com/ubi7-dev-preview/ubi-minimal:latest\nCOPY *-runner /application\nCMD /application\nEXPOSE 8080' \
 ----
 
-To create an service from the minimal build run the following command
+To create a service from the minimal build run the following command:
 
 [source,shell]
 ----

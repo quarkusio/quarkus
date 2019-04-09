@@ -6,11 +6,17 @@ compileTestJava.options.encoding = "UTF-8"
 
 buildscript {
     repositories {
+        maven { url '../gradle/target/dependencies/' }
         mavenCentral()
     }
     dependencies {
         classpath fileTree(dir: '../gradle/build/libs', include: 'quarkus-gradle-plugin-*.jar')
-        classpath fileTree(dir: '../gradle/target/dependencies/compile', include: '*.jar')
+
+        classpath 'io.quarkus:quarkus-bootstrap-core:999-SNAPSHOT'
+        classpath 'io.quarkus:quarkus-devtools-common:999-SNAPSHOT'
+        classpath 'io.quarkus:quarkus-devtools-common-core:999-SNAPSHOT'
+        classpath 'io.quarkus:quarkus-development-mode:999-SNAPSHOT'
+        classpath 'io.quarkus:quarkus-creator:999-SNAPSHOT'
     }
 }
 

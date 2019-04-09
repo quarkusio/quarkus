@@ -52,7 +52,7 @@ public class LoggingSetupTemplate {
         if (config.console.enable) {
             final PatternFormatter formatter;
             if (config.console.color && System.console() != null) {
-                formatter = new ColorPatternFormatter(config.console.format);
+                formatter = new ColorPatternFormatter(config.console.darken, config.console.format);
             } else {
                 formatter = new PatternFormatter(config.console.format);
             }

@@ -110,4 +110,10 @@ public final class LoggingResourceProcessor {
                 Level.class,
                 LevelConverter.class);
     }
+
+    // This is specifically to help out with presentations, to allow an env var to always override this value
+    @BuildStep
+    void setUpDarkeningDefault(Consumer<RunTimeConfigurationDefaultBuildItem> rtcConsumer) {
+        rtcConsumer.accept(new RunTimeConfigurationDefaultBuildItem("quarkus.log.console.darken", "0"));
+    }
 }

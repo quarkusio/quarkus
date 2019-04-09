@@ -146,7 +146,7 @@ Options are `none`, `first`, `last`.
 
 `quarkus.hibernate-orm.database.generation`::
 (e.g. `drop-and-create` which is awesome in development mode). Select whether the database schema is generated or not.
-Options are `none`, `create`, `drop-and-create`, `drop`
+Options are `none`, `create`, `drop-and-create`, `drop`, `update`. The default is `none`.
 
 `quarkus.hibernate-orm.database.generation.halt-on-error`:: (defaults to `false`)
 Whether we should stop on the first error when applying the schema.

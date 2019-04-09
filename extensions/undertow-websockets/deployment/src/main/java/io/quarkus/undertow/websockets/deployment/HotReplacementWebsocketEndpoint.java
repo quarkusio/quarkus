@@ -134,7 +134,7 @@ public class HotReplacementWebsocketEndpoint {
                 }
             }
         } catch (Exception e) {
-            logger.error("Failed to process hot deployment.");
+            logger.error("Failed to process hot deployment", e);
         }
     }
 

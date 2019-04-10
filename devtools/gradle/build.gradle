@@ -16,15 +16,21 @@ compileJava   {
 }
 
 repositories {
-    //Needs latest from local snapshots too:
-    mavenLocal()
+    maven { url 'target/dependencies/' }
     mavenCentral()
     jcenter()
 }
 
 dependencies {
-    compile fileTree(dir: 'target/dependencies/compile', include: '*.jar')
-    testCompile fileTree(dir: 'target/dependencies/test', include: '*.jar')
+    compile 'io.quarkus:quarkus-bootstrap-core:999-SNAPSHOT'
+    compile 'io.quarkus:quarkus-devtools-common:999-SNAPSHOT'
+    compile 'io.quarkus:quarkus-devtools-common-core:999-SNAPSHOT'
+    compile 'io.quarkus:quarkus-development-mode:999-SNAPSHOT'
+    compile 'io.quarkus:quarkus-creator:999-SNAPSHOT'
+
+    testCompile 'org.junit.jupiter:junit-jupiter-api:5.4.1'
+    testCompile 'org.junit.jupiter:junit-jupiter-params:5.4.1'
+    testCompile 'org.junit.jupiter:junit-jupiter-engine:5.4.1'
 }
 
 test {

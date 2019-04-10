@@ -10,8 +10,14 @@ test {
     useJUnitPlatform()
 }
 
+repositories {
+    maven { url 'target/dependencies/' }
+    mavenCentral()
+}
+
 dependencies {
-    // quarkus-resteasy, quarkus-junit5, rest are copied in pom.xml
-    compileOnly fileTree(dir: 'target/dependencies/compile', include: '*.jar')
-    testCompile fileTree(dir: 'target/dependencies/test',    include: '*.jar')
+    implementation group: 'io.quarkus', name: 'quarkus-resteasy', version: '999-SNAPSHOT'
+
+    testCompile group: 'io.quarkus', name: 'quarkus-junit5', version: '999-SNAPSHOT'
+    testCompile group: 'io.rest-assured', name: 'rest-assured', version: '3.3.0'
 }

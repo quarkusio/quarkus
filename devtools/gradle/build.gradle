@@ -18,7 +18,6 @@ compileJava   {
 repositories {
     maven { url 'target/dependencies/' }
     mavenCentral()
-    jcenter()
 }
 
 dependencies {

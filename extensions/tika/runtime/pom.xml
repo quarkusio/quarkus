@@ -42,6 +42,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-common</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-parsers</artifactId>
+            <version>1.20</version>
+        </dependency>
     </dependencies>
 
     <build>

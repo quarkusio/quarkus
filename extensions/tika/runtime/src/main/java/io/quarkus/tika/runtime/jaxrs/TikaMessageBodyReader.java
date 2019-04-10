@@ -1,17 +1,23 @@
 package io.quarkus.tika.runtime.jaxrs;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.Provider;
+
+import org.apache.tika.io.TikaInputStream;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.parser.AutoDetectParser;
+import org.apache.tika.parser.ParseContext;
+import org.apache.tika.parser.Parser;
+import org.apache.tika.sax.ToTextContentHandler;
+import org.xml.sax.ContentHandler;
 
 @Provider
 public class TikaMessageBodyReader implements MessageBodyReader<TikaContent> {
@@ -25,16 +31,23 @@ public class TikaMessageBodyReader implements MessageBodyReader<TikaContent> {
     public TikaContent readFrom(Class<TikaContent> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        return new TikaContent(new String(readBytes(entityStream), StandardCharsets.UTF_8));
+        return createTikaContent(mediaType, entityStream);
     }
 
-    private static byte[] readBytes(InputStream is) throws IOException {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        byte[] buffer = new byte[4096];
-        int len;
-        while ((len = is.read(buffer)) != -1) {
-            os.write(buffer, 0, len);
+    private TikaContent createTikaContent(MediaType mediaType, InputStream entityStream) throws IOException {
+        Parser parser = new AutoDetectParser();
+        ParseContext context = new ParseContext();
+        context.set(Parser.class, parser);
+        Metadata tikaMetadata = new Metadata();
+        tikaMetadata.set(Metadata.CONTENT_TYPE, mediaType.toString());
+
+        ContentHandler tikaHandler = new ToTextContentHandler();
+        try (InputStream tikaStream = TikaInputStream.get(entityStream)) {
+            parser.parse(tikaStream, tikaHandler, tikaMetadata, context);
+            return new TikaContent(tikaHandler.toString(), tikaMetadata);
+        } catch (Exception e) {
+            throw new IOException(e);
         }
-        return os.toByteArray();
     }
+
 }

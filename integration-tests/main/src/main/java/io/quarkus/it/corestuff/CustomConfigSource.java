@@ -1,4 +1,4 @@
-package io.quarkus.example.corestuff;
+package io.quarkus.it.corestuff;
 
 import java.util.Collections;
 import java.util.Map;

@@ -1,4 +1,4 @@
-package io.quarkus.extension;
+package io.quarkus.it.extension;
 
 import javax.enterprise.event.Observes;
 

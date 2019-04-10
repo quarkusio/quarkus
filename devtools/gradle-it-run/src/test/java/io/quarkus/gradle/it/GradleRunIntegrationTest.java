@@ -18,9 +18,11 @@ package io.quarkus.gradle.it;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
-import java.io.IOException;
-
 import org.junit.jupiter.api.Test;
+
+import ch.vorburger.exec.ManagedProcess;
+import ch.vorburger.exec.ManagedProcessBuilder;
+import ch.vorburger.exec.ManagedProcessException;
 
 /**
  * Integration Test which runs the sample app built by Gradle.
@@ -31,11 +33,11 @@ public class GradleRunIntegrationTest {
     // do not rename this to *IT because we want it to run on regular mvn test without requiring failsafe
 
     @Test
-    public void testHelloEndpoint() throws IOException {
-        Process process = new ProcessBuilder()
-                // .directory("../")
-                .command("java", "-jar", "../gradle-it/build/gradle-it-runner.jar")
-                .start();
+    public void testHelloEndpoint() throws ManagedProcessException {
+        ManagedProcess process = new ManagedProcessBuilder("java")
+                .addArgument("-jar").addArgument("../gradle-it/build/gradle-it-runner.jar").build();
+        process.start();
+
         try {
             given()
                     .when().get("/hello")

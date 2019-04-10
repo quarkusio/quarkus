@@ -35,6 +35,17 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>ch.vorburger.exec</groupId>
+            <artifactId>exec</artifactId>
+            <version>3.1.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>

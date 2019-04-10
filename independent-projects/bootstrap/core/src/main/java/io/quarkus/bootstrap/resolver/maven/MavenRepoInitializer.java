@@ -19,11 +19,8 @@ package io.quarkus.bootstrap.resolver.maven;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.resolution.WorkspaceModelResolver;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
@@ -212,7 +209,7 @@ public class MavenRepoInitializer {
                 addProfileRepos(profilesMap.get(profileName), remotes);
             }
         }
-        if (remotes.isEmpty() || !getRepoIds(remotes).contains(DEFAULT_REMOTE_REPO_ID)) {
+        if (remotes.isEmpty() || !includesDefaultRepo(remotes)) {
             remotes.add(new RemoteRepository.Builder(DEFAULT_REMOTE_REPO_ID, "default", DEFAULT_REMOTE_REPO_URL)
                     .setReleasePolicy(new RepositoryPolicy(true, RepositoryPolicy.UPDATE_POLICY_DAILY, RepositoryPolicy.CHECKSUM_POLICY_WARN))
                     .setSnapshotPolicy(new RepositoryPolicy(false, RepositoryPolicy.UPDATE_POLICY_DAILY, RepositoryPolicy.CHECKSUM_POLICY_WARN))
@@ -227,13 +224,11 @@ public class MavenRepoInitializer {
             final RemoteRepository.Builder repoBuilder = new RemoteRepository.Builder(repo.getId(), repo.getLayout(), repo.getUrl());
             org.apache.maven.settings.RepositoryPolicy policy = repo.getReleases();
             if (policy != null) {
-                repoBuilder.setReleasePolicy(
-                        new RepositoryPolicy(policy.isEnabled(), policy.getUpdatePolicy(), policy.getChecksumPolicy()));
+                repoBuilder.setReleasePolicy(toAetherRepoPolicy(policy));
             }
             policy = repo.getSnapshots();
             if (policy != null) {
-                repoBuilder.setSnapshotPolicy(
-                        new RepositoryPolicy(policy.isEnabled(), policy.getUpdatePolicy(), policy.getChecksumPolicy()));
+                repoBuilder.setSnapshotPolicy(toAetherRepoPolicy(policy));
             }
             all.add(repoBuilder.build());
         }
@@ -299,13 +294,22 @@ public class MavenRepoInitializer {
         return new File(userMavenConfigurationHome, "repository").getAbsolutePath();
     }
 
-    private static Set<String> getRepoIds(List<RemoteRepository> repositories) {
-        final Set<String> repoIds = new HashSet<>(repositories.size());
-        if (repositories != null) {
-            for (ArtifactRepository repository : repositories) {
-                repoIds.add(repository.getId());
+    private static boolean includesDefaultRepo(List<RemoteRepository> repositories) {
+        for (ArtifactRepository repository : repositories) {
+            if(repository.getId().equals(DEFAULT_REMOTE_REPO_ID)) {
+                return true;
             }
         }
-        return repoIds;
+        return false;
+    }
+
+    private static RepositoryPolicy toAetherRepoPolicy(org.apache.maven.settings.RepositoryPolicy settingsPolicy) {
+        return new RepositoryPolicy(settingsPolicy.isEnabled(),
+                isEmpty(settingsPolicy.getUpdatePolicy()) ? RepositoryPolicy.UPDATE_POLICY_DAILY : settingsPolicy.getUpdatePolicy(),
+                        isEmpty(settingsPolicy.getChecksumPolicy()) ? RepositoryPolicy.CHECKSUM_POLICY_WARN : settingsPolicy.getChecksumPolicy());
+    }
+
+    private static boolean isEmpty(String str) {
+        return str == null || str.isEmpty();
     }
 }

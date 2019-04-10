@@ -1,8 +1,7 @@
 pluginManagement {
     repositories {
-        mavenLocal()
-
-        // target/dependencies is missing quarkus-gradle-plugin's dependencies; we need latest transitive dependencies from local SNAPSHOTs too:
+        maven { url '../gradle/target/quarkus-gradle-plugin-999-SNAPSHOT/quarkus-gradle-plugin-999-SNAPSHOT/' }
+        maven { url '../gradle/target/dependencies/' }
         mavenCentral()
     }
     resolutionStrategy {

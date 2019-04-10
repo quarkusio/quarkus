@@ -8,7 +8,7 @@ import io.quarkus.tika.runtime.jaxrs.TikaMessageBodyReader;
 public class TikaProcessor {
 
     @BuildStep
-    void setupGzipProviders(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
+    void setupTikaProvider(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
         providers.produce(new ResteasyJaxrsProviderBuildItem(TikaMessageBodyReader.class.getName()));
     }
 }

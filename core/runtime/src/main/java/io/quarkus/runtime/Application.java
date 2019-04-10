@@ -35,7 +35,10 @@ import sun.misc.SignalHandler;
  */
 @SuppressWarnings("restriction")
 public abstract class Application {
-    private static final Logger LOG = Logger.getLogger(Application.class);
+
+    // WARNING: do not inject a logger here, it's too early: the log manager has not been properly set up yet
+
+    private static final String DISABLE_SIGNAL_HANDLERS = "DISABLE_SIGNAL_HANDLERS";
 
     private static final int ST_INITIAL = 0;
     private static final int ST_STARTING = 1;
@@ -65,7 +68,7 @@ public abstract class Application {
      * @implNote The command line args are not yet used, but at some point we'll want a facility for overriding config and/or
      *           letting the user hook into it.
      */
-    public final void start(@SuppressWarnings("unused") String[] args) {
+    public final void start(String[] args) {
         final Lock stateLock = this.stateLock;
         stateLock.lock();
         try {
@@ -180,8 +183,7 @@ public abstract class Application {
      */
     public final void run(String[] args) {
         try {
-            final String property = "DISABLE_SIGNAL_HANDLERS";
-            if (ImageInfo.inImageRuntimeCode() && System.getenv(property) == null) {
+            if (ImageInfo.inImageRuntimeCode() && System.getenv(DISABLE_SIGNAL_HANDLERS) == null) {
                 final SignalHandler handler = new SignalHandler() {
                     @Override
                     public void handle(final Signal signal) {
@@ -197,9 +199,8 @@ public abstract class Application {
                         DiagnosticPrinter.printDiagnostics(System.out);
                     }
                 });
-            } else {
-                LOG.warn("Installation of signal handlers disabled by the presence of the environment variable: " + property);
             }
+
             final ShutdownHookThread shutdownHookThread = new ShutdownHookThread(Thread.currentThread());
             Runtime.getRuntime().addShutdownHook(shutdownHookThread);
             start(args);

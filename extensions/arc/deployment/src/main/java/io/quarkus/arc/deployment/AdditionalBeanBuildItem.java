@@ -61,9 +61,6 @@ public final class AdditionalBeanBuildItem extends MultiBuildItem {
     }
 
     AdditionalBeanBuildItem(List<String> beanClasses, boolean removable, DotName defaultScope) {
-        if (beanClasses.isEmpty()) {
-            throw new IllegalArgumentException("No bean classes specified");
-        }
         this.beanClasses = beanClasses;
         this.removable = removable;
         this.defaultScope = defaultScope;

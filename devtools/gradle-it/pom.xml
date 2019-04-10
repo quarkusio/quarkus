@@ -12,8 +12,8 @@
 
     <artifactId>quarkus-gradle-plugin-integration-test</artifactId>
     <packaging>pom</packaging>
-    <name>Quarkus - Gradle Plugin IT</name>
-    <description>Quarkus - Gradle Plugin Integration Test Dependencies</description>
+    <name>Quarkus - Gradle Plugin Build IT</name>
+    <description>Quarkus - Gradle Plugin Build Integration Test</description>
 
     <properties>
         <gradle.executable>${project.basedir}/../gradle/gradlew</gradle.executable>

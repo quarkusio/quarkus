@@ -42,6 +42,7 @@
         <module>maven</module>
         <module>gradle</module>
         <module>gradle-it</module>
+        <module>gradle-it-run</module>
         <module>aesh</module>
         <module>reflection-agent</module>
     </modules>

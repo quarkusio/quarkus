@@ -7,7 +7,7 @@
     <parent>
         <artifactId>quarkus-build-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>0.13.1</version>
+        <version>0.13-SNAPSHOT</version>
         <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
 

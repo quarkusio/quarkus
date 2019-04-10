@@ -44,7 +44,7 @@ public class TikaMessageBodyReader implements MessageBodyReader<TikaContent> {
         ContentHandler tikaHandler = new ToTextContentHandler();
         try (InputStream tikaStream = TikaInputStream.get(entityStream)) {
             parser.parse(tikaStream, tikaHandler, tikaMetadata, context);
-            return new TikaContent(tikaHandler.toString(), tikaMetadata);
+            return new TikaContent(tikaHandler.toString().trim(), tikaMetadata);
         } catch (Exception e) {
             throw new IOException(e);
         }

@@ -18,8 +18,11 @@
 package io.quarkus.maven;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -28,6 +31,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.MavenProjectHelper;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -58,6 +62,9 @@ public class BuildMojo extends AbstractMojo {
      */
     @Component
     private RepositorySystem repoSystem;
+
+    @Component
+    private MavenProjectHelper projectHelper;
 
     /**
      * The current repository/network configuration of Maven.
@@ -170,7 +177,13 @@ public class BuildMojo extends AbstractMojo {
                     .build());
 
             // resolve the outcome we need here
-            appCreator.resolveOutcome(RunnerJarOutcome.class);
+            RunnerJarOutcome result = appCreator.resolveOutcome(RunnerJarOutcome.class);
+            Artifact original = project.getArtifact();
+            original.setFile(result.getOriginalJar().toFile());
+            if (uberJar) {
+                projectHelper.attachArtifact(project, result.getRunnerJar().toFile(), "runner");
+            }
+
         } catch (AppCreatorException e) {
             throw new MojoExecutionException("Failed to build a runnable JAR", e);
         }

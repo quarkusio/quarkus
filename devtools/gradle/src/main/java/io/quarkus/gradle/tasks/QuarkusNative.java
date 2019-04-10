@@ -417,6 +417,7 @@ public class QuarkusNative extends QuarkusTask {
                 }
             }).pushOutcome(RunnerJarOutcome.class, new RunnerJarOutcome() {
                 final Path runnerJar = getProject().getBuildDir().toPath().resolve(extension().finalName() + "-runner.jar");
+                final Path originalJar = getProject().getBuildDir().toPath().resolve(extension().finalName() + ".jar");
 
                 @Override
                 public Path getRunnerJar() {
@@ -426,6 +427,11 @@ public class QuarkusNative extends QuarkusTask {
                 @Override
                 public Path getLibDir() {
                     return runnerJar.getParent().resolve("lib");
+                }
+
+                @Override
+                public Path getOriginalJar() {
+                    return originalJar;
                 }
             }).resolveOutcome(NativeImageOutcome.class);
 

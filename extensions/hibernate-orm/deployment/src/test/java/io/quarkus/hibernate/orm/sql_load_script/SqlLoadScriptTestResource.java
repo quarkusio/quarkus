@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.hibernate.orm.sql_load_scirpt;
+package io.quarkus.hibernate.orm.sql_load_script;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;

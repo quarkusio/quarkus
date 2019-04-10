@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.hibernate.orm.sql_load_scirpt;
+package io.quarkus.hibernate.orm.sql_load_script;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;

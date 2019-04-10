@@ -21,9 +21,9 @@ import static org.powermock.api.mockito.PowerMockito.*;
 @RunWith(PowerMockRunner.class)
 public class RuntimeUpdatesProcessorTest {
 
-    public static final String classes = "classes";
-    public static final String sources = "sources";
-    public static final String resources = "resources";
+    static final String classes = "classes";
+    static final String sources = "sources";
+    static final String resources = "resources";
 
 
 
@@ -33,36 +33,37 @@ public class RuntimeUpdatesProcessorTest {
         System.setProperty(RuntimeCompilationSetup.PROP_RUNNER_SOURCES, sources);
         System.setProperty(RuntimeCompilationSetup.PROP_RUNNER_RESOURCES, resources);
 
-        Path fake = Paths.get(Thread.currentThread().getContextClassLoader().getResource("fake").toURI());
-
-
-
+        Path fakePath = Paths.get(Thread.currentThread().getContextClassLoader().getResource("fake").toURI());
+        Path classesPath = fakePath.resolve(classes);
 
         ClassLoaderCompiler mock = mock(ClassLoaderCompiler.class);
 
         whenNew(ClassLoaderCompiler.class)
                 .withAnyArguments()
                 .thenReturn(mock);
+
         when(mock, "allHandledExtensions").thenReturn(Collections.singleton(".java"));
 
         mockStatic(Paths.class);
 
         List<String> files = new ArrayList<>();
         Mockito.doAnswer((Answer<Object>) invocationOnMock -> {
-            Map<String, Set<File>> compilation1 = invocationOnMock.getArgument(0, Map.class);
-            Set<File> java = compilation1.get(".java");
+            Map<String, Set<File>> compilation = invocationOnMock.getArgument(0, Map.class);
+            Set<File> java = compilation.get(".java");
             for(File file : java){
                 files.add(file.getName());
-                Files.createFile(fake.resolve(classes).resolve(file.getName().replace("java", "class"))).toFile().deleteOnExit();
+                String compileName = file.getName().replace("java", "class");
+                Path compiledPath = Files.createFile(classesPath.resolve(compileName));
+                compiledPath.toFile().deleteOnExit();
             }
             return null;
         }).when(mock).compile(any());
 
 
 
-        when(Paths.get(classes)).thenReturn(fake.resolve(classes));
-        when(Paths.get(resources)).thenReturn(fake.resolve(resources));
-        when(Paths.get(sources)).thenReturn(fake.resolve(sources));
+        when(Paths.get(classes)).thenReturn(classesPath);
+        when(Paths.get(resources)).thenReturn(fakePath.resolve(resources));
+        when(Paths.get(sources)).thenReturn(fakePath.resolve(sources));
 
         RuntimeUpdatesProcessor setup = RuntimeCompilationSetup.setup();
 

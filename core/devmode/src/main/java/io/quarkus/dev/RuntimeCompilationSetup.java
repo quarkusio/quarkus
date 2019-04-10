@@ -17,8 +17,10 @@
 package io.quarkus.dev;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
@@ -52,6 +54,7 @@ public class RuntimeCompilationSetup {
             }
             RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(Paths.get(classesDir),
                     sourcesDir == null ? null : Paths.get(sourcesDir), resourcesDir == null ? null : Paths.get(resourcesDir),
+                    Collections.singletonList((Path path) -> path.endsWith("package-info.java")),
                     compiler);
 
             for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class)) {

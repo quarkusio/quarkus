@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,6 +45,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     private final Path classesDir;
     private final Path sourcesDir;
     private final Path resourcesDir;
+    private final List<Predicate<Path>> exclusions;
     private final ClassLoaderCompiler compiler;
     private volatile long lastChange = System.currentTimeMillis();
 
@@ -53,10 +55,12 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     private static final Logger log = Logger.getLogger(RuntimeUpdatesProcessor.class.getPackage().getName());
     private final List<Runnable> preScanSteps = new CopyOnWriteArrayList<>();
 
-    public RuntimeUpdatesProcessor(Path classesDir, Path sourcesDir, Path resourcesDir, ClassLoaderCompiler compiler) {
+    public RuntimeUpdatesProcessor(Path classesDir, Path sourcesDir, Path resourcesDir, List<Predicate<Path>> exclusions,
+                                   ClassLoaderCompiler compiler) {
         this.classesDir = classesDir;
         this.sourcesDir = sourcesDir;
         this.resourcesDir = resourcesDir;
+        this.exclusions = exclusions;
         this.compiler = compiler;
     }
 
@@ -113,6 +117,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
             try (final Stream<Path> sourcesStream = Files.walk(sourcesDir)) {
                 changedSourceFiles = sourcesStream
                         .parallel()
+                        .filter(p -> isNotExcluded(p))
                         .filter(p -> matchingHandledExtension(p).isPresent())
                         .filter(p -> wasRecentlyModified(p))
                         .map(Path::toFile)
@@ -140,6 +145,10 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
             }
         }
         return false;
+    }
+
+    private boolean isNotExcluded(Path p){
+        return exclusions.stream().noneMatch(predicate-> predicate.test(p));
     }
 
     private Optional<String> matchingHandledExtension(Path p) {

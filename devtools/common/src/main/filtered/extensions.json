@@ -288,6 +288,15 @@
     "artifactId": "quarkus-smallrye-openapi"
   },
   {
+    "name": "Swagger UI",
+    "labels": [
+      "swagger-ui",
+      "swaggerui"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-swagger-ui"
+  },
+  {
     "name": "SmallRye OpenTracing",
     "labels": [
       "smallrye-opentracing",

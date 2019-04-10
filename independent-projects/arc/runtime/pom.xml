@@ -22,7 +22,7 @@
     <parent>
         <groupId>io.quarkus.arc</groupId>
         <artifactId>arc-parent</artifactId>
-        <version>0.13.1</version>
+        <version>0.13.2-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 

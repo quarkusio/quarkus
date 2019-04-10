@@ -246,7 +246,7 @@ public class GreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "hello";
+        return "hello\n";
     }
 }
 ----
@@ -330,7 +330,7 @@ public class GreetingResourceTest {
           .when().get("/hello")
           .then()
              .statusCode(200)    // <2>
-             .body(is("hello"));
+             .body(is("hello\n"));
     }
 
     @Test
@@ -341,7 +341,7 @@ public class GreetingResourceTest {
           .when().get("/hello/greeting/{name}")
           .then()
             .statusCode(200)
-            .body(is("hello " + uuid));
+            .body(is("hello " + uuid + "\n"));
     }
 
 }
@@ -397,7 +397,7 @@ The resource can also use `CompletionStage` as return type to handle asynchronou
 @Produces(MediaType.TEXT_PLAIN)
 public CompletionStage<String> hello() {
     return CompletableFuture.supplyAsync(() -> {
-        return "hello";
+        return "hello\n";
     });
 }
 ----

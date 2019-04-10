@@ -8,11 +8,13 @@ trigger:
   branches:
     include:
     - master
+    - '0.13'
 
 pr:
   branches:
     include:
       - master
+      - '0.13'
   paths:
     exclude:
       - docs/src/main/asciidoc/*

@@ -33,7 +33,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     private final boolean methods;
     private final boolean fields;
     private final boolean constructors;
-    private final boolean finalIsWritable;
+    private final boolean finalFieldsWritable;
 
     public ReflectiveClassBuildItem(boolean methods, boolean fields, Class<?>... className) {
         this(true, methods, fields, className);
@@ -43,7 +43,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this(constructors, methods, fields, false, className);
     }
 
-    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalIsWritable,
+    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
             Class<?>... className) {
         List<String> names = new ArrayList<>();
         for (Class<?> i : className) {
@@ -56,7 +56,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.methods = methods;
         this.fields = fields;
         this.constructors = constructors;
-        this.finalIsWritable = finalIsWritable;
+        this.finalFieldsWritable = finalFieldsWritable;
     }
 
     public ReflectiveClassBuildItem(boolean methods, boolean fields, String... className) {
@@ -67,7 +67,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this(constructors, methods, fields, false, className);
     }
 
-    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalIsWritable,
+    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
             String... className) {
         for (String i : className) {
             if (i == null) {
@@ -78,7 +78,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.methods = methods;
         this.fields = fields;
         this.constructors = constructors;
-        this.finalIsWritable = finalIsWritable;
+        this.finalFieldsWritable = finalFieldsWritable;
     }
 
     public List<String> getClassNames() {
@@ -97,8 +97,8 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return constructors;
     }
 
-    public boolean isFinalWritable() {
-        return finalIsWritable;
+    public boolean areFinalFieldsWritable() {
+        return finalFieldsWritable;
     }
 
     public static Builder builder(Class<?>... className) {
@@ -125,7 +125,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         private boolean constructors = true;
         private boolean methods;
         private boolean fields;
-        private boolean finalIsWritable;
+        private boolean finalFieldsWritable;
 
         private Builder() {
         }
@@ -150,13 +150,13 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
             return this;
         }
 
-        public Builder finalIsWritable(boolean finalIsWritable) {
-            this.finalIsWritable = finalIsWritable;
+        public Builder finalFieldsWritable(boolean finalFieldsWritable) {
+            this.finalFieldsWritable = finalFieldsWritable;
             return this;
         }
 
         public ReflectiveClassBuildItem build() {
-            return new ReflectiveClassBuildItem(constructors, methods, fields, finalIsWritable, className);
+            return new ReflectiveClassBuildItem(constructors, methods, fields, finalFieldsWritable, className);
         }
     }
 }

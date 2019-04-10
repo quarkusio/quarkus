@@ -86,6 +86,10 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
         return null;
     }
 
+    public Map<AppArtifactKey, LocalProject> getProjects() {
+        return projects;
+    }
+
     @Override
     public WorkspaceRepository getRepository() {
         return wsRepo;

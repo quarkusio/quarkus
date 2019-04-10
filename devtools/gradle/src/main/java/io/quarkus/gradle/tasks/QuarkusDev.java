@@ -15,9 +15,12 @@
  */
 package io.quarkus.gradle.tasks;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
@@ -46,6 +49,7 @@ import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.deployment.ApplicationInfoUtil;
 import io.quarkus.dev.ClassLoaderCompiler;
+import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
 import io.quarkus.gradle.QuarkusPluginExtension;
 
@@ -63,8 +67,6 @@ public class QuarkusDev extends QuarkusTask {
     private String jvmArgs;
 
     private boolean preventnoverify = false;
-
-    private static final String RESOURCES_PROP = "quarkus-internal.undertow.resources";
 
     public QuarkusDev() {
         super("Creates a native image");
@@ -151,7 +153,7 @@ public class QuarkusDev extends QuarkusTask {
                     "this should not happen as build should have been executed first. " +
                     "Do the project have any source files?");
         }
-
+        DevModeContext context = new DevModeContext();
         try {
             List<String> args = new ArrayList<>();
             args.add(findJavaTool());
@@ -187,15 +189,6 @@ public class QuarkusDev extends QuarkusTask {
                 args.addAll(Arrays.asList(getJvmArgs().split(" ")));
             }
 
-            for (File f : extension.resourcesDir()) {
-                File servletRes = new File(f, "META-INF/resources");
-                if (servletRes.exists()) {
-                    args.add("-D" + RESOURCES_PROP + "=" + servletRes.getAbsolutePath());
-                    System.out.println("Using servlet resources " + servletRes.getAbsolutePath());
-                    break;
-                }
-            }
-
             // the following flags reduce startup time and are acceptable only for dev purposes
             args.add("-XX:TieredStopAtLevel=1");
             if (!isPreventnoverify()) {
@@ -206,7 +199,6 @@ public class QuarkusDev extends QuarkusTask {
             //this stuff does not change
             // Do not include URIs in the manifest, because some JVMs do not like that
             StringBuilder classPathManifest = new StringBuilder();
-            StringBuilder classPath = new StringBuilder();
 
             final AppModel appModel;
             final AppModelResolver modelResolver = extension().resolveAppModel();
@@ -219,13 +211,13 @@ public class QuarkusDev extends QuarkusTask {
                         e);
             }
             for (AppDependency appDep : appModel.getAllDependencies()) {
-                addToClassPaths(classPathManifest, classPath, appDep.getArtifact().getPath().toFile());
+                addToClassPaths(classPathManifest, context, appDep.getArtifact().getPath().toFile());
             }
 
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
             File wiringClassesDirectory = new File(getBuildDir(), "wiring-classes");
             wiringClassesDirectory.mkdirs();
-            addToClassPaths(classPathManifest, classPath, wiringClassesDirectory);
+            addToClassPaths(classPathManifest, context, wiringClassesDirectory);
 
             //we also want to add the maven plugin jar to the class path
             //this allows us to just directly use classes, without messing around copying them
@@ -245,13 +237,25 @@ public class QuarkusDev extends QuarkusTask {
             } else {
                 throw new GradleException("Unsupported DevModeMain artifact URL:" + classFile);
             }
-            addToClassPaths(classPathManifest, classPath, path);
+            addToClassPaths(classPathManifest, context, path);
 
             //now we need to build a temporary jar to actually run
 
             File tempFile = new File(getBuildDir(), extension.finalName() + "-dev.jar");
             tempFile.delete();
             tempFile.deleteOnExit();
+
+            StringBuilder resources = new StringBuilder();
+            String res = null;
+            for (File file : extension.resourcesDir()) {
+                if (resources.length() > 0)
+                    resources.append(File.pathSeparator);
+                resources.append(file.getAbsolutePath());
+                res = file.getAbsolutePath();
+            }
+            DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(getSourceDir().getAbsolutePath(),
+                    extension.outputDirectory().getAbsolutePath(), res);
+            context.getModules().add(moduleInfo);
 
             try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(tempFile))) {
                 out.putNextEntry(new ZipEntry("META-INF/"));
@@ -262,24 +266,17 @@ public class QuarkusDev extends QuarkusTask {
                 out.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"));
                 manifest.write(out);
 
-                out.putNextEntry(new ZipEntry(ClassLoaderCompiler.DEV_MODE_CLASS_PATH));
-                out.write(classPath.toString().getBytes(StandardCharsets.UTF_8));
-            }
-            StringBuilder resources = new StringBuilder();
-            for (File file : extension.resourcesDir()) {
-                if (resources.length() > 0)
-                    resources.append(File.pathSeparator);
-                resources.append(file.getAbsolutePath());
+                out.putNextEntry(new ZipEntry(DevModeMain.DEV_MODE_CONTEXT));
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                ObjectOutputStream obj = new ObjectOutputStream(new DataOutputStream(bytes));
+                obj.writeObject(context);
+                obj.close();
+                out.write(bytes.toByteArray());
             }
 
             extension.outputDirectory().mkdirs();
             ApplicationInfoUtil.writeApplicationInfoProperties(appModel.getAppArtifact(), extension.outputDirectory().toPath());
 
-            args.add("-Dquarkus-internal.runner.classes=" + extension.outputDirectory().getAbsolutePath());
-            args.add("-Dquarkus-internal.runner.sources=" + getSourceDir().getAbsolutePath());
-            if (resources != null) {
-                args.add("-Dquarkus-internal.runner.resources=" + resources.toString());
-            }
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
             args.add(extension.outputDirectory().getAbsolutePath());
@@ -353,17 +350,15 @@ public class QuarkusDev extends QuarkusTask {
         return java;
     }
 
-    private void addToClassPaths(StringBuilder classPathManifest, StringBuilder classPath, File file)
+    private void addToClassPaths(StringBuilder classPathManifest, DevModeContext context, File file)
             throws MalformedURLException {
         URI uri = file.toPath().toAbsolutePath().toUri();
         classPathManifest.append(uri.getPath());
-        classPath.append(uri.toURL().toString());
+        context.getClassPath().add(uri.toURL());
         if (file.isDirectory()) {
             classPathManifest.append("/");
-            classPath.append("/");
         }
         classPathManifest.append(" ");
-        classPath.append(" ");
     }
 
     /**

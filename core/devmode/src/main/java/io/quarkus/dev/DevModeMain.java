@@ -17,10 +17,15 @@
 package io.quarkus.dev;
 
 import java.io.Closeable;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Paths;
+import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Handler;
 
@@ -37,6 +42,7 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
  */
 public class DevModeMain {
 
+    public static final String DEV_MODE_CONTEXT = "META-INF/dev-mode-context.dat";
     private static final Logger log = Logger.getLogger(DevModeMain.class);
 
     private static volatile ClassLoader currentAppClassLoader;
@@ -44,6 +50,7 @@ public class DevModeMain {
     private static File classesRoot;
     private static File wiringDir;
     private static File cacheDir;
+    private static DevModeContext context;
 
     private static Closeable runner;
     static volatile Throwable deploymentProblem;
@@ -52,12 +59,23 @@ public class DevModeMain {
     public static void main(String... args) throws Exception {
         Timing.staticInitStarted();
 
+        try (InputStream devModeCp = DevModeMain.class.getClassLoader().getResourceAsStream(DEV_MODE_CONTEXT)) {
+            context = (DevModeContext) new ObjectInputStream(new DataInputStream(devModeCp)).readObject();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        //propagate system props
+        for (Map.Entry<String, String> i : context.getSystemProperties().entrySet()) {
+            if (!System.getProperties().containsKey(i.getKey())) {
+                System.setProperty(i.getKey(), i.getValue());
+            }
+        }
         //the path that contains the compiled classes
         classesRoot = new File(args[0]);
         wiringDir = new File(args[1]);
         cacheDir = new File(args[2]);
 
-        runtimeUpdatesProcessor = RuntimeCompilationSetup.setup();
+        runtimeUpdatesProcessor = RuntimeCompilationSetup.setup(context);
         if (runtimeUpdatesProcessor != null) {
             runtimeUpdatesProcessor.checkForChangedClasses();
         }
@@ -103,6 +121,11 @@ public class DevModeMain {
                         .setTarget(classesRoot.toPath())
                         .setFrameworkClassesPath(wiringDir.toPath())
                         .setTransformerCache(cacheDir.toPath());
+                for (DevModeContext.ModuleInfo i : context.getModules()) {
+                    if (i.getClassesPath() != null) {
+                        builder.addAdditionalHotDeploymentPath(Paths.get(i.getClassesPath()));
+                    }
+                }
                 RuntimeRunner runner = builder
                         .build();
                 runner.run();

@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -37,14 +39,19 @@ public class WebsocketHotReloadSetup implements HotReplacementSetup {
         if (password.isPresent()) {
             replacementPassword = password.get();
         } else {
-            File appConfig = hotReplacementContext.getResourcesDir().resolve("application.properties").toFile();
-            if (appConfig.isFile()) {
-                try (InputStream pw = new FileInputStream(appConfig)) {
-                    Properties p = new Properties();
-                    p.load(pw);
-                    replacementPassword = p.getProperty(HotReplacementWebsocketEndpoint.QUARKUS_HOT_RELOAD_PASSWORD);
-                } catch (IOException e) {
-                    logger.error("Failed to read application.properties", e);
+
+            List<Path> resources = hotReplacementContext.getResourcesDir();
+            if (!resources.isEmpty()) {
+                //TODO: fix this
+                File appConfig = resources.get(0).resolve("application.properties").toFile();
+                if (appConfig.isFile()) {
+                    try (InputStream pw = new FileInputStream(appConfig)) {
+                        Properties p = new Properties();
+                        p.load(pw);
+                        replacementPassword = p.getProperty(HotReplacementWebsocketEndpoint.QUARKUS_HOT_RELOAD_PASSWORD);
+                    } catch (IOException e) {
+                        logger.error("Failed to read application.properties", e);
+                    }
                 }
             }
         }

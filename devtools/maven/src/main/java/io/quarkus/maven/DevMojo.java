@@ -16,17 +16,25 @@
 
 package io.quarkus.maven;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.jar.Attributes;
@@ -35,6 +43,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.Resource;
@@ -53,15 +62,15 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.deployment.ApplicationInfoUtil;
-import io.quarkus.dev.ClassLoaderCompiler;
+import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
-import io.quarkus.dev.RuntimeCompilationSetup;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
 
@@ -71,9 +80,6 @@ import io.quarkus.maven.utilities.MojoUtils;
  */
 @Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class DevMojo extends AbstractMojo {
-
-    private static final String RESOURCES_PROP = "quarkus-internal.undertow.resources";
-
     /**
      * The directory for compiled classes.
      */
@@ -180,7 +186,7 @@ public class DevMojo extends AbstractMojo {
         }
 
         if (!sourceDir.isDirectory()) {
-            throw new MojoFailureException("The `src/main/java` directory is required, please create it.");
+            getLog().warn("The `src/main/java` directory does not exist");
         }
 
         if (!buildDir.isDirectory() || !new File(buildDir, "classes").isDirectory()) {
@@ -223,22 +229,6 @@ public class DevMojo extends AbstractMojo {
             if (jvmArgs != null) {
                 args.addAll(Arrays.asList(jvmArgs.split(" ")));
             }
-            //we don't want to just copy every system property, as a lot of them are set by the JVM
-            for (Map.Entry<Object, Object> i : System.getProperties().entrySet()) {
-                if (i.getKey().toString().startsWith("quarkus.")) {
-                    args.add("-D" + i.getKey() + "=" + i.getValue());
-                }
-            }
-
-            for (Resource r : project.getBuild().getResources()) {
-                File f = new File(r.getDirectory());
-                File servletRes = new File(f, "META-INF/resources");
-                if (servletRes.exists()) {
-                    args.add("-D" + RESOURCES_PROP + "=" + servletRes.getAbsolutePath());
-                    getLog().debug("Using servlet resources: " + servletRes.getAbsolutePath());
-                    break;
-                }
-            }
 
             // the following flags reduce startup time and are acceptable only for dev purposes
             args.add("-XX:TieredStopAtLevel=1");
@@ -250,12 +240,84 @@ public class DevMojo extends AbstractMojo {
             //this stuff does not change
             // Do not include URIs in the manifest, because some JVMs do not like that
             StringBuilder classPathManifest = new StringBuilder();
-            StringBuilder classPath = new StringBuilder();
+            DevModeContext devModeContext = new DevModeContext();
+            for (Map.Entry<Object, Object> e : System.getProperties().entrySet()) {
+                devModeContext.getSystemProperties().put(e.getKey().toString(), (String) e.getValue());
+            }
 
             final AppModel appModel;
             try {
                 final LocalProject localProject = LocalProject
                         .resolveLocalProjectWithWorkspace(LocalProject.locateCurrentProjectDir(outputDirectory.toPath()));
+                //we need to establish a partial ordering of the projects (i.e. 'reactor build order')
+
+                List<AppArtifactKey> orderedProjects = new ArrayList<>();
+                HashSet<AppArtifactKey> toplace = new HashSet<>();
+                for (Map.Entry<AppArtifactKey, LocalProject> i : localProject.getWorkspace().getProjects().entrySet()) {
+                    toplace.add(i.getKey());
+                }
+                //TODO: there is probably a better algorithm than this to establish the partial ordering
+                //basically we just iterate and add anything to the list that has not dependencies in 'toplace'
+                //this has worst case performance of O(n^2), if there is a linear relationship between
+                //the modules and the original order is reversed. As N is generally fairly small we can live with this for now
+                for (;;) {
+                    boolean changed = false;
+                    Iterator<AppArtifactKey> it = toplace.iterator();
+                    while (it.hasNext()) {
+                        AppArtifactKey current = it.next();
+                        LocalProject project = localProject.getWorkspace().getProjects().get(current);
+                        boolean canPlace = true;
+                        for (Dependency dep : project.getRawModel().getDependencies()) {
+                            AppArtifactKey key = new AppArtifactKey(dep.getGroupId(), dep.getArtifactId(), dep.getClassifier(),
+                                    dep.getType());
+                            if (toplace.contains(key)) {
+                                canPlace = false;
+                                break;
+                            }
+                        }
+                        if (canPlace) {
+                            changed = true;
+                            orderedProjects.add(current);
+                            it.remove();
+                        }
+                    }
+                    if (toplace.isEmpty()) {
+                        break;
+                    }
+                    if (!changed) {
+                        throw new MojoFailureException("Failed to establish partial ordering between projects "
+                                + localProject.getWorkspace().getProjects().keySet());
+                    }
+
+                }
+                for (AppArtifactKey i : orderedProjects) {
+                    String sourcePath = null;
+                    String classesPath = null;
+                    String resourcePath = null;
+                    LocalProject project = localProject.getWorkspace().getProjects().get(i);
+                    Path javaSourcesDir = project.getSourcesSourcesDir();
+                    if (Files.isDirectory(javaSourcesDir)) {
+                        sourcePath = javaSourcesDir.toAbsolutePath().toString();
+                    }
+                    Path classesDir = project.getClassesDir();
+                    if (Files.isDirectory(classesDir)) {
+                        classesPath = classesDir.toAbsolutePath().toString();
+                    }
+                    Path resourcesSourcesDir = project.getResourcesSourcesDir();
+                    if (Files.isDirectory(resourcesSourcesDir)) {
+                        resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
+                    }
+                    DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(sourcePath, classesPath, resourcePath);
+                    devModeContext.getModules().add(moduleInfo);
+                }
+
+                String resources = null;
+                for (Resource i : project.getBuild().getResources()) {
+                    //todo: support multiple resources dirs for config hot deployment
+                    resources = i.getDirectory();
+                    break;
+                }
+
                 appModel = new BootstrapAppModelResolver(MavenArtifactResolver.builder()
                         .setRepositorySystem(repoSystem)
                         .setRepositorySystemSession(repoSession)
@@ -267,13 +329,13 @@ public class DevMojo extends AbstractMojo {
                 throw new MojoExecutionException("Failed to resolve Quarkus application model", e);
             }
             for (AppDependency appDep : appModel.getAllDependencies()) {
-                addToClassPaths(classPathManifest, classPath, appDep.getArtifact().getPath().toFile());
+                addToClassPaths(classPathManifest, devModeContext, appDep.getArtifact().getPath().toFile());
             }
 
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
             File wiringClassesDirectory = new File(buildDir, "wiring-devmode");
             wiringClassesDirectory.mkdirs();
-            addToClassPaths(classPathManifest, classPath, wiringClassesDirectory);
+            addToClassPaths(classPathManifest, devModeContext, wiringClassesDirectory);
 
             //we also want to add the maven plugin jar to the class path
             //this allows us to just directly use classes, without messing around copying them
@@ -294,7 +356,7 @@ public class DevMojo extends AbstractMojo {
             } else {
                 throw new MojoFailureException("Unsupported DevModeMain artifact URL:" + classFile);
             }
-            addToClassPaths(classPathManifest, classPath, path);
+            addToClassPaths(classPathManifest, devModeContext, path);
 
             //now we need to build a temporary jar to actually run
 
@@ -315,24 +377,17 @@ public class DevMojo extends AbstractMojo {
                 out.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"));
                 manifest.write(out);
 
-                out.putNextEntry(new ZipEntry(ClassLoaderCompiler.DEV_MODE_CLASS_PATH));
-                out.write(classPath.toString().getBytes(StandardCharsets.UTF_8));
-            }
-            String resources = null;
-            for (Resource i : project.getBuild().getResources()) {
-                //todo: support multiple resources dirs for config hot deployment
-                resources = i.getDirectory();
-                break;
+                out.putNextEntry(new ZipEntry(DevModeMain.DEV_MODE_CONTEXT));
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                ObjectOutputStream obj = new ObjectOutputStream(new DataOutputStream(bytes));
+                obj.writeObject(devModeContext);
+                obj.close();
+                out.write(bytes.toByteArray());
             }
 
             outputDirectory.mkdirs();
             ApplicationInfoUtil.writeApplicationInfoProperties(appModel.getAppArtifact(), outputDirectory.toPath());
 
-            addProperty(args, RuntimeCompilationSetup.PROP_RUNNER_CLASSES, outputDirectory.getAbsolutePath());
-            addProperty(args, RuntimeCompilationSetup.PROP_RUNNER_SOURCES, sourceDir.getAbsolutePath());
-            if (resources != null) {
-                addProperty(args, RuntimeCompilationSetup.PROP_RUNNER_RESOURCES, new File(resources).getAbsolutePath());
-            }
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
             args.add(outputDirectory.getAbsolutePath());
@@ -426,17 +481,19 @@ public class DevMojo extends AbstractMojo {
         return java;
     }
 
-    private void addToClassPaths(StringBuilder classPathManifest, StringBuilder classPath, File file) {
+    private void addToClassPaths(StringBuilder classPathManifest, DevModeContext classPath, File file) {
         URI uri = file.toPath().toAbsolutePath().toUri();
+        try {
+            classPath.getClassPath().add(uri.toURL());
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
         String path = uri.getRawPath();
         classPathManifest.append(path);
-        classPath.append(uri.toString());
         if (file.isDirectory()) {
             classPathManifest.append("/");
-            classPath.append("/");
         }
         classPathManifest.append(" ");
-        classPath.append(" ");
     }
 
     /**

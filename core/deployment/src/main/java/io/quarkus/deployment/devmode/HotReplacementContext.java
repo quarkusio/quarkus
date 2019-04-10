@@ -1,6 +1,7 @@
 package io.quarkus.deployment.devmode;
 
 import java.nio.file.Path;
+import java.util.List;
 
 public interface HotReplacementContext {
 
@@ -8,7 +9,7 @@ public interface HotReplacementContext {
 
     Path getSourcesDir();
 
-    Path getResourcesDir();
+    List<Path> getResourcesDir();
 
     Throwable getDeploymentProblem();
 

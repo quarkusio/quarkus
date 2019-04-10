@@ -73,15 +73,34 @@ public class MojoTestBase {
         } catch (IOException e) {
             throw new RuntimeException("Cannot copy project resources", e);
         }
-
-        File pom = new File(out, "pom.xml");
-        try {
-            filter(pom, VARIABLES);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+        filterPom(out);
 
         return out;
+    }
+
+    private static void filterPom(File out) {
+
+        File pom = new File(out, "pom.xml");
+        if (pom.exists()) {
+            try {
+                filter(pom, VARIABLES);
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+        for (File i : out.listFiles()) {
+            if (i.isDirectory()) {
+                pom = new File(i, "pom.xml");
+                if (pom.exists()) {
+                    try {
+                        filter(pom, VARIABLES);
+                    } catch (IOException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                }
+            }
+        }
+
     }
 
     public static void installPluginToLocalRepository(File local) {

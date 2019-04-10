@@ -19,10 +19,10 @@ package io.quarkus.undertow.runtime;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.URL;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
-import java.util.Enumeration;
+import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +57,7 @@ import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.CachingResourceManager;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
+import io.undertow.server.handlers.resource.Resource;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.server.session.SessionIdGenerator;
 import io.undertow.servlet.ServletExtension;
@@ -91,11 +92,15 @@ public class UndertowDeploymentTemplate {
             currentRoot.handleRequest(exchange);
         }
     };
-    private static final String RESOURCES_PROP = "quarkus-internal.undertow.resources";
 
     private static volatile Undertow undertow;
     private static final List<HandlerWrapper> hotDeploymentWrappers = new CopyOnWriteArrayList<>();
+    private static volatile List<Path> hotDeploymentResourcePaths;
     private static volatile HttpHandler currentRoot = ResponseCodeHandler.HANDLE_404;
+
+    public static void setHotDeploymentResources(List<Path> resources) {
+        hotDeploymentResourcePaths = resources;
+    }
 
     public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
             LaunchMode launchMode, ShutdownContext context) {
@@ -112,14 +117,17 @@ public class UndertowDeploymentTemplate {
         }
         d.setClassLoader(cl);
         //TODO: we need better handling of static resources
-        String resourcesDir = System.getProperty(RESOURCES_PROP);
         ResourceManager resourceManager;
-        if (resourcesDir == null) {
+        if (hotDeploymentResourcePaths == null) {
             resourceManager = new KnownPathResourceManager(knownFile, knownDirectories,
                     new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
         } else {
-            resourceManager = new DelegatingResourceManager(new PathResourceManager(Paths.get(resourcesDir)),
-                    new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
+            List<ResourceManager> managers = new ArrayList<>();
+            for (Path i : hotDeploymentResourcePaths) {
+                managers.add(new PathResourceManager(i));
+            }
+            managers.add(new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
+            resourceManager = new DelegatingResourceManager(managers.toArray(new ResourceManager[0]));
         }
 
         if (launchMode == LaunchMode.NORMAL) {

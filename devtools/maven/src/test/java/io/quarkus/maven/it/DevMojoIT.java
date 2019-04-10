@@ -82,6 +82,59 @@ public class DevMojoIT extends MojoTestBase {
     }
 
     @Test
+    public void testThatTheApplicationIsReloadedMultiModule()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/multimodule", "projects/multimodule");
+        runAndCheck();
+
+        // Edit the "Hello" message.
+        File source = new File(testDir, "rest/src/main/java/org/acme/HelloResource.java");
+        final String uuid = UUID.randomUUID().toString();
+        filter(source, ImmutableMap.of("return \"hello\";", "return \"" + uuid + "\";"));
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains(uuid));
+
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+
+        filter(source, ImmutableMap.of(uuid, "carambar"));
+
+        // Wait until we get "carambar"
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("carambar"));
+
+        // Create a new resource
+        source = new File(testDir, "html/src/main/resources/META-INF/resources/lorem.txt");
+        FileUtils.write(source,
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+                "UTF-8");
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> getHttpResponse("/lorem.txt").contains("Lorem ipsum"));
+
+        // Update the resource
+        FileUtils.write(source, uuid, "UTF-8");
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> getHttpResponse("/lorem.txt").contains(uuid));
+
+        // Delete the resource
+        source.delete();
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> getHttpResponse("/lorem.txt", 404));
+    }
+
+    @Test
     public void testThatTheApplicationIsReloadedOnKotlinChange()
             throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject("projects/classic-kotlin", "projects/project-classic-run-kotlin-change");
@@ -293,16 +346,6 @@ public class DevMojoIT extends MojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("foobarbaz"));
-    }
-
-    @Test
-    public void testErrorMessageWhenNoJavaSources() throws IOException, MavenInvocationException {
-        testDir = initProject("projects/classic", "projects/project-no-sources");
-        FileUtils.deleteQuietly(new File(testDir, "src/main/java"));
-        running = new RunningInvoker(testDir, false);
-        MavenProcessInvocationResult result = running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
-        await().until(() -> result.getProcess() != null && !result.getProcess().isAlive());
-        assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
     }
 
     @Test

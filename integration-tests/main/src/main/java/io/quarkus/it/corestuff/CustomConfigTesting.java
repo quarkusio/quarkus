@@ -1,4 +1,4 @@
-package io.quarkus.example.corestuff;
+package io.quarkus.it.corestuff;
 
 import java.io.IOException;
 import java.util.Optional;

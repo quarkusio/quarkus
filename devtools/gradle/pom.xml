@@ -86,6 +86,7 @@
                         </goals>
                         <inherited>false</inherited>
                         <configuration>
+                            <useBaseVersion>true</useBaseVersion>
                             <addParentPoms>true</addParentPoms>
                             <copyPom>true</copyPom>
                             <useRepositoryLayout>true</useRepositoryLayout>

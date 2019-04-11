@@ -247,8 +247,7 @@ public class DevMojo extends AbstractMojo {
 
             final AppModel appModel;
             try {
-                final LocalProject localProject = LocalProject
-                        .resolveLocalProjectWithWorkspace(LocalProject.locateCurrentProjectDir(outputDirectory.toPath()));
+                final LocalProject localProject = LocalProject.loadWorkspace(outputDirectory.toPath());
                 //we need to establish a partial ordering of the projects (i.e. 'reactor build order')
 
                 List<AppArtifactKey> orderedProjects = new ArrayList<>();

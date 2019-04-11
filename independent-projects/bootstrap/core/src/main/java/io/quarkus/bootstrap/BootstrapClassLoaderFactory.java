@@ -165,10 +165,10 @@ public class BootstrapClassLoaderFactory {
             }
             final LocalProject localProject;
             if (localProjectsDiscovery) {
-                localProject = LocalProject.resolveLocalProjectWithWorkspace(LocalProject.locateCurrentProjectDir(appClasses));
+                localProject = LocalProject.loadWorkspace(appClasses);
                 mvnBuilder.setWorkspace(localProject.getWorkspace());
             } else {
-                localProject = LocalProject.resolveLocalProject(LocalProject.locateCurrentProjectDir(appClasses));
+                localProject = LocalProject.load(appClasses);
             }
             final AppModel appModel = new BootstrapAppModelResolver(mvnBuilder.build()).resolveModel(localProject.getAppArtifact());
             if (hierarchical) {
@@ -197,8 +197,8 @@ public class BootstrapClassLoaderFactory {
         final URLClassLoader ucl;
         Path cachedCpPath = null;
         final LocalProject localProject = localProjectsDiscovery || enableClasspathCache
-                ? LocalProject.resolveLocalProjectWithWorkspace(LocalProject.locateCurrentProjectDir(appClasses))
-                : LocalProject.resolveLocalProject(LocalProject.locateCurrentProjectDir(appClasses));
+                ? LocalProject.loadWorkspace(appClasses)
+                : LocalProject.load(appClasses);
         try {
             if (enableClasspathCache) {
                 cachedCpPath = resolveCachedCpPath(localProject);

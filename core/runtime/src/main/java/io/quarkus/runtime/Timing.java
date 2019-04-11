@@ -73,6 +73,7 @@ public class Timing {
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(bootTimeNanoSeconds);
         logger.infof("Quarkus %s started in %ss. %s", version, secondsRepresentation, httpServerInfo);
         logger.infof("Installed features: [%s]", features);
+        bootStartTime = -1;
     }
 
     public static void printStopTime() {
@@ -80,6 +81,7 @@ public class Timing {
         final Logger logger = Logger.getLogger("io.quarkus");
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(stopTimeNanoSeconds);
         logger.infof("Quarkus stopped in %ss", secondsRepresentation);
+        bootStopTime = -1;
     }
 
     public static BigDecimal convertToBigDecimalSeconds(final long timeNanoSeconds) {

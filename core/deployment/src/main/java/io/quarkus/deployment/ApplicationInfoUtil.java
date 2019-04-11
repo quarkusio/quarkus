@@ -27,7 +27,7 @@ public final class ApplicationInfoUtil {
             properties.setProperty("version", appArtifact.getVersion());
         }
         try {
-            appClassesDir.resolve(META_INF).toFile().mkdir();
+            appClassesDir.resolve(META_INF).toFile().mkdirs();
             File file = appClassesDir.resolve(META_INF).resolve(APPLICATION_INFO_PROPERTIES).toFile();
             properties.store(new FileOutputStream(file), "Generated file; do not edit manually");
         } catch (IOException e) {

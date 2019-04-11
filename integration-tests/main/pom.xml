@@ -173,6 +173,10 @@
             <artifactId>kafka_2.12</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>bootstrap</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

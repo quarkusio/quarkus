@@ -59,7 +59,10 @@ public class RuntimeRunner implements Runnable, Closeable {
         this.chainCustomizers = new ArrayList<>(builder.chainCustomizers);
         this.launchMode = builder.launchMode;
         if (builder.classOutput == null) {
-            RuntimeClassLoader runtimeClassLoader = new RuntimeClassLoader(builder.classLoader, target,
+            List<Path> allPaths = new ArrayList<>();
+            allPaths.add(target);
+            allPaths.addAll(builder.additionalHotDeploymentPaths);
+            RuntimeClassLoader runtimeClassLoader = new RuntimeClassLoader(builder.classLoader, allPaths,
                     builder.frameworkClassesPath, builder.transformerCache);
             this.loader = runtimeClassLoader;
             this.classOutput = runtimeClassLoader;
@@ -146,6 +149,10 @@ public class RuntimeRunner implements Runnable, Closeable {
         private Path transformerCache;
         private LaunchMode launchMode = LaunchMode.NORMAL;
         private final List<Path> additionalArchives = new ArrayList<>();
+        /**
+         * additional classes directories that may be hot deployed
+         */
+        private final List<Path> additionalHotDeploymentPaths = new ArrayList<>();
         private final List<Consumer<BuildChainBuilder>> chainCustomizers = new ArrayList<>();
         private ClassOutput classOutput;
         private TransformerTarget transformerTarget;
@@ -172,6 +179,11 @@ public class RuntimeRunner implements Runnable, Closeable {
 
         public Builder addAdditionalArchive(Path additionalArchive) {
             this.additionalArchives.add(additionalArchive);
+            return this;
+        }
+
+        public Builder addAdditionalHotDeploymentPath(Path additionalPath) {
+            this.additionalHotDeploymentPaths.add(additionalPath);
             return this;
         }
 

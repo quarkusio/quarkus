@@ -19,10 +19,16 @@ package io.quarkus.bootstrap.resolver.maven.workspace;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
+import org.apache.maven.model.Resource;
 import org.jboss.logging.Logger;
+
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
@@ -47,20 +53,22 @@ public class LocalProject {
 
     public static LocalProject resolveLocalProjectWithWorkspace(Path currentProjectDir) throws BootstrapException {
 
-        final Path rootDir = locateRootProjectDir(currentProjectDir);
-        log.debugf("Root project dir %s", rootDir);
+        final List<Path> poms = locateRootProjectDir(currentProjectDir);
+        log.debugf("Discovered pom files %s", poms);
 
-        final LocalWorkspace workspace = new LocalWorkspace();
-        final LocalProject project;
-        try {
-            project = loadProject(workspace, rootDir, currentProjectDir);
-        } catch (IOException e) {
-            throw new BootstrapException("Failed to resolve local Maven projects for " + currentProjectDir, e);
+        for(Path rootDir : poms) {
+            final LocalWorkspace workspace = new LocalWorkspace();
+            final LocalProject project;
+            try {
+                project = loadProject(workspace, rootDir, currentProjectDir);
+            } catch (IOException e) {
+                throw new BootstrapException("Failed to resolve local Maven projects for " + currentProjectDir, e);
+            }
+            if (project != null) {
+                return project;
+            }
         }
-        if(project == null) {
-            throw new BootstrapException("Failed to locate current project among the loaded local projects");
-        }
-        return project;
+        throw new BootstrapException("Failed to locate current project among the loaded local projects");
     }
 
     private static LocalProject loadProject(LocalWorkspace workspace, Path dir, Path currentProjectDir) throws IOException {
@@ -81,15 +89,26 @@ public class LocalProject {
         return result;
     }
 
-    private static Path locateRootProjectDir(Path currentProjectDir) throws BootstrapException {
+    /**
+     * Returns all the paths up to the root that contain a pom.xml file, including the current path.
+     *
+     * This list is in order from top most pom to current pom
+     *
+     * @param currentProjectDir
+     * @return
+     * @throws BootstrapException
+     */
+    private static List<Path> locateRootProjectDir(Path currentProjectDir) throws BootstrapException {
+        List<Path> ret = new ArrayList<>();
         Path p = currentProjectDir;
         while(true) {
+            if(Files.exists(p.resolve(POM_XML))) {
+                ret.add(p);
+            }
             final Path parentDir = p.getParent();
             if(parentDir == null) {
-                return p;
-            }
-            if(!Files.exists(parentDir.resolve(POM_XML))) {
-                return p;
+                Collections.reverse(ret);
+                return ret;
             }
             p = parentDir;
         }
@@ -167,6 +186,23 @@ public class LocalProject {
 
     public Path getClassesDir() {
         return getOutputDir().resolve("classes");
+    }
+
+    public Path getSourcesSourcesDir() {
+        if (getRawModel().getBuild() != null && getRawModel().getBuild().getSourceDirectory() != null) {
+            return Paths.get(getRawModel().getBuild().getSourceDirectory());
+        }
+        return dir.resolve("src/main/java");
+    }
+
+    public Path getResourcesSourcesDir() {
+        if(getRawModel().getBuild() != null && getRawModel().getBuild().getResources() != null) {
+            for (Resource i : getRawModel().getBuild().getResources()) {
+                //todo: support multiple resources dirs for config hot deployment
+                return Paths.get(i.getDirectory());
+            }
+        }
+        return dir.resolve("src/main/resources");
     }
 
     public Model getRawModel() {

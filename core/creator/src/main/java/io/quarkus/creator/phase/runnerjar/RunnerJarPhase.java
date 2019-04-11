@@ -96,6 +96,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
     private Path outputDir;
     private Path libDir;
     private Path runnerJar;
+    private Path originalJar;
 
     private String finalName;
 
@@ -174,6 +175,11 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
     }
 
     @Override
+    public Path getOriginalJar() {
+        return originalJar;
+    }
+
+    @Override
     public void register(OutcomeProviderRegistration registration) throws AppCreatorException {
         registration.provides(RunnerJarOutcome.class);
     }
@@ -212,12 +218,14 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         // this greatly aids tools (such as s2i) that look for a single jar in the output directory to work OOTB
         if (uberJar) {
             try {
-                Path originalFile = outputDir.resolve(finalName + ".jar.original");
-                Files.deleteIfExists(originalFile);
-                Files.move(outputDir.resolve(finalName + ".jar"), originalFile);
+                originalJar = outputDir.resolve(finalName + ".jar.original");
+                Files.deleteIfExists(originalJar);
+                Files.move(outputDir.resolve(finalName + ".jar"), originalJar);
             } catch (IOException e) {
                 throw new AppCreatorException("Unable to build uberjar", e);
             }
+        } else {
+            originalJar = outputDir.resolve(finalName + ".jar");
         }
 
         ctx.pushOutcome(RunnerJarOutcome.class, this);

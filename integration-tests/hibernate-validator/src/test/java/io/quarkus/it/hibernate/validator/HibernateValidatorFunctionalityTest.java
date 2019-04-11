@@ -68,4 +68,13 @@ public class HibernateValidatorFunctionalityTest {
                 .then()
                 .body(is("42"));
     }
+
+    @Test
+    public void testNoProduces() {
+        RestAssured.when()
+                .get("/hibernate-validator/test/no-produces/plop/")
+                .then()
+                .statusCode(400)
+                .body(containsString("numeric value out of bounds"));
+    }
 }

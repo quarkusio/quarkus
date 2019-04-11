@@ -20,6 +20,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.hibernate.validator.constraints.Length;
 
@@ -99,6 +100,12 @@ public class HibernateValidatorTestResource {
     @Produces(MediaType.TEXT_PLAIN)
     public String testRestEndPointValidation(@Digits(integer = 5, fraction = 0) @PathParam("id") String id) {
         return id;
+    }
+
+    @GET
+    @Path("/no-produces/{id}/")
+    public Response noProduces(@Digits(integer = 5, fraction = 0) @PathParam("id") String id) {
+        return Response.accepted().build();
     }
 
     private String formatViolations(Set<? extends ConstraintViolation<?>> violations) {

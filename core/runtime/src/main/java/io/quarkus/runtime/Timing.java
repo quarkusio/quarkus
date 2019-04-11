@@ -79,7 +79,7 @@ public class Timing {
         final long stopTimeNanoSeconds = System.nanoTime() - bootStopTime;
         final Logger logger = Logger.getLogger("io.quarkus");
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(stopTimeNanoSeconds);
-        logger.infof("Quarkus stopped in %ss", secondsRepresentation);
+        logger.infof("Quarkus ran for %ss", secondsRepresentation);
     }
 
     public static BigDecimal convertToBigDecimalSeconds(final long timeNanoSeconds) {

@@ -148,7 +148,7 @@ public class NativeGreetingResourceIT extends GreetingResourceTest { // <2>
 The executable is retrieved using the `native.image.path` system property configured in the _Failsafe Maven Plugin_.
 <2> We extend our previous tests, but you can also implement your tests
 
-To see the `NativeGreetingResourceIT` run against the native executable, runs `./mvnw verify -Pnative`:
+To see the `NativeGreetingResourceIT` run against the native executable, use `./mvnw verify -Pnative`:
 [source,shell]
 ----
 ./mvnw verify -Pnative

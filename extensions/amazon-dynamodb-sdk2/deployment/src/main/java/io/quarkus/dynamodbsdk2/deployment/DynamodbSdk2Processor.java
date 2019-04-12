@@ -34,7 +34,6 @@ public class DynamodbSdk2Processor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupDynamoDb() {
-        // Indicates that this extension would like the SSL support to be enabled
         extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.DYNAMODB_SDK2));
     }
 

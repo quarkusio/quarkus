@@ -410,7 +410,10 @@ public class DevMojo extends AbstractMojo {
                 }
             }, "Development Mode Shutdown Hook"));
             try {
-                p.waitFor();
+                int ret = p.waitFor();
+                if (ret != 0) {
+                    throw new MojoFailureException("JVM exited with error code: " + String.valueOf(ret));
+                }
             } catch (Exception e) {
                 p.destroy();
                 throw e;

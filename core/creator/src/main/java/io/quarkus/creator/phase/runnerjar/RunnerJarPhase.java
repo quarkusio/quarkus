@@ -33,6 +33,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -92,6 +93,8 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             "META-INF/quarkus-extension.properties",
             "META-INF/quarkus-deployment-dependency.graph",
             "LICENSE")));
+
+    private final Set<String> userConfiguredIgnoredEntries = new HashSet<>();
 
     private Path outputDir;
     private Path libDir;
@@ -164,6 +167,19 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         return this;
     }
 
+    /**
+     * Entries that should be ignored when creating the runner JAR. The entries
+     * are relatives to the root of the JAR. I.e. "META-INF/README.MD".
+     *
+     * @param ignoredEntries the entries that should be ignored when creating
+     *        the runner JAR
+     * @return this phase instance
+     */
+    public RunnerJarPhase setUserConfiguredIgnoredEntries(Collection<String> ignoredEntries) {
+        this.userConfiguredIgnoredEntries.addAll(ignoredEntries);
+        return this;
+    }
+
     @Override
     public Path getRunnerJar() {
         return runnerJar;
@@ -215,12 +231,16 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         }
 
         // when using uberJar, we rename the standard jar to include the .original suffix
-        // this greatly aids tools (such as s2i) that look for a single jar in the output directory to work OOTB
+        // this greatly aids tools (such as s2i) that look for a single jar in the output directory to work OOTB.
+        // we only do this if the standard jar was present in the output dir in the first place.
         if (uberJar) {
             try {
-                originalJar = outputDir.resolve(finalName + ".jar.original");
-                Files.deleteIfExists(originalJar);
-                Files.move(outputDir.resolve(finalName + ".jar"), originalJar);
+                Path standardJar = outputDir.resolve(finalName + ".jar");
+                if (standardJar.toFile().exists()) {
+                    originalJar = outputDir.resolve(finalName + ".jar.original");
+                    Files.deleteIfExists(originalJar);
+                    Files.move(standardJar, originalJar);
+                }
             } catch (IOException e) {
                 throw new AppCreatorException("Unable to build uberjar", e);
             }
@@ -241,6 +261,8 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         final Map<String, Set<AppDependency>> duplicateCatcher = new HashMap<>();
         final StringBuilder classPath = new StringBuilder();
         final Map<String, List<byte[]>> services = new HashMap<>();
+        Set<String> finalIgnoredEntries = new HashSet<>(IGNORED_ENTRIES);
+        finalIgnoredEntries.addAll(this.userConfiguredIgnoredEntries);
 
         final List<AppDependency> appDeps = curateOutcome.getEffectiveModel().getUserDependencies();
         for (AppDependency appDep : appDeps) {
@@ -268,7 +290,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                                         if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
                                             services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(read(file));
                                             return FileVisitResult.CONTINUE;
-                                        } else if (!IGNORED_ENTRIES.contains(relativePath)) {
+                                        } else if (!finalIgnoredEntries.contains(relativePath)) {
                                             duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>()).add(appDep);
                                             if (!seen.containsKey(relativePath)) {
                                                 seen.put(relativePath, appDep.toString());

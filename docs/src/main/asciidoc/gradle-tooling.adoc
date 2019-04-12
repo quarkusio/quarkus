@@ -209,3 +209,22 @@ The produced executable will be a 64 bit Linux executable, so depending on your 
 it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
 
+== Building Uber-Jars
+
+Quarkus Gradle plugin supports the generation of Uber-Jars by specifying an `--uber-jar` argument as follows:
+
+[source,shell]
+----
+./gradlew quarkusBuild --uber-jar
+----
+
+When building an Uber-Jar you can specify entries that you want to exclude from the generated jar by using the `--ignored-entry` argument:
+
+[source,shell]
+----
+./gradlew quarkusBuild --uber-jar --ignored-entry=META-INF/file1.txt
+----
+
+The entries are relative to the root of the generated Uber-Jar. You can specify multiple entries by adding extra `--ignored-entry` arguments.
+
+

@@ -17,6 +17,7 @@
 
 package io.quarkus.bootstrap.resolver;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.UUID;
 
@@ -59,7 +60,7 @@ public class ResolverSetupCleanup {
                 .build());
     }
 
-    protected TsJar newJar() {
+    protected TsJar newJar() throws IOException {
         return new TsJar(workDir.resolve(UUID.randomUUID().toString()));
     }
 

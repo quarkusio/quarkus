@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.eclipse.aether.RepositoryException;
 import org.eclipse.aether.artifact.Artifact;
@@ -40,11 +41,11 @@ import org.eclipse.aether.util.graph.transformer.ConflictIdSorter;
 import org.eclipse.aether.util.graph.transformer.ConflictMarker;
 import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 import org.eclipse.aether.version.Version;
-
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.resolver.maven.BuildDependencyGraphVisitor;
 import io.quarkus.bootstrap.resolver.maven.DeploymentInjectingDependencyVisitor;
 import io.quarkus.bootstrap.resolver.maven.DeploymentInjectionException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
@@ -57,9 +58,14 @@ import io.quarkus.bootstrap.resolver.maven.SimpleDependencyGraphTransformationCo
 public class BootstrapAppModelResolver implements AppModelResolver {
 
     protected final MavenArtifactResolver mvn;
+    protected Consumer<String> buildTreeConsumer;
 
     public BootstrapAppModelResolver(MavenArtifactResolver mvn) throws AppModelResolverException {
         this.mvn = mvn;
+    }
+
+    public void setBuildTreeLogger(Consumer<String> buildTreeConsumer) {
+        this.buildTreeConsumer = buildTreeConsumer;
     }
 
     public void addRemoteRepositories(List<RemoteRepository> repos) {
@@ -196,55 +202,9 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             } catch (RepositoryException e) {
                 throw new AppModelResolverException("Failed to normalize the dependency graph", e);
             }
-            List<DependencyNode> deploymentDepNodes = new ArrayList<>();
-            final List<ArtifactRequest> requests = new ArrayList<>();
-            visitor = new TreeDependencyVisitor(new DependencyVisitor() {
-                DependencyNode deploymentNode;
-                DependencyNode runtimeNode;
-                Artifact runtimeArtifact;
-                @Override
-                public boolean visitEnter(DependencyNode node) {
-                    final Dependency dep = node.getDependency();
-                    if(dep != null) {
-                        if(deploymentNode == null) {
-                            runtimeArtifact = DeploymentInjectingDependencyVisitor.getInjectedDependency(node);
-                            if(runtimeArtifact != null) {
-                                deploymentNode = node;
-                            }
-                        } else if(runtimeArtifact != null && runtimeNode == null && runtimeArtifact.equals(dep.getArtifact())) {
-                            runtimeNode = node;
-                        }
-                    }
-                    return true;
-                }
-
-                @Override
-                public boolean visitLeave(DependencyNode node) {
-                    final Dependency dep = node.getDependency();
-                    if (dep != null) {
-                        final Artifact artifact = dep.getArtifact();
-                        if (artifact.getFile() == null) {
-                            requests.add(new ArtifactRequest(node));
-                        }
-                        if (deploymentNode != null) {
-                            if (runtimeNode == null && !appDeps.contains(new AppArtifactKey(artifact.getGroupId(),
-                                    artifact.getArtifactId(), artifact.getClassifier(), artifact.getExtension()))) {
-                                deploymentDepNodes.add(node);
-                            } else if (runtimeNode == node) {
-                                runtimeNode = null;
-                                runtimeArtifact = null;
-                            }
-                            if (deploymentNode == node) {
-                                deploymentNode = null;
-                            }
-                        }
-                    }
-                    return true;
-                }
-            });
-            for(DependencyNode child : root.getChildren()) {
-                child.accept(visitor);
-            }
+            final BuildDependencyGraphVisitor buildDepsVisitor = new BuildDependencyGraphVisitor(appDeps, buildTreeConsumer);
+            buildDepsVisitor.visit(root);
+            final List<ArtifactRequest> requests = buildDepsVisitor.getArtifactRequests();
             if(!requests.isEmpty()) {
                 final List<ArtifactResult> results = mvn.resolve(requests);
                 // update the artifacts in the graph
@@ -254,6 +214,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                         result.getRequest().getDependencyNode().setArtifact(artifact);
                     }
                 }
+                final List<DependencyNode> deploymentDepNodes = buildDepsVisitor.getDeploymentNodes();
                 deploymentDeps = new ArrayList<>(deploymentDepNodes.size());
                 for (DependencyNode dep : deploymentDepNodes) {
                     deploymentDeps.add(new AppDependency(BootstrapAppModelResolver.toAppArtifact(dep.getArtifact()),

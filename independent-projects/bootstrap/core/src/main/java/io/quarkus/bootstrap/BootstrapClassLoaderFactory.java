@@ -238,7 +238,7 @@ public class BootstrapClassLoaderFactory {
             }
             ucl = new URLClassLoader(urls, parent);
         } catch (AppModelResolverException e) {
-            throw new BootstrapException("Failed to create a deployment classloader for " + localProject.getAppArtifact(), e);
+            throw new BootstrapException("Failed to create the deployment classloader for " + localProject.getAppArtifact(), e);
         }
         return ucl;
     }

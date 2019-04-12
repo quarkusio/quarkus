@@ -20,7 +20,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.StringTokenizer;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.ParseException;
+import org.apache.maven.cli.CLIManager;
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.resolution.WorkspaceModelResolver;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
@@ -75,19 +79,23 @@ public class MavenRepoInitializer {
     private static final File USER_SETTINGS_FILE;
     private static final File GLOBAL_SETTINGS_FILE;
 
+    private static final CommandLine mvnArgs;
+
     static {
         final String mvnCmd = System.getenv(MAVEN_CMD_LINE_ARGS);
         String userSettings = null;
         String globalSettings = null;
         if(mvnCmd != null) {
-            userSettings = getMvnCmdArg(mvnCmd, " -s ");
-            if(userSettings == null) {
-                userSettings = getMvnCmdArg(mvnCmd, "--settings ");
+            final CLIManager mvnCli = new CLIManager();
+            try {
+                mvnArgs = mvnCli.parse(mvnCmd.split("\\s+"));
+            } catch (ParseException e) {
+                throw new IllegalStateException("Failed to parse Maven command line arguments", e);
             }
-            globalSettings = getMvnCmdArg(mvnCmd, " -gs ");
-            if(globalSettings == null) {
-                globalSettings = getMvnCmdArg(mvnCmd, "--global-settings ");
-            }
+            userSettings = mvnArgs.getOptionValue(CLIManager.ALTERNATE_USER_SETTINGS);
+            globalSettings = mvnArgs.getOptionValue(CLIManager.ALTERNATE_GLOBAL_SETTINGS);
+        } else {
+            mvnArgs = null;
         }
 
         File f = userSettings != null ? resolveUserSettings(userSettings) : new File(userMavenConfigurationHome, SETTINGS_XML);
@@ -185,6 +193,22 @@ public class MavenRepoInitializer {
 
         session.setOffline(settings.isOffline());
 
+        if(mvnArgs != null) {
+            if(!session.isOffline() && mvnArgs.hasOption(CLIManager.OFFLINE)) {
+                session.setOffline(true);
+            }
+            if(mvnArgs.hasOption(CLIManager.SUPRESS_SNAPSHOT_UPDATES)) {
+                session.setUpdatePolicy(RepositoryPolicy.UPDATE_POLICY_NEVER);
+            } else if(mvnArgs.hasOption(CLIManager.UPDATE_SNAPSHOTS)) {
+                session.setUpdatePolicy(RepositoryPolicy.UPDATE_POLICY_ALWAYS);
+            }
+            if(mvnArgs.hasOption(CLIManager.CHECKSUM_FAILURE_POLICY)) {
+                session.setChecksumPolicy(RepositoryPolicy.CHECKSUM_POLICY_FAIL);
+            } else if(mvnArgs.hasOption(CLIManager.CHECKSUM_WARNING_POLICY)) {
+                session.setChecksumPolicy(RepositoryPolicy.CHECKSUM_POLICY_WARN);
+            }
+        }
+
         return session;
     }
 
@@ -197,18 +221,64 @@ public class MavenRepoInitializer {
 
     public static List<RemoteRepository> getRemoteRepos(Settings settings) throws AppModelResolverException {
         final List<RemoteRepository> remotes = new ArrayList<>();
+
+        List<String> activeProfiles = new ArrayList<>(0);
+        List<String> inactiveProfiles = new ArrayList<>(0);
+        if(mvnArgs != null) {
+            final String[] profileOptionValues = mvnArgs.getOptionValues(CLIManager.ACTIVATE_PROFILES);
+            if (profileOptionValues != null && profileOptionValues.length > 0) {
+                for (String profileOptionValue : profileOptionValues) {
+                    final StringTokenizer profileTokens = new StringTokenizer(profileOptionValue, ",");
+                    while (profileTokens.hasMoreTokens()) {
+                        final String profileAction = profileTokens.nextToken().trim();
+                        if(profileAction.isEmpty()) {
+                            continue;
+                        }
+                        final char c = profileAction.charAt(0);
+                        if (c == '-' || c == '!') {
+                            inactiveProfiles.add(profileAction.substring(1));
+                        } else if (c == '+') {
+                            activeProfiles.add(profileAction.substring(1));
+                        } else {
+                            activeProfiles.add(profileAction);
+                        }
+                    }
+                }
+            }
+        }
+
         for (Profile profile : settings.getProfiles()) {
-            if (profile.getActivation() != null && profile.getActivation().isActiveByDefault()) {
+            if(inactiveProfiles.remove(profile.getId())) {
+                continue;
+            }
+            if (activeProfiles.remove(profile.getId())
+                    || (profile.getActivation() != null && profile.getActivation().isActiveByDefault())) {
                 addProfileRepos(profile, remotes);
             }
         }
-        final List<String> activeProfiles = settings.getActiveProfiles();
-        if (!activeProfiles.isEmpty()) {
-            final Map<String, Profile> profilesMap = settings.getProfilesAsMap();
-            for (String profileName : activeProfiles) {
-                addProfileRepos(profilesMap.get(profileName), remotes);
+
+        if(!activeProfiles.isEmpty()) {
+            for(String id : activeProfiles) {
+                unrecognizedProfile(id, true);
             }
         }
+        if(!inactiveProfiles.isEmpty()) {
+            for(String id : inactiveProfiles) {
+                unrecognizedProfile(id, false);
+            }
+        }
+
+        // then it's the ones under active profiles
+        activeProfiles = settings.getActiveProfiles();
+        if (!activeProfiles.isEmpty()) {
+            for (String profileName : activeProfiles) {
+                final Profile profile = getProfile(profileName, settings);
+                if(profile != null) {
+                    addProfileRepos(profile, remotes);
+                }
+            }
+        }
+        // central must be there
         if (remotes.isEmpty() || !includesDefaultRepo(remotes)) {
             remotes.add(new RemoteRepository.Builder(DEFAULT_REMOTE_REPO_ID, "default", DEFAULT_REMOTE_REPO_URL)
                     .setReleasePolicy(new RepositoryPolicy(true, RepositoryPolicy.UPDATE_POLICY_DAILY, RepositoryPolicy.CHECKSUM_POLICY_WARN))
@@ -216,6 +286,24 @@ public class MavenRepoInitializer {
                     .build());
         }
         return remotes;
+    }
+
+    private static Profile getProfile(String name, Settings settings) throws AppModelResolverException {
+        final Profile profile = settings.getProfilesAsMap().get(name);
+        if(profile == null) {
+            unrecognizedProfile(name, true);
+        }
+        return profile;
+    }
+
+    private static void unrecognizedProfile(String name, boolean activate) {
+        final StringBuilder buf = new StringBuilder();
+        buf.append("The requested Maven profile \"").append(name).append("\" could not be ");
+        if(!activate) {
+            buf.append("de");
+        }
+        buf.append("activated because it does not exist.");
+        log.warn(buf.toString());
     }
 
     private static void addProfileRepos(final Profile profile, final List<RemoteRepository> all) {
@@ -263,26 +351,6 @@ public class MavenRepoInitializer {
         }
 
         return settings = effectiveSettings;
-    }
-
-    private static String getMvnCmdArg(final String mvnCmd, String argName) {
-        final int argStart = mvnCmd.indexOf(argName);
-        if(argStart > 0) {
-            final StringBuilder buf = new StringBuilder();
-            int i = argStart + argName.length();
-            while(i < mvnCmd.length()) {
-                final char c = mvnCmd.charAt(i++);
-                if(Character.isWhitespace(c)) {
-                    if(buf.length() > 0) {
-                        return buf.toString();
-                    }
-                } else {
-                    buf.append(c);
-                }
-            }
-            return buf.length() == 0 ? null : buf.toString();
-        }
-        return null;
     }
 
     public static String getLocalRepo(Settings settings) {

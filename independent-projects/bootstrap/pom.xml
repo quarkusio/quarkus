@@ -86,6 +86,21 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>
+                <artifactId>maven-embedder</artifactId>
+                <version>${maven-core.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.sonatype.plexus</groupId>
+                        <artifactId>plexus-sec-dispatcher</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.sonatype.plexus</groupId>
+                        <artifactId>plexus-cipher</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.maven</groupId>
                 <artifactId>maven-resolver-provider</artifactId>
                 <version>${maven-core.version}</version>
             </dependency>

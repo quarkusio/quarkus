@@ -38,7 +38,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.Config;
-import org.jboss.builder.BuildResult;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -49,6 +48,7 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.builder.BuildResult;
 import io.quarkus.creator.AppCreationPhase;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;

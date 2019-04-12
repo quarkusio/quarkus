@@ -25,8 +25,7 @@ import java.util.Map;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 
-import org.jboss.builder.item.MultiBuildItem;
-
+import io.quarkus.builder.item.MultiBuildItem;
 import io.undertow.servlet.api.InstanceFactory;
 
 public final class FilterBuildItem extends MultiBuildItem {

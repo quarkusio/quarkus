@@ -16,8 +16,7 @@
 
 package io.quarkus.undertow.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
-
+import io.quarkus.builder.item.MultiBuildItem;
 import io.undertow.servlet.ServletExtension;
 
 public final class ServletExtensionBuildItem extends MultiBuildItem {

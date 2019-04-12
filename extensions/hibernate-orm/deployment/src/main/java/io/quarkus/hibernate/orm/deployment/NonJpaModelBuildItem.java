@@ -16,7 +16,7 @@
 
 package io.quarkus.hibernate.orm.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Model class that JPA should ignore

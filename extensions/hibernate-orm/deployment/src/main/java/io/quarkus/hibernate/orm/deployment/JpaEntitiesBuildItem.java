@@ -21,8 +21,7 @@ import java.util.Set;
 
 import javax.persistence.Entity;
 
-import org.jboss.builder.item.SimpleBuildItem;
-
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 

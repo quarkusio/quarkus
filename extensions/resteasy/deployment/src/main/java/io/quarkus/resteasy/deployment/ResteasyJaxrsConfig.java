@@ -16,7 +16,7 @@
 
 package io.quarkus.resteasy.deployment;
 
-import org.jboss.builder.item.SimpleBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  * A build item that represents a JAX-RS config.

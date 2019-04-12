@@ -1,6 +1,6 @@
 package io.quarkus.arc.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Represents a mandatory config property that needs to be validated at runtime.

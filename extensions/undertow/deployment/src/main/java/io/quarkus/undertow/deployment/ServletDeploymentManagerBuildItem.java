@@ -16,8 +16,7 @@
 
 package io.quarkus.undertow.deployment;
 
-import org.jboss.builder.item.SimpleBuildItem;
-
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.undertow.servlet.api.DeploymentManager;
 
 public final class ServletDeploymentManagerBuildItem extends SimpleBuildItem {

@@ -1,6 +1,6 @@
 package io.quarkus.kubernetes.spi;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 public final class KubernetesPortBuildItem extends MultiBuildItem {
 

@@ -20,8 +20,9 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Objects;
 
-import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.MethodInfo;
+
+import io.quarkus.builder.item.MultiBuildItem;
 
 public final class ReflectiveMethodBuildItem extends MultiBuildItem {
 

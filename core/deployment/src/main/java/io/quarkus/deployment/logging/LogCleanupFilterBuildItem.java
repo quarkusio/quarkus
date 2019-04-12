@@ -2,8 +2,7 @@ package io.quarkus.deployment.logging;
 
 import java.util.Arrays;
 
-import org.jboss.builder.item.MultiBuildItem;
-
+import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.runtime.logging.LogCleanupFilterElement;
 
 /**

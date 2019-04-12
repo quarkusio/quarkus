@@ -8,8 +8,7 @@ import java.util.function.Supplier;
 
 import javax.enterprise.context.Dependent;
 
-import org.jboss.builder.item.MultiBuildItem;
-
+import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 
 /**

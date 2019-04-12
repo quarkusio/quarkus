@@ -16,7 +16,7 @@
 
 package io.quarkus.deployment.builditem.substrate;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A class that will be reinitialized at runtime by Substrate. This will result in the static

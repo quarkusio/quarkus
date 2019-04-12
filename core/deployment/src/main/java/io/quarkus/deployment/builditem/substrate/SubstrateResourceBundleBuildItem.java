@@ -16,7 +16,7 @@
 
 package io.quarkus.deployment.builditem.substrate;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Indicates that a resource bundle should be included in the native image

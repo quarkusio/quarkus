@@ -16,7 +16,7 @@
 
 package io.quarkus.deployment.builditem;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 public final class GeneratedClassBuildItem extends MultiBuildItem {
     final boolean applicationClass;

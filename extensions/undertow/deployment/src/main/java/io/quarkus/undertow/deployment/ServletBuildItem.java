@@ -24,8 +24,7 @@ import java.util.Map;
 
 import javax.servlet.Servlet;
 
-import org.jboss.builder.item.MultiBuildItem;
-
+import io.quarkus.builder.item.MultiBuildItem;
 import io.undertow.servlet.api.InstanceFactory;
 
 public final class ServletBuildItem extends MultiBuildItem {

@@ -1,6 +1,6 @@
 package io.quarkus.undertow.websockets.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A server websocket endpoint

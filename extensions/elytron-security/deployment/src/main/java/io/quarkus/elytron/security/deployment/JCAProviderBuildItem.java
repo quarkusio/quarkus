@@ -1,6 +1,6 @@
 package io.quarkus.elytron.security.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Metadata for the names of JCA {@linkplain java.security.Provider} to register for reflection

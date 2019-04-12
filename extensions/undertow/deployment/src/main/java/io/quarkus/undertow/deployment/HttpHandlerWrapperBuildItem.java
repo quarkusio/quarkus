@@ -16,8 +16,7 @@
 
 package io.quarkus.undertow.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
-
+import io.quarkus.builder.item.MultiBuildItem;
 import io.undertow.server.HandlerWrapper;
 
 public final class HttpHandlerWrapperBuildItem extends MultiBuildItem {

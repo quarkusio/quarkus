@@ -2,7 +2,7 @@ package io.quarkus.extest.deployment;
 
 import java.security.interfaces.DSAPublicKey;
 
-import org.jboss.builder.item.SimpleBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 
 final public class PublicKeyBuildItem extends SimpleBuildItem {
     private DSAPublicKey publicKey;

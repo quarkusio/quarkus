@@ -16,8 +16,9 @@
 
 package io.quarkus.arc.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.DotName;
+
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * This build item is used to specify additional bean defining annotations. See also

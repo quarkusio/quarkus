@@ -1,6 +1,6 @@
 package io.quarkus.jaxb.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A location that should be scanned for jaxb.index files

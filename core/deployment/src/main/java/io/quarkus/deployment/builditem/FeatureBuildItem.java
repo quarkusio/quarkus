@@ -2,7 +2,7 @@ package io.quarkus.deployment.builditem;
 
 import java.util.Objects;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Describes a functionality provided by an extension. The info is displayed to users.

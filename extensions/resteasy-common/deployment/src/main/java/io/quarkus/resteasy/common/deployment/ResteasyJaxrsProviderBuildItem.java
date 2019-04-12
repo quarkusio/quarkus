@@ -16,7 +16,7 @@
 
 package io.quarkus.resteasy.common.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A build item that represents a JAX-RS provider class.

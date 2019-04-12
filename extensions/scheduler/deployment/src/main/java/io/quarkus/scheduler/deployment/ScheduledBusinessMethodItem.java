@@ -17,11 +17,11 @@ package io.quarkus.scheduler.deployment;
 
 import java.util.List;
 
-import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.builder.item.MultiBuildItem;
 
 public final class ScheduledBusinessMethodItem extends MultiBuildItem {
 

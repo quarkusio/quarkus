@@ -20,8 +20,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.IndexView;
+
+import io.quarkus.builder.item.MultiBuildItem;
 
 public final class ApplicationArchiveImpl extends MultiBuildItem implements ApplicationArchive, Closeable {
 

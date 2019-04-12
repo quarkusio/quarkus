@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import org.jboss.builder.item.SimpleBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  * Purely marker build item so that you can register enhancers after Hibernate

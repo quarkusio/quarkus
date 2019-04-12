@@ -27,10 +27,10 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import org.jboss.builder.BuildChainBuilder;
-import org.jboss.builder.BuildResult;
 import org.objectweb.asm.ClassVisitor;
 
+import io.quarkus.builder.BuildChainBuilder;
+import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;

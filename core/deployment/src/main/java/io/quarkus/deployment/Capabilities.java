@@ -18,7 +18,7 @@ package io.quarkus.deployment;
 
 import java.util.Set;
 
-import org.jboss.builder.item.SimpleBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  * The list of capabilities.

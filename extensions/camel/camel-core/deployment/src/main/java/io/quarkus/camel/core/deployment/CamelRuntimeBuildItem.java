@@ -1,7 +1,6 @@
 package io.quarkus.camel.core.deployment;
 
-import org.jboss.builder.item.SimpleBuildItem;
-
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.camel.core.runtime.CamelRuntime;
 import io.quarkus.runtime.RuntimeValue;
 

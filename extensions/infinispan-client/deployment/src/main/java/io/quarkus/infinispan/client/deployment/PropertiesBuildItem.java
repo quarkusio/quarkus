@@ -18,7 +18,7 @@ package io.quarkus.infinispan.client.deployment;
 
 import java.util.Properties;
 
-import org.jboss.builder.item.SimpleBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 
 public final class PropertiesBuildItem extends SimpleBuildItem {
 

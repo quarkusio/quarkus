@@ -18,7 +18,7 @@ package io.quarkus.deployment.builditem;
 
 import java.util.function.Function;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A build item that can be used to unwrap CDI or other proxies

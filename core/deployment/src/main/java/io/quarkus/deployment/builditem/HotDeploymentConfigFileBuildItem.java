@@ -16,7 +16,7 @@
 
 package io.quarkus.deployment.builditem;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A configuration file that if modified should result in a hot redeployment when in

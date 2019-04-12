@@ -37,11 +37,6 @@ import java.util.function.Supplier;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
 
-import org.jboss.builder.BuildChainBuilder;
-import org.jboss.builder.BuildContext;
-import org.jboss.builder.BuildException;
-import org.jboss.builder.BuildStep;
-import org.jboss.builder.item.BuildItem;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
@@ -56,6 +51,11 @@ import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
+import io.quarkus.builder.BuildChainBuilder;
+import io.quarkus.builder.BuildContext;
+import io.quarkus.builder.BuildException;
+import io.quarkus.builder.BuildStep;
+import io.quarkus.builder.item.BuildItem;
 import io.quarkus.runner.RuntimeRunner;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;

@@ -113,7 +113,7 @@ and possibly the deployment artifacts of other Quarkus modules if you want to us
 
 == Build Step Processors
 
-Work is done at deployment time by producing and consuming instances of `org.jboss.builder.item.BuildItem`. This is done
+Work is done at deployment time by producing and consuming instances of `io.quarkus.builder.item.BuildItem`. This is done
 by creating a class that has method(s) annotated with `io.quarkus.deployment.annotations.BuildStep`. These classes can
 consume items by injection, and produce items by either returning them from the method or by injecting an
 instance of `io.quarkus.deployment.annotations.BuildProducer` for the produced type. These processors can also record
@@ -958,8 +958,8 @@ Objects created during the build phase that are passed into the runtime need to 
 [source,bash]
 ----
 	[error]: Build step io.quarkus.deployment.steps.MainClassBuildStep#build threw an exception: java.lang.RuntimeException: Unable to serialize objects of type class sun.security.provider.DSAPublicKeyImpl to bytecode as it has no default constructor
-	at org.jboss.builder.Execution.run(Execution.java:123)
-	at org.jboss.builder.BuildExecutionBuilder.execute(BuildExecutionBuilder.java:136)
+	at io.quarkus.builder.Execution.run(Execution.java:123)
+	at io.quarkus.builder.BuildExecutionBuilder.execute(BuildExecutionBuilder.java:136)
 	at io.quarkus.deployment.QuarkusAugmentor.run(QuarkusAugmentor.java:110)
 	at io.quarkus.runner.RuntimeRunner.run(RuntimeRunner.java:99)
 	... 36 more

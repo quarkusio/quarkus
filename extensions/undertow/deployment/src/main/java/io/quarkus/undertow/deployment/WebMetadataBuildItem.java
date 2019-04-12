@@ -1,7 +1,8 @@
 package io.quarkus.undertow.deployment;
 
-import org.jboss.builder.item.SimpleBuildItem;
 import org.jboss.metadata.web.spec.WebMetaData;
+
+import io.quarkus.builder.item.SimpleBuildItem;
 
 public final class WebMetadataBuildItem extends SimpleBuildItem {
 

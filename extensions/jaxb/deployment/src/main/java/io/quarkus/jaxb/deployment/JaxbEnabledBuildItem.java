@@ -1,6 +1,6 @@
 package io.quarkus.jaxb.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * JAXB is an opt-in extension and must be enabled by

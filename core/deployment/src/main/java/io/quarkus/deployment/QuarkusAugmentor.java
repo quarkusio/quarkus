@@ -23,15 +23,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import org.jboss.builder.BuildChain;
-import org.jboss.builder.BuildChainBuilder;
-import org.jboss.builder.BuildExecutionBuilder;
-import org.jboss.builder.BuildResult;
-import org.jboss.builder.item.BuildItem;
 import org.jboss.logging.Logger;
 
+import io.quarkus.builder.BuildChain;
+import io.quarkus.builder.BuildChainBuilder;
+import io.quarkus.builder.BuildExecutionBuilder;
+import io.quarkus.builder.BuildResult;
+import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
-import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.ClassOutputBuildItem;
 import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
@@ -39,7 +38,6 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusAugmentor {

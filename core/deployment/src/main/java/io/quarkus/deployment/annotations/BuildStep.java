@@ -9,10 +9,9 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.jboss.builder.item.BuildItem;
-import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.builder.item.SimpleBuildItem;
-
+import io.quarkus.builder.item.BuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.runtime.annotations.Template;
 

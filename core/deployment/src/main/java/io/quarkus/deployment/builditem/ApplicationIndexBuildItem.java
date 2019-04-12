@@ -16,8 +16,9 @@
 
 package io.quarkus.deployment.builditem;
 
-import org.jboss.builder.item.SimpleBuildItem;
 import org.jboss.jandex.Index;
+
+import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  * The Jandex index of the application root

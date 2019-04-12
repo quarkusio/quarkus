@@ -18,7 +18,7 @@ package io.quarkus.deployment.builditem;
 
 import java.util.concurrent.Executor;
 
-import org.jboss.builder.item.SimpleBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  */

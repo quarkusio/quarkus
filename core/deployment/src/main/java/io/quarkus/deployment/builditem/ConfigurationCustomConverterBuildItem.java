@@ -1,7 +1,8 @@
 package io.quarkus.deployment.builditem;
 
 import org.eclipse.microprofile.config.spi.Converter;
-import org.jboss.builder.item.MultiBuildItem;
+
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A configuration converter to register.

@@ -2,7 +2,7 @@ package io.quarkus.resteasy.common.deployment;
 
 import java.util.Set;
 
-import org.jboss.builder.item.SimpleBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 
 public final class JaxrsProvidersToRegisterBuildItem extends SimpleBuildItem {
 

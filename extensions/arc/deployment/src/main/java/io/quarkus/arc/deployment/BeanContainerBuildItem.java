@@ -16,9 +16,8 @@
 
 package io.quarkus.arc.deployment;
 
-import org.jboss.builder.item.SimpleBuildItem;
-
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.builder.item.SimpleBuildItem;
 
 public final class BeanContainerBuildItem extends SimpleBuildItem {
 

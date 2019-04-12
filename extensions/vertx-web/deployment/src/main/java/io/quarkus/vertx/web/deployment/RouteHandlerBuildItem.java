@@ -2,11 +2,11 @@ package io.quarkus.vertx.web.deployment;
 
 import java.util.List;
 
-import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.builder.item.MultiBuildItem;
 
 public final class RouteHandlerBuildItem extends MultiBuildItem {
 

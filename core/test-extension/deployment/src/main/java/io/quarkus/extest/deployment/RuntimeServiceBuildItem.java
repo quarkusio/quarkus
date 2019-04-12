@@ -1,7 +1,6 @@
 package io.quarkus.extest.deployment;
 
-import org.jboss.builder.item.SimpleBuildItem;
-
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.extest.runtime.RuntimeXmlConfigService;
 import io.quarkus.runtime.RuntimeValue;
 

@@ -165,6 +165,14 @@
     "artifactId": "quarkus-kotlin"
   },
   {
+    "name": "Kubernetes",
+    "labels": [
+      "kubernetes"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kubernetes"
+  },
+  {
     "name": "AWS Lambda",
     "labels": [
       "lambda",

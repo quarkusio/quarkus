@@ -130,6 +130,7 @@
         <test-containers.version>1.10.7</test-containers.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
         <axle-client.version>0.0.4</axle-client.version>
+        <reactive-pg-client.version>0.11.2</reactive-pg-client.version>
         <kafka-clients.version>1.1.0</kafka-clients.version>
         <kafka2.version>1.1.0</kafka2.version>
         <debezium.version>0.9.2.Final</debezium.version>
@@ -1503,6 +1504,16 @@
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-axle-web-client</artifactId>
+                <version>${axle-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.reactiverse</groupId>
+                <artifactId>reactive-pg-client</artifactId>
+                <version>${reactive-pg-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-axle-postgres-client</artifactId>
                 <version>${axle-client.version}</version>
             </dependency>
             <dependency>

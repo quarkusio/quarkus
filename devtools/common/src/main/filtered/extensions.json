@@ -421,5 +421,19 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-vertx"
+  },
+  {
+    "name": "Reactive Postgres Client",
+    "labels": [
+      "eclipse-vert.x",
+      "vertx",
+      "vert.x",
+      "reactive",
+      "database",
+      "data",
+      "postgresql"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-reactive-pg-client"
   }
 ]

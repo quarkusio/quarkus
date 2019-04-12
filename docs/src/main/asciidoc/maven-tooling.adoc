@@ -333,3 +333,65 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 <2> Use the {project-name} Maven plugin that will hook into the build process
 <3> Use a native profile and plugin to activate GraalVM compilation
 <4> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@SubstrateTest` will be run against the native executable. See the link:building-native-image-guide.html[Native executable guide] for more info.
+
+[[uber-jar-maven]]
+=== Uber-Jar Creation
+
+Quarkus Maven plugin supports the generation of Uber-Jars by specifying an `<uberJar>` configuration option in your `pom.xml`.
+
+[source,xml,subs=attributes+]
+----
+<build>
+    <plugins>
+        <plugin> 
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-maven-plugin</artifactId>
+            <version>${quarkus.version}</version>
+            <configuration>
+                <uberJar>true</uberJar> <1>
+            </configuration>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>build</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+----
+
+<1> Specifies that we want to build an Uber-Jar instead of a regular one. The regular jar will still be present in the `target` directory but it will be renamed to contain the `.original` suffix.
+
+When building an Uber-Jar you can specify entries that you want to exclude from the generated jar by using the `<ignoredEntries>` configuration option.
+
+[source,xml,subs=attributes+]
+----
+<build>
+    <plugins>
+        <plugin> 
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-maven-plugin</artifactId>
+            <version>${quarkus.version}</version>
+            <configuration>
+                <uberJar>true</uberJar>
+                <ignoredEntries>
+                    <ignoredEntry>META-INF/DEPENDENCIES.txt</ignoredEntry> <1>
+                </ignoredEntries>
+            </configuration>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>build</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+----
+
+<1> The entries are relative to the root of the generated Uber-Jar. You can specify multiple entries by adding extra `<ignoredEntry>` elements.
+
+

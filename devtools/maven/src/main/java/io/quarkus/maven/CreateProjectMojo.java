@@ -197,7 +197,7 @@ public class CreateProjectMojo extends AbstractMojo {
                             pluginManager));
         } catch (Exception e) {
             // no reason to fail if the wrapper could not be created
-            getLog().error("Unable to install the Maven wrapper (./mvnw) in the project");
+            getLog().error("Unable to install the Maven wrapper (./mvnw) in the project", e);
         }
     }
 

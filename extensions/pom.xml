@@ -91,6 +91,7 @@
 
         <!-- Integrations -->
         <module>amazon-lambda</module>
+        <module>amazon-dynamodb-sdk2</module>
 
         <!-- Camel -->
         <module>camel</module>

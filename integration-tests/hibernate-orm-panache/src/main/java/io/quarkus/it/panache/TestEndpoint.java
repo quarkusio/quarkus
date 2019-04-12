@@ -28,6 +28,8 @@ import javax.persistence.NonUniqueResultException;
 import javax.transaction.Transactional;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
 import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.junit.jupiter.api.Assertions;
@@ -750,5 +752,25 @@ public class TestEndpoint {
         Assertions.assertEquals(0, Person.count());
 
         return "OK";
+    }
+
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @GET
+    @Path("ignored-properties")
+    public Person ignoredProperties() throws NoSuchMethodException, SecurityException {
+        Person.class.getMethod("$$_hibernate_read_id");
+        Person.class.getMethod("$$_hibernate_read_name");
+        try {
+            Person.class.getMethod("$$_hibernate_read_persistent");
+            Assertions.fail();
+        } catch (NoSuchMethodException e) {
+        }
+
+        // no need to persist it, we can fake it
+        Person person = new Person();
+        person.id = 666l;
+        person.name = "Eddie";
+        person.status = Status.DECEASED;
+        return person;
     }
 }

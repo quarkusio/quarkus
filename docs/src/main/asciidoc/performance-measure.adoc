@@ -19,7 +19,7 @@ It goes without saying but it's better when you say it.
 
 When measuring the footprint of a {project-name} application, we measure https://en.wikipedia.org/wiki/Resident_set_size[Resident Set Size (RSS)]
 and not the JVM heap size which is only a small part of the overall problem.
-The JVM not only allocates native memory for heap (`-Xms`, `-Xmx`) but also structures required by the jvm to run your application. Depending on the JVM implementation, the total memory allocated for an application will include, be not limited to;
+The JVM not only allocates native memory for heap (`-Xms`, `-Xmx`) but also structures required by the jvm to run your application. Depending on the JVM implementation, the total memory allocated for an application will include, but not limited to:
 
  * Heap space
  * Class metadata

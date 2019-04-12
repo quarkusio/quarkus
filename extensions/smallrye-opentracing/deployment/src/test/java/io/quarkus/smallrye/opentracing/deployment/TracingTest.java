@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.opentracing.deployment;
 
+import java.util.List;
+
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -9,12 +11,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import io.opentracing.util.GlobalTracer;
 import io.opentracing.util.GlobalTracerTestUtil;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
+import io.restassured.response.Response;
 
 public class TracingTest {
 
@@ -85,6 +89,30 @@ public class TracingTest {
             Assertions.assertEquals("GET", mockTracer.finishedSpans().get(1).operationName());
             Assertions.assertEquals("GET:io.quarkus.smallrye.opentracing.deployment.TestResource.restClient",
                     mockTracer.finishedSpans().get(2).operationName());
+        } finally {
+            RestAssured.reset();
+        }
+    }
+
+    @Test
+    public void testContextPropagationInFaultTolerance() {
+        try {
+            RestAssured.defaultParser = Parser.TEXT;
+            Response response = RestAssured.when().get("/faultTolerance");
+            response.then().statusCode(200);
+            Assertions.assertEquals("fallback", response.body().asString());
+            List<MockSpan> spans = mockTracer.finishedSpans();
+            Assertions.assertEquals(5, spans.size());
+            for (MockSpan mockSpan : spans) {
+                Assertions.assertEquals(spans.get(0).context().traceId(), mockSpan.context().traceId());
+            }
+            Assertions.assertEquals("ft", mockTracer.finishedSpans().get(0).operationName());
+            Assertions.assertEquals("ft", mockTracer.finishedSpans().get(1).operationName());
+            Assertions.assertEquals("ft", mockTracer.finishedSpans().get(2).operationName());
+            Assertions.assertEquals("io.quarkus.smallrye.opentracing.deployment.Service.fallback",
+                    mockTracer.finishedSpans().get(3).operationName());
+            Assertions.assertEquals("io.quarkus.smallrye.opentracing.deployment.Service.faultTolerance",
+                    mockTracer.finishedSpans().get(4).operationName());
         } finally {
             RestAssured.reset();
         }

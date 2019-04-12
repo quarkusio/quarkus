@@ -672,6 +672,17 @@
                 <version>${opentracing.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.opentracing</groupId>
+                <artifactId>opentracing-mock</artifactId>
+                <version>${opentracing.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.opentracing</groupId>
+                <artifactId>opentracing-util</artifactId>
+                <version>${opentracing.version}</version>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
                 <groupId>io.opentracing.contrib</groupId>
                 <artifactId>opentracing-jaxrs2</artifactId>
                 <version>${opentracing-jaxrs.version}</version>

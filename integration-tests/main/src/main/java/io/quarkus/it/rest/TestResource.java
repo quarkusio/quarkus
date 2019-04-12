@@ -36,6 +36,7 @@ import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.MatrixParam;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -284,6 +285,12 @@ public class TestResource {
             @org.jboss.resteasy.annotations.jaxrs.HeaderParam String header,
             @org.jboss.resteasy.annotations.jaxrs.MatrixParam String matrix,
             @org.jboss.resteasy.annotations.jaxrs.QueryParam String query) {
+    }
+
+    @POST
+    @Path("/gzip")
+    public String gzip(byte[] message) {
+        return "gzipped:" + new String(message);
     }
 
     @XmlRootElement

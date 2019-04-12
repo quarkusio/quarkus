@@ -70,6 +70,7 @@ import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildIt
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.jaxb.deployment.JaxbEnabledBuildItem;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
+import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor.ResteasyCommonConfig;
 import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
 import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.runtime.QuarkusInjectorFactory;
@@ -132,6 +133,7 @@ public class ResteasyScanningProcessor {
      * JAX-RS configuration.
      */
     ResteasyConfig resteasyConfig;
+    ResteasyCommonConfig commonConfig;
 
     @ConfigRoot
     static final class ResteasyConfig {
@@ -359,7 +361,11 @@ public class ResteasyScanningProcessor {
             servletContextParams.produce(new ServletInitParamBuildItem("resteasy.providers",
                     String.join(",", jaxrsProvidersToRegisterBuildItem.getProviders())));
         }
-
+        if (commonConfig.gzip.enabled) {
+            commonConfig.gzip.maxInput.ifPresent(
+                    maxSize -> servletContextParams.produce(new ServletInitParamBuildItem("resteasy.gzip.max.input",
+                            Integer.toString(maxSize))));
+        }
         // register the providers for reflection
         for (String providerToRegister : jaxrsProvidersToRegisterBuildItem.getProviders()) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerToRegister));

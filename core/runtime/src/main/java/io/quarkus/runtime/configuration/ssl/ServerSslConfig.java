@@ -87,10 +87,11 @@ public class ServerSslConfig {
         final Optional<Path> certFile = certificate.file;
         final Optional<Path> keyFile = certificate.keyFile;
         final Optional<Path> keyStoreFile = certificate.keyStoreFile;
+        final String keystorePassword = certificate.keyStorePassword;
         final KeyStore keyStore;
         if (certFile.isPresent() && keyFile.isPresent()) {
             keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-            keyStore.load(null, "password".toCharArray());
+            keyStore.load(null, keystorePassword.toCharArray());
             final Path certPath = certFile.get();
             final Iterator<PemEntry<?>> certItr = Pem.parsePemContent(load(certPath));
             final ArrayList<X509Certificate> certList = new ArrayList<>();
@@ -126,8 +127,9 @@ public class ServerSslConfig {
             if (keyItr.hasNext()) {
                 log.warnf("Ignoring extra content in key file \"%s\"", keyPath);
             }
+            //Entry password needs to match the keystore password
             keyStore.setEntry("default", new KeyStore.PrivateKeyEntry(privateKey, certList.toArray(new X509Certificate[0])),
-                    new KeyStore.PasswordProtection("password".toCharArray()));
+                    new KeyStore.PasswordProtection(keystorePassword.toCharArray()));
         } else if (keyStoreFile.isPresent()) {
             final Path keyStorePath = keyStoreFile.get();
             final Optional<String> keyStoreFileType = certificate.keyStoreFileType;
@@ -155,7 +157,7 @@ public class ServerSslConfig {
             return null;
         }
         final KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(keyStore, "password".toCharArray());
+        keyManagerFactory.init(keyStore, keystorePassword.toCharArray());
         final SSLContextBuilder sslContextBuilder = new SSLContextBuilder();
         sslContextBuilder.setCipherSuiteSelector(cipherSuites.orElse(CipherSuiteSelector.openSslDefault()));
         ProtocolSelector protocolSelector;

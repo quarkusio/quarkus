@@ -4,18 +4,7 @@ RUNNER=$( find . -maxdepth 1 -name '*-runner' )
 if [[ ! -z "$RUNNER" ]]
 then
     export DISABLE_SIGNAL_HANDLERS=true
-    $RUNNER &
+    $RUNNER
 else
-    java -jar *-runner.jar &
+    java -jar *-runner.jar
 fi
-
-while true
-do
-  export HEADERS="$(mktemp)"
-  export EVENT_DATA=$(curl -sS -LD "$HEADERS" -X GET "http://${AWS_LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/next")
-  export REQUEST_ID=$(grep -Fi Lambda-Runtime-Aws-Request-Id "$HEADERS" | tr -d '[:space:]' | cut -d: -f2)
-
-  RESPONSE=$( curl -sS -X POST "http://localhost:8080/__lambda" -d "$EVENT_DATA" )
-
-  curl -sS -X POST "http://${AWS_LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/$REQUEST_ID/response"  -d "$RESPONSE"
-done

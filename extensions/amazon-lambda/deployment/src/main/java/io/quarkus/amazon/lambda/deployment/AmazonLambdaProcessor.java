@@ -1,9 +1,6 @@
 package io.quarkus.amazon.lambda.deployment;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,8 +10,8 @@ import org.jboss.jandex.MethodInfo;
 
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
-import io.quarkus.amazon.lambda.runtime.AmazonLambdaServlet;
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaTemplate;
+import io.quarkus.amazon.lambda.runtime.FunctionError;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -22,24 +19,25 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.undertow.deployment.ServletBuildItem;
 
 @SuppressWarnings("unchecked")
 public final class AmazonLambdaProcessor {
     private static final DotName REQUEST_HANDLER = DotName.createSimple(RequestHandler.class.getName());
 
     @BuildStep
-    List<AmazonLambdaBuildItem> discover(CombinedIndexBuildItem combinedIndexBuildItem,
+    List<AmazonLambdaClassNameBuildItem> discover(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClasses) {
-        List<AmazonLambdaBuildItem> ret = new ArrayList<>();
+        List<AmazonLambdaClassNameBuildItem> ret = new ArrayList<>();
 
         for (ClassInfo info : combinedIndexBuildItem.getIndex().getAllKnownImplementors(REQUEST_HANDLER)) {
             final DotName name = info.name();
 
             final String lambda = name.toString();
-            ret.add(new AmazonLambdaBuildItem(lambda));
+            ret.add(new AmazonLambdaClassNameBuildItem(lambda));
 
             ClassInfo current = info;
             boolean done = false;
@@ -60,9 +58,14 @@ public final class AmazonLambdaProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem beans(List<AmazonLambdaBuildItem> lambdas) {
+    ReflectiveClassBuildItem functionError() {
+        return new ReflectiveClassBuildItem(true, true, FunctionError.class);
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem beans(List<AmazonLambdaClassNameBuildItem> lambdas) {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
-        for (AmazonLambdaBuildItem i : lambdas) {
+        for (AmazonLambdaClassNameBuildItem i : lambdas) {
             builder.addBeanClass(i.getClassName());
         }
         return builder.build();
@@ -70,30 +73,34 @@ public final class AmazonLambdaProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
+    List<AmazonLambdaBuildItem> process(List<AmazonLambdaClassNameBuildItem> items,
+            RecorderContext context,
+            AmazonLambdaTemplate template) {
+        List<AmazonLambdaBuildItem> ret = new ArrayList<>();
+        for (AmazonLambdaClassNameBuildItem i : items) {
+            ret.add(new AmazonLambdaBuildItem(i.getClassName(),
+                    template.discoverParameterTypes((Class<? extends RequestHandler>) context.classProxy(i.getClassName()))));
+        }
+        return ret;
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
     public void servlets(List<AmazonLambdaBuildItem> lambdas,
-            BuildProducer<ServletBuildItem> servletProducer,
             BeanContainerBuildItem beanContainerBuildItem,
             AmazonLambdaTemplate template,
-            RecorderContext context) throws IOException {
+            RecorderContext context,
+            ShutdownContextBuildItem shutdownContextBuildItem) throws IOException {
 
-        for (AmazonLambdaBuildItem lambda : lambdas) {
-            servletProducer.produce(ServletBuildItem.builder(lambda.getClassName(), AmazonLambdaServlet.class.getName())
-                    .setLoadOnStartup(1)
-                    .setInstanceFactory(template.lambdaServletInstanceFactory(
-                            (Class<? extends RequestHandler>) context.classProxy(lambda.getClassName()),
-                            beanContainerBuildItem.getValue()))
-                    .addMapping("/__lambda")
-                    .build());
+        if (lambdas.isEmpty()) {
+            return;
+        } else if (lambdas.size() != 1) {
+            throw new RuntimeException("More than one lambda discovered " + lambdas);
         }
-        final File bootstrap = new File("target/bundle/bootstrap");
-        bootstrap.getParentFile().mkdirs();
-        try (final InputStream stream = getClass().getResourceAsStream("/bootstrap");
-                final FileOutputStream outputStream = new FileOutputStream(bootstrap)) {
-            byte[] bytes = new byte[4096];
-            int read;
-            while ((read = stream.read(bytes)) != -1) {
-                outputStream.write(bytes, 0, read);
-            }
-        }
+        AmazonLambdaBuildItem lambda = lambdas.get(0);
+
+        template.start((Class<? extends RequestHandler>) context.classProxy(lambda.getHandlerClass()), shutdownContextBuildItem,
+                lambda.getTargetType(), beanContainerBuildItem.getValue());
+
     }
 }

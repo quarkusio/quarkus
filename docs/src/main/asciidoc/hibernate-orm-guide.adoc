@@ -120,8 +120,11 @@ There are optional properties useful to refine your `EntityManagerFactory` or gu
 ==== Dialect
 
 `quarkus.hibernate-orm.dialect`:: (e.g. `org.hibernate.dialect.PostgreSQL95Dialect`).
-Class name of the Hibernate ORM dialect.
-
+Class name of the Hibernate ORM dialect. The complete list of bundled dialects is available in the https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/dialect/package-summary.html[Hibernate ORM JavaDoc].
+[NOTE]
+====
+Not all the dialects are supported in GraalVM native executables: we currently provide driver extensions for PostgreSQL, MariaDB, Microsoft SQL Server and H2.
+====
 `quarkus.hibernate-orm.dialect.storage-engine`:: (e.g. `MyISAM` or `InnoDB`).
 The storage engine to use when the dialect supports multiple storage engines.
 

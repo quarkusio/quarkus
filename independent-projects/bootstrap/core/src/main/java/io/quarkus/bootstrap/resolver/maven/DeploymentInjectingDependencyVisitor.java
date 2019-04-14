@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Properties;
 
 import org.eclipse.aether.artifact.Artifact;
@@ -112,11 +113,17 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
     }
 
     private void replaceWith(DependencyNode depNode) throws BootstrapDependencyProcessingException {
+        List<DependencyNode> children = depNode.getChildren();
+        if (children.isEmpty()) {
+            throw new BootstrapDependencyProcessingException(
+                    "No dependencies collected for Quarkus extension deployment artifact " + depNode.getArtifact()
+                            + " while at least the corresponding runtime artifact " + node.getArtifact() + " is expected");
+        }
         //BootstrapDependencyGraphTransformer.log("Replacing dependency " + depNode.getArtifact(), depNode);
         node.setData(INJECTED_DEPENDENCY, node.getArtifact());
         node.setArtifact(depNode.getArtifact());
         node.getDependency().setArtifact(depNode.getArtifact());
-        node.setChildren(depNode.getChildren());
+        node.setChildren(children);
         injectedDeps = true;
     }
 

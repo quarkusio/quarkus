@@ -48,6 +48,7 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
 /**
  * The dev mojo, that connects to a remote host
  * <p>
+ * You can launch forked app directly with {@code dev}
  */
 @Mojo(name = "remote-dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class RemoteDevMojo extends AbstractMojo {

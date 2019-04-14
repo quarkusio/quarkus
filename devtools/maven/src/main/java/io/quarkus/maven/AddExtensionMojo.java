@@ -15,6 +15,12 @@ import org.apache.maven.project.MavenProject;
 
 import io.quarkus.cli.commands.AddExtensions;
 
+/**
+ * Allow adding an extension to an existing pom.xml file.
+ * Because you can add one or several extension in one go, there are 2 mojos:
+ * {@code add-extensions} and {@code add-extension}. Both supports the {@code extension} and {@code extensions}
+ * parameters.
+ */
 @Mojo(name = "add-extension")
 public class AddExtensionMojo extends AbstractMojo {
 

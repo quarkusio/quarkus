@@ -75,8 +75,9 @@ import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
 
 /**
- * The dev mojo, that runs a quarkus app in a forked process
+ * The dev mojo, that runs a quarkus app in a forked process. It's mean hot deployment with background compilation.
  * <p>
+ * You can use this dev mode in a remote container environment with {@code remote-dev}
  */
 @Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class DevMojo extends AbstractMojo {

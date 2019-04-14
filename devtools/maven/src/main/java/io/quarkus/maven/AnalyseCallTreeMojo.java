@@ -26,6 +26,11 @@ import org.apache.maven.plugins.annotations.Parameter;
 
 import io.quarkus.creator.phase.nativeimage.ReportAnalyzer;
 
+/**
+ * Analyze call tree of a method or a class based on an existing report produced by Substrate when using
+ * -H:+PrintAnalysisCallTree,
+ * and does a more meaningful analysis of what is causing a type to be retained.
+ */
 @Mojo(name = "analyze-call-tree")
 public class AnalyseCallTreeMojo extends AbstractMojo {
 

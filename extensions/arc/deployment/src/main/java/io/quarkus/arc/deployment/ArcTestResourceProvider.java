@@ -9,6 +9,8 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.inject.Inject;
 import javax.inject.Qualifier;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.CurrentInjectionPointProvider.InjectionPointImpl;
 import io.quarkus.deployment.test.TestResourceProvider;
@@ -21,7 +23,7 @@ public class ArcTestResourceProvider implements TestResourceProvider {
         BeanManager beanManager = Arc.container().beanManager();
         while (c != Object.class) {
             for (Field field : c.getDeclaredFields()) {
-                if (field.isAnnotationPresent(Inject.class)) {
+                if (field.isAnnotationPresent(Inject.class) || field.isAnnotationPresent(ConfigProperty.class)) {
                     try {
                         Set<Annotation> qualifiers = new HashSet<>();
                         Set<Annotation> annotations = new HashSet<>();

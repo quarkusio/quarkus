@@ -44,7 +44,6 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -301,12 +300,14 @@ public class DevMojo extends AbstractMojo {
                     devModeContext.getModules().add(moduleInfo);
                 }
 
-                String resources = null;
-                for (Resource i : project.getBuild().getResources()) {
-                    //todo: support multiple resources dirs for config hot deployment
-                    resources = i.getDirectory();
-                    break;
-                }
+                /*
+                 * TODO: support multiple resources dirs for config hot deployment
+                 * String resources = null;
+                 * for (Resource i : project.getBuild().getResources()) {
+                 * resources = i.getDirectory();
+                 * break;
+                 * }
+                 */
 
                 appModel = new BootstrapAppModelResolver(MavenArtifactResolver.builder()
                         .setRepositorySystem(repoSystem)
@@ -314,6 +315,7 @@ public class DevMojo extends AbstractMojo {
                         .setRemoteRepositories(repos)
                         .setWorkspace(localProject.getWorkspace())
                         .build())
+                                .setDevMode(true)
                                 .resolveModel(localProject.getAppArtifact());
             } catch (Exception e) {
                 throw new MojoExecutionException("Failed to resolve Quarkus application model", e);
@@ -412,10 +414,6 @@ public class DevMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }
-    }
-
-    private static void addProperty(List<String> args, String name, Object value) {
-        args.add("-D" + name + "=" + value);
     }
 
     /**

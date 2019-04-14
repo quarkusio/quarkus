@@ -51,10 +51,6 @@ public class BuildDependencyGraphVisitor {
     }
 
     public void visit(DependencyNode node) {
-        final Dependency dep = node.getDependency();
-        if(dep == null) {
-            return;
-        }
         if(depth != null) {
             buf.setLength(0);
             if (!depth.isEmpty()) {
@@ -74,7 +70,14 @@ public class BuildDependencyGraphVisitor {
                     buf.append('\u2514').append('\u2500').append(' ');
                 }
             }
-            buf.append(dep.getArtifact()).append(':').append(dep.getScope());
+            buf.append(node.getArtifact());
+            if(!depth.isEmpty()) {
+                buf.append(" (").append(node.getDependency().getScope());
+                if(node.getDependency().isOptional()) {
+                    buf.append(" optional");
+                }
+                buf.append(')');
+            }
             buildTreeConsumer.accept(buf.toString());
         }
         visitEnter(node);
@@ -123,6 +126,9 @@ public class BuildDependencyGraphVisitor {
 
     private void visitLeave(DependencyNode node) {
         final Dependency dep = node.getDependency();
+        if(dep == null) {
+            return;
+        }
         final Artifact artifact = dep.getArtifact();
         if (artifact.getFile() == null) {
             requests.add(new ArtifactRequest(node));

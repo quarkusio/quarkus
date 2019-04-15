@@ -1,6 +1,10 @@
 package io.quarkus.amazon.lambda.deployment;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +23,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
@@ -82,6 +87,20 @@ public final class AmazonLambdaProcessor {
                     template.discoverParameterTypes((Class<? extends RequestHandler>) context.classProxy(i.getClassName()))));
         }
         return ret;
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void bootstrap(BuildProducer<GeneratedResourceBuildItem> generatedResources) throws IOException {
+        try (final InputStream stream = getClass().getResourceAsStream("/bootstrap");
+                final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            byte[] bytes = new byte[4096];
+            int read;
+            while ((read = stream.read(bytes)) != -1) {
+                outputStream.write(bytes, 0, read);
+            }
+            generatedResources.produce(new GeneratedResourceBuildItem("bootstrap", outputStream.toByteArray()));
+        }
     }
 
     @BuildStep

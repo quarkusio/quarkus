@@ -194,8 +194,10 @@
                                     <goal>verify</goal>
                                 </goals>
                                 <configuration>
+                                    <environmentVariables>
+                                        <DYNAMODB_PORT>${dynamodb-local.port}</DYNAMODB_PORT>
+                                    </environmentVariables>
                                     <systemProperties>
-                                        <dynamodb.port>${dynamodb-local.port}</dynamodb.port>
                                         <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
                                     </systemProperties>
                                 </configuration>

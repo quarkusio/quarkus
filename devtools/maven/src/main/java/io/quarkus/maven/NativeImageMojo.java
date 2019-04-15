@@ -38,11 +38,6 @@ import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 
 /**
  * Build a native executable of your application.
- * It improves the startup time of the application, and produces a minimal disk footprint.
- * The executable would have everything to run the application including the "JVM" (shrunk to be just enough to run the
- * application), and the application.
- * <p>
- * You can build the application before with {@code build}
  */
 @Mojo(name = "native-image", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class NativeImageMojo extends AbstractMojo {

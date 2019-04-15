@@ -43,7 +43,8 @@ public class SmallRyeOpenApiTemplate {
                 Config config = ConfigProvider.getConfig();
                 OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 
-                OpenAPI readerModel = OpenApiProcessor.modelFromReader(openApiConfig, Quarkus.class.getClassLoader());
+                OpenAPI readerModel = OpenApiProcessor.modelFromReader(openApiConfig,
+                        Thread.currentThread().getContextClassLoader());
 
                 OpenApiDocument document = createDocument(openApiConfig);
                 document.modelFromAnnotations(annotationModel);
@@ -64,6 +65,7 @@ public class SmallRyeOpenApiTemplate {
     }
 
     private OASFilter filter(OpenApiConfig openApiConfig) {
-        return OpenApiProcessor.getFilter(openApiConfig, Quarkus.class.getClassLoader());
+        return OpenApiProcessor.getFilter(openApiConfig,
+                Thread.currentThread().getContextClassLoader());
     }
 }

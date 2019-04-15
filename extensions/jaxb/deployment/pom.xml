@@ -21,7 +21,7 @@
     <parent>
         <artifactId>quarkus-jaxb-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>0.13-SNAPSHOT</version>
+        <version>0.13.2</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>

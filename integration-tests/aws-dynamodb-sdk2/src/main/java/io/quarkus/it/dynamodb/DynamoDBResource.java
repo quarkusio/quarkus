@@ -19,6 +19,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.StartupEvent;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -50,11 +52,13 @@ public class DynamoDBResource {
 
     void onStart(@Observes StartupEvent ev) {
         asyncClient = DynamoDbAsyncClient.builder()
+                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test-key", "test-secret")))
                 .region(Region.of("localhost"))
                 .endpointOverride(URI.create("http://localhost:" + dynamoDbPort))
                 .build();
 
         client = DynamoDbClient.builder()
+                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test-key", "test-secret")))
                 .region(Region.of("localhost"))
                 .endpointOverride(URI.create("http://localhost:" + dynamoDbPort))
                 .build();

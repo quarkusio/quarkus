@@ -130,8 +130,9 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <phase>generate-test-resources</phase>
+                        <phase>process-test-sources</phase>
                         <configuration>
+                            <async>true</async>
                             <executable>java</executable>
                             <classpathScope>test</classpathScope>
                             <arguments>
@@ -143,7 +144,6 @@
                                 <argument>-port</argument>
                                 <argument>${dynamodb-local.port}</argument>
                             </arguments>
-                            <async>true</async>
                         </configuration>
                         <goals>
                             <goal>exec</goal>

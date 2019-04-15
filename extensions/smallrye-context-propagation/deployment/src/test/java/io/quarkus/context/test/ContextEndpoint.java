@@ -5,6 +5,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.context.RequestScoped;
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -17,9 +18,11 @@ import org.junit.jupiter.api.Assertions;
 
 import io.quarkus.arc.Arc;
 
-@RequestScoped
 @Path("/context")
 public class ContextEndpoint {
+    
+    @Inject
+    RequestBean doNotRemoveMe;
 
     @GET
     @Path("/resteasy")
@@ -40,12 +43,12 @@ public class ContextEndpoint {
     public CompletionStage<String> arcTest() {
         ManagedExecutor me = ManagedExecutor.builder().build();
         RequestBean instance = Arc.container().instance(RequestBean.class).get();
-        System.err.println("Got bean1: " + instance);
+        System.err.println("Got bean1: " + instance.callMe());
         Assertions.assertNotNull(instance);
         CompletableFuture<String> ret = me.completedFuture("OK");
         return ret.thenApplyAsync(text -> {
             RequestBean instance2 = Arc.container().instance(RequestBean.class).get();
-            System.err.println("Got bean2: " + instance2);
+            System.err.println("Got bean2: " + instance2.callMe());
             Assertions.assertEquals(instance, instance2);
             return text;
         });

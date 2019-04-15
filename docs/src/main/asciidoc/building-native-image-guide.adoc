@@ -202,17 +202,22 @@ By default, the native executable is tailored for your operating system (Linux, 
 Because the container may not use the same _executable_ format as the one produced by your operating system,
 we will instruct the Maven build to produce an executable from inside a container:
 
+[source, shell]
+----
+./mvnw package -Pnative -Dnative-image.docker-build=true
+----
+
+[TIP]
+====
+You can also select the container runtime to use with:
 [source,shell]
 ----
+# Docker
 ./mvnw package -Pnative -Dnative-image.container-runtime=docker
-----
-
-Or if you'd like to use podman:
-
-[source,shell]
-----
+# Podman
 ./mvnw package -Pnative -Dnative-image.container-runtime=podman
 ----
+====
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a container.

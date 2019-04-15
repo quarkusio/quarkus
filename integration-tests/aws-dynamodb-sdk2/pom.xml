@@ -116,7 +116,7 @@
                         <goals>
                             <goal>reserve-network-port</goal>
                         </goals>
-                        <phase>process-resources</phase>
+                        <phase>initialize</phase>
                         <configuration>
                             <portNames>
                                 <portName>dynamodb-local.port</portName>
@@ -130,7 +130,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <phase>compile</phase>
+                        <phase>initialize</phase>
                         <configuration>
                             <async>true</async>
                             <executable>java</executable>

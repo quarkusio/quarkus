@@ -26,6 +26,7 @@ Using the community edition is enough.
 Version {graalvm-version} is required.
 * The `GRAALVM_HOME` environment variable configured appropriately
 * Apache Maven 3.5.3+
+* A working C developer environment (see the note below for details)
 * A running Docker
 * The code of the application developed in the link:getting-started-guide.html[Getting Started Guide].
 
@@ -40,7 +41,13 @@ On MacOS, point the variable to the `Home` sub-directory:
 `export GRAALVM_HOME=$HOME/Development/graalvm/Contents/Home/`
 ====
 
+[NOTE]
+====
+What does having a working C developer environment mean?
 
+ * On Linux, you will need GCC, the glibc and zlib headers (on common distributions: `sudo dnf install gcc glibc-devel zlib-devel` or `sudo apt-get install build-essential libz-dev`).
+ * On macOS, execute `xcode-select --install`.
+====
 
 == Solution
 

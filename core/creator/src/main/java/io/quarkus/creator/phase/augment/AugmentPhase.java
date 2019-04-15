@@ -287,11 +287,9 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
             if (!bytecodeTransformerBuildItems.isEmpty()) {
                 final Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = new HashMap<>(
                         bytecodeTransformerBuildItems.size());
-                if (!bytecodeTransformerBuildItems.isEmpty()) {
-                    for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
-                        bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
-                                .add(i.getVisitorFunction());
-                    }
+                for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
+                    bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
+                            .add(i.getVisitorFunction());
                 }
 
                 // now copy all the contents to the runner jar
@@ -309,7 +307,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                                 return;
                             }
                             final String pathName = appClassesDir.relativize(path).toString();
-                            if (!pathName.endsWith(".class") || bytecodeTransformers.isEmpty()) {
+                            if (!pathName.endsWith(".class")) {
                                 return;
                             }
                             final String className = pathName.substring(0, pathName.length() - 6).replace('/', '.');

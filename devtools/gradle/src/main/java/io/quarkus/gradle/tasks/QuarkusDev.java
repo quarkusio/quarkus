@@ -69,7 +69,7 @@ public class QuarkusDev extends QuarkusTask {
     private boolean preventnoverify = false;
 
     public QuarkusDev() {
-        super("Creates a native image");
+        super("Development mode: enables hot deployment with background compilation");
     }
 
     @Optional

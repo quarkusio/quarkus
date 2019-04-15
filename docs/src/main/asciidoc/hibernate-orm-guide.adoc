@@ -58,7 +58,8 @@ quarkus.datasource.password = connor
 quarkus.hibernate-orm.database.generation=drop-and-create
 --
 
-Note that these configuration properties are not the same ones as made available in `{config-file}`: they might differ in names, casing and don't necessarily map 1:1 to each other.
+Note that these configuration properties are not the same ones as in your typical Hibernate ORM configuration file: they might differ in names, casing and don't necessarily map 1:1 to each other.
+Please see below for the list of properties you can define.
 
 An `EntityManagerFactory` will be created based on {project-name} `datasource` configuration as long as the Hibernate ORM extension is declared in your `pom.xml`.
 The dialect will be selected based on the JDBC driver.

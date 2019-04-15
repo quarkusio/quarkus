@@ -162,19 +162,19 @@ Use: `./mvnw compile quarkus:dev`:
 
 [source,shell]
 ----
-[INFO] --------------------< org.acme:quarkus-quickstart >---------------------
-[INFO] Building quarkus-quickstart 1.0-SNAPSHOT
+[INFO] --------------------< org.acme:getting-started >---------------------
+[INFO] Building getting-started 1.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
 [INFO]
-[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ quarkus-quickstart ---
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ getting-started ---
 [INFO] Using 'UTF-8' encoding to copy filtered resources.
 [INFO] skip non existing resourceDirectory /Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/getting-started/src/main/resources
 [INFO]
-[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ quarkus-quickstart ---
+[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ getting-started ---
 [INFO] Changes detected - recompiling the module!
 [INFO] Compiling 2 source files to /Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/getting-started/target/classes
 [INFO]
-[INFO] --- quarkus-maven-plugin:<version>:dev (default-cli) @ quarkus-quickstart ---
+[INFO] --- quarkus-maven-plugin:<version>:dev (default-cli) @ getting-started ---
 Listening for transport dt_socket at address: 5005
 2019-02-28 17:05:22,347 INFO  [io.qua.dep.QuarkusAugmentor] (main) Beginning quarkus augmentation
 2019-02-28 17:05:22,635 INFO  [io.qua.dep.QuarkusAugmentor] (main) Quarkus augmentation completed in 288ms

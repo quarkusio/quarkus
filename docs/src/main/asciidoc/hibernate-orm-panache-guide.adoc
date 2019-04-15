@@ -181,7 +181,8 @@ All `list` methods have equivalent `stream` versions.
 
 [source,java]
 --
-List<String> namesButEmmanuels = Person.streamAll()
+Stream<Person> persons = Person.streamAll();
+List<String> namesButEmmanuels = persons
     .map(p -> p.name.toLowerCase() )
     .filter( n -> ! "emmanuel".equals(n) )
     .collect(Collectors.toList());

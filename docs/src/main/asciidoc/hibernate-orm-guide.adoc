@@ -281,7 +281,7 @@ Collections and relations need to be individually annotated to be cached; in thi
 
 [source,java]
 --
-package com.acme;
+package org.acme;
 
 @Entity
 @Cacheable
@@ -328,9 +328,9 @@ That's all! Caching technology is already integrated and enabled by default in {
 
 Caches store the data in separate regions to isolate different portions of data; such regions are assigned a name, which is useful for configuring each region independently, or to monitor their statistics.
 
-By default entities are cached in regions named after their fully qualified name, e.g. `com.acme.Country`.
+By default entities are cached in regions named after their fully qualified name, e.g. `org.acme.Country`.
 
-Collections are cached in regions named after the fully qualified name of their owner entity and collection field name, separated by `#` character, e.g. `com.acme.Country#cities`.
+Collections are cached in regions named after the fully qualified name of their owner entity and collection field name, separated by `#` character, e.g. `org.acme.Country#cities`.
 
 All cached queries are by default kept in a single region dedicated to them called `default-query-results-region`.
 
@@ -344,7 +344,7 @@ To set the maximum idle time, provide the number of seconds via the `quarkus.hib
 ====
 The double quotes are mandatory if your region name contains a dot. For instance:
 ```
-quarkus.hibernate-orm.cache."com.acme.MyEntity".memory.object-count=1000
+quarkus.hibernate-orm.cache."org.acme.MyEntity".memory.object-count=1000
 ```
 ====
 

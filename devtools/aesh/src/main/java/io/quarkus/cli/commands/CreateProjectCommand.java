@@ -21,7 +21,7 @@ public class CreateProjectCommand implements Command<CommandInvocation> {
     @Option(shortName = 'h', hasValue = false)
     private boolean help;
 
-    @Option(shortName = 'g', defaultValue = "com.acme")
+    @Option(shortName = 'g', defaultValue = "org.acme")
     private String groupid;
 
     @Option(shortName = 'a', defaultValue = "quarkuss")

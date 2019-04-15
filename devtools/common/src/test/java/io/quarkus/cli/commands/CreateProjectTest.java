@@ -42,7 +42,7 @@ public class CreateProjectTest {
 
         Model model = new Model();
         model.setModelVersion("4.0.0");
-        model.setGroupId("com.acme");
+        model.setGroupId("org.acme");
         model.setArtifactId("foobar");
         model.setVersion("10.1.2");
         final File pom = new File(testDir, "pom.xml");
@@ -82,7 +82,7 @@ public class CreateProjectTest {
 
         Model model = new Model();
         model.setModelVersion("4.0.0");
-        model.setGroupId("com.acme");
+        model.setGroupId("org.acme");
         model.setArtifactId("foobar");
         model.setVersion("10.1.2");
         final File pom = new File(testDir, "pom.xml");

@@ -25,6 +25,7 @@ import io.quarkus.it.panache.Person;
 import io.quarkus.test.junit.DisabledOnSubstrate;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 
 /**
  * Test various Panache operations running in Quarkus
@@ -41,6 +42,18 @@ public class PanacheFunctionalityTest {
         RestAssured.when().get("/test/model1").then().body(is("OK"));
         RestAssured.when().get("/test/model2").then().body(is("OK"));
         RestAssured.when().get("/test/model3").then().body(is("OK"));
+    }
+
+    @Test
+    public void testPanacheSerialisation() {
+        RestAssured.given().accept(ContentType.JSON)
+                .when().get("/test/ignored-properties")
+                .then()
+                .body(is("{\"id\":666,\"dogs\":[],\"name\":\"Eddie\",\"serialisationTrick\":1,\"status\":\"DECEASED\"}"));
+        RestAssured.given().accept(ContentType.XML)
+                .when().get("/test/ignored-properties")
+                .then().body(is(
+                        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><person><id>666</id><name>Eddie</name><serialisationTrick>1</serialisationTrick><status>DECEASED</status></person>"));
     }
 
     @DisabledOnSubstrate

@@ -15,11 +15,14 @@
  */
 package io.quarkus.gradle.tasks;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
@@ -31,6 +34,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
@@ -272,16 +277,15 @@ public class QuarkusDev extends QuarkusTask {
             args.add(wiringClassesDirectory.getAbsolutePath());
             args.add(new File(getBuildDir(), "transformer-cache").getAbsolutePath());
             ProcessBuilder pb = new ProcessBuilder(args.toArray(new String[0]));
-            pb.redirectError(ProcessBuilder.Redirect.INHERIT);
-            pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+            pb.redirectErrorStream(true);
             pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
             pb.directory(extension.outputDirectory());
             System.out.println("Starting process: ");
             pb.command().forEach(System.out::println);
             System.out.println("Args: ");
             args.forEach(System.out::println);
-            Process p = pb.start();
 
+            Process p = pb.start();
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -289,6 +293,9 @@ public class QuarkusDev extends QuarkusTask {
                 }
             }, "Development Mode Shutdown Hook"));
             try {
+                ExecutorService es = Executors.newSingleThreadExecutor();
+                es.submit(() -> copyOutputToConsole(p.getInputStream()));
+
                 p.waitFor();
             } catch (Exception e) {
                 p.destroy();
@@ -297,6 +304,18 @@ public class QuarkusDev extends QuarkusTask {
 
         } catch (Exception e) {
             throw new GradleException("Failed to run", e);
+        }
+    }
+
+    private void copyOutputToConsole(InputStream is) {
+        try (InputStreamReader isr = new InputStreamReader(is);
+                BufferedReader br = new BufferedReader(isr)) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                System.out.println(line);
+            }
+        } catch (Exception e) {
+            throw new GradleException("Failed to copy output to console", e);
         }
     }
 

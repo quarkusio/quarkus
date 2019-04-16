@@ -95,6 +95,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
         return DevModeMain.deploymentProblem;
     }
 
+    @Override
     public boolean doScan() throws IOException {
         final long startNanoseconds = System.nanoTime();
         for (Runnable i : preScanSteps) {
@@ -208,12 +209,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                                     out.write(data);
                                 }
                             }
+                            configFileTimestamps.put(config, value);
                         }
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 } else {
-                    configFileTimestamps.remove(config);
+                    configFileTimestamps.put(config, 0L);
                     Path target = classesDir.resolve(configFilePath);
                     try {
                         Files.deleteIfExists(target);

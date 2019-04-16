@@ -183,6 +183,41 @@ public class DevMojoIT extends MojoTestBase {
     }
 
     @Test
+    public void testThatAddingConfigFileWorksCorrectly() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic-noconfig", "projects/project-classic-run-noconfig-add-config");
+        assertThat(testDir).isDirectory();
+        running = new RunningInvoker(testDir, false);
+        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
+
+        String resp = getHttpResponse();
+
+        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
+                .containsIgnoringCase("1.0-SNAPSHOT");
+
+        String greeting = getHttpResponse("/app/hello/greeting");
+        assertThat(greeting).contains("initialValue");
+
+        File configurationFile = new File(testDir, "src/main/resources/application.properties");
+        assertThat(configurationFile).doesNotExist();
+
+        String uuid = UUID.randomUUID().toString();
+
+        FileUtils.write(configurationFile,
+                "greeting=" + uuid,
+                "UTF-8");
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(configurationFile::isFile);
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(10, TimeUnit.SECONDS)
+                .until(() -> getHttpResponse("/app/hello/greeting").contains(uuid));
+    }
+
+    @Test
     public void testThatNewResourcesAreServed() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-resource-change");
         runAndCheck();

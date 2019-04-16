@@ -1,6 +1,8 @@
 package io.quarkus.it.main;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Properties;
 
 import io.debezium.kafka.KafkaCluster;
@@ -12,7 +14,7 @@ public class KafkaTestResource implements QuarkusTestResourceLifecycleManager {
     private KafkaCluster kafka;
 
     @Override
-    public void start() {
+    public Map<String, String> start() {
         try {
             Properties props = new Properties();
             props.setProperty("zookeeper.connection.timeout.ms", "10000");
@@ -27,6 +29,7 @@ public class KafkaTestResource implements QuarkusTestResourceLifecycleManager {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+        return Collections.emptyMap();
     }
 
     @Override

@@ -52,6 +52,7 @@ public abstract class Application {
 
     private int state = ST_INITIAL;
     private volatile boolean shutdownRequested;
+    private static volatile Application currentApplication;
 
     /**
      * Construct a new instance.
@@ -69,6 +70,7 @@ public abstract class Application {
      *           letting the user hook into it.
      */
     public final void start(String[] args) {
+        currentApplication = this;
         final Lock stateLock = this.stateLock;
         stateLock.lock();
         try {
@@ -165,6 +167,7 @@ public abstract class Application {
         try {
             doStop();
         } finally {
+            currentApplication = null;
             stateLock.lock();
             try {
                 state = ST_STOPPED;
@@ -174,6 +177,10 @@ public abstract class Application {
                 stateLock.unlock();
             }
         }
+    }
+
+    public static Application currentApplication() {
+        return currentApplication;
     }
 
     protected abstract void doStop();

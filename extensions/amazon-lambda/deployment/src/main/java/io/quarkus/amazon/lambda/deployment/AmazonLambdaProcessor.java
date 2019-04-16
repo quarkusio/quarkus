@@ -52,6 +52,7 @@ public final class AmazonLambdaProcessor {
                             && method.parameters().size() == 2
                             && !method.parameters().get(0).name().equals(DotName.createSimple(Object.class.getName()))) {
                         reflectiveClasses.produce(new ReflectiveHierarchyBuildItem(method.parameters().get(0)));
+                        reflectiveClasses.produce(new ReflectiveHierarchyBuildItem(method.returnType()));
                         done = true;
                         break;
                     }

@@ -17,8 +17,8 @@ import java.util.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.powermock.api.mockito.PowerMockito.*;
 
-@PrepareForTest({ RuntimeCompilationSetup.class, Paths.class})
 @RunWith(PowerMockRunner.class)
+@PrepareForTest({ RuntimeCompilationSetup.class, Paths.class})
 public class RuntimeUpdatesProcessorTest {
 
     static final String classes = "classes";
@@ -26,7 +26,11 @@ public class RuntimeUpdatesProcessorTest {
     static final String resources = "resources";
 
 
-
+    /**
+     * Deals with issue of {@link ClassLoaderCompiler} trying to recompile package-info.java
+     * @see <a href="https://github.com/quarkusio/quarkus/issues/1992">https://github.com/quarkusio/quarkus/issues/1992</a>
+     * @throws Exception {@link RuntimeCompilationSetup#setup()} may throw a null pointer
+     */
     @Test
     public void testPackageInfoExclusion() throws Exception {
         System.setProperty(RuntimeCompilationSetup.PROP_RUNNER_CLASSES, classes);
@@ -36,41 +40,59 @@ public class RuntimeUpdatesProcessorTest {
         Path fakePath = Paths.get(Thread.currentThread().getContextClassLoader().getResource("fake").toURI());
         Path classesPath = fakePath.resolve(classes);
 
-        ClassLoaderCompiler mock = mock(ClassLoaderCompiler.class);
+        ClassLoaderCompiler mockedClassLoaderCompiler = mock(ClassLoaderCompiler.class);
 
-        whenNew(ClassLoaderCompiler.class)
-                .withAnyArguments()
-                .thenReturn(mock);
+        // When a new instance of ClassLoaderCompiler is called inside RuntimeCompilationSetup, return the mock
+        whenNew(ClassLoaderCompiler.class).withAnyArguments().thenReturn(mockedClassLoaderCompiler);
 
-        when(mock, "allHandledExtensions").thenReturn(Collections.singleton(".java"));
+        // Handles the call to ClassLoaderCompiler#allHandledExtensions()
+        when(mockedClassLoaderCompiler, "allHandledExtensions").thenReturn(Collections.singleton(".java"));
 
+        // Mock all the calls to path
         mockStatic(Paths.class);
 
-        List<String> files = new ArrayList<>();
-        Mockito.doAnswer((Answer<Object>) invocationOnMock -> {
-            Map<String, Set<File>> compilation = invocationOnMock.getArgument(0, Map.class);
-            Set<File> java = compilation.get(".java");
-            for(File file : java){
-                files.add(file.getName());
-                String compileName = file.getName().replace("java", "class");
-                Path compiledPath = Files.createFile(classesPath.resolve(compileName));
-                compiledPath.toFile().deleteOnExit();
-            }
-            return null;
-        }).when(mock).compile(any());
-
-
-
+        // Return these paths instead
         when(Paths.get(classes)).thenReturn(classesPath);
         when(Paths.get(resources)).thenReturn(fakePath.resolve(resources));
         when(Paths.get(sources)).thenReturn(fakePath.resolve(sources));
 
+        List<String> files = new ArrayList<>();
+
+        // Invocation of ClassLoaderCompiler#compile(Map<String, Set<File>> extensionToChangedFiles)
+        Mockito.doAnswer((Answer<Void>) invocationOnMock -> {
+            Map<String, Set<File>> compilation = invocationOnMock.getArgument(0, Map.class);
+
+            // Get Java Compilation Targets
+            Set<File> java = compilation.get(".java");
+            for(File file : java){
+                files.add(file.getName());
+
+                // Change the file extension to .class
+                String compileName = file.getName().replace("java", "class");
+
+                // Fake compile by just puting them in the classes directory
+                Path compiledPath = Files.createFile(classesPath.resolve(compileName));
+                compiledPath.toFile().deleteOnExit();
+            }
+            return null;
+        }).when(mockedClassLoaderCompiler).compile(any());
+
+
+
+
+
         RuntimeUpdatesProcessor setup = RuntimeCompilationSetup.setup();
 
 
-        Assert.assertTrue(setup.checkForChangedClasses());
-        Assert.assertFalse(files.contains("package-info.java"));
-        Assert.assertTrue(files.contains("FakeSource.java"));
+        Assert.assertTrue("RuntimeUpdatesProcessor should have detected a change",
+                setup.checkForChangedClasses());
+
+        Assert.assertFalse("RuntimeUpdatesProcessor should not have picked up 'package-info.java'",
+                files.contains("package-info.java"));
+
+        Assert.assertTrue("RuntimeUpdatesProcessor should have detected a change on FakeSource.java because it was " +
+                        "not in the compiled path",
+                files.contains("FakeSource.java"));
 
     }
 

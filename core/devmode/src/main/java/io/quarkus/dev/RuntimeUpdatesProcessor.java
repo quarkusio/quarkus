@@ -40,6 +40,11 @@ import org.jboss.logging.Logger;
 import io.quarkus.deployment.devmode.HotReplacementContext;
 import io.quarkus.runtime.Timing;
 
+/**
+ * Development Mode Change File Detection
+ *
+ * @see RuntimeCompilationSetup
+ */
 public class RuntimeUpdatesProcessor implements HotReplacementContext {
 
     private final Path classesDir;
@@ -55,6 +60,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     private static final Logger log = Logger.getLogger(RuntimeUpdatesProcessor.class.getPackage().getName());
     private final List<Runnable> preScanSteps = new CopyOnWriteArrayList<>();
 
+    /**
+     * @param classesDir Compiled classes Directory {@link RuntimeCompilationSetup#PROP_RUNNER_CLASSES}
+     * @param sourcesDir Source File Directory {@link RuntimeCompilationSetup#PROP_RUNNER_SOURCES}
+     * @param resourcesDir Resources Directory {@link RuntimeCompilationSetup#PROP_RUNNER_RESOURCES}
+     * @param exclusions Source directory exclusions
+     * @param compiler Compiler that will recompile added or changed source files
+     */
     public RuntimeUpdatesProcessor(Path classesDir, Path sourcesDir, Path resourcesDir, List<Predicate<Path>> exclusions,
                                    ClassLoaderCompiler compiler) {
         this.classesDir = classesDir;
@@ -122,7 +134,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                         .filter(p -> wasRecentlyModified(p))
                         .map(Path::toFile)
                         //Needing a concurrent Set, not many standard options:
-                        .collect(Collectors.toCollection(ConcurrentSkipListSet::new));
+                        .collect(Collectors.toCollection(()-> Collections.newSetFromMap(new ConcurrentHashMap<>())));
             }
         } else {
             changedSourceFiles = Collections.emptySet();
@@ -147,6 +159,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
         return false;
     }
 
+    /**
+     * If any of the predicates return true the path will be excluded (meaning it would return false)
+     * @param p a path from the sources directory
+     * @return true if none of the predicates match
+     */
     private boolean isNotExcluded(Path p){
         return exclusions.stream().noneMatch(predicate-> predicate.test(p));
     }

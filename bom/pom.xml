@@ -150,6 +150,8 @@
         <jetty.version>9.4.15.v20190215</jetty.version>
         <flyway.version>5.2.4</flyway.version>
         <yasson.version>1.0.3</yasson.version>
+        <powermock.version>2.0.0</powermock.version>
+        <mockito.version>2.26.0</mockito.version>
     </properties>
 
     <dependencyManagement>
@@ -1717,6 +1719,24 @@
                 <artifactId>flyway-core</artifactId>
                 <version>${flyway.version}</version>
             </dependency>
+
+            <!-- Powermock -->
+            <dependency>
+                <groupId>org.powermock</groupId>
+                <artifactId>powermock-api-mockito2</artifactId>
+                <version>${powermock.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.powermock</groupId>
+                <artifactId>powermock-module-junit4</artifactId>
+                <version>${powermock.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 </project>

@@ -104,18 +104,26 @@ public class SchedulerProcessor {
 
             @Override
             public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
-                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS
+                        || kind == org.jboss.jandex.AnnotationTarget.Kind.METHOD;
             }
 
             @Override
             public void transform(TransformationContext context) {
-                if (context.getAnnotations().isEmpty()) {
+                if (context.isClass() && context.getAnnotations().isEmpty()) {
                     // Class with no annotations but with @Scheduled method
                     if (context.getTarget().asClass().annotations().containsKey(SCHEDULED_NAME)
                             || context.getTarget().asClass().annotations().containsKey(SCHEDULES_NAME)) {
                         LOGGER.debugf("Found scheduled business methods on a class %s with no annotations - adding @Singleton",
                                 context.getTarget());
                         context.transform().add(Singleton.class).done();
+                    }
+                } else if (context.isMethod()) {
+                    MethodInfo method = context.getTarget().asMethod();
+                    if ((method.hasAnnotation(SCHEDULED_NAME) || method.hasAnnotation(SCHEDULES_NAME))
+                            && !method.hasAnnotation(DotNames.ACTIVATE_REQUEST_CONTEXT)) {
+                        // Activate request context during a scheduled method invocation
+                        context.transform().add(DotNames.ACTIVATE_REQUEST_CONTEXT).done();
                     }
                 }
             }

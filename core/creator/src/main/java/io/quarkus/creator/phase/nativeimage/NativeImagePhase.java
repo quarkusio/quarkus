@@ -524,7 +524,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
             ProcessBuilder idPB = new ProcessBuilder().command("id", option);
             idPB.redirectError(new File("/dev/null"));
-            idPB.redirectOutput(new File("/dev/null"));
+            idPB.redirectInput(new File("/dev/null"));
 
             process = idPB.start();
             try (InputStream inputStream = process.getInputStream()) {

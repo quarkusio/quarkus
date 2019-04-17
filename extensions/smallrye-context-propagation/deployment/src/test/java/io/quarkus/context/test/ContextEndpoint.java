@@ -15,12 +15,13 @@ import javax.ws.rs.core.UriInfo;
 
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.junit.jupiter.api.Assertions;
+import org.wildfly.common.Assert;
 
 import io.quarkus.arc.Arc;
 
 @Path("/context")
 public class ContextEndpoint {
-    
+
     @Inject
     RequestBean doNotRemoveMe;
 
@@ -42,14 +43,33 @@ public class ContextEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<String> arcTest() {
         ManagedExecutor me = ManagedExecutor.builder().build();
+        Assert.assertTrue(Arc.container().instance(RequestBean.class).isAvailable());
         RequestBean instance = Arc.container().instance(RequestBean.class).get();
-        System.err.println("Got bean1: " + instance.callMe());
-        Assertions.assertNotNull(instance);
+        String previousValue = instance.callMe();
+        System.err.println("Got bean1: " + previousValue);
         CompletableFuture<String> ret = me.completedFuture("OK");
         return ret.thenApplyAsync(text -> {
             RequestBean instance2 = Arc.container().instance(RequestBean.class).get();
             System.err.println("Got bean2: " + instance2.callMe());
-            Assertions.assertEquals(instance, instance2);
+            Assertions.assertEquals(previousValue, instance2.callMe());
+            return text;
+        });
+    }
+
+    @GET
+    @Path("/noarc")
+    @Produces(MediaType.APPLICATION_JSON)
+    public CompletionStage<String> noarcTest() {
+        ManagedExecutor me = ManagedExecutor.builder().cleared("CDI").build();
+        Assert.assertTrue(Arc.container().instance(RequestBean.class).isAvailable());
+        RequestBean instance = Arc.container().instance(RequestBean.class).get();
+        String previousValue = instance.callMe();
+        System.err.println("Got bean1: " + previousValue);
+        CompletableFuture<String> ret = me.completedFuture("OK");
+        return ret.thenApplyAsync(text -> {
+            RequestBean instance2 = Arc.container().instance(RequestBean.class).get();
+            System.err.println("Got bean2: " + instance2.callMe());
+            Assertions.assertNotEquals(previousValue, instance2.callMe());
             return text;
         });
     }

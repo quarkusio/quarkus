@@ -32,4 +32,10 @@ public class ContextUnitTest {
         RestAssured.when().get("/context/arc").then()
                 .statusCode(Response.Status.OK.getStatusCode());
     }
+
+    @Test()
+    public void testArcContextPropagationDisabled() {
+        RestAssured.when().get("/context/noarc").then()
+                .statusCode(Response.Status.OK.getStatusCode());
+    }
 }

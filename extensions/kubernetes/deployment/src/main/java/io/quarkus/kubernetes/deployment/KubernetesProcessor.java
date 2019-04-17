@@ -1,6 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -36,7 +37,7 @@ class KubernetesProcessor {
     @BuildStep
     public void build(ApplicationInfoBuildItem applicationInfo,
             KubernetesConfig kubernetesConfig,
-            List<KubernetesPortBuildItem> kubernetesPortBuildItems) {
+            List<KubernetesPortBuildItem> kubernetesPortBuildItems) throws UnsupportedEncodingException {
 
         if (kubernetesPortBuildItems.isEmpty()) {
             return;
@@ -69,7 +70,7 @@ class KubernetesProcessor {
                     new GeneratedResourceBuildItem(
                             // we need to make sure we are only passing the relative path to the build item
                             resourceEntry.getKey().replace(root.toAbsolutePath() + "/", "META-INF/kubernetes/"),
-                            resourceEntry.getValue().getBytes()));
+                            resourceEntry.getValue().getBytes("UTF-8")));
         }
 
         featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.KUBERNETES));

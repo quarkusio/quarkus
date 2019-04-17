@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.Provider;
@@ -186,7 +187,7 @@ public final class TestProcessor {
         if (is == null) {
             throw new IOException("Failed to load resource: " + path);
         }
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
         String base64 = reader.readLine();
         reader.close();
         byte[] encoded = Base64.getDecoder().decode(base64);

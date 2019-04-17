@@ -26,16 +26,19 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.gradle.api.GradleException;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.Optional;
@@ -48,7 +51,6 @@ import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.deployment.ApplicationInfoUtil;
-import io.quarkus.dev.ClassLoaderCompiler;
 import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
 import io.quarkus.gradle.QuarkusPluginExtension;
@@ -57,6 +59,8 @@ import io.quarkus.gradle.QuarkusPluginExtension;
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
  */
 public class QuarkusDev extends QuarkusTask {
+
+    private Set<File> filesIncludedInClasspath = new HashSet<>();
 
     private String debug;
 
@@ -222,22 +226,7 @@ public class QuarkusDev extends QuarkusTask {
             //we also want to add the maven plugin jar to the class path
             //this allows us to just directly use classes, without messing around copying them
             //to the runner jar
-            URL classFile = DevModeMain.class.getClassLoader()
-                    .getResource(DevModeMain.class.getName().replace('.', '/') + ".class");
-            File path;
-            if (classFile.getProtocol().equals("jar")) {
-                String jarPath = classFile.getPath().substring(0, classFile.getPath().lastIndexOf('!'));
-                if (jarPath.startsWith("file:"))
-                    jarPath = jarPath.substring(5);
-                path = new File(jarPath);
-            } else if (classFile.getProtocol().equals("file")) {
-                String filePath = classFile.getPath().substring(0,
-                        classFile.getPath().lastIndexOf(DevModeMain.class.getName().replace('.', '/')));
-                path = new File(filePath);
-            } else {
-                throw new GradleException("Unsupported DevModeMain artifact URL:" + classFile);
-            }
-            addToClassPaths(classPathManifest, context, path);
+            addGradlePluginDeps(classPathManifest, context);
 
             //now we need to build a temporary jar to actually run
 
@@ -350,15 +339,38 @@ public class QuarkusDev extends QuarkusTask {
         return java;
     }
 
-    private void addToClassPaths(StringBuilder classPathManifest, DevModeContext context, File file)
-            throws MalformedURLException {
-        URI uri = file.toPath().toAbsolutePath().toUri();
-        classPathManifest.append(uri.getPath());
-        context.getClassPath().add(uri.toURL());
-        if (file.isDirectory()) {
-            classPathManifest.append("/");
+    private void addGradlePluginDeps(StringBuilder classPathManifest, DevModeContext context) {
+        Configuration conf = getProject().getBuildscript().getConfigurations().getByName("classpath");
+        ResolvedDependency quarkusDep = conf.getResolvedConfiguration().getFirstLevelModuleDependencies().stream()
+                .filter(rd -> "quarkus-gradle-plugin".equals(rd.getModuleName()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Unable to find quarkus-gradle-plugin dependency"));
+
+        quarkusDep.getAllModuleArtifacts().stream()
+                .map(ra -> ra.getFile())
+                .forEach(f -> addToClassPaths(classPathManifest, context, f));
+    }
+
+    private void addToClassPaths(StringBuilder classPathManifest, DevModeContext context, File file) {
+        if (filesIncludedInClasspath.add(file)) {
+            getProject().getLogger().info("Adding dependency {}", file);
+
+            URI uri = file.toPath().toAbsolutePath().toUri();
+            classPathManifest.append(uri.getPath());
+            context.getClassPath().add(toUrl(uri));
+            if (file.isDirectory()) {
+                classPathManifest.append("/");
+            }
+            classPathManifest.append(" ");
         }
-        classPathManifest.append(" ");
+    }
+
+    private URL toUrl(URI uri) {
+        try {
+            return uri.toURL();
+        } catch (MalformedURLException e) {
+            throw new IllegalStateException("Failed to convert URI to URL: " + uri, e);
+        }
     }
 
     /**

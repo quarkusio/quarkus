@@ -197,7 +197,7 @@ public class AppModelGradleResolver implements AppModelResolver {
         if (!Files.exists(quarkusDir)) {
             return null;
         }
-        final Path quarkusDescr = quarkusDir.resolve(BootstrapConstants.DESCRIPTOR_PATH);
+        final Path quarkusDescr = quarkusDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
         if (!Files.exists(quarkusDescr)) {
             return null;
         }

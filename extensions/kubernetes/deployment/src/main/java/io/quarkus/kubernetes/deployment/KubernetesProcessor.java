@@ -64,12 +64,12 @@ class KubernetesProcessor {
 
         // write the generated resources to the filesystem
         final Map<String, String> generatedResourcesMap = session.close();
-        for (String generatedResourceFullPath : generatedResourcesMap.keySet()) {
+        for (Map.Entry<String, String> resourceEntry : generatedResourcesMap.entrySet()) {
             generatedResourceProducer.produce(
                     new GeneratedResourceBuildItem(
                             // we need to make sure we are only passing the relative path to the build item
-                            generatedResourceFullPath.replace(root.toAbsolutePath() + "/", "META-INF/kubernetes/"),
-                            generatedResourcesMap.get(generatedResourceFullPath).getBytes()));
+                            resourceEntry.getKey().replace(root.toAbsolutePath() + "/", "META-INF/kubernetes/"),
+                            resourceEntry.getValue().getBytes()));
         }
 
         featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.KUBERNETES));

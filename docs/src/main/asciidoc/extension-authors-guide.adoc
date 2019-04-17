@@ -885,7 +885,7 @@ puclic class SomeBean {
      * @param event
      */
     void onStart(@Observes StartupEvent event) { // <1>
-        System.out.printf("onStart, event=%s\n", event);
+        System.out.printf("onStart, event=%s%n", event);
     }
 
     /**
@@ -893,7 +893,7 @@ puclic class SomeBean {
      * @param event
     */
     void onStop(@Observes ShutdownEvent event) { // <2>
-        System.out.printf("onStop, event=%s\n", event);
+        System.out.printf("onStop, event=%s%n", event);
     }
 }
 ----

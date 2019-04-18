@@ -40,8 +40,7 @@ public class AroundConstructReturningObjectTest {
 
     @Test
     public void testInterception() {
-        ArcContainer arc = Arc.container();
-        SimpleBean simpleBean = arc.instance(SimpleBean.class).get();
+        SimpleBean simpleBean = Arc.container().instance(SimpleBean.class).get();
         assertNotNull(simpleBean);
         assertTrue(INTERCEPTOR_CALLED.get());
     }

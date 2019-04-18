@@ -39,7 +39,9 @@ public class JaegerDeploymentTemplate {
         if (!registered) {
             if (isValidConfig(jaeger)) {
                 initTracerConfig(jaeger);
-                GlobalTracer.register(new QuarkusJaegerTracer());
+                QuarkusJaegerTracer quarkusJaegerTracer = new QuarkusJaegerTracer();
+                log.debugf("Registering tracer to GlobalTracer %s", quarkusJaegerTracer);
+                GlobalTracer.register(quarkusJaegerTracer);
             }
             registered = true;
         }

@@ -54,7 +54,7 @@ import io.smallrye.faulttolerance.DefaultHystrixConcurrencyStrategy;
 import io.smallrye.faulttolerance.HystrixCommandBinding;
 import io.smallrye.faulttolerance.HystrixCommandInterceptor;
 import io.smallrye.faulttolerance.HystrixInitializer;
-import io.smallrye.faulttolerance.MetricsCollectorFactory;
+import io.smallrye.faulttolerance.metrics.MetricsCollectorFactory;
 
 public class SmallRyeFaultToleranceProcessor {
 

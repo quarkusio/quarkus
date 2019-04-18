@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -23,9 +24,10 @@ public class ExtensionTestCase {
         // From config.xml
         Socket socket = new Socket("localhost", 12345);
         OutputStream os = socket.getOutputStream();
-        os.write("testRuntimeXmlConfigService\n".getBytes());
+        os.write("testRuntimeXmlConfigService\n".getBytes("UTF-8"));
         os.flush();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
             String reply = reader.readLine();
             Assertions.assertEquals("testRuntimeXmlConfigService-ack", reply);
         }

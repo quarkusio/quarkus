@@ -135,11 +135,11 @@ public class SwaggerUiProcessor {
     }
 
     private void updateApiUrl(Path indexHtml) throws IOException {
-        String content = new String(Files.readAllBytes(indexHtml));
+        String content = new String(Files.readAllBytes(indexHtml), "UTF-8");
         Matcher uriMatcher = SWAGGER_UI_DEFAULT_API_URL_PATTERN.matcher(content);
         if (uriMatcher.matches()) {
             content = uriMatcher.replaceFirst("$1" + openapi.path + "$3");
-            Files.write(indexHtml, content.getBytes());
+            Files.write(indexHtml, content.getBytes("UTF-8"));
         } else {
             log.warn("Unable to replace the default URL of Swagger UI");
         }

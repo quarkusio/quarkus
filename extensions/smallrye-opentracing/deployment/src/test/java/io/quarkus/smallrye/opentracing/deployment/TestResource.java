@@ -36,4 +36,10 @@ public class TestResource implements RestService {
         client.hello();
         return Response.ok().build();
     }
+
+    @Override
+    public Response faultTolerance() {
+        String ret = service.faultTolerance();
+        return Response.ok(ret).build();
+    }
 }

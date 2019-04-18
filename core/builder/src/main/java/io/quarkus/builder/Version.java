@@ -70,6 +70,6 @@ public final class Version {
      * @param args ignored
      */
     public static void main(String[] args) {
-        System.out.printf("WildFly Deployer (%s) version %s%n", JAR_NAME, VERSION);
+        System.out.printf("Quarkus Builder (%s) version %s%n", JAR_NAME, VERSION);
     }
 }

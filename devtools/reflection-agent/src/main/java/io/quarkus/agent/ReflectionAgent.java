@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
+import java.nio.charset.StandardCharsets;
 import java.security.ProtectionDomain;
 import java.util.Collections;
 import java.util.HashSet;
@@ -107,7 +108,7 @@ public class ReflectionAgent {
             Set<String> known = new HashSet<>();
             try (InputStream in = Thread.currentThread().getContextClassLoader()
                     .getResourceAsStream("META-INF/reflective-classes.txt")) {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
                 String line;
                 while ((line = reader.readLine()) != null) {
                     known.add(line);

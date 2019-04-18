@@ -87,6 +87,17 @@ has no suffix (and is what the end user adds to their project).
         <plugin>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+            <!-- Executions configuration can be inherited from quarkus-build-parent -->
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>extension-descriptor</goal>
+                    </goals>
+                    <configuration>
+                         <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}</deployment>
+                   </configuration>
+               </execution>
+           </executions>
         </plugin>
     </plugins>
 </build>
@@ -99,16 +110,37 @@ in pulling all the deployment time code into runtime scope, which defeats the pu
 ====
 
 Your deployment time module should depend on `io.quarkus:quarkus-core-deployment`, your runtime artifact,
-and possibly the deployment artifacts of other Quarkus modules if you want to use functionality provided by them.
-
+and possibly the deployment artifacts of other Quarkus modules if you want to use functionality provided by them. 
+You will also need to configure the `maven-compiler-plugin` to detect the `quarkus-extension-processor` annotation processor.
 
 [source%nowrap,xml]
 ----
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-core-deployment</artifactId>
-</dependency>
+<dependencies>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-core-deployment</artifactId>
+    </dependency>
+</dependencies>
+
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+                <annotationProcessorPaths>
+                    <path>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-extension-processor</artifactId>
+                    </path>
+                </annotationProcessorPaths>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
 ----
+
+NOTE: The above `maven-compiler-plugin` configuration requires version 3.5+.
 
 
 == Build Step Processors
@@ -885,7 +917,7 @@ puclic class SomeBean {
      * @param event
      */
     void onStart(@Observes StartupEvent event) { // <1>
-        System.out.printf("onStart, event=%s\n", event);
+        System.out.printf("onStart, event=%s%n", event);
     }
 
     /**
@@ -893,7 +925,7 @@ puclic class SomeBean {
      * @param event
     */
     void onStop(@Observes ShutdownEvent event) { // <2>
-        System.out.printf("onStop, event=%s\n", event);
+        System.out.printf("onStop, event=%s%n", event);
     }
 }
 ----

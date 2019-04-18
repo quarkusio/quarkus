@@ -99,7 +99,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private String nativeImageXmx;
 
-    private String builderImage = "quay.io/quarkus/centos-quarkus-native-image:graalvm-1.0.0-rc14";
+    private String builderImage = "quay.io/quarkus/centos-quarkus-native-image:graalvm-1.0.0-rc15";
 
     private String containerRuntime = "";
 
@@ -506,10 +506,10 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
     private boolean isThisGraalVMRCObsolete() {
         final String vmName = System.getProperty("java.vm.name");
         log.info("Running Quarkus native-image plugin on " + vmName);
-        final List<String> obsoleteGraalVmVersions = Arrays.asList("-rc9", "-rc10", "-rc11", "-rc12", "-rc13");
+        final List<String> obsoleteGraalVmVersions = Arrays.asList("-rc9", "-rc10", "-rc11", "-rc12", "-rc13", "-rc14");
         final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(vmName::contains);
         if (vmVersionIsObsolete) {
-            log.error("Out of date RC build of GraalVM detected! Please upgrade to RC14");
+            log.error("Out of date RC build of GraalVM detected! Please upgrade to GraalVM RC15");
             return true;
         }
         return false;
@@ -528,7 +528,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
             process = idPB.start();
             try (InputStream inputStream = process.getInputStream()) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                     while ((line = reader.readLine()) != null) {
                         responseBuilder.append(line);
                     }

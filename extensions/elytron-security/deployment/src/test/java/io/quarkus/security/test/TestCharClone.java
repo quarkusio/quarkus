@@ -11,13 +11,13 @@ public class TestCharClone {
         char[] password = "jb0ss".toCharArray();
         char[] clone = password.clone();
         if (clone == password) {
-            System.out.printf("Failure, clone == password\n");
+            System.out.printf("Failure, clone == password%n");
         }
         if (!Arrays.equals(password, clone)) {
-            System.out.printf("Failure, clone neq password\n");
+            System.out.printf("Failure, clone neq password%n");
         }
         Class<? extends char[]> charArrayClass = password.getClass();
-        System.out.printf("char[](%s) methods:\n", charArrayClass.getName());
+        System.out.printf("char[](%s) methods:%n", charArrayClass.getName());
         for (Method m : charArrayClass.getMethods()) {
             System.out.println(m);
         }

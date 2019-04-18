@@ -34,7 +34,7 @@ public class JCATestCase {
         PublicKey publicKey = keyPair.getPublic();
         byte[] encoded = publicKey.getEncoded();
         byte[] pemEncoded = Base64.getEncoder().encode(encoded);
-        String pemString = new String(pemEncoded);
+        String pemString = new String(pemEncoded, "UTF-8");
 
         RestAssured.given()
                 .queryParam("pemEncoded", pemString)
@@ -53,7 +53,7 @@ public class JCATestCase {
         PublicKey publicKey = keyPair.getPublic();
         byte[] encoded = publicKey.getEncoded();
         byte[] pemEncoded = Base64.getEncoder().encode(encoded);
-        String pemString = new String(pemEncoded);
+        String pemString = new String(pemEncoded, "UTF-8");
 
         RestAssured.given()
                 .queryParam("msg", "Hello verifyRSASig")

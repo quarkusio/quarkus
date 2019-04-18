@@ -75,7 +75,7 @@ public class BasicRest implements QuarkusTemplate {
 
     private void createClasses() throws IOException {
         Object className = context.get(CLASS_NAME);
-        // If className is null we disable the generation of the Jax-RS resource.
+        // If className is null we disable the generation of the JAX-RS resource.
         if (className != null) {
             String extension = type.getExtension();
             File classFile = new File(srcMain, className + extension);

@@ -3,6 +3,7 @@ package io.quarkus.resteasy.common.deployment;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -21,6 +22,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -39,18 +41,34 @@ public class ResteasyCommonProcessor {
     private ResteasyCommonConfig resteasyCommonConfig;
 
     @ConfigRoot(name = "resteasy")
-    static final class ResteasyCommonConfig {
+    public static final class ResteasyCommonConfig {
         /**
-         * Enable gzip support for REST Clients.
+         * Enable gzip support for REST
          */
-        @ConfigItem(defaultValue = "false")
-        boolean enableGzip;
+        public ResteasyCommonConfigGzip gzip;
+    }
+
+    @ConfigGroup
+    public static final class ResteasyCommonConfigGzip {
+        /**
+         * If gzip is enabled
+         */
+        @ConfigItem
+        public boolean enabled;
+        /**
+         * Maximum deflated file bytes size
+         * <p>
+         * If the limit is exceeded, Resteasy will return Response
+         * with status 413("Request Entity Too Large")
+         */
+        @ConfigItem
+        public OptionalInt maxInput;
     }
 
     @BuildStep
     void setupGzipProviders(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
         // If GZIP support is enabled, enable it
-        if (resteasyCommonConfig.enableGzip) {
+        if (resteasyCommonConfig.gzip.enabled) {
             providers.produce(new ResteasyJaxrsProviderBuildItem(AcceptEncodingGZIPFilter.class.getName()));
             providers.produce(new ResteasyJaxrsProviderBuildItem(GZIPDecodingInterceptor.class.getName()));
             providers.produce(new ResteasyJaxrsProviderBuildItem(GZIPEncodingInterceptor.class.getName()));

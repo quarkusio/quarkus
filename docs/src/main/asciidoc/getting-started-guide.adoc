@@ -149,7 +149,7 @@ public class GreetingResource {
 It's a very simple REST endpoint, returning "hello" to requests on "/hello".
 
 [TIP]
-.Differences with vanilla Jax-RS
+.Differences with vanilla JAX-RS
 ====
 With Quarkus, there is no need to create an `Application` class. It's supported, but not required. In addition, only one instance
 of the resource is created and not one per request. You can configure this using the different `*Scoped` annotations (`ApplicationScoped`, `RequestScoped`, etc).

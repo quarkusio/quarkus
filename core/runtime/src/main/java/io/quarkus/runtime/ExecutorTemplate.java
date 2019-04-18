@@ -16,12 +16,10 @@
 
 package io.quarkus.runtime;
 
-import java.util.Optional;
-import java.util.concurrent.Executor;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.threads.EnhancedQueueExecutor;
 import org.jboss.threads.JBossExecutors;
 import org.jboss.threads.JBossThreadFactory;
@@ -34,18 +32,21 @@ import io.quarkus.runtime.annotations.Template;
  */
 @Template
 public class ExecutorTemplate {
-    static final Config config = ConfigProvider.getConfig();
-    public static final String CORE_POOL_SIZE = "executor.core-pool-size";
-    public static final String MAX_POOL_SIZE = "executor.max-pool-size";
-    public static final String QUEUE_SIZE = "executor.queue-size";
-    public static final String GROWTH_RESISTANCE = "executor.growth-resistance";
-    public static final String KEEP_ALIVE_MILLIS = "executor.keep-alive-millis";
 
     public ExecutorTemplate() {
     }
 
-    public Executor setupRunTime(ShutdownContext shutdownContext, int defaultCoreSize, int defaultMaxSize, int defaultQueueSize,
-            float defaultGrowthResistance, int defaultKeepAliveMillis) {
+    /**
+     * In dev mode for now we need the executor to last for the life of the app, as it is used by Undertow. This will likely
+     * change
+     */
+    static ExecutorService devModeExecutor;
+
+    public ExecutorService setupRunTime(ShutdownContext shutdownContext, ThreadPoolConfig threadPoolConfig,
+            LaunchMode launchMode) {
+        if (devModeExecutor != null) {
+            return devModeExecutor;
+        }
         final JBossThreadFactory threadFactory = new JBossThreadFactory(new ThreadGroup("executor"), Boolean.TRUE, null,
                 "executor-thread-%t", JBossExecutors.loggingExceptionHandler("org.jboss.executor.uncaught"), null);
         final EnhancedQueueExecutor.Builder builder = new EnhancedQueueExecutor.Builder()
@@ -54,34 +55,41 @@ public class ExecutorTemplate {
                 .setThreadFactory(JBossExecutors.resettingThreadFactory(threadFactory));
         final int cpus = ProcessorInfo.availableProcessors();
         // run time config variables
-        builder.setCorePoolSize(getIntConfigVal(CORE_POOL_SIZE, defaultCoreSize == -1 ? 4 * cpus : defaultCoreSize));
-        builder.setMaximumPoolSize(getIntConfigVal(MAX_POOL_SIZE, defaultMaxSize == -1 ? 10 * cpus : defaultMaxSize));
-        builder.setMaximumQueueSize(getIntConfigVal(QUEUE_SIZE, defaultQueueSize));
-        builder.setGrowthResistance(getFloatConfigVal(GROWTH_RESISTANCE, defaultGrowthResistance));
-        builder.setKeepAliveTime(getIntConfigVal("executor.keep-alive-millis", defaultKeepAliveMillis), TimeUnit.MILLISECONDS);
+        builder.setCorePoolSize(threadPoolConfig.coreThreads);
+        builder.setMaximumPoolSize(threadPoolConfig.maxThreads <= 0 ? 8 * cpus : threadPoolConfig.maxThreads);
+        builder.setMaximumQueueSize(threadPoolConfig.queueSize);
+        builder.setGrowthResistance(threadPoolConfig.growthResistance);
+        builder.setKeepAliveTime(threadPoolConfig.keepAliveTime);
         final EnhancedQueueExecutor executor = builder.build();
-        shutdownContext.addShutdownTask(new Runnable() {
+
+        Runnable shutdownTask = new Runnable() {
             @Override
             public void run() {
                 executor.shutdown();
                 for (;;)
                     try {
-                        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.HOURS);
+                        if (!executor.awaitTermination(threadPoolConfig.shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
+                            List<Runnable> tasks = executor.shutdownNow();
+                            for (Runnable i : tasks) {
+                                //for any pending tasks we just spawn threads to run them on a best effort basis
+                                //these threads are daemon threads so if everything shuts down they will not keep the
+                                //JVM alive
+                                Thread t = new Thread(i, "Shutdown thread");
+                                t.setDaemon(true);
+                                t.run();
+                            }
+                        }
                         return;
                     } catch (InterruptedException ignored) {
                     }
             }
-        });
+        };
+        if (launchMode == LaunchMode.DEVELOPMENT) {
+            devModeExecutor = executor;
+            Runtime.getRuntime().addShutdownHook(new Thread(shutdownTask, "Executor shutdown thread"));
+        } else {
+            shutdownContext.addShutdownTask(shutdownTask);
+        }
         return executor;
-    }
-
-    public static float getFloatConfigVal(final String key, final float defVal) {
-        final Optional<Float> val = config.getOptionalValue(key, Float.class);
-        return val.isPresent() ? val.get().floatValue() : defVal;
-    }
-
-    public static int getIntConfigVal(String key, int defVal) {
-        final Optional<Integer> val = config.getOptionalValue(key, Integer.class);
-        return val.isPresent() ? val.get().intValue() : defVal;
     }
 }

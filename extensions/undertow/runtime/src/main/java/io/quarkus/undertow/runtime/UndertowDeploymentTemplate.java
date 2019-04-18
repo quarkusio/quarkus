@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
@@ -40,6 +42,8 @@ import javax.servlet.ServletException;
 
 import org.jboss.logging.Logger;
 import org.wildfly.common.net.Inet;
+import org.xnio.Xnio;
+import org.xnio.XnioWorker;
 
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -266,19 +270,22 @@ public class UndertowDeploymentTemplate {
         info.getValue().addInitParameter(name, value);
     }
 
-    public RuntimeValue<Undertow> startUndertow(ShutdownContext shutdown, DeploymentManager manager, HttpConfig config,
+    public RuntimeValue<Undertow> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
+            DeploymentManager manager, HttpConfig config,
             List<HandlerWrapper> wrappers, LaunchMode launchMode) throws Exception {
 
         if (undertow == null) {
             SSLContext context = config.ssl.toSSLContext();
-            doServerStart(config, launchMode, context);
+            doServerStart(config, launchMode, context, executorService);
 
             if (launchMode != LaunchMode.DEVELOPMENT) {
                 //in development mode undertow should not be shut down
                 shutdown.addShutdownTask(new Runnable() {
                     @Override
                     public void run() {
+                        XnioWorker worker = undertow.getWorker();
                         undertow.stop();
+                        worker.shutdown();
                         undertow = null;
                     }
                 });
@@ -327,7 +334,7 @@ public class UndertowDeploymentTemplate {
      * be no chance to use hot deployment to fix the error. In development mode we start Undertow early, so any error
      * on boot can be corrected via the hot deployment handler
      */
-    private static void doServerStart(HttpConfig config, LaunchMode launchMode, SSLContext sslContext)
+    private static void doServerStart(HttpConfig config, LaunchMode launchMode, SSLContext sslContext, ExecutorService executor)
             throws ServletException {
         if (undertow == null) {
             int port = config.determinePort(launchMode);
@@ -338,20 +345,22 @@ public class UndertowDeploymentTemplate {
                 rootHandler = i.wrap(rootHandler);
             }
 
+            XnioWorker.Builder workerBuilder = Xnio.getInstance().createWorkerBuilder()
+                    .setExternalExecutorService(executor);
+
             Undertow.Builder builder = Undertow.builder()
                     .addHttpListener(port, config.host)
                     .setHandler(rootHandler);
             if (config.ioThreads.isPresent()) {
-                builder.setIoThreads(config.ioThreads.getAsInt());
+                workerBuilder.setWorkerIoThreads(config.ioThreads.getAsInt());
             } else if (launchMode.isDevOrTest()) {
                 //we limit the number of IO and worker threads in development and testing mode
-                builder.setIoThreads(2);
+                workerBuilder.setWorkerIoThreads(2);
+            } else {
+                workerBuilder.setWorkerIoThreads(Runtime.getRuntime().availableProcessors() * 2);
             }
-            if (config.workerThreads.isPresent()) {
-                builder.setWorkerThreads(config.workerThreads.getAsInt());
-            } else if (launchMode.isDevOrTest()) {
-                builder.setWorkerThreads(6);
-            }
+            XnioWorker worker = workerBuilder.build();
+            builder.setWorker(worker);
             if (sslContext != null) {
                 log.debugf("Starting Undertow HTTPS listener on port %d", sslPort);
                 builder.addHttpsListener(sslPort, config.host, sslContext);

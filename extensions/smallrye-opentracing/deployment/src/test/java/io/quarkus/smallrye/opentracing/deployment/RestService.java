@@ -4,6 +4,8 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 
+import org.eclipse.microprofile.opentracing.Traced;
+
 @Path("/")
 public interface RestService {
 
@@ -18,4 +20,9 @@ public interface RestService {
     @GET
     @Path("/restClient")
     Response restClient();
+
+    @GET
+    @Traced(false)
+    @Path("/faultTolerance")
+    Response faultTolerance();
 }

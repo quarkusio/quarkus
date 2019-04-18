@@ -1,5 +1,8 @@
 package io.quarkus.it.camel.core;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.manager.EmbeddedCacheManager;
@@ -14,13 +17,14 @@ public class InfinispanServerTestResource implements QuarkusTestResourceLifecycl
     private HotRodServer hotRodServer;
 
     @Override
-    public void start() {
+    public Map<String, String> start() {
         TestResourceTracker.setThreadTestName("InfinispanServer");
         EmbeddedCacheManager ecm = TestCacheManagerFactory.createCacheManager(
                 new GlobalConfigurationBuilder().nonClusteredDefault().defaultCacheName("default"),
                 new ConfigurationBuilder());
         // Client connects to a non default port
         hotRodServer = HotRodTestingUtil.startHotRodServer(ecm, 11232);
+        return Collections.emptyMap();
     }
 
     @Override

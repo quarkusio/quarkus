@@ -287,10 +287,11 @@ public class QuarkusTestExtension
         if (state == null) {
             TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
             try {
-                testResourceManager.start();
+                Map<String, String> systemProps = testResourceManager.start();
 
                 if (substrateTest) {
                     NativeImageLauncher launcher = new NativeImageLauncher(extensionContext.getRequiredTestClass());
+                    launcher.addSystemProperties(systemProps);
                     try {
                         launcher.start();
                     } catch (IOException e) {

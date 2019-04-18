@@ -24,7 +24,7 @@ import java.util.Set;
 import javax.enterprise.inject.spi.DeploymentException;
 
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
 import io.quarkus.runtime.annotations.Template;
 
@@ -35,7 +35,7 @@ import io.quarkus.runtime.annotations.Template;
 public class ConfigDeploymentTemplate {
 
     public void validateConfigProperties(Map<String, Set<Class<?>>> properties) {
-        Config config = ConfigProvider.getConfig();
+        Config config = ConfigProviderResolver.instance().getConfig();
         for (Entry<String, Set<Class<?>>> entry : properties.entrySet()) {
             Set<Class<?>> propertyTypes = entry.getValue();
             for (Class<?> propertyType : propertyTypes) {

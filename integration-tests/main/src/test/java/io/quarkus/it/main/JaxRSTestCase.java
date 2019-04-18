@@ -42,6 +42,16 @@ public class JaxRSTestCase {
     }
 
     @Test
+    public void testConfigInjectionOfPort() {
+        RestAssured.when().get("/test/config/host").then().body(is("0.0.0.0"));
+    }
+
+    @Test
+    public void testConfigInjectionOfMessage() {
+        RestAssured.when().get("/test/config/message").then().body(is("A message"));
+    }
+
+    @Test
     public void testAnnotatedInterface() {
         RestAssured.when().get("/interface").then().body(is("interface endpoint"));
 

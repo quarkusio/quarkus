@@ -413,7 +413,7 @@ public class TokenUtils {
         if (timeClaims.containsKey(Claims.exp.name())) {
             exp = timeClaims.get(Claims.exp.name());
         }
-        System.out.printf("Setting exp: %d / %s\n", exp, new Date(1000*exp));
+        System.out.printf("Setting exp: %d / %s%n", exp, new Date(1000*exp));
         long iat = currentTimeInSecs;
         long authTime = currentTimeInSecs;
         jwtContent.put(Claims.exp.name(), exp);
@@ -431,7 +431,7 @@ public class TokenUtils {
         JWTClaimsSet claimsSet = JWTClaimsSet.parse(jwtContent);
         for (String claim : claimsSet.getClaims().keySet()) {
             Object claimValue = claimsSet.getClaim(claim);
-            System.out.printf("\tAdded claim: %s, value: %s\n", claim, claimValue);
+            System.out.printf("\tAdded claim: %s, value: %s%n", claim, claimValue);
         }
         JWSAlgorithm alg = JWSAlgorithm.RS256;
         JWSHeader jwtHeader = new JWSHeader.Builder(alg)

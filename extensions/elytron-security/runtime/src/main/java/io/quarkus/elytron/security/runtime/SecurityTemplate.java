@@ -109,9 +109,9 @@ public class SecurityTemplate {
         SimpleMapBackedSecurityRealm memRealm = (SimpleMapBackedSecurityRealm) secRealm;
         HashMap<String, SimpleRealmEntry> identityMap = new HashMap<>();
         Map<String, String> userInfo = config.getUsers();
-        log.debugf("UserInfoMap: %s\n", userInfo);
+        log.debugf("UserInfoMap: %s%n", userInfo);
         Map<String, String> roleInfo = config.getRoles();
-        log.debugf("RoleInfoMap: %s\n", roleInfo);
+        log.debugf("RoleInfoMap: %s%n", roleInfo);
         for (Map.Entry<String, String> userPasswordEntry : userInfo.entrySet()) {
             String user = userPasswordEntry.getKey();
             ClearPassword clear = ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR,
@@ -127,7 +127,7 @@ public class SecurityTemplate {
             }
             SimpleRealmEntry entry = new SimpleRealmEntry(credentials, attributes);
             identityMap.put(user, entry);
-            log.debugf("Added user(%s), roles=%s\n", user, attributes.get("groups"));
+            log.debugf("Added user(%s), roles=%s%n", user, attributes.get("groups"));
         }
         memRealm.setIdentityMap(identityMap);
     }

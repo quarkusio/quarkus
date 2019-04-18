@@ -15,7 +15,7 @@ public class NativeBean implements IConfigConsumer {
     TestBuildAndRunTimeConfig buildTimeConfig;
 
     public NativeBean() {
-        System.out.printf("NativeBean.ctor, %s\n", super.toString());
+        System.out.printf("NativeBean.ctor, %s%n", super.toString());
     }
 
     /**
@@ -25,7 +25,7 @@ public class NativeBean implements IConfigConsumer {
      */
     @Override
     public void loadConfig(TestBuildAndRunTimeConfig buildTimeConfig, TestRunTimeConfig runTimeConfig) {
-        System.out.printf("loadConfig, buildTimeConfig=%s, runTimeConfig=%s\n", buildTimeConfig, runTimeConfig);
+        System.out.printf("loadConfig, buildTimeConfig=%s, runTimeConfig=%s%n", buildTimeConfig, runTimeConfig);
         this.buildTimeConfig = buildTimeConfig;
         this.runTimeConfig = runTimeConfig;
     }
@@ -36,11 +36,11 @@ public class NativeBean implements IConfigConsumer {
      * @param event
      */
     void onStart(@Observes StartupEvent event) {
-        System.out.printf("onStart, event=%s\n", event);
+        System.out.printf("onStart, event=%s%n", event);
     }
 
     void onStop(@Observes ShutdownEvent event) {
-        System.out.printf("onStop, event=%s\n", event);
+        System.out.printf("onStop, event=%s%n", event);
     }
 
 }

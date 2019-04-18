@@ -57,6 +57,7 @@
         <module>camel-aws-s3</module>
         <module>flyway</module>
         <module>test-extension</module>
+        <module>amazon-lambda</module>
     </modules>
 
     <build>

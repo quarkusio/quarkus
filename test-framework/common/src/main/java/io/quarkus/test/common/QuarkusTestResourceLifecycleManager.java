@@ -16,6 +16,8 @@
 
 package io.quarkus.test.common;
 
+import java.util.Map;
+
 /**
  * Manage the lifecycle of a test resource, for instance a H2 test server.
  * <p>
@@ -31,8 +33,10 @@ public interface QuarkusTestResourceLifecycleManager {
 
     /**
      * Start the test resource.
+     *
+     * @return A map of system properties that should be set for the running test
      */
-    void start();
+    Map<String, String> start();
 
     /**
      * Stop the test resource.

@@ -167,7 +167,7 @@ public class SubstrateAutoFeatureStep {
 
         final Map<String, ReflectionInfo> reflectiveClasses = new LinkedHashMap<>();
         for (ReflectiveClassBuildItem i : reflectiveClassBuildItems) {
-            addReflectiveClass(reflectiveClasses, i.isConstructors(), i.isMethods(), i.isFields(),
+            addReflectiveClass(reflectiveClasses, i.isConstructors(), i.isMethods(), i.isFields(), i.areFinalFieldsWritable(),
                     i.getClassNames().toArray(new String[0]));
         }
         for (ReflectiveFieldBuildItem i : reflectiveFields) {
@@ -178,7 +178,8 @@ public class SubstrateAutoFeatureStep {
         }
 
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
-            addReflectiveClass(reflectiveClasses, true, false, false, i.providers().toArray(new String[] {}));
+            addReflectiveClass(reflectiveClasses, true, false, false, false,
+                    i.providers().toArray(new String[] {}));
         }
 
         for (Map.Entry<String, ReflectionInfo> entry : reflectiveClasses.entrySet()) {
@@ -246,7 +247,9 @@ public class SubstrateAutoFeatureStep {
             }
             if (entry.getValue().fields) {
                 tc.invokeStaticMethod(
-                        ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Field[].class), fields);
+                        ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class,
+                                boolean.class, Field[].class),
+                        tc.load(entry.getValue().finalFieldsWritable), fields);
             } else if (!entry.getValue().fieldSet.isEmpty()) {
                 ResultHandle farray = tc.newArray(Field.class, tc.load(1));
                 for (String field : entry.getValue().fieldSet) {
@@ -276,7 +279,7 @@ public class SubstrateAutoFeatureStep {
         String cl = methodInfo.getDeclaringClass();
         ReflectionInfo existing = reflectiveClasses.get(cl);
         if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false));
+            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false));
         }
         if (methodInfo.getName().equals("<init>")) {
             existing.ctorSet.add(methodInfo);
@@ -286,12 +289,12 @@ public class SubstrateAutoFeatureStep {
     }
 
     public void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses, boolean constructors, boolean method,
-            boolean fields,
+            boolean fields, boolean finalFieldsWritable,
             String... className) {
         for (String cl : className) {
             ReflectionInfo existing = reflectiveClasses.get(cl);
             if (existing == null) {
-                reflectiveClasses.put(cl, new ReflectionInfo(constructors, method, fields));
+                reflectiveClasses.put(cl, new ReflectionInfo(constructors, method, fields, finalFieldsWritable));
             } else {
                 if (constructors) {
                     existing.constructors = true;
@@ -310,7 +313,7 @@ public class SubstrateAutoFeatureStep {
         String cl = fieldInfo.getDeclaringClass();
         ReflectionInfo existing = reflectiveClasses.get(cl);
         if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false));
+            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false));
         }
         existing.fieldSet.add(fieldInfo.getName());
     }
@@ -319,14 +322,16 @@ public class SubstrateAutoFeatureStep {
         boolean constructors;
         boolean methods;
         boolean fields;
+        boolean finalFieldsWritable;
         Set<String> fieldSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> methodSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> ctorSet = new HashSet<>();
 
-        private ReflectionInfo(boolean constructors, boolean methods, boolean fields) {
+        private ReflectionInfo(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable) {
             this.methods = methods;
             this.fields = fields;
             this.constructors = constructors;
+            this.finalFieldsWritable = finalFieldsWritable;
         }
     }
 }

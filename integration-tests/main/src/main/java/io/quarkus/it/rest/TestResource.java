@@ -64,6 +64,9 @@ public class TestResource {
     @Inject
     ExternalService service;
 
+    @Inject
+    ServiceWithConfig config;
+
     private final AtomicInteger count = new AtomicInteger(0);
 
     @GET
@@ -75,6 +78,18 @@ public class TestResource {
     @Path("/service")
     public String service() {
         return service.service();
+    }
+
+    @GET
+    @Path("/config/host")
+    public String configPort() {
+        return config.host();
+    }
+
+    @GET
+    @Path("/config/message")
+    public String configMessage() {
+        return config.message();
     }
 
     @GET

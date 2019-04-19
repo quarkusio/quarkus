@@ -23,10 +23,10 @@ import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.runtime.ConfigDeploymentTemplate;
+import io.quarkus.arc.runtime.QuarkusConfigProducer;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
-import io.smallrye.config.inject.ConfigProducer;
 
 /**
  * MicroProfile Config related build steps.
@@ -37,7 +37,7 @@ public class ConfigBuildStep {
 
     @BuildStep
     AdditionalBeanBuildItem bean() {
-        return new AdditionalBeanBuildItem(ConfigProducer.class);
+        return new AdditionalBeanBuildItem(QuarkusConfigProducer.class);
     }
 
     @BuildStep

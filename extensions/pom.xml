@@ -92,6 +92,7 @@
 
         <!-- Integrations -->
         <module>amazon-lambda</module>
+        <module>amazon-lambda-resteasy</module>
 
         <!-- Camel -->
         <module>camel</module>

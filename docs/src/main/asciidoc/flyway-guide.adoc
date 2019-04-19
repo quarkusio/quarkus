@@ -15,7 +15,7 @@ https://flywaydb.org/[Flyway] is a popular database migration tool that is commo
 
 [NOTE]
 --
-You only need to add this extension if your are doing native compilation with {project-name}.
+You only need to add this extension if you are doing native compilation with {project-name}.
 Otherwise, you can use Flyway by just adding it as a dependency in the `pom.xml` and run the {project-name} app in JVM mode.
 --
 

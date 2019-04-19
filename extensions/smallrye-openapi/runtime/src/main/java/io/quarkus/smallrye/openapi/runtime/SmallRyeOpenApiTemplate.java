@@ -23,7 +23,6 @@ import org.eclipse.microprofile.openapi.models.OpenAPI;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
-import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.annotations.Template;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
@@ -47,7 +46,9 @@ public class SmallRyeOpenApiTemplate {
                         Thread.currentThread().getContextClassLoader());
 
                 OpenApiDocument document = createDocument(openApiConfig);
-                document.modelFromAnnotations(annotationModel);
+                if (annotationModel != null) {
+                    document.modelFromAnnotations(annotationModel);
+                }
                 document.modelFromReader(readerModel);
                 document.modelFromStaticFile(staticModel);
                 document.filter(filter(openApiConfig));

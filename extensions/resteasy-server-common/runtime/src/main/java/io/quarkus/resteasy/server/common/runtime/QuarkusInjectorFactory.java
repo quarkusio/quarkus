@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.resteasy.runtime;
+package io.quarkus.resteasy.server.common.runtime;
 
 import java.lang.reflect.Constructor;
 import java.util.concurrent.CompletionStage;

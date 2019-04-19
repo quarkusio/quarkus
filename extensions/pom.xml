@@ -52,6 +52,7 @@
 
         <!-- REST services -->
         <module>resteasy-common</module>
+        <module>resteasy-server-common</module>
         <module>resteasy</module>
         <module>resteasy-jsonb</module>
         <module>smallrye-rest-client</module>

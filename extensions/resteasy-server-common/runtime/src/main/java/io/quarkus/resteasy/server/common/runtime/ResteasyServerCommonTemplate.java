@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.resteasy.runtime;
+package io.quarkus.resteasy.server.common.runtime;
 
 import java.util.List;
 import java.util.function.Function;
@@ -23,7 +23,7 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.annotations.Template;
 
 @Template
-public class ResteasyTemplate {
+public class ResteasyServerCommonTemplate {
 
     public void setupIntegration(BeanContainer container, List<Function<Object, Object>> propertyUnwrappers) {
         QuarkusInjectorFactory.CONTAINER = container;
@@ -38,5 +38,4 @@ public class ResteasyTemplate {
             }
         };
     }
-
 }

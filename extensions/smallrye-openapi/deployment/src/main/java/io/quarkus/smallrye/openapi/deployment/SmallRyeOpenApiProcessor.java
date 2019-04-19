@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -54,7 +55,7 @@ import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
-import io.quarkus.resteasy.deployment.ResteasyJaxrsConfig;
+import io.quarkus.resteasy.deployment.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
 import io.quarkus.smallrye.openapi.runtime.OpenApiServlet;
@@ -197,11 +198,16 @@ public class SmallRyeOpenApiProcessor {
     public BeanContainerListenerBuildItem build(SmallRyeOpenApiTemplate template,
             ApplicationArchivesBuildItem archivesBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<FeatureBuildItem> feature,
-            ResteasyJaxrsConfig jaxrsConfig) throws Exception {
+            Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig) throws Exception {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
-        OpenAPI sm = generateStaticModel(archivesBuildItem);
-        OpenAPI am = generateAnnotationModel(combinedIndexBuildItem.getIndex(), jaxrsConfig);
-        return new BeanContainerListenerBuildItem(template.setupModel(sm, am));
+        OpenAPI staticModel = generateStaticModel(archivesBuildItem);
+        OpenAPI annotationModel;
+        if (resteasyJaxrsConfig.isPresent()) {
+            annotationModel = generateAnnotationModel(combinedIndexBuildItem.getIndex(), resteasyJaxrsConfig.get());
+        } else {
+            annotationModel = null;
+        }
+        return new BeanContainerListenerBuildItem(template.setupModel(staticModel, annotationModel));
     }
 
     @BuildStep
@@ -221,7 +227,7 @@ public class SmallRyeOpenApiProcessor {
         return null;
     }
 
-    private OpenAPI generateAnnotationModel(IndexView indexView, ResteasyJaxrsConfig jaxrsConfig) {
+    private OpenAPI generateAnnotationModel(IndexView indexView, ResteasyJaxrsConfigBuildItem jaxrsConfig) {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
         return new OpenApiAnnotationScanner(openApiConfig, indexView,

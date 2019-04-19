@@ -76,6 +76,8 @@ public class QuarkusNative extends QuarkusTask {
 
     private boolean enableVMInspection = false;
 
+    private boolean enableFallbackImages = false;
+
     private boolean fullStackTraces = true;
 
     private boolean disableReports;
@@ -147,6 +149,19 @@ public class QuarkusNative extends QuarkusTask {
     @Input
     public boolean isEnableHttpUrlHandler() {
         return enableHttpUrlHandler;
+    }
+
+    @Optional
+    @Input
+    private boolean isEnableFallbackImages() {
+        return enableFallbackImages;
+    }
+
+    @Option(description = "Enable the GraalVM native image compiler to generate Fallback Images in case of compilation error. "
+            +
+            "Careful: these are not as efficient as normal native images.", option = "enable-fallback-images")
+    public void setEnableFallbackImages(boolean enableFallbackImages) {
+        this.enableFallbackImages = enableFallbackImages;
     }
 
     @Option(description = "Specify if http url handler is enabled", option = "enable-http-url-handler")
@@ -384,6 +399,7 @@ public class QuarkusNative extends QuarkusTask {
                         .setEnableRetainedHeapReporting(isEnableRetainedHeapReporting())
                         .setEnableServer(isEnableServer())
                         .setEnableVMInspection(isEnableVMInspection())
+                        .setEnableFallbackImages(isEnableFallbackImages())
                         .setFullStackTraces(isFullStackTraces())
                         .setGraalvmHome(getGraalvmHome())
                         .setNativeImageXmx(getNativeImageXmx())

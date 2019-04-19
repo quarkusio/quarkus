@@ -87,6 +87,8 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private boolean enableIsolates;
 
+    private boolean enableFallbackImages;
+
     private String graalvmHome;
 
     private boolean enableServer;
@@ -172,6 +174,11 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     public NativeImagePhase setEnableIsolates(boolean enableIsolates) {
         this.enableIsolates = enableIsolates;
+        return this;
+    }
+
+    public NativeImagePhase setEnableFallbackImages(boolean enableFallbackImages) {
+        this.enableFallbackImages = enableFallbackImages;
         return this;
     }
 
@@ -396,6 +403,14 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             command.add(runnerJarName);
             //https://github.com/oracle/graal/issues/660
             command.add("-J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1");
+            if (enableFallbackImages) {
+                command.add("-H:FallbackThreshold=5");
+            } else {
+                //Default: be strict as those fallback images aren't very useful
+                //and tend to cover up real problems.
+                command.add("-H:FallbackThreshold=0");
+            }
+
             if (reportErrorsAtRuntime) {
                 command.add("-H:+ReportUnsupportedElementsAtRuntime");
             }
@@ -632,6 +647,9 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                         break;
                     case "enable-isolates":
                         t.setEnableIsolates(Boolean.parseBoolean(value));
+                        break;
+                    case "enable-fallback-images":
+                        t.setEnableFallbackImages(Boolean.parseBoolean(value));
                         break;
                     case "graalvm-home":
                         t.setGraalvmHome(value);

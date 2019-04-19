@@ -44,8 +44,6 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Plugin;
-import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -166,18 +164,8 @@ public class DevMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
-        boolean found = false;
-        for (Plugin i : project.getBuildPlugins()) {
-            if (i.getGroupId().equals(MojoUtils.getPluginGroupId())
-                    && i.getArtifactId().equals(MojoUtils.getPluginArtifactId())) {
-                for (PluginExecution p : i.getExecutions()) {
-                    if (p.getGoals().contains("build")) {
-                        found = true;
-                        break;
-                    }
-                }
-            }
-        }
+        boolean found = MojoUtils.checkProjectForMavenBuildPlugin(project);
+
         if (!found) {
             getLog().warn("The quarkus-maven-plugin build goal was not configured for this project, " +
                     "skipping quarkus:dev as this is assumed to be a support library. If you want to run quarkus dev" +

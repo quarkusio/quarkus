@@ -114,6 +114,10 @@ Hit `CTRL+C` to stop the application.
 It is possible to use development mode remotely, so that you can run Quarkus in a container environment (such as Openshift)
 and have changes made to your local files become immediately visible.
 
+This allows you to develop in the same environment you will actually run your app in, and with access to the same services.
+
+WARNING: Do not use this in production. This should only be used in a development environment. You should not run production application in dev mode.
+
 To do this you must have the `quarkus-undertow-websockets` extension installed:
 
 [source,shell]
@@ -123,8 +127,8 @@ To do this you must have the `quarkus-undertow-websockets` extension installed:
 
 You must also have the following config properties set:
 
-- `quarkus.hot-reload.password`
-- `quarkus.hot-reload.url`
+- `quarkus.live-reload.password`
+- `quarkus.live-reload.url`
 
 These can be set via `application.properties`, or any other way (e.g. system properties, environment vars etc). The
 password must be set on both the local and remote processes, while the url only needs to be set on the local host.
@@ -133,7 +137,7 @@ Start Quarkus in dev mode on the remote host. Now you need to connect your local
 
 [source,shell]
 ----
-./mvnw quarkus:remote-dev -Dquarkus.hot-reload.url=http://my-remote-host:8080
+./mvnw quarkus:remote-dev -Dquarkus.live-reload.url=http://my-remote-host:8080
 ----
 
 Now every time you refresh the browser you should see any changes you have made locally immediately visible in the remote

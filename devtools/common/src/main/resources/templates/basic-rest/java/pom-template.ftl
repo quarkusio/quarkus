@@ -48,7 +48,7 @@
 
     <build>
         <plugins>
-            <!-- Quarkus build plugin - also provides the quarkus:dev hot-reload feature -->
+            <!-- Quarkus build plugin - also provides the quarkus:dev live-reload feature -->
             <plugin>
                 <groupId>${plugin_groupId}</groupId>
                 <artifactId>${plugin_artifactId}</artifactId>

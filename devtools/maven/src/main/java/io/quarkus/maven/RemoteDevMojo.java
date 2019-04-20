@@ -133,17 +133,21 @@ public class RemoteDevMojo extends AbstractMojo {
             }
         }
 
-        Optional<String> url = ConfigProvider.getConfig().getOptionalValue("quarkus.hot-reload.url", String.class);
-        Optional<String> password = ConfigProvider.getConfig().getOptionalValue("quarkus.hot-reload.password",
+        Optional<String> url = ConfigProvider.getConfig().getOptionalValue("quarkus.live-reload.url", String.class);
+        Optional<String> password = ConfigProvider.getConfig().getOptionalValue("quarkus.live-reload.password",
                 String.class);
         if (!url.isPresent()) {
-            throw new MojoFailureException("To use remote-dev you must specify quarkus.hot-reload.url");
+            throw new MojoFailureException("To use remote-dev you must specify quarkus.live-reload.url");
         }
         if (!password.isPresent()) {
-            throw new MojoFailureException("To use remote-dev you must specify quarkus.hot-reload.password");
+            throw new MojoFailureException("To use remote-dev you must specify quarkus.live-reload.password");
         }
         System.out.println(sources);
-        AgentRunner runner = new AgentRunner(resources, sources, classes, url.get() + "/quarkus/hot-reload",
+        String remotePath = url.get();
+        if (remotePath.endsWith("/")) {
+            remotePath = remotePath.substring(0, remotePath.length() - 1);
+        }
+        AgentRunner runner = new AgentRunner(resources, sources, classes, remotePath + "/quarkus/live-reload",
                 password.get());
 
         runner.run();

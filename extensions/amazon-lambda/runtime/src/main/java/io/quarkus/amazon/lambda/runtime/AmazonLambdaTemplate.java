@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.jboss.logging.Logger;
 
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
@@ -30,7 +31,7 @@ public class AmazonLambdaTemplate {
             BeanContainer beanContainer) {
         RequestHandler handler = beanContainer.instance(handlerClass);
 
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         AtomicBoolean running = new AtomicBoolean(true);
         ObjectReader objectReader = mapper.readerFor(handlerType.getValue());
         context.addShutdownTask(new Runnable() {

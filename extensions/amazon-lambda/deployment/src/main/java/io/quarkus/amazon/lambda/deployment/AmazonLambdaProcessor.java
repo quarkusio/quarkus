@@ -31,9 +31,11 @@ import io.quarkus.deployment.recording.RecorderContext;
 
 @SuppressWarnings("unchecked")
 public final class AmazonLambdaProcessor {
+    public static final String AWS_LAMBDA_EVENTS_ARCHIVE_MARKERS = "com/amazonaws/services/lambda/runtime/events";
+
     private static final DotName REQUEST_HANDLER = DotName.createSimple(RequestHandler.class.getName());
 
-    @BuildStep
+    @BuildStep(applicationArchiveMarkers = { AWS_LAMBDA_EVENTS_ARCHIVE_MARKERS })
     List<AmazonLambdaClassNameBuildItem> discover(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClasses) {
         List<AmazonLambdaClassNameBuildItem> ret = new ArrayList<>();

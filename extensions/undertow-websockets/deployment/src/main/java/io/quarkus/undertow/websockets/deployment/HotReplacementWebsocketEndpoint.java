@@ -34,9 +34,9 @@ import io.quarkus.deployment.devmode.HotReplacementContext;
 @ServerEndpoint(value = HotReplacementWebsocketEndpoint.QUARKUS_HOT_RELOAD, configurator = HotReplacementWebsocketEndpoint.ServerConfigurator.class)
 public class HotReplacementWebsocketEndpoint {
 
-    static final String QUARKUS_HOT_RELOAD = "/quarkus/hot-reload";
+    static final String QUARKUS_HOT_RELOAD = "/quarkus/live-reload";
     static final String QUARKUS_SECURITY_KEY = "quarkus-security-key";
-    static final String QUARKUS_HOT_RELOAD_PASSWORD = "quarkus.hot-reload.password";
+    static final String QUARKUS_HOT_RELOAD_PASSWORD = "quarkus.live-reload.password";
     private static Logger logger = Logger.getLogger(HotReplacementWebsocketEndpoint.class);
 
     private static final long MAX_WAIT_TIME = 15000;

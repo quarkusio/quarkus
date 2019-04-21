@@ -40,7 +40,7 @@ public class DevMojoIT extends MojoTestBase {
     }
 
     @Test
-    public void testThatClassAppCanRun() throws MavenInvocationException, FileNotFoundException {
+    public void testThatClassAppCanRun() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run");
         runAndCheck();
 
@@ -50,11 +50,11 @@ public class DevMojoIT extends MojoTestBase {
 
         //make sure webjars work
         getHttpResponse("webjars/bootstrap/3.1.0/css/bootstrap.min.css");
+        assertThatOutputWorksCorrectly(running.log());
     }
 
     @Test
-    public void testThatTheApplicationIsReloadedOnJavaChange()
-            throws MavenInvocationException, IOException, InterruptedException {
+    public void testThatTheApplicationIsReloadedOnJavaChange() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-java-change");
         runAndCheck();
 
@@ -82,8 +82,7 @@ public class DevMojoIT extends MojoTestBase {
     }
 
     @Test
-    public void testThatTheApplicationIsReloadedMultiModule()
-            throws MavenInvocationException, IOException, InterruptedException {
+    public void testThatTheApplicationIsReloadedMultiModule() throws MavenInvocationException, IOException {
         testDir = initProject("projects/multimodule", "projects/multimodule");
         runAndCheck();
 
@@ -135,8 +134,7 @@ public class DevMojoIT extends MojoTestBase {
     }
 
     @Test
-    public void testThatTheApplicationIsReloadedOnKotlinChange()
-            throws MavenInvocationException, IOException, InterruptedException {
+    public void testThatTheApplicationIsReloadedOnKotlinChange() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic-kotlin", "projects/project-classic-run-kotlin-change");
         runAndCheck();
 
@@ -405,5 +403,4 @@ public class DevMojoIT extends MojoTestBase {
         await().until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
     }
-
 }

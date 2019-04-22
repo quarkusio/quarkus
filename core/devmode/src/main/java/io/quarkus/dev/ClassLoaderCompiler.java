@@ -36,12 +36,16 @@ import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
+import org.jboss.logging.Logger;
+
 /**
  * Class that handles compilation of source files
  *
  * @author Stuart Douglas
  */
 public class ClassLoaderCompiler {
+
+    private static final Logger log = Logger.getLogger(ClassLoaderCompiler.class);
 
     private final List<CompilationProvider> compilationProviders;
     /**
@@ -120,6 +124,11 @@ public class ClassLoaderCompiler {
         }
         for (DevModeContext.ModuleInfo i : context.getModules()) {
             if (i.getSourcePath() != null) {
+                if (i.getClassesPath() == null) {
+                    log.warn("No classes directory found for module '" + i.getName()
+                            + "'. It is advised that this module be compiled before launching dev mode");
+                    continue;
+                }
                 this.compilationContexts.put(i.getSourcePath(),
                         new CompilationProvider.Context(classPathElements, new File(i.getClassesPath())));
             }

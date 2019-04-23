@@ -25,6 +25,7 @@ To complete this guide, you need:
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
+* https://stedolan.github.io/jq/[jq tool]
 * Docker
 
 == Architecture
@@ -256,7 +257,7 @@ This same demo can be compiled into native code: no modifications required.
 
 This implies that you no longer need to install a JVM on your
 production environment, as the runtime technology is included in
-the produced binary, and ptimized to run with minimal resource overhead.
+the produced binary, and optimized to run with minimal resource overhead.
 
 Compilation will take a bit longer, so this step is disabled by default;
 let's build again by enabling the `native` profile:

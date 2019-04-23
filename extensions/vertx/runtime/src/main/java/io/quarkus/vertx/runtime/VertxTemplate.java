@@ -257,7 +257,13 @@ public class VertxTemplate {
                 } else {
                     consumer = eventBus.consumer(address);
                 }
-                consumer.handler(m -> invoker.invoke(m));
+                consumer.handler(m -> {
+                    try {
+                        invoker.invoke(m);
+                    } catch (Throwable e) {
+                        m.fail(ConsumeEvent.FAILURE_CODE, e.getMessage());
+                    }
+                });
                 consumer.completionHandler(ar -> {
                     if (ar.succeeded()) {
                         latch.countDown();

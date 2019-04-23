@@ -116,6 +116,11 @@ class VertxProcessor {
     private static final MethodDescriptor AXLE_MESSAGE_NEW_INSTANCE = MethodDescriptor.ofMethod(
             io.vertx.axle.core.eventbus.Message.class,
             "newInstance", io.vertx.axle.core.eventbus.Message.class, Message.class);
+    private static final MethodDescriptor MESSAGE_REPLY = MethodDescriptor.ofMethod(Message.class, "reply", void.class,
+            Object.class);
+    private static final MethodDescriptor MESSAGE_BODY = MethodDescriptor.ofMethod(Message.class, "body", Object.class);
+    private static final MethodDescriptor INSTANCE_HANDLE_DESTROY = MethodDescriptor.ofMethod(InstanceHandle.class, "destroy",
+            void.class);
 
     @Inject
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
@@ -308,8 +313,7 @@ class VertxProcessor {
                     beanInstanceHandle, axleMessageHandle);
         } else {
             // Parameter is payload
-            ResultHandle bodyHandle = invoke.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(Message.class, "body", Object.class), messageHandle);
+            ResultHandle bodyHandle = invoke.invokeInterfaceMethod(MESSAGE_BODY, messageHandle);
             ResultHandle replyHandle = invoke.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(),
                             method.returnType().name().toString(), paramType.name().toString()),
@@ -320,7 +324,7 @@ class VertxProcessor {
                     FunctionCreator func = invoke.createFunction(Consumer.class);
                     BytecodeCreator funcBytecode = func.getBytecode();
                     funcBytecode.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(Message.class, "reply", void.class, Object.class),
+                            MESSAGE_REPLY,
                             messageHandle,
                             funcBytecode.getMethodParam(0));
                     funcBytecode.returnValue(null);
@@ -331,17 +335,14 @@ class VertxProcessor {
                             replyHandle, func.getInstance());
                 } else {
                     // Message.reply(returnValue)
-                    invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(Message.class, "reply", void.class, Object.class),
-                            messageHandle,
-                            replyHandle);
+                    invoke.invokeInterfaceMethod(MESSAGE_REPLY, messageHandle, replyHandle);
                 }
             }
         }
 
         // handle.destroy() - destroy dependent instance afterwards
         if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
-            invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "destroy", void.class),
-                    instanceHandle);
+            invoke.invokeInterfaceMethod(INSTANCE_HANDLE_DESTROY, instanceHandle);
         }
     }
 

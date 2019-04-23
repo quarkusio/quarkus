@@ -82,6 +82,7 @@
         <!-- Security -->
         <module>elytron-security</module>
         <module>smallrye-jwt</module>
+        <module>keycloak</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>

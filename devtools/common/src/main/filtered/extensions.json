@@ -157,6 +157,16 @@
     "artifactId": "quarkus-jsonp"
   },
   {
+    "name": "Keycloak",
+    "labels": [
+      "keycloak",
+      "oauth2",
+      "openid-connect"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-keycloak"
+  },
+  {
     "name": "Kotlin",
     "labels": [
       "kotlin"

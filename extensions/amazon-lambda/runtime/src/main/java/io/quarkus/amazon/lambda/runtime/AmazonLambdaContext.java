@@ -9,6 +9,7 @@ import com.amazonaws.services.lambda.runtime.ClientContext;
 import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.amazonaws.services.lambda.runtime.LambdaRuntime;
 import com.fasterxml.jackson.databind.ObjectReader;
 
 public class AmazonLambdaContext implements Context {
@@ -44,9 +45,15 @@ public class AmazonLambdaContext implements Context {
             clientContext = clientCtxReader.readValue(clientContextHeader);
         }
 
-        memoryLimitInMB = Integer.valueOf(System.getenv("AWS_LAMBDA_FUNCTION_MEMORY_SIZE"));
-        remainingTimeInMillis = (int) (Long.valueOf(request.getHeaderField("Lambda-Runtime-Deadline-Ms"))
-                - new Date().getTime());
+        String functionMemorySize = System.getenv("AWS_LAMBDA_FUNCTION_MEMORY_SIZE");
+        memoryLimitInMB = functionMemorySize != null ? Integer.valueOf(functionMemorySize) : 0;
+
+        String runtimeDeadlineMs = request.getHeaderField("Lambda-Runtime-Deadline-Ms");
+        if (runtimeDeadlineMs != null) {
+            remainingTimeInMillis = (int) (Long.valueOf(runtimeDeadlineMs)
+                    - new Date().getTime());
+        }
+        logger = LambdaRuntime.getLogger();
     }
 
     @Override
@@ -101,7 +108,7 @@ public class AmazonLambdaContext implements Context {
 
     @Override
     public LambdaLogger getLogger() {
-        return null;
+        return logger;
     }
 
     @Override

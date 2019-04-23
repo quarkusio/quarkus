@@ -76,7 +76,7 @@ public class ExecutorTemplate {
                                 //JVM alive
                                 Thread t = new Thread(i, "Shutdown thread");
                                 t.setDaemon(true);
-                                t.run();
+                                t.start();
                             }
                         }
                         return;

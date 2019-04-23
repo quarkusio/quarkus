@@ -191,6 +191,12 @@ public class PriceResource {
     @Stream("my-data-stream") Publisher<Double> prices; // <1>
 
     @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "hello";
+    }
+
+    @GET
     @Path("/stream")
     @Produces(MediaType.SERVER_SENT_EVENTS)             // <2>
     public Publisher<Double> stream() {                 // <3>

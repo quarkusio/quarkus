@@ -294,7 +294,8 @@ public class DevMojo extends AbstractMojo {
                     if (Files.isDirectory(resourcesSourcesDir)) {
                         resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
                     }
-                    DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(sourcePath, classesPath, resourcePath);
+                    DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(i.getArtifactId(), sourcePath,
+                            classesPath, resourcePath);
                     devModeContext.getModules().add(moduleInfo);
                 }
 

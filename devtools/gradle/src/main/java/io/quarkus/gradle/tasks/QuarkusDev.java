@@ -242,7 +242,8 @@ public class QuarkusDev extends QuarkusTask {
                 resources.append(file.getAbsolutePath());
                 res = file.getAbsolutePath();
             }
-            DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(getSourceDir().getAbsolutePath(),
+            DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(getProject().getName(),
+                    getSourceDir().getAbsolutePath(),
                     extension.outputDirectory().getAbsolutePath(), res);
             context.getModules().add(moduleInfo);
 

@@ -32,14 +32,20 @@ public class DevModeContext implements Serializable {
     }
 
     public static class ModuleInfo implements Serializable {
+        private final String name;
         private final String sourcePath;
         private final String classesPath;
         private final String resourcePath;
 
-        public ModuleInfo(String sourcePath, String classesPath, String resourcePath) {
+        public ModuleInfo(String name, String sourcePath, String classesPath, String resourcePath) {
+            this.name = name;
             this.sourcePath = sourcePath;
             this.classesPath = classesPath;
             this.resourcePath = resourcePath;
+        }
+
+        public String getName() {
+            return name;
         }
 
         public String getSourcePath() {

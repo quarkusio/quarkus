@@ -247,7 +247,7 @@ Then run it:
 
 [source,bash]
 ----
-java -jar ./target/using-keycloak-1.0-SNAPSHOT-runner.jar
+java -jar ./target/using-keycloak-runner.jar
 ----
 
 === Runing in Native Mode
@@ -270,7 +270,7 @@ After getting a cup of coffee, you'll be able to run this binary directly:
 
 [source,bash]
 ----
-./target/using-keycloak-1.0-SNAPSHOT-runner
+./target/using-keycloak-runner
 ----
 
 == Testing the Application

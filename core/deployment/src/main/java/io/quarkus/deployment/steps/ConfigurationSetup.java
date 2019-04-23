@@ -421,7 +421,7 @@ public class ConfigurationSetup {
             List<RunTimeConfigurationSourceBuildItem> runTimeSources) {
         final ClassOutput classOutput = new ClassOutput() {
             public void write(final String name, final byte[] data) {
-                classConsumer.accept(new GeneratedClassBuildItem(false, name, data));
+                classConsumer.accept(new GeneratedClassBuildItem(true, name, data));
             }
         };
 

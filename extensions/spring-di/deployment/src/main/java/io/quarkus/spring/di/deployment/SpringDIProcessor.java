@@ -265,6 +265,14 @@ public class SpringDIProcessor {
             final Set<DotName> scopeStereotypes = new HashSet<>();
             final Set<String> names = new HashSet<>();
             final Set<DotName> clazzAnnotations = classInfo.annotations().keySet();
+
+            for (AnnotationInstance instance : classInfo.classAnnotations()) {
+                // make sure that we don't mix and match Spring and CDI annotations since this can cause a lot of problems
+                if (BuiltinScope.from(instance.name()) != null) {
+                    return annotationsToAdd;
+                }
+            }
+
             for (final DotName clazzAnnotation : clazzAnnotations) {
                 if (stereotypes.contains(clazzAnnotation)) {
                     scopeStereotypes.add(clazzAnnotation);
@@ -293,7 +301,7 @@ public class SpringDIProcessor {
                         declaredScope,
                         target,
                         Collections.emptyList()));
-            } else if (!(isAnnotation && scopes.isEmpty())) { // Annotations without an explicit scope shouldn't default to anything
+            } else if (!(isAnnotation && scopes.isEmpty()) && !classInfo.annotations().containsKey(CONFIGURATION_ANNOTATION)) { // Annotations without an explicit scope shouldn't default to anything
                 final DotName scope = validateScope(classInfo, scopes, scopeStereotypes);
                 annotationsToAdd.add(create(
                         scope,

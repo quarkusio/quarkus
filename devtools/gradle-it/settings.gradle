@@ -1,13 +1,13 @@
 pluginManagement {
     repositories {
-        maven { url '../gradle/target/quarkus-gradle-plugin-999-SNAPSHOT/quarkus-gradle-plugin-999-SNAPSHOT/' }
+        maven { url "../gradle/target/quarkus-gradle-plugin-${version}/quarkus-gradle-plugin-${version}/" }
         maven { url '../gradle/target/dependencies/' }
         mavenCentral()
     }
     resolutionStrategy {
         eachPlugin {
             if (requested.id.id == 'io.quarkus') {
-                useModule("io.quarkus:quarkus-gradle-plugin:${requested.version}")
+                useModule("io.quarkus:quarkus-gradle-plugin:${version}")
             }
         }
     }

@@ -74,6 +74,26 @@ public class TsArtifact {
 
     protected ContentProvider content;
 
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public String getArtifactId() {
+        return artifactId;
+    }
+
+    public String getClassifier() {
+        return classifier;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
     public TsArtifact(String artifactId) {
         this(artifactId, DEFAULT_VERSION);
     }

@@ -106,6 +106,36 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     }
 
     @Override
+    public List<AppDependency> resolveUserDependencies(AppArtifact appArtifact, List<AppDependency> deps) throws AppModelResolverException {
+        final List<Dependency> mvnDeps;
+        if(deps.isEmpty()) {
+            mvnDeps = Collections.emptyList();
+        } else {
+            mvnDeps = new ArrayList<>(deps.size());
+            for (AppDependency dep : deps) {
+                mvnDeps.add(new Dependency(toAetherArtifact(dep.getArtifact()), dep.getScope()));
+            }
+        }
+        final List<AppDependency> result = new ArrayList<>();
+        final TreeDependencyVisitor visitor = new TreeDependencyVisitor(new DependencyVisitor() {
+            @Override
+            public boolean visitEnter(DependencyNode node) {
+                return true;
+            }
+
+            @Override
+            public boolean visitLeave(DependencyNode node) {
+                final Dependency dep = node.getDependency();
+                if(dep != null) {
+                    result.add(new AppDependency(toAppArtifact(dep.getArtifact()), dep.getScope(), dep.isOptional()));
+                }
+                return true;
+            }});
+        mvn.resolveDependencies(toAetherArtifact(appArtifact), mvnDeps).getRoot().accept(visitor);
+        return result;
+    }
+
+    @Override
     public AppModel resolveModel(AppArtifact appArtifact) throws AppModelResolverException {
         return devmode ? injectDeploymentDependencies(appArtifact,
                 mvn.resolveDependencies(toAetherArtifact(appArtifact), "test").getRoot())
@@ -132,7 +162,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     @Override
     public List<String> listLaterVersions(AppArtifact appArtifact, String upToVersion, boolean inclusive) throws AppModelResolverException {
-        final VersionRangeResult rangeResult = resolveVersionRangeResult(appArtifact, upToVersion, inclusive);
+        final VersionRangeResult rangeResult = resolveVersionRangeResult(appArtifact, appArtifact.getVersion(), false, upToVersion, inclusive);
         final List<Version> resolvedVersions = rangeResult.getVersions();
         final List<String> versions = new ArrayList<>(resolvedVersions.size());
         for (Version v : resolvedVersions) {
@@ -142,11 +172,11 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     }
 
     @Override
-    public String getNextVersion(AppArtifact appArtifact, String upToVersion, boolean inclusive) throws AppModelResolverException {
-        final VersionRangeResult rangeResult = resolveVersionRangeResult(appArtifact, upToVersion, inclusive);
+    public String getNextVersion(AppArtifact appArtifact, String fromVersion, boolean fromVersionIncluded, String upToVersion, boolean upToVersionInclusive) throws AppModelResolverException {
+        final VersionRangeResult rangeResult = resolveVersionRangeResult(appArtifact, fromVersion, fromVersionIncluded, upToVersion, upToVersionInclusive);
         final List<Version> versions = rangeResult.getVersions();
         if(versions.isEmpty()) {
-            return appArtifact.getVersion();
+            return null;
         }
         Version next = versions.get(0);
         for(int i = 1; i < versions.size(); ++i) {
@@ -160,7 +190,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     @Override
     public String getLatestVersion(AppArtifact appArtifact, String upToVersion, boolean inclusive) throws AppModelResolverException {
-        final VersionRangeResult rangeResult = resolveVersionRangeResult(appArtifact, upToVersion, inclusive);
+        final VersionRangeResult rangeResult = resolveVersionRangeResult(appArtifact, appArtifact.getVersion(), false, upToVersion, inclusive);
         final List<Version> versions = rangeResult.getVersions();
         if(versions.isEmpty()) {
             return appArtifact.getVersion();
@@ -198,7 +228,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             public boolean visitLeave(DependencyNode node) {
                 final Dependency dep = node.getDependency();
                 if(dep != null) {
-                    final AppArtifact appArtifact = BootstrapAppModelResolver.toAppArtifact(dep.getArtifact());
+                    final AppArtifact appArtifact = toAppArtifact(dep.getArtifact());
                     appDeps.add(appArtifact.getKey());
                     userDeps.add(new AppDependency(appArtifact, dep.getScope(), dep.isOptional()));
                 }
@@ -251,11 +281,13 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         return new AppModel(appArtifact, userDeps, deploymentDeps);
     }
 
-    private VersionRangeResult resolveVersionRangeResult(AppArtifact appArtifact, String upToVersion, boolean inclusive)
+    private VersionRangeResult resolveVersionRangeResult(AppArtifact appArtifact, String fromVersion, boolean fromVersionIncluded, String upToVersion, boolean upToVersionIncluded)
             throws AppModelResolverException {
         return mvn.resolveVersionRange(new DefaultArtifact(appArtifact.getGroupId(),
                 appArtifact.getArtifactId(), appArtifact.getType(),
-                '(' + appArtifact.getVersion() + ',' + (upToVersion == null ? ')' : upToVersion + (inclusive ? ']' : ')'))));
+                (fromVersionIncluded ? '[' : '(')
+                + fromVersion + ','
+                + (upToVersion == null ? ')' : upToVersion + (upToVersionIncluded ? ']' : ')'))));
     }
 
     static List<AppDependency> toAppDepList(DependencyNode rootNode) {

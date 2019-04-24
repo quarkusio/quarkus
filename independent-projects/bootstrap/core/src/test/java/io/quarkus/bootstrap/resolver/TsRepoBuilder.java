@@ -59,6 +59,10 @@ public class TsRepoBuilder {
 
     public void install(TsArtifact artifact, Path p) {
         final Path pomXml = workDir.resolve(artifact.getArtifactFileName() + ".pom");
+        if(Files.exists(pomXml)) {
+            // assume it's already installed
+            return;
+        }
         try {
             ModelUtils.persistModel(pomXml, artifact.getPomModel());
         } catch (Exception e) {
@@ -69,7 +73,9 @@ public class TsRepoBuilder {
             switch(artifact.type) {
                 case TsArtifact.TYPE_JAR:
                     try {
-                        p = newJar().getPath(workDir);
+                        p = newJar()
+                                .addMavenMetadata(artifact, pomXml)
+                                .getPath(workDir);
                     } catch (IOException e) {
                         throw new IllegalStateException("Failed to install " + artifact, e);
                     }

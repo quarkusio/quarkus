@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
+import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
 
 /**
@@ -38,6 +39,7 @@ public class TsJar implements TsArtifact.ContentProvider {
 
     private Path target;
     private Map<String, String> content = Collections.emptyMap();
+    private Map<String, Path> paths = Collections.emptyMap();
 
     public TsJar(Path target) {
         this.target = target;
@@ -61,6 +63,13 @@ public class TsJar implements TsArtifact.ContentProvider {
                     try (BufferedWriter writer = Files.newBufferedWriter(p)) {
                         writer.write(entry.getValue());
                     }
+                }
+            }
+            if(!paths.isEmpty()) {
+                for (Map.Entry<String, Path> entry : paths.entrySet()) {
+                    final Path p = zip.getPath(entry.getKey());
+                    Files.createDirectories(p.getParent());
+                    IoUtils.copy(entry.getValue(), p);
                 }
             }
         } catch (Throwable t) {
@@ -88,12 +97,20 @@ public class TsJar implements TsArtifact.ContentProvider {
         this.content.put(getKey(path), content);
     }
 
-    public TsJar addFile(String content, String... path) throws IOException {
+    public TsJar addEntry(Path content, String... path) {
+        if(paths.isEmpty()) {
+            paths = new HashMap<>(1);
+        }
+        paths.put(getKey(path), content);
+        return this;
+    }
+
+    public TsJar addEntry(String content, String... path) {
         addContent(content, path);
         return this;
     }
 
-    public TsJar addFile(Properties props, String... path) {
+    public TsJar addEntry(Properties props, String... path) {
         final StringWriter writer = new StringWriter();
         try {
             props.store(writer, "Written by TsJarBuilder");
@@ -101,6 +118,16 @@ public class TsJar implements TsArtifact.ContentProvider {
             throw new IllegalStateException("Failed to serialize properties", e);
         }
         addContent(writer.getBuffer().toString(), path);
+        return this;
+    }
+
+    public TsJar addMavenMetadata(TsArtifact artifact, Path pomXml) {
+        final Properties props = new Properties();
+        props.setProperty("groupId", artifact.groupId);
+        props.setProperty("artifactId", artifact.artifactId);
+        props.setProperty("version", artifact.version);
+        addEntry(props, "META-INF", "maven", artifact.groupId, artifact.artifactId, "pom.properties");
+        addEntry(pomXml, "META-INF", "maven", artifact.groupId, artifact.artifactId, "pom.xml");
         return this;
     }
 

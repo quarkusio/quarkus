@@ -96,7 +96,9 @@ public class LocalProject {
 
     private static final Model readModel(Path pom) throws BootstrapException {
         try {
-            return ModelUtils.readModel(pom);
+            final Model model = ModelUtils.readModel(pom);
+            model.setPomFile(pom.toFile());
+            return model;
         } catch (IOException e) {
             throw new BootstrapException("Failed to read " + pom, e);
         }

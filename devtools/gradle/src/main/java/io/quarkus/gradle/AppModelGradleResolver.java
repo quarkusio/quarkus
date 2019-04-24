@@ -24,6 +24,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -66,7 +67,8 @@ public class AppModelGradleResolver implements AppModelResolver {
     }
 
     @Override
-    public String getNextVersion(AppArtifact arg0, String arg1, boolean arg2) throws AppModelResolverException {
+    public String getNextVersion(AppArtifact arg0, String fromVersion, boolean fromVersionIncluded, String arg1, boolean arg2)
+            throws AppModelResolverException {
         throw new UnsupportedOperationException();
     }
 
@@ -86,6 +88,12 @@ public class AppModelGradleResolver implements AppModelResolver {
             throw new AppModelResolverException("Artifact has not been resolved: " + appArtifact);
         }
         return appArtifact.getPath();
+    }
+
+    @Override
+    public List<AppDependency> resolveUserDependencies(AppArtifact appArtifact, List<AppDependency> directDeps)
+            throws AppModelResolverException {
+        return Collections.emptyList();
     }
 
     @Override

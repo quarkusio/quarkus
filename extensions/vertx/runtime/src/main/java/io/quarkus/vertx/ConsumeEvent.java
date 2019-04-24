@@ -46,6 +46,11 @@ import java.lang.annotation.Target;
 public @interface ConsumeEvent {
 
     /**
+     * Failure code used when a message consumer method throws an exception.
+     */
+    int FAILURE_CODE = 0x1FF9;
+
+    /**
      * The address the consumer will be registered to. By default, the fully qualified name of the declaring bean class is
      * assumed.
      *

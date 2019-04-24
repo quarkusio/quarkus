@@ -7,6 +7,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
 
+import com.amazonaws.services.lambda.runtime.ClientContext;
+import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,6 +36,9 @@ public class AmazonLambdaTemplate {
         final ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         AtomicBoolean running = new AtomicBoolean(true);
         ObjectReader objectReader = mapper.readerFor(handlerType.getValue());
+        ObjectReader cognitoIdReader = mapper.readerFor(CognitoIdentity.class);
+        ObjectReader clientCtxReader = mapper.readerFor(ClientContext.class);
+
         context.addShutdownTask(new Runnable() {
             @Override
             public void run() {
@@ -56,7 +61,8 @@ public class AmazonLambdaTemplate {
                             Object response;
                             try {
                                 Object val = objectReader.readValue(requestConnection.getInputStream());
-                                response = handler.handleRequest(val, null);
+                                response = handler.handleRequest(val,
+                                        new AmazonLambdaContext(requestConnection, cognitoIdReader, clientCtxReader));
                             } catch (Exception e) {
                                 log.error("Failed to run lambda", e);
                                 FunctionError fe = new FunctionError(e.getClass().getName(), e.getMessage());

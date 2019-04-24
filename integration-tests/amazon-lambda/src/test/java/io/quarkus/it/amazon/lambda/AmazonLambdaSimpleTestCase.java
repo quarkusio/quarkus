@@ -33,7 +33,7 @@ public class AmazonLambdaSimpleTestCase {
         in.setName("Stu");
         OutputObject out = LambdaClient.invoke(OutputObject.class, in);
         Assertions.assertEquals("Hello Stu", out.getResult());
-
+        Assertions.assertTrue(out.getRequestId().matches("aws-request-\\d"), "Expected requestId as 'aws-request-<number>'");
     }
 
     @Test

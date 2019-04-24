@@ -85,6 +85,7 @@
                             <arguments>
                                 <argument>build</argument>
                                 <argument>-S</argument>
+                                <argument>-Pversion=${project.version}</argument>
                             </arguments>
                             <skip>${skip.gradle.build}</skip>
                         </configuration>

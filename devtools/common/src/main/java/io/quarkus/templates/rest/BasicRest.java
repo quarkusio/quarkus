@@ -56,6 +56,8 @@ public class BasicRest implements QuarkusTemplate {
         createDockerFiles();
         createDockerIgnore();
         createApplicationConfig();
+
+        createGitIgnore();
     }
 
     private void setupContext() {
@@ -152,6 +154,11 @@ public class BasicRest implements QuarkusTemplate {
         File dockerRoot = new File(projectRoot, "");
         File docker = new File(mkdirs(dockerRoot), ".dockerignore");
         generate("templates/dockerignore.ftl", context, docker, "docker ignore");
+    }
+
+    private void createGitIgnore() throws IOException {
+        File gitignore = new File(mkdirs(projectRoot), ".gitignore");
+        generate("templates/gitignore.ftl", context, gitignore, "git ignore");
     }
 
     private void createApplicationConfig() throws IOException {

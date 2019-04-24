@@ -1,7 +1,9 @@
 package io.quarkus.smallrye.opentracing.deployment;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import org.awaitility.Awaitility;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -36,7 +38,6 @@ public class TracingTest {
     @AfterEach
     public void after() {
         mockTracer.reset();
-        System.out.println(GlobalTracer.get());
     }
 
     @AfterAll
@@ -101,7 +102,10 @@ public class TracingTest {
             Response response = RestAssured.when().get("/faultTolerance");
             response.then().statusCode(200);
             Assertions.assertEquals("fallback", response.body().asString());
+            Awaitility.await().atMost(5, TimeUnit.SECONDS)
+                    .until(() -> mockTracer.finishedSpans().size() == 5);
             List<MockSpan> spans = mockTracer.finishedSpans();
+
             Assertions.assertEquals(5, spans.size());
             for (MockSpan mockSpan : spans) {
                 Assertions.assertEquals(spans.get(0).context().traceId(), mockSpan.context().traceId());

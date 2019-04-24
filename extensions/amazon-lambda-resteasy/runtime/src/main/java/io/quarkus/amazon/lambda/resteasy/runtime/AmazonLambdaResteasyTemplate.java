@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Red Hat, Inc.
+ * Copyright 2019 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.quarkus.amazon.lambda.resteasy.runtime;
 
-package io.quarkus.resteasy.deployment;
+import java.util.Map;
 
-import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.amazon.lambda.resteasy.runtime.container.StreamLambdaHandler;
+import io.quarkus.runtime.annotations.Template;
 
-/**
- * A build item that represents a JAX-RS config.
- */
-public final class ResteasyJaxrsConfig extends SimpleBuildItem {
+@Template
+public class AmazonLambdaResteasyTemplate {
 
-    public final String defaultPath;
-
-    public ResteasyJaxrsConfig(String defaultPath) {
-        this.defaultPath = defaultPath;
+    public void initHandler(Map<String, String> initParameters, AmazonLambdaResteasyConfig config) {
+        StreamLambdaHandler.initHandler(initParameters, config.debug);
     }
 }

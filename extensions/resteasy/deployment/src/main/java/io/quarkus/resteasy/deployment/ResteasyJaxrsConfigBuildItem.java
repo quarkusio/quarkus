@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.quarkus.resteasy.deployment;
 
-import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Processor that sets up log filters for RESTEasy
+ * A build item that represents a JAX-RS config.
  */
-public class ResteasyLogFilterBuildStep {
+public final class ResteasyJaxrsConfigBuildItem extends SimpleBuildItem {
 
-    @BuildStep
-    void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
-        filters.produce(new LogCleanupFilterBuildItem("org.jboss.resteasy.resteasy_jaxrs.i18n", "RESTEASY002225"));
+    public final String defaultPath;
+
+    public ResteasyJaxrsConfigBuildItem(String defaultPath) {
+        this.defaultPath = defaultPath;
     }
 }

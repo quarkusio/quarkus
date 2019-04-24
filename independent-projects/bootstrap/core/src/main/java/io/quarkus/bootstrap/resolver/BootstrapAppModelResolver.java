@@ -59,6 +59,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     protected final MavenArtifactResolver mvn;
     protected Consumer<String> buildTreeConsumer;
+    protected boolean devmode;
 
     public BootstrapAppModelResolver(MavenArtifactResolver mvn) throws AppModelResolverException {
         this.mvn = mvn;
@@ -66,6 +67,19 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     public void setBuildTreeLogger(Consumer<String> buildTreeConsumer) {
         this.buildTreeConsumer = buildTreeConsumer;
+    }
+
+    /**
+     * Indicates whether application should be resolved to set up the dev mode.
+     * The important difference between the dev mode and the usual build is that
+     * in the dev mode the user application will have to be compiled, so the classpath
+     * will have to include dependencies of scope provided.
+     *
+     * @param devmode  whether the resolver is going to be used to set up the dev mode
+     */
+    public BootstrapAppModelResolver setDevMode(boolean devmode) {
+        this.devmode = devmode;
+        return this;
     }
 
     public void addRemoteRepositories(List<RemoteRepository> repos) {
@@ -92,17 +106,28 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     }
 
     @Override
-    public AppModel resolveModel(AppArtifact coords) throws AppModelResolverException {
-        return injectDeploymentDependencies(coords, mvn.resolveDependencies(toAetherArtifact(coords)).getRoot());
+    public AppModel resolveModel(AppArtifact appArtifact) throws AppModelResolverException {
+        return devmode ? injectDeploymentDependencies(appArtifact,
+                mvn.resolveDependencies(toAetherArtifact(appArtifact), "test").getRoot())
+                : doResolveModel(appArtifact, Collections.emptyList());
     }
 
     @Override
-    public AppModel resolveModel(AppArtifact root, List<AppDependency> coords) throws AppModelResolverException {
-        final List<Dependency> mvnDeps = new ArrayList<>(coords.size());
-        for(AppDependency dep : coords) {
-            mvnDeps.add(new Dependency(toAetherArtifact(dep.getArtifact()), dep.getScope()));
+    public AppModel resolveModel(AppArtifact appArtifact, List<AppDependency> directDeps) throws AppModelResolverException {
+        final List<Dependency> mvnDeps;
+        if(directDeps.isEmpty()) {
+            mvnDeps = Collections.emptyList();
+        } else {
+            mvnDeps = new ArrayList<>(directDeps.size());
+            for (AppDependency dep : directDeps) {
+                mvnDeps.add(new Dependency(toAetherArtifact(dep.getArtifact()), dep.getScope()));
+            }
         }
-        return injectDeploymentDependencies(root, mvn.resolveDependencies(toAetherArtifact(root), mvnDeps).getRoot());
+        return doResolveModel(appArtifact, mvnDeps);
+    }
+
+    private AppModel doResolveModel(AppArtifact appArtifact, final List<Dependency> directMvnDeps) throws AppModelResolverException {
+        return injectDeploymentDependencies(appArtifact, mvn.resolveDependencies(toAetherArtifact(appArtifact), directMvnDeps).getRoot());
     }
 
     @Override
@@ -163,7 +188,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
         final Set<AppArtifactKey> appDeps = new HashSet<>();
         final List<AppDependency> userDeps = new ArrayList<>();
-        TreeDependencyVisitor visitor = new TreeDependencyVisitor(new DependencyVisitor() {
+        final TreeDependencyVisitor visitor = new TreeDependencyVisitor(new DependencyVisitor() {
             @Override
             public boolean visitEnter(DependencyNode node) {
                 return true;

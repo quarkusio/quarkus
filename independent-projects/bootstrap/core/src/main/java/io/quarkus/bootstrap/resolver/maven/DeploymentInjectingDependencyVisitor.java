@@ -64,7 +64,6 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
 
     @Override
     public boolean visitEnter(DependencyNode node) {
-
         final Artifact artifact = node.getArtifact();
         if(!artifact.getExtension().equals("jar")) {
             return true;
@@ -87,6 +86,11 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
         return processChildren;
     }
 
+    @Override
+    public boolean visitLeave(DependencyNode node) {
+        return true;
+    }
+
     private boolean processMetaInfDir(Path metaInfDir) throws BootstrapDependencyProcessingException {
         if (!Files.exists(metaInfDir)) {
             return false;
@@ -104,7 +108,7 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
         if(rtProps == null) {
             return;
         }
-        log.debugf("Processing platform dependency %s", node);
+        log.debugf("Processing Quarkus extension %s", node);
 
         String value = rtProps.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
         if(value != null) {
@@ -119,7 +123,7 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
                     "No dependencies collected for Quarkus extension deployment artifact " + depNode.getArtifact()
                             + " while at least the corresponding runtime artifact " + node.getArtifact() + " is expected");
         }
-        //BootstrapDependencyGraphTransformer.log("Replacing dependency " + depNode.getArtifact(), depNode);
+        log.debugf("Injecting deployment dependency %s", depNode);
         node.setData(INJECTED_DEPENDENCY, node.getArtifact());
         node.setArtifact(depNode.getArtifact());
         node.getDependency().setArtifact(depNode.getArtifact());
@@ -163,11 +167,6 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
             throw new BootstrapDependencyProcessingException("Failed to load " + path, e);
         }
         return rtProps;
-    }
-
-    @Override
-    public boolean visitLeave(DependencyNode node) {
-        return true;
     }
 
     public static Artifact toArtifact(String str) {

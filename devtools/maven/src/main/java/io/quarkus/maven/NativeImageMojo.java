@@ -36,6 +36,9 @@ import io.quarkus.creator.phase.nativeimage.NativeImageOutcome;
 import io.quarkus.creator.phase.nativeimage.NativeImagePhase;
 import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 
+/**
+ * Build a native executable of your application.
+ */
 @Mojo(name = "native-image", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class NativeImageMojo extends AbstractMojo {
 

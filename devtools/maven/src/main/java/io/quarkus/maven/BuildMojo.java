@@ -49,7 +49,10 @@ import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarPhase;
 
 /**
- *
+ * Build the application.
+ * <p>
+ * You can build a native application runner with {@code native-image}
+ * 
  * @author Alexey Loubyansky
  */
 @Mojo(name = "build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)

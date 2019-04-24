@@ -6,6 +6,11 @@ import org.apache.maven.plugins.annotations.Mojo;
 import io.quarkus.cli.commands.AddExtensions;
 import io.quarkus.maven.utilities.MojoUtils;
 
+/**
+ * List the available extensions.
+ * You can add one or several extensions in one go, with the 2 following mojos:
+ * {@code add-extensions} and {@code add-extension}.
+ */
 @Mojo(name = "list-extensions", requiresProject = false)
 public class ListExtensionsMojo extends AbstractMojo {
 

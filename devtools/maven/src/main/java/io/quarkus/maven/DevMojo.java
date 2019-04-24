@@ -73,8 +73,10 @@ import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
 
 /**
- * The dev mojo, that runs a quarkus app in a forked process
+ * The dev mojo, that runs a quarkus app in a forked process. A background compilation process is launched and any changes are
+ * automatically reflected in your running application.
  * <p>
+ * You can use this dev mode in a remote container environment with {@code remote-dev}.
  */
 @Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class DevMojo extends AbstractMojo {

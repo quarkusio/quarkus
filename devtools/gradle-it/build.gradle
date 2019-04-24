@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'io.quarkus' version '999-SNAPSHOT'
+    id 'io.quarkus'
 }
 
 compileJava.options.encoding = "UTF-8"
@@ -16,8 +16,8 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'io.quarkus', name: 'quarkus-resteasy', version: '999-SNAPSHOT'
+    implementation group: 'io.quarkus', name: 'quarkus-resteasy', version: version
 
-    testCompile group: 'io.quarkus', name: 'quarkus-junit5', version: '999-SNAPSHOT'
+    testCompile group: 'io.quarkus', name: 'quarkus-junit5', version: version
     testCompile group: 'io.rest-assured', name: 'rest-assured', version: '3.3.0'
 }

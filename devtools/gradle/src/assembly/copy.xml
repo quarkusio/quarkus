@@ -7,12 +7,12 @@
     <files>
         <file>
             <source>${basedir}/build/libs/${project.artifactId}-${project.version}.jar</source>
-            <outputDirectory>io/quarkus/quarkus-gradle-plugin/999-SNAPSHOT/</outputDirectory>
+            <outputDirectory>io/quarkus/quarkus-gradle-plugin/${project.version}/</outputDirectory>
         </file>
         <file>
             <source>pom.xml</source>
-            <outputDirectory>io/quarkus/quarkus-gradle-plugin/999-SNAPSHOT/</outputDirectory>
-            <destName>quarkus-gradle-plugin-999-SNAPSHOT.pom</destName>
+            <outputDirectory>io/quarkus/quarkus-gradle-plugin/${project.version}/</outputDirectory>
+            <destName>quarkus-gradle-plugin-${project.version}.pom</destName>
         </file>
     </files>
 </assembly>

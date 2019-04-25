@@ -16,10 +16,13 @@
 
 package io.quarkus.runtime;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.jboss.logging.Logger;
 import org.jboss.threads.EnhancedQueueExecutor;
 import org.jboss.threads.JBossExecutors;
 import org.jboss.threads.JBossThreadFactory;
@@ -32,6 +35,8 @@ import io.quarkus.runtime.annotations.Template;
  */
 @Template
 public class ExecutorTemplate {
+
+    private static final Logger log = Logger.getLogger("io.quarkus.thread-pool");
 
     public ExecutorTemplate() {
     }
@@ -66,17 +71,67 @@ public class ExecutorTemplate {
             @Override
             public void run() {
                 executor.shutdown();
+                final Duration shutdownTimeout = threadPoolConfig.shutdownTimeout;
+                final Optional<Duration> optionalInterval = threadPoolConfig.shutdownCheckInterval;
+                long remaining = shutdownTimeout.toNanos();
+                final long interval = optionalInterval.orElse(Duration.ofNanos(Long.MAX_VALUE)).toNanos();
+                long intervalRemaining = interval;
+                long interruptRemaining = threadPoolConfig.shutdownInterrupt.toNanos();
+
+                long start = System.nanoTime();
                 for (;;)
                     try {
-                        if (!executor.awaitTermination(threadPoolConfig.shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
-                            List<Runnable> tasks = executor.shutdownNow();
-                            for (Runnable i : tasks) {
-                                //for any pending tasks we just spawn threads to run them on a best effort basis
-                                //these threads are daemon threads so if everything shuts down they will not keep the
-                                //JVM alive
-                                Thread t = new Thread(i, "Shutdown thread");
-                                t.setDaemon(true);
-                                t.start();
+                        if (!executor.awaitTermination(Math.min(remaining, intervalRemaining), TimeUnit.MILLISECONDS)) {
+                            long elapsed = System.nanoTime() - start;
+                            intervalRemaining -= elapsed;
+                            remaining -= elapsed;
+                            interruptRemaining -= elapsed;
+                            if (interruptRemaining <= 0) {
+                                executor.shutdown(true);
+                            }
+                            if (remaining <= 0) {
+                                // done waiting
+                                final List<Runnable> runnables = executor.shutdownNow();
+                                if (!runnables.isEmpty()) {
+                                    log.warnf("Thread pool shutdown failed: discarding %d tasks, %d threads still running",
+                                            Integer.valueOf(runnables.size()), Integer.valueOf(executor.getActiveCount()));
+                                } else {
+                                    log.warnf("Thread pool shutdown failed: %d threads still running",
+                                            Integer.valueOf(executor.getActiveCount()));
+                                }
+                                break;
+                            }
+                            if (intervalRemaining <= 0) {
+                                intervalRemaining = interval;
+                                // do some probing
+                                final int queueSize = executor.getQueueSize();
+                                final Thread[] runningThreads = executor.getRunningThreads();
+                                log.infof("Awaiting thread pool shutdown; %d thread(s) running with %d task(s) waiting",
+                                        Integer.valueOf(runningThreads.length), Integer.valueOf(queueSize));
+                                // make sure no threads are stuck in {@code exit()}
+                                int realWaiting = runningThreads.length;
+                                for (Thread thr : runningThreads) {
+                                    final StackTraceElement[] stackTrace = thr.getStackTrace();
+                                    for (int i = 0; i < stackTrace.length && i < 8; i++) {
+                                        if (stackTrace[i].getClassName().equals("java.lang.System")
+                                                && stackTrace[i].getMethodName().equals("exit")) {
+                                            final Throwable t = new Throwable();
+                                            t.setStackTrace(stackTrace);
+                                            log.errorf(t, "Thread %s is blocked in System.exit(); pooled (Executor) threads "
+                                                    + "should never call this method because it never returns, thus preventing "
+                                                    + "the thread pool from shutting down in a timely manner.  This is the "
+                                                    + "stack trace of the call", thr.getName());
+                                            // don't bother waiting for exit() to return
+                                            realWaiting--;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (realWaiting == 0 && queueSize == 0) {
+                                    // just exit
+                                    executor.shutdownNow();
+                                    break;
+                                }
                             }
                         }
                         return;

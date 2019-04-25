@@ -1,6 +1,7 @@
 package io.quarkus.runtime;
 
 import java.time.Duration;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -44,12 +45,28 @@ public class ThreadPoolConfig {
     public float growthResistance;
 
     /**
-     * The shutdown timeout in milliseconds. Defaults to 60s. If all pending work has not been completed by this time
+     * The shutdown timeout. If all pending work has not been completed by this time
      * then additional threads will be spawned to attempt to finish any pending tasks, and the shutdown process will
      * continue
      */
     @ConfigItem(defaultValue = "PT60S")
     public Duration shutdownTimeout;
+
+    /**
+     * The amount of time to wait for thread pool shutdown before tasks should be interrupted. If this value is
+     * greater than or equal to the value for {@link #shutdownTimeout}, then tasks will not be interrupted before
+     * the shutdown timeout occurs.
+     */
+    @ConfigItem(defaultValue = "PT10S")
+    public Duration shutdownInterrupt;
+
+    /**
+     * The frequency at which the status of the thread pool should be checked during shutdown. Information about
+     * waiting tasks and threads will be checked and possibly logged at this interval. Setting this key to an empty
+     * value disables the shutdown check interval.
+     */
+    @ConfigItem(defaultValue = "PT5S")
+    public Optional<Duration> shutdownCheckInterval;
 
     /**
      * The amount of time in milliseconds a thread will stay alive with no work. Defaults to 1 second

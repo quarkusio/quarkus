@@ -39,15 +39,18 @@ abstract class AbstractQuarkusRunListener extends RunListener {
 
     private boolean failed = false;
 
+    private final RestAssuredURLManager restAssuredURLManager;
+
     protected AbstractQuarkusRunListener(Class<?> testClass, RunNotifier runNotifier) {
         this.testClass = testClass;
         this.runNotifier = runNotifier;
         this.testResourceManager = new TestResourceManager(testClass);
+        this.restAssuredURLManager = new RestAssuredURLManager(false);
     }
 
     @Override
     public void testStarted(Description description) throws Exception {
-        RestAssuredURLManager.setURL();
+        restAssuredURLManager.setURL();
         if (!started) {
             List<RunListener> stopListeners = new ArrayList<>();
 
@@ -93,7 +96,7 @@ abstract class AbstractQuarkusRunListener extends RunListener {
     @Override
     public void testFinished(Description description) throws Exception {
         super.testFinished(description);
-        RestAssuredURLManager.clearURL();
+        restAssuredURLManager.clearURL();
     }
 
     protected abstract void startQuarkus() throws Exception;

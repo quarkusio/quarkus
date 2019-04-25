@@ -80,6 +80,8 @@ public class QuarkusTestExtension
     private ClassLoader originalCl;
     private static boolean failedBoot;
 
+    private final RestAssuredURLManager restAssuredURLManager = new RestAssuredURLManager(false);
+
     private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
 
         final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
@@ -259,13 +261,13 @@ public class QuarkusTestExtension
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
-        RestAssuredURLManager.clearURL();
+        restAssuredURLManager.clearURL();
         TestScopeManager.setup();
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        RestAssuredURLManager.setURL();
+        restAssuredURLManager.setURL();
         TestScopeManager.tearDown();
     }
 

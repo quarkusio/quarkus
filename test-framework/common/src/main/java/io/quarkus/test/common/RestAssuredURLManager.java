@@ -13,10 +13,15 @@ import org.eclipse.microprofile.config.ConfigProvider;
  */
 public class RestAssuredURLManager {
 
+    private static final int DEFAULT_HTTP_PORT = 8081;
+    private static final int DEFAULT_HTTPS_PORT = 8444;
+
     private static final Field portField;
     private static final Field baseURIField;
-    private static int oldPort;
-    private static String oldBaseURI;
+    private int oldPort;
+    private String oldBaseURI;
+
+    private final boolean useSecureConnection;
 
     static {
         Field p;
@@ -35,11 +40,20 @@ public class RestAssuredURLManager {
         baseURIField = base;
     }
 
-    public static void setURL() {
+    public RestAssuredURLManager(boolean useSecureConnection) {
+        this.useSecureConnection = useSecureConnection;
+    }
+
+    private static int getPortFromConfig(String key, int defaultValue) {
+        return ConfigProvider.getConfig().getOptionalValue(key, Integer.class).orElse(defaultValue);
+    }
+
+    public void setURL() {
         if (portField != null) {
             try {
                 oldPort = (Integer) portField.get(null);
-                int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-port", Integer.class).orElse(8081);
+                int port = useSecureConnection ? getPortFromConfig("quarkus.https.test-port", DEFAULT_HTTPS_PORT)
+                        : getPortFromConfig("quarkus.http.test-port", DEFAULT_HTTP_PORT);
                 portField.set(null, port);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
@@ -48,8 +62,9 @@ public class RestAssuredURLManager {
         if (baseURIField != null) {
             try {
                 oldBaseURI = (String) baseURIField.get(null);
-                String baseURI = "http://"
-                        + ConfigProvider.getConfig().getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
+                final String protocol = useSecureConnection ? "https://" : "http://";
+                String baseURI = protocol + ConfigProvider.getConfig().getOptionalValue("quarkus.http.host", String.class)
+                        .orElse("localhost");
                 baseURIField.set(null, baseURI);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
@@ -57,7 +72,7 @@ public class RestAssuredURLManager {
         }
     }
 
-    public static void clearURL() {
+    public void clearURL() {
         if (portField != null) {
             try {
                 portField.set(null, oldPort);

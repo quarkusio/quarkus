@@ -150,9 +150,20 @@ public class ServerSslConfig {
                 }
             }
             keyStore = KeyStore.getInstance(type);
-            try (InputStream is = Files.newInputStream(keyStorePath)) {
-                keyStore.load(is, null);
+
+            final InputStream keystoreAsResource = this.getClass().getClassLoader()
+                    .getResourceAsStream(keyStorePath.toString());
+
+            if (keystoreAsResource != null) {
+                try (InputStream is = keystoreAsResource) {
+                    keyStore.load(is, null);
+                }
+            } else {
+                try (InputStream is = Files.newInputStream(keyStorePath)) {
+                    keyStore.load(is, null);
+                }
             }
+
         } else {
             return null;
         }

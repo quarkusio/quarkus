@@ -82,11 +82,25 @@ public class QuarkusUnitTest
     private Supplier<JavaArchive> archiveProducer;
     private Runnable afterUndeployListener;
 
+    private final RestAssuredURLManager restAssuredURLManager;
+
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
         return assertException(t -> {
             assertEquals(expectedException,
                     t.getClass(), "Build failed with wrong exception");
         });
+    }
+
+    public QuarkusUnitTest() {
+        this(false);
+    }
+
+    public static QuarkusUnitTest withSecuredConnection() {
+        return new QuarkusUnitTest(true);
+    }
+
+    private QuarkusUnitTest(boolean useSecureConnection) {
+        this.restAssuredURLManager = new RestAssuredURLManager(useSecureConnection);
     }
 
     public QuarkusUnitTest assertException(Consumer<Throwable> assertException) {
@@ -301,12 +315,12 @@ public class QuarkusUnitTest
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
-        RestAssuredURLManager.clearURL();
+        restAssuredURLManager.clearURL();
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        RestAssuredURLManager.setURL();
+        restAssuredURLManager.setURL();
     }
 
     public Runnable getAfterUndeployListener() {

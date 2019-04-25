@@ -117,9 +117,9 @@ public class TestServlet {
         log.info("Added continuous query listener");
 
         cache.put("book1", new Book("Game of Thrones", "Lots of people perish", 2010,
-                Collections.singleton(new Author("George", "Martin"))));
+                Collections.singleton(new Author("George", "Martin")), Book.Type.FANTASY));
         cache.put("book2", new Book("Game of Thrones Path 2", "They win?", 2023,
-                Collections.singleton(new Author("Son", "Martin"))));
+                Collections.singleton(new Author("Son", "Martin")), Book.Type.FANTASY));
 
         log.info("Inserted values");
 
@@ -253,7 +253,7 @@ public class TestServlet {
         long nearCacheInvalidations = stats.getNearCacheInvalidations();
 
         Book nearCacheBook = new Book("Near Cache Book", "Just here to test", 2010,
-                Collections.emptySet());
+                Collections.emptySet(), Book.Type.PROGRAMMING);
 
         String id = "nearcache";
         cache.put(id, nearCacheBook);
@@ -287,7 +287,7 @@ public class TestServlet {
             return "second retrieved book doesn't match";
         }
 
-        nearCacheBook = new Book("Near Cache Book", "Just here to test", 2011, Collections.emptySet());
+        nearCacheBook = new Book("Near Cache Book", "Just here to test", 2011, Collections.emptySet(), Book.Type.PROGRAMMING);
 
         cache.put(id, nearCacheBook);
 
@@ -316,7 +316,7 @@ public class TestServlet {
     @Consumes(MediaType.TEXT_PLAIN)
     public Response createItem(String value, @PathParam("id") String id) {
         ensureStart();
-        Book book = new Book(id, value, 2019, Collections.emptySet());
+        Book book = new Book(id, value, 2019, Collections.emptySet(), Book.Type.PROGRAMMING);
         Book previous = cache.putIfAbsent(id, book);
         if (previous == null) {
             //status code 201

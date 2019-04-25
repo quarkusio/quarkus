@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
+import org.infinispan.client.hotrod.annotation.ClientListener;
 import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import org.infinispan.client.hotrod.exceptions.HotRodClientException;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
@@ -38,6 +39,11 @@ import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
 import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
 import org.infinispan.commons.util.Util;
+import org.infinispan.protostream.BaseMarshaller;
+import org.infinispan.protostream.EnumMarshaller;
+import org.infinispan.protostream.FileDescriptorSource;
+import org.infinispan.protostream.MessageMarshaller;
+import org.infinispan.protostream.RawProtobufMarshaller;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
@@ -144,7 +150,7 @@ class InfinispanClientProcessor {
         // Add any user project listeners to allow reflection in native code
         Index index = applicationIndexBuildItem.getIndex();
         List<AnnotationInstance> listenerInstances = index.getAnnotations(
-                DotName.createSimple("org.infinispan.client.hotrod.annotation.ClientListener"));
+                DotName.createSimple(ClientListener.class.getName()));
         for (AnnotationInstance instance : listenerInstances) {
             AnnotationTarget target = instance.target();
             if (target.kind() == AnnotationTarget.Kind.CLASS) {
@@ -208,8 +214,11 @@ class InfinispanClientProcessor {
 
     private static final Set<DotName> UNREMOVABLE_BEANS = Collections.unmodifiableSet(
             new HashSet<>(Arrays.asList(
-                    DotName.createSimple("org.infinispan.protostream.MessageMarshaller"),
-                    DotName.createSimple("org.infinispan.protostream.FileDescriptorSource"))));
+                    DotName.createSimple(BaseMarshaller.class.getName()),
+                    DotName.createSimple(EnumMarshaller.class.getName()),
+                    DotName.createSimple(MessageMarshaller.class.getName()),
+                    DotName.createSimple(RawProtobufMarshaller.class.getName()),
+                    DotName.createSimple(FileDescriptorSource.class.getName()))));
 
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {

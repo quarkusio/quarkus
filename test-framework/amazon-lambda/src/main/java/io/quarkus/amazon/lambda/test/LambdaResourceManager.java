@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.amazon.lambda.runtime.AmazonLambdaApi;
 import io.quarkus.amazon.lambda.runtime.FunctionError;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.undertow.Undertow;
@@ -20,8 +21,6 @@ import io.undertow.util.HttpString;
 
 public class LambdaResourceManager implements QuarkusTestResourceLifecycleManager {
 
-    protected static final String QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API = "quarkus-internal.aws-lambda.test-api";
-
     private volatile Undertow undertow;
 
     public static final int PORT = Integer.getInteger("quarkus-internal.aws-lambda.test-port", 5387);
@@ -30,7 +29,7 @@ public class LambdaResourceManager implements QuarkusTestResourceLifecycleManage
     public Map<String, String> start() {
 
         RoutingHandler routingHandler = new RoutingHandler(true);
-        routingHandler.add("GET", "/2018-06-01/runtime/invocation/next", new HttpHandler() {
+        routingHandler.add("GET", AmazonLambdaApi.API_PATH_INVOCATION_NEXT, new HttpHandler() {
             @Override
             public void handleRequest(HttpServerExchange exchange) throws Exception {
                 LambdaStartedNotifier.started = true;
@@ -41,44 +40,46 @@ public class LambdaResourceManager implements QuarkusTestResourceLifecycleManage
                         return;
                     }
                 }
-                exchange.getResponseHeaders().put(new HttpString("Lambda-Runtime-Aws-Request-Id"), req.id);
+                exchange.getResponseHeaders().put(new HttpString(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID), req.id);
                 exchange.getResponseSender().send(req.json);
             }
         });
-        routingHandler.add("POST", "/2018-06-01/runtime/invocation/{req}/response", new HttpHandler() {
-            @Override
-            public void handleRequest(HttpServerExchange exchange) throws Exception {
-                String id = exchange.getQueryParameters().get("req").getFirst();
-                exchange.getRequestReceiver().receiveFullString(new Receiver.FullStringCallback() {
+        routingHandler.add("POST", AmazonLambdaApi.API_PATH_INVOCATION + "{req}" + AmazonLambdaApi.API_PATH_RESPONSE,
+                new HttpHandler() {
                     @Override
-                    public void handle(HttpServerExchange exchange, String message) {
-                        LambdaClient.REQUESTS.get(id).complete(message);
+                    public void handleRequest(HttpServerExchange exchange) throws Exception {
+                        String id = exchange.getQueryParameters().get("req").getFirst();
+                        exchange.getRequestReceiver().receiveFullString(new Receiver.FullStringCallback() {
+                            @Override
+                            public void handle(HttpServerExchange exchange, String message) {
+                                LambdaClient.REQUESTS.get(id).complete(message);
+                            }
+                        });
                     }
                 });
-            }
-        });
 
-        routingHandler.add("POST", "/2018-06-01/runtime/invocation/{req}/error", new HttpHandler() {
-            @Override
-            public void handleRequest(HttpServerExchange exchange) throws Exception {
-                String id = exchange.getQueryParameters().get("req").getFirst();
-                exchange.getRequestReceiver().receiveFullString(new Receiver.FullStringCallback() {
+        routingHandler.add("POST", AmazonLambdaApi.API_PATH_INVOCATION + "{req}" + AmazonLambdaApi.API_PATH_ERROR,
+                new HttpHandler() {
                     @Override
-                    public void handle(HttpServerExchange exchange, String message) {
-                        ObjectMapper mapper = new ObjectMapper();
-                        try {
-                            FunctionError result = mapper.readerFor(FunctionError.class).readValue(message);
+                    public void handleRequest(HttpServerExchange exchange) throws Exception {
+                        String id = exchange.getQueryParameters().get("req").getFirst();
+                        exchange.getRequestReceiver().receiveFullString(new Receiver.FullStringCallback() {
+                            @Override
+                            public void handle(HttpServerExchange exchange, String message) {
+                                ObjectMapper mapper = new ObjectMapper();
+                                try {
+                                    FunctionError result = mapper.readerFor(FunctionError.class).readValue(message);
 
-                            LambdaClient.REQUESTS.get(id).completeExceptionally(
-                                    new LambdaException(result.getErrorType(), result.getErrorMessage()));
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
+                                    LambdaClient.REQUESTS.get(id).completeExceptionally(
+                                            new LambdaException(result.getErrorType(), result.getErrorMessage()));
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                        });
                     }
                 });
-            }
-        });
-        routingHandler.add("POST", "/2018-06-01/runtime/init/error", new HttpHandler() {
+        routingHandler.add("POST", AmazonLambdaApi.API_PATH_INIT_ERROR, new HttpHandler() {
             @Override
             public void handleRequest(HttpServerExchange exchange) throws Exception {
                 exchange.getRequestReceiver().receiveFullString(new Receiver.FullStringCallback() {
@@ -103,7 +104,7 @@ public class LambdaResourceManager implements QuarkusTestResourceLifecycleManage
                 .setHandler(new BlockingHandler(routingHandler))
                 .build();
         undertow.start();
-        return Collections.singletonMap(QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, "localhost:" + PORT);
+        return Collections.singletonMap(AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, "localhost:" + PORT);
     }
 
     @Override

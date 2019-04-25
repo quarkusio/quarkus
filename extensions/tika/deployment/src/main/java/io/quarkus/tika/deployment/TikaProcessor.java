@@ -1,5 +1,6 @@
 package io.quarkus.tika.deployment;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.tika.detect.Detector;
@@ -9,12 +10,19 @@ import org.apache.tika.parser.Parser;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.tika.runtime.jaxrs.TikaMessageBodyReader;
 
 public class TikaProcessor {
+
+    private static final Set<String> RUNTIME_INITIALIZED_CLASSES;
+    static {
+        RUNTIME_INITIALIZED_CLASSES = new HashSet<>();
+        RUNTIME_INITIALIZED_CLASSES.add("org.apache.tika.parser.pdf.PDFParser");
+    }
 
     @BuildStep
     void produceTikaProvider(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
@@ -45,14 +53,23 @@ public class TikaProcessor {
         produceServiceLoaderResources(resource, reflectiveClass, EncodingDetector.class.getName());
     }
 
+    @BuildStep
+    public void produceRuntimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> resource) {
+        for (String className : RUNTIME_INITIALIZED_CLASSES) {
+            resource.produce(new RuntimeInitializedClassBuildItem(className));
+        }
+    }
+
     private void produceServiceLoaderResources(BuildProducer<SubstrateResourceBuildItem> resource,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            String serviceLoaderResourceName) throws Exception {
-        resource.produce(new SubstrateResourceBuildItem("META-INF/services/" + serviceLoaderResourceName));
+            String serviceProviderName) throws Exception {
+        resource.produce(new SubstrateResourceBuildItem("META-INF/services/" + serviceProviderName));
         Set<String> availableProviderClasses = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
-                "META-INF/services/" + serviceLoaderResourceName);
+                "META-INF/services/" + serviceProviderName);
         for (String providerClass : availableProviderClasses) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerClass));
+            if (!RUNTIME_INITIALIZED_CLASSES.contains(providerClass)) {
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerClass));
+            }
         }
     }
 

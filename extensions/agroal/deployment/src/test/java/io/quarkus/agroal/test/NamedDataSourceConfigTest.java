@@ -18,35 +18,24 @@ import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class MultipleDataSourcesConfigTest {
-
-    //tag::injection[]
+public class NamedDataSourceConfigTest {
     @Inject
-    AgroalDataSource defaultDataSource;
-
-    @Inject
-    @DataSource("users")
-    AgroalDataSource dataSource1;
-
-    @Inject
-    @DataSource("inventory")
-    AgroalDataSource dataSource2;
-    //end::injection[]
+    @DataSource("testing")
+    AgroalDataSource ds;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("application-multiple-datasources.properties",
+                    .addAsResource("application-named-datasource.properties",
                             "application.properties"));
 
     @Test
-    public void testDataSourceInjection() throws SQLException {
-        testDataSource("default", defaultDataSource, "jdbc:h2:tcp://localhost/mem:default", "username-default", 3, 13);
-        testDataSource("users", dataSource1, "jdbc:h2:tcp://localhost/mem:users", "username1", 1, 11);
-        testDataSource("inventory", dataSource2, "jdbc:h2:tcp://localhost/mem:inventory", "username2", 2, 12);
+    public void testNamedDataSourceInjection() throws SQLException {
+        dataSourceAssert("testing", ds, "jdbc:h2:tcp://localhost/mem:testing",
+                "username-named", 3, 13);
     }
 
-    private static void testDataSource(String dataSourceName, AgroalDataSource dataSource, String jdbcUrl, String username,
+    private static void dataSourceAssert(String dataSourceName, AgroalDataSource dataSource, String jdbcUrl, String username,
             int minSize, int maxSize)
             throws SQLException {
         AgroalConnectionPoolConfiguration configuration = null;

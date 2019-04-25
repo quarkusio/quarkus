@@ -38,6 +38,11 @@ import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
 import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
 import org.infinispan.commons.util.Util;
+import org.infinispan.protostream.BaseMarshaller;
+import org.infinispan.protostream.EnumMarshaller;
+import org.infinispan.protostream.FileDescriptorSource;
+import org.infinispan.protostream.MessageMarshaller;
+import org.infinispan.protostream.RawProtobufMarshaller;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
@@ -208,8 +213,11 @@ class InfinispanClientProcessor {
 
     private static final Set<DotName> UNREMOVABLE_BEANS = Collections.unmodifiableSet(
             new HashSet<>(Arrays.asList(
-                    DotName.createSimple("org.infinispan.protostream.MessageMarshaller"),
-                    DotName.createSimple("org.infinispan.protostream.FileDescriptorSource"))));
+                    DotName.createSimple(BaseMarshaller.class.getName()),
+                    DotName.createSimple(EnumMarshaller.class.getName()),
+                    DotName.createSimple(MessageMarshaller.class.getName()),
+                    DotName.createSimple(RawProtobufMarshaller.class.getName()),
+                    DotName.createSimple(FileDescriptorSource.class.getName()))));
 
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {

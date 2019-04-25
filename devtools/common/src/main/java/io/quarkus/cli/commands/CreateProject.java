@@ -8,6 +8,7 @@ import static io.quarkus.maven.utilities.MojoUtils.getPluginArtifactId;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginGroupId;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
 import static io.quarkus.maven.utilities.MojoUtils.plugin;
+import static io.quarkus.templates.QuarkusTemplate.ADDITIONAL_GITIGNORE_ENTRIES;
 import static io.quarkus.templates.QuarkusTemplate.CLASS_NAME;
 import static io.quarkus.templates.QuarkusTemplate.PACKAGE_NAME;
 import static io.quarkus.templates.QuarkusTemplate.PROJECT_ARTIFACT_ID;
@@ -36,6 +37,7 @@ import org.apache.maven.model.PluginManagement;
 import org.apache.maven.model.Profile;
 
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.templates.BuildTool;
 import io.quarkus.templates.SourceType;
 import io.quarkus.templates.TemplateRegistry;
 import io.quarkus.templates.rest.BasicRest;
@@ -50,6 +52,7 @@ public class CreateProject {
     private String artifactId;
     private String version = getPluginVersion();
     private SourceType sourceType = SourceType.JAVA;
+    private BuildTool buildTool = BuildTool.MAVEN;
     private String className;
 
     private Model model;
@@ -83,6 +86,11 @@ public class CreateProject {
         return this;
     }
 
+    public CreateProject buildTool(BuildTool buildTool) {
+        this.buildTool = buildTool;
+        return this;
+    }
+
     public Model getModel() {
         return model;
     }
@@ -108,6 +116,7 @@ public class CreateProject {
         context.put(PROJECT_VERSION, version);
         context.put(QUARKUS_VERSION, getPluginVersion());
         context.put(SOURCE_TYPE, sourceType);
+        context.put(ADDITIONAL_GITIGNORE_ENTRIES, buildTool.getGitIgnoreEntries());
 
         if (className != null) {
             className = sourceType.stripExtensionFrom(className);

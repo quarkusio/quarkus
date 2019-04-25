@@ -13,6 +13,7 @@ public interface QuarkusTemplate {
     String SOURCE_TYPE = "source_type";
     String CLASS_NAME = "class_name";
     String RESOURCE_PATH = "path";
+    String ADDITIONAL_GITIGNORE_ENTRIES = "additional_gitignore_entries";
 
     String getName();
 

@@ -1,5 +1,6 @@
 package io.quarkus.amazon.lambda.runtime;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -65,26 +66,13 @@ public class AmazonLambdaTemplate {
                                         new AmazonLambdaContext(requestConnection, cognitoIdReader, clientCtxReader));
                             } catch (Exception e) {
                                 log.error("Failed to run lambda", e);
-                                FunctionError fe = new FunctionError(e.getClass().getName(), e.getMessage());
-                                URL responseUrl = AmazonLambdaApi.invocationError(requestId);
-                                HttpURLConnection responseConnection = (HttpURLConnection) responseUrl.openConnection();
-                                responseConnection.setDoOutput(true);
-                                responseConnection.setRequestMethod("POST");
-                                mapper.writeValue(responseConnection.getOutputStream(), fe);
-                                while (responseConnection.getInputStream().read() != -1) {
-                                    // Read data
-                                }
+
+                                postResponse(AmazonLambdaApi.invocationError(requestId),
+                                        new FunctionError(e.getClass().getName(), e.getMessage()), mapper);
                                 continue;
                             }
 
-                            URL responseUrl = AmazonLambdaApi.invocationResponse(requestId);
-                            HttpURLConnection responseConnection = (HttpURLConnection) responseUrl.openConnection();
-                            responseConnection.setDoOutput(true);
-                            responseConnection.setRequestMethod("POST");
-                            mapper.writeValue(responseConnection.getOutputStream(), response);
-                            while (responseConnection.getInputStream().read() != -1) {
-                                // Read data
-                            }
+                            postResponse(AmazonLambdaApi.invocationResponse(requestId), response, mapper);
                         } catch (Exception e) {
                             log.error("Error running lambda", e);
                             Application app = Application.currentApplication();
@@ -101,15 +89,8 @@ public class AmazonLambdaTemplate {
                 } catch (Exception e) {
                     try {
                         log.error("Lambda init error", e);
-                        URL errorUrl = AmazonLambdaApi.initError();
-                        HttpURLConnection responseConnection = (HttpURLConnection) errorUrl.openConnection();
-                        responseConnection.setDoOutput(true);
-                        responseConnection.setRequestMethod("POST");
-                        FunctionError fe = new FunctionError(e.getClass().getName(), e.getMessage());
-                        mapper.writeValue(responseConnection.getOutputStream(), fe);
-                        while (responseConnection.getInputStream().read() != -1) {
-
-                        }
+                        postResponse(AmazonLambdaApi.initError(), new FunctionError(e.getClass().getName(), e.getMessage()),
+                                mapper);
                     } catch (Exception ex) {
                         log.error("Failed to report init error", ex);
                     } finally {
@@ -124,6 +105,16 @@ public class AmazonLambdaTemplate {
         }, "Lambda Thread");
         t.start();
 
+    }
+
+    private void postResponse(URL url, Object response, ObjectMapper mapper) throws IOException {
+        HttpURLConnection responseConnection = (HttpURLConnection) url.openConnection();
+        responseConnection.setDoOutput(true);
+        responseConnection.setRequestMethod("POST");
+        mapper.writeValue(responseConnection.getOutputStream(), response);
+        while (responseConnection.getInputStream().read() != -1) {
+            // Read data
+        }
     }
 
     public RuntimeValue<Class<?>> discoverParameterTypes(Class<? extends RequestHandler<?, ?>> handlerClass) {

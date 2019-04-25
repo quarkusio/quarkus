@@ -26,10 +26,13 @@ import io.quarkus.runtime.annotations.Template;
  */
 @Template
 public class LoggingSetupTemplate {
+    public static volatile boolean enableDiagnostics;
+
     public LoggingSetupTemplate() {
     }
 
-    public void initializeLogging(LogConfig config) {
+    public void initializeLogging(LogConfig config, LogDiagnosticConfig diagnosticConfig) {
+        enableDiagnostics = diagnosticConfig.enable;
         final Map<String, CategoryConfig> categories = config.categories;
         final LogContext logContext = LogContext.getLogContext();
         final Logger rootLogger = logContext.getLogger("");

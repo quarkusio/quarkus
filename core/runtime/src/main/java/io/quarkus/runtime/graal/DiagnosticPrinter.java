@@ -11,6 +11,9 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.posix.headers.Pthread;
 
+import io.quarkus.runtime.logging.LoggingDiagnosticPrinter;
+import io.quarkus.runtime.logging.LoggingSetupTemplate;
+
 /**
  * A signal handler that prints diagnostic thread info to standard output.
  */
@@ -68,6 +71,10 @@ public final class DiagnosticPrinter {
                 }
                 w.println(')');
             }
+        }
+        if (LoggingSetupTemplate.enableDiagnostics) {
+            w.println();
+            LoggingDiagnosticPrinter.printDiagnostics(w);
         }
     }
 }

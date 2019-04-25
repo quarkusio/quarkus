@@ -37,6 +37,7 @@ import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildIte
 import io.quarkus.runtime.logging.InitialConfigurator;
 import io.quarkus.runtime.logging.LevelConverter;
 import io.quarkus.runtime.logging.LogConfig;
+import io.quarkus.runtime.logging.LogDiagnosticConfig;
 import io.quarkus.runtime.logging.LoggingSetupTemplate;
 
 /**
@@ -93,8 +94,8 @@ public final class LoggingResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setupLoggingRuntimeInit(LoggingSetupTemplate setupTemplate, LogConfig log) {
-        setupTemplate.initializeLogging(log);
+    void setupLoggingRuntimeInit(LoggingSetupTemplate setupTemplate, LogConfig config, LogDiagnosticConfig diagnosticConfig) {
+        setupTemplate.initializeLogging(config, diagnosticConfig);
     }
 
     @BuildStep

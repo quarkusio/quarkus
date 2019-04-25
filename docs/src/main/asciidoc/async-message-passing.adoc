@@ -32,7 +32,7 @@ the `add-extension` command:
 
 [source]
 ----
-mvn quarkus:add-extension -Dextensions="vertx"
+./mvnw quarkus:add-extension -Dextensions="vertx"
 ----
 
 Otherwise, you can manually add this to the dependencies section of your `pom.xml` file:
@@ -294,13 +294,13 @@ This application can be packaged using:
 
 [source,shell]
 ----
-mvn clean package
+./mvnw clean package
 ----
 
 You can also compile it as a native executable with:
 
 [source, shell]
 ----
-mvn clean package -Pnative
+./mvnw clean package -Pnative
 ----
 

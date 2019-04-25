@@ -6,7 +6,6 @@ import org.apache.tika.detect.Detector;
 import org.apache.tika.detect.EncodingDetector;
 import org.apache.tika.parser.Parser;
 
-import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
@@ -30,47 +29,31 @@ public class TikaProcessor {
 
     @BuildStep
     public void produceTikaParsersParsers(BuildProducer<SubstrateResourceBuildItem> resource,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
-        resource.produce(new SubstrateResourceBuildItem("META-INF/services/" + Parser.class.getName()));
-        Set<String> availableParsers = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
-                "META-INF/services/" + Parser.class.getName());
-        for (String parser : availableParsers) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, parser));
-        }
-        unremovableBeans.produce(new UnremovableBeanBuildItem(
-                b -> availableParsers.contains(b.getBeanClass().toString())));
-
+        produceServiceLoaderResources(resource, reflectiveClass, Parser.class.getName());
     }
 
     @BuildStep
     public void produceTikaParsersDetectors(BuildProducer<SubstrateResourceBuildItem> resource,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
-        resource.produce(new SubstrateResourceBuildItem("META-INF/services/" + Detector.class.getName()));
-        Set<String> availableDetectors = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
-                "META-INF/services/" + Detector.class.getName());
-        for (String detector : availableDetectors) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, detector));
-        }
-        unremovableBeans.produce(new UnremovableBeanBuildItem(
-                b -> availableDetectors.contains(b.getBeanClass().toString())));
-
+        produceServiceLoaderResources(resource, reflectiveClass, Detector.class.getName());
     }
 
     @BuildStep
     public void produceTikaParsersEncodingDetectors(BuildProducer<SubstrateResourceBuildItem> resource,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
-        resource.produce(new SubstrateResourceBuildItem("META-INF/services/" + EncodingDetector.class.getName()));
-        Set<String> availableDetectors = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
-                "META-INF/services/" + EncodingDetector.class.getName());
-        for (String detector : availableDetectors) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, detector));
-        }
-        unremovableBeans.produce(new UnremovableBeanBuildItem(
-                b -> availableDetectors.contains(b.getBeanClass().toString())));
+        produceServiceLoaderResources(resource, reflectiveClass, EncodingDetector.class.getName());
+    }
 
+    private void produceServiceLoaderResources(BuildProducer<SubstrateResourceBuildItem> resource,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            String serviceLoaderResourceName) throws Exception {
+        resource.produce(new SubstrateResourceBuildItem("META-INF/services/" + serviceLoaderResourceName));
+        Set<String> availableProviderClasses = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+                "META-INF/services/" + serviceLoaderResourceName);
+        for (String providerClass : availableProviderClasses) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerClass));
+        }
     }
 
 }

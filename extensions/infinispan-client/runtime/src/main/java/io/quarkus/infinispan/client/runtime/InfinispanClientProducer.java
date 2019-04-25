@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
@@ -48,6 +49,7 @@ public class InfinispanClientProducer {
     private RemoteCacheManager cacheManager;
     @Inject
     private BeanManager beanManager;
+    private InfinispanClientConfigRuntime infinispanClientConfigRuntime;
 
     private void initialize() {
         log.debug("Initializing CacheManager");
@@ -142,7 +144,17 @@ public class InfinispanClientProducer {
             }
             builder.marshaller((Marshaller) marshallerInstance);
         }
+
+        // Override serverList property value at runtime if such configuration exists
+        if (infinispanClientConfigRuntime != null) {
+            Optional<String> runtimeServerList = infinispanClientConfigRuntime.serverList;
+            if (runtimeServerList.isPresent()) {
+                properties.replace(ConfigurationProperties.SERVER_LIST, runtimeServerList.get());
+            }
+        }
+
         builder.withProperties(properties);
+
         return builder;
     }
 
@@ -243,5 +255,9 @@ public class InfinispanClientProducer {
             }
         }
         return null;
+    }
+
+    public void setRuntimeConfig(InfinispanClientConfigRuntime infinispanClientConfigRuntime) {
+        this.infinispanClientConfigRuntime = infinispanClientConfigRuntime;
     }
 }

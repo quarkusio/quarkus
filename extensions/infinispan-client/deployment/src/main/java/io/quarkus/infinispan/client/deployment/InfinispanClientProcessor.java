@@ -58,6 +58,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.infinispan.client.runtime.InfinispanClientConfigRuntime;
 import io.quarkus.infinispan.client.runtime.InfinispanClientConfiguration;
 import io.quarkus.infinispan.client.runtime.InfinispanClientProducer;
 import io.quarkus.infinispan.client.runtime.InfinispanTemplate;
@@ -204,6 +205,13 @@ class InfinispanClientProcessor {
         }
 
         return new BeanContainerListenerBuildItem(template.configureInfinispan(properties));
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    void configureRuntimeProperties(InfinispanTemplate template,
+            InfinispanClientConfigRuntime infinispanClientConfigRuntime) {
+        template.configureRuntimeProperties(infinispanClientConfigRuntime);
     }
 
     private static final Set<DotName> UNREMOVABLE_BEANS = Collections.unmodifiableSet(

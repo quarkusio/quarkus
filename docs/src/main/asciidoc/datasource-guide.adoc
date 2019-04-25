@@ -9,7 +9,9 @@ include::./attributes.adoc[]
 
 Many projects that use data require connections to a database.
 The main way of obtaining connections to a database is to use a datasource.
-In {project-name}, the out of the box datasource implementation is Agroal.
+
+In {project-name}, the out of the box datasource and connection pooling implementation is https://agroal.github.io/[Agroal].
+
 This guide will explain how to:
 
 * configure a datasource, or multiple datasources
@@ -49,36 +51,29 @@ It generates:
 == Adding maven dependencies
 
 Next, you will need to add the `quarkus-agroal` dependency to your project.
-There are a couple of ways to do this.
-You can add it explicitly, or transitively by adding the `quarkus-hibernate-orm` dependency.
 
-If you want to add the dependency explicitly:
 
-[source,xml]
---
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-agroal</artifactId>
-</dependency>
---
+You can add it using a simple Maven command:
 
-If you'd like to add Hibernate ORM instead, and get Agroal transitively:
+[source,shell]
+----
+./mvnw quarkus:add-extension -Dextensions="agroal"
+----
 
-[source,xml]
---
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-hibernate-orm</artifactId>
-</dependency>
---
+[NOTE]
+====
+Agroal comes as a transitive dependency of the Hibernate ORM extension so if you are using Hibernate ORM,
+you don't need to add the Agroal extension dependency explicitly.
+====
 
 You will also need to add the database connector library of choice.
-Quarkus provides extensions for
 
-* H2
-* MariaDB (and MySQL)
-* PostgreSQL
-* Microsoft SQL Server
+Quarkus provides driver extensions for:
+
+* H2 - jdbc-h2
+* PostgreSQL - jdbc-postgresql
+* MariaDB (and MySQL) - jdbc-mariadb
+* Microsoft SQL Server - jdbc-mssql
 
 [NOTE]
 ====
@@ -86,53 +81,33 @@ In JVM mode, simply adding your driver of choice is sufficient.
 Extensions are mostly useful to support GraalVM native images.
 ====
 
-Do so by adding one of these dependencies to your pom.xml file:
+As usual, you can install the extension using `add-extension`.
 
-[source,xml]
---
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-jdbc-h2</artifactId>
-</dependency>
---
-[source,xml]
---
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-jdbc-mariadb</artifactId>
-</dependency>
---
-[source,xml]
---
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-jdbc-postgresql</artifactId>
-</dependency>
---
-[source,xml]
---
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-jdbc-mssql</artifactId>
-</dependency>
---
+To install the PostgreSQL driver dependency for instance, just run the following command:
+
+[source,shell]
+----
+./mvnw quarkus:add-extension -Dextensions="jdbc-postgresql"
+----
 
 == Configuring the datasource
 
 Once the dependencies are added to your pom.xml file, you'll need to configure Agroal.
-This is done in `{config-file}`.
-The minimum necessary for a configured database is as follows:
+
+This is done in the `src/main/resources/application.properties` file.
+
+A viable configuration file would be:
 
 [source,properties]
 --
-include::../../../../extensions/agroal/deployment/src/test/resources/application-default-datasource.properties[basic]
+include::../../../../extensions/agroal/deployment/src/test/resources/application-default-datasource.properties[tag=basic]
 --
 
 There are other configuration options, detailed below.
 
 == Injecting a Datasource
 
-Because {project-name} uses CDI, injecting a Datasource is very simple:
+Because {project-name} uses CDI, injecting a datasource is very simple:
 
 [source,java,indent=0]
 --
@@ -201,19 +176,19 @@ include::../../../../extensions/agroal/deployment/src/test/java/io/quarkus/agroa
 
 |quarkus.datasource.background-validation-interval
 |java.time.Duration
-|PT3M, PT56S, for more information on the format, see link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration.parse]
+|PT3M, PT56S, 
 
 |quarkus.datasource.acquisition-timeout
 |java.time.Duration
-|PT3M, PT56S, for more information on the format, see link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration.parse]
+|PT3M, PT56S - see note below
 
 |quarkus.datasource.leak-detection-interval
 |java.time.Duration
-|PT3M, PT56S, for more information on the format, see link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration.parse]
+|PT3M, PT56S - see note below
 
 |quarkus.datasource.idle-removal-interval
 |java.time.Duration
-|PT3M, PT56S, for more information on the format, see link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration.parse]
+|PT3M, PT56S - see note below
 
 |quarkus.datasource.transaction-isolation-level
 |io.quarkus.agroal.runtime.TransactionIsolationLevel (enum)
@@ -223,4 +198,11 @@ include::../../../../extensions/agroal/deployment/src/test/java/io/quarkus/agroa
 |Boolean
 |True or False
 |===
+
+[NOTE]
+====
+The format for durations uses the standard `java.time` format.
+
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+====
 

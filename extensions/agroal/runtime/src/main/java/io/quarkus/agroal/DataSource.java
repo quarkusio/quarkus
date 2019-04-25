@@ -21,5 +21,5 @@ import javax.inject.Qualifier;
 @Qualifier
 public @interface DataSource {
 
-    String value() default "";
+    String value();
 }

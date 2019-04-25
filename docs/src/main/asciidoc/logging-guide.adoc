@@ -28,7 +28,7 @@ Console logging is enabled by default.  To configure or disable it, the followin
 
 === File configuration
 
-Logging to a file is also supported and enabled by default.  To configure or disable this behavior, use the following configuration properties:
+Logging to a file is also supported but not enabled by default.  To configure or enable this behavior, use the following configuration properties:
 
 [cols="<m,<m,<2",options="header"]
 |===

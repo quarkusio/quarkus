@@ -88,6 +88,7 @@
         <!-- Integrations -->
         <module>amazon-lambda</module>
         <module>amazon-lambda-resteasy</module>
+        <module>amazon-dynamodb</module>
 
         <!-- Camel -->
         <module>camel</module>

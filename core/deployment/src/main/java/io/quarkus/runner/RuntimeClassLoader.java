@@ -61,7 +61,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
 
     private volatile Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = null;
 
-    private final List<Path> applicationClasses;
+    private final List<Path> applicationClassDirectories;
     private final Path frameworkClassesPath;
     private final Path transformerCache;
 
@@ -73,64 +73,48 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         registerAsParallelCapable();
     }
 
-    public RuntimeClassLoader(ClassLoader parent, List<Path> applicationClasses, Path frameworkClassesPath,
+    public RuntimeClassLoader(ClassLoader parent, List<Path> applicationClassesDirectories, Path frameworkClassesDirectory,
             Path transformerCache) {
         super(parent);
-        this.applicationClasses = applicationClasses;
-        this.frameworkClassesPath = frameworkClassesPath;
+        this.applicationClassDirectories = applicationClassesDirectories;
+        this.frameworkClassesPath = frameworkClassesDirectory;
         this.transformerCache = transformerCache;
     }
 
     @Override
     public Enumeration<URL> getResources(String nm) throws IOException {
-        String name;
-        if (nm.startsWith("/")) {
-            name = nm.substring(1);
-        } else {
-            name = nm;
-        }
+        String name = sanitizeName(nm);
+
+        List<URL> resources = new ArrayList<>();
 
         // TODO: some superugly hack for bean provider
-        byte[] data = resources.get(name);
-        if (data != null) {
-            URL url = new URL(null, "quarkus:" + name + "/", new URLStreamHandler() {
-                @Override
-                protected URLConnection openConnection(final URL u) throws IOException {
-                    return new URLConnection(u) {
-                        @Override
-                        public void connect() throws IOException {
-                        }
-
-                        @Override
-                        public InputStream getInputStream() throws IOException {
-                            return new ByteArrayInputStream(resources.get(name));
-                        }
-                    };
-                }
-            });
-            return Collections.enumeration(Collections.singleton(url));
+        URL resource = getQuarkusResource(name);
+        if (resource != null) {
+            resources.add(resource);
         }
 
         URL appResource = findApplicationResource(name);
         if (appResource != null) {
-            List<URL> resources = new ArrayList<>();
             resources.add(appResource);
-            for (Enumeration<URL> e = super.getResources(name); e.hasMoreElements();) {
-                resources.add(e.nextElement());
-            }
-            return Collections.enumeration(resources);
         }
-        return super.getResources(name);
+
+        for (Enumeration<URL> e = super.getResources(name); e.hasMoreElements();) {
+            resources.add(e.nextElement());
+        }
+
+        return Collections.enumeration(resources);
     }
 
     @Override
     public URL getResource(String nm) {
-        String name;
-        if (nm.startsWith("/")) {
-            name = nm.substring(1);
-        } else {
-            name = nm;
+        String name = sanitizeName(nm);
+
+        // TODO: some superugly hack for bean provider
+        URL resource = getQuarkusResource(name);
+        if (resource != null) {
+            return resource;
         }
+
         URL appResource = findApplicationResource(name);
         if (appResource != null) {
             return appResource;
@@ -140,15 +124,18 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
 
     @Override
     public InputStream getResourceAsStream(String nm) {
-        String name;
-        if (nm.startsWith("/")) {
-            name = nm.substring(1);
-        } else {
-            name = nm;
-        }
+        String name = sanitizeName(nm);
+
         byte[] data = resources.get(name);
-        if (data != null)
+        if (data != null) {
             return new ByteArrayInputStream(data);
+        }
+
+        data = findApplicationResourceContent(name);
+        if (data != null) {
+            return new ByteArrayInputStream(data);
+        }
+
         return super.getResourceAsStream(name);
     }
 
@@ -158,27 +145,45 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         if (ex != null) {
             return ex;
         }
-        if (appClasses.containsKey(name)) {
+
+        if (appClasses.containsKey(name)
+                || (!frameworkClasses.contains(name) && getClassInApplicationClassPaths(name) != null)) {
             return findClass(name);
         }
-        if (frameworkClasses.contains(name)) {
-            return super.loadClass(name, resolve);
+
+        return super.loadClass(name, resolve);
+    }
+
+    @Override
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+        Class<?> existing = findLoadedClass(name);
+        if (existing != null) {
+            return existing;
         }
 
-        final String fileName = name.replace('.', '/') + ".class";
-        Path classLoc = null;
-        for (Path i : applicationClasses) {
-            classLoc = i.resolve(fileName);
-            if (Files.exists(classLoc)) {
-                break;
+        byte[] bytes = appClasses.get(name);
+        if (bytes != null) {
+            try {
+                definePackage(name);
+                return defineClass(name, bytes, 0, bytes.length);
+            } catch (Error e) {
+                //potential race conditions if another thread is loading the same class
+                existing = findLoadedClass(name);
+                if (existing != null) {
+                    return existing;
+                }
+                throw e;
             }
         }
-        if (classLoc != null && Files.exists(classLoc)) {
+
+        Path classLoc = getClassInApplicationClassPaths(name);
+
+        if (classLoc != null) {
             CompletableFuture<Class<?>> res = new CompletableFuture<>();
-            Future<Class<?>> existing = loadingClasses.putIfAbsent(name, res);
-            if (existing != null) {
+            Future<Class<?>> loadingClass = loadingClasses.putIfAbsent(name, res);
+            if (loadingClass != null) {
                 try {
-                    return existing.get();
+                    return loadingClass.get();
                 } catch (Exception e) {
                     throw new ClassNotFoundException("Failed to load " + name, e);
                 }
@@ -194,8 +199,9 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
                 } catch (IOException e) {
                     throw new ClassNotFoundException("Failed to load class", e);
                 }
-                byte[] bytes = out.toByteArray();
+                bytes = out.toByteArray();
                 bytes = handleTransform(name, bytes);
+                definePackage(name);
                 Class<?> clazz = defineClass(name, bytes, 0, bytes.length);
                 res.complete(clazz);
                 return clazz;
@@ -207,7 +213,102 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
                 throw e;
             }
         }
-        return super.loadClass(name, resolve);
+
+        throw new ClassNotFoundException(name);
+    }
+
+    @Override
+    public void writeClass(boolean applicationClass, String className, byte[] data) {
+        if (applicationClass) {
+            String dotName = className.replace('/', '.');
+            appClasses.put(dotName, data);
+            if (DEBUG_CLASSES_DIR != null) {
+                try {
+                    File debugPath = new File(DEBUG_CLASSES_DIR);
+                    if (!debugPath.exists()) {
+                        debugPath.mkdir();
+                    }
+                    File classFile = new File(debugPath, dotName + ".class");
+                    FileOutputStream classWriter = new FileOutputStream(classFile);
+                    classWriter.write(data);
+                    classWriter.close();
+                    log.infof("Wrote %s", classFile.getAbsolutePath());
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
+            }
+        } else {
+            //this is pretty horrible
+            //basically we add the framework level classes to the file system
+            //in the same dir as the actual app classes
+            //however as we add them to the frameworkClasses set we know to load them
+            //from the parent CL
+            frameworkClasses.add(className.replace('/', '.'));
+            final Path fileName = frameworkClassesPath.resolve(className.replace('.', '/') + ".class");
+            try {
+                Files.createDirectories(fileName.getParent());
+                try (FileOutputStream out = new FileOutputStream(fileName.toFile())) {
+                    out.write(data);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Override
+    public void setTransformers(Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> functions) {
+        this.bytecodeTransformers = functions;
+    }
+
+    @Override
+    public void writeResource(String name, byte[] data) throws IOException {
+        resources.put(name, data);
+    }
+
+    private void definePackage(String name) {
+        final String pkgName = getPackageNameFromClassName(name);
+        if ((pkgName != null) && getPackage(pkgName) == null) {
+            synchronized (getClassLoadingLock(pkgName)) {
+                if (getPackage(pkgName) == null) {
+                    // this could certainly be improved to use the actual manifest
+                    definePackage(pkgName, null, null, null, null, null, null, null);
+                }
+            }
+        }
+    }
+
+    private String getPackageNameFromClassName(String className) {
+        final int index = className.lastIndexOf('.');
+        if (index == -1) {
+            // we return null here since in this case no package is defined
+            // this is same behavior as Package.getPackage(clazz) exhibits
+            // when the class is in the default package
+            return null;
+        }
+        return className.substring(0, index);
+    }
+
+    private static byte[] readFileContent(final Path path) {
+        final File file = path.toFile();
+        final long fileLength = file.length();
+        if (fileLength > Integer.MAX_VALUE) {
+            throw new RuntimeException("Can't process class files larger than Integer.MAX_VALUE bytes");
+        }
+        final int intLength = (int) fileLength;
+        try (FileInputStream in = new FileInputStream(file)) {
+            //Might be large but we need a single byte[] at the end of things, might as well allocate it in one shot:
+            ByteArrayOutputStream out = new ByteArrayOutputStream(intLength);
+            final int reasonableBufferSize = Math.min(intLength, 2048);
+            byte[] buf = new byte[reasonableBufferSize];
+            int r;
+            while ((r = in.read(buf)) > 0) {
+                out.write(buf, 0, r);
+            }
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Unable to read file " + path, e);
+        }
     }
 
     private byte[] handleTransform(String name, byte[] bytes) {
@@ -258,120 +359,30 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         return data;
     }
 
-    @Override
-    protected Class<?> findClass(String name) throws ClassNotFoundException {
-        Class<?> existing = findLoadedClass(name);
-        if (existing != null) {
-            return existing;
+    private String sanitizeName(String name) {
+        if (name.startsWith("/")) {
+            return name.substring(1);
         }
-        byte[] bytes = appClasses.get(name);
-        if (bytes == null) {
-            throw new ClassNotFoundException(name);
-        }
-        try {
-            final String pkgName = getPackageNameFromClassName(name);
-            if ((pkgName != null) && getPackage(pkgName) == null) {
-                synchronized (getClassLoadingLock(pkgName)) {
-                    if (getPackage(pkgName) == null) {
-                        // this could certainly be improved to use the actual manifest
-                        definePackage(pkgName, null, null, null, null, null, null, null);
-                    }
-                }
-            }
-            return defineClass(name, bytes, 0, bytes.length);
-        } catch (Error e) {
-            //potential race conditions if another thread is loading the same class
-            existing = findLoadedClass(name);
-            if (existing != null) {
-                return existing;
-            }
-            throw e;
-        }
+
+        return name;
     }
 
-    private String getPackageNameFromClassName(String className) {
-        final int index = className.lastIndexOf('.');
-        if (index == -1) {
-            // we return null here since in this case no package is defined
-            // this is same behavior as Package.getPackage(clazz) exhibits
-            // when the class is in the default package
-            return null;
-        }
-        return className.substring(0, index);
-    }
-
-    @Override
-    public void writeClass(boolean applicationClass, String className, byte[] data) {
-        if (applicationClass) {
-            String dotName = className.replace('/', '.');
-            appClasses.put(dotName, data);
-            if (DEBUG_CLASSES_DIR != null) {
-                try {
-                    File debugPath = new File(DEBUG_CLASSES_DIR);
-                    if (!debugPath.exists()) {
-                        debugPath.mkdir();
-                    }
-                    File classFile = new File(debugPath, dotName + ".class");
-                    FileOutputStream classWriter = new FileOutputStream(classFile);
-                    classWriter.write(data);
-                    classWriter.close();
-                    log.infof("Wrote %s", classFile.getAbsolutePath());
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                }
-            }
-        } else {
-            //this is pretty horrible
-            //basically we add the framework level classes to the file system
-            //in the same dir as the actual app classes
-            //however as we add them to the frameworkClasses set we know to load them
-            //from the parent CL
-            frameworkClasses.add(className.replace('/', '.'));
-            final Path fileName = frameworkClassesPath.resolve(className.replace('.', '/') + ".class");
-            try {
-                Files.createDirectories(fileName.getParent());
-                try (FileOutputStream out = new FileOutputStream(fileName.toFile())) {
-                    out.write(data);
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+    private Path getClassInApplicationClassPaths(String name) {
+        final String fileName = name.replace('.', '/') + ".class";
+        Path classLocation;
+        for (Path i : applicationClassDirectories) {
+            classLocation = i.resolve(fileName);
+            if (Files.exists(classLocation)) {
+                return classLocation;
             }
         }
-    }
-
-    public void setTransformers(Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> functions) {
-        this.bytecodeTransformers = functions;
-    }
-
-    @Override
-    public void writeResource(String name, byte[] data) throws IOException {
-        resources.put(name, data);
-    }
-
-    public static byte[] readFileContent(final Path path) throws IOException {
-        final File file = path.toFile();
-        final long fileLength = file.length();
-        if (fileLength > Integer.MAX_VALUE) {
-            throw new RuntimeException("Can't process class files larger than Integer.MAX_VALUE bytes");
-        }
-        final int intLength = (int) fileLength;
-        try (FileInputStream in = new FileInputStream(file)) {
-            //Might be large but we need a single byte[] at the end of things, might as well allocate it in one shot:
-            ByteArrayOutputStream out = new ByteArrayOutputStream(intLength);
-            final int reasonableBufferSize = Math.min(intLength, 2048);
-            byte[] buf = new byte[reasonableBufferSize];
-            int r;
-            while ((r = in.read(buf)) > 0) {
-                out.write(buf, 0, r);
-            }
-            return out.toByteArray();
-        }
+        return null;
     }
 
     private URL findApplicationResource(String name) {
         Path resourcePath = null;
 
-        for (Path i : applicationClasses) {
+        for (Path i : applicationClassDirectories) {
             resourcePath = i.resolve(name);
             if (Files.exists(resourcePath)) {
                 break;
@@ -385,4 +396,46 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         }
     }
 
+    private byte[] findApplicationResourceContent(String name) {
+        Path resourcePath = null;
+
+        for (Path i : applicationClassDirectories) {
+            resourcePath = i.resolve(name);
+            if (Files.exists(resourcePath)) {
+                return readFileContent(resourcePath);
+            }
+        }
+
+        return null;
+    }
+
+    private URL getQuarkusResource(String name) {
+        byte[] data = resources.get(name);
+        if (data != null) {
+            String path = "quarkus:" + name + "/";
+
+            try {
+                URL url = new URL(null, path, new URLStreamHandler() {
+                    @Override
+                    protected URLConnection openConnection(final URL u) throws IOException {
+                        return new URLConnection(u) {
+                            @Override
+                            public void connect() throws IOException {
+                            }
+
+                            @Override
+                            public InputStream getInputStream() throws IOException {
+                                return new ByteArrayInputStream(resources.get(name));
+                            }
+                        };
+                    }
+                });
+
+                return url;
+            } catch (MalformedURLException e) {
+                throw new IllegalArgumentException("Invalid URL: " + path);
+            }
+        }
+        return null;
+    }
 }

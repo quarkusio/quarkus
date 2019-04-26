@@ -61,7 +61,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
 
     private volatile Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = null;
 
-    private final List<Path> applicationClasses;
+    private final List<Path> applicationClassDirectories;
     private final Path frameworkClassesPath;
     private final Path transformerCache;
 
@@ -73,11 +73,11 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         registerAsParallelCapable();
     }
 
-    public RuntimeClassLoader(ClassLoader parent, List<Path> applicationClasses, Path frameworkClassesPath,
+    public RuntimeClassLoader(ClassLoader parent, List<Path> applicationClassesDirectories, Path frameworkClassesDirectory,
             Path transformerCache) {
         super(parent);
-        this.applicationClasses = applicationClasses;
-        this.frameworkClassesPath = frameworkClassesPath;
+        this.applicationClassDirectories = applicationClassesDirectories;
+        this.frameworkClassesPath = frameworkClassesDirectory;
         this.transformerCache = transformerCache;
     }
 
@@ -103,14 +103,6 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         }
 
         return Collections.enumeration(resources);
-    }
-
-    private String sanitizeName(String name) {
-        if (name.startsWith("/")) {
-            return name.substring(1);
-        }
-
-        return name;
     }
 
     @Override
@@ -160,54 +152,6 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         }
 
         return super.loadClass(name, resolve);
-    }
-
-    private byte[] handleTransform(String name, byte[] bytes) {
-        if (bytecodeTransformers == null || bytecodeTransformers.isEmpty()) {
-            return bytes;
-        }
-        List<BiFunction<String, ClassVisitor, ClassVisitor>> transformers = bytecodeTransformers.get(name);
-        if (transformers == null) {
-            return bytes;
-        }
-
-        Path hashPath = null;
-        if (transformerCache != null) {
-
-            try {
-                MessageDigest md = MessageDigest.getInstance("MD5");
-                byte[] thedigest = md.digest(bytes);
-                String hash = Base64.getUrlEncoder().encodeToString(thedigest);
-                hashPath = transformerCache.resolve(hash);
-                if (Files.exists(hashPath)) {
-                    return readFileContent(hashPath);
-                }
-            } catch (Exception e) {
-                log.error("Unable to load transformed class from cache", e);
-            }
-        }
-
-        ClassReader cr = new ClassReader(bytes);
-        ClassWriter writer = new QuarkusClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-        ClassVisitor visitor = writer;
-        for (BiFunction<String, ClassVisitor, ClassVisitor> i : transformers) {
-            visitor = i.apply(name, visitor);
-        }
-        cr.accept(visitor, 0);
-        byte[] data = writer.toByteArray();
-        if (hashPath != null) {
-            try {
-
-                File file = hashPath.toFile();
-                file.getParentFile().mkdirs();
-                try (FileOutputStream out = new FileOutputStream(file)) {
-                    out.write(data);
-                }
-            } catch (Exception e) {
-                log.error("Unable to write class to cache", e);
-            }
-        }
-        return data;
     }
 
     @Override
@@ -273,29 +217,6 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         throw new ClassNotFoundException(name);
     }
 
-    private void definePackage(String name) {
-        final String pkgName = getPackageNameFromClassName(name);
-        if ((pkgName != null) && getPackage(pkgName) == null) {
-            synchronized (getClassLoadingLock(pkgName)) {
-                if (getPackage(pkgName) == null) {
-                    // this could certainly be improved to use the actual manifest
-                    definePackage(pkgName, null, null, null, null, null, null, null);
-                }
-            }
-        }
-    }
-
-    private String getPackageNameFromClassName(String className) {
-        final int index = className.lastIndexOf('.');
-        if (index == -1) {
-            // we return null here since in this case no package is defined
-            // this is same behavior as Package.getPackage(clazz) exhibits
-            // when the class is in the default package
-            return null;
-        }
-        return className.substring(0, index);
-    }
-
     @Override
     public void writeClass(boolean applicationClass, String className, byte[] data) {
         if (applicationClass) {
@@ -345,7 +266,30 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         resources.put(name, data);
     }
 
-    public static byte[] readFileContent(final Path path) {
+    private void definePackage(String name) {
+        final String pkgName = getPackageNameFromClassName(name);
+        if ((pkgName != null) && getPackage(pkgName) == null) {
+            synchronized (getClassLoadingLock(pkgName)) {
+                if (getPackage(pkgName) == null) {
+                    // this could certainly be improved to use the actual manifest
+                    definePackage(pkgName, null, null, null, null, null, null, null);
+                }
+            }
+        }
+    }
+
+    private String getPackageNameFromClassName(String className) {
+        final int index = className.lastIndexOf('.');
+        if (index == -1) {
+            // we return null here since in this case no package is defined
+            // this is same behavior as Package.getPackage(clazz) exhibits
+            // when the class is in the default package
+            return null;
+        }
+        return className.substring(0, index);
+    }
+
+    private static byte[] readFileContent(final Path path) {
         final File file = path.toFile();
         final long fileLength = file.length();
         if (fileLength > Integer.MAX_VALUE) {
@@ -367,10 +311,66 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         }
     }
 
+    private byte[] handleTransform(String name, byte[] bytes) {
+        if (bytecodeTransformers == null || bytecodeTransformers.isEmpty()) {
+            return bytes;
+        }
+        List<BiFunction<String, ClassVisitor, ClassVisitor>> transformers = bytecodeTransformers.get(name);
+        if (transformers == null) {
+            return bytes;
+        }
+
+        Path hashPath = null;
+        if (transformerCache != null) {
+
+            try {
+                MessageDigest md = MessageDigest.getInstance("MD5");
+                byte[] thedigest = md.digest(bytes);
+                String hash = Base64.getUrlEncoder().encodeToString(thedigest);
+                hashPath = transformerCache.resolve(hash);
+                if (Files.exists(hashPath)) {
+                    return readFileContent(hashPath);
+                }
+            } catch (Exception e) {
+                log.error("Unable to load transformed class from cache", e);
+            }
+        }
+
+        ClassReader cr = new ClassReader(bytes);
+        ClassWriter writer = new QuarkusClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+        ClassVisitor visitor = writer;
+        for (BiFunction<String, ClassVisitor, ClassVisitor> i : transformers) {
+            visitor = i.apply(name, visitor);
+        }
+        cr.accept(visitor, 0);
+        byte[] data = writer.toByteArray();
+        if (hashPath != null) {
+            try {
+
+                File file = hashPath.toFile();
+                file.getParentFile().mkdirs();
+                try (FileOutputStream out = new FileOutputStream(file)) {
+                    out.write(data);
+                }
+            } catch (Exception e) {
+                log.error("Unable to write class to cache", e);
+            }
+        }
+        return data;
+    }
+
+    private String sanitizeName(String name) {
+        if (name.startsWith("/")) {
+            return name.substring(1);
+        }
+
+        return name;
+    }
+
     private Path getClassInApplicationClassPaths(String name) {
         final String fileName = name.replace('.', '/') + ".class";
         Path classLocation;
-        for (Path i : applicationClasses) {
+        for (Path i : applicationClassDirectories) {
             classLocation = i.resolve(fileName);
             if (Files.exists(classLocation)) {
                 return classLocation;
@@ -382,7 +382,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
     private URL findApplicationResource(String name) {
         Path resourcePath = null;
 
-        for (Path i : applicationClasses) {
+        for (Path i : applicationClassDirectories) {
             resourcePath = i.resolve(name);
             if (Files.exists(resourcePath)) {
                 break;
@@ -399,7 +399,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
     private byte[] findApplicationResourceContent(String name) {
         Path resourcePath = null;
 
-        for (Path i : applicationClasses) {
+        for (Path i : applicationClassDirectories) {
             resourcePath = i.resolve(name);
             if (Files.exists(resourcePath)) {
                 return readFileContent(resourcePath);

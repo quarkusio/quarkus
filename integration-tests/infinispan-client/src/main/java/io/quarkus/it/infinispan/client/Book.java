@@ -11,12 +11,18 @@ public class Book {
     private final String description;
     private final int publicationYear;
     private final Set<Author> authors;
+    private final Type bookType;
 
-    public Book(String title, String description, int publicationYear, Set<Author> authors) {
+    enum Type {
+        FANTASY, PROGRAMMING
+    }
+
+    public Book(String title, String description, int publicationYear, Set<Author> authors, Type bookType) {
         this.title = Objects.requireNonNull(title);
         this.description = Objects.requireNonNull(description);
         this.publicationYear = publicationYear;
         this.authors = Objects.requireNonNull(authors);
+        this.bookType = bookType;
     }
 
     public String getTitle() {
@@ -35,6 +41,10 @@ public class Book {
         return authors;
     }
 
+    public Type getBookType() {
+        return bookType;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -45,11 +55,12 @@ public class Book {
         return publicationYear == book.publicationYear &&
                 title.equals(book.title) &&
                 description.equals(book.description) &&
-                authors.equals(book.authors);
+                authors.equals(book.authors) &&
+                bookType.equals(book.bookType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(title, description, publicationYear, authors);
+        return Objects.hash(title, description, publicationYear, authors, bookType);
     }
 }

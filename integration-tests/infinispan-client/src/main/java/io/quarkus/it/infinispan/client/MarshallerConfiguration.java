@@ -3,16 +3,23 @@ package io.quarkus.it.infinispan.client;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 
+import org.infinispan.protostream.BaseMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.MessageMarshaller;
 
 /**
  * Handles configuration of marshalling code for marshalling
- * 
+ *
  * @author William Burns
  */
 @ApplicationScoped
 public class MarshallerConfiguration {
+
+    @Produces
+    BaseMarshaller bookTypeMarshaller() {
+        return new BookTypeMarshaller();
+    }
+
     @Produces
     MessageMarshaller bookMarshaller() {
         return new BookMarshaller();

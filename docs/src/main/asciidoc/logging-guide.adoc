@@ -94,6 +94,9 @@ The logging format string supports the following symbols:
 |%t|Thread name|Render the thread name.
 |%t{id}|Thread ID|Render the thread ID.
 |%z{<zone name>}|Time zone|Set the time zone of the output to `<zone name>`.
+|%X{<MDC property name>}|Mapped Diagnostics Context Value|Renders the value from Mapped Diagnostics Context
+|%X|Mapped Diagnostics Context Values|Renders all the values from Mapped Diagnostics Context in format {property.key=property.value}
+|%x|Nested Diagnostics context values|Renders all the values from Nested Diagnostics Context in format {value1.value2}
 |===
 
 

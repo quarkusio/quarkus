@@ -23,7 +23,14 @@ import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -48,16 +55,20 @@ import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.engines.URLConnectionEngine;
-import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
+import org.jboss.resteasy.client.jaxrs.internal.LocalResteasyProviderFactory;
+import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.jboss.resteasy.spi.ResteasyUriBuilder;
 
-import io.smallrye.restclient.*;
+import io.smallrye.restclient.ConfigurationWrapper;
+import io.smallrye.restclient.DefaultMediaTypeFilter;
+import io.smallrye.restclient.DefaultResponseExceptionMapper;
+import io.smallrye.restclient.ExceptionMapping;
+import io.smallrye.restclient.MethodInjectionFilter;
+import io.smallrye.restclient.RestClientListeners;
+import io.smallrye.restclient.RestClientProxy;
 import io.smallrye.restclient.async.AsyncInvocationInterceptorHandler;
 import io.smallrye.restclient.header.ClientHeaderProviders;
 
-/**
- * Created by hbraun on 15.01.18.
- */
 public class RestClientBuilderImpl implements RestClientBuilder {
 
     private static final String RESTEASY_PROPERTY_PREFIX = "resteasy.";
@@ -68,17 +79,21 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     public static final MethodInjectionFilter METHOD_INJECTION_FILTER = new MethodInjectionFilter();
     public static final ClientHeadersRequestFilter HEADERS_REQUEST_FILTER = new ClientHeadersRequestFilter();
 
-    public static boolean SSL_ENABLED = false;
-    public static boolean REGISTER_BUILTIN_PROVIDERS = true;
-    public static String PROVIDERS_TO_REGISTER = "";
+    static boolean SSL_ENABLED = false;
+    static ResteasyProviderFactory PROVIDER_FACTORY;
 
     RestClientBuilderImpl() {
         ClientBuilder availableBuilder = ClientBuilder.newBuilder();
 
         if (availableBuilder instanceof ResteasyClientBuilder) {
             builderDelegate = (ResteasyClientBuilder) availableBuilder;
-            builderDelegate.property(ResteasyContextParameters.RESTEASY_USE_BUILTIN_PROVIDERS, REGISTER_BUILTIN_PROVIDERS);
-            builderDelegate.property(ResteasyContextParameters.RESTEASY_PROVIDERS, PROVIDERS_TO_REGISTER);
+
+            ResteasyProviderFactory localProviderFactory = new LocalResteasyProviderFactory(PROVIDER_FACTORY);
+            if (ResteasyProviderFactory.peekInstance() != null) {
+                localProviderFactory.initializeClientProviders(ResteasyProviderFactory.getInstance());
+            }
+            builderDelegate.providerFactory(localProviderFactory);
+
             configurationWrapper = new ConfigurationWrapper(builderDelegate.getConfiguration());
             config = ConfigProvider.getConfig();
         } else {

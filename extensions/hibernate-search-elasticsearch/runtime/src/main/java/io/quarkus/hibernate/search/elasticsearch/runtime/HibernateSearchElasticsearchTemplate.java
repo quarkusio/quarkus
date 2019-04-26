@@ -18,6 +18,7 @@ package io.quarkus.hibernate.search.elasticsearch.runtime;
 
 import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendConfig;
 import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendDefaultIndexConfig;
+import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendIndexConfig;
 import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchConfigUtil.addConfig;
 
 import java.util.Map.Entry;
@@ -39,6 +40,7 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationListe
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
 import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchBackendBuildTimeConfig;
 import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.ElasticsearchBackendRuntimeConfig;
+import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.ElasticsearchIndexConfig;
 import io.quarkus.runtime.annotations.Template;
 
 @Template
@@ -148,12 +150,25 @@ public class HibernateSearchElasticsearchTemplate {
                     ElasticsearchIndexSettings.LIFECYCLE_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
                     elasticsearchBackendConfig.indexDefaults.lifecycle.requiredStatusWaitTimeout, Optional::isPresent,
                     d -> d.get().toMillis());
-
             addBackendDefaultIndexConfig(propertyCollector, backendName, ElasticsearchIndexSettings.REFRESH_AFTER_WRITE,
                     runtimeConfig.elasticsearch.indexDefaults.refreshAfterWrite);
 
-            // TODO: manage the specific per-index configuration: let's wait for Alpha4 as it is totally different now
-            // TODO: test the per-backend configuration: let's wait for Alpha4 as it is totally different now
+            for (Entry<String, ElasticsearchIndexConfig> indexConfigEntry : runtimeConfig.elasticsearch.indexes.entrySet()) {
+                String indexName = indexConfigEntry.getKey();
+                ElasticsearchIndexConfig indexConfig = indexConfigEntry.getValue();
+
+                addBackendIndexConfig(propertyCollector, backendName, indexName, ElasticsearchIndexSettings.LIFECYCLE_STRATEGY,
+                        indexConfig.lifecycle.strategy);
+                addBackendIndexConfig(propertyCollector, backendName, indexName,
+                        ElasticsearchIndexSettings.LIFECYCLE_MINIMAL_REQUIRED_STATUS,
+                        indexConfig.lifecycle.requiredStatus);
+                addBackendIndexConfig(propertyCollector, backendName, indexName,
+                        ElasticsearchIndexSettings.LIFECYCLE_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
+                        indexConfig.lifecycle.requiredStatusWaitTimeout, Optional::isPresent,
+                        d -> d.get().toMillis());
+                addBackendIndexConfig(propertyCollector, backendName, indexName, ElasticsearchIndexSettings.REFRESH_AFTER_WRITE,
+                        indexConfig.refreshAfterWrite);
+            }
         }
     }
 }

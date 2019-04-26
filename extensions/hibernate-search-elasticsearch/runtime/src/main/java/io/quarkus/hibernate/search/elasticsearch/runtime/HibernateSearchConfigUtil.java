@@ -56,6 +56,24 @@ public class HibernateSearchConfigUtil {
                 shouldBeAdded, getValue);
     }
 
+    public static void addBackendIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
+            String indexName, String configPath, Optional<?> value) {
+        addBackendIndexConfig(propertyCollector, backendName, indexName, configPath, value, Optional::isPresent, Optional::get);
+    }
+
+    public static void addBackendIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
+            String indexName, String configPath, OptionalInt value) {
+        addBackendIndexConfig(propertyCollector, backendName, indexName, configPath, value, OptionalInt::isPresent,
+                OptionalInt::getAsInt);
+    }
+
+    public static <T> void addBackendIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
+            String indexName, String configPath, T value,
+            Function<T, Boolean> shouldBeAdded, Function<T, ?> getValue) {
+        addBackendConfig(propertyCollector, backendName, BackendSettings.INDEXES + "." + indexName + "." + configPath, value,
+                shouldBeAdded, getValue);
+    }
+
     private static String configKey(String configPath) {
         return HibernateOrmMapperSettings.PREFIX + configPath;
     }

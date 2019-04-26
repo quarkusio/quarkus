@@ -25,7 +25,7 @@ public class TikaProcessor {
     }
 
     @BuildStep
-    void produceTikaProvider(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
+    void produceTikaJaxrsProvider(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
         providers.produce(new ResteasyJaxrsProviderBuildItem(TikaMessageBodyReader.class.getName()));
     }
 
@@ -36,21 +36,11 @@ public class TikaProcessor {
     }
 
     @BuildStep
-    public void produceTikaParsersParsers(BuildProducer<SubstrateResourceBuildItem> resource,
+    public void produceTikaParsersProviders(BuildProducer<SubstrateResourceBuildItem> resource,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
-        produceServiceLoaderResources(resource, reflectiveClass, Parser.class.getName());
-    }
-
-    @BuildStep
-    public void produceTikaParsersDetectors(BuildProducer<SubstrateResourceBuildItem> resource,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
-        produceServiceLoaderResources(resource, reflectiveClass, Detector.class.getName());
-    }
-
-    @BuildStep
-    public void produceTikaParsersEncodingDetectors(BuildProducer<SubstrateResourceBuildItem> resource,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
-        produceServiceLoaderResources(resource, reflectiveClass, EncodingDetector.class.getName());
+        produceTikaServiceProviders(resource, reflectiveClass, Parser.class.getName());
+        produceTikaServiceProviders(resource, reflectiveClass, Detector.class.getName());
+        produceTikaServiceProviders(resource, reflectiveClass, EncodingDetector.class.getName());
     }
 
     @BuildStep
@@ -60,7 +50,7 @@ public class TikaProcessor {
         }
     }
 
-    private void produceServiceLoaderResources(BuildProducer<SubstrateResourceBuildItem> resource,
+    private void produceTikaServiceProviders(BuildProducer<SubstrateResourceBuildItem> resource,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             String serviceProviderName) throws Exception {
         resource.produce(new SubstrateResourceBuildItem("META-INF/services/" + serviceProviderName));

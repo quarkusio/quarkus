@@ -25,7 +25,7 @@ public class BookTypeMarshaller implements EnumMarshaller<Book.Type> {
             case 1:
                 return Book.Type.PROGRAMMING;
         }
-        return null;  // unknown value
+        return null; // unknown value
     }
 
     @Override

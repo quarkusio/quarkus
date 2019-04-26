@@ -14,7 +14,8 @@ public class Book {
     private final Type bookType;
 
     enum Type {
-        FANTASY, PROGRAMMING
+        FANTASY,
+        PROGRAMMING
     }
 
     public Book(String title, String description, int publicationYear, Set<Author> authors, Type bookType) {

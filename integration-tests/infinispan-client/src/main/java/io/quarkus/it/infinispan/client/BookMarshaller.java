@@ -27,6 +27,7 @@ public class BookMarshaller implements MessageMarshaller<Book> {
         writer.writeString("description", book.getDescription());
         writer.writeInt("publicationYear", book.getPublicationYear());
         writer.writeCollection("authors", book.getAuthors(), Author.class);
+        writer.writeEnum("bookType", book.getBookType());
     }
 
     @Override
@@ -35,6 +36,7 @@ public class BookMarshaller implements MessageMarshaller<Book> {
         String description = reader.readString("description");
         int publicationYear = reader.readInt("publicationYear");
         Set<Author> authors = reader.readCollection("authors", new HashSet<>(), Author.class);
-        return new Book(title, description, publicationYear, authors);
+        Book.Type bookType = reader.readEnum("bookType", Book.Type.class);
+        return new Book(title, description, publicationYear, authors, bookType);
     }
 }

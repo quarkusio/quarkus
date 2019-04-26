@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
+import org.infinispan.client.hotrod.annotation.ClientListener;
 import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import org.infinispan.client.hotrod.exceptions.HotRodClientException;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
@@ -149,7 +150,7 @@ class InfinispanClientProcessor {
         // Add any user project listeners to allow reflection in native code
         Index index = applicationIndexBuildItem.getIndex();
         List<AnnotationInstance> listenerInstances = index.getAnnotations(
-                DotName.createSimple("org.infinispan.client.hotrod.annotation.ClientListener"));
+                DotName.createSimple(ClientListener.class.getName()));
         for (AnnotationInstance instance : listenerInstances) {
             AnnotationTarget target = instance.target();
             if (target.kind() == AnnotationTarget.Kind.CLASS) {

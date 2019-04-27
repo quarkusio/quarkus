@@ -36,14 +36,18 @@ public class AddExtensions {
         boolean updated = false;
         List<Dependency> dependenciesFromBom = getDependenciesFromBom();
 
+        List<Extension> loadedExtensions = MojoUtils.loadExtensions();
         for (String dependency : extensions) {
-            Optional<Extension> optional = MojoUtils.loadExtensions().stream()
+            String quarkusId = "quarkus-" + dependency.trim().toLowerCase();
+            Optional<Extension> optional = loadedExtensions.stream()
                     .filter(d -> {
-                        boolean hasTag = d.labels().contains(dependency.trim().toLowerCase());
-                        boolean machName = d.getName()
+                        boolean machId = d.getArtifactId()
                                 .toLowerCase()
-                                .contains(dependency.trim().toLowerCase());
-                        return hasTag || machName;
+                                .equalsIgnoreCase(dependency.trim().toLowerCase());
+                        boolean machQuarkusId = d.getArtifactId()
+                                .toLowerCase()
+                                .equalsIgnoreCase(quarkusId);
+                        return machId || machQuarkusId;
                     })
                     .findAny();
 

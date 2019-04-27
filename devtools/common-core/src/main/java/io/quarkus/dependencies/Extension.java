@@ -18,6 +18,7 @@ package io.quarkus.dependencies;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,6 +42,10 @@ public class Extension {
     private String description;
     private boolean internal = false;
     private String[] labels;
+    private String guide;
+
+    private String simplifiedArtifactId;
+    private static final Pattern QUARKUS_PREFIX = Pattern.compile("^quarkus-");
 
     public Extension() {
         // Use by mapper.
@@ -48,7 +53,7 @@ public class Extension {
 
     public Extension(String groupId, String artifactId, String version) {
         this.groupId = groupId;
-        this.artifactId = artifactId;
+        this.setArtifactId(artifactId);
         this.version = version;
     }
 
@@ -58,6 +63,7 @@ public class Extension {
 
     public Extension setArtifactId(String artifactId) {
         this.artifactId = artifactId;
+        this.simplifiedArtifactId = QUARKUS_PREFIX.matcher(artifactId).replaceFirst("");
         return this;
     }
 
@@ -175,6 +181,10 @@ public class Extension {
         return managementKey() + ":" + version;
     }
 
+    public String getSimplifiedArtifactId() {
+        return simplifiedArtifactId;
+    }
+
     @Override
     public String toString() {
         return gav();
@@ -231,5 +241,9 @@ public class Extension {
         }
 
         return true;
+    }
+
+    public String getGuide() {
+        return guide;
     }
 }

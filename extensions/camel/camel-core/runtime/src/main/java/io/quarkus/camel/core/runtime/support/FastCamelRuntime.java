@@ -82,8 +82,8 @@ public class FastCamelRuntime implements CamelRuntime {
             RuntimeSupport.bindProperties(pc.getInitialProperties(), pc, PFX_CAMEL_PROPERTIES);
             context.addComponent("properties", pc);
 
-            fireEvent(InitializingEvent.class, new InitializingEvent());
             this.context.getTypeConverterRegistry().setInjector(this.context.getInjector());
+            fireEvent(InitializingEvent.class, new InitializingEvent());
             if (buildTimeConfig.disableJaxb) {
                 this.context.setModelJAXBContextFactory(() -> {
                     throw new UnsupportedOperationException();

@@ -23,15 +23,19 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.interceptor.InvocationContext;
 import javax.transaction.Status;
+import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
+import org.jboss.resteasy.core.ResteasyContext;
+import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.tm.usertx.client.ServerVMClientUserTransaction;
 
 import com.arjuna.ats.jta.logging.jtaLogger;
 
 import io.quarkus.arc.runtime.InterceptorBindings;
+import io.undertow.servlet.handlers.ServletRequestContext;
 
 /**
  * @author paul.robinson@redhat.com 02/05/2013
@@ -51,7 +55,6 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     }
 
     public Object intercept(InvocationContext ic) throws Exception {
-
         final TransactionManager tm = transactionManager;
         final Transaction tx = tm.getTransaction();
 
@@ -67,12 +70,14 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     /**
      * <p>
-     * Looking for the {@link Transactional} annotation first on the method, second on the class.
+     * Looking for the {@link Transactional} annotation first on the method,
+     * second on the class.
      * <p>
-     * Method handles CDI types to cover cases where extensions are used.
-     * In case of EE container uses reflection.
+     * Method handles CDI types to cover cases where extensions are used. In
+     * case of EE container uses reflection.
      *
-     * @param ic invocation context of the interceptor
+     * @param ic
+     *            invocation context of the interceptor
      * @return instance of {@link Transactional} annotation or null
      */
     private Transactional getTransactional(InvocationContext ic) {
@@ -95,9 +100,38 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         } catch (Exception e) {
             handleException(ic, e, tx);
         } finally {
-            endTransaction(tm, tx);
+            if(!handleIfAsyncStarted(tm, tx, ic)) {
+                endTransaction(tm, tx);
+            }
         }
         throw new RuntimeException("UNREACHABLE");
+    }
+
+    protected boolean handleIfAsyncStarted(TransactionManager tm, Transaction tx, InvocationContext ic) {
+        TransactionAsyncListener asyncListener = new TransactionAsyncListener(() -> {
+            try {
+                endTransaction(tm, tx);
+            } catch (Exception e) {
+                jtaLogger.logger.error("Failed to end async transaction", e);
+            }
+        }, t -> {
+            try {
+                handleExceptionNoThrow(ic, t, tx);
+            } catch (IllegalStateException | SystemException e) {
+                jtaLogger.logger.error("Failed to handle async transaction exception", e);
+            }
+        });
+
+        ServletRequestContext req = ServletRequestContext.current();
+        if (req != null && req.getServletRequest().isAsyncStarted()) {
+            HttpRequest resteasyHttpRequest = ResteasyContext.getContextData(HttpRequest.class);
+            if (resteasyHttpRequest != null && resteasyHttpRequest.getAsyncContext().isSuspended()) {
+                resteasyHttpRequest.getAsyncContext().getAsyncResponse().register(asyncListener);
+            }
+            req.getServletRequest().getAsyncContext().addListener(asyncListener);
+            return true;
+        }
+        return false;
     }
 
     protected Object invokeInCallerTx(InvocationContext ic, Transaction tx) throws Exception {
@@ -115,28 +149,32 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         return ic.proceed();
     }
 
-    protected void handleException(InvocationContext ic, Exception e, Transaction tx) throws Exception {
+    protected void handleExceptionNoThrow(InvocationContext ic, Throwable e, Transaction tx) throws IllegalStateException, SystemException {
 
         Transactional transactional = getTransactional(ic);
 
         for (Class<?> dontRollbackOnClass : transactional.dontRollbackOn()) {
             if (dontRollbackOnClass.isAssignableFrom(e.getClass())) {
-                throw e;
+                return;
             }
         }
 
         for (Class<?> rollbackOnClass : transactional.rollbackOn()) {
             if (rollbackOnClass.isAssignableFrom(e.getClass())) {
                 tx.setRollbackOnly();
-                throw e;
+                return;
             }
         }
 
         if (e instanceof RuntimeException) {
             tx.setRollbackOnly();
-            throw e;
+            return;
         }
+    }
 
+    protected void handleException(InvocationContext ic, Exception e, Transaction tx) throws Exception {
+
+        handleExceptionNoThrow(ic, e, tx);
         throw e;
     }
 

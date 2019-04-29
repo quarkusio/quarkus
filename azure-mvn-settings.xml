@@ -1,8 +1,33 @@
 <settings>
+  <servers>
+    <server>
+      <id>azure-maven-feed</id>
+      <configuration>
+        <httpHeaders>
+          <property>
+            <name>Authorization</name>
+            <!-- Treat this auth token like a password. Do not share it with anyone, including Microsoft support. -->
+            <!-- The generated token expires on or before 28/07/2019 -->
+            <!-- This token should be pased here, then the resulting file uploaded as an azure secret file under the name secret-maven-settings.xml -->
+            <!-- This token should never be commited to a repo -->
+            <value>ENTER_TOKEN_HERE</value>
+          </property>
+        </httpHeaders>
+      </configuration>
+    </server>
+  </servers>
   <profiles>
     <profile>
       <id>google-mirror-jboss-proxy</id>
       <repositories>
+        <repository>
+          <id>azure-maven-feed</id>
+          <name>Quarkus Maven Feed</name>
+          <url>https://pkgs.dev.azure.com/quarkus-ci/_packaging/QuarkusMavenFeed/maven/v1</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+        </repository>
         <repository>
           <id>google-maven-central</id>
           <name>GCS Maven Central mirror EU</name>
@@ -15,6 +40,14 @@
         </repository>
       </repositories>
       <pluginRepositories>
+        <pluginRepository>
+          <id>azure-maven-feed</id>
+          <name>Quarkus Maven Feed</name>
+          <url>https://pkgs.dev.azure.com/quarkus-ci/_packaging/QuarkusMavenFeed/maven/v1</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+        </pluginRepository>
         <pluginRepository>
           <id>google-maven-central</id>
           <name>GCS Maven Central mirror EU</name>

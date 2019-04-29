@@ -20,11 +20,11 @@ import java.util.Properties;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
-public final class PropertiesBuildItem extends SimpleBuildItem {
+public final class InfinispanPropertiesBuildItem extends SimpleBuildItem {
 
     private final Properties properties;
 
-    public PropertiesBuildItem(Properties properties) {
+    public InfinispanPropertiesBuildItem(Properties properties) {
         this.properties = properties;
     }
 

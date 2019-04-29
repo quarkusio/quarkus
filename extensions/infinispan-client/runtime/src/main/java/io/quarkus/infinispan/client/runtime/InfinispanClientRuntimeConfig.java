@@ -7,10 +7,10 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
- * @author William Burns
+ * @author Katia Aresti
  */
-@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public class InfinispanClientConfiguration {
+@ConfigRoot(name = "infinispan-client", phase = ConfigPhase.RUN_TIME)
+public class InfinispanClientRuntimeConfig {
 
     /**
      * Sets the host name/port to connect to. Each one is separated by a semicolon (eg. host1:11222;host2:11222).
@@ -18,17 +18,10 @@ public class InfinispanClientConfiguration {
     @ConfigItem
     public Optional<String> serverList;
 
-    /**
-     * Sets the bounded entry count for near cache. If this value is 0 or less near cache is disabled.
-     */
-    @ConfigItem(defaultValue = "0")
-    public int nearCacheMaxEntries;
-
     @Override
     public String toString() {
-        return "InfinispanClientConfiguration{" +
+        return "InfinispanClientRuntimeConfig{" +
                 "serverList=" + serverList +
-                ", nearCacheMaxEntries=" + nearCacheMaxEntries +
                 '}';
     }
 }

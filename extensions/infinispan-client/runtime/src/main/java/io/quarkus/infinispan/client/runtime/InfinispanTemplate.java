@@ -3,7 +3,6 @@ package io.quarkus.infinispan.client.runtime;
 import java.util.Properties;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.annotations.Template;
 
@@ -17,10 +16,7 @@ public class InfinispanTemplate {
         };
     }
 
-    public void configureRuntimeProperties(InfinispanClientConfigRuntime infinispanClientConfigRuntime) {
-        InstanceHandle<InfinispanClientProducer> instance = Arc.container().instance(InfinispanClientProducer.class);
-        if (instance.isAvailable()) {
-            instance.get().setRuntimeConfig(infinispanClientConfigRuntime);
-        }
+    public void configureRuntimeProperties(InfinispanClientRuntimeConfig infinispanClientRuntimeConfig) {
+        Arc.container().instance(InfinispanClientProducer.class).get().setRuntimeConfig(infinispanClientRuntimeConfig);
     }
 }

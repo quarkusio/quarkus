@@ -45,11 +45,16 @@ public class InfinispanClientProducer {
 
     public static final String PROTOBUF_FILE_PREFIX = "infinispan.client.hotrod.protofile.";
 
-    private Properties properties;
-    private RemoteCacheManager cacheManager;
     @Inject
     private BeanManager beanManager;
-    private InfinispanClientConfigRuntime infinispanClientConfigRuntime;
+
+    private Properties properties;
+    private RemoteCacheManager cacheManager;
+    private InfinispanClientRuntimeConfig infinispanClientRuntimeConfig;
+
+    public void setRuntimeConfig(InfinispanClientRuntimeConfig infinispanClientConfigRuntime) {
+        this.infinispanClientRuntimeConfig = infinispanClientConfigRuntime;
+    }
 
     private void initialize() {
         log.debug("Initializing CacheManager");
@@ -84,7 +89,7 @@ public class InfinispanClientProducer {
     /**
      * This method is designed to be called during static initialization time. This is so we have access to the
      * classes, and thus we can use reflection to find and instantiate any instances we may need
-     * 
+     *
      * @param properties properties file read from hot rod
      * @throws ClassNotFoundException if a class is not actually found that should be present
      */
@@ -102,7 +107,7 @@ public class InfinispanClientProducer {
 
     /**
      * Sets up additional properties for use when proto stream marshaller is in use
-     * 
+     *
      * @param properties the properties to be updated for querying
      */
     public static void handleProtoStreamRequirements(Properties properties) {
@@ -118,19 +123,21 @@ public class InfinispanClientProducer {
 
     /**
      * Reads all the contents of the file as a single string using default charset
-     * 
+     *
      * @param fileName file on class path to read contents of
      * @return string containing the contents of the file
      */
     private static String getContents(String fileName) {
         InputStream stream = InfinispanClientProducer.class.getResourceAsStream(fileName);
-        return new Scanner(stream, "UTF-8").useDelimiter("\\A").next();
+        try (Scanner scanner = new Scanner(stream, "UTF-8")) {
+            return scanner.useDelimiter("\\A").next();
+        }
     }
 
     /**
      * The mirror side of {@link #replaceProperties(Properties)} so that we can take out any objects that were
      * instantiated during static init time and inject them properly
-     * 
+     *
      * @param properties the properties that was static constructed
      * @return the configuration builder based on the provided properties
      */
@@ -146,10 +153,10 @@ public class InfinispanClientProducer {
         }
 
         // Override serverList property value at runtime if such configuration exists
-        if (infinispanClientConfigRuntime != null) {
-            Optional<String> runtimeServerList = infinispanClientConfigRuntime.serverList;
+        if (infinispanClientRuntimeConfig != null) {
+            Optional<String> runtimeServerList = infinispanClientRuntimeConfig.serverList;
             if (runtimeServerList.isPresent()) {
-                properties.replace(ConfigurationProperties.SERVER_LIST, runtimeServerList.get());
+                properties.put(ConfigurationProperties.SERVER_LIST, runtimeServerList.get());
             }
         }
 
@@ -255,9 +262,5 @@ public class InfinispanClientProducer {
             }
         }
         return null;
-    }
-
-    public void setRuntimeConfig(InfinispanClientConfigRuntime infinispanClientConfigRuntime) {
-        this.infinispanClientConfigRuntime = infinispanClientConfigRuntime;
     }
 }

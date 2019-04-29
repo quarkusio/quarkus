@@ -5,8 +5,8 @@ import java.util.Set;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
@@ -30,11 +30,10 @@ public class TikaProcessor {
     }
 
     @BuildStep
-    public void produceTikaParsersProviders(BuildProducer<SubstrateResourceBuildItem> resource,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
-        produceTikaServiceProviders(resource, reflectiveClass, "org.apache.tika.parser.Parser");
-        produceTikaServiceProviders(resource, reflectiveClass, "org.apache.tika.detect.Detector");
-        produceTikaServiceProviders(resource, reflectiveClass, "org.apache.tika.detect.EncodingDetector");
+    public void produceTikaParsersProviders(BuildProducer<ServiceProviderBuildItem> serviceProvider) throws Exception {
+        produceTikaServiceProviders(serviceProvider, "org.apache.tika.parser.Parser");
+        produceTikaServiceProviders(serviceProvider, "org.apache.tika.detect.Detector");
+        produceTikaServiceProviders(serviceProvider, "org.apache.tika.detect.EncodingDetector");
     }
 
     @BuildStep
@@ -44,15 +43,12 @@ public class TikaProcessor {
         }
     }
 
-    private void produceTikaServiceProviders(BuildProducer<SubstrateResourceBuildItem> resource,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+    private void produceTikaServiceProviders(BuildProducer<ServiceProviderBuildItem> serviceProvider,
             String serviceProviderName) throws Exception {
-        resource.produce(new SubstrateResourceBuildItem("META-INF/services/" + serviceProviderName));
-        Set<String> availableProviderClasses = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
-                "META-INF/services/" + serviceProviderName);
-        for (String providerClass : availableProviderClasses) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerClass));
-        }
+        String serviceProviderPath = "META-INF/services/" + serviceProviderName;
+        String[] availableProviderClasses = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+                serviceProviderPath).toArray(new String[] {});
+        serviceProvider.produce(new ServiceProviderBuildItem(serviceProviderPath, availableProviderClasses));
     }
 
 }

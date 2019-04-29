@@ -74,7 +74,7 @@ public class HibernateSearchElasticsearchTemplate {
             if (buildTimeConfig.defaultBackend.isPresent()) {
                 addConfig(propertyCollector, EngineSettings.DEFAULT_BACKEND,
                         buildTimeConfig.defaultBackend.get());
-            } else if (buildTimeConfig.elasticsearch.dialect.isPresent()) {
+            } else if (buildTimeConfig.elasticsearch.version.isPresent()) {
                 addConfig(propertyCollector, EngineSettings.DEFAULT_BACKEND,
                         HibernateSearchElasticsearchTemplate.DEFAULT_BACKEND);
             }
@@ -108,8 +108,8 @@ public class HibernateSearchElasticsearchTemplate {
                 ElasticsearchBackendBuildTimeConfig elasticsearchBackendConfig) {
             addBackendConfig(propertyCollector, backendName, BackendSettings.TYPE,
                     ElasticsearchBackendSettings.TYPE_NAME);
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DIALECT,
-                    elasticsearchBackendConfig.dialect);
+            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION,
+                    elasticsearchBackendConfig.version);
             addBackendConfig(propertyCollector, backendName,
                     ElasticsearchBackendSettings.ANALYSIS_CONFIGURER,
                     elasticsearchBackendConfig.analysisConfigurer,

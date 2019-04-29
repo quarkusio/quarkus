@@ -31,8 +31,8 @@
 
     <properties>
         <!-- Maven plugin versions -->
-        <elasticsearch-maven-plugin.version>6.11</elasticsearch-maven-plugin.version>
-        <elasticsearch-server.version>6.7.0</elasticsearch-server.version>
+        <elasticsearch-maven-plugin.version>6.12</elasticsearch-maven-plugin.version>
+        <elasticsearch-server.version>7.0.0</elasticsearch-server.version>
 
         <!-- These properties are not in the bom as we don't want to enforce the version -->
         <spring.version>5.1.4.RELEASE</spring.version>

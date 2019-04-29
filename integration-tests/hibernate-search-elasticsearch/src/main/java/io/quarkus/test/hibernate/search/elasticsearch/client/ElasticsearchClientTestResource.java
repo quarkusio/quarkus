@@ -51,12 +51,10 @@ public class ElasticsearchClientTestResource {
                             "        \"number_of_shards\" : 1 " +
                             "    }, " +
                             "    \"mappings\" : { " +
-                            "        \"_doc\" : { " +
                             "            \"properties\" : { " +
                             "                \"title\" : { \"type\" : \"text\" }, " +
                             "                \"author\" : { \"type\" : \"text\" } " +
                             "            } " +
-                            "        } " +
                             "    } " +
                             "}");
 
@@ -64,7 +62,7 @@ public class ElasticsearchClientTestResource {
             checkStatus(response, 200);
 
             // index documents
-            Request indexDocument = new Request("POST", "/books/_doc/1");
+            Request indexDocument = new Request("POST", "/books/_doc/1?refresh=true");
             indexDocument.setJsonEntity(
                     "{" +
                             "    \"title\": \"4 3 2 1\"," +
@@ -73,7 +71,7 @@ public class ElasticsearchClientTestResource {
             response = restClient.performRequest(indexDocument);
             checkStatus(response, 201);
 
-            indexDocument = new Request("POST", "/books/_doc/2");
+            indexDocument = new Request("POST", "/books/_doc/2?refresh=true");
             indexDocument.setJsonEntity(
                     "{" +
                             "    \"title\": \"Avenue of mysteries\"," +
@@ -82,13 +80,11 @@ public class ElasticsearchClientTestResource {
             response = restClient.performRequest(indexDocument);
             checkStatus(response, 201);
 
-            restClient.performRequest(new Request("POST", "/books/_flush"));
-
             // search
             Request searchRequest = new Request("POST", "/books/_search");
             searchRequest.setJsonEntity("{" +
                     "    \"query\": { " +
-                    "        \"query_string\": {" +
+                    "        \"simple_query_string\": {" +
                     "            \"query\": \"Irving\"" +
                     "        } " +
                     "    } " +

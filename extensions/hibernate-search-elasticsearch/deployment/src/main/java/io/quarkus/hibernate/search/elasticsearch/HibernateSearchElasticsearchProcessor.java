@@ -105,7 +105,7 @@ class HibernateSearchElasticsearchProcessor {
 
     private static void checkConfig(HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig) {
         if (buildTimeConfig.defaultBackend.isPresent()) {
-            if (buildTimeConfig.elasticsearch.dialect.isPresent()) {
+            if (buildTimeConfig.elasticsearch.version.isPresent()) {
                 throw new ConfigurationError(
                         "quarkus.hibernate-search.elasticsearch.default-backend cannot be used in conjunction with a default backend configuration.");
             }

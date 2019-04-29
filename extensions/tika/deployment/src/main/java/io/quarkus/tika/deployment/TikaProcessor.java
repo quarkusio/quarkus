@@ -3,10 +3,6 @@ package io.quarkus.tika.deployment;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.tika.detect.Detector;
-import org.apache.tika.detect.EncodingDetector;
-import org.apache.tika.parser.Parser;
-
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
@@ -14,19 +10,17 @@ import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildIte
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
-import io.quarkus.tika.runtime.jaxrs.TikaMessageBodyReader;
 
 public class TikaProcessor {
 
     private static final Set<String> RUNTIME_INITIALIZED_CLASSES;
     static {
         RUNTIME_INITIALIZED_CLASSES = new HashSet<>();
-        RUNTIME_INITIALIZED_CLASSES.add("org.apache.tika.parser.pdf.PDFParser");
     }
 
     @BuildStep
     void produceTikaJaxrsProvider(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
-        providers.produce(new ResteasyJaxrsProviderBuildItem(TikaMessageBodyReader.class.getName()));
+        providers.produce(new ResteasyJaxrsProviderBuildItem("io.quarkus.tika.runtime.jaxrs.TikaMessageBodyReader"));
     }
 
     @BuildStep
@@ -38,9 +32,9 @@ public class TikaProcessor {
     @BuildStep
     public void produceTikaParsersProviders(BuildProducer<SubstrateResourceBuildItem> resource,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
-        produceTikaServiceProviders(resource, reflectiveClass, Parser.class.getName());
-        produceTikaServiceProviders(resource, reflectiveClass, Detector.class.getName());
-        produceTikaServiceProviders(resource, reflectiveClass, EncodingDetector.class.getName());
+        produceTikaServiceProviders(resource, reflectiveClass, "org.apache.tika.parser.Parser");
+        produceTikaServiceProviders(resource, reflectiveClass, "org.apache.tika.detect.Detector");
+        produceTikaServiceProviders(resource, reflectiveClass, "org.apache.tika.detect.EncodingDetector");
     }
 
     @BuildStep
@@ -57,9 +51,7 @@ public class TikaProcessor {
         Set<String> availableProviderClasses = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
                 "META-INF/services/" + serviceProviderName);
         for (String providerClass : availableProviderClasses) {
-            if (!RUNTIME_INITIALIZED_CLASSES.contains(providerClass)) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerClass));
-            }
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerClass));
         }
     }
 

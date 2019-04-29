@@ -1,12 +1,19 @@
 <settings>
   <profiles>
     <profile>
-      <id>google-mirror-jboss-proxy</id>
-      <repositories>
+      <id>azure-jboss-proxy</id>
+        <repositories>
+          <repository>
+          <id>dev-azure-com-quarkus-ci-quarkusmavenfeed</id>
+          <url>https://pkgs.dev.azure.com/quarkus-ci/_packaging/QuarkusMavenFeed/maven/v1</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+        </repository>
         <repository>
-          <id>google-maven-central</id>
-          <name>GCS Maven Central mirror EU</name>
-          <url>https://maven-central-eu.storage-download.googleapis.com/repos/central/data/</url>
+          <id>maven-central</id>
+          <name>Maven Central</name>
+          <url>https://repo.maven.apache.org/maven2/</url>
         </repository>
         <repository>
           <id>jboss-maven-central-proxy</id>
@@ -29,6 +36,6 @@
     </profile>
   </profiles>
   <activeProfiles>
-    <activeProfile>google-mirror-jboss-proxy</activeProfile>
+    <activeProfile>azure-jboss-proxy</activeProfile>
   </activeProfiles>
 </settings>

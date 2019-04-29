@@ -59,29 +59,28 @@ The injection uses the `@ConfigProperty` annotation.
 [source,java]
 ----
 @ConfigProperty(name = "greeting.message")
-private String message;
+String message;
 ----
 
-Edit the `org.acme.config.GreetingResource`, and introduce the 3 following configuration properties:
+NOTE: When injecting a configured value, you can use `@Inject @ConfigProperty` or just `@ConfigProperty`.
+The `@Inject` annotation is not necessary for members annotated with `@ConfigProperty`, a behavior which differs from https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config]
+
+Edit the `org.acme.config.GreetingResource`, and introduce the following configuration properties:
 
 [source,java]
 ----
-@ConfigProperty(name = "greeting.message")
-private String message;
+@ConfigProperty(name = "greeting.message") <1>
+String message;
 
-@ConfigProperty(name = "greeting.suffix", defaultValue="!")
-private String suffix;
+@ConfigProperty(name = "greeting.suffix", defaultValue="!") <2>
+String suffix;
 
-@ConfigProperty(name = "greeting.name")
-private Optional<String> name;
+@ConfigProperty(name = "greeting.name") 
+Optional<String> name; <3>
 ----
-
-NOTE: When injecting a configured value, you can use `@Inject @ConfigProperty(...)` or just `@ConfigProperty(...)`.
-The `@Inject` annotation is not necessary for members annotated with `@ConfigProperty`, a behavior which differs from https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config]
-
-If you do not provide a value for the first property, it will have a `null` value.
-The second property injects the given default value if the configuration file does not provide a value.
-The third property is optional. The injected `Optional` is empty as the configuration file does not provide a value.
+<1> If you do not provide a value for this property, the application startup fails with `javax.enterprise.inject.spi.DeploymentException: No config value of type [class java.lang.String] exists for: greeting.message`.
+<2> The default value is injected if the configuration does not provide a value for `greeting.suffix`.
+<3> This property is optional - an empty `Optional` is injected if the configuration does not provide a value for `greeting.name`.
 
 Now, modify the `hello` method to use the injected properties:
 

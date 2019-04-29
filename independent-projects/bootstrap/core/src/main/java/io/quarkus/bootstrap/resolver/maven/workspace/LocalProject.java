@@ -48,11 +48,9 @@ public class LocalProject {
 
     public static LocalProject loadWorkspace(Path path) throws BootstrapException {
         final Path currentProjectDir = locateCurrentProjectDir(path);
-        final LocalProject project = load(new LocalWorkspace(), null, loadRootModel(currentProjectDir), currentProjectDir);
-        if(project == null) {
-            throw new BootstrapException("Failed to locate current project among the loaded local projects");
-        }
-        return project;
+        final LocalWorkspace ws = new LocalWorkspace();
+        final LocalProject project = load(ws, null, loadRootModel(currentProjectDir), currentProjectDir);
+        return project == null ? load(ws, null, readModel(currentProjectDir.resolve(POM_XML)), currentProjectDir) : project;
     }
 
     private static LocalProject load(LocalWorkspace workspace, LocalProject parent, Model model, Path currentProjectDir) throws BootstrapException {
@@ -80,8 +78,14 @@ public class LocalProject {
         Model model = readModel(pomXml);
         Parent parent = model.getParent();
         while(parent != null) {
-            if(parent.getRelativePath() == null) {
-                pomXml = pomXml.getParent().resolve(parent.getRelativePath()).resolve(POM_XML);
+            if(parent.getRelativePath() != null) {
+                pomXml = pomXml.getParent().resolve(parent.getRelativePath()).normalize();
+                if(!Files.exists(pomXml)) {
+                    return model;
+                }
+                if(Files.isDirectory(pomXml)) {
+                    pomXml = pomXml.resolve(POM_XML);
+                }
             } else {
                 pomXml = pomXml.getParent().getParent().resolve(POM_XML);
                 if(!Files.exists(pomXml)) {

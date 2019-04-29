@@ -138,6 +138,7 @@ class JaxbProcessor {
                 .produce(new RuntimeInitializedClassBuildItem("com.sun.xml.internal.bind.v2.runtime.reflect.opt.Injector"));
 
         addResourceBundle("javax.xml.bind.Messages");
+        addResourceBundle("javax.xml.bind.helpers.Messages");
         addResourceBundle("com.sun.org.apache.xml.internal.serializer.utils.SerializerMessages");
         addResourceBundle("com.sun.org.apache.xml.internal.res.XMLErrorResources");
         substrateProps

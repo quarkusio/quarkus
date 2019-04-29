@@ -5,6 +5,7 @@ import java.util.Map;
 
 import javax.enterprise.inject.spi.CDI;
 
+import org.eclipse.microprofile.context.ThreadContext;
 import org.eclipse.microprofile.context.spi.ThreadContextController;
 import org.eclipse.microprofile.context.spi.ThreadContextProvider;
 import org.eclipse.microprofile.context.spi.ThreadContextSnapshot;
@@ -104,7 +105,7 @@ public class ArcContextProvider implements ThreadContextProvider {
 
     @Override
     public String getThreadContextType() {
-        return "CDI";
+        return ThreadContext.CDI;
     }
 
     /**

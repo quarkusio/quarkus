@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
@@ -64,7 +62,6 @@ import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.CachingResourceManager;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
-import io.undertow.server.handlers.resource.Resource;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.server.session.SessionIdGenerator;
 import io.undertow.servlet.ServletExtension;
@@ -108,7 +105,8 @@ public class UndertowDeploymentTemplate {
     private static volatile List<Path> hotDeploymentResourcePaths;
     private static volatile HttpHandler currentRoot = ResponseCodeHandler.HANDLE_404;
 
-    private static final AttachmentKey<Collection<io.quarkus.arc.ContextInstanceHandle<?>>> REQUEST_CONTEXT = AttachmentKey.create(Collection.class);
+    private static final AttachmentKey<Collection<io.quarkus.arc.ContextInstanceHandle<?>>> REQUEST_CONTEXT = AttachmentKey
+            .create(Collection.class);
 
     public static void setHotDeploymentResources(List<Path> resources) {
         hotDeploymentResourcePaths = resources;
@@ -436,25 +434,31 @@ public class UndertowDeploymentTemplate {
                         return new Action<T, C>() {
                             @Override
                             public T call(HttpServerExchange exchange, C context) throws Exception {
+                                // Not sure what to do here
+                                if (exchange == null)
+                                    return action.call(exchange, context);
                                 ManagedContext requestContext = beanContainer.requestContext();
                                 if (requestContext.isActive()) {
                                     return action.call(exchange, context);
                                 } else {
-                                    Collection<io.quarkus.arc.ContextInstanceHandle<?>> existingRequestContext = exchange.getAttachment(REQUEST_CONTEXT);
+                                    Collection<io.quarkus.arc.ContextInstanceHandle<?>> existingRequestContext = exchange
+                                            .getAttachment(REQUEST_CONTEXT);
                                     try {
                                         requestContext.activate(existingRequestContext);
                                         return action.call(exchange, context);
                                     } finally {
-                                        ServletRequestContext src = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
+                                        ServletRequestContext src = exchange
+                                                .getAttachment(ServletRequestContext.ATTACHMENT_KEY);
                                         HttpServletRequestImpl req = src.getOriginalRequest();
-                                        if(req.isAsyncStarted()) {
+                                        if (req.isAsyncStarted()) {
                                             exchange.putAttachment(REQUEST_CONTEXT, requestContext.getAll());
                                             requestContext.deactivate();
-                                            if(existingRequestContext == null) {
+                                            if (existingRequestContext == null) {
                                                 src.getServletRequest().getAsyncContext().addListener(new AsyncListener() {
                                                     @Override
                                                     public void onComplete(AsyncEvent event) throws IOException {
-                                                        for(io.quarkus.arc.InstanceHandle<?> i : exchange.getAttachment(REQUEST_CONTEXT)) {
+                                                        for (io.quarkus.arc.InstanceHandle<?> i : exchange
+                                                                .getAttachment(REQUEST_CONTEXT)) {
                                                             i.destroy();
                                                         }
                                                     }

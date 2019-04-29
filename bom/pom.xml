@@ -126,6 +126,7 @@
         <junit4.version>4.12</junit4.version>
         <junit.jupiter.version>5.4.1</junit.jupiter.version>
         <assertj.version>3.12.1</assertj.version>
+        <json-smart.version>2.3</json-smart.version>
         <infinispan.version>10.0.0.Beta2</infinispan.version>
         <caffeine.version>2.6.2</caffeine.version>
         <netty.version>4.1.34.Final</netty.version>
@@ -1087,6 +1088,11 @@
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
                 <version>${assertj.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.minidev</groupId>
+                <artifactId>json-smart</artifactId>
+                <version>${json-smart.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.testcontainers</groupId>

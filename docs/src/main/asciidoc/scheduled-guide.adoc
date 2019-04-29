@@ -35,7 +35,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `scheduling-periodic-task` directory.
+The solution is located in the `scheduling-periodic-tasks` directory.
 
 == Creating the Maven project
 

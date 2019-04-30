@@ -25,10 +25,10 @@ public class TransactionAsyncListener implements AsyncListener, CompletionCallba
     }
 
     // Servlet
-    
+
     @Override
     public void onComplete(AsyncEvent event) throws IOException {
-        if(throwable != null)
+        if (throwable != null)
             exceptionHandler.accept(throwable);
         endListener.run();
     }

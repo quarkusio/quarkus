@@ -77,7 +77,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
      * case of EE container uses reflection.
      *
      * @param ic
-     *            invocation context of the interceptor
+     *        invocation context of the interceptor
      * @return instance of {@link Transactional} annotation or null
      */
     private Transactional getTransactional(InvocationContext ic) {
@@ -100,7 +100,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         } catch (Exception e) {
             handleException(ic, e, tx);
         } finally {
-            if(!handleIfAsyncStarted(tm, tx, ic)) {
+            if (!handleIfAsyncStarted(tm, tx, ic)) {
                 endTransaction(tm, tx);
             }
         }
@@ -149,7 +149,8 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         return ic.proceed();
     }
 
-    protected void handleExceptionNoThrow(InvocationContext ic, Throwable e, Transaction tx) throws IllegalStateException, SystemException {
+    protected void handleExceptionNoThrow(InvocationContext ic, Throwable e, Transaction tx)
+            throws IllegalStateException, SystemException {
 
         Transactional transactional = getTransactional(ic);
 

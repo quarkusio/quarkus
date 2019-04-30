@@ -269,7 +269,7 @@ public class MavenRepoInitializer {
                     .setActiveProfileIds(activeProfiles)
                     .setInactiveProfileIds(inactiveProfiles)
                     .setSystemProperties(System.getProperties())
-                    .setProjectDirectory(basedir == null ? new File(basedir) : new File(""));
+                    .setProjectDirectory(basedir == null ? new File("") : new File(basedir));
             final DefaultProfileSelector profileSelector = new DefaultProfileSelector()
                     .addProfileActivator(new PropertyProfileActivator())
                     .addProfileActivator(new JdkVersionProfileActivator())

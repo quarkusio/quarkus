@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.example;
+package io.quarkus.it.extension;
 
 import static java.lang.String.format;
 

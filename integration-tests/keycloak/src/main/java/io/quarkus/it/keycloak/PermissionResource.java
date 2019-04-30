@@ -1,4 +1,4 @@
-package io.quarkus.example.keycloak;
+package io.quarkus.it.keycloak;
 
 import java.util.List;
 

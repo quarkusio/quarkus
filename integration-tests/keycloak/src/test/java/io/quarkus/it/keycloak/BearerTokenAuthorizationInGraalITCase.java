@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.quarkus.example.test;
+package io.quarkus.it.keycloak;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.SubstrateTest;

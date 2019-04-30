@@ -1,4 +1,4 @@
-package io.quarkus.example.test;
+package io.quarkus.it.keycloak;
 
 import java.util.HashMap;
 import java.util.Map;

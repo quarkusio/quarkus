@@ -9,18 +9,12 @@ import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildIte
 import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
-import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
 
 public class TikaProcessor {
 
     private static final Set<String> RUNTIME_INITIALIZED_CLASSES;
     static {
         RUNTIME_INITIALIZED_CLASSES = new HashSet<>();
-    }
-
-    @BuildStep
-    void produceTikaJaxrsProvider(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
-        providers.produce(new ResteasyJaxrsProviderBuildItem("io.quarkus.tika.runtime.jaxrs.TikaMessageBodyReader"));
     }
 
     @BuildStep

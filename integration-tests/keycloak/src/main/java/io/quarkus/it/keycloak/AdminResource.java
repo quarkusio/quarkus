@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.quarkus.example.keycloak;
+package io.quarkus.it.keycloak;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;

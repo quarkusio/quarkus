@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.extest.test;
+package io.quarkus.it.extension;
 
 import static org.hamcrest.Matchers.is;
 

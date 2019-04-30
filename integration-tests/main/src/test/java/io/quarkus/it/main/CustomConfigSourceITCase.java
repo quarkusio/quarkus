@@ -1,4 +1,4 @@
-package io.quarkus.example.test;
+package io.quarkus.it.main;
 
 import io.quarkus.test.junit.SubstrateTest;
 

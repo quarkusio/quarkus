@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.quarkus.example.test;
+package io.quarkus.it.keycloak;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
@@ -41,6 +41,7 @@ import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
 import org.keycloak.util.JsonSerialization;
 
+import io.quarkus.it.keycloak.TestConfigResolver;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
@@ -302,7 +303,7 @@ public class BearerTokenAuthorizationTest {
     /**
      * This test make sure multi-tenancy is working so that applications can define their
      * {@link org.keycloak.adapters.KeycloakConfigResolver}
-     * classes as regular CDI beans. See {@link io.quarkus.example.keycloak.TestConfigResolver}
+     * classes as regular CDI beans. See {@link TestConfigResolver}
      */
     @Test
     public void testAccessConfidentialResourceUsingTenantConfig() {

@@ -1,4 +1,4 @@
-package io.quarkus.example.test;
+package io.quarkus.it.main;
 
 import static org.hamcrest.Matchers.is;
 

@@ -3,18 +3,30 @@ package io.quarkus.tika.deployment;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.tika.detect.Detector;
+import org.apache.tika.detect.EncodingDetector;
+import org.apache.tika.parser.Parser;
+
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.tika.runtime.jaxrs.TikaMessageBodyReader;
 
 public class TikaProcessor {
 
     private static final Set<String> RUNTIME_INITIALIZED_CLASSES;
     static {
         RUNTIME_INITIALIZED_CLASSES = new HashSet<>();
+        RUNTIME_INITIALIZED_CLASSES.add("org.apache.tika.parser.pdf.PDFParser");
+    }
+
+    @BuildStep
+    void produceTikaJaxrsProvider(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
+        providers.produce(new ResteasyJaxrsProviderBuildItem(TikaMessageBodyReader.class.getName()));
     }
 
     @BuildStep
@@ -24,10 +36,11 @@ public class TikaProcessor {
     }
 
     @BuildStep
-    public void produceTikaParsersProviders(BuildProducer<ServiceProviderBuildItem> serviceProvider) throws Exception {
-        produceTikaServiceProviders(serviceProvider, "org.apache.tika.parser.Parser");
-        produceTikaServiceProviders(serviceProvider, "org.apache.tika.detect.Detector");
-        produceTikaServiceProviders(serviceProvider, "org.apache.tika.detect.EncodingDetector");
+    public void produceTikaParsersProviders(BuildProducer<SubstrateResourceBuildItem> resource,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
+        produceTikaServiceProviders(resource, reflectiveClass, Parser.class.getName());
+        produceTikaServiceProviders(resource, reflectiveClass, Detector.class.getName());
+        produceTikaServiceProviders(resource, reflectiveClass, EncodingDetector.class.getName());
     }
 
     @BuildStep
@@ -37,12 +50,17 @@ public class TikaProcessor {
         }
     }
 
-    private void produceTikaServiceProviders(BuildProducer<ServiceProviderBuildItem> serviceProvider,
+    private void produceTikaServiceProviders(BuildProducer<SubstrateResourceBuildItem> resource,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             String serviceProviderName) throws Exception {
-        String serviceProviderPath = "META-INF/services/" + serviceProviderName;
-        String[] availableProviderClasses = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
-                serviceProviderPath).toArray(new String[] {});
-        serviceProvider.produce(new ServiceProviderBuildItem(serviceProviderPath, availableProviderClasses));
+        resource.produce(new SubstrateResourceBuildItem("META-INF/services/" + serviceProviderName));
+        Set<String> availableProviderClasses = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+                "META-INF/services/" + serviceProviderName);
+        for (String providerClass : availableProviderClasses) {
+            if (!RUNTIME_INITIALIZED_CLASSES.contains(providerClass)) {
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerClass));
+            }
+        }
     }
 
 }

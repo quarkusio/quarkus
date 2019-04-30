@@ -2,8 +2,11 @@ package io.quarkus.context.test;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.inject.Inject;
+import javax.servlet.SingleThreadModel;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.Transactional;
@@ -31,12 +34,15 @@ public class ContextEndpoint {
 
     @Inject
     RequestBean doNotRemoveMe;
+    @Inject
+    ManagedExecutor all;
+    @Inject
+    ThreadContext allTc;
 
     @GET
     @Path("/resteasy")
     public CompletionStage<String> resteasyTest(@Context UriInfo uriInfo) {
-        ManagedExecutor me = ManagedExecutor.builder().build();
-        CompletableFuture<String> ret = me.completedFuture("OK");
+        CompletableFuture<String> ret = all.completedFuture("OK");
         return ret.thenApplyAsync(text -> {
             uriInfo.getAbsolutePath();
             return text;
@@ -44,13 +50,24 @@ public class ContextEndpoint {
     }
 
     @GET
+    @Path("/thread-context")
+    public CompletionStage<String> threadContextTest(@Context UriInfo uriInfo) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        CompletableFuture<String> ret = allTc.withContextCapture(CompletableFuture.completedFuture("OK"));
+        return ret.thenApplyAsync(text -> {
+            uriInfo.getAbsolutePath();
+            return text;
+        }, executor);
+    }
+
+    @GET
     @Path("/arc")
     public CompletionStage<String> arcTest() {
-        ManagedExecutor me = ManagedExecutor.builder().build();
         Assert.assertTrue(Arc.container().instance(RequestBean.class).isAvailable());
         RequestBean instance = Arc.container().instance(RequestBean.class).get();
         String previousValue = instance.callMe();
-        CompletableFuture<String> ret = me.completedFuture("OK");
+        CompletableFuture<String> ret = all.completedFuture("OK");
         return ret.thenApplyAsync(text -> {
             RequestBean instance2 = Arc.container().instance(RequestBean.class).get();
             Assertions.assertEquals(previousValue, instance2.callMe());
@@ -77,8 +94,7 @@ public class ContextEndpoint {
     @GET
     @Path("/transaction")
     public CompletionStage<String> transactionTest() throws SystemException {
-        ManagedExecutor me = ManagedExecutor.builder().build();
-        CompletableFuture<String> ret = me.completedFuture("OK");
+        CompletableFuture<String> ret = all.completedFuture("OK");
 
         ContextEntity entity = new ContextEntity();
         entity.name = "Stef";
@@ -103,8 +119,7 @@ public class ContextEndpoint {
     @GET
     @Path("/transaction2")
     public CompletionStage<String> transactionTest2() throws SystemException {
-        ManagedExecutor me = ManagedExecutor.builder().build();
-        CompletableFuture<String> ret = me.completedFuture("OK");
+        CompletableFuture<String> ret = all.completedFuture("OK");
 
         // check that the first transaction was committed
         Assertions.assertEquals(1, ContextEntity.count());
@@ -120,8 +135,7 @@ public class ContextEndpoint {
     @GET
     @Path("/transaction3")
     public CompletionStage<String> transactionTest3() throws SystemException {
-        ManagedExecutor me = ManagedExecutor.builder().build();
-        CompletableFuture<String> ret = me.failedFuture(new WebApplicationException(Response.status(Status.CONFLICT).build()));
+        CompletableFuture<String> ret = all.failedFuture(new WebApplicationException(Response.status(Status.CONFLICT).build()));
 
         // check that the second transaction was not committed
         Assertions.assertEquals(1, ContextEntity.count());

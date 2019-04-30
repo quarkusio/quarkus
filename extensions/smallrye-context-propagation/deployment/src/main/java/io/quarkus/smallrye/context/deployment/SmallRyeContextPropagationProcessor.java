@@ -18,10 +18,31 @@ package io.quarkus.smallrye.context.deployment;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ExecutorBuildItem;
+import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationProvider;
+import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationTemplate;
+
 /**
- * The deployment processor for MP-CT applications
+ * The deployment processor for MP-CP applications
  */
 class SmallRyeContextPropagationProcessor {
     private static final Logger log = Logger.getLogger(SmallRyeContextPropagationProcessor.class.getName());
 
+    @BuildStep
+    AdditionalBeanBuildItem registerBean() {
+        return AdditionalBeanBuildItem.builder().addBeanClass(SmallRyeContextPropagationProvider.class).build();
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void build(SmallRyeContextPropagationTemplate template,
+            BeanContainerBuildItem beanContainer,
+            ExecutorBuildItem executorBuildItem) {
+        template.configure(beanContainer.getValue(), executorBuildItem.getExecutorProxy());
+    }
 }

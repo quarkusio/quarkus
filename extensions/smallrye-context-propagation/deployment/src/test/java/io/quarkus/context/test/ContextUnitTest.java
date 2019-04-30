@@ -28,6 +28,12 @@ public class ContextUnitTest {
     }
 
     @Test()
+    public void testThreadContextPropagation() {
+        RestAssured.when().get("/context/thread-context").then()
+                .statusCode(Response.Status.OK.getStatusCode());
+    }
+
+    @Test()
     public void testArcContextPropagation() {
         RestAssured.when().get("/context/arc").then()
                 .statusCode(Response.Status.OK.getStatusCode());

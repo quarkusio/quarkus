@@ -18,15 +18,13 @@
 package io.quarkus.creator.phase.curate;
 
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
@@ -35,6 +33,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
@@ -44,6 +43,7 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.creator.AppCreationPhase;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
@@ -63,9 +63,6 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
     public static final String CONFIG_PROP_LOCAL_REPO = "local-repo";
     public static final String CONFIG_PROP_VERSION_UPDATE = "version-update";
     public static final String CONFIG_PROP_VERSION_UPDATE_NUMBER = "version-update-number";
-    public static final String CONFIG_PROP_UPDATE_GROUP_ID = "update-groupId";
-
-    private static final String GROUP_ID_SPLIT_EXPR = "\\s*(,|\\s)\\s*";
 
     public static String completePropertyName(String name) {
         return CONFIG_PROP + '.' + name;
@@ -77,7 +74,6 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
     private VersionUpdate update = VersionUpdate.NONE;
     private VersionUpdateNumber updateNumber = VersionUpdateNumber.MICRO;
     private Path localRepo;
-    private Set<String> updateGroupIds = Collections.singleton("io.quarkus");
 
     public void setInitialDeps(DependenciesOrigin initialDeps) {
         this.depsOrigin = initialDeps;
@@ -131,9 +127,6 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
                                         + VersionUpdateNumber.MAJOR + ", " + VersionUpdateNumber.MINOR + " or "
                                         + VersionUpdateNumber.MICRO + " but was " + value);
                     }
-                })
-                .map(CONFIG_PROP_UPDATE_GROUP_ID, (target, value) -> {
-                    updateGroupIds = new HashSet<>(Arrays.asList(value.split(GROUP_ID_SPLIT_EXPR)));
                 });
     }
 
@@ -257,7 +250,6 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
         } catch (AppModelResolverException e) {
             throw new AppCreatorException("Failed to resolve initial application dependencies", e);
         }
-        //logDeps("INITIAL:", initialDepsList);
 
         outcome.setAppModel(initialDepsList);
         if (update == VersionUpdate.NONE) {
@@ -268,11 +260,33 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
         log.info("Checking for available updates");
         List<AppDependency> appDeps;
         try {
-            appDeps = ModelUtils.getUpdateCandidates(ModelUtils.readAppModel(appJar, appArtifact).getDependencies(),
-                    initialDepsList.getAllDependencies(), updateGroupIds);
-        } catch (IOException | BootstrapDependencyProcessingException e) {
+            appDeps = modelResolver.resolveUserDependencies(appArtifact, initialDepsList.getUserDependencies());
+        } catch (AppModelResolverException | BootstrapDependencyProcessingException e) {
             throw new AppCreatorException("Failed to determine the list of dependencies to update", e);
         }
+        final Iterator<AppDependency> depsI = appDeps.iterator();
+        while (depsI.hasNext()) {
+            final AppArtifact appDep = depsI.next().getArtifact();
+            if (!appDep.getType().equals(AppArtifact.TYPE_JAR)) {
+                depsI.remove();
+                continue;
+            }
+            final Path path = appDep.getPath();
+            if (Files.isDirectory(path)) {
+                if (!Files.exists(path.resolve(BootstrapConstants.DESCRIPTOR_PATH))) {
+                    depsI.remove();
+                }
+            } else {
+                try (FileSystem artifactFs = ZipUtils.newFileSystem(path)) {
+                    if (!Files.exists(artifactFs.getPath(BootstrapConstants.DESCRIPTOR_PATH))) {
+                        depsI.remove();
+                    }
+                } catch (IOException e) {
+                    throw new AppCreatorException("Failed to open " + path, e);
+                }
+            }
+        }
+
         final UpdateDiscovery ud = new DefaultUpdateDiscovery(modelResolver, updateNumber);
         List<AppDependency> availableUpdates = null;
         int i = 0;
@@ -281,7 +295,7 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
             final AppArtifact depArtifact = dep.getArtifact();
             final String updatedVersion = update == VersionUpdate.NEXT ? ud.getNextVersion(depArtifact)
                     : ud.getLatestVersion(depArtifact);
-            if (depArtifact.getVersion().equals(updatedVersion)) {
+            if (updatedVersion == null || depArtifact.getVersion().equals(updatedVersion)) {
                 continue;
             }
             log.info(dep.getArtifact() + " -> " + updatedVersion);
@@ -307,17 +321,5 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
         mvnPolicy.setChecksumPolicy(policy.getChecksumPolicy());
         mvnPolicy.setUpdatePolicy(policy.getUpdatePolicy());
         return mvnPolicy;
-    }
-
-    private static void logDeps(String header, List<AppDependency> deps) {
-        final List<String> list = new ArrayList<>(deps.size());
-        for (AppDependency dep : deps) {
-            list.add(dep.toString());
-        }
-        Collections.sort(list);
-        System.out.println(header);
-        for (String str : list) {
-            System.out.println("- " + str);
-        }
     }
 }

@@ -18,6 +18,7 @@
 package io.quarkus.bootstrap.resolver;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 
 import io.quarkus.bootstrap.model.AppArtifact;
@@ -50,7 +51,33 @@ public interface AppModelResolver {
     Path resolve(AppArtifact artifact) throws AppModelResolverException;
 
     /**
-     * Collect dependencies that are required at runtime, excluding test and optional depependencies.
+     * Resolve application direct and transitive dependencies configured by the user.
+     *
+     * Note that deployment dependencies are not included in the result.
+     *
+     * @param artifact  application artifact
+     * @return  the list of dependencies configured by the user
+     * @throws AppModelResolverException  in case of a failure
+     */
+    default List<AppDependency> resolveUserDependencies(AppArtifact artifact) throws AppModelResolverException {
+        return resolveUserDependencies(artifact, Collections.emptyList());
+    }
+
+    /**
+     * Resolve application direct and transitive dependencies configured by the user,
+     * given the specific versions of the direct dependencies.
+     *
+     * Note that deployment dependencies are not included in the result.
+     *
+     * @param artifact  application artifact
+     * @param deps  some or all of the direct dependencies that should be used in place of the original ones
+     * @return  the list of dependencies configured by the user
+     * @throws AppModelResolverException  in case of a failure
+     */
+    List<AppDependency> resolveUserDependencies(AppArtifact artifact, List<AppDependency> deps) throws AppModelResolverException;
+
+    /**
+     * Resolve dependencies that are required at runtime, excluding test and optional dependencies.
      *
      * @param artifact
      * @return
@@ -59,7 +86,7 @@ public interface AppModelResolver {
     AppModel resolveModel(AppArtifact artifact) throws AppModelResolverException;
 
     /**
-     * Collects artifact dependencies merging the provided direct dependencies in
+     * Resolve artifact dependencies given the specific versions of the direct dependencies
      *
      * @param root  root artifact
      * @param deps  some or all of the direct dependencies that should be used in place of the original ones
@@ -79,16 +106,18 @@ public interface AppModelResolver {
     List<String> listLaterVersions(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppModelResolverException;
 
     /**
-     * Returns the next version for the artifact which is not later than the version specified.
-     * In case the next version is not available, the artifact's version is returned.
+     * Returns the next version of the artifact from the specified range.
+     * In case the next version is not available, the method returns null.
      *
      * @param artifact  artifact
-     * @param upToVersion  max version boundary
-     * @param inclusive  whether the upToVersion should be included in the range or not
-     * @return  the next version which is not later than the specified boundary
+     * @param fromVersion  the lowest version of the range
+     * @param fromVersionIncluded  whether the specified lowest version should be included in the range
+     * @param upToVersion  the highest version of the range
+     * @param upToVersionIncluded  whether the specified highest version should be included in the range
+     * @return  the next version from the specified range or null if the next version is not avaiable
      * @throws AppModelResolverException  in case of a failure
      */
-    String getNextVersion(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppModelResolverException;
+    String getNextVersion(AppArtifact artifact, String fromVersion, boolean fromVersionIncluded, String upToVersion, boolean upToVersionIncluded) throws AppModelResolverException;
 
     /**
      * Returns the latest version for the artifact up to the version specified.

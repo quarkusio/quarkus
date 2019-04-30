@@ -10,10 +10,14 @@ public class TsQuarkusExt {
     protected final TsArtifact deployment;
 
     public TsQuarkusExt(String artifactId) {
-        runtime = TsArtifact.jar(artifactId);
-        deployment = TsArtifact.jar(artifactId + "-deployment");
+        this(artifactId, TsArtifact.DEFAULT_VERSION);
+    }
+
+    public TsQuarkusExt(String artifactId, String version) {
+        runtime = TsArtifact.jar(artifactId, version);
+        deployment = TsArtifact.jar(artifactId + "-deployment", version);
         deployment.addDependency(runtime);
-        runtime.setContent(new TsJar().addFile(PropsBuilder.build(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment), BootstrapConstants.DESCRIPTOR_PATH));
+        runtime.setContent(new TsJar().addEntry(PropsBuilder.build(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment), BootstrapConstants.DESCRIPTOR_PATH));
     }
 
     public TsArtifact getRuntime() {

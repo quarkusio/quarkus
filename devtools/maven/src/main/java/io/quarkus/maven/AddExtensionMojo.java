@@ -1,7 +1,6 @@
 package io.quarkus.maven;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -63,7 +62,7 @@ public class AddExtensionMojo extends AbstractMojo {
             File pomFile = new File(model.getPomFile().getAbsolutePath());
             new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
                     .addExtensions(ext.stream().map(String::trim).collect(Collectors.toSet()));
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new MojoExecutionException("Unable to update the pom.xml file", e);
         }
     }

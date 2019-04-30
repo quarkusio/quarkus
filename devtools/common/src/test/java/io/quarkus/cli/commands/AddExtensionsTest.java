@@ -41,13 +41,14 @@ public class AddExtensionsTest {
         final File pom = new File("target/extensions-test", "pom.xml");
 
         CreateProjectTest.delete(pom.getParentFile());
-        new CreateProject(pom.getParentFile())
+        FileProjectWriter writer = new FileProjectWriter(pom.getParentFile());
+        new CreateProject(writer)
                 .groupId("org.acme")
                 .artifactId("add-extension-test")
                 .version("0.0.1-SNAPSHOT")
                 .doCreateProject(new HashMap<>());
 
-        new AddExtensions(pom)
+        new AddExtensions(writer, "pom.xml")
                 .addExtensions(new HashSet<>(asList("io.quarkus:quarkus-hibernate-validator")));
 
         Model model = MojoUtils.readPom(pom);
@@ -59,14 +60,17 @@ public class AddExtensionsTest {
         final File pom = new File("target/extensions-test", "pom.xml");
 
         CreateProjectTest.delete(pom.getParentFile());
-        new CreateProject(pom.getParentFile())
+        FileProjectWriter writer = new FileProjectWriter(pom.getParentFile());
+        new CreateProject(writer)
                 .groupId("org.acme")
                 .artifactId("add-extension-test")
                 .version("0.0.1-SNAPSHOT")
                 .doCreateProject(new HashMap<>());
 
-        new AddExtensions(pom)
-                .addExtensions(new HashSet<>(asList(" hibernate")));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            new AddExtensions(writer, "pom.xml")
+                    .addExtensions(new HashSet<>(asList(" hibernate")));
+        });
 
         Model model = MojoUtils.readPom(pom);
         hasNotDependencyStartBy(model, "quarkus-hibernate");
@@ -77,14 +81,17 @@ public class AddExtensionsTest {
         final File pom = new File("target/extensions-test", "pom.xml");
 
         CreateProjectTest.delete(pom.getParentFile());
-        new CreateProject(pom.getParentFile())
+        FileProjectWriter writer = new FileProjectWriter(pom.getParentFile());
+        new CreateProject(writer)
                 .groupId("org.acme")
                 .artifactId("add-extension-test")
                 .version("0.0.1-SNAPSHOT")
                 .doCreateProject(new HashMap<>());
 
-        new AddExtensions(pom)
-                .addExtensions(new HashSet<>(asList("io.quarkus:hibernate-validator")));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            new AddExtensions(writer, "pom.xml")
+                    .addExtensions(new HashSet<>(asList("io.quarkus:hibernate-validator")));
+        });
 
         Model model = MojoUtils.readPom(pom);
         hasNotDependencyStartBy(model, "quarkus-hibernate");

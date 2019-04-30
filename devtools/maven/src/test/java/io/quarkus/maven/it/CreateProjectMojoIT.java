@@ -174,7 +174,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
-        properties.put("extensions", "resteasy,smallrye-metrics,missing");
+        properties.put("extensions", "resteasy,smallrye-metrics");
         setup(properties);
 
         // As the directory is not empty (log) navigate to the artifactID directory
@@ -186,7 +186,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         check(new File(testDir, "src/main/java/org/acme/MyResource.java"), "package org.acme;");
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains("quarkus-resteasy", "quarkus-smallrye-metrics").doesNotContain("missing");
+                .contains("quarkus-resteasy", "quarkus-smallrye-metrics");
 
         Model model = load(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream()
@@ -202,6 +202,21 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(model.getDependencies().stream()
                 .anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-smallrye-metrics")
                         && d.getVersion() == null)).isTrue();
+    }
+
+    @Test
+    public void testProjectGenerationFromScratchWithMissingExtensions() throws Exception {
+        testDir = initEmptyProject("projects/project-generation-with-resources-and-extension");
+        assertThat(testDir).isDirectory();
+        init(testDir);
+        Properties properties = new Properties();
+        properties.put("projectGroupId", "org.acme");
+        properties.put("projectArtifactId", "acme");
+        properties.put("className", "org.acme.MyResource");
+        properties.put("extensions", "resteasy,smallrye-metrics,missing");
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isNotEqualTo(0);
     }
 
     @Test

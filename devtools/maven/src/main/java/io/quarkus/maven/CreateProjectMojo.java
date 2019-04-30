@@ -163,7 +163,7 @@ public class CreateProjectMojo extends AbstractMojo {
             }
 
             createMavenWrapper(createdPomFile);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
         if (success) {

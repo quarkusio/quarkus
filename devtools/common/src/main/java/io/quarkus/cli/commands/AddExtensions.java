@@ -18,6 +18,8 @@ import io.quarkus.dependencies.Extension;
 import io.quarkus.maven.utilities.MojoUtils;
 
 public class AddExtensions {
+    private static final String EXTENSION_ARTIFACTID_PREFIX = "quarkus-";
+    private static final String QUARKUS_GROUPID = "io.quarkus";
     private Model model;
     private String pom;
     private ProjectWriter writer;
@@ -38,38 +40,54 @@ public class AddExtensions {
 
         List<Extension> loadedExtensions = MojoUtils.loadExtensions();
         for (String dependency : extensions) {
-            String quarkusId = "quarkus-" + dependency.trim().toLowerCase();
-            Optional<Extension> optional = loadedExtensions.stream()
-                    .filter(d -> {
-                        boolean machId = d.getArtifactId()
-                                .toLowerCase()
-                                .equalsIgnoreCase(dependency.trim().toLowerCase());
-                        boolean machQuarkusId = d.getArtifactId()
-                                .toLowerCase()
-                                .equalsIgnoreCase(quarkusId);
-                        return machId || machQuarkusId;
-                    })
-                    .findAny();
-
-            if (optional.isPresent()) {
-                final Extension extension = optional.get();
-
-                if (!MojoUtils.hasDependency(model, extension.getGroupId(), extension.getArtifactId())) {
-                    System.out.println("Adding extension " + extension.managementKey());
-                    model.addDependency(extension
-                            .toDependency(containsBOM(model) &&
-                                    isDefinedInBom(dependenciesFromBom, extension)));
-                    updated = true;
+            dependency = dependency.trim();
+            Dependency res;
+            if (!dependency.contains(":")) {
+                final String groupId = QUARKUS_GROUPID;
+                String artifactId;
+                if (!dependency.startsWith(EXTENSION_ARTIFACTID_PREFIX)) {
+                    artifactId = EXTENSION_ARTIFACTID_PREFIX + dependency.toLowerCase();
                 } else {
-                    System.out.println("Skipping extension " + extension.managementKey() + ": already present");
+                    artifactId = dependency.toLowerCase();
                 }
-            } else if (dependency.contains(":")) {
-                Dependency parsed = MojoUtils.parse(dependency);
-                System.out.println("Adding dependency " + parsed.getManagementKey());
-                model.addDependency(parsed);
+                res = new Dependency();
+                res.setGroupId(groupId);
+                res.setArtifactId(artifactId);
+            } else {
+                if (dependency.startsWith(QUARKUS_GROUPID)) {
+                    dependency = dependency.toLowerCase();
+                }
+                res = MojoUtils.parse(dependency);
+            }
+
+            if (QUARKUS_GROUPID.equals(res.getGroupId())) {
+                Optional<Extension> optional = loadedExtensions.stream()
+                        .filter(d -> {
+                            return d.getArtifactId()
+                                    .equals(res.getArtifactId());
+                        })
+                        .findAny();
+
+                if (!optional.isPresent()) {
+                    throw new IllegalArgumentException("Cannot find a Quarkus extension matching " + dependency);
+                } else if ((res.getVersion() == null || res.getVersion().isEmpty())) {
+                    res.setVersion(optional.get().getVersion());
+                }
+            }
+
+            if (!MojoUtils.hasDependency(model, res.getGroupId(), res.getArtifactId())) {
+                if (res.getVersion() != null && containsBOM(model) &&
+                        isDefinedInBom(dependenciesFromBom, res)) {
+                    res.setVersion(null);
+                }
+                System.out.println(
+                        String.format("Adding extension %s:%s%s", res.getGroupId(), res.getArtifactId(),
+                                res.getVersion() != null ? ":" + res.getVersion() : ""));
+                model.addDependency(res);
                 updated = true;
             } else {
-                System.out.println("Cannot find a dependency matching '" + dependency + "'");
+                System.out.println(
+                        String.format("Skipping extension %s:%s : already present", res.getGroupId(), res.getArtifactId()));
             }
         }
 
@@ -102,11 +120,12 @@ public class AddExtensions {
                 .filter(dependency -> "import".equalsIgnoreCase(dependency.getScope()))
                 .filter(dependency -> "pom".equalsIgnoreCase(dependency.getType()))
                 // Does it matches the bom artifact name
-                .anyMatch(dependency -> dependency.getArtifactId().equalsIgnoreCase(getBomArtifactId()));
+                .anyMatch(dependency -> dependency.getGroupId().equalsIgnoreCase(QUARKUS_GROUPID)
+                        && dependency.getArtifactId().equalsIgnoreCase(getBomArtifactId()));
     }
 
-    private boolean isDefinedInBom(List<Dependency> dependencies, Extension extension) {
-        return dependencies.stream().anyMatch(dependency -> dependency.getGroupId().equalsIgnoreCase(extension.getGroupId())
-                && dependency.getArtifactId().equalsIgnoreCase(extension.getArtifactId()));
+    private boolean isDefinedInBom(List<Dependency> dependencies, Dependency dep) {
+        return dependencies.stream().anyMatch(dependency -> dependency.getGroupId().equalsIgnoreCase(dep.getGroupId())
+                && dependency.getArtifactId().equalsIgnoreCase(dep.getArtifactId()));
     }
 }

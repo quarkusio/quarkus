@@ -1,7 +1,6 @@
 package io.quarkus.cli.commands;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
 
 import org.aesh.command.Command;
@@ -47,8 +46,9 @@ public class AddExtensionCommand implements Command<CommandInvocation> {
                     AddExtensions project = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()),
                             pomFile.getName());
                     project.addExtensions(Collections.singleton(extension));
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
+                    return CommandResult.FAILURE;
                 }
             }
 

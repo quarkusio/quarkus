@@ -30,6 +30,7 @@ import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
 import org.infinispan.commons.marshall.Marshaller;
 import org.infinispan.commons.util.Util;
 import org.infinispan.counter.api.CounterManager;
+import org.infinispan.protostream.BaseMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.MessageMarshaller;
 import org.infinispan.protostream.SerializationContext;
@@ -202,10 +203,10 @@ public class InfinispanClientProducer {
             throw new RuntimeException(e);
         }
 
-        Set<Bean<MessageMarshaller>> beans = (Set) beanManager.getBeans(MessageMarshaller.class);
-        for (Bean<MessageMarshaller> bean : beans) {
-            CreationalContext<MessageMarshaller> ctx = beanManager.createCreationalContext(bean);
-            MessageMarshaller messageMarshaller = (MessageMarshaller) beanManager.getReference(bean, MessageMarshaller.class,
+        Set<Bean<BaseMarshaller>> beans = (Set) beanManager.getBeans(BaseMarshaller.class);
+        for (Bean<BaseMarshaller> bean : beans) {
+            CreationalContext<BaseMarshaller> ctx = beanManager.createCreationalContext(bean);
+            BaseMarshaller messageMarshaller = (BaseMarshaller) beanManager.getReference(bean, BaseMarshaller.class,
                     ctx);
             serializationContext.registerMarshaller(messageMarshaller);
         }

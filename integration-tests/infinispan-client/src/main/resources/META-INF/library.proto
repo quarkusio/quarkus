@@ -6,6 +6,13 @@ message Book {
   required int32 publicationYear = 3; // no native Date type available in Protobuf
 
   repeated Author authors = 4;
+
+  enum Type {
+    FANTASY = 0;
+    PROGRAMMING = 1;
+  }
+
+  required Type bookType = 5;
 }
 
 message Author {

@@ -3,16 +3,23 @@ package io.quarkus.it.infinispan.client;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 
+import org.infinispan.protostream.BaseMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.MessageMarshaller;
 
 /**
  * Handles configuration of marshalling code for marshalling
- * 
+ *
  * @author William Burns
  */
 @ApplicationScoped
 public class MarshallerConfiguration {
+
+    @Produces
+    BaseMarshaller bookTypeMarshaller() {
+        return new BookTypeMarshaller();
+    }
+
     @Produces
     MessageMarshaller bookMarshaller() {
         return new BookMarshaller();
@@ -33,6 +40,12 @@ public class MarshallerConfiguration {
                 "  required int32 publicationYear = 3; // no native Date type available in Protobuf\n" +
                 "\n" +
                 "  repeated Author authors = 4;\n" +
+                "\n" +
+                "  enum Type {\n" +
+                "    FANTASY = 0;\n" +
+                "    PROGRAMMING = 1;\n" +
+                "  }\n" +
+                "  required Type bookType = 5;\n" +
                 "}\n" +
                 "\n" +
                 "message Author {\n" +

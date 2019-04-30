@@ -17,11 +17,13 @@
 package io.quarkus.test.junit4;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.model.InitializationError;
 
 import io.quarkus.test.common.NativeImageLauncher;
+import io.quarkus.test.common.configuration.ConfigurationPropertiesExtractor;
 
 /**
  * A test runner for GraalVM native images.
@@ -43,11 +45,19 @@ public class SubstrateTest extends AbstractQuarkusTestRunner {
         @Override
         protected void startQuarkus() throws IOException {
             quarkusProcess = new NativeImageLauncher(getTestClass());
+            final Map<String, String> configurationPropertiesForSubstrateTests = extractTestConfigurationPropertiesForSubstrateTests();
+            quarkusProcess.addSystemProperties(configurationPropertiesForSubstrateTests);
+
             try {
                 quarkusProcess.start();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+        }
+
+        private Map<String, String> extractTestConfigurationPropertiesForSubstrateTests() {
+            final ConfigurationPropertiesExtractor configurationPropertiesExtractor = new ConfigurationPropertiesExtractor();
+            return configurationPropertiesExtractor.extract(getTestClass());
         }
 
         @Override

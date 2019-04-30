@@ -31,7 +31,7 @@ public abstract class AbstractDelegatingConfigSource implements ConfigSource {
      *
      * @return the delegate config source (not {@code null})
      */
-    protected @NotNull ConfigSource getDelegate() {
+    public @NotNull ConfigSource getDelegate() {
         return delegate;
     }
 

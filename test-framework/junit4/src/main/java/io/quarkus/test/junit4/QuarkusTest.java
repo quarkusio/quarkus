@@ -33,6 +33,9 @@ import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.runner.RuntimeRunner;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PropertyTestUtil;
+import io.quarkus.test.common.configuration.ConfigurationProperty;
+import io.quarkus.test.common.configuration.InMemoryConfigSourcePopulator;
+import io.quarkus.test.common.configuration.TestConfiguration;
 
 public class QuarkusTest extends AbstractQuarkusTestRunner {
 
@@ -70,6 +73,12 @@ public class QuarkusTest extends AbstractQuarkusTestRunner {
                     })
                     .build();
             runtimeRunner.run();
+            populateTestConfigurationPropertiesForNoneSubstrateTests();
+        }
+
+        private void populateTestConfigurationPropertiesForNoneSubstrateTests() {
+            final InMemoryConfigSourcePopulator inMemoryConfigSourcePopulator = new InMemoryConfigSourcePopulator();
+            inMemoryConfigSourcePopulator.populate(getTestClass());
         }
 
         @Override

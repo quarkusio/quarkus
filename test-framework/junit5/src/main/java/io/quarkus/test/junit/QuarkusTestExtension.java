@@ -71,6 +71,10 @@ import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestInjectionManager;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
+import io.quarkus.test.common.configuration.ConfigurationPropertiesExtractor;
+import io.quarkus.test.common.configuration.ConfigurationProperty;
+import io.quarkus.test.common.configuration.InMemoryConfigSourcePopulator;
+import io.quarkus.test.common.configuration.TestConfiguration;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 public class QuarkusTestExtension
@@ -234,6 +238,7 @@ public class QuarkusTestExtension
                     }
                 })
                 .build();
+
         runtimeRunner.run();
 
         Closeable shutdownTask = new Closeable() {
@@ -289,6 +294,7 @@ public class QuarkusTestExtension
             TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
             try {
                 Map<String, String> systemProps = testResourceManager.start();
+                systemProps.putAll(extractTestConfigurationPropertiesForSubstrateTests(extensionContext));
 
                 if (substrateTest) {
                     NativeImageLauncher launcher = new NativeImageLauncher(extensionContext.getRequiredTestClass());
@@ -301,6 +307,7 @@ public class QuarkusTestExtension
                     state = new ExtensionState(testResourceManager, launcher, true);
                 } else {
                     state = doJavaStart(extensionContext, testResourceManager);
+                    populateTestConfigurationPropertiesForNoneSubstrateTests(extensionContext);
                 }
                 store.put(ExtensionState.class.getName(), state);
 
@@ -326,6 +333,16 @@ public class QuarkusTestExtension
         } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new TestInstantiationException("Failed to create test instance", e);
         }
+    }
+
+    private void populateTestConfigurationPropertiesForNoneSubstrateTests(final ExtensionContext extensionContext) {
+        final InMemoryConfigSourcePopulator inMemoryConfigSourcePopulator = new InMemoryConfigSourcePopulator();
+        inMemoryConfigSourcePopulator.populate(extensionContext.getRequiredTestClass());
+    }
+
+    private Map<String, String> extractTestConfigurationPropertiesForSubstrateTests(final ExtensionContext extensionContext) {
+        final ConfigurationPropertiesExtractor configurationPropertiesExtractor = new ConfigurationPropertiesExtractor();
+        return configurationPropertiesExtractor.extract(extensionContext.getRequiredTestClass());
     }
 
     private static ClassLoader setCCL(ClassLoader cl) {

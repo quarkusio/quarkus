@@ -275,9 +275,12 @@ When building APIs, developers want to test them quickly. https://swagger.io/too
 permitting to visualize and interact with your APIs.
 The UI is automatically generated from your OpenAPI specification.
 
-The Quarkus `smallrye-openapi` extension comes with a `swagger-ui` extension embedding a properly configured Swagger UI page.
+To enable the Swagger UI just need to add the `quarkus-swagger-ui` extension to your Quarkus application:
+----
+./mvnw quarkus:add-extension -Dextensions="quarkus-swagger-ui"
+----
 
-NOTE: Swagger UI is only available when Quarkus is started in dev or test mode.
+NOTE: Swagger UI is only available when Quarkus is started in dev or test mode. The Swagger UI extension was introduced in quarkus v 0.14.0 and is not present in older versions.
 
 By default, Swagger UI is accessible at `/swagger-ui`.
 

@@ -88,7 +88,7 @@ Open the _Preferences_ window, navigate to _Plugins_ and install the [Eclipse Co
 Restart you IDE, open the *Preferences* window again and navigate to _Other Settings_ -> _Eclipse Code Formatter_.
 
 Select _Use the Eclipse Code Formatter_, then change the _Eclipse Java Formatter Config File_ to point to the
-`eclipse-formatter.xml` file in the `ide-config` directory. Make sure the _Optimize Imports_ box is ticked, and
+`eclipse-format.xml` file in the `ide-config` directory. Make sure the _Optimize Imports_ box is ticked, and
 select the `eclipse.importorder` file as the import order config file.
 
 

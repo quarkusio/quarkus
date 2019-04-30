@@ -21,6 +21,7 @@ import org.apache.maven.model.Model;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.cli.commands.writer.FileWriter;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.templates.BuildTool;
 
@@ -29,7 +30,7 @@ public class CreateProjectTest {
     public void create() throws IOException {
         final File file = new File("target/basic-rest");
         delete(file);
-        final CreateProject createProject = new CreateProject(file).groupId("io.quarkus")
+        final CreateProject createProject = new CreateProject(new FileWriter(file)).groupId("io.quarkus")
                 .artifactId("basic-rest")
                 .version("1.0.0-SNAPSHOT");
 
@@ -45,7 +46,7 @@ public class CreateProjectTest {
     public void createGradle() throws IOException {
         final File file = new File("target/basic-rest-gradle");
         delete(file);
-        final CreateProject createProject = new CreateProject(file).groupId("io.quarkus")
+        final CreateProject createProject = new CreateProject(new FileWriter(file)).groupId("io.quarkus")
                 .artifactId("basic-rest")
                 .version("1.0.0-SNAPSHOT")
                 .buildTool(BuildTool.GRADLE);
@@ -73,7 +74,7 @@ public class CreateProjectTest {
         model.setVersion("10.1.2");
         final File pom = new File(testDir, "pom.xml");
         MojoUtils.write(model, pom);
-        final CreateProject createProject = new CreateProject(testDir).groupId("something.is")
+        final CreateProject createProject = new CreateProject(new FileWriter(testDir)).groupId("something.is")
                 .artifactId("wrong")
                 .version("1.0.0-SNAPSHOT");
 
@@ -113,7 +114,7 @@ public class CreateProjectTest {
         model.setVersion("10.1.2");
         final File pom = new File(testDir, "pom.xml");
         MojoUtils.write(model, pom);
-        final CreateProject createProject = new CreateProject(testDir).groupId("something.is")
+        final CreateProject createProject = new CreateProject(new FileWriter(testDir)).groupId("something.is")
                 .artifactId("wrong")
                 .className("org.foo.MyResource")
                 .version("1.0.0-SNAPSHOT");
@@ -150,7 +151,7 @@ public class CreateProjectTest {
         properties.put("className", "org.acme.MyResource");
         properties.put("extensions", "commons-io:commons-io:2.5");
 
-        Assertions.assertTrue(new CreateProject(testDir).groupId("org.acme")
+        Assertions.assertTrue(new CreateProject(new FileWriter(testDir)).groupId("org.acme")
                 .artifactId("acme")
                 .version("1.0.0-SNAPSHOT")
                 .className("org.acme.MyResource")

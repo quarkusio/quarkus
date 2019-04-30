@@ -24,7 +24,7 @@ public class CreateProjectCommand implements Command<CommandInvocation> {
     @Option(shortName = 'g', defaultValue = "org.acme")
     private String groupid;
 
-    @Option(shortName = 'a', defaultValue = "quarkuss")
+    @Option(shortName = 'a', defaultValue = "quarkus")
     private String artifactid;
 
     @Option(shortName = 'v', defaultValue = "1.0.0-SNAPSHOT")

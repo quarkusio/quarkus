@@ -12,12 +12,6 @@ import com.oracle.svm.core.annotate.TargetClass;
 @TargetClass(Method.class)
 final class MethodReplacement {
 
-    //https://github.com/oracle/graal/issues/649
-    @Substitute
-    public Object getDefaultValue() {
-        return null;
-    }
-
     @Alias
     public Type getGenericReturnType() {
         return null;

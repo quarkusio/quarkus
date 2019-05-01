@@ -19,6 +19,8 @@ import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.ToTextContentHandler;
 import org.xml.sax.ContentHandler;
 
+import io.quarkus.tika.TikaContent;
+
 @Provider
 public class TikaMessageBodyReader implements MessageBodyReader<TikaContent> {
 

@@ -1,4 +1,4 @@
-package io.quarkus.tika.runtime.jaxrs;
+package io.quarkus.tika;
 
 import org.apache.tika.metadata.Metadata;
 

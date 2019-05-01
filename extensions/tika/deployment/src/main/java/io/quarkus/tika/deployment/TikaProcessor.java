@@ -2,6 +2,7 @@ package io.quarkus.tika.deployment;
 
 import java.util.Arrays;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.tika.detect.Detector;
@@ -10,7 +11,7 @@ import org.apache.tika.parser.Parser;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
@@ -35,23 +36,22 @@ public class TikaProcessor {
     }
 
     @BuildStep
-    public void produceTikaParsersProviders(BuildProducer<SubstrateResourceBuildItem> resource,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
-        produceTikaServiceProviders(resource, reflectiveClass, Parser.class.getName());
-        produceTikaServiceProviders(resource, reflectiveClass, Detector.class.getName());
-        produceTikaServiceProviders(resource, reflectiveClass, EncodingDetector.class.getName());
+    public void produceTikaParsersProviders(BuildProducer<ServiceProviderBuildItem> serviceProvider) throws Exception {
+        produceTikaServiceProviders(serviceProvider,
+                Parser.class.getName(),
+                Detector.class.getName(),
+                EncodingDetector.class.getName());
     }
 
-    private void produceTikaServiceProviders(BuildProducer<SubstrateResourceBuildItem> resource,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            String serviceProviderName) throws Exception {
-        resource.produce(new SubstrateResourceBuildItem("META-INF/services/" + serviceProviderName));
-        Set<String> availableProviderClasses = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
-                "META-INF/services/" + serviceProviderName);
-        for (String providerClass : availableProviderClasses) {
-            if (!Parser.class.getName().equals(serviceProviderName) || NATIVE_READY_PARSERS.contains(providerClass)) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerClass));
-            }
+    private void produceTikaServiceProviders(BuildProducer<ServiceProviderBuildItem> serviceProvider,
+            String... serviceProviderNames) throws Exception {
+        for (String serviceProviderName : serviceProviderNames) {
+            Set<String> availableProviderClasses = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+                    "META-INF/services/" + serviceProviderName);
+            Predicate<String> pred = p -> !Parser.class.getName().equals(serviceProviderName)
+                    || NATIVE_READY_PARSERS.contains(p);
+            serviceProvider.produce(new ServiceProviderBuildItem(serviceProviderName,
+                    availableProviderClasses.stream().filter(pred).collect(Collectors.toList()).toArray(new String[] {})));
         }
     }
 

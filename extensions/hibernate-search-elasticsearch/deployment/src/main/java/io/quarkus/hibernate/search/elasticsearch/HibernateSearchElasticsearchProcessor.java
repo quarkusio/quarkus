@@ -22,7 +22,10 @@ import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.P
 import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.SCHEMA_MAPPING_CLASSES;
 import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.TYPE_BRIDGE_DECLARATION_ANNOTATION;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -55,6 +58,7 @@ import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig;
+import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchBackendBuildTimeConfig;
 import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
 import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchTemplate;
 
@@ -74,14 +78,14 @@ class HibernateSearchElasticsearchProcessor {
             BuildProducer<FeatureBuildItem> feature) throws Exception {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_SEARCH_ELASTICSEARCH));
 
-        checkConfig(buildTimeConfig);
-
         IndexView index = combinedIndexBuildItem.getIndex();
 
         if (index.getAnnotations(INDEXED).isEmpty()) {
             // we don't have any indexed entity, we can bail out
             return;
         }
+
+        checkConfig(buildTimeConfig);
 
         // Register the Hibernate Search integration
         integrations.produce(new HibernateOrmIntegrationBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH));
@@ -105,6 +109,7 @@ class HibernateSearchElasticsearchProcessor {
 
     private static void checkConfig(HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig) {
         if (buildTimeConfig.defaultBackend.isPresent()) {
+            // we have a default named backend
             if (buildTimeConfig.elasticsearch.version.isPresent()) {
                 throw new ConfigurationError(
                         "quarkus.hibernate-search.elasticsearch.default-backend cannot be used in conjunction with a default backend configuration.");
@@ -112,6 +117,27 @@ class HibernateSearchElasticsearchProcessor {
             if (!buildTimeConfig.additionalBackends.containsKey(buildTimeConfig.defaultBackend.get())) {
                 throw new ConfigurationError(
                         "The default backend defined does not exist: " + buildTimeConfig.defaultBackend.get());
+            }
+        } else {
+            // we are in the default backend case
+            if (!buildTimeConfig.elasticsearch.version.isPresent()) {
+                throw new ConfigurationError(
+                        "The Elasticsearch version needs to be defined via the quarkus.hibernate-search.elasticsearch.version property.");
+            }
+        }
+
+        // we validate that the version is present for all the additional backends
+        if (!buildTimeConfig.additionalBackends.isEmpty()) {
+            List<String> additionalBackendsWithNoVersion = new ArrayList<>();
+            for (Entry<String, ElasticsearchBackendBuildTimeConfig> additionalBackendEntry : buildTimeConfig.additionalBackends
+                    .entrySet()) {
+                if (!additionalBackendEntry.getValue().version.isPresent()) {
+                    additionalBackendsWithNoVersion.add(additionalBackendEntry.getKey());
+                }
+            }
+            if (!additionalBackendsWithNoVersion.isEmpty()) {
+                throw new ConfigurationError("The Elasticsearch version property needs to be defined for backends "
+                        + String.join(", ", additionalBackendsWithNoVersion));
             }
         }
     }

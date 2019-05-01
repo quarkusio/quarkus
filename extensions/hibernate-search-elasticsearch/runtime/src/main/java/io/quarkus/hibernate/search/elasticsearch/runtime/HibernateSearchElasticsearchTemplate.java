@@ -72,9 +72,11 @@ public class HibernateSearchElasticsearchTemplate {
                     HibernateOrmPropertyHandleFactoryName.JAVA_LANG_REFLECT);
 
             if (buildTimeConfig.defaultBackend.isPresent()) {
+                // we have a named default backend
                 addConfig(propertyCollector, EngineSettings.DEFAULT_BACKEND,
                         buildTimeConfig.defaultBackend.get());
             } else if (buildTimeConfig.elasticsearch.version.isPresent()) {
+                // we use the default backend configuration
                 addConfig(propertyCollector, EngineSettings.DEFAULT_BACKEND,
                         HibernateSearchElasticsearchTemplate.DEFAULT_BACKEND);
             }

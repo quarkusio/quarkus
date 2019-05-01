@@ -1,7 +1,5 @@
 package io.quarkus.tika;
 
-import org.apache.tika.metadata.Metadata;
-
 public class TikaContent {
 
     private String content;
@@ -11,7 +9,7 @@ public class TikaContent {
         this.content = content;
     }
 
-    public String getContent() {
+    public String getText() {
         return content;
     }
 

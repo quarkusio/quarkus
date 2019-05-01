@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -40,16 +44,24 @@ public class TikaMessageBodyReader implements MessageBodyReader<TikaContent> {
         Parser parser = new AutoDetectParser();
         ParseContext context = new ParseContext();
         context.set(Parser.class, parser);
-        Metadata tikaMetadata = new Metadata();
+        org.apache.tika.metadata.Metadata tikaMetadata = new org.apache.tika.metadata.Metadata();
         tikaMetadata.set(Metadata.CONTENT_TYPE, mediaType.toString());
 
         ContentHandler tikaHandler = new ToTextContentHandler();
         try (InputStream tikaStream = TikaInputStream.get(entityStream)) {
             parser.parse(tikaStream, tikaHandler, tikaMetadata, context);
-            return new TikaContent(tikaHandler.toString().trim(), tikaMetadata);
+            return new TikaContent(tikaHandler.toString().trim(), convert(tikaMetadata));
         } catch (Exception e) {
             throw new IOException(e);
         }
+    }
+
+    private io.quarkus.tika.Metadata convert(org.apache.tika.metadata.Metadata tikaMetadata) {
+        Map<String, List<String>> map = new HashMap<>();
+        for (String name : tikaMetadata.names()) {
+            map.put(name, Arrays.asList(tikaMetadata.getValues(name)));
+        }
+        return new io.quarkus.tika.Metadata(map);
     }
 
 }

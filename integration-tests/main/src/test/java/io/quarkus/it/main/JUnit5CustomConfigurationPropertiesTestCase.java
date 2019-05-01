@@ -16,24 +16,23 @@
 
 package io.quarkus.it.main;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.Map;
+
+import javax.inject.Inject;
+
+import org.eclipse.microprofile.config.Config;
+import org.junit.jupiter.api.Test;
+
 import io.quarkus.test.common.configuration.ConfigurationProperty;
 import io.quarkus.test.common.configuration.ConfigurationTestPropertiesBuilder;
 import io.quarkus.test.common.configuration.TestConfiguration;
 import io.quarkus.test.common.configuration.TestConfigurationInitializer;
-import java.util.HashMap;
-import java.util.Map;
-import javax.inject.Inject;
-
-import org.eclipse.microprofile.config.Config;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import io.quarkus.test.junit.QuarkusTest;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @QuarkusTest
-@ConfigurationProperty(key="test.key", value = "value1")
+@ConfigurationProperty(key = "test.key", value = "value1")
 @TestConfiguration(JUnit5CustomConfigurationPropertiesTestCase.CustomProperties.class)
 public class JUnit5CustomConfigurationPropertiesTestCase {
 
@@ -56,9 +55,9 @@ public class JUnit5CustomConfigurationPropertiesTestCase {
         @Override
         public Map<String, String> initilize() {
             return ConfigurationTestPropertiesBuilder
-                .configuration(
-                    "test.key1=value1",
-                    "test.key2=value2");
+                    .configuration(
+                            "test.key1=value1",
+                            "test.key2=value2");
         }
     }
 

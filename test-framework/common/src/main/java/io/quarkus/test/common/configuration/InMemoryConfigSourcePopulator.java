@@ -16,9 +16,10 @@
 
 package io.quarkus.test.common.configuration;
 
-import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
+
+import io.quarkus.runtime.configuration.ExpandingConfigSource;
 
 /**
  * Class that populates configuration parameters from test to In Memory Config Source

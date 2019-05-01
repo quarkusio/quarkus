@@ -16,17 +16,19 @@
 
 package io.quarkus.test.common.configuration;
 
-import java.util.Map;
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
+
+import java.util.Map;
+
+import org.junit.Test;
 
 public class ConfigurationTestPropertiesBuilderTestCase {
 
     @Test
     public void testValidPropertiesSet() {
 
-        final Map<String, String> configuration = ConfigurationTestPropertiesBuilder.configuration("key1=value1", "key2=value2");
+        final Map<String, String> configuration = ConfigurationTestPropertiesBuilder.configuration("key1=value1",
+                "key2=value2");
 
         assertEquals("value1", configuration.get("key1"));
         assertEquals("value2", configuration.get("key2"));

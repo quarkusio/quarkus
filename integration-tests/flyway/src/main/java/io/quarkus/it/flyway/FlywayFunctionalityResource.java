@@ -16,55 +16,31 @@
 
 package io.quarkus.it.flyway;
 
-import static java.sql.DriverManager.getConnection;
+import java.util.Objects;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-
+import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.MigrationVersion;
 
-@Path("/flyway")
+@Path("/")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class FlywayFunctionalityResource {
-    @ConfigProperty(name = "datasource.url")
-    String dbURL;
-    @ConfigProperty(name = "datasource.username")
-    String dbUser;
-    @ConfigProperty(name = "datasource.password")
-    String dbPassword;
+    @Inject
+    Flyway flyway;
 
     @GET
-    @Path("/migrate")
-    public String doMigrate() throws SQLException {
-        Flyway flyway = Flyway.configure()
-                .dataSource(dbURL, dbUser, dbPassword)
-                .load();
+    @Path("migrate")
+    public String doMigrateAuto() {
         flyway.migrate();
-        int rows = countTableRows();
-        return "OK " + rows;
-    }
-
-    private int countTableRows() throws SQLException {
-        try (Connection connection = getConnection(dbURL, dbUser, dbPassword)) {
-            try (Statement statement = connection.createStatement()) {
-                try (ResultSet execute = statement.executeQuery("SELECT COUNT(*) FROM quarkus; ")) {
-                    if (execute.next()) {
-                        return execute.getInt(1);
-                    } else {
-                        return -1; //ERROR
-                    }
-                }
-            }
-        }
+        MigrationVersion version = Objects.requireNonNull(flyway.info().current().getVersion(),
+                "Version is null! Migration was not applied");
+        return version.toString();
     }
 }

@@ -76,6 +76,8 @@
         <module>hibernate-orm</module>
         <module>hibernate-validator</module>
         <module>panache</module>
+        <module>hibernate-search-elasticsearch</module>
+        <module>elasticsearch-rest-client</module>
         <module>kafka-client</module>
 
         <!-- Spring -->

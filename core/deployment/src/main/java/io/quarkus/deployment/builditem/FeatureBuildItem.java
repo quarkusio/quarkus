@@ -17,9 +17,11 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String CAMEL_NETTY4_HTTP = "camel-netty4-http";
     public static final String CAMEL_SALESFORCE = "camel-salesforce";
     public static final String CDI = "cdi";
+    public static final String ELASTICSEARCH_REST_CLIENT = "elasticsearch-rest-client";
     public static final String FLYWAY = "flyway";
     public static final String HIBERNATE_ORM = "hibernate-orm";
     public static final String HIBERNATE_VALIDATOR = "hibernate-validator";
+    public static final String HIBERNATE_SEARCH_ELASTICSEARCH = "hibernate-search-elasticsearch";
     public static final String INFINISPAN_CLIENT = "infinispan-client";
     public static final String JAEGER = "jaeger";
     public static final String JDBC_H2 = "jdbc-h2";

@@ -385,6 +385,10 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
         }
     }
 
+    public List<ProvidedService> getProvidedServices() {
+        return providedServices;
+    }
+
     /**
      * Temporarily exposed since Configuration is still around and much code still
      * uses Configuration. This allows code to configure the builder and access that

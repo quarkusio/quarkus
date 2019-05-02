@@ -1,6 +1,8 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -68,6 +70,11 @@ public class HibernateOrmConfig {
     public HibernateOrmConfigLog log;
 
     /**
+     * Caching configuration
+     */
+    public Map<String, CacheConfig> cache;
+
+    /**
      * Statistics configuration.
      */
     @ConfigItem(defaultValue = "false")
@@ -82,7 +89,8 @@ public class HibernateOrmConfig {
                 query.isAnyPropertySet() ||
                 database.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||
-                log.isAnyPropertySet();
+                log.isAnyPropertySet() ||
+                !cache.isEmpty();
     }
 
     @ConfigGroup
@@ -195,6 +203,49 @@ public class HibernateOrmConfig {
 
         public boolean isAnyPropertySet() {
             return sql || jdbcWarnings.isPresent();
+        }
+    }
+
+    @ConfigGroup
+    public static class CacheConfig {
+        /**
+         * Cache expiration config
+         */
+        @ConfigItem
+        public ExpirationConfig expiration;
+
+        /**
+         * Cache memory config
+         */
+        @ConfigItem
+        public MemoryConfig memory;
+    }
+
+    @ConfigGroup
+    public static class ExpirationConfig {
+        /**
+         * Indicates maximum idle time in seconds
+         */
+        @ConfigItem
+        public OptionalLong maxIdle;
+    }
+
+    @ConfigGroup
+    public static class MemoryConfig {
+        /**
+         * The size of each region can be customized
+         */
+        @ConfigItem
+        public OptionalLong objectCount;
+    }
+
+    public static class CacheConfigEntry {
+        public String key;
+        public String value;
+
+        public CacheConfigEntry(String key, String value) {
+            this.key = key;
+            this.value = value;
         }
     }
 }

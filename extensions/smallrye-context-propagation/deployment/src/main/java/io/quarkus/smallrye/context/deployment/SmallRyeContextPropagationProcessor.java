@@ -16,6 +16,11 @@
 
 package io.quarkus.smallrye.context.deployment;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.microprofile.context.spi.ThreadContextProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -24,6 +29,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
+import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationProvider;
 import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationTemplate;
 
@@ -39,10 +45,27 @@ class SmallRyeContextPropagationProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void buildStatic(SmallRyeContextPropagationTemplate template) throws ClassNotFoundException, IOException {
+        List<ThreadContextProvider> discoveredProviders = new ArrayList<>();
+        for (Class<?> provider : ServiceUtil.classesNamedIn(SmallRyeContextPropagationTemplate.class.getClassLoader(),
+                "META-INF/services/" + ThreadContextProvider.class.getName())) {
+            try {
+                discoveredProviders.add((ThreadContextProvider) provider.newInstance());
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new RuntimeException("Failed to instantiate declared ThreadContextProvider class: " + provider.getName(),
+                        e);
+            }
+        }
+
+        template.configureStaticInit(discoveredProviders);
+    }
+
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void build(SmallRyeContextPropagationTemplate template,
             BeanContainerBuildItem beanContainer,
             ExecutorBuildItem executorBuildItem) {
-        template.configure(beanContainer.getValue(), executorBuildItem.getExecutorProxy());
+        template.configureRuntime(beanContainer.getValue(), executorBuildItem.getExecutorProxy());
     }
 }

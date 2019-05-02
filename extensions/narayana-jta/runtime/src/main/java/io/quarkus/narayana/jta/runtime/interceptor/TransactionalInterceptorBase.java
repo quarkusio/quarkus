@@ -93,13 +93,16 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
         tm.begin();
         Transaction tx = tm.getTransaction();
+        boolean throwing = false;
 
         try {
             return ic.proceed();
         } catch (Exception e) {
             handleException(ic, e, tx);
+            throwing = true;
         } finally {
-            if (!handleIfAsyncStarted(tm, tx, ic)) {
+            // do not listen to async notifications if we're throwing
+            if (throwing || !handleIfAsyncStarted(tm, tx, ic)) {
                 endTransaction(tm, tx);
             }
         }

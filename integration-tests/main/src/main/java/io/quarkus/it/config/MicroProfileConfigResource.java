@@ -19,6 +19,9 @@ package io.quarkus.it.config;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -51,5 +54,11 @@ public class MicroProfileConfigResource {
     @Path("/get-custom-value")
     public String getCustomValue() {
         return Integer.toString(value.getNumber());
+    }
+
+    @Path("/{property}")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getProperty(@PathParam("property") String property) {
+        return config.getOptionalValue(property, String.class).orElse("Not Found");
     }
 }

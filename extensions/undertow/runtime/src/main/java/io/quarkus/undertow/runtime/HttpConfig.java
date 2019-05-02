@@ -22,6 +22,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.configuration.TestPortContext;
 import io.quarkus.runtime.configuration.ssl.ServerSslConfig;
 
 /**
@@ -72,7 +73,15 @@ public class HttpConfig {
     public ServerSslConfig ssl;
 
     public int determinePort(LaunchMode launchMode) {
-        return launchMode == LaunchMode.TEST ? testPort : port;
+        return launchMode == LaunchMode.TEST ? getTestPort() : port;
+    }
+
+    private int getTestPort() {
+        if (testPort == 0) {
+            return TestPortContext.getRandomPort();
+        }
+
+        return testPort;
     }
 
     public int determineSslPort(LaunchMode launchMode) {

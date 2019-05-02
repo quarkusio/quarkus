@@ -46,7 +46,7 @@ public class NativeImageLauncher implements Closeable {
     private List<NativeImageStartedNotifier> startedNotifiers;
 
     public NativeImageLauncher(Class<?> testClass) {
-        this(testClass, ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-port", Integer.class).orElse(8081));
+        this(testClass, TestPortExtractor.getTestPort(ConfigProvider.getConfig()));
     }
 
     public NativeImageLauncher(Class<?> testClass, int port) {

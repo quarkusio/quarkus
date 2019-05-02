@@ -39,7 +39,7 @@ public class RestAssuredURLManager {
         if (portField != null) {
             try {
                 oldPort = (Integer) portField.get(null);
-                int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-port", Integer.class).orElse(8081);
+                int port = TestPortExtractor.getTestPort(ConfigProvider.getConfig());
                 portField.set(null, port);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();

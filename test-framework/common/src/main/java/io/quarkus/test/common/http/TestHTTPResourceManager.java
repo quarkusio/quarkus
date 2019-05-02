@@ -10,6 +10,8 @@ import java.util.ServiceLoader;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import io.quarkus.test.common.TestPortExtractor;
+
 public class TestHTTPResourceManager {
 
     static final String uri;
@@ -23,7 +25,8 @@ public class TestHTTPResourceManager {
         providers = Collections.unmodifiableMap(map);
         Config config = ConfigProvider.getConfig();
         String host = config.getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
-        String port = config.getOptionalValue("quarkus.http.test-port", String.class).orElse("8081");
+        int port = TestPortExtractor.getTestPort(config);
+
         uri = "http://" + host + ":" + port;
         System.setProperty("test.url", uri);
     }

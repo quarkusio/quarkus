@@ -213,6 +213,15 @@ public class BeanInfo implements InjectionTargetInfo {
         return types;
     }
 
+    public boolean hasType(DotName typeName) {
+        for (Type type : types) {
+            if (type.name().equals(typeName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public Set<AnnotationInstance> getQualifiers() {
         return qualifiers;
     }

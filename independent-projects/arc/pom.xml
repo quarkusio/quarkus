@@ -51,7 +51,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <!-- Versions -->
         <version.cdi>2.0.SP1</version.cdi>
-        <version.jandex>2.1.0.Final</version.jandex>
+        <version.jandex>2.1.1.Final</version.jandex>
         <version.junit4>4.12</version.junit4>
         <version.maven>3.5.2</version.maven>
         <version.jboss-logging>3.3.2.Final</version.jboss-logging>

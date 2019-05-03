@@ -58,6 +58,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
@@ -128,6 +129,7 @@ public class ArcAnnotationProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<AnnotationsTransformerBuildItem> annotationTransformers,
             ShutdownContextBuildItem shutdown, List<AdditionalStereotypeBuildItem> additionalStereotypeBuildItems,
+            List<ApplicationClassPredicateBuildItem> applicationClassPredicates,
             BuildProducer<FeatureBuildItem> feature)
             throws Exception {
 
@@ -145,6 +147,14 @@ public class ArcAnnotationProcessor {
                 }
                 if (generatedClassNames.contains(dotName)) {
                     return true;
+                }
+                if (!applicationClassPredicates.isEmpty()) {
+                    String className = dotName.toString();
+                    for (ApplicationClassPredicateBuildItem predicate : applicationClassPredicates) {
+                        if (predicate.test(className)) {
+                            return true;
+                        }
+                    }
                 }
                 return false;
             }

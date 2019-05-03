@@ -6,16 +6,18 @@ import java.io.OutputStream;
 import java.util.Map;
 
 import com.amazonaws.serverless.proxy.internal.testutils.Timer;
-import com.amazonaws.serverless.proxy.model.AwsProxyRequest;
-import com.amazonaws.serverless.proxy.model.AwsProxyResponse;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 
 public class StreamLambdaHandler implements RequestStreamHandler {
 
-    private static ResteasyLambdaContainerHandler<AwsProxyRequest, AwsProxyResponse> handler;
+    private static ResteasyLambdaContainerHandler handler;
 
-    public StreamLambdaHandler() {
+    public StreamLambdaHandler() throws ReflectiveOperationException {
+        final Class<?> aClass = Class.forName("io.quarkus.runner.ApplicationImpl1");
+
+        aClass.getMethod("doStart", String[].class)
+                .invoke(aClass.newInstance(), new Object[] { new String[0] });
     }
 
     public static void initHandler(Map<String, String> initParameters, boolean debugMode) {
@@ -26,8 +28,7 @@ public class StreamLambdaHandler implements RequestStreamHandler {
     }
 
     @Override
-    public void handleRequest(InputStream inputStream, OutputStream outputStream, Context context)
-            throws IOException {
+    public void handleRequest(InputStream inputStream, OutputStream outputStream, Context context) throws IOException {
         handler.proxyStream(inputStream, outputStream, context);
     }
 }

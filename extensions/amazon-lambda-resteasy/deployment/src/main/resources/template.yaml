@@ -1,0 +1,16 @@
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  QuarkusSam:
+    Type: AWS::Serverless::Function
+
+    Properties:
+      Handler: io.quarkus.amazon.lambda.resteasy.runtime.container.StreamLambdaHandler::handleRequest
+      Runtime: java8
+
+      Events:
+        GetResource:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: any

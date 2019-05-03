@@ -68,7 +68,9 @@ public class ResteasyLambdaFilter implements Filter, HttpRequestFactory, HttpRes
         servletContainerDispatcher.service(httpServletRequest.getMethod(), httpServletRequest, httpServletResponse, true);
 
         Timer.stop("RESTEASY_FILTER_DOFILTER");
-        filterChain.doFilter(servletRequest, servletResponse);
+        if (filterChain != null) {
+            filterChain.doFilter(servletRequest, servletResponse);
+        }
     }
 
     @Override

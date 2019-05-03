@@ -69,6 +69,10 @@ public class MojoTestBase {
         return tc;
     }
 
+    public static File initProject(String name) {
+        return initProject(name, name);
+    }
+
     public static File initProject(String name, String output) {
         File tc = new File("target/test-classes");
         if (!tc.isDirectory()) {

@@ -120,7 +120,7 @@ class MainClassBuildStep {
         // Application class: start method
 
         mv = file.getMethodCreator("doStart", void.class, String[].class);
-        mv.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
+        mv.setModifiers(Modifier.PUBLIC | Modifier.FINAL);
 
         // very first thing is to set system props (for run time, which use substitutions for a different
         // storage from build-time)

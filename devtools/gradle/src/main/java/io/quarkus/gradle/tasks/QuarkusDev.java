@@ -59,6 +59,7 @@ import io.quarkus.deployment.ApplicationInfoUtil;
 import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
 import io.quarkus.gradle.QuarkusPluginExtension;
+import io.quarkus.utilities.JavaBinFinder;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -165,7 +166,7 @@ public class QuarkusDev extends QuarkusTask {
         DevModeContext context = new DevModeContext();
         try {
             List<String> args = new ArrayList<>();
-            args.add(findJavaTool());
+            args.add(JavaBinFinder.findBin());
             if (getDebug() == null) {
                 // debug mode not specified
                 // make sure 5005 is not used, we don't want to just fail if something else is using it
@@ -320,45 +321,6 @@ public class QuarkusDev extends QuarkusTask {
         }
     }
 
-    /**
-     * Search for the java command in the order:
-     * 1. maven-toolchains plugin configuration
-     * 2. java.home location
-     * 3. java[.exe] on the system path
-     *
-     * @return the java command to use
-     */
-    protected String findJavaTool() {
-        // use the same JVM as the one used to run Maven (the "java.home" one)
-        String java = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
-        File javaCheck = new File(java);
-        if (!javaCheck.canExecute()) {
-
-            java = null;
-            // Try executable extensions if windows
-            if (OS.determineOS() == OS.WINDOWS && System.getenv().containsKey("PATHEXT")) {
-                String extpath = System.getenv("PATHEXT");
-                String[] exts = extpath.split(";");
-                for (String ext : exts) {
-                    File winExe = new File(javaCheck.getAbsolutePath() + ext);
-                    if (winExe.canExecute()) {
-                        java = winExe.getAbsolutePath();
-                        break;
-                    }
-                }
-            }
-            // Fallback to java on the path
-            if (java == null) {
-                if (OS.determineOS() == OS.WINDOWS) {
-                    java = "java.exe";
-                } else {
-                    java = "java";
-                }
-            }
-        }
-        return java;
-    }
-
     private void addGradlePluginDeps(StringBuilder classPathManifest, DevModeContext context) {
         Configuration conf = getProject().getBuildscript().getConfigurations().getByName("classpath");
         ResolvedDependency quarkusDep = conf.getResolvedConfiguration().getFirstLevelModuleDependencies().stream()
@@ -393,46 +355,4 @@ public class QuarkusDev extends QuarkusTask {
         }
     }
 
-    /**
-     * Enum to classify the os.name system property
-     */
-    static enum OS {
-        WINDOWS,
-        LINUX,
-        MAC,
-        OTHER;
-
-        private String version;
-
-        public String getVersion() {
-            return version;
-        }
-
-        public void setVersion(String version) {
-            this.version = version;
-        }
-
-        static OS determineOS() {
-            OS os = OS.OTHER;
-            String osName = System.getProperty("os.name");
-            osName = osName.toLowerCase();
-            if (osName.contains("windows")) {
-                os = OS.WINDOWS;
-            } else if (osName.contains("linux")
-                    || osName.contains("freebsd")
-                    || osName.contains("unix")
-                    || osName.contains("sunos")
-                    || osName.contains("solaris")
-                    || osName.contains("aix")) {
-                os = OS.LINUX;
-            } else if (osName.contains("mac os")) {
-                os = OS.MAC;
-            } else {
-                os = OS.OTHER;
-            }
-
-            os.setVersion(System.getProperty("os.version"));
-            return os;
-        }
-    }
 }

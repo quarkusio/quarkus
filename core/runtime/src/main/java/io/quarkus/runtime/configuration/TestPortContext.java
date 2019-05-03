@@ -24,7 +24,7 @@ public class TestPortContext {
      * Generates a random private port for testing purposes.
      * The port is stored in a thread local so it is the same port for each thread.
      *
-     * @return Random port between 49152-65535
+     * @return Random private port
      */
     public static int getRandomPort() {
         Integer randomPort = TestPortContext.randomPort.get();

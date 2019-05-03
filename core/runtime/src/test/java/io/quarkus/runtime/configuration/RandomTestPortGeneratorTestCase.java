@@ -8,9 +8,13 @@ public class RandomTestPortGeneratorTestCase {
 
     @Test
     public void testRandomPort() {
-        final int randomPort = RandomTestPortGenerator.generate();
-        assertTrue(randomPort >= RandomTestPortGenerator.FIRST_PRIVATE_PORT);
-        assertTrue(randomPort <= RandomTestPortGenerator.LAST_PRIVATE_PORT);
+        final int randomPort1 = RandomTestPortGenerator.generate();
+        final int randomPort2 = RandomTestPortGenerator.generate();
+
+        assertTrue(randomPort1 > 1024);
+        assertTrue(randomPort2 > 1024);
+        assertTrue(randomPort1 != randomPort2);
+
     }
 
 }

@@ -52,7 +52,7 @@ import io.quarkus.creator.phase.runnerjar.RunnerJarPhase;
  * Build the application.
  * <p>
  * You can build a native application runner with {@code native-image}
- * 
+ *
  * @author Alexey Loubyansky
  */
 @Mojo(name = "build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
@@ -143,14 +143,14 @@ public class BuildMojo extends AbstractMojo {
      * be excluded from the final jar. The entries are relative to the root of
      * the file. An example of this configuration could be:
      * <code><pre>
-     * &#x3C;configuration&#x3E; 
+     * &#x3C;configuration&#x3E;
      *   &#x3C;uberJar&#x3E;true&#x3C;/uberJar&#x3E;
      *   &#x3C;ignoredEntries&#x3E;
      *     &#x3C;ignoredEntry&#x3E;META-INF/BC2048KE.SF&#x3C;/ignoredEntry&#x3E;
      *     &#x3C;ignoredEntry&#x3E;META-INF/BC2048KE.DSA&#x3C;/ignoredEntry&#x3E;
      *     &#x3C;ignoredEntry&#x3E;META-INF/BC1024KE.SF&#x3C;/ignoredEntry&#x3E;
      *     &#x3C;ignoredEntry&#x3E;META-INF/BC1024KE.DSA&#x3C;/ignoredEntry&#x3E;
-     *   &#x3C;/ignoredEntries&#x3E; 
+     *   &#x3C;/ignoredEntries&#x3E;
      * &#x3C;/configuration&#x3E;
      * </pre></code>
      */
@@ -163,7 +163,9 @@ public class BuildMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
-        final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion());
+        final Artifact projectArtifact = project.getArtifact();
+        final AppArtifact appArtifact = new AppArtifact(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
+                projectArtifact.getClassifier(), projectArtifact.getType(), projectArtifact.getVersion());
         final AppModel appModel;
         final BootstrapAppModelResolver modelResolver;
         try {
@@ -190,7 +192,7 @@ public class BuildMojo extends AbstractMojo {
                         .setMainClass(mainClass)
                         .setUberJar(uberJar)
                         .setUserConfiguredIgnoredEntries(
-                                this.ignoredEntries == null ? Collections.EMPTY_SET : Arrays.asList(this.ignoredEntries)))
+                                this.ignoredEntries == null ? Collections.emptySet() : Arrays.asList(this.ignoredEntries)))
                 .setWorkDir(buildDir.toPath())
                 .build()) {
 

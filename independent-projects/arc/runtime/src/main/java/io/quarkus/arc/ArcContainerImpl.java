@@ -227,6 +227,11 @@ class ArcContainerImpl implements ArcContainer {
         return bean != null ? (InstanceHandle<T>) beanInstanceHandle(bean, null) : InstanceHandleImpl.unavailable();
     }
 
+    @Override
+    public boolean isRunning() {
+        return running.get();
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <T> InjectableBean<T> bean(String beanIdentifier) {

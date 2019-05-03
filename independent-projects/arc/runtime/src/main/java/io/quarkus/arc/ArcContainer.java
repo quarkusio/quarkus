@@ -106,6 +106,14 @@ public interface ArcContainer {
     <T> InstanceHandle<T> instance(InjectableBean<T> bean);
 
     /**
+     * Returns true if Arc container is running.
+     * This can be used as a quick check to determine CDI availability in Quarkus.
+     *
+     * @return true is {@link ArcContainer} is running, false otherwise
+     */
+    boolean isRunning();
+
+    /**
      *
      * @param beanIdentifier
      * @return an injectable bean or null

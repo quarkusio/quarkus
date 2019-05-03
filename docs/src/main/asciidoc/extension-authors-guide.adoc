@@ -23,18 +23,18 @@ This section is a work in progress and gathers the philosophy under which extens
 
 === Why an extension framework
 
-Quarkus’s mission is to transform your full application and the libraries it uses into an optimal output for GraalVM.
+Quarkus’s mission is to transform your entire application including the libraries it uses, into an artifact optimized for GraalVM.
 To do this you need to analyze and understand the full "closed world" of the application.
 Without the full and complete context, the best that can be achieved is partial and limited generic support.
 By using the Quarkus extension approach, we can bring Java applications in line with memory footprint constrained environments like Kubernetes or cloud platforms.
 
-The Quarkus extension framework makes a significant impact even when GraalVM is not used (e.g. in HotSpot). 
-Let’s list the actions an extension does:
+The Quarkus extension framework results in significantly improved resource utilization even when GraalVM is not used (e.g. in HotSpot).
+Let’s list the actions an extension performs:
 
 * Gather build time metadata and generate code
 ** This part has nothing to do with GraalVM, it is how Quarkus starts frameworks “at build time”
 ** The extension framework facilitates reading metadata, scanning classes as well as generating classes as needed
-** a small part of the extension work is executed at runtime via the generated classes, while the bulk of the work is done at build time (called deployment time)
+** A small part of the extension work is executed at runtime via the generated classes, while the bulk of the work is done at build time (called deployment time)
 * Enforce opinionated and sensible defaults based on the close world view of the application (e.g. an application with no `@Entity` does not need to start Hibernate ORM)
 * An extension hosts Substrate VM code substitution so that libraries can run on GraalVM
 ** Most changes are pushed upstream to help the underlying library run on GraalVM

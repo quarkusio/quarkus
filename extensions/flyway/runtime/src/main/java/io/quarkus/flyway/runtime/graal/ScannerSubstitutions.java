@@ -49,10 +49,8 @@ public final class ScannerSubstitutions {
      */
     @Substitute
     public ScannerSubstitutions(Collection<Location> locations, ClassLoader classLoader, Charset encoding) {
-        for (Location location : locations) {
-            ResourceAndClassScanner quarkusScanner = new QuarkusPathLocationScanner(location);
-            resources.addAll(quarkusScanner.scanForResources());
-            classes.addAll(quarkusScanner.scanForClasses());
-        }
+        ResourceAndClassScanner quarkusScanner = new QuarkusPathLocationScanner();
+        resources.addAll(quarkusScanner.scanForResources());
+        classes.addAll(quarkusScanner.scanForClasses());
     }
 }

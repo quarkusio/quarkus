@@ -39,21 +39,8 @@ test {
     useJUnitPlatform()
 }
 
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
 javadoc {
     options.addStringOption('encoding', 'UTF-8')
-}
-task javadocJar(type: Jar) {
-    classifier = "javadoc"
-    from javadoc
-}
-
-artifacts {
-    archives sourcesJar
-    archives javadocJar
 }
 
 gradlePlugin {

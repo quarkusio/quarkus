@@ -1,5 +1,5 @@
 plugins {
-    id 'com.gradle.build-scan' version '2.2.1'
+    id 'com.gradle.build-scan' version '2.3'
     id 'com.gradle.plugin-publish' version '0.10.1'
     id 'java-gradle-plugin'
 }

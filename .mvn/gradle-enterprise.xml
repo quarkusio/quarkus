@@ -1,14 +1,8 @@
 <gradleEnterprise>
-<!--
-  <server>
-    <url>https://e.grdev.net</url>
-  </server>
--->
   <buildScan>
     <termsOfService>
       <url>https://gradle.com/terms-of-service</url>
       <accept>true</accept>
     </termsOfService>
-    <publish>ALWAYS</publish>
   </buildScan>
 </gradleEnterprise>

@@ -78,16 +78,19 @@ public class QuarkusUnitTest
 
     private RuntimeRunner runtimeRunner;
     private Path deploymentDir;
-    private Class<? extends Throwable> expectedException;
+    private Consumer<Throwable> assertException;
     private Supplier<JavaArchive> archiveProducer;
     private Runnable afterUndeployListener;
 
-    public Class<? extends Throwable> getExpectedException() {
-        return expectedException;
+    public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
+        return assertException(t -> {
+            assertEquals(expectedException,
+                    t.getClass(), "Build failed with wrong exception");
+        });
     }
 
-    public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
-        this.expectedException = expectedException;
+    public QuarkusUnitTest assertException(Consumer<Throwable> assertException) {
+        this.assertException = assertException;
         return this;
     }
 
@@ -100,6 +103,7 @@ public class QuarkusUnitTest
         return this;
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
             throws TestInstantiationException {
         try {
@@ -116,7 +120,7 @@ public class QuarkusUnitTest
             return factory.newInstance(new InvocationHandler() {
                 @Override
                 public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                    if (expectedException != null) {
+                    if (assertException != null) {
                         return null;
                     }
                     Method realMethod = actualTestInstance.getClass().getMethod(method.getName(), method.getParameterTypes());
@@ -218,8 +222,8 @@ public class QuarkusUnitTest
 
             try {
                 runtimeRunner.run();
-                if (expectedException != null) {
-                    fail("Build did not fail");
+                if (assertException != null) {
+                    fail("The build was expected to fail");
                 }
                 started = true;
                 Instance<?> factory;
@@ -234,15 +238,13 @@ public class QuarkusUnitTest
                 extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).put(testClass.getName(), actualTest);
             } catch (Exception e) {
                 started = false;
-                if (expectedException != null) {
+                if (assertException != null) {
                     if (e instanceof RuntimeException) {
                         Throwable cause = e.getCause();
                         if (cause != null && cause instanceof BuildException) {
-                            assertEquals(expectedException,
-                                    cause.getCause().getClass(), "Build failed with wrong exception");
+                            assertException.accept(cause.getCause());
                         } else if (cause != null) {
-                            assertEquals(expectedException,
-                                    cause.getClass(), "Build failed with wrong exception");
+                            assertException.accept(cause);
                         } else {
                             fail("Unable to unwrap build exception from: " + e);
                         }

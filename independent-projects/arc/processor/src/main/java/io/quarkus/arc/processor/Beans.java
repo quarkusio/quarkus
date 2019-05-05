@@ -348,7 +348,13 @@ final class Beans {
 
     static void resolveInjectionPoint(BeanDeployment deployment, BeanInfo bean, InjectionPointInfo injectionPoint,
             List<Throwable> errors) {
-        if (BuiltinBean.resolvesTo(injectionPoint)) {
+        BuiltinBean builtinBean = BuiltinBean.resolve(injectionPoint);
+        if (builtinBean != null) {
+            if (BuiltinBean.INJECTION_POINT.equals(builtinBean)
+                    && (bean == null || !BuiltinScope.DEPENDENT.is(bean.getScope()))) {
+                errors.add(new DefinitionException("Only @Dependent beans can access metadata about an injection point: "
+                        + injectionPoint.getTargetInfo()));
+            }
             // Skip built-in beans
             return;
         }

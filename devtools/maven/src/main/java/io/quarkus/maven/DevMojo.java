@@ -33,8 +33,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.jar.Attributes;
@@ -43,7 +41,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -53,13 +50,11 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.toolchain.Toolchain;
 import org.apache.maven.toolchain.ToolchainManager;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
@@ -238,52 +233,10 @@ public class DevMojo extends AbstractMojo {
             final AppModel appModel;
             try {
                 final LocalProject localProject = LocalProject.loadWorkspace(outputDirectory.toPath());
-                //we need to establish a partial ordering of the projects (i.e. 'reactor build order')
-
-                List<AppArtifactKey> orderedProjects = new ArrayList<>();
-                HashSet<AppArtifactKey> toplace = new HashSet<>();
-                for (Map.Entry<AppArtifactKey, LocalProject> i : localProject.getWorkspace().getProjects().entrySet()) {
-                    toplace.add(i.getKey());
-                }
-                //TODO: there is probably a better algorithm than this to establish the partial ordering
-                //basically we just iterate and add anything to the list that has not dependencies in 'toplace'
-                //this has worst case performance of O(n^2), if there is a linear relationship between
-                //the modules and the original order is reversed. As N is generally fairly small we can live with this for now
-                for (;;) {
-                    boolean changed = false;
-                    Iterator<AppArtifactKey> it = toplace.iterator();
-                    while (it.hasNext()) {
-                        AppArtifactKey current = it.next();
-                        LocalProject project = localProject.getWorkspace().getProjects().get(current);
-                        boolean canPlace = true;
-                        for (Dependency dep : project.getRawModel().getDependencies()) {
-                            AppArtifactKey key = new AppArtifactKey(dep.getGroupId(), dep.getArtifactId(), dep.getClassifier(),
-                                    dep.getType());
-                            if (toplace.contains(key)) {
-                                canPlace = false;
-                                break;
-                            }
-                        }
-                        if (canPlace) {
-                            changed = true;
-                            orderedProjects.add(current);
-                            it.remove();
-                        }
-                    }
-                    if (toplace.isEmpty()) {
-                        break;
-                    }
-                    if (!changed) {
-                        throw new MojoFailureException("Failed to establish partial ordering between projects "
-                                + localProject.getWorkspace().getProjects().keySet());
-                    }
-
-                }
-                for (AppArtifactKey i : orderedProjects) {
+                for (LocalProject project : localProject.getSelfWithLocalDeps()) {
                     String sourcePath = null;
                     String classesPath = null;
                     String resourcePath = null;
-                    LocalProject project = localProject.getWorkspace().getProjects().get(i);
                     Path javaSourcesDir = project.getSourcesSourcesDir();
                     if (Files.isDirectory(javaSourcesDir)) {
                         sourcePath = javaSourcesDir.toAbsolutePath().toString();
@@ -296,7 +249,7 @@ public class DevMojo extends AbstractMojo {
                     if (Files.isDirectory(resourcesSourcesDir)) {
                         resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
                     }
-                    DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(i.getArtifactId(), sourcePath,
+                    DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(project.getArtifactId(), sourcePath,
                             classesPath, resourcePath);
                     devModeContext.getModules().add(moduleInfo);
                 }

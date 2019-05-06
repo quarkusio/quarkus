@@ -16,6 +16,8 @@
 
 package io.quarkus.bootstrap.model;
 
+import io.quarkus.bootstrap.BootstrapConstants;
+
 /**
  * GroupId, artifactId, classifier, type, version
  *
@@ -23,8 +25,8 @@ package io.quarkus.bootstrap.model;
  */
 public class AppArtifactCoords {
 
-    public static final String TYPE_JAR = "jar";
-    public static final String TYPE_POM = "pom";
+    public static final String TYPE_JAR = BootstrapConstants.JAR;
+    public static final String TYPE_POM = BootstrapConstants.POM;
 
     public static AppArtifactCoords fromString(String str) {
         return new AppArtifactCoords(split(str, new String[5]));
@@ -57,7 +59,7 @@ public class AppArtifactCoords {
     }
 
     public AppArtifactCoords(String groupId, String artifactId, String version) {
-        this(groupId, artifactId, "", TYPE_JAR, version);
+        this(groupId, artifactId, BootstrapConstants.EMPTY, TYPE_JAR, version);
     }
 
     public AppArtifactCoords(String groupId, String artifactId, String type, String version) {

@@ -29,4 +29,8 @@ public interface BootstrapConstants {
     String DESCRIPTOR_PATH = META_INF + '/' + DESCRIPTOR_FILE_NAME;
 
     String PROP_DEPLOYMENT_ARTIFACT = "deployment-artifact";
+
+    String EMPTY = "";
+    String JAR = "jar";
+    String POM = "pom";
 }

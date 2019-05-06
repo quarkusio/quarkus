@@ -30,6 +30,8 @@ import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.Resource;
+
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
@@ -39,6 +41,8 @@ import io.quarkus.bootstrap.model.AppArtifactKey;
  * @author Alexey Loubyansky
  */
 public class LocalProject {
+
+    public static final String PROJECT_GROUPID = "${project.groupId}";
 
     private static final String POM_XML = "pom.xml";
 
@@ -211,40 +215,40 @@ public class LocalProject {
     }
 
     public AppArtifact getAppArtifact() {
-        final AppArtifact appArtifact = new AppArtifact(groupId, artifactId, "", rawModel.getPackaging(), version);
+        final AppArtifact appArtifact = new AppArtifact(groupId, artifactId, BootstrapConstants.EMPTY, rawModel.getPackaging(), version);
         appArtifact.setPath(getClassesDir());
         return appArtifact;
     }
 
-    public List<LocalProject> getLocalDependencies() {
+    public List<LocalProject> getSelfWithLocalDeps() {
         if(workspace == null) {
             return Collections.singletonList(this);
         }
         final List<LocalProject> ordered = new ArrayList<>();
-        collectLocalDependencies(this, new HashSet<>(),  ordered);
+        collectSelfWithLocalDeps(this, new HashSet<>(),  ordered);
         return ordered;
     }
 
-    private void collectLocalDependencies(LocalProject project, Set<AppArtifactKey> addedDeps, List<LocalProject> ordered) {
-        if(!modules.isEmpty()) {
-            for(LocalProject module : modules) {
-                collectLocalDependencies(module, addedDeps, ordered);
+    private static void collectSelfWithLocalDeps(LocalProject project, Set<AppArtifactKey> addedDeps, List<LocalProject> ordered) {
+        if(!project.modules.isEmpty()) {
+            for(LocalProject module : project.modules) {
+                collectSelfWithLocalDeps(module, addedDeps, ordered);
             }
         }
         for(Dependency dep : project.getRawModel().getDependencies()) {
-            final AppArtifactKey depKey = getKey(dep);
-            final LocalProject localDep = workspace.getProject(depKey);
+            final AppArtifactKey depKey = project.getKey(dep);
+            final LocalProject localDep = project.workspace.getProject(depKey);
             if(localDep == null || addedDeps.contains(depKey)) {
                 continue;
             }
-            collectLocalDependencies(localDep, addedDeps, ordered);
+            collectSelfWithLocalDeps(localDep, addedDeps, ordered);
         }
         if(addedDeps.add(project.getKey())) {
             ordered.add(project);
         }
     }
 
-    private static AppArtifactKey getKey(Dependency dep) {
-        return new AppArtifactKey(dep.getGroupId(), dep.getArtifactId());
+    private AppArtifactKey getKey(Dependency dep) {
+        return new AppArtifactKey(PROJECT_GROUPID.equals(dep.getGroupId()) ? getGroupId() : dep.getGroupId(), dep.getArtifactId());
     }
 }

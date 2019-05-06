@@ -21,9 +21,10 @@ Console logging is enabled by default.  To configure or disable it, the followin
 |===
 |Property Name|Default|Description
 |quarkus.log.console.enable|true|Determine whether console logging is enabled.
-|quarkus.log.console.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n|The format pattern to use for logging to the console; see <<format_string>>.
+|quarkus.log.console.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n|The format pattern to use for `text` logging to the console; see <<format_string>>.
+|quarkus.log.console.format-type|text|The type of formatter to use for the console; valid values are `text` or `json` (see <<json_config>>).
 |quarkus.log.console.level|INFO|The minimum log level to display to the console.
-|quarkus.log.console.color|true|Allow color rendering to be used on the console, if it is supported by the terminal.
+|quarkus.log.console.color|true|Allow color rendering to be used on the console in `text` mode, if it is supported by the terminal.
 |===
 
 === File configuration
@@ -37,6 +38,17 @@ Logging to a file is also supported but not enabled by default.  To configure or
 |quarkus.log.file.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{3.}] (%t) %s%e%n|The format pattern to use for logging to a file; see <<format_string>>.
 |quarkus.log.file.level|ALL|The minimum log level to write to the log file.
 |quarkus.log.file.path|quarkus.log|The path of the log file.
+|===
+
+[id="json_config"]
+=== JSON configuration
+
+When outputting in JSON format, it is possible to configure additional properties.
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|quarkus.log.console.json.call-details|false|Determine whether extra detail (class name, method name, source file, etc.) should be included in the log output.
 |===
 
 === Logging categories
@@ -128,6 +140,14 @@ quarkus.log.file.format=%d{HH:mm:ss} %-5p [%c{2.}]] (%t) %s%e%n
 # Set 2 categories (io.quarkus.smallrye.jwt, io.undertow.request.security) to TRACE level
 quarkus.log.category."io.quarkus.smallrye.jwt".level=TRACE
 quarkus.log.category."io.undertow.request.security".level=TRACE
+----
+
+.JSON Console Logging With Extended Call Details
+[source, properties]
+----
+quarkus.log.console.enable=true
+quarkus.log.console.format-type=json
+quarkus.log.console.json.call-details=true
 ----
 
 == Supported Logging APIs

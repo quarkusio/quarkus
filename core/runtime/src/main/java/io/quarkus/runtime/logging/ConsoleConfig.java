@@ -37,6 +37,17 @@ public class ConsoleConfig {
     String format;
 
     /**
+     * The type of output format to use.
+     */
+    @ConfigItem(defaultValue = "text")
+    FormatType formatType;
+
+    /**
+     * JSON format configuration.
+     */
+    JsonConfig json;
+
+    /**
      * The console log level
      */
     @ConfigItem(defaultValue = "INFO")

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.ErrorManager;
+import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 
@@ -15,6 +16,7 @@ import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.Logger;
 import org.jboss.logmanager.errormanager.OnlyOnceErrorManager;
 import org.jboss.logmanager.formatters.ColorPatternFormatter;
+import org.jboss.logmanager.formatters.JsonFormatter;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
@@ -50,11 +52,20 @@ public class LoggingSetupTemplate {
         }
         ArrayList<Handler> handlers = new ArrayList<>(2);
         if (config.console.enable) {
-            final PatternFormatter formatter;
-            if (config.console.color && System.console() != null) {
-                formatter = new ColorPatternFormatter(config.console.darken, config.console.format);
+            final Formatter formatter;
+            if (config.console.formatType == FormatType.JSON) {
+                JsonFormatter jsonFormatter = new JsonFormatter();
+                if (config.console.json.callDetails) {
+                    jsonFormatter.setPrintDetails(true);
+                }
+                formatter = jsonFormatter;
             } else {
-                formatter = new PatternFormatter(config.console.format);
+                assert config.console.formatType == FormatType.TEXT;
+                if (config.console.color && System.console() != null) {
+                    formatter = new ColorPatternFormatter(config.console.darken, config.console.format);
+                } else {
+                    formatter = new PatternFormatter(config.console.format);
+                }
             }
             final ConsoleHandler handler = new ConsoleHandler(formatter);
             handler.setLevel(config.console.level);

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.microprofile.context.spi.ContextManagerExtension;
 import org.eclipse.microprofile.context.spi.ThreadContextProvider;
 import org.jboss.logging.Logger;
 
@@ -48,6 +49,7 @@ class SmallRyeContextPropagationProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void buildStatic(SmallRyeContextPropagationTemplate template) throws ClassNotFoundException, IOException {
         List<ThreadContextProvider> discoveredProviders = new ArrayList<>();
+        List<ContextManagerExtension> discoveredExtensions = new ArrayList<>();
         for (Class<?> provider : ServiceUtil.classesNamedIn(SmallRyeContextPropagationTemplate.class.getClassLoader(),
                 "META-INF/services/" + ThreadContextProvider.class.getName())) {
             try {
@@ -57,8 +59,17 @@ class SmallRyeContextPropagationProcessor {
                         e);
             }
         }
+        for (Class<?> extension : ServiceUtil.classesNamedIn(SmallRyeContextPropagationTemplate.class.getClassLoader(),
+                "META-INF/services/" + ContextManagerExtension.class.getName())) {
+            try {
+                discoveredExtensions.add((ContextManagerExtension) extension.newInstance());
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new RuntimeException("Failed to instantiate declared ThreadContextProvider class: " + extension.getName(),
+                        e);
+            }
+        }
 
-        template.configureStaticInit(discoveredProviders);
+        template.configureStaticInit(discoveredProviders, discoveredExtensions);
     }
 
     @BuildStep

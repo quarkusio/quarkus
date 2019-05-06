@@ -147,8 +147,8 @@
             <artifactId>smallrye-context-propagation-jta</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.smallrye</groupId>
-            <artifactId>smallrye-context-propagation-resteasy</artifactId>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-context-propagation</artifactId>
         </dependency>
 
         <!-- test dependencies -->

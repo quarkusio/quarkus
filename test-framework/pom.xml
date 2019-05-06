@@ -36,6 +36,7 @@
         <module>junit5-internal</module>
         <module>junit5</module>
         <module>amazon-lambda</module>
+        <module>arquillian</module>
     </modules>
 
 </project>

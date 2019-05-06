@@ -302,6 +302,17 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>tcks</id>
+            <activation>
+                <property>
+                    <name>tcks</name>
+                </property>
+            </activation>
+            <modules>
+                <module>tcks</module>
+            </modules>
+        </profile>
     </profiles>
 
 </project>

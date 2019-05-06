@@ -10,16 +10,17 @@ import javax.inject.Singleton;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.context.ThreadContext;
 
-import io.smallrye.context.impl.ManagedExecutorImpl;
-import io.smallrye.context.impl.ThreadContextImpl;
+import io.smallrye.context.SmallRyeManagedExecutor;
+import io.smallrye.context.SmallRyeThreadContext;
 
 @ApplicationScoped
 public class SmallRyeContextPropagationProvider {
 
-    private volatile ManagedExecutorImpl managedExecutor;
+    private volatile SmallRyeManagedExecutor managedExecutor;
 
     void initialize(ExecutorService executorService) {
-        managedExecutor = new ManagedExecutorImpl(-1, -1, (ThreadContextImpl) getAllThreadContext(), executorService, "no-ip") {
+        managedExecutor = new SmallRyeManagedExecutor(-1, -1, (SmallRyeThreadContext) getAllThreadContext(), executorService,
+                "no-ip") {
             @Override
             public void shutdown() {
                 throw new IllegalStateException("This executor is managed by the container and cannot be shut down.");

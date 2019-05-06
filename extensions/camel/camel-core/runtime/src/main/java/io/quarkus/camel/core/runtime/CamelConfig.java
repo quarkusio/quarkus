@@ -2,6 +2,8 @@ package io.quarkus.camel.core.runtime;
 
 import java.util.List;
 
+import io.quarkus.camel.core.runtime.graal.JaxbDisabled;
+import io.quarkus.camel.core.runtime.graal.XmlDisabled;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -28,8 +30,10 @@ public class CamelConfig {
          * down the size of applications, it is possible to disable jaxb support
          * at runtime. This is useful when routes at loaded at build time and
          * thus the camel route model is not used at runtime anymore.
+         *
+         * @see JaxbDisabled
          */
-        @ConfigItem
+        @ConfigItem(defaultValue = "false")
         public boolean disableJaxb;
 
         /**
@@ -37,8 +41,10 @@ public class CamelConfig {
          * Because xml parsing using xerces/xalan libraries can consume
          * a lot of code space in the native binary (and a lot of cpu resources
          * when building), this allows to disable both libraries.
+         *
+         * @see XmlDisabled
          */
-        @ConfigItem
+        @ConfigItem(defaultValue = "false")
         public boolean disableXml;
     }
 

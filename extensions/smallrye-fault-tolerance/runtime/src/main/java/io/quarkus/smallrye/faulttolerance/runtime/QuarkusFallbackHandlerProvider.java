@@ -37,7 +37,7 @@ public class QuarkusFallbackHandlerProvider implements FallbackHandlerProvider {
 
     @Inject
     @Any
-    Instance<Object> instance;
+    Instance<FallbackHandler<?>> instance;
 
     @Override
     public <T> FallbackHandler<T> get(FaultToleranceOperation operation) {
@@ -46,7 +46,7 @@ public class QuarkusFallbackHandlerProvider implements FallbackHandlerProvider {
                 @SuppressWarnings("unchecked")
                 @Override
                 public T handle(ExecutionContext context) {
-                    Class<?> clazz = operation.getFallback().get(FallbackConfig.VALUE);
+                    Class<? extends FallbackHandler<?>> clazz = operation.getFallback().get(FallbackConfig.VALUE);
                     FallbackHandler<T> fallbackHandlerInstance = (FallbackHandler<T>) instance.select(clazz).get();
                     try {
                         return fallbackHandlerInstance.handle(context);

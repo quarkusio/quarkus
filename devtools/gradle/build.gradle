@@ -1,5 +1,5 @@
 plugins {
-    id 'com.gradle.build-scan' version '2.2.1'
+    id 'com.gradle.build-scan' version '2.3'
     id 'com.gradle.plugin-publish' version '0.10.1'
     id 'java-gradle-plugin'
 }
@@ -39,21 +39,8 @@ test {
     useJUnitPlatform()
 }
 
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
 javadoc {
     options.addStringOption('encoding', 'UTF-8')
-}
-task javadocJar(type: Jar) {
-    classifier = "javadoc"
-    from javadoc
-}
-
-artifacts {
-    archives sourcesJar
-    archives javadocJar
 }
 
 gradlePlugin {

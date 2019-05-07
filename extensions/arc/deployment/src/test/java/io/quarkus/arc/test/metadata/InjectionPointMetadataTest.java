@@ -14,40 +14,48 @@
  * limitations under the License.
  */
 
-package io.quarkus.arc.test;
+package io.quarkus.arc.test.metadata;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.wildfly.common.Assert.assertFalse;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.spi.DefinitionException;
+import javax.enterprise.inject.spi.DeploymentException;
+import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class SimpleBeanTest {
+public class InjectionPointMetadataTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(SimpleBean.class)
-                    .addAsResource(new StringAsset("simpleBean.baz=1"), "application.properties"));
-
-    @Inject
-    SimpleBean simpleBean;
+                    .addClasses(InvalidInjection.class))
+            .assertException(t -> {
+                assertEquals(DeploymentException.class, t.getClass());
+                // There should be only one deployment problem
+                assertEquals(DefinitionException.class, t.getCause().getClass());
+            });
 
     @Test
-    public void testSimpleBean() {
-        assertNotNull(simpleBean.getStartupEvent());
-        assertEquals(SimpleBean.DEFAULT, simpleBean.getFoo());
-        assertFalse(simpleBean.getFooOptional().isPresent());
-        assertEquals("1", simpleBean.getBazOptional().get());
-        assertEquals("1", simpleBean.getBazProvider().get());
+    public void testValidationFailed() {
+        // This method should not be invoked
+        Assertions.fail();
+    }
+
+    @ApplicationScoped
+    static class InvalidInjection {
+
+        @Inject
+        InjectionPoint injectionPoint;
+
     }
 
 }

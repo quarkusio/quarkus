@@ -51,7 +51,7 @@ public class TikaProcessor {
             Predicate<String> pred = p -> !Parser.class.getName().equals(serviceProviderName)
                     || NATIVE_READY_PARSERS.contains(p);
             serviceProvider.produce(new ServiceProviderBuildItem(serviceProviderName,
-                    availableProviderClasses.stream().filter(pred).collect(Collectors.toList()).toArray(new String[] {})));
+                    availableProviderClasses.stream().filter(pred).collect(Collectors.toList())));
         }
     }
 

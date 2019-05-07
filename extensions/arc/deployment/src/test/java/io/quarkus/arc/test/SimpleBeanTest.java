@@ -47,6 +47,7 @@ public class SimpleBeanTest {
         assertEquals(SimpleBean.DEFAULT, simpleBean.getFoo());
         assertFalse(simpleBean.getFooOptional().isPresent());
         assertEquals("1", simpleBean.getBazOptional().get());
+        assertEquals("1", simpleBean.getBazProvider().get());
     }
 
 }

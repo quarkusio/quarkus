@@ -109,14 +109,24 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         throw new RuntimeException("UNREACHABLE");
     }
 
-    protected boolean handleIfAsyncStarted(TransactionManager tm, Transaction tx, InvocationContext ic) {
+    protected boolean handleIfAsyncStarted(TransactionManager tm, Transaction tx, InvocationContext ic) throws SystemException {
         ArcContainer arcContainer = Arc.container();
         if (arcContainer.isCurrentRequestAsync()) {
+            // Suspend the transaction to remove it from the main request thread
+            tm.suspend();
             arcContainer.getAsyncRequestNotifier().handle((v, t) -> {
                 try {
+                    // Verify if this thread's transaction is the right one
+                    Transaction currentTransaction = tm.getTransaction();
+                    // If not, install the right transaction
+                    if (currentTransaction != tx) {
+                        tm.suspend();
+                        tm.resume(tx);
+                    }
                     if (t != null)
                         handleExceptionNoThrow(ic, t, tx);
                     endTransaction(tm, tx);
+                    // FIXME: should we restore the previous transaction?
                 } catch (Exception e) {
                     jtaLogger.logger.error("Failed to end async transaction", e);
                 }

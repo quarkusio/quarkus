@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
+import javax.inject.Provider;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -45,6 +46,10 @@ public class SimpleBean {
     @ConfigProperty(name = "simpleBean.baz")
     Optional<String> bazOptional;
 
+    @Inject
+    @ConfigProperty(name = "simpleBean.baz")
+    Provider<String> bazProvider;
+
     void onStart(@Observes StartupEvent event) {
         startupEvent.set(event);
     }
@@ -63,6 +68,10 @@ public class SimpleBean {
 
     Optional<String> getBazOptional() {
         return bazOptional;
+    }
+
+    public Provider<String> getBazProvider() {
+        return bazProvider;
     }
 
 }

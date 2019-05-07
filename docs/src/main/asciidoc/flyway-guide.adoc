@@ -97,6 +97,7 @@ The following is an example for the `{config-file}` file:
 --
 # configure your datasource
 quarkus.datasource.url: jdbc:postgresql://localhost:5432/mydatabase
+quarkus.datasource.driver: org.postgresql.Driver
 quarkus.datasource.username: sarah
 quarkus.datasource.password: connor
 

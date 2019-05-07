@@ -47,7 +47,8 @@ class SmallRyeContextPropagationProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void buildStatic(SmallRyeContextPropagationTemplate template) throws ClassNotFoundException, IOException {
+    void buildStatic(SmallRyeContextPropagationTemplate template)
+            throws ClassNotFoundException, IOException {
         List<ThreadContextProvider> discoveredProviders = new ArrayList<>();
         List<ContextManagerExtension> discoveredExtensions = new ArrayList<>();
         for (Class<?> provider : ServiceUtil.classesNamedIn(SmallRyeContextPropagationTemplate.class.getClassLoader(),

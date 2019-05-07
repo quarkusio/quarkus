@@ -13,6 +13,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.processor.BeanDeploymentValidator;
@@ -63,7 +65,28 @@ public class ConfigBuildStep {
                             // No need to validate properties with default values
                             continue;
                         }
-                        String propertyName = configProperty.value("name").asString();
+                        AnnotationValue nameValue = configProperty.value("name");
+                        String propertyName;
+                        if (nameValue != null) {
+                            propertyName = nameValue.asString();
+                        } else {
+                            // org.acme.Foo.config
+                            if (injectionPoint.isField()) {
+                                FieldInfo field = injectionPoint.getTarget().asField();
+                                propertyName = (field.declaringClass().enclosingClass() == null ? field.declaringClass().name()
+                                        : field.declaringClass().enclosingClass() + "." + field.declaringClass().simpleName())
+                                        + "." + field.name();
+                            } else if (injectionPoint.isParam()) {
+                                MethodInfo method = injectionPoint.getTarget().asMethod();
+                                propertyName = (method.declaringClass().enclosingClass() == null
+                                        ? method.declaringClass().name()
+                                        : method.declaringClass().enclosingClass() + "." + method.declaringClass().simpleName())
+                                        + "."
+                                        + method.parameterName(injectionPoint.getPosition());
+                            } else {
+                                throw new IllegalStateException("Unsupported injection point target: " + injectionPoint);
+                            }
+                        }
                         Class<?> propertyType;
 
                         if (injectionPoint.getRequiredType().kind() == Type.Kind.PRIMITIVE) {

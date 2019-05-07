@@ -108,7 +108,7 @@
         <slf4j-jboss-logging.version>1.1.0.Final</slf4j-jboss-logging.version>
         <wildfly-common.version>1.5.0.Final-format-001</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
-        <wildfly-elytron.version>2.0.0.Alpha1</wildfly-elytron.version>
+        <wildfly-elytron.version>2.0.0.Alpha4</wildfly-elytron.version>
         <jboss-modules.version>1.8.7.Final</jboss-modules.version>
         <jboss-threads.version>3.0.0.Beta3</jboss-threads.version>
         <vertx.version>3.6.3</vertx.version>
@@ -1418,6 +1418,11 @@
             <dependency>
                 <groupId>org.wildfly.security</groupId>
                 <artifactId>wildfly-elytron-auth-server</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-password-impl</artifactId>
                 <version>${wildfly-elytron.version}</version>
             </dependency>
             <dependency>

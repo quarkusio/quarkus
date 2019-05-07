@@ -67,7 +67,7 @@ public class AppArtifactCoords {
     public AppArtifactCoords(String groupId, String artifactId, String classifier, String type, String version) {
         this.groupId = groupId;
         this.artifactId = artifactId;
-        this.classifier = classifier;
+        this.classifier = classifier == null ? "" : classifier;
         this.type = type;
         this.version = version;
     }

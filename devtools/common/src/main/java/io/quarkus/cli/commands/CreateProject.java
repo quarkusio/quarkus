@@ -37,7 +37,7 @@ import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.PluginManagement;
 import org.apache.maven.model.Profile;
 
-import io.quarkus.cli.commands.writer.Writer;
+import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.MojoUtils.Element;
 import io.quarkus.templates.BuildTool;
@@ -50,8 +50,8 @@ import io.quarkus.templates.rest.BasicRest;
  */
 public class CreateProject {
 
-    private static final String POM_PATH = "/pom.xml";
-    private Writer writer;
+    private static final String POM_PATH = "pom.xml";
+    private ProjectWriter writer;
     private String groupId;
     private String artifactId;
     private String version = getPluginVersion();
@@ -61,7 +61,7 @@ public class CreateProject {
 
     private Model model;
 
-    public CreateProject(final Writer writer) {
+    public CreateProject(final ProjectWriter writer) {
         this.writer = writer;
     }
 

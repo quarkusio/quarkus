@@ -3,14 +3,13 @@
  */
 package io.quarkus.cli.commands.writer;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
- * @author guillaumedufour
- *         This writer provide a way to write direct a file or inside a zip for project creation
- *
+ * This writer provide a way to write direct a file or inside a zip for project creation.
  */
-public interface Writer {
+public interface ProjectWriter extends Closeable {
 
     default boolean init() {
         return true;

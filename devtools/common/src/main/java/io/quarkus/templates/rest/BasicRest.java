@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 import org.apache.maven.model.Model;
 
-import io.quarkus.cli.commands.writer.Writer;
+import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.templates.QuarkusTemplate;
 import io.quarkus.templates.SourceType;
@@ -25,9 +25,9 @@ public class BasicRest implements QuarkusTemplate {
 
     private Map<String, Object> context;
     private String path = "/hello";
-    private Writer writer;
-    private String srcMain;
-    private String testMain;
+    private ProjectWriter writer;
+    private String srcMainPath;
+    private String testMainPath;
     private SourceType type;
 
     public BasicRest() {
@@ -39,7 +39,7 @@ public class BasicRest implements QuarkusTemplate {
     }
 
     @Override
-    public void generate(final Writer writer, Map<String, Object> parameters) throws IOException {
+    public void generate(final ProjectWriter writer, Map<String, Object> parameters) throws IOException {
         this.writer = writer;
         this.context = parameters == null ? Collections.emptyMap() : parameters;
         this.type = (SourceType) context.get(SOURCE_TYPE);
@@ -62,10 +62,10 @@ public class BasicRest implements QuarkusTemplate {
             String packageName = (String) context.get(PACKAGE_NAME);
 
             if (packageName != null) {
-                String packageDir = srcMain + '/' + packageName.replace('.', '/');
-                String testPackageDir = testMain + '/' + packageName.replace('.', '/');
-                srcMain = writer.mkdirs(packageDir);
-                testMain = writer.mkdirs(testPackageDir);
+                String packageDir = srcMainPath + '/' + packageName.replace('.', '/');
+                String testPackageDir = testMainPath + '/' + packageName.replace('.', '/');
+                srcMainPath = writer.mkdirs(packageDir);
+                testMainPath = writer.mkdirs(testPackageDir);
             } else {
                 throw new NullPointerException("Need a non-null package name");
             }
@@ -77,9 +77,9 @@ public class BasicRest implements QuarkusTemplate {
         // If className is null we disable the generation of the JAX-RS resource.
         if (className != null) {
             String extension = type.getExtension();
-            String classFile = srcMain + '/' + className + extension;
-            String testClassFile = testMain + '/' + className + "Test" + extension;
-            String itTestClassFile = testMain + '/' + "Native" + className + "IT" + extension;
+            String classFile = srcMainPath + '/' + className + extension;
+            String testClassFile = testMainPath + '/' + className + "Test" + extension;
+            String itTestClassFile = testMainPath + '/' + "Native" + className + "IT" + extension;
             String name = getName();
             generate(type.getSrcResourceTemplate(name), context, classFile, "resource code");
             generate(type.getTestResourceTemplate(name), context, testClassFile, "test code");
@@ -104,8 +104,8 @@ public class BasicRest implements QuarkusTemplate {
 
         path = get(RESOURCE_PATH, path);
 
-        srcMain = writer.mkdirs(type.getSrcDir());
-        testMain = writer.mkdirs(type.getTestSrcDir());
+        srcMainPath = writer.mkdirs(type.getSrcDir());
+        testMainPath = writer.mkdirs(type.getTestSrcDir());
 
         return newProject;
     }
@@ -140,9 +140,10 @@ public class BasicRest implements QuarkusTemplate {
 
     private void createDockerFiles() throws IOException {
         String dockerRoot = "src/main/docker";
-        generate("templates/dockerfile-native.ftl", context, writer.mkdirs(dockerRoot) + "Dockerfile.native",
+        String dockerRootDir = writer.mkdirs(dockerRoot);
+        generate("templates/dockerfile-native.ftl", context, dockerRootDir + "Dockerfile.native",
                 "native docker file");
-        generate("templates/dockerfile-jvm.ftl", context, writer.mkdirs(dockerRoot) + "Dockerfile.jvm", "jvm docker file");
+        generate("templates/dockerfile-jvm.ftl", context, dockerRootDir + "Dockerfile.jvm", "jvm docker file");
     }
 
     private void createDockerIgnore() throws IOException {

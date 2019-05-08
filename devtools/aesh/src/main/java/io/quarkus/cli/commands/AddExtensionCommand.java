@@ -13,7 +13,7 @@ import org.aesh.command.option.Argument;
 import org.aesh.command.option.Option;
 import org.aesh.io.Resource;
 
-import io.quarkus.cli.commands.writer.FileWriter;
+import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.maven.utilities.MojoUtils;
 
@@ -44,7 +44,8 @@ public class AddExtensionCommand implements Command<CommandInvocation> {
             } else if (pom.isLeaf()) {
                 try {
                     File pomFile = new File(pom.getAbsolutePath());
-                    AddExtensions project = new AddExtensions(new FileWriter(pomFile.getParentFile()), pomFile.getName());
+                    AddExtensions project = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()),
+                            pomFile.getName());
                     project.addExtensions(Collections.singleton(extension));
                 } catch (IOException e) {
                     e.printStackTrace();

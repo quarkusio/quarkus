@@ -10,13 +10,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * @author guillaumedufour
- *
+ * ProjectWriter implementation to create direct files in the file system.
  */
-public class FileWriter implements Writer {
+public class FileProjectWriter implements ProjectWriter {
     private final File root;
 
-    public FileWriter(final File file) {
+    public FileProjectWriter(final File file) {
         root = file;
     }
 
@@ -67,6 +66,11 @@ public class FileWriter implements Writer {
     @Override
     public boolean exists(String path) {
         return new File(root, path).exists();
+    }
+
+    @Override
+    public void close() throws IOException {
+        //do nothing
     }
 
 }

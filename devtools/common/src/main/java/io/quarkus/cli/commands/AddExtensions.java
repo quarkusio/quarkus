@@ -13,16 +13,16 @@ import java.util.Set;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 
-import io.quarkus.cli.commands.writer.Writer;
+import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.maven.utilities.MojoUtils;
 
 public class AddExtensions {
     private Model model;
     private String pom;
-    private Writer writer;
+    private ProjectWriter writer;
 
-    public AddExtensions(final Writer writer, final String pom) throws IOException {
+    public AddExtensions(final ProjectWriter writer, final String pom) throws IOException {
         this.model = MojoUtils.readPom(new ByteArrayInputStream(writer.getContent(pom)));
         this.writer = writer;
         this.pom = pom;

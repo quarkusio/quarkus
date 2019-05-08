@@ -25,13 +25,13 @@ public class ListExtensionsMojo extends AbstractMojo {
     /**
      * list all extensions or just the installable.
      */
-    @Parameter(property = "quarkus.extension.all", alias = "all", defaultValue = "true")
+    @Parameter(property = "quarkus.extension.all", alias = "quarkus.extension.all", defaultValue = "true")
     protected boolean all;
 
     /**
      * display in simplified format.
      */
-    @Parameter(property = "quarkus.extension.format", alias = "format", defaultValue = "full")
+    @Parameter(property = "quarkus.extension.format", alias = "quarkus.extension.format", defaultValue = "full")
     protected String format;
 
     @Override

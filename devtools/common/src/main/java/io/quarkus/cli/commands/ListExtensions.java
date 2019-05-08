@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
@@ -32,7 +33,9 @@ public class ListExtensions {
         Consumer<String[]> currentFormatter = "simple".equalsIgnoreCase(format) ? this::simpleFormatter : this::fullFormatter;
         String extensionStatus = all ? "available" : "installable";
         System.out.println(String.format("\nCurrent Quarkus extensions %s: ", extensionStatus));
-        currentFormatter.accept(new String[] { "Status", "Extension", "ArtifactId", "Updated Version", "Guide" });
+        if (!"simple".equalsIgnoreCase(format)) {
+            currentFormatter.accept(new String[] { "Status", "Extension", "ArtifactId", "Updated Version", "Guide" });
+        }
 
         final Map<String, Dependency> installed = findInstalled();
 
@@ -63,15 +66,17 @@ public class ListExtensions {
 
         final String extracted = extractVersion(dependency);
         if (extracted != null) {
-            if (MojoUtils.getPluginVersion().equalsIgnoreCase(extracted)) {
+            if (getPluginVersion().equalsIgnoreCase(extracted)) {
                 label = "current";
+                version = String.format("%s", extracted);
             } else {
                 label = "update";
                 version = String.format("%s <> %s", extracted, getPluginVersion());
             }
         }
 
-        formatter.accept(new String[] { label, extension.getName(), extension.getArtifactId(), version, extension.getGuide() });
+        String guide = StringUtils.defaultString(extension.getGuide(), "");
+        formatter.accept(new String[] { label, extension.getName(), extension.getArtifactId(), version, guide });
     }
 
     private String extractVersion(final Dependency dependency) {

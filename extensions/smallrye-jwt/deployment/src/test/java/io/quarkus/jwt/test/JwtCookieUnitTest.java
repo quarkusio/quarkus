@@ -20,7 +20,6 @@ public class JwtCookieUnitTest {
      * The test generated JWT token string
      */
     private String token;
-    // Time claims in the token
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -34,8 +33,7 @@ public class JwtCookieUnitTest {
     }
 
     /**
-     * Validate a request with MP-JWT without a 'groups' claim is successful
-     * due to the default value being provided in the configuration
+     * Validate a request with MP-JWT token in a Cookie header is successful
      *
      * @throws Exception
      */

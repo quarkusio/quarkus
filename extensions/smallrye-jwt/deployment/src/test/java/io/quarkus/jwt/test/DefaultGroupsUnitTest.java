@@ -20,7 +20,6 @@ public class DefaultGroupsUnitTest {
      * The test generated JWT token string
      */
     private String token;
-    // Time claims in the token
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()

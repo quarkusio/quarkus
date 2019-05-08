@@ -43,7 +43,7 @@ The solution is located in the `getting-started-knative` directory.
 
 Before we deploy the application to Knative in Minikube or Minishift we need to create the following Kubernetes objects:
 
-- https://github.com/knative/docs/tree/master/serving/samples/build-private-repo-go#creating-a-dockerhub-push-credential[Container registry secrets] :-
+- https://github.com/knative/docs/blob/master/docs/serving/deploying-with-private-registry.md#provide-container-registry-credentials-to-knative[Container registry secrets] :-
 This is required to for the built container image to be pushed to the container registry of your choice
 - https://developer.github.com/v3/guides/managing-deploy-keys/#deploy-keys[Deploy Key] :-
 This is required only if you are going to pull the sources from private repository.

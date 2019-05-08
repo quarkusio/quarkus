@@ -135,7 +135,7 @@ public class ClassLoaderCompiler {
         }
         this.allHandledExtensions = new HashSet<>();
         for (CompilationProvider compilationProvider : compilationProviders) {
-            allHandledExtensions.add(compilationProvider.handledExtension());
+            allHandledExtensions.addAll(compilationProvider.handledExtensions());
         }
     }
 
@@ -147,7 +147,7 @@ public class ClassLoaderCompiler {
         CompilationProvider.Context compilationContext = compilationContexts.get(sourceDir);
         for (String extension : extensionToChangedFiles.keySet()) {
             for (CompilationProvider compilationProvider : compilationProviders) {
-                if (extension.equals(compilationProvider.handledExtension())) {
+                if (compilationProvider.handledExtensions().contains(extension)) {
                     compilationProvider.compile(extensionToChangedFiles.get(extension), compilationContext);
                     break;
                 }

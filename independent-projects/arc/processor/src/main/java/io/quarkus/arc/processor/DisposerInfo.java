@@ -31,7 +31,7 @@ import org.jboss.jandex.Type;
  *
  * @author Martin Kouba
  */
-public class DisposerInfo {
+public class DisposerInfo implements InjectionTargetInfo {
 
     private final BeanInfo declaringBean;
 
@@ -46,6 +46,16 @@ public class DisposerInfo {
         this.disposerMethod = disposerMethod;
         this.injection = injection;
         this.disposedParameter = initDisposedParam(disposerMethod);
+    }
+
+    @Override
+    public TargetKind kind() {
+        return TargetKind.DISPOSER;
+    }
+
+    @Override
+    public DisposerInfo asDisposer() {
+        return this;
     }
 
     public BeanInfo getDeclaringBean() {
@@ -72,7 +82,7 @@ public class DisposerInfo {
 
     void init(List<Throwable> errors) {
         for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
-            Beans.resolveInjectionPoint(declaringBean.getDeployment(), null, injectionPoint, errors);
+            Beans.resolveInjectionPoint(declaringBean.getDeployment(), this, injectionPoint, errors);
         }
     }
 

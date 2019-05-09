@@ -44,7 +44,7 @@ import org.jboss.jandex.Type;
  *
  * @author Martin Kouba
  */
-public class BeanInfo {
+public class BeanInfo implements InjectionTargetInfo {
 
     private final String identifier;
 
@@ -147,6 +147,16 @@ public class BeanInfo {
         this.params = params;
         // Identifier must be unique for a specific deployment
         this.identifier = Hashes.sha1(toString());
+    }
+
+    @Override
+    public TargetKind kind() {
+        return TargetKind.BEAN;
+    }
+
+    @Override
+    public BeanInfo asBean() {
+        return this;
     }
 
     public String getIdentifier() {

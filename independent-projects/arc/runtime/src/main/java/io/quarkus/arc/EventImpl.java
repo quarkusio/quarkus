@@ -297,7 +297,7 @@ class EventImpl<T> implements Event<T> {
 
         @Override
         public InjectionPoint getInjectionPoint() {
-            // TODO add partial support
+            // Currently we do not support injection point of the injected Event instance which fired the event
             return null;
         }
 

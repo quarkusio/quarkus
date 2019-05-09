@@ -18,8 +18,10 @@ package io.quarkus.arc.processor;
 
 import io.quarkus.arc.Arc;
 import java.lang.reflect.Modifier;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type.Kind;
 
 abstract class AbstractGenerator {
 
@@ -84,12 +86,17 @@ abstract class AbstractGenerator {
     }
 
     protected String getPackageName(BeanInfo bean) {
-        String packageName;
+        DotName providerTypeName;
         if (bean.isProducerMethod() || bean.isProducerField()) {
-            packageName = DotNames.packageName(bean.getDeclaringBean().getProviderType().name());
+            providerTypeName = bean.getDeclaringBean().getProviderType().name();
         } else {
-            packageName = DotNames.packageName(bean.getProviderType().name());
+            if (bean.getProviderType().kind() == Kind.ARRAY || bean.getProviderType().kind() == Kind.PRIMITIVE) {
+                providerTypeName = bean.getImplClazz().name();
+            } else {
+                providerTypeName = bean.getProviderType().name();
+            }
         }
+        String packageName = DotNames.packageName(providerTypeName);
         if (packageName.startsWith("java.")) {
             // It is not possible to place a class in a JDK package
             packageName = DEFAULT_PACKAGE;

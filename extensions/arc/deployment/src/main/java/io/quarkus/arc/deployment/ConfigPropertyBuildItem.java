@@ -9,9 +9,9 @@ public final class ConfigPropertyBuildItem extends MultiBuildItem {
 
     private final String propertyName;
 
-    private final Class<?> propertyType;
+    private final String propertyType;
 
-    public ConfigPropertyBuildItem(String propertyName, Class<?> propertyType) {
+    public ConfigPropertyBuildItem(String propertyName, String propertyType) {
         this.propertyName = propertyName;
         this.propertyType = propertyType;
     }
@@ -20,7 +20,7 @@ public final class ConfigPropertyBuildItem extends MultiBuildItem {
         return propertyName;
     }
 
-    public Class<?> getPropertyType() {
+    public String getPropertyType() {
         return propertyType;
     }
 

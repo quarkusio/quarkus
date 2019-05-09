@@ -49,4 +49,8 @@ public class InjectionPointProvider implements InjectableReferenceProvider<Injec
         }
     }
 
+    public static InjectionPoint get() {
+        return CURRENT.get();
+    }
+
 }

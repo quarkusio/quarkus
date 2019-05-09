@@ -63,7 +63,6 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 
@@ -81,9 +80,6 @@ public class ArcAnnotationProcessor {
 
     @Inject
     BuildProducer<GeneratedResourceBuildItem> generatedResource;
-
-    @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
 
     @Inject
     List<AdditionalBeanBuildItem> additionalBeans;

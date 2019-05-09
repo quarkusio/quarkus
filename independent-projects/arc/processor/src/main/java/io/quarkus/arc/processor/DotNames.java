@@ -98,6 +98,7 @@ public final class DotNames {
     public static final DotName INTEGER = create(Integer.class);
     public static final DotName LONG = create(Long.class);
     public static final DotName SHORT = create(Short.class);
+    public static final DotName STRING = create(String.class);
 
     private DotNames() {
     }

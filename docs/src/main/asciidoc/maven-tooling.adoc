@@ -85,6 +85,25 @@ You can enable an extension using:
 
 Extensions are passed using a comma-separated list.
 
+The extension name is the GAV name of the extension: e.g. `io.quarkus:quarkus-agroal`.
+But you can pass a partial name and Quarkus will do its best to find the right extension.
+For example, `agroal`, `Agroal` or `agro`  will expand to `io.quarkus:quarkus-agroal`.
+If no extension is found or if more than one extensions match, you will see a red check mark  ❌ in the command result.
+
+[source,shell]
+----
+$ mvn quarkus:add-extensions -Dextensions=jdbc,agroal,non-exist-ent
+[...]
+❌ Multiple extensions matching 'jdbc'
+     * io.quarkus:quarkus-jdbc-h2
+     * io.quarkus:quarkus-jdbc-mariadb
+     * io.quarkus:quarkus-jdbc-postgresql
+     Be more specific e.g using the exact name or the full gav.
+✅ Adding extension io.quarkus:quarkus-agroal
+❌ Cannot find a dependency matching 'non-exist-ent', maybe a typo?
+[...]
+----
+
 == Development mode
 
 {project-name} comes with a built-in development mode.

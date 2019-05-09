@@ -5,10 +5,7 @@ import static io.undertow.util.Headers.COOKIE;
 import static io.undertow.util.Headers.WWW_AUTHENTICATE;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 
-import java.util.List;
 import java.util.Locale;
-
-import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.undertow.UndertowLogger;
@@ -17,6 +14,7 @@ import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.Cookie;
 
 /**
  * An AuthenticationMechanism that validates a caller based on a MicroProfile JWT bearer token
@@ -79,18 +77,9 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
             }
         } else if (COOKIE.toString().equals(authContextInfo.getTokenHeader())
                 && authContextInfo.getTokenCookie() != null) {
-            List<String> cookieValues = exchange.getRequestHeaders().get(authContextInfo.getTokenHeader());
-            if (cookieValues != null) {
-                for (String cookieValue : cookieValues) {
-                    for (String cookie : cookieValue.split(";")) {
-                        if (cookie.startsWith(authContextInfo.getTokenCookie())) {
-                            String[] parts = cookie.split("=");
-                            if (parts.length == 2) {
-                                bearerToken = parts[1].trim();
-                            }
-                        }
-                    }
-                }
+            Cookie cookie = exchange.getRequestCookies().get(authContextInfo.getTokenCookie());
+            if (cookie != null) {
+                bearerToken = cookie.getValue();
             }
         } else {
             bearerToken = exchange.getRequestHeaders().getFirst(authContextInfo.getTokenHeader());

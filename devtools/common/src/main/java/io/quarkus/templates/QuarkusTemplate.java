@@ -1,8 +1,9 @@
 package io.quarkus.templates;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+
+import io.quarkus.cli.commands.writer.ProjectWriter;
 
 public interface QuarkusTemplate {
     String PROJECT_GROUP_ID = "project_groupId";
@@ -17,5 +18,5 @@ public interface QuarkusTemplate {
 
     String getName();
 
-    void generate(final File projectRoot, Map<String, Object> parameters) throws IOException;
+    void generate(final ProjectWriter writer, Map<String, Object> parameters) throws IOException;
 }

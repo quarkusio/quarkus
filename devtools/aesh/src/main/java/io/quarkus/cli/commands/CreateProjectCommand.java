@@ -12,6 +12,8 @@ import org.aesh.command.invocation.CommandInvocation;
 import org.aesh.command.option.Option;
 import org.aesh.io.Resource;
 
+import io.quarkus.cli.commands.writer.FileProjectWriter;
+
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
  */
@@ -41,7 +43,7 @@ public class CreateProjectCommand implements Command<CommandInvocation> {
 
         if (path != null) {
             try {
-                boolean status = new CreateProject(new File(path.getAbsolutePath()))
+                boolean status = new CreateProject(new FileProjectWriter(new File(path.getAbsolutePath())))
                         .groupId(groupid)
                         .artifactId(artifactid)
                         .version(this.version)

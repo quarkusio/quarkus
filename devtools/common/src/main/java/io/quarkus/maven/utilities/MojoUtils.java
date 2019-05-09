@@ -228,7 +228,12 @@ public class MojoUtils {
     }
 
     public static void write(Model model, File outputFile) throws IOException {
-        try (OutputStream stream = new FileOutputStream(outputFile)) {
+        FileOutputStream fileOutputStream = new FileOutputStream(outputFile);
+        write(model, fileOutputStream);
+    }
+
+    public static void write(Model model, OutputStream fileOutputStream) throws IOException {
+        try (OutputStream stream = fileOutputStream) {
             new MavenXpp3Writer().write(stream, model);
         }
     }

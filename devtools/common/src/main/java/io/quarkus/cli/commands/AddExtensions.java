@@ -3,7 +3,8 @@ package io.quarkus.cli.commands;
 import static io.quarkus.maven.utilities.MojoUtils.getBomArtifactId;
 import static io.quarkus.maven.utilities.MojoUtils.readPom;
 
-import java.io.File;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -12,15 +13,18 @@ import java.util.Set;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 
+import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.maven.utilities.MojoUtils;
 
 public class AddExtensions {
     private Model model;
-    private File pom;
+    private String pom;
+    private ProjectWriter writer;
 
-    public AddExtensions(final File pom) throws IOException {
-        this.model = MojoUtils.readPom(pom);
+    public AddExtensions(final ProjectWriter writer, final String pom) throws IOException {
+        this.model = MojoUtils.readPom(new ByteArrayInputStream(writer.getContent(pom)));
+        this.writer = writer;
         this.pom = pom;
     }
 
@@ -66,7 +70,9 @@ public class AddExtensions {
         }
 
         if (updated) {
-            MojoUtils.write(model, pom);
+            ByteArrayOutputStream pomOutputStream = new ByteArrayOutputStream();
+            MojoUtils.write(model, pomOutputStream);
+            writer.write(pom, pomOutputStream.toString());
         }
 
         return updated;

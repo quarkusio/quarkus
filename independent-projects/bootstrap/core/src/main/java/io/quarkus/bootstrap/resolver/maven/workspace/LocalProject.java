@@ -44,6 +44,7 @@ public class LocalProject {
 
     public static final String PROJECT_GROUPID = "${project.groupId}";
 
+    private static final String PROJECT_BASEDIR = "${project.basedir}";
     private static final String POM_XML = "pom.xml";
 
     public static LocalProject load(Path path) throws BootstrapException {
@@ -187,7 +188,8 @@ public class LocalProject {
 
     public Path getSourcesSourcesDir() {
         if (getRawModel().getBuild() != null && getRawModel().getBuild().getSourceDirectory() != null) {
-            return Paths.get(getRawModel().getBuild().getSourceDirectory());
+            String originalValue = getRawModel().getBuild().getSourceDirectory();
+            return Paths.get(originalValue.startsWith(PROJECT_BASEDIR) ? originalValue.replace(PROJECT_BASEDIR, this.dir.toString()) : originalValue);
         }
         return dir.resolve("src/main/java");
     }

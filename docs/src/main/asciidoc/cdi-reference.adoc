@@ -77,7 +77,7 @@ public class CounterBean {
     }
 
     @Inject
-    CounterBean(CounterService service) { <2>
+    CounterBean(CounterService service) { // <2>
       this.service = service;
     }
 }

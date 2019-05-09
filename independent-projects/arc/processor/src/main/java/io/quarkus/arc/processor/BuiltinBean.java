@@ -174,7 +174,16 @@ enum BuiltinBean {
                             InjectableReferenceProvider.class.getName()),
                     constructor.getThis(), resourceProvider);
         }
-    }, ip -> ip.getKind() == InjectionPointKind.RESOURCE);
+    }, ip -> ip.getKind() == InjectionPointKind.RESOURCE),
+    EVENT_METADATA(DotNames.EVENT_METADATA, new Generator() {
+        @Override
+        void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
+                ClassCreator clazzCreator, MethodCreator constructor, String providerName,
+                AnnotationLiteralProcessor annotationLiterals) {
+            // No-op
+        }
+    }),
+    ;
 
     private final DotName rawTypeDotName;
 

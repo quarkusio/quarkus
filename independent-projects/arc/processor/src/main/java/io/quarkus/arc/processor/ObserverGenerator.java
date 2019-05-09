@@ -152,6 +152,10 @@ public class ObserverGenerator extends AbstractGenerator {
     protected void initMaps(ObserverInfo observer, Map<InjectionPointInfo, String> injectionPointToProvider) {
         int providerIdx = 1;
         for (InjectionPointInfo injectionPoint : observer.getInjection().injectionPoints) {
+            if (injectionPoint.getRequiredType().name().equals(DotNames.EVENT_METADATA)) {
+                // We do not need a provider for event metadata
+                continue;
+            }
             injectionPointToProvider.put(injectionPoint, "observerProvider" + providerIdx++);
         }
     }

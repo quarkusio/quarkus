@@ -2,7 +2,9 @@ package io.quarkus.smallrye.jwt.runtime.auth;
 
 import javax.enterprise.inject.spi.CDI;
 
-import io.quarkus.smallrye.jwt.runtime.PrincipalProducer;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
+import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -31,10 +33,10 @@ public class MpJwtPrincipalHandler implements HttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         Account account = exchange.getSecurityContext().getAuthenticatedAccount();
-        if (account instanceof JWTAccount) {
-            JWTAccount jwtAccount = (JWTAccount) account;
+        if (account != null && account.getPrincipal() instanceof JsonWebToken) {
+            JsonWebToken token = (JsonWebToken) account.getPrincipal();
             PrincipalProducer myInstance = CDI.current().select(PrincipalProducer.class).get();
-            myInstance.setAccount(jwtAccount);
+            myInstance.setJsonWebToken(token);
         }
         next.handleRequest(exchange);
     }

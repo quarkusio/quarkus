@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Stream;
 
-import org.apache.log4j.Logger;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -41,7 +40,10 @@ import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.internal.artifacts.DefaultModuleIdentifier;
+import org.gradle.api.provider.Provider;
+import org.gradle.jvm.tasks.Jar;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifact;
@@ -51,8 +53,6 @@ import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 
 public class AppModelGradleResolver implements AppModelResolver {
-
-    private static final Logger log = Logger.getLogger(AppModelGradleResolver.class);
 
     private AppModel appModel;
     private final Project project;
@@ -106,7 +106,7 @@ public class AppModelGradleResolver implements AppModelResolver {
         final List<AppDependency> userDeps = new ArrayList<>();
         Map<ModuleIdentifier, ModuleVersionIdentifier> userModules = new HashMap<>();
         for (ResolvedArtifact a : compileCp.getResolvedConfiguration().getResolvedArtifacts()) {
-            if (!"jar".equals(a.getType())) {
+            if (!"jar".equals(a.getExtension())) {
                 continue;
             }
             userModules.put(getModuleId(a), a.getModuleVersion().getId());
@@ -136,7 +136,7 @@ public class AppModelGradleResolver implements AppModelResolver {
                 final ModuleVersionIdentifier userVersion = userModules.get(getModuleId(a));
                 if (userVersion != null) {
                     if (!userVersion.equals(a.getModuleVersion().getId())) {
-                        log.warn("User dependency " + userVersion + " overrides Quarkus platform dependency "
+                        project.getLogger().warn("User dependency " + userVersion + " overrides Quarkus platform dependency "
                                 + a.getModuleVersion().getId());
                     }
                     continue;
@@ -156,29 +156,19 @@ public class AppModelGradleResolver implements AppModelResolver {
          * }
          */
 
+        // In the case of quarkusBuild (which is the primary user of this),
+        // it's not necessary to actually resolve the original application JAR
         if (!appArtifact.isResolved()) {
-            // TODO this is pretty dirty
-            final Path libs = project.getBuildDir().toPath().resolve("libs");
-            if (Files.isDirectory(libs)) {
-                Path theJar = null;
-                try (Stream<Path> stream = Files.list(libs)) {
-                    final Iterator<Path> i = stream.iterator();
-                    while (i.hasNext()) {
-                        final Path p = i.next();
-                        if (!p.getFileName().toString().endsWith(".jar")) {
-                            continue;
-                        }
-                        if (theJar != null) {
-                            throw new GradleException("Failed to determine the application JAR in " + libs);
-                        }
-                        theJar = p;
-                    }
-                    appArtifact.setPath(theJar);
-                } catch (IOException e) {
-                    throw new GradleException("Failed to read project's libs dir", e);
+            final Jar jarTask = (Jar) project.getTasks().findByName("jar");
+            if (jarTask == null) {
+                throw new AppModelResolverException("Failed to locate task 'jar' in the project.");
+            }
+            final Provider<RegularFile> jarProvider = jarTask.getArchiveFile();
+            if (jarProvider.isPresent()) {
+                final File f = jarProvider.get().getAsFile();
+                if (f.exists()) {
+                    appArtifact.setPath(f.toPath());
                 }
-            } else {
-                throw new GradleException("The project's libs dir does not exist: " + libs);
             }
         }
         return this.appModel = new AppModel(appArtifact, userDeps, deploymentDeps);

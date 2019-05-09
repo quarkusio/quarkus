@@ -125,8 +125,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     boolean checkForChangedClasses() throws IOException {
 
         for (DevModeContext.ModuleInfo i : context.getModules()) {
-            final Set<File> changedSourceFiles;
             if (i.getSourcePath() != null) {
+                final Set<File> changedSourceFiles;
                 try (final Stream<Path> sourcesStream = Files.walk(Paths.get(i.getSourcePath()))) {
                     changedSourceFiles = sourcesStream
                             .parallel()
@@ -136,17 +136,15 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                             //Needing a concurrent Set, not many standard options:
                             .collect(Collectors.toCollection(ConcurrentSkipListSet::new));
                 }
-            } else {
-                changedSourceFiles = Collections.emptySet();
-            }
-            if (!changedSourceFiles.isEmpty()) {
-                log.info("Changed source files detected, recompiling " + changedSourceFiles);
-                try {
-                    compiler.compile(i.getSourcePath(), changedSourceFiles.stream()
-                            .collect(groupingBy(this::getFileExtension, Collectors.toSet())));
-                } catch (Exception e) {
-                    DevModeMain.deploymentProblem = e;
-                    return false;
+                if (!changedSourceFiles.isEmpty()) {
+                    log.info("Changed source files detected, recompiling " + changedSourceFiles);
+                    try {
+                        compiler.compile(i.getSourcePath(), changedSourceFiles.stream()
+                                .collect(groupingBy(this::getFileExtension, Collectors.toSet())));
+                    } catch (Exception e) {
+                        DevModeMain.deploymentProblem = e;
+                        return false;
+                    }
                 }
             }
         }

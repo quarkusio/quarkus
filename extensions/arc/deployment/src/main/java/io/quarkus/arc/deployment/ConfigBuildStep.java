@@ -12,7 +12,10 @@ import java.util.Set;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.processor.BeanDeploymentValidator;
@@ -63,7 +66,23 @@ public class ConfigBuildStep {
                             // No need to validate properties with default values
                             continue;
                         }
-                        String propertyName = configProperty.value("name").asString();
+                        AnnotationValue nameValue = configProperty.value("name");
+                        String propertyName;
+                        if (nameValue != null) {
+                            propertyName = nameValue.asString();
+                        } else {
+                            // org.acme.Foo.config
+                            if (injectionPoint.isField()) {
+                                FieldInfo field = injectionPoint.getTarget().asField();
+                                propertyName = getPropertyName(field.name(), field.declaringClass());
+                            } else if (injectionPoint.isParam()) {
+                                MethodInfo method = injectionPoint.getTarget().asMethod();
+                                propertyName = getPropertyName(method.parameterName(injectionPoint.getPosition()),
+                                        method.declaringClass());
+                            } else {
+                                throw new IllegalStateException("Unsupported injection point target: " + injectionPoint);
+                            }
+                        }
                         Class<?> propertyType;
 
                         if (injectionPoint.getRequiredType().kind() == Type.Kind.PRIMITIVE) {
@@ -127,6 +146,16 @@ public class ConfigBuildStep {
                 groupingBy(ConfigPropertyBuildItem::getPropertyName,
                         mapping(ConfigPropertyBuildItem::getPropertyType, toSet())));
         template.validateConfigProperties(propNamesToClasses);
+    }
+
+    private String getPropertyName(String name, ClassInfo declaringClass) {
+        StringBuilder builder = new StringBuilder();
+        if (declaringClass.enclosingClass() == null) {
+            builder.append(declaringClass.name());
+        } else {
+            builder.append(declaringClass.enclosingClass()).append(".").append(declaringClass.simpleName());
+        }
+        return builder.append(".").append(name).toString();
     }
 
 }

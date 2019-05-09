@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
@@ -151,6 +152,14 @@ public class InjectionPointInfo {
      */
     public AnnotationTarget getTarget() {
         return target;
+    }
+
+    public boolean isField() {
+        return target.kind() == Kind.FIELD;
+    }
+
+    public boolean isParam() {
+        return target.kind() == Kind.METHOD;
     }
 
     /**

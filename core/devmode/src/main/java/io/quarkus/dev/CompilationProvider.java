@@ -5,7 +5,7 @@ import java.util.Set;
 
 public interface CompilationProvider {
 
-    String handledExtension();
+    Set<String> handledExtensions();
 
     void compile(Set<File> files, Context context);
 

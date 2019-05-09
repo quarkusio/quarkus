@@ -106,7 +106,7 @@ The Reactive Postgres Client can be configured with standard Quarkus datasource 
 [source]
 .src/main/resources/application.properties
 ----
-quarkus.datasource.url=vertx-reactive:postgresql:///quarkus_test
+quarkus.datasource.url=vertx-reactive:postgresql://localhost:5432/quarkus_test
 quarkus.datasource.username=quarkus_test
 quarkus.datasource.password=quarkus_test
 ----

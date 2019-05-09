@@ -24,13 +24,22 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Consumer;
 import java.util.logging.Handler;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.builder.BuildChainBuilder;
+import io.quarkus.builder.BuildContext;
+import io.quarkus.builder.BuildStep;
+import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.runner.RuntimeRunner;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.Timing;
@@ -121,11 +130,30 @@ public class DevModeMain {
                         .setTarget(classesRoot.toPath())
                         .setFrameworkClassesPath(wiringDir.toPath())
                         .setTransformerCache(cacheDir.toPath());
+
+                List<Path> addAdditionalHotDeploymentPaths = new ArrayList<>();
                 for (DevModeContext.ModuleInfo i : context.getModules()) {
                     if (i.getClassesPath() != null) {
-                        builder.addAdditionalHotDeploymentPath(Paths.get(i.getClassesPath()));
+                        Path classesPath = Paths.get(i.getClassesPath());
+                        addAdditionalHotDeploymentPaths.add(classesPath);
+                        builder.addAdditionalHotDeploymentPath(classesPath);
                     }
                 }
+                // Make it possible to identify wiring classes generated for classes from additional hot deployment paths
+                builder.addChainCustomizer(new Consumer<BuildChainBuilder>() {
+                    @Override
+                    public void accept(BuildChainBuilder buildChainBuilder) {
+                        buildChainBuilder.addBuildStep(new BuildStep() {
+                            @Override
+                            public void execute(BuildContext context) {
+                                context.produce(new ApplicationClassPredicateBuildItem(n -> {
+                                    return getClassInApplicationClassPaths(n, addAdditionalHotDeploymentPaths) != null;
+                                }));
+                            }
+                        }).produces(ApplicationClassPredicateBuildItem.class).build();
+                    }
+                });
+
                 RuntimeRunner runner = builder
                         .build();
                 runner.run();
@@ -165,5 +193,17 @@ public class DevModeMain {
 
     public static ClassLoader getCurrentAppClassLoader() {
         return currentAppClassLoader;
+    }
+
+    private static Path getClassInApplicationClassPaths(String name, List<Path> addAdditionalHotDeploymentPaths) {
+        final String fileName = name.replace('.', '/') + ".class";
+        Path classLocation;
+        for (Path i : addAdditionalHotDeploymentPaths) {
+            classLocation = i.resolve(fileName);
+            if (Files.exists(classLocation)) {
+                return classLocation;
+            }
+        }
+        return null;
     }
 }

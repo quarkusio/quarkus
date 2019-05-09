@@ -23,6 +23,8 @@ import io.quarkus.arc.Arc;
 public class ContextPropagationResource {
 
     @Inject
+    RequestBean doNotRemove;
+    @Inject
     ManagedExecutor allExec;
     @Inject
     TransactionManager transactionManager;

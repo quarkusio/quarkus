@@ -9,8 +9,6 @@ import java.util.Locale;
 
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.jwt.JsonWebToken;
-
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.undertow.UndertowLogger;
 import io.undertow.security.api.AuthenticationMechanism;
@@ -58,7 +56,6 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
                         UndertowLogger.SECURITY_LOGGER.tracef("Bearer token: %s", bearerToken);
                     }
                     try {
-                        //identityManager = securityContext.getIdentityManager();
                         JWTCredential credential = new JWTCredential(bearerToken, authContextInfo);
                         if (UndertowLogger.SECURITY_LOGGER.isTraceEnabled()) {
                             UndertowLogger.SECURITY_LOGGER.tracef("Bearer token: %s", bearerToken);
@@ -66,19 +63,7 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
                         // Install the JWT principal as the caller
                         Account account = identityManager.verify(credential.getName(), credential);
                         if (account != null) {
-                            JsonWebToken jwtPrincipal = (JsonWebToken) account.getPrincipal();
-                            //MPJWTProducer.setJWTPrincipal(jwtPrincipal);
-                            JWTAccount jwtAccount = new JWTAccount(jwtPrincipal, account);
-                            securityContext.authenticationComplete(jwtAccount, "MP-JWT", false);
-                            /*
-                             * // Workaround authenticated JsonWebToken not being installed as user principal
-                             * // https://issues.jboss.org/browse/WFLY-9212
-                             * org.jboss.security.SecurityContext jbSC = SecurityContextAssociation.getSecurityContext();
-                             * Subject subject = jbSC.getUtil().getSubject();
-                             * jbSC.getUtil().createSubjectInfo(jwtPrincipal, bearerToken, subject);
-                             * RoleGroup roles = extract(subject);
-                             * jbSC.getUtil().setRoles(roles);
-                             */
+                            securityContext.authenticationComplete(account, "MP-JWT", false);
                             UndertowLogger.SECURITY_LOGGER.debugf("Authenticated caller(%s) for path(%s) with roles: %s",
                                     credential.getName(), exchange.getRequestPath(), account.getRoles());
                             return AuthenticationMechanismOutcome.AUTHENTICATED;
@@ -105,19 +90,4 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
         return new ChallengeResult(true, UNAUTHORIZED);
     }
 
-    /**
-     * Extract the Roles group and return it as a RoleGroup
-     *
-     * @param subject authenticated subject
-     * @return RoleGroup from "Roles"
-     *         protected RoleGroup extract(Subject subject) {
-     *         Optional<Principal> match = subject.getPrincipals()
-     *         .stream()
-     *         .filter(g -> g.getName().equals(SecurityConstants.ROLES_IDENTIFIER))
-     *         .findFirst();
-     *         Group rolesGroup = (Group) match.get();
-     *         RoleGroup roles = new SimpleRoleGroup(rolesGroup);
-     *         return roles;
-     *         }
-     */
 }

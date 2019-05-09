@@ -165,7 +165,8 @@ public class BuildMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException {
         final Artifact projectArtifact = project.getArtifact();
         final AppArtifact appArtifact = new AppArtifact(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
-                projectArtifact.getClassifier(), projectArtifact.getType(), projectArtifact.getVersion());
+                projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),
+                projectArtifact.getVersion());
         final AppModel appModel;
         final BootstrapAppModelResolver modelResolver;
         try {

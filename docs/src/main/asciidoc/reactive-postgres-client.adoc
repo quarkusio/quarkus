@@ -245,7 +245,7 @@ And the endpoint to get all fruits from the backend:
 @GET
 public CompletionStage<Response> get() {
     return Fruit.findAll(client)
-            .thenApply(fruits -> fruits.isEmpty() ? Response.noContent() : Response.ok(fruits))
+            .thenApply(Response::ok)
             .thenApply(ResponseBuilder::build);
 }
 ----

@@ -257,7 +257,7 @@ Now start {project-name} in `dev` mode with:
 mvn compile quarkus:dev
 ----
 
-Eventually, open your browser and navigate to http://localhost:8080/fruits, you should see:
+Lastly, open your browser and navigate to http://localhost:8080/fruits, you should see:
 
 [source, shell]
 ----
@@ -275,7 +275,7 @@ client.preparedQuery("SELECT name FROM fruits WHERE id = $1", Tuple.of(id))
 
 TIP: The SQL string can refer to parameters by position, using $1, $2, ...etc.
 
-As the simple `query` method, `preparedQuery` eventually returns a `PgRowSet`.
+Like the simple `query` method, `preparedQuery` returns an instance of `CompletionStage<PgRowSet>`.
 Equipped with this tooling, we are able to safely use an `id` provided by the user to get the details of a particular fruit:
 
 [source,java]

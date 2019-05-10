@@ -17,7 +17,8 @@
 package io.quarkus.hibernate.orm.deployment;
 
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
-import org.jboss.builder.item.MultiBuildItem;
+
+import io.quarkus.builder.item.MultiBuildItem;
 
 public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 

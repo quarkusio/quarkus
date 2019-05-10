@@ -1,8 +1,8 @@
 package io.quarkus.elytron.security.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
 import org.wildfly.security.auth.server.SecurityRealm;
 
+import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.elytron.security.runtime.AuthConfig;
 import io.quarkus.runtime.RuntimeValue;
 

@@ -23,6 +23,7 @@ import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -30,18 +31,15 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.elytron.security.deployment.AuthConfigBuildItem;
 import io.quarkus.elytron.security.deployment.IdentityManagerBuildItem;
+import io.quarkus.elytron.security.deployment.JCAProviderBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityDomainBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.runtime.AuthConfig;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.smallrye.jwt.runtime.ClaimValueProducer;
-import io.quarkus.smallrye.jwt.runtime.CommonJwtProducer;
 import io.quarkus.smallrye.jwt.runtime.JWTAuthContextInfoGroup;
-import io.quarkus.smallrye.jwt.runtime.JsonValueProducer;
-import io.quarkus.smallrye.jwt.runtime.PrincipalProducer;
-import io.quarkus.smallrye.jwt.runtime.RawClaimTypeProducer;
 import io.quarkus.smallrye.jwt.runtime.SmallRyeJwtTemplate;
 import io.quarkus.smallrye.jwt.runtime.auth.ClaimAttributes;
 import io.quarkus.smallrye.jwt.runtime.auth.ElytronJwtCallerPrincipal;
@@ -50,6 +48,11 @@ import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import io.quarkus.smallrye.jwt.runtime.auth.PublicKeyProxy;
 import io.quarkus.smallrye.jwt.runtime.auth.PublicKeySubstitution;
 import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
+import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
+import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
+import io.smallrye.jwt.auth.cdi.JsonValueProducer;
+import io.smallrye.jwt.auth.cdi.PrincipalProducer;
+import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.servlet.ServletExtension;
@@ -69,24 +72,45 @@ class SmallRyeJwtProcessor {
      */
     @BuildStep
     void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalBeans.produce(new AdditionalBeanBuildItem(JWTAuthContextInfoProvider.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(false, MpJwtValidator.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(false, JWTAuthMethodExtension.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(CommonJwtProducer.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(RawClaimTypeProducer.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(PrincipalProducer.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(ClaimValueProducer.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(JsonValueProducer.class));
+        AdditionalBeanBuildItem.Builder unremovable = AdditionalBeanBuildItem.builder().setUnremovable();
+        unremovable.addBeanClass(MpJwtValidator.class);
+        unremovable.addBeanClass(JWTAuthMethodExtension.class);
+        additionalBeans.produce(unremovable.build());
+        AdditionalBeanBuildItem.Builder removable = AdditionalBeanBuildItem.builder();
+        removable.addBeanClass(JWTAuthContextInfoProvider.class);
+        removable.addBeanClass(CommonJwtProducer.class);
+        removable.addBeanClass(RawClaimTypeProducer.class);
+        removable.addBeanClass(PrincipalProducer.class);
+        removable.addBeanClass(ClaimValueProducer.class);
+        removable.addBeanClass(JsonValueProducer.class);
+        additionalBeans.produce(removable.build());
     }
 
     /**
      * Register this extension as a MP-JWT feature
      *
-     * @return
+     * @return FeatureBuildItem
      */
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.SMALLRYE_JWT);
+    }
+
+    /**
+     * If the configuration specified a deployment local key resource, register it with substrate
+     * 
+     * @return SubstrateResourceBuildItem
+     */
+    @BuildStep
+    SubstrateResourceBuildItem registerSubstrateResources() {
+        String publicKeyLocation = QuarkusConfig.getString("mp.jwt.verify.publickey.location", null, true);
+        if (publicKeyLocation != null) {
+            if (publicKeyLocation.indexOf(':') < 0 || publicKeyLocation.startsWith("classpath:")) {
+                log.infof("Adding %s to native image", publicKeyLocation);
+                return new SubstrateResourceBuildItem(publicKeyLocation);
+            }
+        }
+        return null;
     }
 
     /**
@@ -158,5 +182,16 @@ class SmallRyeJwtProcessor {
         ServletExtension authExt = template.createAuthExtension(config.authMechanism, container.getValue());
         ServletExtensionBuildItem sebi = new ServletExtensionBuildItem(authExt);
         return sebi;
+    }
+
+    /**
+     * Register the SHA256withRSA signature provider
+     * 
+     * @return JCAProviderBuildItem for SHA256withRSA signature provider
+     */
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    JCAProviderBuildItem registerRSASigProvider() {
+        return new JCAProviderBuildItem(config.rsaSigProvider);
     }
 }

@@ -16,6 +16,7 @@
 
 package io.quarkus.arc;
 
+import io.quarkus.arc.ArcCDIProvider.ArcCDI;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -31,7 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Dependent;
@@ -48,10 +48,7 @@ import javax.enterprise.inject.spi.InterceptionType;
 import javax.enterprise.inject.spi.Interceptor;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Singleton;
-
 import org.jboss.logging.Logger;
-
-import io.quarkus.arc.ArcCDIProvider.ArcCDI;
 
 /**
  *
@@ -80,20 +77,20 @@ class ArcContainerImpl implements ArcContainer {
     private final ComputingCache<String, Set<InjectableBean<?>>> beansByName;
 
     private final List<ResourceReferenceProvider> resourceProviders;
-    
+
     public ArcContainerImpl() {
         id = UUID.randomUUID().toString();
         running = new AtomicBoolean(true);
         beans = new ArrayList<>();
         interceptors = new ArrayList<>();
         observers = new ArrayList<>();
-        
+
         applicationContext = new ApplicationContext();
         singletonContext = new SingletonContext();
         requestContext = new RequestContext();
         contexts = new ArrayList<>();
         contexts.add(requestContext);
-        
+
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
             Components components = componentsProvider.getComponents();
             for (InjectableBean<?> bean : components.getBeans()) {
@@ -107,16 +104,18 @@ class ArcContainerImpl implements ArcContainer {
             // Add custom contexts
             for (InjectableContext context : components.getContexts()) {
                 if (ApplicationScoped.class.equals(context.getScope())) {
-                    throw new IllegalStateException("Failed to register a context - built-in application context is always active: " + context);
+                    throw new IllegalStateException(
+                            "Failed to register a context - built-in application context is always active: " + context);
                 }
                 if (Singleton.class.equals(context.getScope())) {
-                    throw new IllegalStateException("Failed to register a context - built-in singleton context is always active: " + context);
+                    throw new IllegalStateException(
+                            "Failed to register a context - built-in singleton context is always active: " + context);
                 }
                 contexts.add(context);
             }
         }
         Collections.sort(interceptors, (i1, i2) -> Integer.compare(i2.getPriority(), i1.getPriority()));
-        
+
         resolved = new ComputingCache<>(this::resolve);
         beansById = new ComputingCache<>(this::findById);
         beansByName = new ComputingCache<>(this::resolve);
@@ -144,7 +143,7 @@ class ArcContainerImpl implements ArcContainer {
         // Application/Singleton context is always active
         if (ApplicationScoped.class.equals(scopeType)) {
             return applicationContext;
-        } else if(Singleton.class.equals(scopeType)) {
+        } else if (Singleton.class.equals(scopeType)) {
             return singletonContext;
         }
         List<InjectableContext> active = new ArrayList<>();
@@ -155,7 +154,7 @@ class ArcContainerImpl implements ArcContainer {
         }
         if (active.isEmpty()) {
             return null;
-        } else if(active.size() == 1) {
+        } else if (active.size() == 1) {
             return active.get(0);
         }
         throw new IllegalArgumentException("More than one context object for the given scope: " + active);
@@ -163,7 +162,8 @@ class ArcContainerImpl implements ArcContainer {
 
     @Override
     public Set<Class<? extends Annotation>> getScopes() {
-        Set<Class<? extends Annotation>> scopes = contexts.stream().map(InjectableContext::getScope).collect(Collectors.toSet());
+        Set<Class<? extends Annotation>> scopes = contexts.stream().map(InjectableContext::getScope)
+                .collect(Collectors.toSet());
         scopes.add(ApplicationScoped.class);
         scopes.add(Singleton.class);
         return scopes;
@@ -182,6 +182,12 @@ class ArcContainerImpl implements ArcContainer {
     }
 
     @Override
+    public <X> InstanceHandle<X> instance(Type type, Annotation... qualifiers) {
+        requireRunning();
+        return instanceHandle(type, qualifiers);
+    }
+
+    @Override
     public <T> Supplier<InstanceHandle<T>> instanceSupplier(Class<T> type, Annotation... qualifiers) {
         requireRunning();
 
@@ -192,7 +198,7 @@ class ArcContainerImpl implements ArcContainer {
         return new Supplier<InstanceHandle<T>>() {
             @Override
             public InstanceHandle<T> get() {
-                return beanInstanceHandle(bean, null); 
+                return beanInstanceHandle(bean, null);
             }
         };
     }
@@ -203,7 +209,6 @@ class ArcContainerImpl implements ArcContainer {
         requireRunning();
         return bean != null ? (InstanceHandle<T>) beanInstanceHandle(bean, null) : InstanceHandleImpl.unavailable();
     }
-    
 
     @SuppressWarnings("unchecked")
     @Override
@@ -215,7 +220,7 @@ class ArcContainerImpl implements ArcContainer {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T> InstanceHandle<T> instance(String name) {    
+    public <T> InstanceHandle<T> instance(String name) {
         Objects.requireNonNull(name);
         requireRunning();
         Set<InjectableBean<?>> resolvedBeans = beansByName.getValue(name);
@@ -237,7 +242,8 @@ class ArcContainerImpl implements ArcContainer {
 
     @Override
     public String toString() {
-        return "ArcContainerImpl [id=" + id + ", running=" + running + ", beans=" + beans.size() + ", observers=" + observers.size() + ", scopes="
+        return "ArcContainerImpl [id=" + id + ", running=" + running + ", beans=" + beans.size() + ", observers="
+                + observers.size() + ", scopes="
                 + getScopes() + "]";
     }
 
@@ -287,26 +293,33 @@ class ArcContainerImpl implements ArcContainer {
         return beanInstanceHandle(getBean(type, qualifiers), null);
     }
 
-    <T> InstanceHandle<T> beanInstanceHandle(InjectableBean<T> bean, CreationalContextImpl<T> parentContext) {
+    <T> InstanceHandle<T> beanInstanceHandle(InjectableBean<T> bean, CreationalContextImpl<T> parentContext,
+            boolean resetCurrentInjectionPoint) {
         if (bean != null) {
             if (parentContext == null && Dependent.class.equals(bean.getScope())) {
                 parentContext = new CreationalContextImpl<>();
             }
-            CreationalContextImpl<T> creationalContext = parentContext != null ? parentContext.child() : new CreationalContextImpl<>();
-            InjectionPoint prev = InjectionPointProvider.CURRENT.get();
-            InjectionPointProvider.CURRENT.set(CurrentInjectionPointProvider.EMPTY);
+            CreationalContextImpl<T> creationalContext = parentContext != null ? parentContext.child()
+                    : new CreationalContextImpl<>();
+            InjectionPoint prev = null;
+            if (resetCurrentInjectionPoint) {
+                prev = InjectionPointProvider.set(CurrentInjectionPointProvider.EMPTY);
+            }
+
             try {
                 return new InstanceHandleImpl<T>(bean, bean.get(creationalContext), creationalContext, parentContext);
             } finally {
-                if (prev != null) {
-                    InjectionPointProvider.CURRENT.set(prev);
-                } else {
-                    InjectionPointProvider.CURRENT.remove();
+                if (resetCurrentInjectionPoint) {
+                    InjectionPointProvider.set(prev);
                 }
             }
         } else {
             return InstanceHandleImpl.unavailable();
         }
+    }
+
+    <T> InstanceHandle<T> beanInstanceHandle(InjectableBean<T> bean, CreationalContextImpl<T> parentContext) {
+        return beanInstanceHandle(bean, parentContext, true);
     }
 
     @SuppressWarnings("unchecked")
@@ -322,7 +335,7 @@ class ArcContainerImpl implements ArcContainer {
         // This method does not cache the results
         return new HashSet<>(getMatchingBeans(new Resolvable(requiredType, qualifiers)));
     }
-    
+
     Set<Bean<?>> getBeans(String name) {
         // This method does not cache the results
         return new HashSet<>(getMatchingBeans(name));
@@ -331,11 +344,11 @@ class ArcContainerImpl implements ArcContainer {
     private Set<InjectableBean<?>> resolve(Resolvable resolvable) {
         return resolve(getMatchingBeans(resolvable));
     }
-    
+
     private Set<InjectableBean<?>> resolve(String name) {
         return resolve(getMatchingBeans(name));
     }
-    
+
     private InjectableBean<?> findById(String identifier) {
         for (InjectableBean<?> bean : beans) {
             if (bean.getIdentifier().equals(identifier)) {
@@ -344,7 +357,7 @@ class ArcContainerImpl implements ArcContainer {
         }
         return null;
     }
-    
+
     @SuppressWarnings("unchecked")
     static <X> Bean<? extends X> resolve(Set<Bean<? extends X>> beans) {
         if (beans == null || beans.isEmpty()) {
@@ -389,7 +402,8 @@ class ArcContainerImpl implements ArcContainer {
         List<InjectableBean<?>> resolved = new ArrayList<>(matching);
         for (Iterator<InjectableBean<?>> iterator = resolved.iterator(); iterator.hasNext();) {
             InjectableBean<?> bean = iterator.next();
-            if (bean.getAlternativePriority() == null && (bean.getDeclaringBean() == null || bean.getDeclaringBean().getAlternativePriority() == null)) {
+            if (bean.getAlternativePriority() == null
+                    && (bean.getDeclaringBean() == null || bean.getDeclaringBean().getAlternativePriority() == null)) {
                 // Remove non-alternatives
                 iterator.remove();
             }
@@ -413,7 +427,8 @@ class ArcContainerImpl implements ArcContainer {
     }
 
     private static Integer getAlternativePriority(InjectableBean<?> bean) {
-        return bean.getDeclaringBean() != null ? bean.getDeclaringBean().getAlternativePriority() : bean.getAlternativePriority();
+        return bean.getDeclaringBean() != null ? bean.getDeclaringBean().getAlternativePriority()
+                : bean.getAlternativePriority();
     }
 
     List<InjectableBean<?>> getMatchingBeans(Resolvable resolvable) {
@@ -425,7 +440,7 @@ class ArcContainerImpl implements ArcContainer {
         }
         return matching;
     }
-    
+
     List<InjectableBean<?>> getMatchingBeans(String name) {
         List<InjectableBean<?>> matching = new ArrayList<>();
         for (InjectableBean<?> bean : beans) {
@@ -438,8 +453,10 @@ class ArcContainerImpl implements ArcContainer {
 
     private static int compareAlternativeBeans(InjectableBean<?> bean1, InjectableBean<?> bean2) {
         // The highest priority wins
-        Integer priority2 = bean2.getDeclaringBean() != null ? bean2.getDeclaringBean().getAlternativePriority() : bean2.getAlternativePriority();
-        Integer priority1 = bean1.getDeclaringBean() != null ? bean1.getDeclaringBean().getAlternativePriority() : bean1.getAlternativePriority();
+        Integer priority2 = bean2.getDeclaringBean() != null ? bean2.getDeclaringBean().getAlternativePriority()
+                : bean2.getAlternativePriority();
+        Integer priority1 = bean1.getDeclaringBean() != null ? bean1.getDeclaringBean().getAlternativePriority()
+                : bean1.getAlternativePriority();
         return priority2.compareTo(priority1);
     }
 
@@ -452,7 +469,8 @@ class ArcContainerImpl implements ArcContainer {
         List<InjectableObserverMethod<? super T>> resolvedObservers = new ArrayList<>();
         for (InjectableObserverMethod<?> observer : observers) {
             if (EventTypeAssignabilityRules.matches(observer.getObservedType(), eventTypes)) {
-                if (observer.getObservedQualifiers().isEmpty() || Qualifiers.isSubset(observer.getObservedQualifiers(), eventQualifiers)) {
+                if (observer.getObservedQualifiers().isEmpty()
+                        || Qualifiers.isSubset(observer.getObservedQualifiers(), eventQualifiers)) {
                     resolvedObservers.add((InjectableObserverMethod<? super T>) observer);
                 }
             }
@@ -461,7 +479,7 @@ class ArcContainerImpl implements ArcContainer {
         Collections.sort(resolvedObservers, InjectableObserverMethod::compare);
         return resolvedObservers;
     }
-    
+
     List<Interceptor<?>> resolveInterceptors(InterceptionType type, Annotation... interceptorBindings) {
         if (interceptors.isEmpty()) {
             return Collections.emptyList();
@@ -474,7 +492,7 @@ class ArcContainerImpl implements ArcContainer {
         }
         return interceptors;
     }
-    
+
     private boolean hasAllInterceptionBindings(InjectableInterceptor<?> interceptor, Annotation[] interceptorBindings) {
         for (Annotation binding : interceptorBindings) {
             // The resolution rules are the same for qualifiers

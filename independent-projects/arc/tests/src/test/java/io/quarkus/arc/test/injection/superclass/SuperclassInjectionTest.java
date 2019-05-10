@@ -20,19 +20,17 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.injection.superclass.foo.FooHarvester;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.test.ArcTestContainer;
-import io.quarkus.arc.test.injection.superclass.foo.FooHarvester;
 import org.junit.Rule;
 import org.junit.Test;
 

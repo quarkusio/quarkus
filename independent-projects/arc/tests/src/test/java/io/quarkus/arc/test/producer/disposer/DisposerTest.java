@@ -19,10 +19,13 @@ package io.quarkus.arc.test.producer.disposer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.MyQualifier;
 import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
@@ -30,11 +33,6 @@ import javax.enterprise.inject.Disposes;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Singleton;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.test.ArcTestContainer;
-import io.quarkus.arc.test.MyQualifier;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -58,7 +56,7 @@ public class DisposerTest {
                 }
             };
         }
-    }).around(new ArcTestContainer(StringProducer.class, LongProducer.class, BigDecimalProducer.class));
+    }).around(new ArcTestContainer(StringProducer.class, LongProducer.class, BigDecimalProducer.class, MyQualifier.class));
 
     @Test
     public void testDisposers() {

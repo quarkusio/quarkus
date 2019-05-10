@@ -20,7 +20,20 @@
         <skip.gradle.build>false</skip.gradle.build>
     </properties>
     <dependencies>
+        <!-- Special -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bom</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <!-- NOT <scope>import</scope> because this is for the maven-dependency-plugin -->
+        </dependency>
+
         <!-- Compile -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bootstrap-core</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-common</artifactId>
@@ -41,17 +54,22 @@
             <artifactId>quarkus-creator</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <!-- Test -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>
@@ -61,27 +79,18 @@
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>copy-compile-dependencies</id>
+                        <id>copy-dependencies</id>
                         <phase>generate-resources</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>
                         <inherited>false</inherited>
                         <configuration>
-                            <includeScope>compile</includeScope>
-                            <outputDirectory>${project.build.directory}/dependencies/compile</outputDirectory>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-test-dependencies</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <inherited>false</inherited>
-                        <configuration>
-                            <includeScope>test</includeScope>
-                            <outputDirectory>${project.build.directory}/dependencies/test</outputDirectory>
+                            <useBaseVersion>true</useBaseVersion>
+                            <addParentPoms>true</addParentPoms>
+                            <copyPom>true</copyPom>
+                            <useRepositoryLayout>true</useRepositoryLayout>
+                            <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
@@ -133,6 +142,25 @@
                                 </resource>
                             </resources>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/assembly/copy.xml</descriptor>
+                    </descriptors>
+                    <attach>false</attach>
+                    <appendAssemblyId>false</appendAssemblyId>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>create-repo</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

@@ -19,6 +19,7 @@ package io.quarkus.deployment.logging;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import org.jboss.logmanager.EmbeddedConfigurator;
 
@@ -67,11 +68,15 @@ public final class LoggingResourceProcessor {
     void setUpDefaultLogCleanupFilters(List<LogCleanupFilterBuildItem> logCleanupFilters,
             Consumer<RunTimeConfigurationDefaultBuildItem> configOutput) {
         for (LogCleanupFilterBuildItem logCleanupFilter : logCleanupFilters) {
+            String startsWithClause = logCleanupFilter.getFilterElement().getMessageStarts().stream()
+                    // SmallRye Config escaping is pretty naive so we only need to escape commas
+                    .map(s -> s.replace(",", "\\,"))
+                    .collect(Collectors.joining(","));
             configOutput.accept(
                     new RunTimeConfigurationDefaultBuildItem(
                             "quarkus.log.filter.\"" + logCleanupFilter.getFilterElement().getLoggerName()
                                     + "\".if-starts-with",
-                            logCleanupFilter.getFilterElement().getMessageStart()));
+                            startsWithClause));
         }
     }
 
@@ -94,8 +99,8 @@ public final class LoggingResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupLoggingStaticInit(LoggingSetupTemplate setupTemplate, LogConfig log) {
-        setupTemplate.initializeLogging(log);
+    void setupLoggingStaticInit(LoggingSetupTemplate setupTemplate) {
+        setupTemplate.initializeLoggingForImageBuild();
     }
 
     @BuildStep
@@ -104,5 +109,11 @@ public final class LoggingResourceProcessor {
                 200,
                 Level.class,
                 LevelConverter.class);
+    }
+
+    // This is specifically to help out with presentations, to allow an env var to always override this value
+    @BuildStep
+    void setUpDarkeningDefault(Consumer<RunTimeConfigurationDefaultBuildItem> rtcConsumer) {
+        rtcConsumer.accept(new RunTimeConfigurationDefaultBuildItem("quarkus.log.console.darken", "0"));
     }
 }

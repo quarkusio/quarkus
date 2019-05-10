@@ -26,10 +26,15 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-kotlin</artifactId>
+    <artifactId>quarkus-kotlin-deployment</artifactId>
     <name>Quarkus - Kotlin - Deployment</name>
 
     <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kotlin</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-development-mode</artifactId>

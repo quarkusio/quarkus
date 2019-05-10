@@ -1,44 +1,61 @@
 plugins {
-    id 'java'
+    id 'com.gradle.build-scan' version '2.3'
+    id 'com.gradle.plugin-publish' version '0.10.1'
+    id 'java-gradle-plugin'
+}
+
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+if (JavaVersion.current().isJava9Compatible()) {
+    compileJava.options.compilerArgs.addAll(['--release', '8'])
+}
+
+compileJava   {
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
 }
 
 repositories {
-        mavenLocal()
+    maven { url 'target/dependencies/' }
     mavenCentral()
 }
 
 dependencies {
-    compile localGroovy()
-    compile gradleApi()
-    compile fileTree(dir: 'target/dependencies/compile', include: '*.jar')
-    testCompile gradleTestKit()
-    testCompile fileTree(dir: 'target/dependencies/test', include: '*.jar')
-}
+    compile "io.quarkus:quarkus-bootstrap-core:${version}"
+    compile "io.quarkus:quarkus-devtools-common:${version}"
+    compile "io.quarkus:quarkus-devtools-common-core:${version}"
+    compile "io.quarkus:quarkus-development-mode:${version}"
+    compile "io.quarkus:quarkus-creator:${version}"
 
-jar {
-    manifest {
-        attributes 'Implementation-Version': (version ? version : 'unknown')
-    }
+    testCompile 'org.junit.jupiter:junit-jupiter-api:5.4.1'
+    testCompile 'org.junit.jupiter:junit-jupiter-params:5.4.1'
+    testCompile 'org.junit.jupiter:junit-jupiter-engine:5.4.1'
 }
 
 test {
     testLogging {
         events "passed", "skipped", "failed"
     }
+    useJUnitPlatform()
 }
 
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
+javadoc {
+    options.addStringOption('encoding', 'UTF-8')
 }
 
-task javadocJar(type: Jar) {
-    classifier = "javadoc"
-    from javadoc
+gradlePlugin {
+    plugins {
+        simplePlugin {
+            id = 'io.quarkus'
+            implementationClass = 'io.quarkus.gradle.QuarkusPlugin'
+            displayName = 'Quarkus Plugin'
+            description = 'Builds a Quarkus application, and provides helpers to launch dev-mode, the Quarkus CLI, building of native images'
+        }
+    }
 }
 
-artifacts {
-    archives sourcesJar
-    archives javadocJar
+buildScan {
+    //See also: https://docs.gradle.com/build-scan-plugin/
+    termsOfServiceUrl = 'https://gradle.com/terms-of-service';
+    termsOfServiceAgree = 'yes'
 }
-

@@ -38,14 +38,12 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-elytron-security</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <!-- JAX-RS -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-jsonb</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <!-- test dependencies -->

@@ -16,7 +16,6 @@
 
 package io.quarkus.jaeger.runtime;
 
-import static io.jaegertracing.Configuration.JAEGER_ENDPOINT;
 import static io.jaegertracing.Configuration.JAEGER_SERVICE_NAME;
 
 import java.util.Optional;
@@ -39,7 +38,9 @@ public class JaegerDeploymentTemplate {
         if (!registered) {
             if (isValidConfig(jaeger)) {
                 initTracerConfig(jaeger);
-                GlobalTracer.register(new QuarkusJaegerTracer());
+                QuarkusJaegerTracer quarkusJaegerTracer = new QuarkusJaegerTracer();
+                log.debugf("Registering tracer to GlobalTracer %s", quarkusJaegerTracer);
+                GlobalTracer.register(quarkusJaegerTracer);
             }
             registered = true;
         }
@@ -48,15 +49,9 @@ public class JaegerDeploymentTemplate {
     private boolean isValidConfig(JaegerConfig jaeger) {
         Config mpconfig = ConfigProvider.getConfig();
         Optional<String> serviceName = mpconfig.getOptionalValue(JAEGER_SERVICE_NAME, String.class);
-        Optional<String> endpoint = mpconfig.getOptionalValue(JAEGER_ENDPOINT, String.class);
         if (!jaeger.serviceName.isPresent() && !serviceName.isPresent()) {
             log.warn(
-                    "Jaeger service name has not been defined (e.g. JAEGER_SERVICE_NAME environment variable or system properties)");
-        } else if (!jaeger.endpoint.isPresent() && !endpoint.isPresent()) {
-            log.warn(
-                    "Jaeger collector endpoint has not been defined (e.g. JAEGER_ENDPOINT environment variable or system properties)");
-            // Return true for now, so we can reproduce issue with UdpSender
-            return true;
+                    "Jaeger service name has not been defined, either as 'quarkus.jaeger.service-name' application property or JAEGER_SERVICE_NAME environment variable/system property");
         } else {
             return true;
         }

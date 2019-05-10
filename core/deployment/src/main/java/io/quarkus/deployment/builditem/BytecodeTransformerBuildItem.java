@@ -18,8 +18,9 @@ package io.quarkus.deployment.builditem;
 
 import java.util.function.BiFunction;
 
-import org.jboss.builder.item.MultiBuildItem;
 import org.objectweb.asm.ClassVisitor;
+
+import io.quarkus.builder.item.MultiBuildItem;
 
 public final class BytecodeTransformerBuildItem extends MultiBuildItem {
 

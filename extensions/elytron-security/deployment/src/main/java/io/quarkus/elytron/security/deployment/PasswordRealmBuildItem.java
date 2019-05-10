@@ -2,8 +2,7 @@ package io.quarkus.elytron.security.deployment;
 
 import java.util.List;
 
-import org.jboss.builder.item.MultiBuildItem;
-
+import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 
 /**

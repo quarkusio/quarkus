@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.nio.file.FileVisitResult;
@@ -38,11 +37,6 @@ import java.util.function.Supplier;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
 
-import org.jboss.builder.BuildChainBuilder;
-import org.jboss.builder.BuildContext;
-import org.jboss.builder.BuildException;
-import org.jboss.builder.BuildStep;
-import org.jboss.builder.item.BuildItem;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
@@ -57,9 +51,15 @@ import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
+import io.quarkus.builder.BuildChainBuilder;
+import io.quarkus.builder.BuildContext;
+import io.quarkus.builder.BuildException;
+import io.quarkus.builder.BuildStep;
+import io.quarkus.builder.item.BuildItem;
 import io.quarkus.runner.RuntimeRunner;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;
+import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
@@ -78,16 +78,19 @@ public class QuarkusUnitTest
 
     private RuntimeRunner runtimeRunner;
     private Path deploymentDir;
-    private Class<? extends Throwable> expectedException;
+    private Consumer<Throwable> assertException;
     private Supplier<JavaArchive> archiveProducer;
     private Runnable afterUndeployListener;
 
-    public Class<? extends Throwable> getExpectedException() {
-        return expectedException;
+    public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
+        return assertException(t -> {
+            assertEquals(expectedException,
+                    t.getClass(), "Build failed with wrong exception");
+        });
     }
 
-    public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
-        this.expectedException = expectedException;
+    public QuarkusUnitTest assertException(Consumer<Throwable> assertException) {
+        this.assertException = assertException;
         return this;
     }
 
@@ -100,6 +103,7 @@ public class QuarkusUnitTest
         return this;
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
             throws TestInstantiationException {
         try {
@@ -116,7 +120,7 @@ public class QuarkusUnitTest
             return factory.newInstance(new InvocationHandler() {
                 @Override
                 public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                    if (expectedException != null) {
+                    if (assertException != null) {
                         return null;
                     }
                     Method realMethod = actualTestInstance.getClass().getMethod(method.getName(), method.getParameterTypes());
@@ -160,7 +164,7 @@ public class QuarkusUnitTest
             throw new RuntimeException("QuarkusUnitTest does not have archive producer set");
         }
 
-        System.setProperty("quarkus.log.file.path", "target/quarkus.log");
+        PropertyTestUtil.setLogFileProperty();
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         if (store.get(TestResourceManager.class.getName()) == null) {
             TestResourceManager manager = new TestResourceManager(extensionContext.getRequiredTestClass());
@@ -194,9 +198,8 @@ public class QuarkusUnitTest
                             @Override
                             public void execute(BuildContext context) {
                                 try {
-                                    Constructor<? extends BuildItem> ctor = buildItem.getConstructor(boolean.class,
-                                            String[].class);
-                                    context.produce(ctor.newInstance(false, new String[] { testClass.getName() }));
+                                    Method factoryMethod = buildItem.getMethod("unremovableOf", Class.class);
+                                    context.produce((BuildItem) factoryMethod.invoke(null, testClass));
                                 } catch (Exception e) {
                                     throw new RuntimeException(e);
                                 }
@@ -219,8 +222,8 @@ public class QuarkusUnitTest
 
             try {
                 runtimeRunner.run();
-                if (expectedException != null) {
-                    fail("Build did not fail");
+                if (assertException != null) {
+                    fail("The build was expected to fail");
                 }
                 started = true;
                 Instance<?> factory;
@@ -235,15 +238,13 @@ public class QuarkusUnitTest
                 extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).put(testClass.getName(), actualTest);
             } catch (Exception e) {
                 started = false;
-                if (expectedException != null) {
+                if (assertException != null) {
                     if (e instanceof RuntimeException) {
                         Throwable cause = e.getCause();
                         if (cause != null && cause instanceof BuildException) {
-                            assertEquals(expectedException,
-                                    cause.getCause().getClass(), "Build failed with wrong exception");
+                            assertException.accept(cause.getCause());
                         } else if (cause != null) {
-                            assertEquals(expectedException,
-                                    cause.getClass(), "Build failed with wrong exception");
+                            assertException.accept(cause);
                         } else {
                             fail("Unable to unwrap build exception from: " + e);
                         }

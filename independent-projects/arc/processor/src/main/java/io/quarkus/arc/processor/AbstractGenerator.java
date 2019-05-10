@@ -16,15 +16,43 @@
 
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.Arc;
 import java.lang.reflect.Modifier;
-
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
-import io.quarkus.arc.Arc;
+import org.jboss.jandex.Type.Kind;
 
 abstract class AbstractGenerator {
 
     static final String DEFAULT_PACKAGE = Arc.class.getPackage().getName() + ".generator";
+
+    /**
+     * Create a generated bean name from a bean package. When bean is located
+     * in a default package (i.e. a classpath root), the target package name
+     * is empty string. This need to be taken into account when creating
+     * generated bean name because it is later used to build class file path
+     * and we do not want it to start from a slash because it will point root
+     * directory instead of a relative one. This method will address this
+     * problem.<br>
+     * <br>
+     * Example generated bean names (without quotes):
+     * <ol>
+     * <li>a <i>"io/quarcus/foo/FooService_Bean"</i>, when in io.quarcus.foo package,</li>
+     * <li>a <i>"BarService_Bean"</i>, when in default package.</li>
+     * </ol>
+     *
+     * @param baseName a bean name (class name)
+     * @param targetPackage a package where bean is located
+     * @return Generated name
+     */
+    static String generatedNameFromTarget(String targetPackage, String baseName, String suffix) {
+        if (targetPackage == null || targetPackage.isEmpty()) {
+            return baseName + suffix;
+        } else {
+            return targetPackage.replace('.', '/') + "/" + baseName + suffix;
+        }
+    }
 
     protected String getBaseName(BeanInfo bean, String beanClassName) {
         String name = Types.getSimpleName(beanClassName);
@@ -58,18 +86,22 @@ abstract class AbstractGenerator {
     }
 
     protected String getPackageName(BeanInfo bean) {
-        String packageName;
+        DotName providerTypeName;
         if (bean.isProducerMethod() || bean.isProducerField()) {
-            packageName = DotNames.packageName(bean.getDeclaringBean().getProviderType().name());
+            providerTypeName = bean.getDeclaringBean().getProviderType().name();
         } else {
-            packageName = DotNames.packageName(bean.getProviderType().name());
+            if (bean.getProviderType().kind() == Kind.ARRAY || bean.getProviderType().kind() == Kind.PRIMITIVE) {
+                providerTypeName = bean.getImplClazz().name();
+            } else {
+                providerTypeName = bean.getProviderType().name();
+            }
         }
+        String packageName = DotNames.packageName(providerTypeName);
         if (packageName.startsWith("java.")) {
             // It is not possible to place a class in a JDK package
             packageName = DEFAULT_PACKAGE;
         }
         return packageName;
     }
-
 
 }

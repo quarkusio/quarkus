@@ -18,28 +18,30 @@ package io.quarkus.arc.test.producer.primitive;
 
 import static org.junit.Assert.assertEquals;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class PrimitiveProducerTest {
 
     @Rule
-    public ArcTestContainer container = new ArcTestContainer(IntProducer.class, LongProducer.class, PrimitiveConsumer.class);
+    public ArcTestContainer container = new ArcTestContainer(IntProducer.class, LongProducer.class, StringArrayProducer.class,
+            PrimitiveConsumer.class);
 
     @Test
     public void testPrimitiveProducers() {
         assertEquals(Long.valueOf(10), Arc.container().instance(Long.class).get());
         assertEquals(Integer.valueOf(10), Arc.container().instance(Integer.class).get());
         PrimitiveConsumer consumer = Arc.container().instance(PrimitiveConsumer.class).get();
-        assertEquals(10, consumer.getIntFoo());
-        assertEquals(10l, consumer.getLongFoo());
+        assertEquals(10, consumer.intFoo);
+        assertEquals(10l, consumer.longFoo);
+        assertEquals(2, consumer.strings.length);
+        assertEquals("foo", consumer.strings[0]);
     }
 
     @Dependent
@@ -59,23 +61,26 @@ public class PrimitiveProducerTest {
         }
 
     }
-    
+
+    @Dependent
+    static class StringArrayProducer {
+
+        @Produces
+        String[] strings = { "foo", "bar" };
+
+    }
+
     @Singleton
     static class PrimitiveConsumer {
-        
+
         @Inject
         int intFoo;
-        
+
         @Inject
         long longFoo;
 
-        int getIntFoo() {
-            return intFoo;
-        }
+        @Inject
+        String[] strings;
 
-        long getLongFoo() {
-            return longFoo;
-        }
-        
     }
 }

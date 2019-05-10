@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import javax.json.bind.annotation.JsonbTransient;
 import javax.persistence.Transient;
 
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
@@ -21,13 +22,13 @@ import io.quarkus.panache.common.Sort;
  * @author Stéphane Épardaud
  * @see PanacheEntity
  */
-public class PanacheEntityBase {
+public abstract class PanacheEntityBase {
 
     // Operations
 
     /**
      * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.
-     * 
+     *
      * @see #isPersistent()
      * @see #persist(Iterable)
      * @see #persist(Stream)
@@ -39,7 +40,7 @@ public class PanacheEntityBase {
 
     /**
      * Delete this entity from the database, if it is already persisted.
-     * 
+     *
      * @see #isPersistent()
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
@@ -54,9 +55,10 @@ public class PanacheEntityBase {
      * Returns true if this entity is persistent in the database. If yes, all modifications to
      * its persistent fields will be automatically committed to the database at transaction
      * commit time.
-     * 
+     *
      * @return true if this entity is persistent in the database.
      */
+    @JsonbTransient
     public boolean isPersistent() {
         return JpaOperations.isPersistent(this);
     }
@@ -65,7 +67,7 @@ public class PanacheEntityBase {
 
     /**
      * Find an entity of this type by ID.
-     * 
+     *
      * @param id the ID of the entity to find.
      * @return the entity found, or <code>null</code> if not found.
      */
@@ -75,7 +77,7 @@ public class PanacheEntityBase {
 
     /**
      * Find entities using a query, with optional indexed parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params optional sequence of indexed parameters
      * @return a new {@link PanacheQuery} instance for the given query
@@ -91,7 +93,7 @@ public class PanacheEntityBase {
 
     /**
      * Find entities using a query and the given sort options, with optional indexed parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
@@ -108,7 +110,7 @@ public class PanacheEntityBase {
 
     /**
      * Find entities using a query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Map} of named parameters
      * @return a new {@link PanacheQuery} instance for the given query
@@ -124,7 +126,7 @@ public class PanacheEntityBase {
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Map} of indexed parameters
@@ -141,7 +143,7 @@ public class PanacheEntityBase {
 
     /**
      * Find entities using a query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return a new {@link PanacheQuery} instance for the given query
@@ -157,7 +159,7 @@ public class PanacheEntityBase {
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Parameters} of indexed parameters
@@ -174,7 +176,7 @@ public class PanacheEntityBase {
 
     /**
      * Find all entities of this type.
-     * 
+     *
      * @return a new {@link PanacheQuery} instance to find all entities of this type.
      * @see #findAll(Sort)
      * @see #listAll()
@@ -186,7 +188,7 @@ public class PanacheEntityBase {
 
     /**
      * Find all entities of this type, in the given order.
-     * 
+     *
      * @param sort the sort order to use
      * @return a new {@link PanacheQuery} instance to find all entities of this type.
      * @see #findAll()
@@ -200,7 +202,7 @@ public class PanacheEntityBase {
     /**
      * Find entities matching a query, with optional indexed parameters.
      * This method is a shortcut for <code>find(query, params).list()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params optional sequence of indexed parameters
      * @return a {@link List} containing all results, without paging
@@ -217,7 +219,7 @@ public class PanacheEntityBase {
     /**
      * Find entities matching a query and the given sort options, with optional indexed parameters.
      * This method is a shortcut for <code>find(query, sort, params).list()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
@@ -235,7 +237,7 @@ public class PanacheEntityBase {
     /**
      * Find entities matching a query, with named parameters.
      * This method is a shortcut for <code>find(query, params).list()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Map} of named parameters
      * @return a {@link List} containing all results, without paging
@@ -252,7 +254,7 @@ public class PanacheEntityBase {
     /**
      * Find entities matching a query and the given sort options, with named parameters.
      * This method is a shortcut for <code>find(query, sort, params).list()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Map} of indexed parameters
@@ -270,7 +272,7 @@ public class PanacheEntityBase {
     /**
      * Find entities matching a query, with named parameters.
      * This method is a shortcut for <code>find(query, params).list()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return a {@link List} containing all results, without paging
@@ -287,7 +289,7 @@ public class PanacheEntityBase {
     /**
      * Find entities matching a query and the given sort options, with named parameters.
      * This method is a shortcut for <code>find(query, sort, params).list()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Parameters} of indexed parameters
@@ -305,7 +307,7 @@ public class PanacheEntityBase {
     /**
      * Find all entities of this type.
      * This method is a shortcut for <code>findAll().list()</code>.
-     * 
+     *
      * @return a {@link List} containing all results, without paging
      * @see #listAll(Sort)
      * @see #findAll()
@@ -318,7 +320,7 @@ public class PanacheEntityBase {
     /**
      * Find all entities of this type, in the given order.
      * This method is a shortcut for <code>findAll(sort).list()</code>.
-     * 
+     *
      * @param sort the sort order to use
      * @return a {@link List} containing all results, without paging
      * @see #listAll()
@@ -332,7 +334,7 @@ public class PanacheEntityBase {
     /**
      * Find entities matching a query, with optional indexed parameters.
      * This method is a shortcut for <code>find(query, params).stream()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params optional sequence of indexed parameters
      * @return a {@link Stream} containing all results, without paging
@@ -349,7 +351,7 @@ public class PanacheEntityBase {
     /**
      * Find entities matching a query and the given sort options, with optional indexed parameters.
      * This method is a shortcut for <code>find(query, sort, params).stream()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
@@ -367,7 +369,7 @@ public class PanacheEntityBase {
     /**
      * Find entities matching a query, with named parameters.
      * This method is a shortcut for <code>find(query, params).stream()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Map} of named parameters
      * @return a {@link Stream} containing all results, without paging
@@ -384,7 +386,7 @@ public class PanacheEntityBase {
     /**
      * Find entities matching a query and the given sort options, with named parameters.
      * This method is a shortcut for <code>find(query, sort, params).stream()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Map} of indexed parameters
@@ -402,7 +404,7 @@ public class PanacheEntityBase {
     /**
      * Find entities matching a query, with named parameters.
      * This method is a shortcut for <code>find(query, params).stream()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return a {@link Stream} containing all results, without paging
@@ -419,7 +421,7 @@ public class PanacheEntityBase {
     /**
      * Find entities matching a query and the given sort options, with named parameters.
      * This method is a shortcut for <code>find(query, sort, params).stream()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Parameters} of indexed parameters
@@ -437,7 +439,7 @@ public class PanacheEntityBase {
     /**
      * Find all entities of this type.
      * This method is a shortcut for <code>findAll().stream()</code>.
-     * 
+     *
      * @return a {@link Stream} containing all results, without paging
      * @see #streamAll(Sort)
      * @see #findAll()
@@ -450,7 +452,7 @@ public class PanacheEntityBase {
     /**
      * Find all entities of this type, in the given order.
      * This method is a shortcut for <code>findAll(sort).stream()</code>.
-     * 
+     *
      * @param sort the sort order to use
      * @return a {@link Stream} containing all results, without paging
      * @see #streamAll()
@@ -463,7 +465,7 @@ public class PanacheEntityBase {
 
     /**
      * Counts the number of this type of entity in the database.
-     * 
+     *
      * @return the number of this type of entity in the database.
      * @see #count(String, Object...)
      * @see #count(String, Map)
@@ -475,7 +477,7 @@ public class PanacheEntityBase {
 
     /**
      * Counts the number of this type of entity matching the given query, with optional indexed parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params optional sequence of indexed parameters
      * @return the number of entities counted.
@@ -489,7 +491,7 @@ public class PanacheEntityBase {
 
     /**
      * Counts the number of this type of entity matching the given query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Map} of named parameters
      * @return the number of entities counted.
@@ -503,7 +505,7 @@ public class PanacheEntityBase {
 
     /**
      * Counts the number of this type of entity matching the given query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return the number of entities counted.
@@ -517,7 +519,7 @@ public class PanacheEntityBase {
 
     /**
      * Delete all entities of this type from the database.
-     * 
+     *
      * @return the number of entities deleted.
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
@@ -529,7 +531,7 @@ public class PanacheEntityBase {
 
     /**
      * Delete all entities of this type matching the given query, with optional indexed parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params optional sequence of indexed parameters
      * @return the number of entities deleted.
@@ -543,7 +545,7 @@ public class PanacheEntityBase {
 
     /**
      * Delete all entities of this type matching the given query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Map} of named parameters
      * @return the number of entities deleted.
@@ -557,7 +559,7 @@ public class PanacheEntityBase {
 
     /**
      * Delete all entities of this type matching the given query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return the number of entities deleted.
@@ -571,7 +573,7 @@ public class PanacheEntityBase {
 
     /**
      * Persist all given entities.
-     * 
+     *
      * @param entities the entities to persist
      * @see #persist()
      * @see #persist(Stream)
@@ -583,7 +585,7 @@ public class PanacheEntityBase {
 
     /**
      * Persist all given entities.
-     * 
+     *
      * @param entities the entities to persist
      * @see #persist()
      * @see #persist(Iterable)
@@ -595,7 +597,7 @@ public class PanacheEntityBase {
 
     /**
      * Persist all given entities.
-     * 
+     *
      * @param entities the entities to persist
      * @see #persist()
      * @see #persist(Stream)

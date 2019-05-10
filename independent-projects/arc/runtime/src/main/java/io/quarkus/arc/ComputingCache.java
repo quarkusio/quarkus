@@ -27,7 +27,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Computing cache backed by a {@link ConcurrentHashMap} which intentionally does not use {@link Map#computeIfAbsent(Object, Function)} and is reentrant.
+ * Computing cache backed by a {@link ConcurrentHashMap} which intentionally does not use
+ * {@link Map#computeIfAbsent(Object, Function)} and is reentrant.
  * Derived from {@code org.jboss.weld.util.cache.ReentrantMapBackedComputingCache}.
  *
  * @param <K>
@@ -58,7 +59,7 @@ public class ComputingCache<K, V> {
 
     public V getValueIfPresent(K key) {
         LazyValue<V> value = map.get(key);
-        return value != null ? value.getIfPresent() :null;
+        return value != null ? value.getIfPresent() : null;
     }
 
     public V remove(K key) {
@@ -80,12 +81,12 @@ public class ComputingCache<K, V> {
     public void forEachExistingValue(Consumer<? super V> action) {
         Objects.requireNonNull(action);
         for (LazyValue<V> value : map.values()) {
-            if(value.isSet()) {
+            if (value.isSet()) {
                 action.accept(value.get());
             }
         }
     }
-    
+
     public Set<V> getPresentValues() {
         return map.values().stream().map(LazyValue::getIfPresent).filter(Objects::nonNull).collect(Collectors.toSet());
     }

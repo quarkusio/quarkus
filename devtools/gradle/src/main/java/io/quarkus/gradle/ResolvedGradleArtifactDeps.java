@@ -20,8 +20,10 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -32,15 +34,14 @@ import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
-import io.quarkus.creator.AppArtifact;
-import io.quarkus.creator.AppArtifactResolverBase;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.AppDependency;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
  */
-public class ResolvedGradleArtifactDeps extends AppArtifactResolverBase {
+public class ResolvedGradleArtifactDeps {
 
     private final String groupId;
     private final String artifactId;
@@ -64,9 +65,9 @@ public class ResolvedGradleArtifactDeps extends AppArtifactResolverBase {
     }
 
     private List<AppDependency> extractDependencies(Project project) {
-        List<AppDependency> dependencies = new ArrayList<>();
+        Set<AppDependency> dependencies = new HashSet<>();
 
-        Configuration configuration = project.getConfigurations().getByName("compileOnly");
+        Configuration configuration = project.getConfigurations().getByName("compileClasspath");
         ResolutionResult resolutionResult = configuration.getIncoming().getResolutionResult();
         ResolvedComponentResult root = resolutionResult.getRoot();
 
@@ -82,33 +83,39 @@ public class ResolvedGradleArtifactDeps extends AppArtifactResolverBase {
                 artifactId + "-" + version + ".jar");
 
         traverseDependencies(root.getDependencies(), dependencies);
-        return dependencies;
+        return new ArrayList<>(dependencies);
     }
 
-    private void traverseDependencies(Set<? extends DependencyResult> dependencies, List<AppDependency> appDependencies) {
+    private void traverseDependencies(Set<? extends DependencyResult> dependencies, Set<AppDependency> appDependencies) {
         dependencies.forEach(dependency -> {
             if (dependency instanceof ResolvedDependencyResult) {
                 ResolvedComponentResult result = ((ResolvedDependencyResult) dependency).getSelected();
-                appDependencies.add(new AppDependency(toAppArtifact(result), "provided"));
-                traverseDependencies(result.getDependencies(), appDependencies);
+                //if the resolved component is platform-compile its a bom, which do not have a jar, lets ignore it
+                AtomicBoolean platformCompile = new AtomicBoolean(false);
+                result.getVariants().forEach(variant -> {
+                    if (variant.getDisplayName().equals("platform-compile"))
+                        platformCompile.set(true);
+                });
+                if (!platformCompile.get()) {
+                    appDependencies.add(new AppDependency(toAppArtifact(result), "provided"));
+                    traverseDependencies(result.getDependencies(), appDependencies);
+                }
             }
         });
     }
 
-    @Override
     public void relink(AppArtifact artifact, Path path) throws AppCreatorException {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     protected void doResolve(AppArtifact coords) throws AppCreatorException {
         if (coords.getGroupId().equals(groupId) && coords.getArtifactId().equals(artifactId)) {
-            setPath(coords, projectFile.toPath());
+            coords.setPath(projectFile.toPath());
         } else {
 
-            File dep = findMatchingDependencyFile(coords.getGroupId(), coords.getArtifactId());
+            File dep = findMatchingDependencyFile(coords.getGroupId(), coords.getArtifactId(), coords.getVersion());
             if (dep != null)
-                setPath(coords, dep.toPath());
+                coords.setPath(dep.toPath());
             else
                 throw new AppCreatorException("Did not find dependency file for: " + coords.toString());
         }
@@ -118,24 +125,28 @@ public class ResolvedGradleArtifactDeps extends AppArtifactResolverBase {
         AppArtifact appArtifacat = new AppArtifact(result.getModuleVersion().getGroup(),
                 result.getModuleVersion().getName(), result.getModuleVersion().getVersion());
 
-        File dep = findMatchingDependencyFile(appArtifacat.getGroupId(), appArtifacat.getArtifactId());
+        File dep = findMatchingDependencyFile(appArtifacat.getGroupId(), appArtifacat.getArtifactId(),
+                appArtifacat.getVersion());
         if (dep != null) {
-            setPath(appArtifacat, dep.toPath());
+            appArtifacat.setPath(dep.toPath());
         }
         return appArtifacat;
     }
 
-    private File findMatchingDependencyFile(String group, String artifact) {
-        String searchCriteria1 = group + File.separator + artifact;
-        String searchCriteria2 = group.replace('.', File.separatorChar) + File.separator + artifact;
+    private File findMatchingDependencyFile(String group, String artifact, String version) {
+        String searchCriteria1 = group + File.separator + artifact + "-" + version;
+        String searchCriteria2 = group + File.separator + artifact + File.separatorChar + version;
+        String searchCriteria3 = group.replace('.', File.separatorChar) +
+                File.separatorChar + artifact + File.separatorChar + version;
         for (File file : dependencyFiles) {
-            if (file.getPath().contains(searchCriteria1) || file.getPath().contains(searchCriteria2))
+            if (file.getPath().contains(searchCriteria1) ||
+                    file.getPath().contains(searchCriteria2) ||
+                    file.getPath().contains(searchCriteria3))
                 return file;
         }
         return null;
     }
 
-    @Override
     public List<AppDependency> collectDependencies(AppArtifact coords) throws AppCreatorException {
         if (!coords.getGroupId().equals(groupId) ||
                 !coords.getArtifactId().equals(artifactId) ||
@@ -148,38 +159,34 @@ public class ResolvedGradleArtifactDeps extends AppArtifactResolverBase {
         return deps;
     }
 
-    @Override
     public List<AppDependency> collectDependencies(AppArtifact root, List<AppDependency> deps) throws AppCreatorException {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     public List<String> listLaterVersions(AppArtifact artifact, String upToVersion, boolean inclusive)
             throws AppCreatorException {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     public String getNextVersion(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppCreatorException {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     public String getLatestVersion(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppCreatorException {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public String toString() {
-        return "ResolvedGradleArtifactDeps{" +
+        return "ResolvedGradleArtifactDeps{\n" +
                 "groupId='" + groupId + '\n' +
-                ", artifactId='" + artifactId + '\n' +
-                ", classifier='" + classifier + '\n' +
-                ", type='" + type + '\n' +
-                ", version='" + version + '\n' +
-                ", deps=" + deps +
-                ", dependencyFiles=" + dependencyFiles +
-                ", projectFile=" + projectFile +
+                "artifactId='" + artifactId + '\n' +
+                "classifier='" + classifier + '\n' +
+                "type='" + type + '\n' +
+                "version='" + version + '\n' +
+                "deps=" + deps + '\n' +
+                "dependencyFiles=" + dependencyFiles + '\n' +
+                "projectFile=" + projectFile + '\n' +
                 '}';
     }
 }

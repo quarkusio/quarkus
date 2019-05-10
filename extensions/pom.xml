@@ -33,7 +33,11 @@
         <!-- Plumbing -->
         <module>arc</module>
         <module>scheduler</module>
+
+        <!-- Formats -->
         <module>jaxb</module>
+        <module>jsonp</module>
+        <module>jsonb</module>
 
         <!-- HTTP -->
         <module>undertow</module>
@@ -48,17 +52,22 @@
 
         <!-- REST services -->
         <module>resteasy-common</module>
+        <module>resteasy-server-common</module>
         <module>resteasy</module>
         <module>resteasy-jsonb</module>
         <module>smallrye-rest-client</module>
+        <module>smallrye-openapi-common</module>
         <module>smallrye-openapi</module>
+        <module>swagger-ui</module>
 
         <!-- Reactive -->
         <module>vertx</module>
+        <module>vertx-web</module>
         <module>netty</module>
         <module>reactive-streams-operators</module>
         <module>smallrye-reactive-messaging</module>
         <module>smallrye-reactive-messaging-kafka</module>
+        <module>reactive-pg-client</module>
 
         <!-- Data access and validation -->
         <module>narayana-jta</module>
@@ -67,6 +76,8 @@
         <module>hibernate-orm</module>
         <module>hibernate-validator</module>
         <module>panache</module>
+        <module>hibernate-search-elasticsearch</module>
+        <module>elasticsearch-rest-client</module>
         <module>kafka-client</module>
 
         <!-- Spring -->
@@ -75,6 +86,7 @@
         <!-- Security -->
         <module>elytron-security</module>
         <module>smallrye-jwt</module>
+        <module>keycloak</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>
@@ -82,11 +94,21 @@
         <!-- Caching -->
         <module>caffeine</module>
 
+        <!-- Integrations -->
         <module>amazon-lambda</module>
+        <module>amazon-lambda-resteasy</module>
+
         <!-- Camel -->
         <module>camel</module>
 
+        <!-- Additional languages -->
         <module>kotlin</module>
+
+        <!-- Kubernetes -->
+        <module>kubernetes</module>
+
+        <!-- Database migrations -->
+        <module>flyway</module>
     </modules>
 
 </project>

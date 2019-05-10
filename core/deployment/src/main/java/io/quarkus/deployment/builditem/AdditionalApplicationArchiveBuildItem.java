@@ -18,7 +18,7 @@ package io.quarkus.deployment.builditem;
 
 import java.nio.file.Path;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * An additional application archive

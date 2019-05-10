@@ -4,7 +4,6 @@ import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
@@ -66,7 +65,7 @@ public class AnnotationProxyProvider {
             if (clazz == null) {
                 try (InputStream annotationStream = IoUtil.readClass(classLoader, name.toString())) {
                     clazz = indexer.index(annotationStream);
-                } catch (IOException e) {
+                } catch (Exception e) {
                     throw new IllegalStateException("Failed to index: " + name, e);
                 }
             }

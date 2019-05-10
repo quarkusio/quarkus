@@ -39,7 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *
  */
 @Target(ElementType.TYPE)
-@ExtendWith(QuarkusTestExtension.class)
+@ExtendWith({ QuarkusTestExtension.class, DisabledOnSubstrateCondition.class })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SubstrateTest {
 }

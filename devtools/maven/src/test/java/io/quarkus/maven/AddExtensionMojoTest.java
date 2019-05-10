@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -90,7 +92,7 @@ class AddExtensionMojoTest {
 
     private Model reload() throws IOException, XmlPullParserException {
         MavenXpp3Reader reader = new MavenXpp3Reader();
-        try (Reader fr = new FileReader(OUTPUT_POM)) {
+        try (Reader fr = Files.newBufferedReader(OUTPUT_POM.toPath())) {
             return reader.read(fr);
         }
     }

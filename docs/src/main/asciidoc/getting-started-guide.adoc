@@ -1,3 +1,9 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+
 include::./attributes.adoc[]
 = {project-name} - Creating Your First Application
 
@@ -33,7 +39,7 @@ To complete this guide, you need:
 == Architecture
 
 In this guide, we create a straightforward application serving a `hello` endpoint. To demonstrate
-dependency injection this endpoint uses a `greeting` bean.
+dependency injection, this endpoint uses a `greeting` bean.
 
 image::getting-started-architecture.png[alt=Architecture]
 
@@ -67,11 +73,11 @@ It generates:
 * an `org.acme.quickstart.GreetingResource` resource exposed on `/hello`
 * an associated unit test
 * a landing page that is accessible on `http://localhost:8080` after starting the application
-* an example of `Dockerfile`
+* example `Dockerfile` files for both `native` and `jvm` modes
 * the application configuration file
 
 Once generated, look at the `pom.xml`.
-You will find the import of the Quarkus BOM, allowing to omit the version on the different {project-name} dependencies.
+You will find the import of the Quarkus BOM, allowing you to omit the version on the different {project-name} dependencies.
 In addition, you can see the `quarkus-maven-plugin` responsible of the packaging of the application and also providing the development mode.
 
 [source,xml,subs=attributes+]
@@ -106,7 +112,7 @@ In addition, you can see the `quarkus-maven-plugin` responsible of the packaging
 </build>
 ----
 
-If we focus on the dependencies section, you can see 2 extensions allowing the development of REST applications:
+If we focus on the dependencies section, you can see the extension allowing the development of REST applications:
 
 [source,xml]
 ----
@@ -114,17 +120,7 @@ If we focus on the dependencies section, you can see 2 extensions allowing the d
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-resteasy</artifactId>
     </dependency>
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-arc</artifactId>
-    </dependency>
 ----
-
-[NOTE]
-.What's ArC?
-====
-ArC is a CDI-based dependency injection solution tailored for Quarkus architecture - see also link:cdi-reference.html[Contexts and Dependency Injection].
-====
 
 === The JAX-RS resources
 
@@ -145,7 +141,7 @@ public class GreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "hello";
+        return "hello\n";
     }
 }
 ----
@@ -153,32 +149,32 @@ public class GreetingResource {
 It's a very simple REST endpoint, returning "hello" to requests on "/hello".
 
 [TIP]
-.Differences with vanilla Jax-RS
+.Differences with vanilla JAX-RS
 ====
-With Quarkus there is no need to create an `Application` class. It's supported but not required. In addition, only one instance
+With Quarkus, there is no need to create an `Application` class. It's supported, but not required. In addition, only one instance
 of the resource is created and not one per request. You can configure this using the different `*Scoped` annotations (`ApplicationScoped`, `RequestScoped`, etc).
 ====
 
 == Running the application
 
 Now we are ready to run our application.
-Use: `mvn compile quarkus:dev`:
+Use: `./mvnw compile quarkus:dev`:
 
 [source,shell]
 ----
-[INFO] --------------------< org.acme:quarkus-quickstart >---------------------
-[INFO] Building quarkus-quickstart 1.0-SNAPSHOT
+[INFO] --------------------< org.acme:getting-started >---------------------
+[INFO] Building getting-started 1.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
 [INFO]
-[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ quarkus-quickstart ---
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ getting-started ---
 [INFO] Using 'UTF-8' encoding to copy filtered resources.
 [INFO] skip non existing resourceDirectory /Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/getting-started/src/main/resources
 [INFO]
-[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ quarkus-quickstart ---
+[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ getting-started ---
 [INFO] Changes detected - recompiling the module!
 [INFO] Compiling 2 source files to /Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/getting-started/target/classes
 [INFO]
-[INFO] --- quarkus-maven-plugin:<version>:dev (default-cli) @ quarkus-quickstart ---
+[INFO] --- quarkus-maven-plugin:<version>:dev (default-cli) @ getting-started ---
 Listening for transport dt_socket at address: 5005
 2019-02-28 17:05:22,347 INFO  [io.qua.dep.QuarkusAugmentor] (main) Beginning quarkus augmentation
 2019-02-28 17:05:22,635 INFO  [io.qua.dep.QuarkusAugmentor] (main) Quarkus augmentation completed in 288ms
@@ -197,6 +193,11 @@ Hit `CTRL+C` to stop the application, but you can also keep it running and enjoy
 
 == Using injection
 
+Dependency injection in Quarkus is based on ArC which is a CDI-based dependency injection solution tailored for Quarkus' architecture.
+You can learn more about it in the link:cdi-reference.html[Contexts and Dependency Injection guide].
+
+ArC comes as a dependency of `quarkus-resteasy` so you already have it handy.
+
 Let's modify the application and add a companion bean.
 Create the `src/main/java/org/acme/quickstart/GreetingService.java` file with the following content:
 
@@ -210,7 +211,7 @@ import javax.enterprise.context.ApplicationScoped;
 public class GreetingService {
 
     public String greeting(String name) {
-        return "hello " + name;
+        return "hello " + name + "\n";
     }
 
 }
@@ -245,20 +246,20 @@ public class GreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "hello";
+        return "hello\n";
     }
 }
 ----
 
-If you stopped the application, restart the application with `mvn compile quarkus:dev`.
+If you stopped the application, restart the application with `./mvnw compile quarkus:dev`.
 Then check that http://localhost:8080/hello/greeting/quarkus returns `hello quarkus`.
 
 == Development Mode
 
 `quarkus:dev` runs Quarkus in development mode. This enables hot deployment with background compilation, which means
-that when you modify your Java files your resource files and refresh your browser these changes will automatically take effect.
+that when you modify your Java files and/or your resource files and refresh your browser, these changes will automatically take effect.
 This works too for resource files like the configuration property file.
-Refreshing the browser triggers a scan of the workspace, and if any changes are detected the Java files are recompiled
+Refreshing the browser triggers a scan of the workspace, and if any changes are detected, the Java files are recompiled
 and the application is redeployed; your request is then serviced by the redeployed application. If there are any issues
 with compilation or deployment an error page will let you know.
 
@@ -276,13 +277,11 @@ In the generated `pom.xml` file, you can see 2 test dependencies:
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-junit5</artifactId>
-    <version>${quarkus.version}</version>
     <scope>test</scope>
 </dependency>
 <dependency>
     <groupId>io.rest-assured</groupId>
     <artifactId>rest-assured</artifactId>
-    <version>{restassured-version}</version>
     <scope>test</scope>
 </dependency>
 ----
@@ -296,7 +295,7 @@ be set, as the default version does not support Junit 5:
 ----
 <plugin>
     <artifactId>maven-surefire-plugin</artifactId>
-    <version>${surefire.version}</version>
+    <version>${surefire-plugin.version}</version>
     <configuration>
        <systemProperties>
           <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
@@ -331,7 +330,7 @@ public class GreetingResourceTest {
           .when().get("/hello")
           .then()
              .statusCode(200)    // <2>
-             .body(is("hello"));
+             .body(is("hello\n"));
     }
 
     @Test
@@ -342,7 +341,7 @@ public class GreetingResourceTest {
           .when().get("/hello/greeting/{name}")
           .then()
             .statusCode(200)
-            .body(is("hello " + uuid));
+            .body(is("hello " + uuid + "\n"));
     }
 
 }
@@ -352,12 +351,12 @@ public class GreetingResourceTest {
 
 These tests use http://rest-assured.io/[RestAssured], but feel free to use your favorite library.
 
-You can run the test from your IDE directly (be sure you stopped the application first), or from Maven using: `mvn test`.
+You can run the test from your IDE directly (be sure you stopped the application first), or from Maven using: `./mvnw test`.
 
-By default tests will run on port `8081` so as not to conflict with the running application. We automatically
+By default, tests will run on port `8081` so as not to conflict with the running application. We automatically
 configure RestAssured to use this port. If you want to use a different client you should use the `@TestHTTPResource`
 annotation to directly inject the URL of the test into a field on the test class. This field can be of the type
-`String`, `URL` or `URI`. This annotation can also be given a value for the test path. For example if I want to test
+`String`, `URL` or `URI`. This annotation can also be given a value for the test path. For example, if I want to test
 a Servlet mapped to `/myservlet` I would just add the following to my test:
 
 
@@ -373,7 +372,7 @@ property called `test.url` that is set to the base test URL for situations where
 
 == Packaging and run the application
 
-The application is packaged using `mvn package`.
+The application is packaged using `./mvnw package`.
 It produces 2 jar files:
 
 * `getting-started-1.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
@@ -398,7 +397,7 @@ The resource can also use `CompletionStage` as return type to handle asynchronou
 @Produces(MediaType.TEXT_PLAIN)
 public CompletionStage<String> hello() {
     return CompletableFuture.supplyAsync(() -> {
-        return "hello";
+        return "hello\n";
     });
 }
 ----
@@ -413,8 +412,8 @@ We recommend continuing the journey with the link:building-native-image-guide.ht
 
 In addition, the link:tooling.html[tooling guide] document explains how to:
 
-* scaffold a project in a single command line,
-* enable the _development model_ (hot reload)
+* scaffold a project in a single command line
+* enable the _development mode_ (hot reload)
 * import the project in your favorite IDE
 * and more
 

@@ -7,9 +7,6 @@ import org.wildfly.security.auth.server.SecurityIdentity;
 import org.wildfly.security.evidence.BearerTokenEvidence;
 
 import io.quarkus.elytron.security.runtime.ElytronAccount;
-import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
-import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
-import io.smallrye.jwt.auth.principal.ParseException;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
@@ -54,18 +51,5 @@ public class JwtIdentityManager implements IdentityManager {
     @Override
     public Account verify(Credential credential) {
         return null;
-    }
-
-    /**
-     * Validate the bearer token passed in with the authorization header
-     *
-     * @param jwtCredential - the input bearer token
-     * @return return the validated JWTCallerPrincipal
-     * @throws ParseException - thrown on token parse or validation failure
-     */
-    protected JWTCallerPrincipal validate(JWTCredential jwtCredential) throws ParseException {
-        JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
-        JWTCallerPrincipal callerPrincipal = factory.parse(jwtCredential.getBearerToken(), jwtCredential.getAuthContextInfo());
-        return callerPrincipal;
     }
 }

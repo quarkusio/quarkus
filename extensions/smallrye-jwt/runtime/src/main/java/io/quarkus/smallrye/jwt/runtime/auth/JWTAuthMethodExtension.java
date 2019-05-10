@@ -1,7 +1,9 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
+import javax.inject.Inject;
 import javax.servlet.ServletContext;
 
+import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.undertow.servlet.ServletExtension;
 import io.undertow.servlet.api.DeploymentInfo;
 
@@ -10,6 +12,8 @@ import io.undertow.servlet.api.DeploymentInfo;
  * Additionally, registers an Undertow handler that cleans up MP JWT principal
  */
 public class JWTAuthMethodExtension implements ServletExtension {
+    @Inject
+    JWTAuthContextInfo info;
     private String authMechanism;
 
     public String getAuthMechanism() {
@@ -28,7 +32,7 @@ public class JWTAuthMethodExtension implements ServletExtension {
      */
     @Override
     public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
-        deploymentInfo.addAuthenticationMechanism(authMechanism, new JWTAuthMechanismFactory());
+        deploymentInfo.addAuthenticationMechanism(authMechanism, new JWTAuthMechanismFactory(info));
         deploymentInfo.addInnerHandlerChainWrapper(MpJwtPrincipalHandler::new);
     }
 }

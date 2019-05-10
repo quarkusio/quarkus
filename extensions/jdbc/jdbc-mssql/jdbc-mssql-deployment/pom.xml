@@ -25,17 +25,17 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-jdbc-mssql</artifactId>
+    <artifactId>quarkus-jdbc-mssql-deployment</artifactId>
     <name>Quarkus - JDBC - MSSQL - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jdbc-mssql-runtime</artifactId>
+            <artifactId>quarkus-jdbc-mssql</artifactId>
         </dependency>
     </dependencies>
 

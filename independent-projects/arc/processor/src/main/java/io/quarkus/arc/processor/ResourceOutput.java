@@ -76,11 +76,15 @@ public interface ResourceOutput {
         SpecialType getSpecialType();
 
         enum Type {
-            JAVA_CLASS, JAVA_SOURCE, SERVICE_PROVIDER,
+            JAVA_CLASS,
+            JAVA_SOURCE,
+            SERVICE_PROVIDER,
         }
 
         enum SpecialType {
-            BEAN, INTERCEPTOR_BEAN, OBSERVER;
+            BEAN,
+            INTERCEPTOR_BEAN,
+            OBSERVER;
         }
 
     }

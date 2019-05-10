@@ -12,6 +12,8 @@ import org.aesh.command.invocation.CommandInvocation;
 import org.aesh.command.option.Option;
 import org.aesh.io.Resource;
 
+import io.quarkus.cli.commands.writer.FileProjectWriter;
+
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
  */
@@ -21,10 +23,10 @@ public class CreateProjectCommand implements Command<CommandInvocation> {
     @Option(shortName = 'h', hasValue = false)
     private boolean help;
 
-    @Option(shortName = 'g', defaultValue = "com.acme")
+    @Option(shortName = 'g', defaultValue = "org.acme")
     private String groupid;
 
-    @Option(shortName = 'a', defaultValue = "quarkuss")
+    @Option(shortName = 'a', defaultValue = "quarkus")
     private String artifactid;
 
     @Option(shortName = 'v', defaultValue = "1.0.0-SNAPSHOT")
@@ -41,7 +43,7 @@ public class CreateProjectCommand implements Command<CommandInvocation> {
 
         if (path != null) {
             try {
-                boolean status = new CreateProject(new File(path.getAbsolutePath()))
+                boolean status = new CreateProject(new FileProjectWriter(new File(path.getAbsolutePath())))
                         .groupId(groupid)
                         .artifactId(artifactid)
                         .version(this.version)

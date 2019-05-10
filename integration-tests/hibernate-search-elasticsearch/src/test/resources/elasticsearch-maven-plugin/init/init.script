@@ -1,0 +1,6 @@
+PUT:_template/lightweight_index:{ "template" : "*", "order": -9999, "settings" : { "number_of_shards" : 1, "number_of_replicas" : 0 } }
+PUT:_template/slowlogs_search_level:{ "template" : "*", "order": -9999, "settings" : { "index.search.slowlog.level": "debug" } }
+PUT:_template/slowlogs_indexing_level:{ "template" : "*", "order": -9999, "settings" : { "index.indexing.slowlog.level": "debug" } }
+PUT:_template/slowlogs_search_threshold_query:{ "template" : "*", "order": -9999, "settings" : { "index.search.slowlog.threshold.query.warn": "5s", "index.search.slowlog.threshold.query.info": "500ms", "index.search.slowlog.threshold.query.debug": "100ms", "index.search.slowlog.threshold.query.trace": "10ms" } }
+PUT:_template/slowlogs_search_threshold_fetch:{ "template" : "*", "order": -9999, "settings" : { "index.search.slowlog.threshold.fetch.warn": "1s", "index.search.slowlog.threshold.fetch.info": "200ms", "index.search.slowlog.threshold.fetch.debug": "100ms", "index.search.slowlog.threshold.fetch.trace": "10ms" } }
+PUT:_template/slowlogs_indexing_threshold_index:{ "template" : "*", "order": -9999, "settings" : { "index.indexing.slowlog.threshold.index.warn": "2s", "index.indexing.slowlog.threshold.index.info": "500ms", "index.indexing.slowlog.threshold.index.debug": "100ms", "index.indexing.slowlog.threshold.index.trace": "10ms" } }

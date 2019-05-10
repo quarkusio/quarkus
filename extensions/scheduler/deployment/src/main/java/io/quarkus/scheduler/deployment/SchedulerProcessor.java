@@ -64,6 +64,7 @@ import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -93,11 +94,8 @@ public class SchedulerProcessor {
     static final String INVOKER_SUFFIX = "_ScheduledInvoker";
 
     @BuildStep
-    List<AdditionalBeanBuildItem> beans() {
-        List<AdditionalBeanBuildItem> beans = new ArrayList<>();
-        beans.add(new AdditionalBeanBuildItem(SchedulerConfiguration.class));
-        beans.add(new AdditionalBeanBuildItem(QuartzScheduler.class));
-        return beans;
+    AdditionalBeanBuildItem beans() {
+        return new AdditionalBeanBuildItem(SchedulerConfiguration.class, QuartzScheduler.class);
     }
 
     @BuildStep
@@ -106,18 +104,26 @@ public class SchedulerProcessor {
 
             @Override
             public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
-                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS
+                        || kind == org.jboss.jandex.AnnotationTarget.Kind.METHOD;
             }
 
             @Override
             public void transform(TransformationContext context) {
-                if (context.getAnnotations().isEmpty()) {
+                if (context.isClass() && context.getAnnotations().isEmpty()) {
                     // Class with no annotations but with @Scheduled method
                     if (context.getTarget().asClass().annotations().containsKey(SCHEDULED_NAME)
                             || context.getTarget().asClass().annotations().containsKey(SCHEDULES_NAME)) {
                         LOGGER.debugf("Found scheduled business methods on a class %s with no annotations - adding @Singleton",
                                 context.getTarget());
                         context.transform().add(Singleton.class).done();
+                    }
+                } else if (context.isMethod()) {
+                    MethodInfo method = context.getTarget().asMethod();
+                    if ((method.hasAnnotation(SCHEDULED_NAME) || method.hasAnnotation(SCHEDULES_NAME))
+                            && !method.hasAnnotation(DotNames.ACTIVATE_REQUEST_CONTEXT)) {
+                        // Activate request context during a scheduled method invocation
+                        context.transform().add(DotNames.ACTIVATE_REQUEST_CONTEXT).done();
                     }
                 }
             }
@@ -173,13 +179,13 @@ public class SchedulerProcessor {
                                 if (params.size() > 1
                                         || (params.size() == 1 && !params.get(0).equals(SCHEDULED_EXECUTION_TYPE))) {
                                     throw new IllegalStateException(String.format(
-                                            "Invalid scheduled business method parameters %s [method: %s, bean:%s", params,
+                                            "Invalid scheduled business method parameters %s [method: %s, bean: %s]", params,
                                             method, bean));
                                 }
                                 if (!method.returnType().kind().equals(Type.Kind.VOID)) {
                                     throw new IllegalStateException(
-                                            String.format("Scheduled business method must return void [method: %s, bean:%s",
-                                                    method.returnType(), method, bean));
+                                            String.format("Scheduled business method must return void [method: %s, bean: %s]",
+                                                    method, bean));
                                 }
                                 // Validate cron() and every() expressions
                                 for (AnnotationInstance scheduled : schedules) {
@@ -233,6 +239,28 @@ public class SchedulerProcessor {
             scheduleConfigurations.add(config);
         }
         template.registerSchedules(scheduleConfigurations, beanContainer.getValue());
+    }
+
+    @BuildStep
+    public void logCleanup(BuildProducer<LogCleanupFilterBuildItem> logCleanupFilter) {
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem("org.quartz.impl.StdSchedulerFactory",
+                "Quartz scheduler version:",
+                // no need to log if it's the default
+                "Using default implementation for",
+                "Quartz scheduler 'DefaultQuartzScheduler'"));
+
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem("org.quartz.core.QuartzScheduler",
+                "Quartz Scheduler v",
+                "JobFactory set to:",
+                "Scheduler meta-data:",
+                // no need to log if it's the default
+                "Scheduler DefaultQuartzScheduler"));
+
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem("org.quartz.simpl.RAMJobStore",
+                "RAMJobStore initialized."));
+
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem("org.quartz.core.SchedulerSignalerImpl",
+                "Initialized Scheduler Signaller of type"));
     }
 
     private String generateInvoker(BeanInfo bean, MethodInfo method, ClassOutput classOutput) {

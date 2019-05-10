@@ -16,16 +16,15 @@
 
 package io.quarkus.arc.test.injection.constructornoinject;
 
+import static org.junit.Assert.assertNotNull;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
-import org.junit.Rule;
-import org.junit.Test;
-
 import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static org.junit.Assert.assertNotNull;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class SingleNonNoArgConstructorInjectionTest {
 

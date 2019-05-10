@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.graalvm.nativeimage.ImageInfo;
-import org.jboss.builder.Version;
 
+import io.quarkus.builder.Version;
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -188,9 +188,18 @@ class MainClassBuildStep {
         startupContext = mv.readStaticField(scField.getFieldDescriptor());
 
         tryBlock = mv.tryBlock();
+
+        // Load the run time configuration
+        tryBlock.invokeStaticMethod(ConfigurationSetup.CREATE_RUN_TIME_CONFIG);
+
         for (MainBytecodeRecorderBuildItem holder : mainMethod) {
             final BytecodeRecorderImpl recorder = holder.getBytecodeRecorder();
             if (!recorder.isEmpty()) {
+                // Register substitutions in all recorders
+                for (ObjectSubstitutionBuildItem sub : substitutions) {
+                    ObjectSubstitutionBuildItem.Holder holder1 = sub.holder;
+                    recorder.registerSubstitution(holder1.from, holder1.to, holder1.substitution);
+                }
                 for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
                     recorder.registerObjectLoader(item.getObjectLoader());
                 }

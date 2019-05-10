@@ -21,8 +21,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.jboss.builder.item.SimpleBuildItem;
-
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.ApplicationArchive;
 
 //temp class

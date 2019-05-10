@@ -17,11 +17,12 @@
 package io.quarkus.hibernate.orm.deployment;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import javax.persistence.Embeddable;
 import javax.persistence.Embedded;
@@ -33,14 +34,13 @@ import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
-import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.configuration.ConfigurationError;
 
 /**
  * Scan the Jandex index to find JPA entities (and embeddables supporting entity models).
@@ -61,19 +61,18 @@ final class JpaJandexScavenger {
     private static final DotName MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
 
     private static final DotName ENUM = DotName.createSimple(Enum.class.getName());
-    private static final Logger log = Logger.getLogger("io.quarkus.hibernate.orm");
 
-    private final List<ParsedPersistenceXmlDescriptor> descriptors;
+    private final List<ParsedPersistenceXmlDescriptor> explicitDescriptors;
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
     private final IndexView indexView;
     private final Set<String> nonJpaModelClasses;
 
     JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            List<ParsedPersistenceXmlDescriptor> descriptors,
+            List<ParsedPersistenceXmlDescriptor> explicitDescriptors,
             IndexView indexView,
             Set<String> nonJpaModelClasses) {
         this.reflectiveClass = reflectiveClass;
-        this.descriptors = descriptors;
+        this.explicitDescriptors = explicitDescriptors;
         this.indexView = indexView;
         this.nonJpaModelClasses = nonJpaModelClasses;
     }
@@ -83,14 +82,16 @@ final class JpaJandexScavenger {
         // Not functional as we will need one deployment template per persistence unit
         final JpaEntitiesBuildItem domainObjectCollector = new JpaEntitiesBuildItem();
         final Set<String> enumTypeCollector = new HashSet<>();
+        final Set<DotName> unindexedClasses = new TreeSet<>();
 
-        enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, JPA_ENTITY);
-        enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, EMBEDDABLE);
-        enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, MAPPED_SUPERCLASS);
-        enlistReturnType(indexView, domainObjectCollector, enumTypeCollector);
+        enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, JPA_ENTITY, unindexedClasses);
+        enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, EMBEDDABLE, unindexedClasses);
+        enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, MAPPED_SUPERCLASS, unindexedClasses);
+        enlistReturnType(indexView, domainObjectCollector, enumTypeCollector, unindexedClasses);
 
-        for (PersistenceUnitDescriptor pud : descriptors) {
-            enlistExplicitClasses(indexView, domainObjectCollector, enumTypeCollector, pud.getManagedClassNames());
+        for (PersistenceUnitDescriptor pud : explicitDescriptors) {
+            enlistExplicitClasses(indexView, domainObjectCollector, enumTypeCollector, pud.getManagedClassNames(),
+                    unindexedClasses);
         }
 
         domainObjectCollector.registerAllForReflection(reflectiveClass);
@@ -102,90 +103,98 @@ final class JpaJandexScavenger {
             }
         }
 
+        if (!unindexedClasses.isEmpty()) {
+            final String unindexedClassesErrorMessage = unindexedClasses.stream().map(d -> "\t- " + d + "\n")
+                    .collect(Collectors.joining());
+            throw new ConfigurationError(
+                    "Unable to properly register the hierarchy of the following JPA classes as they are not in the Jandex index:\n"
+                            + unindexedClassesErrorMessage
+                            + "Consider adding them to the index either by creating a Jandex index " +
+                            "for your dependency via the Maven plugin, an empty META-INF/beans.xml or quarkus.index-dependency properties.");
+        }
+
         return domainObjectCollector;
     }
 
     private static void enlistExplicitClasses(IndexView index, JpaEntitiesBuildItem domainObjectCollector,
-            Set<String> enumTypeCollector, List<String> managedClassNames) {
+            Set<String> enumTypeCollector, List<String> managedClassNames, Set<DotName> unindexedClasses) {
         for (String className : managedClassNames) {
             DotName dotName = DotName.createSimple(className);
             boolean isInIndex = index.getClassByName(dotName) != null;
-            if (isInIndex) {
-                addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, dotName);
-            } else {
-                // We do lipstick service by manually adding explicitly the <class> reference but not navigating the hierarchy
-                // so a class with a complex hierarchy will fail.
-                log.warnf(
-                        "Did not find `%s` in the indexed jars. You likely forgot to tell Quarkus to index your dependency jar. See https://github.com/quarkus-project/quarkus/#indexing-and-application-classes for more info.",
-                        className);
-                domainObjectCollector.addEntity(className);
+            if (!isInIndex) {
+                unindexedClasses.add(dotName);
             }
+
+            addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, dotName, unindexedClasses);
         }
     }
 
     private static void enlistReturnType(IndexView index, JpaEntitiesBuildItem domainObjectCollector,
-            Set<String> enumTypeCollector) {
+            Set<String> enumTypeCollector, Set<DotName> unindexedClasses) {
         Collection<AnnotationInstance> annotations = index.getAnnotations(EMBEDDED);
-        if (annotations != null && annotations.size() > 0) {
-            for (AnnotationInstance annotation : annotations) {
-                AnnotationTarget target = annotation.target();
-                DotName jpaClassName = null;
-                switch (target.kind()) {
-                    case FIELD:
-                        // TODO could fail if that's an array or a generic type
-                        jpaClassName = target.asField().type().name();
-                        break;
-                    case METHOD:
-                        // TODO could fail if that's an array or a generic type
-                        jpaClassName = target.asMethod().returnType().name();
-                        break;
-                    default:
-                        throw new IllegalStateException("[internal error] @Embedded placed on a unknown element: " + target);
-                }
-                addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, jpaClassName);
+        if (annotations == null) {
+            return;
+        }
+
+        for (AnnotationInstance annotation : annotations) {
+            AnnotationTarget target = annotation.target();
+            DotName jpaClassName;
+            switch (target.kind()) {
+                case FIELD:
+                    // TODO could fail if that's an array or a generic type
+                    jpaClassName = target.asField().type().name();
+                    break;
+                case METHOD:
+                    // TODO could fail if that's an array or a generic type
+                    jpaClassName = target.asMethod().returnType().name();
+                    break;
+                default:
+                    throw new IllegalStateException("[internal error] @Embedded placed on a unknown element: " + target);
             }
+            addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, jpaClassName,
+                    unindexedClasses);
         }
     }
 
     private void enlistJPAModelClasses(IndexView index, JpaEntitiesBuildItem domainObjectCollector,
-            Set<String> enumTypeCollector, DotName dotName) {
+            Set<String> enumTypeCollector, DotName dotName, Set<DotName> unindexedClasses) {
         Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
-        if (jpaAnnotations != null && jpaAnnotations.size() > 0) {
-            for (AnnotationInstance annotation : jpaAnnotations) {
-                ClassInfo klass = annotation.target().asClass();
-                DotName targetDotName = klass.name();
-                // ignore non-jpa model classes that we think belong to JPA
-                if (nonJpaModelClasses.contains(targetDotName.toString())) {
-                    continue;
-                }
-                addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, targetDotName);
-                domainObjectCollector.addEntity(targetDotName.toString());
+
+        if (jpaAnnotations == null) {
+            return;
+        }
+
+        for (AnnotationInstance annotation : jpaAnnotations) {
+            ClassInfo klass = annotation.target().asClass();
+            DotName targetDotName = klass.name();
+            // ignore non-jpa model classes that we think belong to JPA
+            if (nonJpaModelClasses.contains(targetDotName.toString())) {
+                continue;
             }
+            addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, targetDotName,
+                    unindexedClasses);
+            collectDomainObject(domainObjectCollector, klass);
         }
     }
 
     /**
      * Add the class to the reflective list with full method and field access.
      * Add the superclasses recursively as well as the interfaces.
+     * Un-indexed classes/interfaces are accumulated to be thrown as a configuration error in the top level caller method
      * <p>
-     * TODO this approach fails if the Jandex index is not complete (e.g. misses somes interface or super types)
-     * TODO should we also return the return types of all methods and fields? It could container Enums for example.
+     * TODO should we also return the return types of all methods and fields? It could contain Enums for example.
      */
     private static void addClassHierarchyToReflectiveList(IndexView index, JpaEntitiesBuildItem domainObjectCollector,
-            Set<String> enumTypeCollector, DotName className) {
-        // If type is not Object
-        // recursively add superclass and interfaces
-        if (className == null) {
-            // java.lang.Object
+            Set<String> enumTypeCollector, DotName className, Set<DotName> unindexedClasses) {
+        if (className == null || className.toString().startsWith("java.")) {
+            // bail out if java.lang.Object or any java. class
             return;
         }
+
         ClassInfo classInfo = index.getClassByName(className);
         if (classInfo == null) {
-            if (className.equals(ClassType.OBJECT_TYPE.name()) || className.toString().equals(Serializable.class.getName())) {
-                return;
-            } else {
-                throw new IllegalStateException("The Jandex index is not complete, missing: " + className.toString());
-            }
+            unindexedClasses.add(className);
+            return;
         }
         //we need to check for enums
         for (FieldInfo fieldInfo : classInfo.fields()) {
@@ -197,12 +206,23 @@ final class JpaJandexScavenger {
         }
 
         //Capture this one (for various needs: Reflective access enablement, Hibernate enhancement, JPA Template)
-        domainObjectCollector.addEntity(className.toString());
+        collectDomainObject(domainObjectCollector, classInfo);
+
         // add superclass recursively
-        addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, classInfo.superName());
+        addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, classInfo.superName(),
+                unindexedClasses);
         // add interfaces recursively
         for (DotName interfaceDotName : classInfo.interfaceNames()) {
-            addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, interfaceDotName);
+            addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, interfaceDotName,
+                    unindexedClasses);
+        }
+    }
+
+    private static void collectDomainObject(JpaEntitiesBuildItem domainObjectCollector, ClassInfo modelClass) {
+        if (modelClass.classAnnotation(JPA_ENTITY) != null) {
+            domainObjectCollector.addEntityClass(modelClass.name().toString());
+        } else {
+            domainObjectCollector.addModelClass(modelClass.name().toString());
         }
     }
 }

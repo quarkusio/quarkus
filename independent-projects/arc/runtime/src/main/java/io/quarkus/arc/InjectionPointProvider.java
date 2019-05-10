@@ -25,10 +25,31 @@ import javax.enterprise.inject.spi.InjectionPoint;
  */
 public class InjectionPointProvider implements InjectableReferenceProvider<InjectionPoint> {
 
-    static final ThreadLocal<InjectionPoint> CURRENT = new ThreadLocal<>();
+    private static final ThreadLocal<InjectionPoint> CURRENT = new ThreadLocal<>();
 
     @Override
     public InjectionPoint get(CreationalContext<InjectionPoint> creationalContext) {
+        return CURRENT.get();
+    }
+
+    /**
+     * Set the current injection point for a non-null parameter, remove the threadlocal for null parameter.
+     * 
+     * @param injectionPoint
+     * @return the previous injection point or {@code null}
+     */
+    static InjectionPoint set(InjectionPoint injectionPoint) {
+        if (injectionPoint != null) {
+            InjectionPoint prev = InjectionPointProvider.CURRENT.get();
+            InjectionPointProvider.CURRENT.set(injectionPoint);
+            return prev;
+        } else {
+            CURRENT.remove();
+            return null;
+        }
+    }
+
+    public static InjectionPoint get() {
         return CURRENT.get();
     }
 

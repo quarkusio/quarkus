@@ -16,13 +16,11 @@
       <groupId>@project.groupId@</groupId>
       <artifactId>quarkus-resteasy</artifactId>
       <version>${quarkus.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>@project.groupId@</groupId>
       <artifactId>quarkus-arc</artifactId>
       <version>${quarkus.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>@project.groupId@</groupId>
@@ -33,7 +31,7 @@
     <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
-      <version>3.2.0</version>
+      <version>3.3.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

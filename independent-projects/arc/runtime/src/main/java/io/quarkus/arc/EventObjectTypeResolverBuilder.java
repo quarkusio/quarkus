@@ -27,7 +27,8 @@ import java.util.Map.Entry;
 /**
  * Builds a special {@link TypeResolver} capable of resolving type variables by using a combination of two type hierarchies.
  *
- * The special resolver is only necessary for situations where the type of the event object contains an unresolved type variable which cannot be resolved using
+ * The special resolver is only necessary for situations where the type of the event object contains an unresolved type variable
+ * which cannot be resolved using
  * the selected event type because the selected event type is a subtype of the event object.
  *
  * For example:
@@ -38,7 +39,8 @@ import java.util.Map.Entry;
  *
  * The event object type is {@link ArrayList} (raw type due to type erasure) The selected type is List<String>
  *
- * We cannot simply infer the correct type (ArrayList<String>) from the runtime type nor from the selected type. What this special resolver does is that it
+ * We cannot simply infer the correct type (ArrayList<String>) from the runtime type nor from the selected type. What this
+ * special resolver does is that it
  * combines the following type variable assignments:
  *
  * L -> E
@@ -57,7 +59,8 @@ class EventObjectTypeResolverBuilder {
 
     private final Map<TypeVariable<?>, Type> resolvedTypes;
 
-    public EventObjectTypeResolverBuilder(Map<TypeVariable<?>, Type> selectedTypeVariables, Map<TypeVariable<?>, Type> eventTypeVariables) {
+    public EventObjectTypeResolverBuilder(Map<TypeVariable<?>, Type> selectedTypeVariables,
+            Map<TypeVariable<?>, Type> eventTypeVariables) {
         this.selectedTypeVariables = selectedTypeVariables;
         this.eventTypeVariables = eventTypeVariables;
         this.resolvedTypes = new HashMap<TypeVariable<?>, Type>();

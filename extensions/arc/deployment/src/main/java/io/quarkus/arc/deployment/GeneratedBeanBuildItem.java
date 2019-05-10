@@ -16,7 +16,7 @@
 
 package io.quarkus.arc.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A generated CDI bean. If this is produced then a {@link io.quarkus.deployment.builditem.GeneratedClassBuildItem}

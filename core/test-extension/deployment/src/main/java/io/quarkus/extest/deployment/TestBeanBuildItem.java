@@ -1,9 +1,11 @@
 package io.quarkus.extest.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
-
+import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.extest.runtime.IConfigConsumer;
 
+/**
+ * Represents beans annotated with @TestAnnotation that also implement IConfigConsumer
+ */
 public final class TestBeanBuildItem extends MultiBuildItem {
     private Class<IConfigConsumer> configConsumer;
 

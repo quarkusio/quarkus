@@ -26,17 +26,17 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-jaxb</artifactId>
+    <artifactId>quarkus-jaxb-deployment</artifactId>
     <name>Quarkus - JAXB - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jaxb-runtime</artifactId>
+            <artifactId>quarkus-jaxb</artifactId>
         </dependency>
     </dependencies>
 

@@ -29,6 +29,7 @@ import java.util.*;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.project.MavenProject;
@@ -82,6 +83,14 @@ public class MojoUtils {
 
     public static String getBomArtifactId() {
         return get("bom-artifactId");
+    }
+
+    public static String getProposedMavenVersion() {
+        return get("proposed-maven-version");
+    }
+
+    public static String getMavenWrapperVersion() {
+        return get("maven-wrapper-version");
     }
 
     private static void loadProperties() {
@@ -219,7 +228,12 @@ public class MojoUtils {
     }
 
     public static void write(Model model, File outputFile) throws IOException {
-        try (OutputStream stream = new FileOutputStream(outputFile)) {
+        FileOutputStream fileOutputStream = new FileOutputStream(outputFile);
+        write(model, fileOutputStream);
+    }
+
+    public static void write(Model model, OutputStream fileOutputStream) throws IOException {
+        try (OutputStream stream = fileOutputStream) {
             new MavenXpp3Writer().write(stream, model);
         }
     }
@@ -244,6 +258,21 @@ public class MojoUtils {
 
     public static String credentials(final Dependency d) {
         return String.format("%s:%s", d.getGroupId(), d.getArtifactId());
+    }
+
+    public static boolean checkProjectForMavenBuildPlugin(MavenProject project) {
+        for (Plugin plugin : project.getBuildPlugins()) {
+            if (plugin.getGroupId().equals(MojoUtils.getPluginGroupId())
+                    && plugin.getArtifactId().equals(MojoUtils.getPluginArtifactId())) {
+                for (PluginExecution pluginExecution : plugin.getExecutions()) {
+                    if (pluginExecution.getGoals().contains("build")) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

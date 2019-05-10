@@ -1,3 +1,9 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+
 include::./attributes.adoc[]
 = {project-name} - Simplified Hibernate ORM with Panache
 :config-file: application.properties
@@ -16,7 +22,7 @@ What we're doing in Panache is allow you to write your Hibernate ORM entities li
 public class Person extends PanacheEntity {
     public String name;
     public LocalDate birth;
-    public PersonStatus status;
+    public Status status;
     
     public static Person findByName(String name){
       return find("name", name).firstResult();
@@ -59,14 +65,12 @@ In your `pom.xml`, add the following dependencies:
     <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-hibernate-orm-panache</artifactId>
-        <scope>provided</scope>
     </dependency>
 
     <!-- JDBC driver dependencies -->
     <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-jdbc-postgresql</artifactId>
-        <scope>provided</scope>
     </dependency>
 </dependencies>
 --
@@ -76,13 +80,13 @@ Then add the relevant configuration properties in `{config-file}`.
 [source,properties]
 --
 # configure your datasource
-quarkus.datasource.url: jdbc:postgresql://localhost:5432/mydatabase
-quarkus.datasource.driver: org.postgresql.Driver
-quarkus.datasource.username: sarah
-quarkus.datasource.password: connor
+quarkus.datasource.url = jdbc:postgresql://localhost:5432/mydatabase
+quarkus.datasource.driver = org.postgresql.Driver
+quarkus.datasource.username = sarah
+quarkus.datasource.password = connor
 
 # drop and create the database at startup (use `update` to only update the schema)
-quarkus.hibernate-orm.database.generation=drop-and-create
+quarkus.hibernate-orm.database.generation = drop-and-create
 --
 
 == Defining your entity
@@ -96,7 +100,7 @@ columns as public fields:
 public class Person extends PanacheEntity {
     public String name;
     public LocalDate birth;
-    public PersonStatus status;
+    public Status status;
 }
 --
 
@@ -109,7 +113,7 @@ You can put all your JPA column annotations on the public fields. If you need a 
 public class Person extends PanacheEntity {
     public String name;
     public LocalDate birth;
-    public PersonStatus status;
+    public Status status;
     
     // this will store all names in lowercase in the DB,
     // and make them uppercase in the model
@@ -161,10 +165,10 @@ person = Person.findById(personId);
 List<Person> livingPersons = Person.list("status", Status.Alive);
 
 // counting all persons
-int countAll = Person.count();
+long countAll = Person.count();
 
 // counting all living persons
-int countAlive = Person.count("status", Status.Alive);
+long countAlive = Person.count("status", Status.Alive);
 
 // delete all living persons
 Person.delete("status", Status.Alive);
@@ -177,7 +181,8 @@ All `list` methods have equivalent `stream` versions.
 
 [source,java]
 --
-List<String> namesButEmmanuels = Person.streamAll()
+Stream<Person> persons = Person.streamAll();
+List<String> namesButEmmanuels = persons
     .map(p -> p.name.toLowerCase() )
     .filter( n -> ! "emmanuel".equals(n) )
     .collect(Collectors.toList());
@@ -253,7 +258,7 @@ in your entity class:
 public class Person extends PanacheEntity {
     public String name;
     public LocalDate birth;
-    public PersonStatus status;
+    public Status status;
     
     public static Person findByName(String name){
       return find("name", name).firstResult();

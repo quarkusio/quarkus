@@ -1,3 +1,9 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+
 include::./attributes.adoc[]
 = Building {project-name} apps with {project-name} Command Line Interface (CLI)
 
@@ -65,7 +71,7 @@ $ quarkus create-project hello-world
 
 This will create a folder called 'hello-world' in your current working directory using default
 groupId, artifactId and version values 
-(groupId='com.acme', artifactId='quarkus' and version='1.0.0-SNAPSHOT').
+(groupId='org.acme', artifactId='quarkus' and version='1.0.0-SNAPSHOT').
 
 To specify the groupId, artifactId and version values, 
 use the '--groupid', '--artifactid' and '--version' options:

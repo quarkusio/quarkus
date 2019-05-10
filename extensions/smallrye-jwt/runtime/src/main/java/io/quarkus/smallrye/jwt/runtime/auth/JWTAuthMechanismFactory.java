@@ -2,6 +2,8 @@ package io.quarkus.smallrye.jwt.runtime.auth;
 
 import java.util.Map;
 
+import javax.inject.Inject;
+
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.AuthenticationMechanismFactory;
@@ -12,8 +14,11 @@ import io.undertow.server.handlers.form.FormParserFactory;
  * An AuthenticationMechanismFactory for the MicroProfile JWT RBAC
  */
 public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
+    @Inject
+    private JWTAuthContextInfo authContextInfo;
 
-    public JWTAuthMechanismFactory() {
+    public JWTAuthMechanismFactory(JWTAuthContextInfo authContextInfo) {
+        this.authContextInfo = authContextInfo;
     }
 
     /**
@@ -32,7 +37,7 @@ public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
     @Override
     public AuthenticationMechanism create(String mechanismName, IdentityManager identityManager,
             FormParserFactory formParserFactory, final Map<String, String> properties) {
-        return new JWTAuthMechanism(identityManager);
+        return new JWTAuthMechanism(authContextInfo, identityManager);
     }
 
 }

@@ -27,7 +27,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
@@ -39,27 +41,44 @@ import org.jboss.jandex.Indexer;
 public class TestResourceManager {
 
     private final Set<QuarkusTestResourceLifecycleManager> testResources;
+    private Map<String, String> oldSystemProps;
 
     public TestResourceManager(Class<?> testClass) {
         testResources = getTestResources(testClass);
     }
 
-    public void start() {
+    public Map<String, String> start() {
+        Map<String, String> ret = new HashMap<>();
         for (QuarkusTestResourceLifecycleManager testResource : testResources) {
             try {
-                testResource.start();
+                ret.putAll(testResource.start());
             } catch (Exception e) {
-                throw new RuntimeException("Unable to start Quarkus test resource " + testResource);
+                throw new RuntimeException("Unable to start Quarkus test resource " + testResource, e);
             }
         }
+        oldSystemProps = new HashMap<>();
+        for (Map.Entry<String, String> i : ret.entrySet()) {
+            oldSystemProps.put(i.getKey(), System.getProperty(i.getKey()));
+            System.setProperty(i.getKey(), i.getValue());
+        }
+        return ret;
     }
 
     public void stop() {
+        for (Map.Entry<String, String> e : oldSystemProps.entrySet()) {
+            if (e.getValue() == null) {
+                System.clearProperty(e.getKey());
+            } else {
+                System.setProperty(e.getKey(), e.getValue());
+            }
+
+        }
+        oldSystemProps = null;
         for (QuarkusTestResourceLifecycleManager testResource : testResources) {
             try {
                 testResource.stop();
             } catch (Exception e) {
-                throw new RuntimeException("Unable to start Quarkus test resource " + testResource);
+                throw new RuntimeException("Unable to start Quarkus test resource " + testResource, e);
             }
         }
     }

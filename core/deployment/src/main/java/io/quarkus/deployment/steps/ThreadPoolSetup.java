@@ -20,20 +20,24 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import io.quarkus.runtime.ExecutorTemplate;
+import io.quarkus.runtime.ThreadPoolConfig;
 
 /**
+ *
  */
 public class ThreadPoolSetup {
 
     @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
-    public ExecutorBuildItem createExecutor(ExecutorTemplate setupTemplate, ShutdownContextBuildItem shutdownContextBuildItem) {
-        return new ExecutorBuildItem(setupTemplate.setupRunTime(shutdownContextBuildItem,
-        // build time default config constants - static method calls are not proxied
-        ExecutorTemplate.getIntConfigVal(ExecutorTemplate.CORE_POOL_SIZE,-1),ExecutorTemplate.getIntConfigVal(ExecutorTemplate.MAX_POOL_SIZE,-1),ExecutorTemplate.getIntConfigVal(ExecutorTemplate.QUEUE_SIZE,Integer.MAX_VALUE),ExecutorTemplate.getFloatConfigVal(ExecutorTemplate.GROWTH_RESISTANCE,0f),ExecutorTemplate.getIntConfigVal(ExecutorTemplate.KEEP_ALIVE_MILLIS,60_000)));
+    public ExecutorBuildItem createExecutor(ExecutorTemplate setupTemplate, ShutdownContextBuildItem shutdownContextBuildItem,
+            LaunchModeBuildItem launchModeBuildItem,
+            ThreadPoolConfig threadPoolConfig) {
+        return new ExecutorBuildItem(
+                setupTemplate.setupRunTime(shutdownContextBuildItem, threadPoolConfig, launchModeBuildItem.getLaunchMode()));
     }
 
     @BuildStep

@@ -18,11 +18,11 @@ package io.quarkus.arc;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
 import javax.el.ELResolver;
 import javax.el.ExpressionFactory;
 import javax.enterprise.context.ContextNotActiveException;
@@ -31,6 +31,7 @@ import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.event.Event;
 import javax.enterprise.inject.Instance;
+import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.enterprise.inject.spi.AnnotatedField;
 import javax.enterprise.inject.spi.AnnotatedMember;
 import javax.enterprise.inject.spi.AnnotatedMethod;
@@ -49,6 +50,7 @@ import javax.enterprise.inject.spi.InterceptionType;
 import javax.enterprise.inject.spi.Interceptor;
 import javax.enterprise.inject.spi.ObserverMethod;
 import javax.enterprise.inject.spi.ProducerFactory;
+import javax.enterprise.util.TypeLiteral;
 import javax.interceptor.InterceptorBinding;
 
 /**
@@ -56,25 +58,46 @@ import javax.interceptor.InterceptorBinding;
  */
 public class BeanManagerImpl implements BeanManager {
 
+    @SuppressWarnings("serial")
+    static final TypeLiteral<Instance<Object>> INSTANCE_LITERAL = new TypeLiteral<Instance<Object>>() {
+    };
+
     static final LazyValue<BeanManagerImpl> INSTANCE = new LazyValue<>(BeanManagerImpl::new);
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public Object getReference(Bean<?> bean, Type beanType, CreationalContext<?> ctx) {
-        if (bean == null) {
-            throw new NullPointerException("Managed Bean [" + beanType + "] is null");
-        }
+        Objects.requireNonNull(bean, "Bean is null");
+        Objects.requireNonNull(beanType, "Bean type is null");
         Objects.requireNonNull(ctx, "CreationalContext is null");
         if (bean instanceof InjectableBean && ctx instanceof CreationalContextImpl) {
             return ArcContainerImpl.instance().beanInstanceHandle((InjectableBean) bean, (CreationalContextImpl) ctx).get();
         }
         throw new IllegalArgumentException(
-                "Arguments must be instances of " + InjectableBean.class + " and " + CreationalContextImpl.class + ": \nbean: " + bean + "\nctx: " + ctx);
+                "Arguments must be instances of " + InjectableBean.class + " and " + CreationalContextImpl.class + ": \nbean: "
+                        + bean + "\nctx: " + ctx);
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public Object getInjectableReference(InjectionPoint ij, CreationalContext<?> ctx) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(ij, "InjectionPoint is null");
+        Objects.requireNonNull(ctx, "CreationalContext is null");
+        if (ctx instanceof CreationalContextImpl) {
+            Set<Bean<?>> beans = getBeans(ij.getType(), ij.getQualifiers().toArray(new Annotation[] {}));
+            if (beans.isEmpty()) {
+                throw new UnsatisfiedResolutionException();
+            }
+            InjectableBean<?> bean = (InjectableBean<?>) resolve(beans);
+            InjectionPoint prev = InjectionPointProvider.set(ij);
+            try {
+                return ArcContainerImpl.instance().beanInstanceHandle(bean, (CreationalContextImpl) ctx, false).get();
+            } finally {
+                InjectionPointProvider.set(prev);
+            }
+        }
+        throw new IllegalArgumentException(
+                "CreationalContext must be an instances of " + CreationalContextImpl.class);
     }
 
     @Override
@@ -242,7 +265,8 @@ public class BeanManagerImpl implements BeanManager {
     }
 
     @Override
-    public <T> Bean<T> createBean(BeanAttributes<T> attributes, Class<T> beanClass, InjectionTargetFactory<T> injectionTargetFactory) {
+    public <T> Bean<T> createBean(BeanAttributes<T> attributes, Class<T> beanClass,
+            InjectionTargetFactory<T> injectionTargetFactory) {
         throw new UnsupportedOperationException();
     }
 
@@ -278,7 +302,8 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public Instance<Object> createInstance() {
-        return new InstanceImpl<>(Object.class, null, new CreationalContextImpl<>());
+        return new InstanceImpl<>(null, INSTANCE_LITERAL.getType(), Collections.emptySet(), new CreationalContextImpl<>(),
+                Collections.emptySet(), null, -1);
     }
 
 }

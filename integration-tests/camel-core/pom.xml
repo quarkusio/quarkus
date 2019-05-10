@@ -17,32 +17,26 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-camel-core</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-camel-netty4-http</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-camel-infinispan</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -122,7 +116,7 @@
             <id>native-image</id>
             <activation>
                 <property>
-                    <name>native</name>
+                    <name>native-camel</name>
                 </property>
             </activation>
             <build>

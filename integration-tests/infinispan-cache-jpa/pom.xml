@@ -34,19 +34,16 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm</artifactId>
-            <scope>provided</scope>
         </dependency>
         <!-- We'll be using the H2 database -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-h2</artifactId>
-            <scope>provided</scope>
         </dependency>
         <!-- .. and some REST endpoints -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <!-- test dependencies -->

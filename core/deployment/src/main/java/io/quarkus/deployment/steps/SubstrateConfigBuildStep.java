@@ -28,6 +28,8 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
@@ -39,14 +41,19 @@ import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import io.quarkus.runtime.ssl.SslContextConfigurationTemplate;
 
 //TODO: this should go away, once we decide on which one of the API's we want
 class SubstrateConfigBuildStep {
 
     private static final Logger log = Logger.getLogger(SubstrateConfigBuildStep.class);
 
+    private static final String LIB_SUN_EC = "libsunec.so";
+
     @BuildStep
-    void build(List<SubstrateConfigBuildItem> substrateConfigBuildItems,
+    @Record(ExecutionTime.STATIC_INIT)
+    void build(SslContextConfigurationTemplate sslContextConfigurationTemplate,
+            List<SubstrateConfigBuildItem> substrateConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
             List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
             BuildProducer<SubstrateProxyDefinitionBuildItem> proxy,
@@ -77,6 +84,10 @@ class SubstrateConfigBuildStep {
 
         Boolean sslNativeEnabled = isSslNativeEnabled(sslNativeConfig, extensionSslNativeSupport);
 
+        // For now, we enable SSL native if it hasn't been explicitly disabled
+        // it's probably overly conservative but it's a first step in the right direction
+        sslContextConfigurationTemplate.setSslNativeEnabled(!sslNativeConfig.isExplicitlyDisabled());
+
         if (sslNativeEnabled) {
             // This is an ugly hack but for now it's the only way to make the SunEC library
             // available to the native image.
@@ -89,11 +100,12 @@ class SubstrateConfigBuildStep {
             if (graalVmHome != null) {
                 Path graalVmLibDirectory = Paths.get(graalVmHome, "jre", "lib");
                 Path linuxLibDirectory = graalVmLibDirectory.resolve("amd64");
+                Path linuxPath = linuxLibDirectory.resolve(LIB_SUN_EC);
 
                 // We add . as it might be useful in a containerized world
                 // FIXME: it seems GraalVM does not support having multiple paths in java.library.path
                 //javaLibraryPathAdditionalPath.produce(new JavaLibraryPathAdditionalPathBuildItem("."));
-                if (Files.exists(linuxLibDirectory)) {
+                if (Files.exists(linuxPath)) {
                     // On Linux, the SunEC library is in jre/lib/amd64/
                     // This is useful for testing or if you have a similar environment in production
                     javaLibraryPathAdditionalPath

@@ -18,8 +18,11 @@
 package io.quarkus.maven;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -28,21 +31,27 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.MavenProjectHelper;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 
-import io.quarkus.creator.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.AppDependency;
 import io.quarkus.creator.phase.augment.AugmentPhase;
 import io.quarkus.creator.phase.curate.CurateOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarPhase;
-import io.quarkus.creator.resolver.maven.ResolvedMavenArtifactDeps;
 
 /**
+ * Build the application.
+ * <p>
+ * You can build a native application runner with {@code native-image}
  *
  * @author Alexey Loubyansky
  */
@@ -56,6 +65,9 @@ public class BuildMojo extends AbstractMojo {
      */
     @Component
     private RepositorySystem repoSystem;
+
+    @Component
+    private MavenProjectHelper projectHelper;
 
     /**
      * The current repository/network configuration of Maven.
@@ -107,6 +119,7 @@ public class BuildMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project.build.directory}")
     private File buildDir;
+
     /**
      * The directory for library jars
      */
@@ -122,8 +135,27 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(defaultValue = "true")
     private boolean useStaticInit;
 
-    @Parameter(defaultValue = "false")
+    @Parameter(property = "uberJar", defaultValue = "false")
     private boolean uberJar;
+
+    /**
+     * When using the uberJar option, this array specifies entries that should
+     * be excluded from the final jar. The entries are relative to the root of
+     * the file. An example of this configuration could be:
+     * <code><pre>
+     * &#x3C;configuration&#x3E;
+     *   &#x3C;uberJar&#x3E;true&#x3C;/uberJar&#x3E;
+     *   &#x3C;ignoredEntries&#x3E;
+     *     &#x3C;ignoredEntry&#x3E;META-INF/BC2048KE.SF&#x3C;/ignoredEntry&#x3E;
+     *     &#x3C;ignoredEntry&#x3E;META-INF/BC2048KE.DSA&#x3C;/ignoredEntry&#x3E;
+     *     &#x3C;ignoredEntry&#x3E;META-INF/BC1024KE.SF&#x3C;/ignoredEntry&#x3E;
+     *     &#x3C;ignoredEntry&#x3E;META-INF/BC1024KE.DSA&#x3C;/ignoredEntry&#x3E;
+     *   &#x3C;/ignoredEntries&#x3E;
+     * &#x3C;/configuration&#x3E;
+     * </pre></code>
+     */
+    @Parameter(property = "ignoredEntries")
+    private String[] ignoredEntries;
 
     public BuildMojo() {
         MojoLogger.logSupplier = this::getLog;
@@ -131,33 +163,53 @@ public class BuildMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
+        final Artifact projectArtifact = project.getArtifact();
+        final AppArtifact appArtifact = new AppArtifact(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
+                projectArtifact.getClassifier(), projectArtifact.getType(), projectArtifact.getVersion());
+        final AppModel appModel;
+        final BootstrapAppModelResolver modelResolver;
+        try {
+            modelResolver = new BootstrapAppModelResolver(
+                    MavenArtifactResolver.builder()
+                            .setRepositorySystem(repoSystem)
+                            .setRepositorySystemSession(repoSession)
+                            .setRemoteRepositories(repos)
+                            .build());
+            appModel = modelResolver.resolveModel(appArtifact);
+        } catch (AppModelResolverException e) {
+            throw new MojoExecutionException("Failed to resolve application model " + appArtifact + " dependencies", e);
+        }
         try (AppCreator appCreator = AppCreator.builder()
                 // configure the build phases we want the app to go through
                 .addPhase(new AugmentPhase()
                         .setAppClassesDir(outputDirectory.toPath())
+                        .setConfigDir(outputDirectory.toPath())
                         .setTransformedClassesDir(transformedClassesDirectory.toPath())
                         .setWiringClassesDir(wiringClassesDirectory.toPath()))
                 .addPhase(new RunnerJarPhase()
                         .setLibDir(libDir.toPath())
                         .setFinalName(finalName)
                         .setMainClass(mainClass)
-                        .setUberJar(uberJar))
+                        .setUberJar(uberJar)
+                        .setUserConfiguredIgnoredEntries(
+                                this.ignoredEntries == null ? Collections.emptySet() : Arrays.asList(this.ignoredEntries)))
                 .setWorkDir(buildDir.toPath())
                 .build()) {
 
-            final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(),
-                    project.getVersion());
-            final List<AppDependency> appDeps = new ResolvedMavenArtifactDeps(project.getGroupId(), project.getArtifactId(),
-                    project.getVersion(), project.getArtifacts()).collectDependencies(appArtifact);
-
             // push resolved application state
             appCreator.pushOutcome(CurateOutcome.builder()
-                    .setAppArtifact(appArtifact)
-                    .setInitialDeps(appDeps)
+                    .setAppModelResolver(modelResolver)
+                    .setAppModel(appModel)
                     .build());
 
             // resolve the outcome we need here
-            appCreator.resolveOutcome(RunnerJarOutcome.class);
+            RunnerJarOutcome result = appCreator.resolveOutcome(RunnerJarOutcome.class);
+            Artifact original = project.getArtifact();
+            original.setFile(result.getOriginalJar().toFile());
+            if (uberJar) {
+                projectHelper.attachArtifact(project, result.getRunnerJar().toFile(), "runner");
+            }
+
         } catch (AppCreatorException e) {
             throw new MojoExecutionException("Failed to build a runnable JAR", e);
         }

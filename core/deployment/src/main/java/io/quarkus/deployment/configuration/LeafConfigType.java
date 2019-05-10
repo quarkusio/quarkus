@@ -9,6 +9,7 @@ import org.wildfly.common.annotation.NotNull;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
 
@@ -35,11 +36,14 @@ public abstract class LeafConfigType extends ConfigType {
      * Handle a configuration key from the input file.
      * 
      * @param name the configuration property name
+     * @param cache
      * @param config the source configuration
      */
-    public abstract void acceptConfigurationValue(@NotNull NameIterator name, @NotNull SmallRyeConfig config);
+    public abstract void acceptConfigurationValue(@NotNull NameIterator name, final ExpandingConfigSource.Cache cache,
+            @NotNull SmallRyeConfig config);
 
-    public abstract void generateAcceptConfigurationValue(BytecodeCreator body, ResultHandle name, ResultHandle config);
+    public abstract void generateAcceptConfigurationValue(BytecodeCreator body, ResultHandle name, final ResultHandle cache,
+            ResultHandle config);
 
     abstract void acceptConfigurationValueIntoGroup(Object enclosing, Field field, NameIterator name, SmallRyeConfig config);
 
@@ -55,4 +59,6 @@ public abstract class LeafConfigType extends ConfigType {
             ResultHandle name, ResultHandle config) {
         throw Assert.unsupported();
     }
+
+    public abstract String getDefaultValueString();
 }

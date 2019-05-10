@@ -16,11 +16,12 @@
 
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.ComputingCache;
 import java.util.Optional;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
+import javax.enterprise.context.control.ActivateRequestContext;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
 import javax.enterprise.event.ObservesAsync;
@@ -47,10 +48,8 @@ import javax.interceptor.AroundConstruct;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InterceptorBinding;
-
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import io.quarkus.arc.ComputingCache;
 
 public final class DotNames {
 
@@ -89,6 +88,7 @@ public final class DotNames {
     public static final DotName EXTENSION = create(Extension.class);
     public static final DotName OPTIONAL = create(Optional.class);
     public static final DotName NAMED = create(Named.class);
+    public static final DotName ACTIVATE_REQUEST_CONTEXT = create(ActivateRequestContext.class);
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);
@@ -98,6 +98,7 @@ public final class DotNames {
     public static final DotName INTEGER = create(Integer.class);
     public static final DotName LONG = create(Long.class);
     public static final DotName SHORT = create(Short.class);
+    public static final DotName STRING = create(String.class);
 
     private DotNames() {
     }
@@ -134,7 +135,7 @@ public final class DotNames {
                 throw new IllegalStateException("Unsupported nesting type: " + clazz);
         }
     }
-    
+
     /**
      * @param dotName
      * @see #simpleName(String)
@@ -144,7 +145,8 @@ public final class DotNames {
     }
 
     /**
-     * Note that "$" is a valid character for class names so we cannot detect a nested class here. Therefore, this method would return "Foo$Bar" for the
+     * Note that "$" is a valid character for class names so we cannot detect a nested class here. Therefore, this method would
+     * return "Foo$Bar" for the
      * parameter "com.foo.Foo$Bar". Use {@link #simpleName(ClassInfo)} when you need to distinguish the nested classes.
      * 
      * @param name

@@ -16,6 +16,11 @@
 
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.ContextCreator;
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,12 +28,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import io.quarkus.arc.ContextCreator;
-import io.quarkus.arc.InjectableContext;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 
 /**
  * Custom context configurator.
@@ -40,7 +39,7 @@ public final class ContextConfigurator {
     private final Consumer<ContextConfigurator> configuratorConsumer;
 
     Class<? extends Annotation> scopeAnnotation;
-    
+
     boolean isNormal;
 
     Function<MethodCreator, ResultHandle> creator;
@@ -82,12 +81,12 @@ public final class ContextConfigurator {
         params.put(name, value);
         return this;
     }
-    
+
     public ContextConfigurator normal() {
         this.isNormal = true;
         return this;
     }
-    
+
     public ContextConfigurator contextClass(Class<? extends InjectableContext> contextClazz) {
         return creator(mc -> mc.newInstance(MethodDescriptor.ofConstructor(contextClazz)));
     }
@@ -117,7 +116,8 @@ public final class ContextConfigurator {
             }
             ResultHandle creatorHandle = mc.newInstance(MethodDescriptor.ofConstructor(creatorClazz));
             ResultHandle ret = mc.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(ContextCreator.class, "create", InjectableContext.class, Map.class), creatorHandle, paramsHandle);
+                    MethodDescriptor.ofMethod(ContextCreator.class, "create", InjectableContext.class, Map.class),
+                    creatorHandle, paramsHandle);
             return ret;
         });
     }

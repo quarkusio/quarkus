@@ -25,17 +25,17 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-caffeine</artifactId>
+    <artifactId>quarkus-caffeine-deployment</artifactId>
     <name>Quarkus - Caffeine - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-caffeine-runtime</artifactId>
+            <artifactId>quarkus-caffeine</artifactId>
         </dependency>
     </dependencies>
 

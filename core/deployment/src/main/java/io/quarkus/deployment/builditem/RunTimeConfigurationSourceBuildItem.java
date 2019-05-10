@@ -2,8 +2,9 @@ package io.quarkus.deployment.builditem;
 
 import java.util.OptionalInt;
 
-import org.jboss.builder.item.MultiBuildItem;
 import org.wildfly.common.Assert;
+
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Define an additional configuration source which is used at run time.

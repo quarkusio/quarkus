@@ -7,14 +7,15 @@ import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -74,15 +75,34 @@ public class MojoTestBase {
         } catch (IOException e) {
             throw new RuntimeException("Cannot copy project resources", e);
         }
-
-        File pom = new File(out, "pom.xml");
-        try {
-            filter(pom, VARIABLES);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+        filterPom(out);
 
         return out;
+    }
+
+    private static void filterPom(File out) {
+
+        File pom = new File(out, "pom.xml");
+        if (pom.exists()) {
+            try {
+                filter(pom, VARIABLES);
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+        for (File i : out.listFiles()) {
+            if (i.isDirectory()) {
+                pom = new File(i, "pom.xml");
+                if (pom.exists()) {
+                    try {
+                        filter(pom, VARIABLES);
+                    } catch (IOException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                }
+            }
+        }
+
     }
 
     public static void installPluginToLocalRepository(File local) {
@@ -143,7 +163,7 @@ public class MojoTestBase {
         });
     }
 
-    static String getHttpResponse() {
+    String getHttpResponse() {
         AtomicReference<String> resp = new AtomicReference<>();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
@@ -151,6 +171,12 @@ public class MojoTestBase {
                 //some, such as org.jetbrains.kotlin:kotlin-compiler, are huge and will take more than a minute.
                 .atMost(20, TimeUnit.MINUTES).until(() -> {
                     try {
+                        String broken = getBrokenReason();
+                        if (broken != null) {
+                            //try and avoid waiting 20m
+                            resp.set("BROKEN: " + broken);
+                            return true;
+                        }
                         String content = get();
                         resp.set(content);
                         return true;
@@ -159,6 +185,10 @@ public class MojoTestBase {
                     }
                 });
         return resp.get();
+    }
+
+    protected String getBrokenReason() {
+        return null;
     }
 
     static String getHttpResponse(String path) {
@@ -215,5 +245,15 @@ public class MojoTestBase {
     public static String get() throws IOException {
         URL url = new URL("http://localhost:8080");
         return IOUtils.toString(url, "UTF-8");
+    }
+
+    public static void assertThatOutputWorksCorrectly(String logs) {
+        assertThat(logs.isEmpty()).isFalse();
+        String infoLogLevel = "INFO";
+        assertThat(logs.contains(infoLogLevel)).isTrue();
+        Predicate<String> datePattern = Pattern.compile("\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2},\\d{3}\\s").asPredicate();
+        assertThat(datePattern.test(logs)).isTrue();
+        assertThat(logs.contains("features: [cdi, resteasy, undertow-websockets]")).isTrue();
+        assertThat(logs.contains("JBoss Threads version")).isFalse();
     }
 }

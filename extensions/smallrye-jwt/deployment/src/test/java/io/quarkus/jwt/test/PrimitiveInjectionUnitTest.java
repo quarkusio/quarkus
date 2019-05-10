@@ -114,9 +114,7 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        // TODO add proper assertion
-        //System.out.println(reply.toString());
-
+        Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
     }
 
     /**
@@ -137,8 +135,7 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        // TODO add proper assertion
-        //System.out.println(reply.toString());
+        Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
     }
 
     /**
@@ -159,8 +156,7 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        // TODO add proper assertion
-        //System.out.println(reply.toString());
+        Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
     }
 
     /**
@@ -182,8 +178,7 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        // TODO add proper assertion
-        //System.out.println(reply.toString());
+        Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
     }
 
     /**
@@ -204,8 +199,7 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        // TODO add proper assertion
-        //System.out.println(reply.toString());
+        Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
     }
 
     /**
@@ -226,8 +220,7 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        // TODO add proper assertion
-        //System.out.println(reply.toString());
+        Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
     }
 
     /**
@@ -248,8 +241,7 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        // TODO add proper assertion
-        //System.out.println(reply.toString());
+        Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
     }
 
     /**
@@ -270,7 +262,6 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        // TODO add proper assertion
-        //System.out.println(reply.toString());
+        Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
     }
 }

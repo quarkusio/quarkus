@@ -1,7 +1,8 @@
 package io.quarkus.deployment.builditem;
 
-import org.jboss.builder.item.MultiBuildItem;
 import org.wildfly.common.Assert;
+
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * The configuration type build item. Every configuration type should be registered using this build item

@@ -18,12 +18,11 @@ package io.quarkus.arc.test.build.extension.annotations;
 
 import static org.junit.Assert.assertEquals;
 
-import javax.enterprise.context.Dependent;
-
-import org.jboss.jandex.AnnotationTarget.Kind;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.test.ArcTestContainer;
+import javax.enterprise.context.Dependent;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.junit.Rule;
 import org.junit.Test;
 

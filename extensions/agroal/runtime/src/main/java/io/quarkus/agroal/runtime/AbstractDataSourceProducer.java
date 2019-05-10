@@ -31,6 +31,7 @@ import javax.transaction.TransactionSynchronizationRegistry;
 import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
+import io.agroal.api.configuration.supplier.AgroalConnectionFactoryConfigurationSupplier;
 import io.agroal.api.configuration.supplier.AgroalConnectionPoolConfigurationSupplier;
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
 import io.agroal.api.security.NamePrincipal;
@@ -107,8 +108,16 @@ public abstract class AbstractDataSourceProducer {
         AgroalDataSourceConfigurationSupplier dataSourceConfiguration = new AgroalDataSourceConfigurationSupplier();
 
         AgroalConnectionPoolConfigurationSupplier poolConfiguration = dataSourceConfiguration.connectionPoolConfiguration();
-        poolConfiguration.connectionFactoryConfiguration().jdbcUrl(url);
-        poolConfiguration.connectionFactoryConfiguration().connectionProviderClass(driver);
+        AgroalConnectionFactoryConfigurationSupplier agroalConnectionFactoryConfigurationSupplier = poolConfiguration
+                .connectionFactoryConfiguration();
+        agroalConnectionFactoryConfigurationSupplier.jdbcUrl(url);
+        agroalConnectionFactoryConfigurationSupplier.connectionProviderClass(driver);
+
+        if (dataSourceRuntimeConfig.transactionIsolationLevel.isPresent()) {
+            agroalConnectionFactoryConfigurationSupplier
+                    .jdbcTransactionIsolation(
+                            dataSourceRuntimeConfig.transactionIsolationLevel.get().jdbcTransactionIsolationLevel);
+        }
 
         TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
                 transactionSynchronizationRegistry);
@@ -116,11 +125,11 @@ public abstract class AbstractDataSourceProducer {
 
         // Authentication
         if (dataSourceRuntimeConfig.username.isPresent()) {
-            poolConfiguration.connectionFactoryConfiguration()
+            agroalConnectionFactoryConfigurationSupplier
                     .principal(new NamePrincipal(dataSourceRuntimeConfig.username.get()));
         }
         if (dataSourceRuntimeConfig.password.isPresent()) {
-            poolConfiguration.connectionFactoryConfiguration()
+            agroalConnectionFactoryConfigurationSupplier
                     .credential(new SimplePassword(dataSourceRuntimeConfig.password.get()));
         }
 
@@ -149,10 +158,10 @@ public abstract class AbstractDataSourceProducer {
         if (disableSslSupport) {
             switch (driverName) {
                 case "org.postgresql.Driver":
-                    poolConfiguration.connectionFactoryConfiguration().jdbcProperty("sslmode", "disable");
+                    agroalConnectionFactoryConfigurationSupplier.jdbcProperty("sslmode", "disable");
                     break;
                 case "org.mariadb.jdbc.Driver":
-                    poolConfiguration.connectionFactoryConfiguration().jdbcProperty("useSSL", "false");
+                    agroalConnectionFactoryConfigurationSupplier.jdbcProperty("useSSL", "false");
                     break;
                 default:
                     log.warn("Agroal does not support disabling SSL for driver " + driverName);

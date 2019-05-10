@@ -1,3 +1,9 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+
 include::./attributes.adoc[]
 = {project-name} - Scheduling Periodic Tasks
 
@@ -29,7 +35,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `scheduling-periodic-task` directory.
+The solution is located in the `scheduling-periodic-tasks` directory.
 
 == Creating the Maven project
 
@@ -49,7 +55,7 @@ It generates:
 
 * the Maven structure
 * a landing page accessible on `http://localhost:8080`
-* an example of `Dockerfile`
+* example `Dockerfile` files for both `native` and `jvm` modes
 * the application configuration file
 * an `org.acme.scheduling.CountResource` resource
 * an associated test
@@ -154,9 +160,9 @@ public class CountResourceTest {
 
 == Package and run the application
 
-Run the application with: `mvn compile quarkus:dev`.
+Run the application with: `./mvnw compile quarkus:dev`.
 In another terminal, run `curl localhost:8080/count` to check the counter value.
 After a few seconds, re-run `curl localhost:8080/count` to verify the counter has been incremented.
 
-As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.
-You can also generate the native executable with `mvn clean package -Pnative`.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+You can also generate the native executable with `./mvnw clean package -Pnative`.

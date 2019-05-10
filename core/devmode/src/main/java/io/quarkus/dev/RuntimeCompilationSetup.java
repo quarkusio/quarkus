@@ -16,8 +16,6 @@
 
 package io.quarkus.dev;
 
-import java.io.File;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -30,25 +28,20 @@ public class RuntimeCompilationSetup {
 
     private static Logger log = Logger.getLogger(RuntimeCompilationSetup.class.getName());
 
-    public static RuntimeUpdatesProcessor setup() throws Exception {
-        String classesDir = System.getProperty("quarkus.runner.classes");
-        String sourcesDir = System.getProperty("quarkus.runner.sources");
-        String resourcesDir = System.getProperty("quarkus.runner.resources");
-        if (classesDir != null) {
+    public static RuntimeUpdatesProcessor setup(DevModeContext context) throws Exception {
+        if (!context.getModules().isEmpty()) {
             ServiceLoader<CompilationProvider> serviceLoader = ServiceLoader.load(CompilationProvider.class);
             List<CompilationProvider> compilationProviders = new ArrayList<>();
             serviceLoader.iterator().forEachRemaining(compilationProviders::add);
-            ClassLoaderCompiler compiler = null;
+            ClassLoaderCompiler compiler;
             try {
-                compiler = new ClassLoaderCompiler(Thread.currentThread().getContextClassLoader(), new File(classesDir),
-                        compilationProviders);
+                compiler = new ClassLoaderCompiler(Thread.currentThread().getContextClassLoader(),
+                        compilationProviders, context);
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Failed to create compiler, runtime compilation will be unavailable", e);
                 return null;
             }
-            RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(Paths.get(classesDir),
-                    sourcesDir == null ? null : Paths.get(sourcesDir), resourcesDir == null ? null : Paths.get(resourcesDir),
-                    compiler);
+            RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(context, compiler);
 
             for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class)) {
                 service.setupHotDeployment(processor);

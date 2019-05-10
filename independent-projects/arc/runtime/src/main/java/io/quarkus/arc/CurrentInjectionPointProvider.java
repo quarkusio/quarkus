@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.spi.Annotated;
 import javax.enterprise.inject.spi.AnnotatedCallable;
@@ -46,7 +45,8 @@ import javax.enterprise.inject.spi.InjectionPoint;
  */
 public class CurrentInjectionPointProvider<T> implements InjectableReferenceProvider<T> {
 
-    static final InjectionPoint EMPTY = new InjectionPointImpl(Object.class, Collections.emptySet(), null, null, null, -1);
+    static final InjectionPoint EMPTY = new InjectionPointImpl(Object.class, Object.class, Collections.emptySet(), null, null,
+            null, -1);
 
     private final InjectableReferenceProvider<T> delegate;
 
@@ -55,25 +55,21 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
     public CurrentInjectionPointProvider(InjectableBean<?> bean, InjectableReferenceProvider<T> delegate, Type requiredType,
             Set<Annotation> qualifiers, Set<Annotation> annotations, Member javaMember, int position) {
         this.delegate = delegate;
-        this.injectionPoint = new InjectionPointImpl(requiredType, qualifiers, bean, annotations, javaMember, position);
+        this.injectionPoint = new InjectionPointImpl(requiredType, requiredType, qualifiers, bean, annotations, javaMember,
+                position);
     }
 
     @Override
     public T get(CreationalContext<T> creationalContext) {
-        InjectionPoint prev = InjectionPointProvider.CURRENT.get();
-        InjectionPointProvider.CURRENT.set(injectionPoint);
+        InjectionPoint prev = InjectionPointProvider.set(injectionPoint);
         try {
             return delegate.get(creationalContext);
         } finally {
-            if (prev != null) {
-                InjectionPointProvider.CURRENT.set(prev);
-            } else {
-                InjectionPointProvider.CURRENT.remove();
-            }
+            InjectionPointProvider.set(prev);
         }
     }
 
-    private static class InjectionPointImpl implements InjectionPoint {
+    public static class InjectionPointImpl implements InjectionPoint {
 
         private final Type requiredType;
         private final Set<Annotation> qualifiers;
@@ -81,15 +77,18 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
         private final Annotated annotated;
         private final Member member;
 
-        InjectionPointImpl(Type requiredType, Set<Annotation> qualifiers, InjectableBean<?> bean, Set<Annotation> annotations,
+        public InjectionPointImpl(Type injectionPointType, Type requiredType, Set<Annotation> qualifiers,
+                InjectableBean<?> bean,
+                Set<Annotation> annotations,
                 Member javaMember, int position) {
             this.requiredType = requiredType;
             this.qualifiers = qualifiers;
             this.bean = bean;
             if (javaMember instanceof Executable) {
-                this.annotated = new AnnotatedParameterImpl<>(requiredType, annotations, position, (Executable) javaMember);
+                this.annotated = new AnnotatedParameterImpl<>(injectionPointType, annotations, position,
+                        (Executable) javaMember);
             } else {
-                this.annotated = new AnnotatedFieldImpl<>(requiredType, annotations, (Field) javaMember);
+                this.annotated = new AnnotatedFieldImpl<>(injectionPointType, annotations, (Field) javaMember);
             }
             this.member = javaMember;
         }

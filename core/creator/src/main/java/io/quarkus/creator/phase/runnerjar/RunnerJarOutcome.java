@@ -28,4 +28,6 @@ public interface RunnerJarOutcome {
     Path getRunnerJar();
 
     Path getLibDir();
+
+    Path getOriginalJar();
 }

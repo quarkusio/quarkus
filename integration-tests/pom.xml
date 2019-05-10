@@ -48,12 +48,46 @@
         <module>jpa-h2</module>
         <module>jpa-mssql</module>
         <module>hibernate-orm-panache</module>
+        <module>hibernate-search-elasticsearch</module>
         <module>vertx</module>
         <module>spring-di</module>
         <module>infinispan-cache-jpa</module>
-        <module>infinispan-cache-jpa-stress</module>
         <module>elytron-security</module>
         <module>camel-core</module>
         <module>camel-salesforce</module>
+        <module>camel-aws-s3</module>
+        <module>flyway</module>
+        <module>keycloak</module>
+        <module>reactive-pg-client</module>
+        <module>test-extension</module>
+        <module>amazon-lambda</module>
     </modules>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>${nexus-staging-maven-plugin.version}</version>
+                <configuration>
+                    <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-integration-test-class-transformer-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-integration-test-class-transformer</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>

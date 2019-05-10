@@ -16,9 +16,8 @@
 
 package io.quarkus.deployment;
 
-import org.jboss.builder.BuildContext;
-import org.jboss.builder.item.BuildItem;
-
+import io.quarkus.builder.BuildContext;
+import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 
 /**

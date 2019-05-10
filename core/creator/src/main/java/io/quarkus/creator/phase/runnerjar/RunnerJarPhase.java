@@ -31,9 +31,9 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -47,19 +47,19 @@ import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.creator.AppArtifact;
-import io.quarkus.creator.AppArtifactResolver;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppDependency;
+import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.creator.AppCreationPhase;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.AppDependency;
 import io.quarkus.creator.config.reader.MappedPropertiesHandler;
 import io.quarkus.creator.config.reader.PropertiesHandler;
 import io.quarkus.creator.outcome.OutcomeProviderRegistration;
 import io.quarkus.creator.phase.augment.AugmentOutcome;
 import io.quarkus.creator.phase.curate.CurateOutcome;
-import io.quarkus.creator.util.IoUtils;
-import io.quarkus.creator.util.ZipUtils;
 
 /**
  * Based on the provided {@link io.quarkus.creator.phase.augment.AugmentOutcome},
@@ -70,7 +70,6 @@ import io.quarkus.creator.util.ZipUtils;
 public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJarOutcome {
 
     private static final String DEFAULT_MAIN_CLASS = "io.quarkus.runner.GeneratedMain";
-    private static final String PROVIDED = "provided";
 
     private static final Logger log = Logger.getLogger(RunnerJarPhase.class);
 
@@ -79,20 +78,28 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             "META-INF/MANIFEST.MF",
             "module-info.class",
             "META-INF/LICENSE",
-            "META-INF/NOTICE",
             "META-INF/LICENSE.txt",
+            "META-INF/LICENSE.md",
+            "META-INF/NOTICE",
             "META-INF/NOTICE.txt",
-            "dependencies.runtime",
+            "META-INF/NOTICE.md",
             "META-INF/README",
-            "META-INF/quarkus-config-roots.list",
+            "META-INF/README.txt",
+            "META-INF/README.md",
             "META-INF/DEPENDENCIES",
             "META-INF/beans.xml",
+            "META-INF/quarkus-config-roots.list",
             "META-INF/quarkus-javadoc.properties",
+            "META-INF/quarkus-extension.properties",
+            "META-INF/quarkus-deployment-dependency.graph",
             "LICENSE")));
+
+    private final Set<String> userConfiguredIgnoredEntries = new HashSet<>();
 
     private Path outputDir;
     private Path libDir;
     private Path runnerJar;
+    private Path originalJar;
 
     private String finalName;
 
@@ -160,6 +167,19 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         return this;
     }
 
+    /**
+     * Entries that should be ignored when creating the runner JAR. The entries
+     * are relatives to the root of the JAR. I.e. "META-INF/README.MD".
+     *
+     * @param ignoredEntries the entries that should be ignored when creating
+     *        the runner JAR
+     * @return this phase instance
+     */
+    public RunnerJarPhase setUserConfiguredIgnoredEntries(Collection<String> ignoredEntries) {
+        this.userConfiguredIgnoredEntries.addAll(ignoredEntries);
+        return this;
+    }
+
     @Override
     public Path getRunnerJar() {
         return runnerJar;
@@ -168,6 +188,11 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
     @Override
     public Path getLibDir() {
         return libDir;
+    }
+
+    @Override
+    public Path getOriginalJar() {
+        return originalJar;
     }
 
     @Override
@@ -184,7 +209,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         libDir = IoUtils.mkdirs(libDir == null ? outputDir.resolve("lib") : libDir);
 
         if (finalName == null) {
-            final String name = appState.getArtifactResolver().resolve(appState.getAppArtifact()).getFileName().toString();
+            final String name = toUri(appState.getAppArtifact().getPath().getFileName());
             int i = name.lastIndexOf('.');
             if (i > 0) {
                 finalName = name.substring(0, i);
@@ -206,39 +231,42 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         }
 
         // when using uberJar, we rename the standard jar to include the .original suffix
-        // this greatly aids tools (such as s2i) that look for a single jar in the output directory to work OOTB
+        // this greatly aids tools (such as s2i) that look for a single jar in the output directory to work OOTB.
+        // we only do this if the standard jar was present in the output dir in the first place.
         if (uberJar) {
             try {
-                Path originalFile = outputDir.resolve(finalName + ".jar.original");
-                Files.deleteIfExists(originalFile);
-                Files.move(outputDir.resolve(finalName + ".jar"), originalFile);
+                Path standardJar = outputDir.resolve(finalName + ".jar");
+                if (standardJar.toFile().exists()) {
+                    originalJar = outputDir.resolve(finalName + ".jar.original");
+                    Files.deleteIfExists(originalJar);
+                    Files.move(standardJar, originalJar);
+                }
             } catch (IOException e) {
                 throw new AppCreatorException("Unable to build uberjar", e);
             }
+        } else {
+            originalJar = outputDir.resolve(finalName + ".jar");
         }
 
         ctx.pushOutcome(RunnerJarOutcome.class, this);
     }
 
-    private void buildRunner(FileSystem runnerZipFs, CurateOutcome appState, AugmentOutcome augmentOutcome) throws Exception {
+    private void buildRunner(FileSystem runnerZipFs, CurateOutcome curateOutcome, AugmentOutcome augmentOutcome)
+            throws Exception {
 
         log.info("Building jar: " + runnerJar);
 
-        final AppArtifactResolver depResolver = appState.getArtifactResolver();
-        final List<AppDependency> appDeps = appState.getEffectiveDeps();
+        final AppModelResolver depResolver = curateOutcome.getArtifactResolver();
         final Map<String, String> seen = new HashMap<>();
         final Map<String, Set<AppDependency>> duplicateCatcher = new HashMap<>();
         final StringBuilder classPath = new StringBuilder();
         final Map<String, List<byte[]>> services = new HashMap<>();
+        Set<String> finalIgnoredEntries = new HashSet<>(IGNORED_ENTRIES);
+        finalIgnoredEntries.addAll(this.userConfiguredIgnoredEntries);
 
+        final List<AppDependency> appDeps = curateOutcome.getEffectiveModel().getUserDependencies();
         for (AppDependency appDep : appDeps) {
-            if (appDep.getScope().equals(PROVIDED) && !augmentOutcome.isWhitelisted(appDep)) {
-                continue;
-            }
             final AppArtifact depArtifact = appDep.getArtifact();
-            if (depArtifact.getArtifactId().equals("svm") && depArtifact.getGroupId().equals("com.oracle.substratevm")) {
-                continue;
-            }
             final Path resolvedDep = depResolver.resolve(depArtifact);
             if (uberJar) {
                 try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep)) {
@@ -248,9 +276,9 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                                     @Override
                                     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
                                             throws IOException {
-                                        final String relativePath = root.relativize(dir).toString();
+                                        final String relativePath = toUri(root.relativize(dir));
                                         if (!relativePath.isEmpty()) {
-                                            addDir(runnerZipFs, dir, relativePath);
+                                            addDir(runnerZipFs, relativePath);
                                         }
                                         return FileVisitResult.CONTINUE;
                                     }
@@ -258,10 +286,11 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                                     @Override
                                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                                             throws IOException {
-                                        final String relativePath = root.relativize(file).toString();
+                                        final String relativePath = toUri(root.relativize(file));
                                         if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
                                             services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(read(file));
-                                        } else if (!IGNORED_ENTRIES.contains(relativePath)) {
+                                            return FileVisitResult.CONTINUE;
+                                        } else if (!finalIgnoredEntries.contains(relativePath)) {
                                             duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>()).add(appDep);
                                             if (!seen.containsKey(relativePath)) {
                                                 seen.put(relativePath, appDep.toString());
@@ -302,11 +331,11 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             @Override
             public void accept(Path path) {
                 try {
-                    final String relativePath = wiringClassesDir.relativize(path).toString();
+                    final String relativePath = toUri(wiringClassesDir.relativize(path));
                     if (Files.isDirectory(path)) {
                         if (!seen.containsKey(relativePath + "/") && !relativePath.isEmpty()) {
                             seen.put(relativePath + "/", "Current Application");
-                            addDir(runnerZipFs, path, relativePath);
+                            addDir(runnerZipFs, relativePath);
                         }
                         return;
                     }
@@ -325,16 +354,13 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             }
         });
 
-        final Manifest manifest = new Manifest();
-        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-        manifest.getMainAttributes().put(Attributes.Name.CLASS_PATH, classPath.toString());
-        manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, mainClass);
-        try (OutputStream os = Files.newOutputStream(runnerZipFs.getPath("META-INF", "MANIFEST.MF"))) {
-            manifest.write(os);
+        copyFiles(augmentOutcome.getAppClassesDir(), runnerZipFs, services);
+        if (Files.exists(augmentOutcome.getConfigDir())) {
+            copyFiles(augmentOutcome.getConfigDir(), runnerZipFs, services);
         }
+        copyFiles(augmentOutcome.getTransformedClassesDir(), runnerZipFs, services);
 
-        copyFiles(augmentOutcome.getAppClassesDir(), runnerZipFs);
-        copyFiles(augmentOutcome.getTransformedClassesDir(), runnerZipFs);
+        generateManifest(runnerZipFs, classPath.toString());
 
         for (Map.Entry<String, List<byte[]>> entry : services.entrySet()) {
             try (OutputStream os = Files.newOutputStream(runnerZipFs.getPath(entry.getKey()))) {
@@ -346,32 +372,95 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         }
     }
 
-    private void copyFiles(Path dir, FileSystem fs) throws IOException {
-        Files.walk(dir).forEach(new Consumer<Path>() {
-            @Override
-            public void accept(Path path) {
-                final String relativePath = dir.relativize(path).toString();
-                if (relativePath.isEmpty()) {
-                    return;
-                }
-                try {
-                    if (Files.isDirectory(path)) {
-                        addDir(fs, path, relativePath);
-                    } else {
-                        Files.copy(path, fs.getPath(relativePath), StandardCopyOption.REPLACE_EXISTING);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+    /**
+     * Manifest generation is quite simple : we just have to push some attributes in manifest.
+     * However, it gets a little more complex if the manifest preexists.
+     * So we first try to see if a manifest exists, and otherwise create a new one.
+     *
+     * <b>BEWARE</b> this method should be invoked after file copy from target/classes and so on.
+     * Otherwise this manifest manipulation will be useless.
+     */
+    private void generateManifest(FileSystem runnerZipFs, final String classPath) throws IOException {
+        final Path manifestPath = runnerZipFs.getPath("META-INF", "MANIFEST.MF");
+        final Manifest manifest = new Manifest();
+        if (Files.exists(manifestPath)) {
+            try (InputStream is = Files.newInputStream(manifestPath)) {
+                manifest.read(is);
             }
-        });
+            Files.delete(manifestPath);
+        }
+        Attributes attributes = manifest.getMainAttributes();
+        attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        if (attributes.containsKey(Attributes.Name.CLASS_PATH)) {
+            log.warn(
+                    "Your MANIFEST.MF already defined a CLASS_PATH entry. Quarkus has overwritten this existing entry.");
+        }
+        attributes.put(Attributes.Name.CLASS_PATH, classPath);
+        if (attributes.containsKey(Attributes.Name.MAIN_CLASS)) {
+            String existingMainClass = attributes.getValue(Attributes.Name.MAIN_CLASS);
+            if (!mainClass.equals(existingMainClass)) {
+                log.warn("Your MANIFEST.MF already defined a MAIN_CLASS entry. Quarkus has overwritten your existing entry.");
+            }
+        }
+        attributes.put(Attributes.Name.MAIN_CLASS, mainClass);
+        try (OutputStream os = Files.newOutputStream(manifestPath)) {
+            manifest.write(os);
+        }
     }
 
-    private void addDir(FileSystem fs, Path dir, final String relativePath)
+    /**
+     * Copy files from {@code dir} to {@code fs}, filtering out service providers into the given map.
+     *
+     * @param dir the source directory
+     * @param fs the destination filesystem
+     * @param services the services map
+     * @throws IOException if an error occurs
+     */
+    private void copyFiles(Path dir, FileSystem fs, Map<String, List<byte[]>> services) throws IOException {
+        try {
+            Files.walk(dir).forEach(new Consumer<Path>() {
+                @Override
+                public void accept(Path path) {
+                    final Path file = dir.relativize(path);
+                    final String relativePath = toUri(file);
+                    if (relativePath.isEmpty()) {
+                        return;
+                    }
+                    try {
+                        if (Files.isDirectory(path)) {
+                            addDir(fs, relativePath);
+                        } else {
+                            if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
+                                final byte[] content;
+                                try {
+                                    content = Files.readAllBytes(path);
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                                services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(content);
+                            } else {
+                                Files.copy(path, fs.getPath(relativePath), StandardCopyOption.REPLACE_EXISTING);
+                            }
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+        } catch (RuntimeException re) {
+            final Throwable cause = re.getCause();
+            if (cause instanceof IOException) {
+                throw (IOException) cause;
+            }
+            throw re;
+        }
+    }
+
+    private void addDir(FileSystem fs, final String relativePath)
             throws IOException, FileAlreadyExistsException {
         final Path targetDir = fs.getPath(relativePath);
         try {
-            Files.copy(dir, targetDir);
+            Files.createDirectory(targetDir);
         } catch (FileAlreadyExistsException e) {
             if (!Files.isDirectory(targetDir)) {
                 throw e;
@@ -409,5 +498,24 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                 .map("final-name", RunnerJarPhase::setFinalName)
                 .map("main-class", RunnerJarPhase::setMainClass)
                 .map("uber-jar", (RunnerJarPhase t, String value) -> t.setUberJar(Boolean.parseBoolean(value)));
+    }
+
+    private static String toUri(Path path) {
+        if (path.isAbsolute()) {
+            return path.toUri().getPath();
+        } else if (path.getNameCount() == 0) {
+            return "";
+        } else {
+            return toUri(new StringBuilder(), path, 0).toString();
+        }
+    }
+
+    private static StringBuilder toUri(StringBuilder b, Path path, int seg) {
+        b.append(path.getName(seg));
+        if (seg < path.getNameCount() - 1) {
+            b.append('/');
+            toUri(b, path, seg + 1);
+        }
+        return b;
     }
 }

@@ -48,7 +48,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import io.quarkus.arc.processor.BeanProcessor;
+import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.deployment.util.IoUtil;
 
 /**
@@ -171,7 +171,7 @@ class SpringDIProcessorTest {
                 throw new IllegalStateException("Failed to index: " + className, e);
             }
         }
-        return BeanProcessor.addBuiltinClasses(indexer.complete());
+        return BeanArchives.buildBeanArchiveIndex(indexer.complete());
     }
 
     @SafeVarargs

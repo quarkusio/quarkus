@@ -16,14 +16,23 @@
 
 package io.quarkus.netty.deployment;
 
+import java.util.function.Supplier;
+
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.jboss.logging.Logger;
 
+import io.netty.channel.EventLoopGroup;
+import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
+import io.quarkus.netty.BossGroup;
+import io.quarkus.netty.runtime.NettyTemplate;
 
 class NettyProcessor {
 
@@ -57,6 +66,25 @@ class NettyProcessor {
         }
         return builder //TODO: make configurable
                 .build();
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void createExecutors(BuildProducer<RuntimeBeanBuildItem> runtimeBeanBuildItemBuildProducer,
+            NettyTemplate template) {
+        //TODO: configuration
+        Supplier<Object> boss = template.createEventLoop(1);
+        Supplier<Object> worker = template.createEventLoop(0);
+
+        runtimeBeanBuildItemBuildProducer.produce(RuntimeBeanBuildItem.builder(EventLoopGroup.class)
+                .setSupplier(boss)
+                .setScope(ApplicationScoped.class)
+                .addQualifier(BossGroup.class)
+                .build());
+        runtimeBeanBuildItemBuildProducer.produce(RuntimeBeanBuildItem.builder(EventLoopGroup.class)
+                .setSupplier(worker)
+                .setScope(ApplicationScoped.class)
+                .build());
     }
 
 }

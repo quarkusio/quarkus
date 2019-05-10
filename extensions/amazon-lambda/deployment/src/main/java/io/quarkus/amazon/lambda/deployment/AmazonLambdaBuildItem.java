@@ -1,22 +1,23 @@
 package io.quarkus.amazon.lambda.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.runtime.RuntimeValue;
 
 public final class AmazonLambdaBuildItem extends MultiBuildItem {
 
-    private final String className;
-    private final String path;
+    private final String handlerClass;
+    private final RuntimeValue<Class<?>> targetType;
 
-    public AmazonLambdaBuildItem(String className, String path) {
-        this.className = className;
-        this.path = path;
+    public AmazonLambdaBuildItem(String handlerClass, RuntimeValue<Class<?>> targetType) {
+        this.handlerClass = handlerClass;
+        this.targetType = targetType;
     }
 
-    public String getClassName() {
-        return className;
+    public String getHandlerClass() {
+        return handlerClass;
     }
 
-    public String getPath() {
-        return path;
+    public RuntimeValue<Class<?>> getTargetType() {
+        return targetType;
     }
 }

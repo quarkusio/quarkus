@@ -10,17 +10,17 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-smallrye-reactive-type-converters</artifactId>
+    <artifactId>quarkus-smallrye-reactive-type-converters-deployment</artifactId>
     <name>Quarkus - SmallRye Reactive Type Converters - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-type-converters-runtime</artifactId>
+            <artifactId>quarkus-smallrye-reactive-type-converters</artifactId>
         </dependency>
     </dependencies>
 

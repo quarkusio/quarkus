@@ -38,6 +38,9 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 
+/**
+ * Creates an example configuration file.
+ */
 @Mojo(name = "create-example-config", defaultPhase = LifecyclePhase.NONE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class ExampleConfigMojo extends AbstractMojo {
 

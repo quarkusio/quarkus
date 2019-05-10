@@ -18,8 +18,9 @@ import org.jboss.logmanager.formatters.ColorPatternFormatter;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
-
-import com.oracle.svm.core.annotate.RecomputeFieldValue;
+import org.jboss.logmanager.handlers.PeriodicRotatingFileHandler;
+import org.jboss.logmanager.handlers.PeriodicSizeRotatingFileHandler;
+import org.jboss.logmanager.handlers.SizeRotatingFileHandler;
 
 import io.quarkus.runtime.annotations.Template;
 
@@ -31,15 +32,7 @@ public class LoggingSetupTemplate {
     public LoggingSetupTemplate() {
     }
 
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
-    private static volatile boolean initialized;
-
     public void initializeLogging(LogConfig config) {
-        if (initialized || ImageInfo.inImageBuildtimeCode()) {
-            // JVM mode, already initialized in static init
-            return;
-        }
-        initialized = true;
         final Map<String, CategoryConfig> categories = config.categories;
         final LogContext logContext = LogContext.getLogContext();
         final Logger rootLogger = logContext.getLogger("");
@@ -62,7 +55,7 @@ public class LoggingSetupTemplate {
         if (config.console.enable) {
             final PatternFormatter formatter;
             if (config.console.color && System.console() != null) {
-                formatter = new ColorPatternFormatter(config.console.format);
+                formatter = new ColorPatternFormatter(config.console.darken, config.console.format);
             } else {
                 formatter = new PatternFormatter(config.console.format);
             }
@@ -73,9 +66,30 @@ public class LoggingSetupTemplate {
             handlers.add(handler);
             errorManager = handler.getLocalErrorManager();
         }
+
         if (config.file.enable) {
+            FileHandler handler = new FileHandler();
+            FileConfig.RotationConfig rotationConfig = config.file.rotation;
+            if (rotationConfig.maxFileSize.isPresent() && rotationConfig.fileSuffix.isPresent()) {
+                PeriodicSizeRotatingFileHandler periodicSizeRotatingFileHandler = new PeriodicSizeRotatingFileHandler();
+                periodicSizeRotatingFileHandler.setSuffix(rotationConfig.fileSuffix.get());
+                periodicSizeRotatingFileHandler.setRotateSize(rotationConfig.maxFileSize.getAsLong());
+                periodicSizeRotatingFileHandler.setRotateOnBoot(rotationConfig.rotateOnBoot);
+                periodicSizeRotatingFileHandler.setMaxBackupIndex(rotationConfig.maxBackupIndex);
+                handler = periodicSizeRotatingFileHandler;
+            } else if (rotationConfig.maxFileSize.isPresent()) {
+                SizeRotatingFileHandler sizeRotatingFileHandler = new SizeRotatingFileHandler(
+                        rotationConfig.maxFileSize.getAsLong(), rotationConfig.maxBackupIndex);
+                sizeRotatingFileHandler.setRotateOnBoot(rotationConfig.rotateOnBoot);
+                handler = sizeRotatingFileHandler;
+            } else if (rotationConfig.fileSuffix.isPresent()) {
+                PeriodicRotatingFileHandler periodicRotatingFileHandler = new PeriodicRotatingFileHandler();
+                periodicRotatingFileHandler.setSuffix(rotationConfig.fileSuffix.get());
+                handler = periodicRotatingFileHandler;
+            }
+
             final PatternFormatter formatter = new PatternFormatter(config.file.format);
-            final FileHandler handler = new FileHandler(formatter);
+            handler.setFormatter(formatter);
             handler.setAppend(true);
             try {
                 handler.setFile(config.file.path);
@@ -87,6 +101,16 @@ public class LoggingSetupTemplate {
             handler.setFilter(new LogCleanupFilter(filterElements));
             handlers.add(handler);
         }
+
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+    }
+
+    public void initializeLoggingForImageBuild() {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            final ConsoleHandler handler = new ConsoleHandler(new PatternFormatter(
+                    "%d{HH:mm:ss,SSS} %-5p [%c{1.}] %s%e%n"));
+            handler.setLevel(Level.INFO);
+            InitialConfigurator.DELAYED_HANDLER.setHandlers(new Handler[] { handler });
+        }
     }
 }

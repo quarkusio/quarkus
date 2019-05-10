@@ -16,6 +16,12 @@
 
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.BeanCreator;
+import io.quarkus.arc.BeanDestroyer;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,21 +29,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
-
 import javax.enterprise.context.spi.CreationalContext;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
-import io.quarkus.arc.BeanCreator;
-import io.quarkus.arc.BeanDestroyer;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 
 /**
  * Synthetic bean configurator. An alternative to {@link javax.enterprise.inject.spi.configurator.BeanConfigurator}.
@@ -54,6 +52,8 @@ public final class BeanConfigurator<T> {
 
     private final ClassInfo implClass;
 
+    private Type providerType;
+
     private final Set<Type> types;
 
     private final Set<AnnotationInstance> qualifiers;
@@ -61,7 +61,7 @@ public final class BeanConfigurator<T> {
     private ScopeInfo scope;
 
     private Integer alternativePriority;
-    
+
     private String name;
 
     private Consumer<MethodCreator> creatorConsumer;
@@ -117,8 +117,6 @@ public final class BeanConfigurator<T> {
         return this;
     }
 
-    // TODO other supported param types
-
     public BeanConfigurator<T> types(Class<?>... types) {
         for (Class<?> type : types) {
             this.types.add(Type.create(DotName.createSimple(type.getName()), Kind.CLASS));
@@ -130,12 +128,12 @@ public final class BeanConfigurator<T> {
         Collections.addAll(this.types, types);
         return this;
     }
-    
+
     public BeanConfigurator<T> addType(DotName className) {
         this.types.add(Type.create(className, Kind.CLASS));
         return this;
     }
-    
+
     public BeanConfigurator<T> addQualifier(DotName annotationName) {
         this.qualifiers.add(AnnotationInstance.create(annotationName, null, new AnnotationValue[] {}));
         return this;
@@ -150,7 +148,7 @@ public final class BeanConfigurator<T> {
         this.scope = scope;
         return this;
     }
-    
+
     public BeanConfigurator<T> name(String name) {
         this.name = name;
         return this;
@@ -161,16 +159,22 @@ public final class BeanConfigurator<T> {
         return this;
     }
 
+    public BeanConfigurator<T> providerType(Type providerType) {
+        this.providerType = providerType;
+        return this;
+    }
+
     public <U extends T> BeanConfigurator<U> creator(Class<? extends BeanCreator<U>> creatorClazz) {
         return creator(mc -> {
             // return new FooBeanCreator().create(context, params)
-            // TODO verify, optimize, etc.
-            ResultHandle paramsHandle = mc.readInstanceField(FieldDescriptor.of(mc.getMethodDescriptor().getDeclaringClass(), "params", Map.class),
+            ResultHandle paramsHandle = mc.readInstanceField(
+                    FieldDescriptor.of(mc.getMethodDescriptor().getDeclaringClass(), "params", Map.class),
                     mc.getThis());
             ResultHandle creatorHandle = mc.newInstance(MethodDescriptor.ofConstructor(creatorClazz));
             ResultHandle[] params = { mc.getMethodParam(0), paramsHandle };
             ResultHandle ret = mc.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(BeanCreator.class, "create", Object.class, CreationalContext.class, Map.class), creatorHandle, params);
+                    MethodDescriptor.ofMethod(BeanCreator.class, "create", Object.class, CreationalContext.class, Map.class),
+                    creatorHandle, params);
             mc.returnValue(ret);
         });
     }
@@ -183,12 +187,14 @@ public final class BeanConfigurator<T> {
     public <U extends T> BeanConfigurator<U> destroyer(Class<? extends BeanDestroyer<U>> destroyerClazz) {
         return destroyer(mc -> {
             // new FooBeanDestroyer().destroy(instance, context, params)
-            // TODO verify, optimize, etc.
-            ResultHandle paramsHandle = mc.readInstanceField(FieldDescriptor.of(mc.getMethodDescriptor().getDeclaringClass(), "params", Map.class),
+            ResultHandle paramsHandle = mc.readInstanceField(
+                    FieldDescriptor.of(mc.getMethodDescriptor().getDeclaringClass(), "params", Map.class),
                     mc.getThis());
             ResultHandle destoyerHandle = mc.newInstance(MethodDescriptor.ofConstructor(destroyerClazz));
             ResultHandle[] params = { mc.getMethodParam(0), mc.getMethodParam(1), paramsHandle };
-            mc.invokeInterfaceMethod(MethodDescriptor.ofMethod(BeanDestroyer.class, "destroy", Void.class, Object.class, CreationalContext.class, Map.class),
+            mc.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(BeanDestroyer.class, "destroy", Void.class, Object.class, CreationalContext.class,
+                            Map.class),
                     destoyerHandle, params);
             mc.returnValue(null);
         });
@@ -204,8 +210,11 @@ public final class BeanConfigurator<T> {
      */
     public void done() {
         // TODO sanity checks
-        beanConsumer.accept(new BeanInfo.Builder().implClazz(implClass).beanDeployment(beanDeployment).scope(scope).types(types).qualifiers(qualifiers)
-                .alternativePriority(alternativePriority).name(name).creator(creatorConsumer).destroyer(destroyerConsumer).params(params).build());
+        beanConsumer.accept(new BeanInfo.Builder().implClazz(implClass).providerType(providerType)
+                .beanDeployment(beanDeployment).scope(scope).types(types)
+                .qualifiers(qualifiers)
+                .alternativePriority(alternativePriority).name(name).creator(creatorConsumer).destroyer(destroyerConsumer)
+                .params(params).build());
     }
 
     @SuppressWarnings("unchecked")

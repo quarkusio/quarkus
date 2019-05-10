@@ -27,4 +27,11 @@ public class ArcConfig {
     @ConfigItem(defaultValue = "true")
     public boolean removeUnusedBeans;
 
+    /**
+     * If set to true {@code @Inject} is automatically added to all non-static fields that are annotated with
+     * one of the annotations defined by {@link AutoInjectAnnotationBuildItem}.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean autoInjectFields;
+
 }

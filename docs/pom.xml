@@ -54,6 +54,8 @@
                         <quarkus-version>${project.version}</quarkus-version>
                         <surefire-version>${version.surefire.plugin}</surefire-version>
                         <graalvm-version>${graal-sdk.version-for-documentation}</graalvm-version>
+                        <axle-version>${axle-client.version}</axle-version>
+                        <vertx-version>${vertx.version}</vertx-version>
                         <restassured-version>${rest-assured.version}</restassured-version>
                         <project-name>Quarkus</project-name>
                         <!-- Project website home page -->
@@ -85,6 +87,7 @@
                         <quarkus-tree-url>${quarkus-base-url}/tree/master</quarkus-tree-url>
                         <!-- Quarkus URL to issues -->
                         <quarkus-issues-url>${quarkus-base-url}/issues</quarkus-issues-url>
+                        <quarkus-images-url>https://github.com/quarkusio/quarkus-images/tree</quarkus-images-url>
 
                         <!-- === Quickstart settings === -->
                         <!-- Quickstart repository base URL -->

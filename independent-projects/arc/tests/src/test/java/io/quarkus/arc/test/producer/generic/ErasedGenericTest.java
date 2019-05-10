@@ -1,21 +1,20 @@
 package io.quarkus.arc.test.producer.generic;
 
+import static org.junit.Assert.assertEquals;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.test.ArcTestContainer;
-import org.junit.Rule;
-import org.junit.Test;
-
+import java.lang.annotation.Annotation;
+import java.util.Optional;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.lang.annotation.Annotation;
-import java.util.Optional;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.Rule;
+import org.junit.Test;
 
 /**
  * Test for https://github.com/quarkus-project/quarkus/issues/120
@@ -41,6 +40,7 @@ public class ErasedGenericTest {
             return optionalString.get();
         }
     }
+
     @Dependent
     static class ErasedTypeProducer {
         @Produces
@@ -50,6 +50,7 @@ public class ErasedGenericTest {
             Optional<String> value = Optional.of(name);
             return value;
         }
+
         @Produces
         @Claim("")
         @Named("RawClaimTypeProducer#getOptionalValue")
@@ -58,6 +59,7 @@ public class ErasedGenericTest {
             Optional<Object> value = Optional.of(name);
             return value;
         }
+
         String getName(InjectionPoint ip) {
             String name = null;
             for (Annotation ann : ip.getQualifiers()) {

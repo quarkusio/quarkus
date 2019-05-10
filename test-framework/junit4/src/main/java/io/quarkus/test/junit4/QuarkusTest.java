@@ -20,12 +20,19 @@ import static io.quarkus.test.common.PathTestHelper.getAppClassLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
+import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.model.InitializationError;
 
+import io.quarkus.builder.BuildChainBuilder;
+import io.quarkus.builder.BuildContext;
+import io.quarkus.builder.BuildStep;
+import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.runner.RuntimeRunner;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.test.common.PropertyTestUtil;
 
 public class QuarkusTest extends AbstractQuarkusTestRunner {
 
@@ -43,12 +50,24 @@ public class QuarkusTest extends AbstractQuarkusTestRunner {
 
         @Override
         protected void startQuarkus() {
-            System.setProperty("quarkus.log.file.path", "target/quarkus.log");
+            PropertyTestUtil.setLogFileProperty();
             runtimeRunner = RuntimeRunner.builder()
                     .setLaunchMode(LaunchMode.TEST)
                     .setClassLoader(getClass().getClassLoader())
                     .setTarget(getAppClassLocation(getTestClass()))
                     .setFrameworkClassesPath(getTestClassesLocation(getTestClass()))
+                    .addChainCustomizer(new Consumer<BuildChainBuilder>() {
+                        @Override
+                        public void accept(BuildChainBuilder buildChainBuilder) {
+                            buildChainBuilder.addBuildStep(new BuildStep() {
+                                @Override
+                                public void execute(BuildContext context) {
+                                    context.produce(new TestAnnotationBuildItem(RunWith.class.getName()));
+                                }
+                            }).produces(TestAnnotationBuildItem.class)
+                                    .build();
+                        }
+                    })
                     .build();
             runtimeRunner.run();
         }

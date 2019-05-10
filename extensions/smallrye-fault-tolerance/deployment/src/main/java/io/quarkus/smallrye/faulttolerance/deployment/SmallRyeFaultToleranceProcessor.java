@@ -40,12 +40,14 @@ import com.netflix.hystrix.HystrixCircuitBreaker;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
 import io.smallrye.faulttolerance.DefaultCommandListenersProvider;
@@ -53,7 +55,7 @@ import io.smallrye.faulttolerance.DefaultHystrixConcurrencyStrategy;
 import io.smallrye.faulttolerance.HystrixCommandBinding;
 import io.smallrye.faulttolerance.HystrixCommandInterceptor;
 import io.smallrye.faulttolerance.HystrixInitializer;
-import io.smallrye.faulttolerance.MetricsCollectorFactory;
+import io.smallrye.faulttolerance.metrics.MetricsCollectorFactory;
 
 public class SmallRyeFaultToleranceProcessor {
 
@@ -91,25 +93,35 @@ public class SmallRyeFaultToleranceProcessor {
         nativeImageSystemProperty.produce(new SubstrateSystemPropertyBuildItem("rx.unsafe-disable", "true"));
 
         // Add reflective acccess to fallback handlers
-        Collection<ClassInfo> fallbackHandlers = index
-                .getAllKnownImplementors(DotName.createSimple(FallbackHandler.class.getName()));
-        for (ClassInfo fallbackHandler : fallbackHandlers) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, fallbackHandler.name().toString()));
+        Set<String> fallbackHandlers = new HashSet<>();
+        for (ClassInfo implementor : index
+                .getAllKnownImplementors(DotName.createSimple(FallbackHandler.class.getName()))) {
+            fallbackHandlers.add(implementor.name().toString());
         }
+        if (!fallbackHandlers.isEmpty()) {
+            AdditionalBeanBuildItem.Builder fallbackHandlersBeans = AdditionalBeanBuildItem.builder()
+                    .setDefaultScope(BuiltinScope.DEPENDENT.getName());
+            for (String fallbackHandler : fallbackHandlers) {
+                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, fallbackHandler));
+                fallbackHandlersBeans.addBeanClass(fallbackHandler);
+            }
+            additionalBean.produce(fallbackHandlersBeans.build());
+        }
+
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, true, HystrixCircuitBreaker.Factory.class.getName()));
         for (DotName annotation : FT_ANNOTATIONS) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, annotation.toString()));
         }
 
         // Add HystrixCommandBinding to app classes
-        Set<String> ftClasses = new HashSet<>();
+        Set<DotName> ftClasses = new HashSet<>();
         for (DotName annotation : FT_ANNOTATIONS) {
             Collection<AnnotationInstance> annotationInstances = index.getAnnotations(annotation);
             for (AnnotationInstance instance : annotationInstances) {
                 if (instance.target().kind() == Kind.CLASS) {
-                    ftClasses.add(instance.target().asClass().toString());
+                    ftClasses.add(instance.target().asClass().name());
                 } else if (instance.target().kind() == Kind.METHOD) {
-                    ftClasses.add(instance.target().asMethod().declaringClass().toString());
+                    ftClasses.add(instance.target().asMethod().declaringClass().name());
                 }
             }
         }
@@ -122,7 +134,7 @@ public class SmallRyeFaultToleranceProcessor {
 
                 @Override
                 public void transform(TransformationContext context) {
-                    if (ftClasses.contains(context.getTarget().asClass().name().toString())) {
+                    if (ftClasses.contains(context.getTarget().asClass().name())) {
                         context.transform().add(HystrixCommandBinding.class).done();
                     }
                 }
@@ -136,4 +148,17 @@ public class SmallRyeFaultToleranceProcessor {
                 MetricsCollectorFactory.class));
     }
 
+    @BuildStep
+    public void logCleanup(BuildProducer<LogCleanupFilterBuildItem> logCleanupFilter) {
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem("io.smallrye.faulttolerance.HystrixInitializer",
+                "### Init Hystrix ###",
+                // no need to log the strategy if it is the default
+                "Hystrix concurrency strategy used: DefaultHystrixConcurrencyStrategy"));
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem("io.smallrye.faulttolerance.DefaultHystrixConcurrencyStrategy",
+                "### Privilleged Thread Factory used ###"));
+
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem("com.netflix.config.sources.URLConfigurationSource",
+                "No URLs will be polled as dynamic configuration sources.",
+                "To enable URLs as dynamic configuration sources"));
+    }
 }

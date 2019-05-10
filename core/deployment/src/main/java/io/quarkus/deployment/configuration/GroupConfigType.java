@@ -4,6 +4,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
@@ -16,6 +17,7 @@ import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
 
@@ -85,14 +87,14 @@ public class GroupConfigType extends CompoundConfigType {
     }
 
     public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder,
-            final ResultHandle smallRyeConfig) {
+            final ResultHandle cache, final ResultHandle smallRyeConfig) {
         final ResultHandle instance = body
                 .invokeStaticMethod(accessorFinder.getConstructorFor(MethodDescriptor.ofConstructor(class_)));
         for (Map.Entry<String, ConfigType> entry : fields.entrySet()) {
             final String fieldName = entry.getKey();
             final ConfigType fieldType = entry.getValue();
             final FieldDescriptor fieldDescriptor = FieldDescriptor.of(fieldInfos.get(fieldName).getField());
-            final ResultHandle value = fieldType.writeInitialization(body, accessorFinder, smallRyeConfig);
+            final ResultHandle value = fieldType.writeInitialization(body, accessorFinder, cache, smallRyeConfig);
             body.invokeStaticMethod(accessorFinder.getSetterFor(fieldDescriptor), instance, value);
         }
         return instance;
@@ -119,7 +121,7 @@ public class GroupConfigType extends CompoundConfigType {
         return fieldInfo.getField();
     }
 
-    private Object create(final SmallRyeConfig config) {
+    private Object create(final ExpandingConfigSource.Cache cache, final SmallRyeConfig config) {
         Object self;
         try {
             self = constructor.newInstance();
@@ -128,43 +130,51 @@ public class GroupConfigType extends CompoundConfigType {
         } catch (IllegalAccessException e) {
             throw toError(e);
         } catch (InvocationTargetException e) {
-            throw new IllegalStateException(e.getCause());
+            try {
+                throw e.getCause();
+            } catch (RuntimeException | Error e2) {
+                throw e2;
+            } catch (Throwable t) {
+                throw new UndeclaredThrowableException(t);
+            }
         }
         for (Map.Entry<String, ConfigType> entry : fields.entrySet()) {
-            entry.getValue().getDefaultValueIntoEnclosingGroup(self, config, findField(entry.getKey()));
+            entry.getValue().getDefaultValueIntoEnclosingGroup(self, cache, config, findField(entry.getKey()));
         }
         return self;
     }
 
-    private ResultHandle generateCreate(final BytecodeCreator body, final ResultHandle config) {
+    private ResultHandle generateCreate(final BytecodeCreator body, final ResultHandle cache, final ResultHandle config) {
         final ResultHandle self = body.invokeStaticMethod(constructorAccessor);
         for (Map.Entry<String, ConfigType> entry : fields.entrySet()) {
             final ConfigType childType = entry.getValue();
             final MethodDescriptor setter = fieldInfos.get(entry.getKey()).getSetter();
-            childType.generateGetDefaultValueIntoEnclosingGroup(body, self, setter, config);
+            childType.generateGetDefaultValueIntoEnclosingGroup(body, self, setter, cache, config);
         }
         return self;
     }
 
-    Object getChildObject(final NameIterator name, final SmallRyeConfig config, final Object self, final String childName) {
+    Object getChildObject(final NameIterator name, final ExpandingConfigSource.Cache cache, final SmallRyeConfig config,
+            final Object self, final String childName) {
         final Field field = findField(childName);
         Object val = getFromField(field, self);
         if (val == null) {
             final ConfigType childType = getField(childName);
-            childType.getDefaultValueIntoEnclosingGroup(self, config, field);
+            childType.getDefaultValueIntoEnclosingGroup(self, cache, config, field);
             val = getFromField(field, self);
         }
         return val;
     }
 
-    ResultHandle generateGetChildObject(final BytecodeCreator body, final ResultHandle name, final ResultHandle config,
+    ResultHandle generateGetChildObject(final BytecodeCreator body, final ResultHandle name, final ResultHandle cache,
+            final ResultHandle config,
             final ResultHandle self, final String childName) {
         final AssignableResultHandle val = body.createVariable(Object.class);
         final FieldInfo fieldInfo = fieldInfos.get(childName);
         body.assign(val, body.invokeStaticMethod(fieldInfo.getGetter(), self));
         try (BytecodeCreator isNull = body.ifNull(val).trueBranch()) {
             final ConfigType childType = getField(childName);
-            childType.generateGetDefaultValueIntoEnclosingGroup(isNull, self, fieldInfo.getSetter(), config);
+            childType.generateGetDefaultValueIntoEnclosingGroup(isNull, self, fieldInfo.getSetter(), cache, config);
             isNull.assign(val, isNull.invokeStaticMethod(fieldInfo.getGetter(), self));
         }
         return val;
@@ -178,17 +188,17 @@ public class GroupConfigType extends CompoundConfigType {
         }
     }
 
-    Object getOrCreate(final NameIterator name, final SmallRyeConfig config) {
+    Object getOrCreate(final NameIterator name, final ExpandingConfigSource.Cache cache, final SmallRyeConfig config) {
         final CompoundConfigType container = getContainer();
         if (isConsumeSegment())
             name.previous();
-        final Object enclosing = container.getOrCreate(name, config);
-        Object self = container.getChildObject(name, config, enclosing, getContainingName());
+        final Object enclosing = container.getOrCreate(name, cache, config);
+        Object self = container.getChildObject(name, cache, config, enclosing, getContainingName());
         if (isConsumeSegment())
             name.next();
         if (self == null) {
             // it's a map, and it doesn't contain our key.
-            self = create(config);
+            self = create(cache, config);
             if (isConsumeSegment())
                 name.previous();
             container.setChildObject(name, enclosing, getContainingName(), self);
@@ -198,19 +208,20 @@ public class GroupConfigType extends CompoundConfigType {
         return self;
     }
 
-    ResultHandle generateGetOrCreate(final BytecodeCreator body, final ResultHandle name, final ResultHandle config) {
+    ResultHandle generateGetOrCreate(final BytecodeCreator body, final ResultHandle name, final ResultHandle cache,
+            final ResultHandle config) {
         final CompoundConfigType container = getContainer();
         if (isConsumeSegment())
             body.invokeVirtualMethod(NI_PREV_METHOD, name);
-        final ResultHandle enclosing = container.generateGetOrCreate(body, name, config);
+        final ResultHandle enclosing = container.generateGetOrCreate(body, name, cache, config);
         final AssignableResultHandle var = body.createVariable(Object.class);
-        body.assign(var, container.generateGetChildObject(body, name, config, enclosing, getContainingName()));
+        body.assign(var, container.generateGetChildObject(body, name, cache, config, enclosing, getContainingName()));
         if (isConsumeSegment())
             body.invokeVirtualMethod(NI_NEXT_METHOD, name);
         if (container.getClass() == MapConfigType.class) {
             // it could be null
             try (BytecodeCreator createBranch = body.ifNull(var).trueBranch()) {
-                createBranch.assign(var, generateCreate(createBranch, config));
+                createBranch.assign(var, generateCreate(createBranch, cache, config));
                 if (isConsumeSegment())
                     createBranch.invokeVirtualMethod(NI_PREV_METHOD, name);
                 container.generateSetChildObject(createBranch, name, enclosing, getContainingName(), var);
@@ -221,15 +232,17 @@ public class GroupConfigType extends CompoundConfigType {
         return var;
     }
 
-    void acceptConfigurationValueIntoLeaf(final LeafConfigType leafType, final NameIterator name, final SmallRyeConfig config) {
+    void acceptConfigurationValueIntoLeaf(final LeafConfigType leafType, final NameIterator name,
+            final ExpandingConfigSource.Cache cache, final SmallRyeConfig config) {
         final FieldInfo fieldInfo = fieldInfos.get(leafType.getContainingName());
-        leafType.acceptConfigurationValueIntoGroup(getOrCreate(name, config), fieldInfo.getField(), name, config);
+        leafType.acceptConfigurationValueIntoGroup(getOrCreate(name, cache, config), fieldInfo.getField(), name, config);
     }
 
     void generateAcceptConfigurationValueIntoLeaf(final BytecodeCreator body, final LeafConfigType leafType,
-            final ResultHandle name, final ResultHandle config) {
+            final ResultHandle name, final ResultHandle cache, final ResultHandle config) {
         final FieldInfo fieldInfo = fieldInfos.get(leafType.getContainingName());
-        leafType.generateAcceptConfigurationValueIntoGroup(body, generateGetOrCreate(body, name, config), fieldInfo.getSetter(),
+        leafType.generateAcceptConfigurationValueIntoGroup(body, generateGetOrCreate(body, name, cache, config),
+                fieldInfo.getSetter(),
                 name, config);
     }
 
@@ -246,17 +259,18 @@ public class GroupConfigType extends CompoundConfigType {
         body.invokeStaticMethod(fieldInfos.get(containingName).getSetter(), self, value);
     }
 
-    void getDefaultValueIntoEnclosingGroup(final Object enclosing, final SmallRyeConfig config, final Field field) {
+    void getDefaultValueIntoEnclosingGroup(final Object enclosing, final ExpandingConfigSource.Cache cache,
+            final SmallRyeConfig config, final Field field) {
         try {
-            field.set(enclosing, create(config));
+            field.set(enclosing, create(cache, config));
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
     }
 
     void generateGetDefaultValueIntoEnclosingGroup(final BytecodeCreator body, final ResultHandle enclosing,
-            final MethodDescriptor setter, final ResultHandle config) {
-        final ResultHandle self = generateCreate(body, config);
+            final MethodDescriptor setter, final ResultHandle cache, final ResultHandle config) {
+        final ResultHandle self = generateCreate(body, cache, config);
         body.invokeStaticMethod(setter, enclosing, self);
     }
 

@@ -20,13 +20,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.test.ArcTestContainer;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.RequestScoped;
@@ -35,17 +37,14 @@ import javax.enterprise.event.Observes;
 import javax.enterprise.event.ObservesAsync;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class AsyncObserverTest {
 
     @Rule
-    public ArcTestContainer container = new ArcTestContainer(StringProducer.class, StringObserver.class, ThreadNameProvider.class);
+    public ArcTestContainer container = new ArcTestContainer(StringProducer.class, StringObserver.class,
+            ThreadNameProvider.class);
 
     @Test
     public void testAsyncObservers() throws InterruptedException, ExecutionException, TimeoutException {

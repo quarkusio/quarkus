@@ -20,11 +20,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import javax.enterprise.inject.spi.InterceptionType;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
@@ -54,8 +53,10 @@ class InterceptorInfo extends BeanInfo implements Comparable<InterceptorInfo> {
      * @param bindings
      * @param injections
      */
-    InterceptorInfo(AnnotationTarget target, BeanDeployment beanDeployment, Set<AnnotationInstance> bindings, List<Injection> injections, int priority) {
-        super(target, beanDeployment, BuiltinScope.DEPENDENT.getInfo(), Collections.singleton(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
+    InterceptorInfo(AnnotationTarget target, BeanDeployment beanDeployment, Set<AnnotationInstance> bindings,
+            List<Injection> injections, int priority) {
+        super(target, beanDeployment, BuiltinScope.DEPENDENT.getInfo(),
+                Collections.singleton(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
                 null, null, null, Collections.emptyList(), null);
         this.bindings = bindings;
         this.priority = priority;
@@ -66,7 +67,21 @@ class InterceptorInfo extends BeanInfo implements Comparable<InterceptorInfo> {
         for (MethodInfo method : target.asClass().methods()) {
             if (aroundInvoke == null && method.hasAnnotation(DotNames.AROUND_INVOKE)) {
                 aroundInvoke = method;
-            } else if (aroundConstruct == null && method.hasAnnotation(DotNames.AROUND_CONSTRUCT)) {
+            } else if (method.hasAnnotation(DotNames.AROUND_CONSTRUCT)) {
+                // validate compliance with rules for AroundConstruct methods
+                if (!method.parameters().equals(Collections.singletonList(
+                        Type.create(DotName.createSimple("javax.interceptor.InvocationContext"), Type.Kind.CLASS)))) {
+                    throw new IllegalStateException(
+                            "@AroundConstruct must have exactly one argument of type javax.interceptor.InvocationContext, but method "
+                                    + method.asMethod() + " declared by " + method.declaringClass()
+                                    + " violates this.");
+                }
+                if (!method.returnType().kind().equals(Type.Kind.VOID) &&
+                        !method.returnType().name().equals(DotNames.OBJECT)) {
+                    throw new IllegalStateException("Return type of @AroundConstruct method must be Object or void, but method "
+                            + method.asMethod() + " declared by " + method.declaringClass()
+                            + " violates this.");
+                }
                 aroundConstruct = method;
             } else if (postConstruct == null && method.hasAnnotation(DotNames.POST_CONSTRUCT)) {
                 postConstruct = method;

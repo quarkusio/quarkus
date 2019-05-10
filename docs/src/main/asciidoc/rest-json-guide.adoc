@@ -1,3 +1,9 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+
 include::./attributes.adoc[]
 = Quarkus - Writing JSON REST Services
 
@@ -175,13 +181,13 @@ In the `src/main/resources/META-INF/resources` directory, add a `fruits.html` fi
 
 You can now interact with your REST service:
 
- * start Quarkus with `mvn compile quarkus:dev`
+ * start Quarkus with `./mvnw compile quarkus:dev`
  * open a browser to `http://localhost:8080/fruits.html`
  * add new fruits to the list via the form
 
 == Building a native executable
 
-You can build a native executable with the usual command `mvn package -Pnative`.
+You can build a native executable with the usual command `./mvnw package -Pnative`.
 
 Running it is as simple as executing `./target/rest-json-1.0-SNAPSHOT-runner`.
 
@@ -336,7 +342,7 @@ Open a browser to http://localhost:8080/legumes.html and you will see our list o
 
 The interesting part starts when running the application as a native executable:
 
- * create the native executable with `mvn package -Pnative`.
+ * create the native executable with `./mvnw package -Pnative`.
  * execute it with `./target/rest-json-1.0-SNAPSHOT-runner`
  * open a browser and go to http://localhost:8080/legumes.html
 
@@ -365,7 +371,7 @@ public class Legume {
 Let's do that and follow the same steps as before:
 
  * hit `Ctrl+C` to stop the application
- * create the native executable with `mvn package -Pnative`.
+ * create the native executable with `./mvnw package -Pnative`.
  * execute it with `./target/rest-json-1.0-SNAPSHOT-runner`
  * open a browser and go to http://localhost:8080/legumes.html
 

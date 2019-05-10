@@ -28,12 +28,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
+import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.creator.config.reader.MappedPropertiesHandler;
 import io.quarkus.creator.config.reader.PropertiesConfigReaderException;
 import io.quarkus.creator.config.reader.PropertiesHandler;
 import io.quarkus.creator.outcome.OutcomeResolver;
 import io.quarkus.creator.outcome.OutcomeResolverFactory;
-import io.quarkus.creator.util.IoUtils;
 
 /**
  *
@@ -47,7 +48,7 @@ public class AppCreator implements AutoCloseable {
         private List<AppCreationPhase> phases = Collections.emptyList();
         private Path appJar;
         private Path workDir;
-        private AppArtifactResolver artifactResolver;
+        private AppModelResolver modelResolver;
 
         private Builder() {
         }
@@ -94,15 +95,15 @@ public class AppCreator implements AutoCloseable {
         }
 
         /**
-         * Artifact resolver which should be used to resolve application
-         * dependencies.
+         * Application model resolver which should be used to resolve
+         * application dependencies.
          * If artifact resolver is not set by the user, the default one will be
          * created based on the user Maven settings.xml file.
          *
          * @param resolver artifact resolver
          */
-        public Builder setArtifactResolver(AppArtifactResolver resolver) {
-            this.artifactResolver = resolver;
+        public Builder setModelResolver(AppModelResolver resolver) {
+            this.modelResolver = resolver;
             return this;
         }
 
@@ -175,7 +176,7 @@ public class AppCreator implements AutoCloseable {
         private AppCreator initAppCreator() throws AppCreatorException {
             final AppCreator target = new AppCreator();
             target.setWorkDir(workDir);
-            target.artifactResolver = artifactResolver;
+            target.artifactResolver = modelResolver;
             target.appJar = appJar;
             return target;
         }
@@ -191,7 +192,7 @@ public class AppCreator implements AutoCloseable {
     }
 
     private OutcomeResolver<AppCreator> outcomeResolver;
-    private AppArtifactResolver artifactResolver;
+    private AppModelResolver artifactResolver;
     private Path appJar;
     private Path workDir;
     private boolean deleteTmpDir = true;
@@ -224,7 +225,7 @@ public class AppCreator implements AutoCloseable {
      *
      * @return artifact resolver for application dependencies
      */
-    public AppArtifactResolver getArtifactResolver() {
+    public AppModelResolver getArtifactResolver() {
         return artifactResolver;
     }
 

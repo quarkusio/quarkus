@@ -16,7 +16,7 @@
 
 package io.quarkus.deployment.builditem.substrate;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A system property that will be set at native image build time

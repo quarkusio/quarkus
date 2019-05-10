@@ -1,3 +1,9 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+
 include::./attributes.adoc[]
 = {project-name} - Using Security
 
@@ -79,7 +85,7 @@ The property files realm supports mapping of users to password and users to role
 
 |===
 |Property Name|Default|Description
-|quarkus.security.file.enabled|false|Determine whether security via the fila realm is enabled.
+|quarkus.security.file.enabled|false|Determine whether security via the file realm is enabled
 |quarkus.security.file.auth-mechanism|BASIC|Name of authentication mechanism to use
 |quarkus.security.file.realm-name|Quarkus|Name to assign the security realm
 |quarkus.security.file.users|users.properties|Classpath resource name of properties file containing user to password mappings; see <<Users.properties>>
@@ -193,6 +199,19 @@ quarkus.security.embedded.roles.noadmin=user
 ----
 <1> User `scott` has roles `Admin`, `admin`, `Tester`, and `user`
 <2> User `stuart` has roles `admin` and `user`
+
+#### Registering Security Providers
+When running in native mode the default behavior for Graal native image generation is to only include the main "SUN" provider
+unless you have enabled SSL, in which case all security providers are registered. If you are not using SSL, then you can selectively
+register security providers by name using the `quarkus.security.security-providers` property. The following example illustrates
+configuration to register the "SunRsaSign" and "SunJCE" security providers:
+
+.Example Security Providers Configuration
+[source,properties]
+----
+quarkus.security-providers=SunRsaSign,SunJCE
+...
+----
 
 ## Augmenting the Elytron Security Extension __Advanced Topic__
 [TIP]

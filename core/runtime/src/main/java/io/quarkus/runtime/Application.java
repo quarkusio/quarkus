@@ -21,8 +21,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 
 import org.graalvm.nativeimage.ImageInfo;
-import org.jboss.threads.Locks;
 import org.wildfly.common.Assert;
+import org.wildfly.common.lock.Locks;
 
 import io.quarkus.runtime.graal.DiagnosticPrinter;
 import sun.misc.Signal;
@@ -34,6 +34,11 @@ import sun.misc.SignalHandler;
  */
 @SuppressWarnings("restriction")
 public abstract class Application {
+
+    // WARNING: do not inject a logger here, it's too early: the log manager has not been properly set up yet
+
+    private static final String DISABLE_SIGNAL_HANDLERS = "DISABLE_SIGNAL_HANDLERS";
+
     private static final int ST_INITIAL = 0;
     private static final int ST_STARTING = 1;
     private static final int ST_STARTED = 2;
@@ -46,6 +51,7 @@ public abstract class Application {
 
     private int state = ST_INITIAL;
     private volatile boolean shutdownRequested;
+    private static volatile Application currentApplication;
 
     /**
      * Construct a new instance.
@@ -62,7 +68,8 @@ public abstract class Application {
      * @implNote The command line args are not yet used, but at some point we'll want a facility for overriding config and/or
      *           letting the user hook into it.
      */
-    public final void start(@SuppressWarnings("unused") String[] args) {
+    public final void start(String[] args) {
+        currentApplication = this;
         final Lock stateLock = this.stateLock;
         stateLock.lock();
         try {
@@ -159,6 +166,7 @@ public abstract class Application {
         try {
             doStop();
         } finally {
+            currentApplication = null;
             stateLock.lock();
             try {
                 state = ST_STOPPED;
@@ -170,6 +178,10 @@ public abstract class Application {
         }
     }
 
+    public static Application currentApplication() {
+        return currentApplication;
+    }
+
     protected abstract void doStop();
 
     /**
@@ -177,15 +189,16 @@ public abstract class Application {
      */
     public final void run(String[] args) {
         try {
-            if (ImageInfo.inImageRuntimeCode()) {
+            if (ImageInfo.inImageRuntimeCode() && System.getenv(DISABLE_SIGNAL_HANDLERS) == null) {
                 final SignalHandler handler = new SignalHandler() {
                     @Override
                     public void handle(final Signal signal) {
-                        System.exit(0);
+                        System.exit(signal.getNumber() + 0x80);
                     }
                 };
                 Signal.handle(new Signal("INT"), handler);
                 Signal.handle(new Signal("TERM"), handler);
+                Signal.handle(new Signal("HUP"), handler);
                 Signal.handle(new Signal("QUIT"), new SignalHandler() {
                     @Override
                     public void handle(final Signal signal) {
@@ -193,6 +206,7 @@ public abstract class Application {
                     }
                 });
             }
+
             final ShutdownHookThread shutdownHookThread = new ShutdownHookThread(Thread.currentThread());
             Runtime.getRuntime().addShutdownHook(shutdownHookThread);
             start(args);

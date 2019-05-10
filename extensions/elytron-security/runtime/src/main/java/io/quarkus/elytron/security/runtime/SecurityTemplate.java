@@ -109,12 +109,13 @@ public class SecurityTemplate {
         SimpleMapBackedSecurityRealm memRealm = (SimpleMapBackedSecurityRealm) secRealm;
         HashMap<String, SimpleRealmEntry> identityMap = new HashMap<>();
         Map<String, String> userInfo = config.getUsers();
-        log.debugf("UserInfoMap: %s\n", userInfo);
+        log.debugf("UserInfoMap: %s%n", userInfo);
         Map<String, String> roleInfo = config.getRoles();
-        log.debugf("RoleInfoMap: %s\n", roleInfo);
-        for (String user : userInfo.keySet()) {
-            String password = userInfo.get(user);
-            ClearPassword clear = ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR, password.toCharArray());
+        log.debugf("RoleInfoMap: %s%n", roleInfo);
+        for (Map.Entry<String, String> userPasswordEntry : userInfo.entrySet()) {
+            String user = userPasswordEntry.getKey();
+            ClearPassword clear = ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR,
+                    userPasswordEntry.getValue().toCharArray());
             PasswordCredential passwordCred = new PasswordCredential(clear);
             List<Credential> credentials = new ArrayList<>();
             credentials.add(passwordCred);
@@ -126,7 +127,7 @@ public class SecurityTemplate {
             }
             SimpleRealmEntry entry = new SimpleRealmEntry(credentials, attributes);
             identityMap.put(user, entry);
-            log.debugf("Added user(%s), roles=%s\n", user, attributes.get("groups"));
+            log.debugf("Added user(%s), roles=%s%n", user, attributes.get("groups"));
         }
         memRealm.setIdentityMap(identityMap);
     }
@@ -262,18 +263,32 @@ public class SecurityTemplate {
      *
      * @param domain - the SecurityDomain to use for auth decisions
      * @param identityManager - the IdentityManager for auth decisions
-     * @param authConfigs - the authentication methods to register with the deployment {@linkplain LoginConfig}
      * @return - the ServletExtension instance to register
      */
     public ServletExtension configureUndertowIdentityManager(RuntimeValue<SecurityDomain> domain,
-            IdentityManager identityManager,
-            List<AuthConfig> authConfigs) {
+            IdentityManager identityManager) {
+        return new ServletExtension() {
+            @Override
+            public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
+                deploymentInfo.setIdentityManager(identityManager);
+            }
+        };
+    }
+
+    /**
+     * Called to create a {@linkplain ServletExtension} to associate the {@linkplain LoginConfig} with the
+     * deployment.
+     *
+     * @param authConfigs - the authenticaiton methods to register with the deployment {@linkplain LoginConfig}
+     * @return - the ServletExtension instance to register
+     */
+    public ServletExtension configureLoginConfig(List<AuthConfig> authConfigs) {
         return new ServletExtension() {
             @Override
             public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
                 if (authConfigs.size() > 0) {
                     AuthConfig first = authConfigs.get(0);
-                    log.debugf("configureUndertowIdentityManager, %s", authConfigs);
+                    log.debugf("configureLoginConfig, %s", authConfigs);
                     LoginConfig loginConfig = new LoginConfig(first.authMechanism, first.realmName);
                     for (int n = 1; n < authConfigs.size(); n++) {
                         AuthConfig ac = authConfigs.get(n);
@@ -281,9 +296,7 @@ public class SecurityTemplate {
                     }
                     deploymentInfo.setLoginConfig(loginConfig);
                 }
-                deploymentInfo.setIdentityManager(identityManager);
             }
         };
     }
-
 }

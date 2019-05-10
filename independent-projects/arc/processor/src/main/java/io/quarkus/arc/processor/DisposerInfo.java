@@ -17,20 +17,21 @@
 package io.quarkus.arc.processor;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-
+import java.util.stream.Collectors;
 import javax.enterprise.inject.spi.DefinitionException;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
+import org.jboss.jandex.Type;
 
 /**
  *
  * @author Martin Kouba
  */
-public class DisposerInfo {
+public class DisposerInfo implements InjectionTargetInfo {
 
     private final BeanInfo declaringBean;
 
@@ -45,6 +46,16 @@ public class DisposerInfo {
         this.disposerMethod = disposerMethod;
         this.injection = injection;
         this.disposedParameter = initDisposedParam(disposerMethod);
+    }
+
+    @Override
+    public TargetKind kind() {
+        return TargetKind.DISPOSER;
+    }
+
+    @Override
+    public DisposerInfo asDisposer() {
+        return this;
     }
 
     public BeanInfo getDeclaringBean() {
@@ -71,8 +82,18 @@ public class DisposerInfo {
 
     void init(List<Throwable> errors) {
         for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
-            Beans.resolveInjectionPoint(declaringBean.getDeployment(), null, injectionPoint, errors);
+            Beans.resolveInjectionPoint(declaringBean.getDeployment(), this, injectionPoint, errors);
         }
+    }
+
+    Collection<AnnotationInstance> getDisposedParameterQualifiers() {
+        return Annotations.getParameterAnnotations(declaringBean.getDeployment(), disposerMethod, disposedParameter.position())
+                .stream().filter(a -> declaringBean.getDeployment().getQualifier(a.name()) != null)
+                .collect(Collectors.toList());
+    }
+
+    Type getDisposedParameterType() {
+        return disposerMethod.parameters().get(disposedParameter.position());
     }
 
     MethodParameterInfo initDisposedParam(MethodInfo disposerMethod) {

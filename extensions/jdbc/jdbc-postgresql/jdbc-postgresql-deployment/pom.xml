@@ -25,17 +25,17 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-jdbc-postgresql</artifactId>
+    <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
     <name>Quarkus - JDBC - PostgreSQL - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jdbc-postgresql-runtime</artifactId>
+            <artifactId>quarkus-jdbc-postgresql</artifactId>
         </dependency>
     </dependencies>
 

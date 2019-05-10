@@ -31,12 +31,14 @@ import org.apache.maven.project.MavenProject;
 
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.AppDependency;
 import io.quarkus.creator.phase.augment.AugmentOutcome;
 import io.quarkus.creator.phase.nativeimage.NativeImageOutcome;
 import io.quarkus.creator.phase.nativeimage.NativeImagePhase;
 import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 
+/**
+ * Build a native executable of your application.
+ */
 @Mojo(name = "native-image", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class NativeImageMojo extends AbstractMojo {
 
@@ -109,6 +111,12 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "${native-image.docker-build}")
     private String dockerBuild;
 
+    @Parameter(defaultValue = "${native-image.container-runtime}")
+    private String containerRuntime;
+
+    @Parameter(defaultValue = "${native-image.container-runtime-options}")
+    private String containerRuntimeOptions;
+
     @Parameter(defaultValue = "false")
     private boolean enableVMInspection;
 
@@ -123,6 +131,9 @@ public class NativeImageMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "false")
     private boolean addAllCharsets;
+
+    @Parameter(defaultValue = "false")
+    private boolean enableFallbackImages;
 
     public NativeImageMojo() {
         MojoLogger.logSupplier = this::getLog;
@@ -148,9 +159,12 @@ public class NativeImageMojo extends AbstractMojo {
                         .setDebugSymbols(debugSymbols)
                         .setDisableReports(disableReports)
                         .setDockerBuild(dockerBuild)
+                        .setContainerRuntime(containerRuntime)
+                        .setContainerRuntimeOptions(containerRuntimeOptions)
                         .setDumpProxies(dumpProxies)
                         .setEnableAllSecurityServices(enableAllSecurityServices)
                         .setEnableCodeSizeReporting(enableCodeSizeReporting)
+                        .setEnableFallbackImages(enableFallbackImages)
                         .setEnableHttpsUrlHandler(enableHttpsUrlHandler)
                         .setEnableHttpUrlHandler(enableHttpUrlHandler)
                         .setEnableIsolates(enableIsolates)
@@ -189,13 +203,13 @@ public class NativeImageMojo extends AbstractMojo {
                         }
 
                         @Override
-                        public boolean isWhitelisted(AppDependency dep) {
-                            // not relevant for this mojo
-                            throw new UnsupportedOperationException();
+                        public Path getConfigDir() {
+                            return classesDir;
                         }
                     })
                     .pushOutcome(RunnerJarOutcome.class, new RunnerJarOutcome() {
                         final Path runnerJar = buildDir.toPath().resolve(finalName + "-runner.jar");
+                        final Path originalJar = buildDir.toPath().resolve(finalName + ".jar");
 
                         @Override
                         public Path getRunnerJar() {
@@ -205,6 +219,11 @@ public class NativeImageMojo extends AbstractMojo {
                         @Override
                         public Path getLibDir() {
                             return runnerJar.getParent().resolve("lib");
+                        }
+
+                        @Override
+                        public Path getOriginalJar() {
+                            return originalJar;
                         }
                     })
                     // resolve the outcome of the native image phase

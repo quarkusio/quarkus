@@ -20,6 +20,7 @@ import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -28,14 +29,19 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Template;
 
 /**
- * @author Martin Kouba
  */
 @Template
 public class ArcDeploymentTemplate {
+
+    /**
+     * Used to hold the Supplier instances used for synthetic bean declarations.
+     */
+    public static volatile Map<String, Supplier<Object>> supplierMap;
 
     private static final Logger LOGGER = Logger.getLogger(ArcDeploymentTemplate.class.getName());
 
@@ -50,11 +56,14 @@ public class ArcDeploymentTemplate {
         return container;
     }
 
+    public void initSupplierBeans(Map<String, Supplier<Object>> beans) {
+        supplierMap = beans;
+    }
+
     public BeanContainer initBeanContainer(ArcContainer container, List<BeanContainerListener> listeners,
             Collection<String> removedBeanTypes)
             throws Exception {
         BeanContainer beanContainer = new BeanContainer() {
-            @SuppressWarnings("unchecked")
             @Override
             public <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers) {
                 Supplier<InstanceHandle<T>> handleSupplier = container.instanceSupplier(type, qualifiers);
@@ -110,6 +119,15 @@ public class ArcDeploymentTemplate {
                 instance.fireShutdownEvent();
             }
         });
+    }
+
+    public Supplier<Object> createSupplier(RuntimeValue<?> value) {
+        return new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return value.getValue();
+            }
+        };
     }
 
     private static final class DefaultInstanceFactory<T> implements BeanContainer.Factory<T> {

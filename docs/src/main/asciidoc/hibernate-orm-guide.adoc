@@ -1,3 +1,9 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+
 include::./attributes.adoc[]
 = {project-name} - Using Hibernate ORM and JPA
 :config-file: application.properties
@@ -27,14 +33,12 @@ In your `pom.xml`, add the following dependencies:
     <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-hibernate-orm</artifactId>
-        <scope>provided</scope>
     </dependency>
 
     <!-- JDBC driver dependencies -->
     <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-jdbc-postgresql</artifactId>
-        <scope>provided</scope>
     </dependency>
 </dependencies>
 --
@@ -45,16 +49,17 @@ then add the relevant configuration properties in `{config-file}`.
 [source,properties]
 --
 # configure your datasource
-quarkus.datasource.url: jdbc:postgresql://localhost:5432/mydatabase
-quarkus.datasource.driver: org.postgresql.Driver
-quarkus.datasource.username: sarah
-quarkus.datasource.password: connor
+quarkus.datasource.url = jdbc:postgresql://localhost:5432/mydatabase
+quarkus.datasource.driver = org.postgresql.Driver
+quarkus.datasource.username = sarah
+quarkus.datasource.password = connor
 
 # drop and create the database at startup (use `update` to only update the schema)
 quarkus.hibernate-orm.database.generation=drop-and-create
 --
 
-Note that these configuration properties are not the same ones as made available in `{config-file}`: they might differ in names, casing and don't necessarily map 1:1 to each other.
+Note that these configuration properties are not the same ones as in your typical Hibernate ORM configuration file: they might differ in names, casing and don't necessarily map 1:1 to each other.
+Please see below for the list of properties you can define.
 
 An `EntityManagerFactory` will be created based on {project-name} `datasource` configuration as long as the Hibernate ORM extension is declared in your `pom.xml`.
 The dialect will be selected based on the JDBC driver.
@@ -115,8 +120,11 @@ There are optional properties useful to refine your `EntityManagerFactory` or gu
 ==== Dialect
 
 `quarkus.hibernate-orm.dialect`:: (e.g. `org.hibernate.dialect.PostgreSQL95Dialect`).
-Class name of the Hibernate ORM dialect.
-
+Class name of the Hibernate ORM dialect. The complete list of bundled dialects is available in the https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/dialect/package-summary.html[Hibernate ORM JavaDoc].
+[NOTE]
+====
+Not all the dialects are supported in GraalVM native executables: we currently provide driver extensions for PostgreSQL, MariaDB, Microsoft SQL Server and H2.
+====
 `quarkus.hibernate-orm.dialect.storage-engine`:: (e.g. `MyISAM` or `InnoDB`).
 The storage engine to use when the dialect supports multiple storage engines.
 
@@ -142,7 +150,7 @@ Options are `none`, `first`, `last`.
 
 `quarkus.hibernate-orm.database.generation`::
 (e.g. `drop-and-create` which is awesome in development mode). Select whether the database schema is generated or not.
-Options are `none`, `create`, `drop-and-create`, `drop`
+Options are `none`, `create`, `drop-and-create`, `drop`, `update`. The default is `none`.
 
 `quarkus.hibernate-orm.database.generation.halt-on-error`:: (defaults to `false`)
 Whether we should stop on the first error when applying the schema.
@@ -276,7 +284,7 @@ Collections and relations need to be individually annotated to be cached; in thi
 
 [source,java]
 --
-package com.acme;
+package org.acme;
 
 @Entity
 @Cacheable
@@ -323,9 +331,9 @@ That's all! Caching technology is already integrated and enabled by default in {
 
 Caches store the data in separate regions to isolate different portions of data; such regions are assigned a name, which is useful for configuring each region independently, or to monitor their statistics.
 
-By default entities are cached in regions named after their fully qualified name, e.g. `com.acme.Country`.
+By default entities are cached in regions named after their fully qualified name, e.g. `org.acme.Country`.
 
-Collections are cached in regions named after the fully qualified name of their owner entity and collection field name, separated by `#` character, e.g. `com.acme.Country#cities`.
+Collections are cached in regions named after the fully qualified name of their owner entity and collection field name, separated by `#` character, e.g. `org.acme.Country#cities`.
 
 All cached queries are by default kept in a single region dedicated to them called `default-query-results-region`.
 
@@ -339,7 +347,7 @@ To set the maximum idle time, provide the number of seconds via the `quarkus.hib
 ====
 The double quotes are mandatory if your region name contains a dot. For instance:
 ```
-quarkus.hibernate-orm.cache."com.acme.MyEntity".memory.object-count=1000
+quarkus.hibernate-orm.cache."org.acme.MyEntity".memory.object-count=1000
 ```
 ====
 

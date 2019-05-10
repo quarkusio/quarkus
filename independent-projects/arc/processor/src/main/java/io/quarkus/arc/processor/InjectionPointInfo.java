@@ -24,10 +24,10 @@ import java.util.ListIterator;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -63,7 +63,7 @@ public class InjectionPointInfo {
         for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
             Type paramType = iterator.next();
             int position = iterator.previousIndex();
-            Set<AnnotationInstance> paramAnnotations = getParameterAnnotations(beanDeployment, method, position);
+            Set<AnnotationInstance> paramAnnotations = Annotations.getParameterAnnotations(beanDeployment, method, position);
             if (skipPredicate != null && skipPredicate.test(paramAnnotations)) {
                 // Skip parameter, e.g. @Disposes
                 continue;
@@ -79,36 +79,27 @@ public class InjectionPointInfo {
         return injectionPoints;
     }
 
-    static Set<AnnotationInstance> getParameterAnnotations(BeanDeployment beanDeployment, MethodInfo method, int position) {
-        Set<AnnotationInstance> annotations = new HashSet<>();
-        for (AnnotationInstance annotation : beanDeployment.getAnnotations(method)) {
-            if (Kind.METHOD_PARAMETER.equals(annotation.target().kind())
-                    && annotation.target().asMethodParameter().position() == position) {
-                annotations.add(annotation);
-            }
-        }
-        return annotations;
-    }
-    
     private final TypeAndQualifiers typeAndQualifiers;
 
     private final AtomicReference<BeanInfo> resolvedBean;
 
     private final InjectionPointKind kind;
-    
+
     private final boolean hasDefaultedQualifier;
-    
+
     private final AnnotationTarget target;
-    
+
     private final int position;
 
     InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, AnnotationTarget target, int position) {
         this(requiredType, requiredQualifiers, InjectionPointKind.CDI, target, position);
     }
 
-    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, InjectionPointKind kind, AnnotationTarget target, int position) {
+    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, InjectionPointKind kind,
+            AnnotationTarget target, int position) {
         this.typeAndQualifiers = new TypeAndQualifiers(requiredType,
-                requiredQualifiers.isEmpty() ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
+                requiredQualifiers.isEmpty()
+                        ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
                         : requiredQualifiers);
         this.resolvedBean = new AtomicReference<BeanInfo>(null);
         this.kind = kind;
@@ -137,14 +128,23 @@ public class InjectionPointInfo {
         return typeAndQualifiers.qualifiers;
     }
 
+    public AnnotationInstance getRequiredQualifier(DotName name) {
+        for (AnnotationInstance qualifier : typeAndQualifiers.qualifiers) {
+            if (qualifier.name().equals(name)) {
+                return qualifier;
+            }
+        }
+        return null;
+    }
+
     public boolean hasDefaultedQualifier() {
         return hasDefaultedQualifier;
     }
-    
+
     TypeAndQualifiers getTypeAndQualifiers() {
         return typeAndQualifiers;
     }
-    
+
     /**
      * For injected params, this method returns the corresponding method and not the param itself.
      * 
@@ -153,7 +153,15 @@ public class InjectionPointInfo {
     public AnnotationTarget getTarget() {
         return target;
     }
-    
+
+    public boolean isField() {
+        return target.kind() == Kind.FIELD;
+    }
+
+    public boolean isParam() {
+        return target.kind() == Kind.METHOD;
+    }
+
     /**
      * @return the parameter position or {@code -1} for a field injection point
      */
@@ -164,9 +172,9 @@ public class InjectionPointInfo {
     public String getTargetInfo() {
         switch (target.kind()) {
             case FIELD:
-                return target.asField().declaringClass().name() + "#" + target.asField().name(); 
+                return target.asField().declaringClass().name() + "#" + target.asField().name();
             case METHOD:
-                return target.asMethod().declaringClass().name() + "#" + target.asMethod().name() + "()"; 
+                return target.asMethod().declaringClass().name() + "#" + target.asMethod().name() + "()";
             default:
                 return target.toString();
         }
@@ -174,11 +182,13 @@ public class InjectionPointInfo {
 
     @Override
     public String toString() {
-        return "InjectionPointInfo [requiredType=" + typeAndQualifiers.type + ", requiredQualifiers=" + typeAndQualifiers.qualifiers + "]";
+        return "InjectionPointInfo [requiredType=" + typeAndQualifiers.type + ", requiredQualifiers="
+                + typeAndQualifiers.qualifiers + "]";
     }
 
     enum InjectionPointKind {
-        CDI, RESOURCE
+        CDI,
+        RESOURCE
     }
 
     static class TypeAndQualifiers {

@@ -43,7 +43,7 @@ import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.AdditionalStereotypeBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
-import io.quarkus.arc.deployment.FullArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Transformation;
@@ -105,9 +105,9 @@ public class SpringDIProcessor {
 
     @BuildStep
     AnnotationsTransformerBuildItem beanTransformer(
-            final FullArchiveIndexBuildItem fullArchiveIndexBuildItem,
+            final BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             final BuildProducer<AdditionalStereotypeBuildItem> additionalStereotypeBuildItemBuildProducer) {
-        final IndexView index = fullArchiveIndexBuildItem.getIndex();
+        final IndexView index = beanArchiveIndexBuildItem.getIndex();
         final Map<DotName, Set<DotName>> scopes = getStereotypeScopes(index);
         final Map<DotName, Collection<AnnotationInstance>> instances = new HashMap<>();
         for (final DotName name : scopes.keySet()) {
@@ -265,6 +265,14 @@ public class SpringDIProcessor {
             final Set<DotName> scopeStereotypes = new HashSet<>();
             final Set<String> names = new HashSet<>();
             final Set<DotName> clazzAnnotations = classInfo.annotations().keySet();
+
+            for (AnnotationInstance instance : classInfo.classAnnotations()) {
+                // make sure that we don't mix and match Spring and CDI annotations since this can cause a lot of problems
+                if (BuiltinScope.from(instance.name()) != null) {
+                    return annotationsToAdd;
+                }
+            }
+
             for (final DotName clazzAnnotation : clazzAnnotations) {
                 if (stereotypes.contains(clazzAnnotation)) {
                     scopeStereotypes.add(clazzAnnotation);
@@ -293,7 +301,7 @@ public class SpringDIProcessor {
                         declaredScope,
                         target,
                         Collections.emptyList()));
-            } else if (!(isAnnotation && scopes.isEmpty())) { // Annotations without an explicit scope shouldn't default to anything
+            } else if (!(isAnnotation && scopes.isEmpty()) && !classInfo.annotations().containsKey(CONFIGURATION_ANNOTATION)) { // Annotations without an explicit scope shouldn't default to anything
                 final DotName scope = validateScope(classInfo, scopes, scopeStereotypes);
                 annotationsToAdd.add(create(
                         scope,

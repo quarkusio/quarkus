@@ -1,3 +1,9 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+
 include::./attributes.adoc[]
 = {project-name} - Gradle Plugin Repositories
 
@@ -13,7 +19,7 @@ pluginManagement {
     }
     resolutionStrategy {
         eachPlugin {
-            if (requested.id.id == 'io.quarkus.gradle.plugin') {
+            if (requested.id.id == 'io.quarkus') {
                 useModule("io.quarkus:quarkus-gradle-plugin:${requested.version}")
             }
         }
@@ -31,7 +37,7 @@ pluginManagement {
     }
     resolutionStrategy {
         eachPlugin {
-            if (requested.id.id == "io.quarkus.gradle.plugin") {
+            if (requested.id.id == "io.quarkus") {
                 useModule("io.quarkus:quarkus-gradle-plugin:${requested.version}")
             }
         }

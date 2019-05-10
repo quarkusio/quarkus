@@ -1,3 +1,9 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+
 include::./attributes.adoc[]
 = {project-name} - Measuring Performance
 
@@ -5,6 +11,7 @@ This guide covers:
 
 * how we measure memory usage
 * how we measure startup time
+* which additional flags will Quarkus apply to native-image by default
 
 All of our tests are run on the same hardware for a given batch.
 It goes without saying but it's better when you say it.
@@ -13,7 +20,7 @@ It goes without saying but it's better when you say it.
 
 When measuring the footprint of a {project-name} application, we measure https://en.wikipedia.org/wiki/Resident_set_size[Resident Set Size (RSS)]
 and not the JVM heap size which is only a small part of the overall problem.
-The JVM not only allocates native memory for heap (`-Xms`, `-Xmx`) but also structures required by the jvm to run your application. Depending on the JVM implementation, the total memory allocated for an application will include, be not limited to;
+The JVM not only allocates native memory for heap (`-Xms`, `-Xmx`) but also structures required by the jvm to run your application. Depending on the JVM implementation, the total memory allocated for an application will include, but not limited to:
 
  * Heap space
  * Class metadata
@@ -146,13 +153,63 @@ In a separate terminal, we start the timing application that we are testing, pri
 
 [source, shell]
 --
-$ date +"%H:%M:%S.%s" &&  ./target/quarkus-timing-runner
+$ date +"%T.%3N" &&  ./target/quarkus-timing-runner
 
-16:17:01.1551889021
-16:17:01.626
-2019-03-06 16:17:01,626 INFO  [io.quarkus] (main) Quarkus 0.11.0 started in 0.035s. Listening on: http://127.0.0.1:8080
-2019-03-06 16:17:01,626 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb]
-16:17:01.637
+10:57:32.508
+10:57:32.512
+2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Quarkus 0.11.0 started in 0.002s. Listening on: http://127.0.0.1:8080
+2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb]
+10:57:32.537
 --
 
 The difference between the final timestamp and the first timestamp is the total startup time for the application to serve the first request.
+
+== Additional flags applied by Quarkus
+
+When Quarkus invokes GraalVM `native-image` it will apply some additional flags by default.
+
+You might want to know about the following ones in case you're comparing performance properties with other builds.
+
+=== Disable fallback images
+
+Fallback native images are a feature of GraalVM to "fall back" to run your application in the normal JVM, should the compilation
+to native code fail for some reason.
+
+Quarkus disables this feature by setting `-H:FallbackThreshold=0`: this will ensure you get a compilation failure rather
+risking to not notice that the application is unable to really run in native mode.
+
+If you instead want to just run in Java mode, that's totally possible: just skip the native-image build and run it as a jar.
+
+=== Disable Isolates
+
+Isolates are a neat feature of GraalVM, but Quarkus isn't using them at this stage.
+
+Disable via `-H:-SpawnIsolates`.
+
+=== Disable auto-registration of all Service Loader implementations
+
+Quarkus extensions can automatically pick the right services they need, while GraalVM's native-image defaults to include
+all services it's able to find on the classpath.
+
+We prefer listing services explicitly as it produces better optimised binaries. Disable it as well by setting `-H:-UseServiceLoaderFeature`.
+
+=== Better default for Garbage Collection implementation
+
+The default in GraalVM seems meant to optimise for short lived processes.
+
+Quarkus defaults to server applications, so we switch to a better default by setting
+ `-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime`.
+
+=== Others ...
+
+This section is provided as high level guidance, but can't presume to be comprehensive as some flags are controlled
+ dynamically by the extensions, the platform you're building on, configuration details, your code and possibly
+ a combination of any of these.
+
+Generally speaking the ones listed here are those most likely to affect performance metrics, but in the right
+circumstances one could observe non negligible impact from the other flags too.
+
+If you're to investigate some differences in detail make sure to check what Quarkus is invoking exactly: when the build
+plugin is producing a native image, the full command lines are logged.
+
+

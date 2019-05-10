@@ -1,3 +1,9 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+
 include::./attributes.adoc[]
 = {project-name} - Testing Your Application
 
@@ -79,7 +85,7 @@ must be set, as the default version does not support Junit 5:
 ----
 <plugin>
     <artifactId>maven-surefire-plugin</artifactId>
-    <version>${surefire.version}</version>
+    <version>${surefire-plugin.version}</version>
     <configuration>
        <systemProperties>
           <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
@@ -135,9 +141,18 @@ the test is run.
 
 === Controlling the test port
 
-While Quarkus will listen on port `8080` by default when running tests it defaults to `8081`. This allows you to run
-tests while having the application running in parallel. This can be configured via the `quarkus.http.test-port`
-config property in `application.properties`.
+While Quarkus will listen on port `8080` by default, when running tests it defaults to `8081`. This allows you to run
+tests while having the application running in parallel.
+
+[TIP]
+.Changing the test port
+====
+You can configure the port used by tests by configuring `quarkus.http.test-port` in your `application.properties`:
+[source]
+----
+quarkus.http.test-port=8083
+----
+====
 
 Quarkus also provides Restassured integration that updates the default port used by Restassured before the tests are run,
 so no additional configuration should be required.

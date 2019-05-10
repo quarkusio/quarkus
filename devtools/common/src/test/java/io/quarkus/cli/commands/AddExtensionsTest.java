@@ -11,6 +11,7 @@ import org.apache.maven.model.Model;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.maven.utilities.MojoUtils;
 
 public class AddExtensionsTest {
@@ -19,13 +20,14 @@ public class AddExtensionsTest {
         final File pom = new File("target/extensions-test", "pom.xml");
 
         CreateProjectTest.delete(pom.getParentFile());
-        new CreateProject(pom.getParentFile())
+        new CreateProject(new FileProjectWriter(pom.getParentFile()))
                 .groupId("org.acme")
                 .artifactId("add-extension-test")
                 .version("0.0.1-SNAPSHOT")
                 .doCreateProject(new HashMap<>());
 
-        new AddExtensions(pom)
+        File pomFile = new File(pom.getAbsolutePath());
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
                 .addExtensions(new HashSet<>(asList("agroal", "arc", " hibernate-validator")));
 
         Model model = MojoUtils.readPom(pom);

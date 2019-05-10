@@ -40,14 +40,21 @@ public class DevMojoIT extends MojoTestBase {
     }
 
     @Test
-    public void testThatClassAppCanRun() throws MavenInvocationException, FileNotFoundException {
+    public void testThatClassAppCanRun() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run");
         runAndCheck();
+
+        //make sure that the Class.getPackage() works for app classes
+        String pkg = getHttpResponse("/app/hello/package");
+        assertThat(pkg).isEqualTo("org.acme");
+
+        //make sure webjars work
+        getHttpResponse("webjars/bootstrap/3.1.0/css/bootstrap.min.css");
+        assertThatOutputWorksCorrectly(running.log());
     }
 
     @Test
-    public void testThatTheApplicationIsReloadedOnJavaChange()
-            throws MavenInvocationException, IOException, InterruptedException {
+    public void testThatTheApplicationIsReloadedOnJavaChange() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-java-change");
         runAndCheck();
 
@@ -75,8 +82,59 @@ public class DevMojoIT extends MojoTestBase {
     }
 
     @Test
-    public void testThatTheApplicationIsReloadedOnKotlinChange()
-            throws MavenInvocationException, IOException, InterruptedException {
+    public void testThatTheApplicationIsReloadedMultiModule() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/multimodule", "projects/multimodule");
+        runAndCheck();
+
+        // Edit the "Hello" message.
+        File source = new File(testDir, "rest/src/main/java/org/acme/HelloResource.java");
+        final String uuid = UUID.randomUUID().toString();
+        filter(source, ImmutableMap.of("return \"hello\";", "return \"" + uuid + "\";"));
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains(uuid));
+
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+
+        filter(source, ImmutableMap.of(uuid, "carambar"));
+
+        // Wait until we get "carambar"
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("carambar"));
+
+        // Create a new resource
+        source = new File(testDir, "html/src/main/resources/META-INF/resources/lorem.txt");
+        FileUtils.write(source,
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+                "UTF-8");
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> getHttpResponse("/lorem.txt").contains("Lorem ipsum"));
+
+        // Update the resource
+        FileUtils.write(source, uuid, "UTF-8");
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> getHttpResponse("/lorem.txt").contains(uuid));
+
+        // Delete the resource
+        source.delete();
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> getHttpResponse("/lorem.txt", 404));
+    }
+
+    @Test
+    public void testThatTheApplicationIsReloadedOnKotlinChange() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic-kotlin", "projects/project-classic-run-kotlin-change");
         runAndCheck();
 
@@ -175,6 +233,41 @@ public class DevMojoIT extends MojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES)
+                .until(() -> getHttpResponse("/app/hello/greeting").contains(uuid));
+    }
+
+    @Test
+    public void testThatAddingConfigFileWorksCorrectly() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic-noconfig", "projects/project-classic-run-noconfig-add-config");
+        assertThat(testDir).isDirectory();
+        running = new RunningInvoker(testDir, false);
+        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
+
+        String resp = getHttpResponse();
+
+        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
+                .containsIgnoringCase("1.0-SNAPSHOT");
+
+        String greeting = getHttpResponse("/app/hello/greeting");
+        assertThat(greeting).contains("initialValue");
+
+        File configurationFile = new File(testDir, "src/main/resources/application.properties");
+        assertThat(configurationFile).doesNotExist();
+
+        String uuid = UUID.randomUUID().toString();
+
+        FileUtils.write(configurationFile,
+                "greeting=" + uuid,
+                "UTF-8");
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(configurationFile::isFile);
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(10, TimeUnit.SECONDS)
                 .until(() -> getHttpResponse("/app/hello/greeting").contains(uuid));
     }
 
@@ -289,16 +382,6 @@ public class DevMojoIT extends MojoTestBase {
     }
 
     @Test
-    public void testErrorMessageWhenNoJavaSources() throws IOException, MavenInvocationException {
-        testDir = initProject("projects/classic", "projects/project-no-sources");
-        FileUtils.deleteQuietly(new File(testDir, "src/main/java"));
-        running = new RunningInvoker(testDir, false);
-        MavenProcessInvocationResult result = running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
-        await().until(() -> result.getProcess() != null && !result.getProcess().isAlive());
-        assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
-    }
-
-    @Test
     public void testErrorMessageWhenNoTarget() throws IOException, MavenInvocationException {
         testDir = initProject("projects/classic", "projects/project-no-target");
         FileUtils.deleteQuietly(new File(testDir, "target"));
@@ -320,5 +403,4 @@ public class DevMojoIT extends MojoTestBase {
         await().until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
     }
-
 }

@@ -19,8 +19,9 @@ package io.quarkus.creator.phase.curate;
 
 import java.util.List;
 
-import io.quarkus.creator.AppArtifact;
-import io.quarkus.creator.AppArtifactResolver;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.creator.AppCreatorException;
 
 /**
@@ -29,22 +30,30 @@ import io.quarkus.creator.AppCreatorException;
  */
 public class DefaultUpdateDiscovery implements UpdateDiscovery {
 
-    private final AppArtifactResolver resolver;
+    private final AppModelResolver resolver;
     private final VersionUpdateNumber updateNumber;
 
-    public DefaultUpdateDiscovery(AppArtifactResolver resolver, VersionUpdateNumber updateNumber) {
+    public DefaultUpdateDiscovery(AppModelResolver resolver, VersionUpdateNumber updateNumber) {
         this.resolver = resolver;
         this.updateNumber = updateNumber;
     }
 
     @Override
     public List<String> listUpdates(AppArtifact artifact) throws AppCreatorException {
-        return resolver.listLaterVersions(artifact, resolveUpToVersion(artifact), false);
+        try {
+            return resolver.listLaterVersions(artifact, resolveUpToVersion(artifact), false);
+        } catch (AppModelResolverException e) {
+            throw new AppCreatorException("Failed to collect later versions", e);
+        }
     }
 
     @Override
     public String getNextVersion(AppArtifact artifact) throws AppCreatorException {
-        return resolver.getNextVersion(artifact, resolveUpToVersion(artifact), false);
+        try {
+            return resolver.getNextVersion(artifact, getFromVersion(artifact), true, resolveUpToVersion(artifact), false);
+        } catch (AppModelResolverException e) {
+            throw new AppCreatorException("Failed to determine the next available version", e);
+        }
     }
 
     @Override
@@ -62,7 +71,11 @@ public class DefaultUpdateDiscovery implements UpdateDiscovery {
          * }
          * return latestStr;
          */
-        return resolver.getLatestVersion(artifact, resolveUpToVersion(artifact), false);
+        try {
+            return resolver.getLatestVersion(artifact, resolveUpToVersion(artifact), false);
+        } catch (AppModelResolverException e) {
+            throw new AppCreatorException("Failed to determine the latest available version", e);
+        }
     }
 
     private String resolveUpToVersion(AppArtifact artifact) throws AppCreatorException {
@@ -102,5 +115,56 @@ public class DefaultUpdateDiscovery implements UpdateDiscovery {
                     "Failed to parse the minor number in version: " + version);
         }
         return majorStr + "." + String.valueOf(minor + 1) + ".alpha";
+    }
+
+    private String getFromVersion(AppArtifact artifact) throws AppCreatorException {
+        // here we are looking for the major version which is going to be used
+        // as the base for the version range to look for the updates
+        final String version = artifact.getVersion();
+        final int majorMinorSep = version.indexOf('.');
+        if (majorMinorSep <= 0) {
+            throw new AppCreatorException("Failed to determine the major version in " + version);
+        }
+        final String majorStr = version.substring(0, majorMinorSep);
+        if (updateNumber == VersionUpdateNumber.MAJOR) {
+            final long major;
+            try {
+                major = Long.parseLong(majorStr);
+            } catch (NumberFormatException e) {
+                throw new AppCreatorException(
+                        "The version is expected to start with a number indicating the major version: " + version);
+            }
+            return String.valueOf(major + 1) + ".alpha";
+        }
+
+        final int minorMicroSep = version.indexOf('.', majorMinorSep + 1);
+        if (minorMicroSep <= 0) {
+            throw new AppCreatorException("Failed to determine the minor version in " + version);
+        }
+        final String minorStr = version.substring(majorMinorSep + 1, minorMicroSep);
+        if (updateNumber == VersionUpdateNumber.MINOR) {
+            final long minor;
+            try {
+                minor = Long.parseLong(minorStr);
+            } catch (NumberFormatException e) {
+                throw new AppCreatorException(
+                        "Failed to parse the minor number in version: " + version);
+            }
+            return majorStr + "." + String.valueOf(minor + 1) + ".alpha";
+        }
+
+        if (minorMicroSep == version.length() - 1) {
+            throw new AppCreatorException("Failed to determine the micro version in " + version);
+        }
+        final String microStr = version.substring(minorMicroSep + 1);
+
+        final long micro;
+        try {
+            micro = Long.parseLong(microStr);
+        } catch (NumberFormatException e) {
+            throw new AppCreatorException(
+                    "Failed to parse the micro number in version: " + version);
+        }
+        return majorStr + "." + minorStr + "." + String.valueOf(micro + 1) + ".alpha";
     }
 }

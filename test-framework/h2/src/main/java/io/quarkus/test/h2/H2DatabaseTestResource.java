@@ -17,6 +17,8 @@
 package io.quarkus.test.h2;
 
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.Map;
 
 import org.h2.tools.Server;
 
@@ -27,7 +29,7 @@ public class H2DatabaseTestResource implements QuarkusTestResourceLifecycleManag
     private Server tcpServer;
 
     @Override
-    public void start() {
+    public Map<String, String> start() {
 
         try {
             tcpServer = Server.createTcpServer();
@@ -36,6 +38,7 @@ public class H2DatabaseTestResource implements QuarkusTestResourceLifecycleManag
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        return Collections.emptyMap();
     }
 
     @Override

@@ -19,16 +19,14 @@ package io.quarkus.arc.test.instance.destroy;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

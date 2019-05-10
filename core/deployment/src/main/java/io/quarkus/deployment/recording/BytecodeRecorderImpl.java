@@ -43,7 +43,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.commons.beanutils.PropertyUtils;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.jandex.AnnotationValue;
@@ -255,7 +254,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         return "Runtime proxy of " + returnType + " with id " + key;
                     }
                     throw new RuntimeException(
-                            "You cannot invoke directly on an object returned from the bytecode recorded, you can only pass is back into the recorder as a parameter");
+                            "You cannot invoke " + method.getName()
+                                    + "() directly on an object returned from the bytecode recorder, you can only pass it back into the recorder as a parameter");
                 }
             });
             ProxyInstance instance = new ProxyInstance(proxyInstance, key);
@@ -397,16 +397,23 @@ public class BytecodeRecorderImpl implements RecorderContext {
             out = method.invokeVirtualMethod(ofMethod(StartupContext.class, "getValue", Object.class, String.class),
                     method.getMethodParam(0), method.load(proxyId));
         } else if (param instanceof Class<?>) {
-            String name = classProxies.get(param);
-            if (name == null) {
-                name = ((Class) param).getName();
+            if (!((Class) param).isPrimitive()) {
+                // Only try to load the class by name if it is not a primitive class
+                String name = classProxies.get(param);
+                if (name == null) {
+                    name = ((Class) param).getName();
+                }
+                ResultHandle currentThread = method.invokeStaticMethod(ofMethod(Thread.class, "currentThread", Thread.class));
+                ResultHandle tccl = method.invokeVirtualMethod(
+                        ofMethod(Thread.class, "getContextClassLoader", ClassLoader.class),
+                        currentThread);
+                out = method.invokeStaticMethod(
+                        ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
+                        method.load(name), method.load(true), tccl);
+            } else {
+                // Else load the primitive type by reference; double.class => Class var9 = Double.TYPE;
+                out = method.loadClass((Class) param);
             }
-            ResultHandle currentThread = method.invokeStaticMethod(ofMethod(Thread.class, "currentThread", Thread.class));
-            ResultHandle tccl = method.invokeVirtualMethod(ofMethod(Thread.class, "getContextClassLoader", ClassLoader.class),
-                    currentThread);
-            out = method.invokeStaticMethod(
-                    ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
-                    method.load(name), method.load(true), tccl);
         } else if (expectedType == boolean.class) {
             out = method.load((boolean) param);
         } else if (expectedType == Boolean.class) {
@@ -541,80 +548,84 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 }
             }
             Set<String> handledProperties = new HashSet<>();
-            PropertyDescriptor[] desc = PropertyUtils.getPropertyDescriptors(param);
-            for (PropertyDescriptor i : desc) {
-                if (i.getReadMethod() != null && i.getWriteMethod() == null) {
-                    try {
-                        //read only prop, we may still be able to do stuff with it if it is a collection
-                        if (Collection.class.isAssignableFrom(i.getPropertyType())) {
-                            //special case, a collection with only a read method
-                            //we assume we can just add to the connection
-                            handledProperties.add(i.getName());
+            try (PropertyUtils introspection = new PropertyUtils()) {
+                PropertyDescriptor[] desc = introspection.getPropertyDescriptors(param);
+                for (PropertyDescriptor i : desc) {
+                    if (i.getReadMethod() != null && i.getWriteMethod() == null) {
+                        try {
+                            //read only prop, we may still be able to do stuff with it if it is a collection
+                            if (Collection.class.isAssignableFrom(i.getPropertyType())) {
+                                //special case, a collection with only a read method
+                                //we assume we can just add to the connection
+                                handledProperties.add(i.getName());
 
-                            Collection propertyValue = (Collection) PropertyUtils.getProperty(param, i.getName());
-                            if (!propertyValue.isEmpty()) {
-                                ResultHandle prop = method.invokeVirtualMethod(MethodDescriptor.ofMethod(i.getReadMethod()),
-                                        out);
-                                for (Object c : propertyValue) {
-                                    ResultHandle toAdd = loadObjectInstance(method, c, returnValueResults, Object.class);
-                                    method.invokeInterfaceMethod(COLLECTION_ADD, prop, toAdd);
+                                Collection propertyValue = (Collection) introspection.getProperty(param, i.getName());
+                                if (!propertyValue.isEmpty()) {
+                                    ResultHandle prop = method.invokeVirtualMethod(MethodDescriptor.ofMethod(i.getReadMethod()),
+                                            out);
+                                    for (Object c : propertyValue) {
+                                        ResultHandle toAdd = loadObjectInstance(method, c, returnValueResults, Object.class);
+                                        method.invokeInterfaceMethod(COLLECTION_ADD, prop, toAdd);
+                                    }
                                 }
-                            }
 
-                        } else if (Map.class.isAssignableFrom(i.getPropertyType())) {
-                            //special case, a map with only a read method
-                            //we assume we can just add to the map
+                            } else if (Map.class.isAssignableFrom(i.getPropertyType())) {
+                                //special case, a map with only a read method
+                                //we assume we can just add to the map
 
-                            handledProperties.add(i.getName());
-                            Map<Object, Object> propertyValue = (Map<Object, Object>) PropertyUtils.getProperty(param,
-                                    i.getName());
-                            if (!propertyValue.isEmpty()) {
-                                ResultHandle prop = method.invokeVirtualMethod(MethodDescriptor.ofMethod(i.getReadMethod()),
-                                        out);
-                                for (Map.Entry<Object, Object> entry : propertyValue.entrySet()) {
-                                    ResultHandle key = loadObjectInstance(method, entry.getKey(), returnValueResults,
-                                            Object.class);
-                                    ResultHandle val = entry.getValue() != null
-                                            ? loadObjectInstance(method, entry.getValue(), returnValueResults, Object.class)
-                                            : method.loadNull();
-                                    method.invokeInterfaceMethod(MAP_PUT, prop, key, val);
-                                }
-                            }
-                        }
-
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                } else if (i.getReadMethod() != null && i.getWriteMethod() != null) {
-                    try {
-                        handledProperties.add(i.getName());
-                        Object propertyValue = PropertyUtils.getProperty(param, i.getName());
-                        if (propertyValue == null) {
-                            //we just assume properties are null by default
-                            //TODO: is this a valid assumption? Should we check this by creating an instance?
-                            continue;
-                        }
-                        Class propertyType = i.getPropertyType();
-                        if (i.getReadMethod().getReturnType() != i.getWriteMethod().getParameterTypes()[0]) {
-                            //this is a weird situation where the reader and writer are different types
-                            //we iterate and try and find a valid setter method for the type we have
-                            //OpenAPI does some weird stuff like this
-
-                            for (Method m : param.getClass().getMethods()) {
-                                if (m.getName().equals(i.getWriteMethod().getName())) {
-                                    if (m.getParameterTypes().length > 0
-                                            && m.getParameterTypes()[0].isAssignableFrom(param.getClass())) {
-                                        propertyType = m.getParameterTypes()[0];
-                                        break;
+                                handledProperties.add(i.getName());
+                                Map<Object, Object> propertyValue = (Map<Object, Object>) introspection.getProperty(param,
+                                        i.getName());
+                                if (!propertyValue.isEmpty()) {
+                                    ResultHandle prop = method.invokeVirtualMethod(MethodDescriptor.ofMethod(i.getReadMethod()),
+                                            out);
+                                    for (Map.Entry<Object, Object> entry : propertyValue.entrySet()) {
+                                        ResultHandle key = loadObjectInstance(method, entry.getKey(), returnValueResults,
+                                                Object.class);
+                                        ResultHandle val = entry.getValue() != null
+                                                ? loadObjectInstance(method, entry.getValue(), returnValueResults, Object.class)
+                                                : method.loadNull();
+                                        method.invokeInterfaceMethod(MAP_PUT, prop, key, val);
                                     }
                                 }
                             }
+
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
                         }
-                        ResultHandle val = loadObjectInstance(method, propertyValue, returnValueResults, i.getPropertyType());
-                        method.invokeVirtualMethod(
-                                ofMethod(param.getClass(), i.getWriteMethod().getName(), void.class, propertyType), out, val);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                    } else if (i.getReadMethod() != null && i.getWriteMethod() != null) {
+                        try {
+                            handledProperties.add(i.getName());
+                            Object propertyValue = introspection.getProperty(param, i.getName());
+                            if (propertyValue == null) {
+                                //we just assume properties are null by default
+                                //TODO: is this a valid assumption? Should we check this by creating an instance?
+                                continue;
+                            }
+                            Class propertyType = i.getPropertyType();
+                            if (i.getReadMethod().getReturnType() != i.getWriteMethod().getParameterTypes()[0]) {
+                                //this is a weird situation where the reader and writer are different types
+                                //we iterate and try and find a valid setter method for the type we have
+                                //OpenAPI does some weird stuff like this
+
+                                for (Method m : param.getClass().getMethods()) {
+                                    if (m.getName().equals(i.getWriteMethod().getName())) {
+                                        if (m.getParameterTypes().length > 0
+                                                && m.getParameterTypes()[0].isAssignableFrom(param.getClass())) {
+                                            propertyType = m.getParameterTypes()[0];
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            ResultHandle val = loadObjectInstance(method, propertyValue, returnValueResults,
+                                    i.getPropertyType());
+                            method.invokeVirtualMethod(
+                                    ofMethod(param.getClass(), i.getWriteMethod().getName(), void.class, propertyType), out,
+                                    val);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                 }
             }
@@ -643,7 +654,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             return true;
         }
         for (ObjectLoader loader : loaders) {
-            ResultHandle handle = loader.load(body, param);
+            ResultHandle handle = loader.load(body, param, staticInit);
             if (handle != null) {
                 loadedObjects.put(param, handle);
                 return true;

@@ -1,34 +1,34 @@
 <settings>
-  <mirrors>
-    <mirror>
-      <id>jboss-public-repository-group</id>
-      <mirrorOf>*,!quarkus-nexus-release,!quarkus-nexus-snapshot</mirrorOf>
-      <name>jboss</name>
-      <url>http://repository.jboss.org/nexus/content/groups/developer/</url>
-    </mirror>
-  </mirrors>
   <profiles>
     <profile>
-      <id>jboss-nexus</id>
+      <id>google-mirror-jboss-proxy</id>
       <repositories>
         <repository>
-          <id>jboss-public-repository-group</id>
-          <name>JBoss Public Repository Group</name>
-          <url>http://repository.jboss.org/nexus/content/groups/public/</url>
-          <layout>default</layout>
-          <releases>
-            <enabled>true</enabled>
-            <updatePolicy>never</updatePolicy>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-            <updatePolicy>never</updatePolicy>
-          </snapshots>
+          <id>google-maven-central</id>
+          <name>GCS Maven Central mirror EU</name>
+          <url>https://maven-central-eu.storage-download.googleapis.com/repos/central/data/</url>
+        </repository>
+        <repository>
+          <id>jboss-maven-central-proxy</id>
+          <name>JBoss Maven Central proxy</name>
+          <url>https://repository.jboss.org/nexus/content/repositories/central/</url>
         </repository>
       </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>google-maven-central</id>
+          <name>GCS Maven Central mirror EU</name>
+          <url>https://maven-central-eu.storage-download.googleapis.com/repos/central/data/</url>
+        </pluginRepository>
+        <pluginRepository>
+          <id>jboss-maven-central-proxy</id>
+          <name>JBoss Maven Central proxy</name>
+          <url>https://repository.jboss.org/nexus/content/repositories/central/</url>
+        </pluginRepository>
+      </pluginRepositories>
     </profile>
   </profiles>
   <activeProfiles>
-    <activeProfile>jboss-nexus</activeProfile>
+    <activeProfile>google-mirror-jboss-proxy</activeProfile>
   </activeProfiles>
 </settings>

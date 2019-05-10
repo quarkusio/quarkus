@@ -17,7 +17,8 @@
       "di"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-arc"
+    "artifactId": "quarkus-arc",
+    "guide": "https://quarkus.io/guides/cdi-reference"
   },
   {
     "name": "Camel Core",
@@ -56,6 +57,17 @@
     "artifactId": "quarkus-camel-salesforce"
   },
   {
+    "name": "Flyway",
+    "labels": [
+      "flyway",
+      "database",
+      "data"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-flyway",
+    "guide": "https://quarkus.io/guides/flyway-guide"
+  },
+  {
     "name": "Hibernate ORM",
     "labels": [
       "hibernate-orm",
@@ -63,7 +75,8 @@
       "hibernate"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-hibernate-orm"
+    "artifactId": "quarkus-hibernate-orm",
+    "guide": "https://quarkus.io/guides/hibernate-orm-guide"
   },
   {
     "name": "Hibernate ORM with Panache",
@@ -74,7 +87,8 @@
       "jpa"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-hibernate-orm-panache"
+    "artifactId": "quarkus-hibernate-orm-panache",
+    "guide": "https://quarkus.io/guides/hibernate-orm-panache-guide"
   },
   {
     "name": "Hibernate Validator",
@@ -84,7 +98,8 @@
       "validation"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-hibernate-validator"
+    "artifactId": "quarkus-hibernate-validator",
+    "guide": "https://quarkus.io/guides/validation-guide"
   },
   {
     "name": "Infinispan Client",
@@ -94,7 +109,8 @@
       "infinispan"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-infinispan-client"
+    "artifactId": "quarkus-infinispan-client",
+    "guide": "https://quarkus.io/guides/infinispan-client-guide"
   },
   {
     "name": "JDBC Driver - H2",
@@ -127,12 +143,54 @@
     "artifactId": "quarkus-jdbc-postgresql"
   },
   {
+    "name": "JSON-B",
+    "labels": [
+      "jsonb",
+      "json-b",
+      "json"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jsonb",
+    "guide": "https://quarkus.io/guides/rest-json-guide"
+  },
+  {
+    "name": "JSON-P",
+    "labels": [
+      "jsonp",
+      "json-p",
+      "json"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jsonp"
+  },
+  {
+    "name": "Keycloak",
+    "labels": [
+      "keycloak",
+      "oauth2",
+      "openid-connect"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-keycloak",
+    "guide": "https://quarkus.io/guides/keycloak-guide"
+  },
+  {
     "name": "Kotlin",
     "labels": [
       "kotlin"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-kotlin"
+    "artifactId": "quarkus-kotlin",
+    "guide": "https://quarkus.io/guides/kotlin"
+  },
+  {
+    "name": "Kubernetes",
+    "labels": [
+      "kubernetes"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kubernetes",
+    "guide": "https://quarkus.io/guides/kubernetes-guide"
   },
   {
     "name": "AWS Lambda",
@@ -155,7 +213,8 @@
       "txs"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-narayana-jta"
+    "artifactId": "quarkus-narayana-jta",
+    "guide": "https://quarkus.io/guides/transaction-guide"
   },
   {
     "name": "RESTEasy",
@@ -166,7 +225,8 @@
       "rest"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-resteasy"
+    "artifactId": "quarkus-resteasy",
+    "guide": "https://quarkus.io/guides/rest-json-guide"
   },
   {
     "name": "RESTEasy - JSON-B",
@@ -180,7 +240,8 @@
       "jsonb"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-resteasy-jsonb"
+    "artifactId": "quarkus-resteasy-jsonb",
+    "guide": "https://quarkus.io/guides/rest-json-guide"
   },
   {
     "name": "Scheduler",
@@ -190,7 +251,8 @@
       "periodic-tasks"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-scheduler"
+    "artifactId": "quarkus-scheduler",
+    "guide": "https://quarkus.io/guides/scheduled-guide"
   },
   {
     "name": "Security",
@@ -198,7 +260,8 @@
       "security"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-elytron-security"
+    "artifactId": "quarkus-elytron-security",
+    "guide": "https://quarkus.io/guides/security-guide"
   },
   {
     "name": "SmallRye Fault Tolerance",
@@ -222,7 +285,8 @@
       "microprofile-health-check"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-health"
+    "artifactId": "quarkus-smallrye-health",
+    "guide": "https://quarkus.io/guides/health-guide"
   },
   {
     "name": "SmallRye JWT",
@@ -233,7 +297,8 @@
       "rbac"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-jwt"
+    "artifactId": "quarkus-smallrye-jwt",
+    "guide": "https://quarkus.io/guides/jwt-guide"
   },
   {
     "name": "SmallRye Metrics",
@@ -245,7 +310,8 @@
       "monitoring"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-metrics"
+    "artifactId": "quarkus-smallrye-metrics",
+    "guide": "https://quarkus.io/guides/metrics-guide"
   },
   {
     "name": "SmallRye OpenAPI",
@@ -255,7 +321,8 @@
       "open-api"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-openapi"
+    "artifactId": "quarkus-smallrye-openapi",
+    "guide": "https://quarkus.io/guides/openapi-swaggerui-guide"
   },
   {
     "name": "SmallRye OpenTracing",
@@ -267,7 +334,8 @@
       "jaeger"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-opentracing"
+    "artifactId": "quarkus-smallrye-opentracing",
+    "guide": "https://quarkus.io/guides/opentracing-guide"
   },
   {
     "name": "SmallRye Reactive Streams Operators",
@@ -303,7 +371,8 @@
       "reactive"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-reactive-messaging"
+    "artifactId": "quarkus-smallrye-reactive-messaging",
+    "guide": "https://quarkus.io/guides/async-message-passing"
   },
   {
     "name": "SmallRye Reactive Messaging - Kafka Connector",
@@ -312,7 +381,8 @@
       "reactive-kafka"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-reactive-messaging-kafka"
+    "artifactId": "quarkus-smallrye-reactive-messaging-kafka",
+    "guide": "https://quarkus.io/guides/kafka-guide"
   },
   {
     "name": "SmallRye REST Client",
@@ -323,7 +393,8 @@
       "microprofile-rest-client"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-rest-client"
+    "artifactId": "quarkus-smallrye-rest-client",
+    "guide": "https://quarkus.io/guides/rest-client-guide"
   },
   {
     "name": "Spring DI compatibility layer",
@@ -331,7 +402,17 @@
       "spring-di"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-spring-di"
+    "artifactId": "quarkus-spring-di",
+    "guide": "https://quarkus.io/guides/spring-di-guide"
+  },
+  {
+    "name": "Swagger UI",
+    "labels": [
+      "swagger-ui"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-swagger-ui",
+    "guide": "https://quarkus.io/guides/openapi-swaggerui-guide"
   },
   {
     "name": "Undertow",
@@ -353,7 +434,8 @@
       "web-sockets"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-undertow-websockets"
+    "artifactId": "quarkus-undertow-websockets",
+    "guide": "https://quarkus.io/guides/websocket-guide"
   },
   {
     "name": "Eclipse Vert.x",
@@ -364,6 +446,21 @@
       "reactive"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-vertx"
+    "artifactId": "quarkus-vertx",
+    "guide": "https://quarkus.io/guides/using-vertx"
+  },
+  {
+    "name": "Reactive Postgres Client",
+    "labels": [
+      "eclipse-vert.x",
+      "vertx",
+      "vert.x",
+      "reactive",
+      "database",
+      "data",
+      "postgresql"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-reactive-pg-client"
   }
 ]

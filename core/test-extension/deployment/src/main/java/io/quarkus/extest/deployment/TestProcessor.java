@@ -1,9 +1,32 @@
 package io.quarkus.extest.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
+import java.security.Provider;
+import java.security.Security;
+import java.security.interfaces.DSAPublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -11,28 +34,35 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
-import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.extest.runtime.IConfigConsumer;
-import io.quarkus.extest.runtime.ObjectOfValue;
-import io.quarkus.extest.runtime.ObjectValueOf;
-import io.quarkus.extest.runtime.TestAnnotation;
-import io.quarkus.extest.runtime.TestBuildAndRunTimeConfig;
-import io.quarkus.extest.runtime.TestBuildTimeConfig;
-import io.quarkus.extest.runtime.TestRunTimeConfig;
-import io.quarkus.extest.runtime.TestTemplate;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
+import io.quarkus.extest.runtime.*;
+import io.quarkus.extest.runtime.beans.CommandServlet;
+import io.quarkus.extest.runtime.beans.PublicKeyProducer;
+import io.quarkus.extest.runtime.config.ObjectOfValue;
+import io.quarkus.extest.runtime.config.ObjectValueOf;
+import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
+import io.quarkus.extest.runtime.config.TestBuildTimeConfig;
+import io.quarkus.extest.runtime.config.TestConfigRoot;
+import io.quarkus.extest.runtime.config.TestRunTimeConfig;
+import io.quarkus.extest.runtime.config.XmlConfig;
+import io.quarkus.extest.runtime.subst.DSAPublicKeyObjectSubstitution;
+import io.quarkus.extest.runtime.subst.KeyProxy;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.undertow.deployment.ServletBuildItem;
 
 /**
  * A test extension deployment processor
@@ -40,10 +70,16 @@ import io.quarkus.runtime.RuntimeValue;
 public final class TestProcessor {
     static final Logger log = Logger.getLogger(TestProcessor.class);
     static DotName TEST_ANNOTATION = DotName.createSimple(TestAnnotation.class.getName());
+    static DotName TEST_ANNOTATION_SCOPE = DotName.createSimple(ApplicationScoped.class.getName());
 
+    @Inject
+    BuildProducer<SubstrateResourceBuildItem> resource;
+    @Inject
+    BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle;
+
+    TestConfigRoot configRoot;
     TestBuildTimeConfig buildTimeConfig;
     TestBuildAndRunTimeConfig buildAndRunTimeConfig;
-    TestRunTimeConfig runTimeConfig;
 
     /**
      * Register a extension capability and feature
@@ -61,16 +97,145 @@ public final class TestProcessor {
      * @return
      */
     @BuildStep
-    BeanDefiningAnnotationBuildItem registerX() {
-        return new BeanDefiningAnnotationBuildItem(TEST_ANNOTATION);
+    BeanDefiningAnnotationBuildItem registerBeanDefinningAnnotations() {
+        return new BeanDefiningAnnotationBuildItem(TEST_ANNOTATION, TEST_ANNOTATION_SCOPE);
+    }
+
+    @BuildStep
+    void registerNativeImageReources() {
+        resource.produce(new SubstrateResourceBuildItem("/DSAPublicKey.encoded"));
+    }
+
+    /**
+     * Register the CDI beans that are needed by the test extension
+     *
+     * @param additionalBeans - producer for additional bean items
+     */
+    @BuildStep
+    void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        AdditionalBeanBuildItem additionalBeansItem = AdditionalBeanBuildItem.builder()
+                .addBeanClass(PublicKeyProducer.class)
+                .addBeanClass(CommandServlet.class)
+                .setRemovable()
+                .build();
+        additionalBeans.produce(additionalBeansItem);
+    }
+
+    /**
+     * Parse an XML configuration using JAXB into an XmlConfig instance graph
+     * 
+     * @param template - runtime template
+     * @return RuntimeServiceBuildItem
+     * @throws JAXBException
+     */
+    @BuildStep
+    @Record(STATIC_INIT)
+    RuntimeServiceBuildItem parseServiceXmlConfig(TestTemplate template) throws JAXBException {
+        RuntimeServiceBuildItem serviceBuildItem = null;
+        JAXBContext context = JAXBContext.newInstance(XmlConfig.class);
+        Unmarshaller unmarshaller = context.createUnmarshaller();
+        InputStream is = getClass().getResourceAsStream("/config.xml");
+        if (is != null) {
+            log.infof("Have XmlConfig, loading");
+            XmlConfig config = (XmlConfig) unmarshaller.unmarshal(is);
+            log.infof("Loaded XmlConfig, creating service");
+            RuntimeValue<RuntimeXmlConfigService> service = template.initRuntimeService(config);
+            serviceBuildItem = new RuntimeServiceBuildItem(service);
+        }
+        return serviceBuildItem;
+    }
+
+    /**
+     * Have the runtime template start the service and install a shutdown hook
+     * 
+     * @param template - runtime template
+     * @param shutdownContextBuildItem - ShutdownContext information
+     * @param serviceBuildItem - previously created RuntimeXmlConfigService container
+     * @return ServiceStartBuildItem - build item indicating the RuntimeXmlConfigService startuup
+     * @throws IOException - on failure
+     */
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    ServiceStartBuildItem startRuntimeService(TestTemplate template, ShutdownContextBuildItem shutdownContextBuildItem,
+            RuntimeServiceBuildItem serviceBuildItem) throws IOException {
+        if (serviceBuildItem != null) {
+            log.info("Registering service start");
+            template.startRuntimeService(shutdownContextBuildItem, serviceBuildItem.getService());
+        } else {
+            log.info("No RuntimeServiceBuildItem seen, check config.xml");
+        }
+        return new ServiceStartBuildItem("RuntimeXmlConfigService");
+    }
+
+    /**
+     * Load a DSAPublicKey from a resource and create an instance of it
+     * 
+     * @param template - runtime template
+     * @return PublicKeyBuildItem for the DSAPublicKey
+     * @throws IOException - on resource load failure
+     * @throws GeneralSecurityException - on key creation failure
+     */
+    @BuildStep
+    @Record(STATIC_INIT)
+    PublicKeyBuildItem loadDSAPublicKey(TestTemplate template,
+            BuildProducer<ObjectSubstitutionBuildItem> substitutions) throws IOException, GeneralSecurityException {
+        String path = configRoot.dsaKeyLocation;
+        InputStream is = getClass().getResourceAsStream(path);
+        if (is == null) {
+            throw new IOException("Failed to load resource: " + path);
+        }
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+        String base64 = reader.readLine();
+        reader.close();
+        byte[] encoded = Base64.getDecoder().decode(base64);
+        KeyFactory keyFactory = KeyFactory.getInstance("DSA");
+        X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(encoded);
+        DSAPublicKey publicKey = (DSAPublicKey) keyFactory.generatePublic(publicKeySpec);
+        // Register how to serialize DSAPublicKey
+        ObjectSubstitutionBuildItem.Holder<DSAPublicKey, KeyProxy> holder = new ObjectSubstitutionBuildItem.Holder(
+                DSAPublicKey.class, KeyProxy.class, DSAPublicKeyObjectSubstitution.class);
+        ObjectSubstitutionBuildItem keysub = new ObjectSubstitutionBuildItem(holder);
+        substitutions.produce(keysub);
+        log.infof("loadDSAPublicKey run");
+        return new PublicKeyBuildItem(publicKey);
+    }
+
+    /**
+     * Have the runtime register the public key with the public key producer bean
+     * 
+     * @param template - runtime template
+     * @param publicKey - previously loaded public key
+     * @param beanContainer - BeanContainer build item
+     */
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void loadDSAPublicKeyProducer(TestTemplate template, PublicKeyBuildItem publicKey, BeanContainerBuildItem beanContainer) {
+        template.loadDSAPublicKeyProducer(publicKey.getPublicKey(), beanContainer.getValue());
+    }
+
+    /**
+     * Register a servlet used for interacting with native image for testing
+     * 
+     * @return ServletBuildItem
+     */
+    @BuildStep
+    ServletBuildItem createServlet() {
+        ServletBuildItem servletBuildItem = ServletBuildItem.builder("commands", CommandServlet.class.getName())
+                .addMapping("/commands/*")
+                .build();
+        return servletBuildItem;
     }
 
     /**
      * Validate the expected BUILD_TIME configuration
      */
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(STATIC_INIT)
     void checkConfig() {
+        if (!configRoot.validateBuildConfig) {
+            return;
+        }
+
         // Deployment time configuration
         if (!buildTimeConfig.btSBV.getValue().equals("StringBasedValue")) {
             throw new IllegalStateException("buildTimeConfig.btSBV != StringBasedValue; " + buildTimeConfig.btSBV.getValue());
@@ -166,7 +331,7 @@ public final class TestProcessor {
      * @param testBeanProducer - producer for located Class<IConfigConsumer> bean types
      */
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(STATIC_INIT)
     void scanForBeans(TestTemplate template, BeanArchiveIndexBuildItem beanArchiveIndex,
             BuildProducer<TestBeanBuildItem> testBeanProducer) {
         IndexView indexView = beanArchiveIndex.getIndex();
@@ -174,11 +339,16 @@ public final class TestProcessor {
         for (AnnotationInstance ann : testBeans) {
             ClassInfo beanClassInfo = ann.target().asClass();
             try {
-                Class<IConfigConsumer> beanClass = (Class<IConfigConsumer>) Class.forName(beanClassInfo.name().toString());
-                testBeanProducer.produce(new TestBeanBuildItem(beanClass));
-                System.out.printf("Configured bean: %s\n", beanClass);
+                boolean isConfigConsumer = beanClassInfo.interfaceNames()
+                        .stream()
+                        .anyMatch(dotName -> dotName.equals(DotName.createSimple(IConfigConsumer.class.getName())));
+                if (isConfigConsumer) {
+                    Class<IConfigConsumer> beanClass = (Class<IConfigConsumer>) Class.forName(beanClassInfo.name().toString());
+                    testBeanProducer.produce(new TestBeanBuildItem(beanClass));
+                    log.infof("Configured bean: %s", beanClass);
+                }
             } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+                log.warn("Failed to load bean class", e);
             }
         }
     }
@@ -189,14 +359,43 @@ public final class TestProcessor {
      * @param template - runtime template
      * @param testBeans - types of IConfigConsumer found
      * @param beanContainer - bean container to create test bean in
+     * @param runTimeConfig - The RUN_TIME config phase root config
      */
     @BuildStep
     @Record(RUNTIME_INIT)
-    void configureBeans(TestTemplate template, List<TestBeanBuildItem> testBeans, BeanContainerBuildItem beanContainer) {
+    void configureBeans(TestTemplate template, List<TestBeanBuildItem> testBeans,
+            BeanContainerBuildItem beanContainer,
+            TestRunTimeConfig runTimeConfig) {
         for (TestBeanBuildItem testBeanBuildItem : testBeans) {
             Class<IConfigConsumer> beanClass = testBeanBuildItem.getConfigConsumer();
             template.configureBeans(beanContainer.getValue(), beanClass, buildAndRunTimeConfig, runTimeConfig);
         }
+    }
+
+    /**
+     * Test for https://github.com/quarkusio/quarkus/issues/1633
+     * 
+     * @param template - runtime template
+     */
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void referencePrimitiveTypeClasses(TestTemplate template) {
+        HashSet<Class<?>> allPrimitiveTypes = new HashSet<>();
+        allPrimitiveTypes.add(byte.class);
+        allPrimitiveTypes.add(char.class);
+        allPrimitiveTypes.add(short.class);
+        allPrimitiveTypes.add(int.class);
+        allPrimitiveTypes.add(long.class);
+        allPrimitiveTypes.add(float.class);
+        allPrimitiveTypes.add(double.class);
+        allPrimitiveTypes.add(byte[].class);
+        allPrimitiveTypes.add(char[].class);
+        allPrimitiveTypes.add(short[].class);
+        allPrimitiveTypes.add(int[].class);
+        allPrimitiveTypes.add(long[].class);
+        allPrimitiveTypes.add(float[].class);
+        allPrimitiveTypes.add(double[].class);
+        template.validateTypes(allPrimitiveTypes);
     }
 
     @BuildStep
@@ -204,5 +403,39 @@ public final class TestProcessor {
     ServiceStartBuildItem boot(LaunchModeBuildItem launchMode) {
         log.infof("boot, launchMode=%s", launchMode.getLaunchMode());
         return new ServiceStartBuildItem("test-service");
+    }
+
+    @BuildStep
+    @Record(STATIC_INIT)
+    void registerSUNProvider(BuildProducer<ReflectiveClassBuildItem> classes) {
+        Provider provider = Security.getProvider("SUN");
+        ArrayList<String> providerClasses = new ArrayList<>();
+        providerClasses.add(provider.getClass().getName());
+        Set<Provider.Service> services = provider.getServices();
+        for (Provider.Service service : services) {
+            String serviceClass = service.getClassName();
+            providerClasses.add(serviceClass);
+            // Need to pull in the key classes
+            String supportedKeyClasses = service.getAttribute("SupportedKeyClasses");
+            if (supportedKeyClasses != null) {
+                String[] keyClasses = supportedKeyClasses.split("\\|");
+                providerClasses.addAll(Arrays.asList(keyClasses));
+            }
+        }
+        for (String className : providerClasses) {
+            classes.produce(new ReflectiveClassBuildItem(true, true, className));
+            log.debugf("Register SUN.provider class: %s", className);
+        }
+    }
+
+    @BuildStep
+    void registerFinalFieldReflectionObject(BuildProducer<ReflectiveClassBuildItem> classes) {
+        ReflectiveClassBuildItem finalField = ReflectiveClassBuildItem
+                .builder(FinalFieldReflectionObject.class.getName())
+                .methods(true)
+                .fields(true)
+                .finalFieldsWritable(true)
+                .build();
+        classes.produce(finalField);
     }
 }

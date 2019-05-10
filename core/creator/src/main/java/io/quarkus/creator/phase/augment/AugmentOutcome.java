@@ -19,8 +19,6 @@ package io.quarkus.creator.phase.augment;
 
 import java.nio.file.Path;
 
-import io.quarkus.creator.AppDependency;
-
 /**
  * Represents an outcome of {@link AugmentPhase}
  *
@@ -51,13 +49,9 @@ public interface AugmentOutcome {
     Path getWiringClassesDir();
 
     /**
-     * Phases that consume this outcome may check whether an application
-     * dependency was "whitelisted" for processing during augmentation.
-     * <p>
-     * The need for this method has to be further reviewed.
+     * Directory containing config files used by the application
      *
-     * @param dep application dependency
-     * @return true if the dependency was whitelisted, otherwise - false
+     * @return directory containing config files
      */
-    boolean isWhitelisted(AppDependency dep);
+    Path getConfigDir();
 }

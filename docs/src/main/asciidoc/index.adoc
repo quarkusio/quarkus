@@ -32,10 +32,13 @@ include::quarkus-intro.adoc[tag=intro]
 * link:infinispan-client-guide.html[Using Infinispan Client]
 * link:spring-di-guide.html[Using our Spring Dependency Injection compatibility layer]
 * link:kotlin.html[Using Kotlin]
+* link:health-guide.html[Using MicroProfile Health]
 * link:fault-tolerance-guide.html[Using Fault Tolerance]
 * link:extension-authors-guide.html[Write Your Own Extension] _(advanced)_
+* link:writing-native-applications-tips.html[Tips for writing native applications] _(advanced)_
 * link:performance-measure.html[Measuring Performance] _(advanced)_
 * link:cdi-reference.html[Contexts and Dependency Injection] _(advanced)_
+* link:keycloak-guide.html[Using Keycloak]
 
 * link:faq.html[FAQs]
 
@@ -56,7 +59,7 @@ _Recommended:_
 
 You can contact the project team using:
 
-* email using the http://post-office.corp.redhat.com/mailman/listinfo/quarkus-dev[quarkus-dev@redhat.com] mailing list
+* the https://groups.google.com/forum/#!forum/quarkus-dev[quarkus-dev Google Groups]
 * chat using https://quarkus.zulipchat.com[Zulip]
 
 Your help is more than welcome! Don't hesitate to join the crowd.

@@ -1,16 +1,112 @@
-include::./attributes.adoc[]
-= {project-name} - Writing Your Own Extension
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
 
+= {project-name} - Writing Your Own Extension
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:toc:
+
+include::./attributes.adoc[]
 
 Quarkus extensions add a new developer focused behavior to the core offering, and consist of two distinct parts, buildtime augmentation and runtime container. The augmentation part is responsible for all metadata processing, such as reading annotations, XML descriptors etc. The output of this augmentation phase is recorded bytecode which is responsible for directly instantiating the relevant runtime services.
 
 This means that metadata is only processed once at build time, which both saves on startup time, and also on memory
 usage as the classes etc that are used for processing are not loaded (or even present) in the runtime JVM.
 
-== Three Phases of Bootstrap and Quarkus Philosophy
+== Extension philosophy
+
+This section is a work in progress and gathers the philosophy under which extensions should be designed and written.
+
+=== Why an extension framework
+
+Quarkus’s mission is to transform your entire application including the libraries it uses, into an artifact optimized for GraalVM.
+To do this you need to analyze and understand the full "closed world" of the application.
+Without the full and complete context, the best that can be achieved is partial and limited generic support.
+By using the Quarkus extension approach, we can bring Java applications in line with memory footprint constrained environments like Kubernetes or cloud platforms.
+
+The Quarkus extension framework results in significantly improved resource utilization even when GraalVM is not used (e.g. in HotSpot).
+Let’s list the actions an extension performs:
+
+* Gather build time metadata and generate code
+** This part has nothing to do with GraalVM, it is how Quarkus starts frameworks “at build time”
+** The extension framework facilitates reading metadata, scanning classes as well as generating classes as needed
+** A small part of the extension work is executed at runtime via the generated classes, while the bulk of the work is done at build time (called deployment time)
+* Enforce opinionated and sensible defaults based on the close world view of the application (e.g. an application with no `@Entity` does not need to start Hibernate ORM)
+* An extension hosts Substrate VM code substitution so that libraries can run on GraalVM
+** Most changes are pushed upstream to help the underlying library run on GraalVM
+** Not all changes can be pushed upstream, extensions host Substrate VM substitutions - which is a form of code patching - so that libraries can run
+* Host Substrate VM code substitution to help dead code elimination based on the application needs
+** This is application dependant and cannot really be shared in the library itself
+** For example, Quarkus optimizes the Hibernate code because it knows it only needs a specific connection pool and cache provider
+* Send metadata to GraalVM for example classes in need of reflection
+** This information is not static per library (e.g. Hibernate) but the framework has the semantic knowledge and knows which classes need to have reflection (for example @Entity classes)
+
+=== Favor build time work over runtime work
+
+As much as possible favor doing work at build time (deployment part of the extension) as opposed to let the framework do work at startup time (runtime).
+The more is done there, the smaller Quarkus applications using that extension will be and the faster they will load.
+
+=== How to expose configuration
+
+Quarkus simplifies the most common usages.
+This means that its defaults might be different than the library it integrates.
+
+To make the simple experience easiest, unify the configuration in `application.properties` via MicroProfile Config.
+Avoid library specific configuration files, or at least make them optional: e.g. `persistence.xml` for Hibernate ORM is optional.
+
+Extensions should see the configuration holistically as a Quarkus application instead of focusing on the library experience.
+For example `quarkus.database.url` and friends are shared between extensions as defining a database access is a shared task (instead of a `hibernate.` property for example).
+The most useful configuration options should be exposed as `quarkus.[extension].` instead of the natural namespace of the library.
+Less common properties can live in the library namespace.
+
+To fully enable the close world assumptions that Quarkus can optimize best, it is better to consider configuration options as build time settled vs overridable at runtime.
+Of course properties like host, port, password should be overridable at runtime.
+But many properties like enable caching or setting the JDBC driver can safely require a rebuild of the application.
+
+////
+=== API
+
+TODO: Describe where to put APIs
+I wonder if that content should be in the technical aspects
+
+=== Substitution and template
+
+TODO: Describe where Substitutions and templates should live
+////
+
+=== Expose your components via CDI
+
+Since CDI is the central programming model when it comes to component composition, frameworks should expose producers that are easily consumable by user applications. +
+For example, Hibernate ORM exposes `EntityManagerFactory` and `EntityManager` beans, the connection pool exposes `DataSource` beans etc.
+An extension must generate these bean definitions at build time.
+
+=== Some types of extensions
+
+There exist multiple stereotypes of extension, let's list a few.
+
+Bare library running::
+This is the less sophisticated extension.
+It consists of a set of patches to make sure a library runs on GraalVM.
+If possible, contribute these patches upstream, not in extensions.
+Second best is to write Substrate VM substitutions, which are patches applied during native image compilation.
+
+Get a framework running::
+A framework at runtime typically reads configuration, scan the classpath and classes for metadata (annotations, getters etc), build a metamodel on top of which it runs, find options via the service loader pattern, prepare invocation calls (reflection), proxy interfaces, etc. +
+These operations should be done at build time and the metamodel be passed to the template DSL that will generate classes are runtime and boot the framework.
+
+Get a CDI portable extension running::
+The CDI portable extension model is very flexible.
+Too flexible to benefit from the build time boot promoted by Quarkus.
+Most extension we have seen do not make use of these extreme flexibilities capabilities.
+The way to port a CDI extension to Quarkus is to rewrite it as a Quarkus extension which will define the various beans at build time (deployment time in extension parley).
+
+== Technical aspect
+
+=== Three Phases of Bootstrap and Quarkus Philosophy
 
 There are three distinct bootstrap phases of a Quarkus app:
 
@@ -50,7 +146,7 @@ Pushing as much as possible into the `@Record(STATIC_INIT)` phase allows for two
 that method. If config is read at runtime, Substrate cannot reason about the contents of the config and so needs to keep all features in case they are required.
 
 
-== Maven setup
+=== Maven setup
 
 Your extension project should be setup as a multi-module project with two submodules:
 
@@ -58,14 +154,13 @@ Your extension project should be setup as a multi-module project with two submod
 
 2. A runtime submodule that contains the runtime behavior that will provide the extension behavior in the native executable or runtime JVM.
 
-Your runtime artifact should depend on quarkus-core-runtime, and possibly the runtime artifacts of other Quarkus
-modules if you want to use functionality provided by them. You will also need to include the `maven-dependency-plugin`
-to write out the needed runtime dependencies, if you are using the Quarkus parent pom it will automatically
-inherit the correct configuration.
+Your runtime artifact should depend on `io.quarkus:quarkus-core`, and possibly the runtime artifacts of other Quarkus
+modules if you want to use functionality provided by them. 
+You will also need to include the `io.quarkus:quarkus-bootstrap-maven-plugin` to generate the Quarkus extension descriptor included into the runtime artifact, if you are using the Quarkus parent pom it will automatically inherit the correct configuration.
+Futhermore, you'll need to configure the `maven-compiler-plugin` to detect the `quarkus-extension-processor` annotation processor.
 
-Note that at present by convention the runtime artifact will have the `-runtime` suffix, and the deployment time artifact
-has no suffix (and is what the end user adds to their project). In the near future this will change, so the `-runtime`
-artifact will loose its suffix, and the deployment time artifacts will have one added.
+NOTE: By convention the deployment time artifact has the `-deployment` suffix, and the runtime artifact
+has no suffix (and is what the end user adds to their project).
 
 [source%nowrap,xml]
 ----
@@ -73,18 +168,44 @@ artifact will loose its suffix, and the deployment time artifacts will have one 
 <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-core-runtime</artifactId>
+      <artifactId>quarkus-core</artifactId>
     </dependency>
 </dependencies>
 
 <build>
     <plugins>
         <plugin>
-            <artifactId>maven-dependency-plugin</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+            <!-- Executions configuration can be inherited from quarkus-build-parent -->
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>extension-descriptor</goal>
+                    </goals>
+                    <configuration>
+                         <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}</deployment>
+                   </configuration>
+               </execution>
+           </executions>
+        </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+                <annotationProcessorPaths>
+                    <path>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-extension-processor</artifactId>
+                    </path>
+                </annotationProcessorPaths>
+            </configuration>
         </plugin>
     </plugins>
 </build>
 ----
+
+NOTE: The above `maven-compiler-plugin` configuration requires version 3.5+.
 
 [WARNING]
 ====
@@ -92,23 +213,40 @@ Under no circumstances can the runtime module depend on a deployment artifact. T
 in pulling all the deployment time code into runtime scope, which defeats the purpose of having the split.
 ====
 
-Your deployment time module should depend on `quarkus-core`, your runtime artifact,
-and possibly the deployment artifacts of other Quarkus modules if you want to use functionality provided by them.
-
+Your deployment time module should depend on `io.quarkus:quarkus-core-deployment`, your runtime artifact,
+and possibly the deployment artifacts of other Quarkus modules if you want to use functionality provided by them. 
+You will also need to configure the `maven-compiler-plugin` to detect the `quarkus-extension-processor` annotation processor.
 
 [source%nowrap,xml]
 ----
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-core</artifactId>
-</dependency>
+<dependencies>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-core-deployment</artifactId>
+    </dependency>
+</dependencies>
+
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+                <annotationProcessorPaths>
+                    <path>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-extension-processor</artifactId>
+                    </path>
+                </annotationProcessorPaths>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
 ----
 
-NOTE: For historical reasons the `augment` step is still called `deployment`, this will likely remain until we do our big rename.
+=== Build Step Processors
 
-== Build Step Processors
-
-Work is done at deployment time by producing and consuming instances of `org.jboss.builder.item.BuildItem`. This is done
+Work is done at deployment time by producing and consuming instances of `io.quarkus.builder.item.BuildItem`. This is done
 by creating a class that has method(s) annotated with `io.quarkus.deployment.annotations.BuildStep`. These classes can
 consume items by injection, and produce items by either returning them from the method or by injecting an
 instance of `io.quarkus.deployment.annotations.BuildProducer` for the produced type. These processors can also record
@@ -143,7 +281,7 @@ and the resulting code does not have permission to inject private fields or invo
 `BuildItem` instances should be immutable, as the producer/consumer model does not allow for mutation to be correctly
 ordered. This is not enforced but failure to adhere to this can result in race conditions.
 
-=== Capabilities
+==== Capabilities
 
 The `@BuildStep` annotation has a `providesCapabilities` property that can be used to provide capability information
 to other extensions about what is present in the current application. Capabilities are simply strings that are used to
@@ -155,14 +293,14 @@ To check if a capability is present you can inject the `io.quarkus.deployment.Ca
 
 Capabilities should be used when checking for the presence of an extension rather than class path based checks.
 
-=== Application Archives
+==== Application Archives
 
 The `@BuildStep` annotation can also register marker files that determine which archives on the class path are considered
 to be 'Application Archives', and will therefore get indexed. This is done via the `applicationArchiveMarkers`. For
 example the ArC extension registers `META-INF/beans.xml`, which means that all archives on the class path with a `beans.xml`
 file will be indexed.
 
-== Configuration
+=== Configuration
 
 Configuration in Quarkus is based on SmallRye Config, an implementation of the MicroProfile Config specification.
 All of the standard features of MP-Config are supported; in addition, there are several extensions which are made available
@@ -172,7 +310,7 @@ The value of these properties is configured in a `application.properties` file t
 
 Configuration of Quarkus extensions is injection-based, using annotations.
 
-=== Configuration Keys
+==== Configuration Keys
 
 Leaf configuration keys are mapped to non-`private` fields via the `@io.quarkus.runtime.annotations.ConfigItem` annotation.
 
@@ -191,7 +329,7 @@ The name can also be explicitly specified by giving a `name` attribute to the `@
 NOTE: Though it is possible to override the configuration key name using the `name` attribute of `@ConfigItem`,
 normally this should only be done in cases where (for example) the configuration key name is the same as a Java keyword.
 
-=== Configuration Value types
+==== Configuration Value types
 
 The type of the field with the `@ConfigItem` annotation determines the conversion that is applied to it.  Quarkus
 extensions may use the full range of configuration types made available by SmallRye Config, which includes:
@@ -209,18 +347,18 @@ class.
 
 Though these implicit converters use reflection, Quarkus will automatically ensure that they are loaded at the appropriate time.
 
-=== Configuration Groups
+==== Configuration Groups
 
 Configuration values are always collected into grouping classes which are marked with the `@io.quarkus.runtime.annotations.ConfigGroup`
 annotation.  These classes contain a field for each key within its group.  In addition, configuration groups can be nested.
 
-=== Configuration Maps
+==== Configuration Maps
 
 A `Map` can be used for configuration at any position where a configuration group would be allowed.  The key type of such a
 map *must* be `String`, and its value may be either a configuration group class or a valid leaf type.  The configuration
 key segment following the map's key segment will be used as the key for map values.
 
-=== Configuration Roots
+==== Configuration Roots
 
 Configuration roots are configuration groups that appear in the root of the configuration tree.  A configuration property's full
 name is determined by joining the string `quarkus.` with the hyphenated name of the fields that form the path from the root to the
@@ -235,7 +373,7 @@ Note: The current implementation is still using injection site to determine the 
 is recommended that the injection site (field or parameter) have the same name as the configuration root class until
 this change is complete.
 
-==== Configuration Root Phases
+===== Configuration Root Phases
 
 A configuration root dictates when its contained keys are read from configuration, and when they are available to applications.  The phases defined by `io.quarkus.runtime.annotations.ConfigPhase` are as follows:
 
@@ -280,7 +418,7 @@ A configuration root dictates when its contained keys are read from configuratio
 
 For all cases other than the `BUILD_TIME` case, the configuration root class and all of the configuration groups and types contained therein must be located in, or reachable from, the extension's run time artifact.  Configuration roots of phase `BUILD_TIME` may be located in or reachable from either of the extension's run time or deployment artifacts.
 
-=== Configuration Example
+==== Configuration Example
 
 [source%nowrap,java]
 ----
@@ -330,7 +468,7 @@ public class LogConfiguration {
     /**
      * Configuration properties for the logging file handler.
      */
-    File file;
+    FileConfig file;
 }
 
 public class LoggingProcessor {
@@ -357,7 +495,7 @@ quarkus.log.file.level=DEBUG
 quarkus.log.file.path=/tmp/debug.log
 ----
 
-== Bytecode Recording
+=== Bytecode Recording
 
 One of the main outputs of the build process is recorded bytecode. This bytecode actually sets up the runtime environment. For example, in order to start Undertow, the resulting application will have some bytecode that directly registers all
 Servlet instances and then starts Undertow.
@@ -387,7 +525,7 @@ control the order that generated bytecode is run. In the example above we know t
 `ServletExtensionBuildItem` will be run before the bytecode that consumes it.
 
 
-=== RecorderContext
+==== RecorderContext
 
 `io.quarkus.deployment.recording.RecorderContext` provides some convenience methods to enhance bytecode recording,
 this includes the ability to register creation functions for classes without no-arg constructors, to register an object
@@ -401,8 +539,10 @@ convenience to avoid the need to explicitly load classes in the templates.
 
 TODO: config integration
 
+=== CDI Extension Points
+As a CDI based runtime, {project-name} extensions often make CDI beans available as part of the extension behavior. The link:cdi-reference.html[Build Time Extension Points] describes the `BuildItems` you can make use of in your extension build steps to achieve this.
 
-== Testing Extensions
+=== Testing Extensions
 
 Testing of extensions should be done with the `io.quarkus.test.QuarkusUnitTest` runner. This runner allows
 for Arquillian-style tests that test specific functionalities. It is not intended for testing user applications, as this
@@ -517,7 +657,7 @@ public class PersistenceAndQuarkusConfigTest {
 <1> This tells JUnit that the {project-name} deployment should fail with a specific exception
 
 
-== Native Executable Support
+=== Native Executable Support
 
 There Quarkus provides a lot of build items that control aspects of the native executable build. This allows for extensions
 to programmatically perform tasks such as registering classes for reflection or adding static resources to the native
@@ -544,19 +684,20 @@ A class that will be initialized at runtime rather than build time. This will ca
 `io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem`::
 A convenience feature that allows you to control most of the above features from a single build item.
 
-== IDE support tips
+=== IDE support tips
 
-=== Writing {project-name} extensions in Eclipse
+==== Writing {project-name} extensions in Eclipse
 
 The only particular aspect of writing {project-name} extensions in Eclipse is that APT (Annotation Processing Tool) is required as part of extension builds, which means you need to:
 
 - Install `m2e-apt` from https://marketplace.eclipse.org/content/m2e-apt
 - Define this property in your `pom.xml`: `<m2e.apt.activation>jdt_apt</m2e.apt.activation>`, although if you rely on `io.quarkus:quarkus-build-parent` you will get it for free.
-- If you have the `io.quarkus:quarkus-extension-processor` open at the same time in your IDE (for example, if you have the {project-name} sources checked out and open in your IDE) you will need to close that project. Otherwise, Eclipse will not invoke the APT plugin that it contains.
+- If you have the `io.quarkus:quarkus-extension-processor` project open at the same time in your IDE (for example, if you have the {project-name} sources checked out and open in your IDE) you will need to close that project. Otherwise, Eclipse will not invoke the APT plugin that it contains.
+- If you just closed the extension processor project, be sure to do `Maven > Update Project` on the other projects in order for Eclipse to pick up the extension processor from the Maven repository.
 
-== Troubleshooting / Debugging Tips
+=== Troubleshooting / Debugging Tips
 
-=== Saving Application Generated Classes to Disk
+==== Saving Application Generated Classes to Disk
 
 The class augmentation step of {project-name} generates classes for various purposes. Sometimes you need to view these
 classes/bytecode to debug or understand an issue. Classes that are related to application augmentation are currently held in
@@ -565,5 +706,550 @@ memory in a runtime class loader. To have these classes written out to disk for 
 
 [source,shell]
 ----
-mvn clean install -Dquarkus.debug.generated-classes-dir=./target/app-generated-classes
+./mvnw clean install -Dquarkus.debug.generated-classes-dir=./target/app-generated-classes
+----
+
+
+=== Sample Test Extension
+We have an extension that is used to test for regressions in the extension processing. It is located in {quarkus-tree-url}/core/test-extension directory. In this section we touch on some of the tasks an extension
+author will typically need to perform using the test-extension code to illustrate how the task could be done.
+
+==== Features and Capabilities
+When you start a {project-name} instance, you will see a line like the one highlighted in this example:
+
+.Example Startup Lines
+[source, bash]
+----
+2019-03-22 14:02:37,884 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 0.061s.
+2019-03-22 14:02:37,884 INFO  [io.quarkus] (main) Installed features: [cdi, test-extension] <1>
+----
+<1> A list of features installed in the runtime image
+
+The features listed reflect the types of extensions that are installed. An extension declares its display name
+ using a <<Build Step Processors>> method that produces a `FeatureBuildItem` like this TestProcessor#featureBuildItem() method example:
+
+
+.TestProcessor#featureBuildItem()
+[source,java]
+----
+    /**
+     * Register a extension capability and feature
+     *
+     * @return test-extension feature build item
+     */
+    @BuildStep(providesCapabilities = "io.quarkus.test-extension")
+    FeatureBuildItem featureBuildItem() {
+        return new FeatureBuildItem("test-extension");
+    }
+----
+
+The feature name should map to a label in the extension's devtools/common/src/main/filtered/extensions.json entry so that
+the feature name displayed by the startup line matches a label that one can used to select the extension when creating a project
+using the {project-name} maven plugin as shown in this example taken from the Writing JSON REST Services guide where the "resteasy-jsonb" feature is referenced:
+
+[source,shell,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=rest-json \
+    -DclassName="org.acme.rest.json.FruitResource" \
+    -Dpath="/fruits" \
+    -Dextensions="resteasy-jsonb"
+----
+
+==== Bean Defining Annotations
+The CDI layer processes CDI beans that are either explicitly registered or that it discovers based on bean defining annotations as defined in http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations">[2.5.1. Bean defining annotations]. You can expand this set of annotations to include annotations your extension processes using a `BeanDefiningAnnotationBuildItem` as shown in this `TestProcessor#registerBeanDefinningAnnotations` example:
+
+.Register a Bean Definining Annotation
+[source,java]
+----
+import javax.enterprise.context.ApplicationScoped;
+import org.jboss.jandex.DotName;
+import io.quarkus.extest.runtime.TestAnnotation;
+
+public final class TestProcessor {
+    static DotName TEST_ANNOTATION = DotName.createSimple(TestAnnotation.class.getName());
+    static DotName TEST_ANNOTATION_SCOPE = DotName.createSimple(ApplicationScoped.class.getName());
+
+...
+
+    @BuildStep
+    BeanDefiningAnnotationBuildItem registerX() {
+        <1>
+        return new BeanDefiningAnnotationBuildItem(TEST_ANNOTATION, TEST_ANNOTATION_SCOPE);
+    }
+...
+}
+
+/**
+ * Marker annotation for test configuration target beans
+ */
+@Target({ TYPE })
+@Retention(RUNTIME)
+@Documented
+@Inherited
+public @interface TestAnnotation {
+}
+
+/**
+ * A sample bean
+ */
+@TestAnnotation <2>
+public class ConfiguredBean implements IConfigConsumer {
+
+...
+----
+<1> Register the annotation class and CDI default scope using the Jandex `DotName` class.
+<2> `ConfiguredBean` will be processed by the CDI layer the same as a bean annotated with the CDI standard @ApplicationScoped.
+
+==== Parsing Config to Objects
+One of the main things an extension is likely to do is completely separate the configuration phase of behavior from the runtime phase. Frameworks often do parsing/load of configuration on startup that can be done during build time to both reduce the runtime dependencies on frameworks like xml parsers as well as reducing the startup time the parsing incurs.
+
+An example of parsing a XML config file using JAXB is shown in the `TestProcessor#parseServiceXmlConfig` method:
+.Parsing an XML Configuration into Runtime XmlConfig Instance
+[source,java]
+----
+    @BuildStep
+    @Record(STATIC_INIT)
+    RuntimeServiceBuildItem parseServiceXmlConfig(TestTemplate template) throws JAXBException {
+        RuntimeServiceBuildItem serviceBuildItem = null;
+        JAXBContext context = JAXBContext.newInstance(XmlConfig.class);
+        Unmarshaller unmarshaller = context.createUnmarshaller();
+        InputStream is = getClass().getResourceAsStream("/config.xml"); <1>
+        if (is != null) {
+            log.infof("Have XmlConfig, loading");
+            XmlConfig config = (XmlConfig) unmarshaller.unmarshal(is); <2>
+...
+        }
+        return serviceBuildItem;
+    }
+
+----
+<1> Look for a config.xml classpath resource
+<2> If found, parse using JAXB context for `XmlConfig.class`
+
+[NOTE]
+====
+If there was no /config.xml resource available in the build environment, then a null `RuntimeServiceBuildItem` would be returned and no subsequent logic based on a `RuntimeServiceBuildItem` being produced would execute.
+====
+
+Typically one is loading a configuration to create some runtime component/service as `parseServiceXmlConfig` is doing. We will come back to the rest of the behavior in `parseServiceXmlConfig` in the following <<Manage Non-CDI Service>> section.
+
+If for some reason you need to parse the config and use it in other build steps in an extension processor, you would need to create an `XmlConfigBuildItem` to pass the parsed XmlConfig instance around.
+
+[TIP]
+====
+If you look at the XmlConfig code you will see that it does carry around the JAXB annotations. If you don't want these in the runtime image, you could clone the XmlConfig instance into some POJO object graph and then replace XmlConfig with the POJO class. We will do this in <<Replacing Classes in the Native Image>>.
+====
+
+==== Scanning Deployments Using Jandex
+If your extension defines annotations or interfaces that mark beans needing to be processed, you can locate these beans using the Jandex API, a Java annotation indexer and offline reflection library. The following `TestProcessor#scanForBeans` method shows how to find the beans annotated with our `@TestAnnotation` that also implement the `IConfigConsumer` interface:
+
+.Example Jandex Usage
+[source,java]
+----
+    static DotName TEST_ANNOTATION = DotName.createSimple(TestAnnotation.class.getName());
+...
+
+    @BuildStep
+    @Record(STATIC_INIT)
+    void scanForBeans(TestTemplate template, BeanArchiveIndexBuildItem beanArchiveIndex, <1>
+            BuildProducer<TestBeanBuildItem> testBeanProducer) {
+        IndexView indexView = beanArchiveIndex.getIndex(); <2>
+        Collection<AnnotationInstance> testBeans = indexView.getAnnotations(TEST_ANNOTATION); <3>
+        for (AnnotationInstance ann : testBeans) {
+            ClassInfo beanClassInfo = ann.target().asClass();
+            try {
+                boolean isConfigConsumer = beanClassInfo.interfaceNames()
+                        .stream()
+                        .anyMatch(dotName -> dotName.equals(DotName.createSimple(IConfigConsumer.class.getName()))); <4>
+                if (isConfigConsumer) {
+                    Class<IConfigConsumer> beanClass = (Class<IConfigConsumer>) Class.forName(beanClassInfo.name().toString());
+                    testBeanProducer.produce(new TestBeanBuildItem(beanClass)); <5>
+                    log.infof("Configured bean: %s", beanClass);
+                }
+            } catch (ClassNotFoundException e) {
+                log.warn("Failed to load bean class", e);
+            }
+        }
+    }
+----
+<1> Depend on a `BeanArchiveIndexBuildItem` to have the build step be run after the deployment has been indexed.
+<2> Retrieve the index.
+<3> Find all beans annotated with `@TestAnnotation`.
+<4> Determine which of these beans also has the `IConfigConsumer` interface.
+<5> Save the bean class in a `TestBeanBuildItem` for use in a latter RUNTIME_INIT build step that will interact with the bean instances.
+
+==== Interacting With Extension Beans
+You can use the `io.quarkus.arc.runtime.BeanContainer` interface to interact with your extension beans. The following `configureBeans` methods illustrate interacting with the beans scanned for in the previous section:
+
+.Using CDI BeanContainer Interface
+[source,java]
+----
+// TestProcessor#configureBeans
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void configureBeans(TestTemplate template, List<TestBeanBuildItem> testBeans, <1>
+            BeanContainerBuildItem beanContainer, <2>
+            TestRunTimeConfig runTimeConfig) {
+
+        for (TestBeanBuildItem testBeanBuildItem : testBeans) {
+            Class<IConfigConsumer> beanClass = testBeanBuildItem.getConfigConsumer();
+            template.configureBeans(beanContainer.getValue(), beanClass, buildAndRunTimeConfig, runTimeConfig); <3>
+        }
+    }
+
+// TestTemplate#configureBeans
+    public void configureBeans(BeanContainer beanContainer, Class<IConfigConsumer> beanClass,
+            TestBuildAndRunTimeConfig buildTimeConfig,
+            TestRunTimeConfig runTimeConfig) {
+        log.infof("Begin BeanContainerListener callback\n");
+        IConfigConsumer instance = beanContainer.instance(beanClass); <4>
+        instance.loadConfig(buildTimeConfig, runTimeConfig); <5>
+        log.infof("configureBeans, instance=%s\n", instance);
+    }
+----
+<1> Consume the `TestBeanBuildItem`s produced from the scanning build step.
+<2> Consume the `BeanContainerBuildItem` to order this build step to run after the CDI bean container has been created.
+<3> Call the runtime template to record the bean interactions.
+<4> Runtime template retrieves the bean using its type.
+<5> Runtime template invokes the `IConfigConsumer#loadConfig(...)` method passing in the configuration objects with runtime information.
+
+==== Manage Non-CDI Service
+A common purpose for an extension is to integrate a non-CDI aware service into the CDI based {project-name} runtime. Step 1 of this task is to load any configuration needed in a STATIC_INIT build step as we did in <<Parsing Config to Objects>>. Now we need to create an instance of the service using the configuration. Let's return to the `TestProcessor#parseServiceXmlConfig` method to see how this can be done.
+
+.Creating a Non-CDI Service
+[source,java]
+----
+// TestProcessor#parseServiceXmlConfig
+    @BuildStep
+    @Record(STATIC_INIT)
+    RuntimeServiceBuildItem parseServiceXmlConfig(TestTemplate template) throws JAXBException {
+        RuntimeServiceBuildItem serviceBuildItem = null;
+        JAXBContext context = JAXBContext.newInstance(XmlConfig.class);
+        Unmarshaller unmarshaller = context.createUnmarshaller();
+        InputStream is = getClass().getResourceAsStream("/config.xml");
+        if (is != null) {
+            log.infof("Have XmlConfig, loading");
+            XmlConfig config = (XmlConfig) unmarshaller.unmarshal(is);
+            log.infof("Loaded XmlConfig, creating service");
+            RuntimeValue<RuntimeXmlConfigService> service = template.initRuntimeService(config); //<1>
+            serviceBuildItem = new RuntimeServiceBuildItem(service); //<3>
+        }
+        return serviceBuildItem;
+    }
+
+// TestTemplate#initRuntimeService
+    public RuntimeValue<RuntimeXmlConfigService> initRuntimeService(XmlConfig config) {
+        RuntimeXmlConfigService service = new RuntimeXmlConfigService(config); //<2>
+        return new RuntimeValue<>(service);
+    }
+
+// RuntimeServiceBuildItem
+    final public class RuntimeServiceBuildItem extends SimpleBuildItem {
+    private RuntimeValue<RuntimeXmlConfigService> service;
+
+    public RuntimeServiceBuildItem(RuntimeValue<RuntimeXmlConfigService> service) {
+        this.service = service;
+    }
+
+    public RuntimeValue<RuntimeXmlConfigService> getService() {
+        return service;
+    }
+}
+----
+<1> Call into the runtime template to record the creation of the service.
+<2> Using the parsed `XmlConfig` instance, create an instance of `RuntimeXmlConfigService` and wrap it in a `RuntimeValue`. Use a `RuntimeValue` wrapper for non-interface objects that are non-proxiable.
+<3> Wrap the return service value in a `RuntimeServiceBuildItem` for use in a RUNTIME_INIT build step that will start the service.
+
+===== Starting a Service
+Now that you have recorded the creation of a service during the build phase, you need to record how to start the service at runtime during booting. You do this with a RUNTIME_INIT build step as shown in the `TestProcessor#startRuntimeService` method.
+
+.Starting/Stopping a Non-CDI Service
+[source,java]
+----
+// TestProcessor#startRuntimeService
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    ServiceStartBuildItem startRuntimeService(TestTemplate template, ShutdownContextBuildItem shutdownContextBuildItem , // <1>
+            RuntimeServiceBuildItem serviceBuildItem) throws IOException { // <2>
+        if (serviceBuildItem != null) {
+            log.info("Registering service start");
+            template.startRuntimeService(shutdownContextBuildItem, serviceBuildItem.getService()); // <3>
+        } else {
+            log.info("No RuntimeServiceBuildItem seen, check config.xml");
+        }
+        return new ServiceStartBuildItem("RuntimeXmlConfigService"); //<4>
+    }
+
+// TestTemplate#startRuntimeService
+    public void startRuntimeService(ShutdownContext shutdownContext, RuntimeValue<RuntimeXmlConfigService> runtimeValue)
+            throws IOException {
+        RuntimeXmlConfigService service = runtimeValue.getValue();
+        service.startService(); //<5>
+        shutdownContext.addShutdownTask(service::stopService); //<6>
+    }
+----
+<1> We consume a ShutdownContextBuildItem to register the service shutdown.
+<2> We consume the previously initialized service captured in `RuntimeServiceBuildItem`.
+<3> Call the runtime template to record the service start invocation.
+<4> Produce a `ServiceStartBuildItem` to indicate the startup of a service. See <<Startup and Shutdown Events>> for details.
+<5> Runtime template retrieves the service instance reference and calls its `startService` method.
+<6> Runtime template registers an invocation of the service instance `stopService` method with the {project-name} `ShutdownContext`.
+
+The code for the `RuntimeXmlConfigService` can be viewed here:
+{quarkus-blob-url}/core/test-extension/runtime/src/main/java/io/quarkus/extest/runtime/RuntimeXmlConfigService.java[RuntimeXmlConfigService.java]
+
+The testcase for validating that the `RuntimeXmlConfigService` has started can be found in the `testRuntimeXmlConfigService` test of `ConfiguredBeanTest` and `NativeImageIT`.
+
+==== Startup and Shutdown Events
+The {project-name} container supports startup and shutdown lifecycle events to notify components of the container startup
+and shutdown. There are CDI events fired that components can observe are illustrated in this example:
+
+.Observing Container Startup
+[source,java]
+----
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
+
+puclic class SomeBean {
+    /**
+     * Called when the runtime has started
+     * @param event
+     */
+    void onStart(@Observes StartupEvent event) { // <1>
+        System.out.printf("onStart, event=%s%n", event);
+    }
+
+    /**
+     * Called when the runtime is shutting down
+     * @param event
+    */
+    void onStop(@Observes ShutdownEvent event) { // <2>
+        System.out.printf("onStop, event=%s%n", event);
+    }
+}
+----
+<1> Observe a `StartupEvent` to be notified the runtime has started.
+<2> Observe a 'ShutdownEvent` to be notified when the runtime is going to shutdown.
+
+What is the relevance of startup and shutdown events for extension authors? We have already seen the use of a `ShutdownContext`
+to register a callback to perform shutdown tasks in the <<Starting a Service>> section. These shutdown tasks would be called
+after a `ShutdownEvent` had been sent.
+
+A `StartupEvent` is fired after all `io.quarkus.deployment.builditem.ServiceStartBuildItem` producers have been consumed.
+The implication of this is that if an extension has services that application components would expect to have been
+started when they observe a `StartupEvent`, the build steps that invoke the runtime code to start those services needs
+to produce a `ServiceStartBuildItem` to ensure that the runtime code is run before the `StartupEvent` is sent. Recall that
+we saw the production of a `ServiceStartBuildItem` in the previous section, and it is repeated here for clarity:
+
+.Example of Producing a ServiceStartBuildItem
+[source,java]
+----
+// TestProcessor#startRuntimeService
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    ServiceStartBuildItem startRuntimeService(TestTemplate template, ShutdownContextBuildItem shutdownContextBuildItem,
+            RuntimeServiceBuildItem serviceBuildItem) throws IOException {
+...
+        return new ServiceStartBuildItem("RuntimeXmlConfigService"); //<1>
+    }
+----
+<1> Produce a `ServiceStartBuildItem` to indicate that this is a service starting step that needs to run before the `StartupEvent` is sent.
+
+==== Register Resources for Use in Native Image
+Not all configuration or resources can be consumed at build time. If you have classpath resources that the runtime needs to access, you need to inform the build phase that these resources need to be copied into the native image. This is done by producing one or more `SubstrateResourceBuildItem` or `SubstrateResourceBundleBuildItem` in the case of resource bundles. Examples of this are shown in this sample `registerNativeImageReources` build step:
+
+.Registering Resources and ResourceBundles
+[source,java]
+----
+public final class MyExtProcessor {
+    @Inject
+    BuildProducer<SubstrateResourceBuildItem> resource;
+    @Inject
+    BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle;
+
+    @BuildStep
+    void registerNativeImageReources() {
+        resource.produce(new SubstrateResourceBuildItem("/security/runtime.keys")); //<1>
+
+        resource.produce(new SubstrateResourceBuildItem(
+                "META-INF/services/" + io.quarkus.SomeService.class.getName())); //<2>
+
+        resourceBundle.produce(new SubstrateResourceBuildItem("javax.xml.bind.Messages")); //<3>
+    }
+}
+----
+<1> Indicate that the /security/runtime.keys classpath resource should be copied into native image.
+<2> Indicate that the `io.quarkus.SomeService` ServiceLoader resource should be copied into native image.
+<3> Indicate that the "javax.xml.bind.Messages" resource bundle should be copied into native image.
+
+==== Object Substitution
+Objects created during the build phase that are passed into the runtime need to have a default constructor in order for them to be created and configured at startup of the runtime from the build time state. If an object does not have a default constructor you will see an error similar to the following during generation of the augmented artifacts:
+
+.DSAPublicKey Serialization Error
+[source,bash]
+----
+	[error]: Build step io.quarkus.deployment.steps.MainClassBuildStep#build threw an exception: java.lang.RuntimeException: Unable to serialize objects of type class sun.security.provider.DSAPublicKeyImpl to bytecode as it has no default constructor
+	at io.quarkus.builder.Execution.run(Execution.java:123)
+	at io.quarkus.builder.BuildExecutionBuilder.execute(BuildExecutionBuilder.java:136)
+	at io.quarkus.deployment.QuarkusAugmentor.run(QuarkusAugmentor.java:110)
+	at io.quarkus.runner.RuntimeRunner.run(RuntimeRunner.java:99)
+	... 36 more
+----
+
+There is a `io.quarkus.runtime.ObjectSubstitution` interface that can be implemented to tell {project-name} how to handle such classes. An example implementation for the `DSAPublicKey` is shown here:
+
+.DSAPublicKeyObjectSubstitution Example
+[source,bash]
+----
+package io.quarkus.extest.runtime.subst;
+
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.DSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.logging.Logger;
+
+import io.quarkus.runtime.ObjectSubstitution;
+
+public class DSAPublicKeyObjectSubstitution implements ObjectSubstitution<DSAPublicKey, KeyProxy> {
+    private static final Logger log = Logger.getLogger("DSAPublicKeyObjectSubstitution");
+    @Override
+    public KeyProxy serialize(DSAPublicKey obj) { //<1>
+        log.info("DSAPublicKeyObjectSubstitution.serialize");
+        byte[] encoded = obj.getEncoded();
+        KeyProxy proxy = new KeyProxy();
+        proxy.setContent(encoded);
+        return proxy;
+    }
+
+    @Override
+    public DSAPublicKey deserialize(KeyProxy obj) { //<2>
+        log.info("DSAPublicKeyObjectSubstitution.deserialize");
+        byte[] encoded = obj.getContent();
+        X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(encoded);
+        DSAPublicKey dsaPublicKey = null;
+        try {
+            KeyFactory kf = KeyFactory.getInstance("DSA");
+            dsaPublicKey = (DSAPublicKey) kf.generatePublic(publicKeySpec);
+
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
+        return dsaPublicKey;
+    }
+}
+----
+<1> The serialize method takes the object without a default constructor and creates a `KeyProxy` that contains the information necessary to recreate the `DSAPublicKey`.
+<2> The deserialize method uses the `KeyProxy` to recreate the `DSAPublicKey` from its encoded form using the key factory.
+
+An extension registers this substitution by producing an `ObjectSubstitutionBuildItem` as shown in this `TestProcessor#loadDSAPublicKey` fragment:
+
+.Registering an Object Subtitution
+[source,java]
+----
+    @BuildStep
+    @Record(STATIC_INIT)
+    PublicKeyBuildItem loadDSAPublicKey(TestTemplate template,
+            BuildProducer<ObjectSubstitutionBuildItem> substitutions) throws IOException, GeneralSecurityException {
+...
+        // Register how to serialize DSAPublicKey
+        ObjectSubstitutionBuildItem.Holder<DSAPublicKey, KeyProxy> holder = new ObjectSubstitutionBuildItem.Holder(
+                DSAPublicKey.class, KeyProxy.class, DSAPublicKeyObjectSubstitution.class);
+        ObjectSubstitutionBuildItem keysub = new ObjectSubstitutionBuildItem(holder);
+        substitutions.produce(keysub);
+
+        log.infof("loadDSAPublicKey run");
+        return new PublicKeyBuildItem(publicKey);
+    }
+----
+
+==== Replacing Classes in the Native Image
+The Graal SDK supports substitutions of classes in the native image. An example of how one could replace the `XmlConfig/XmlData` classes with versions that have no JAXB annotation dependencies is shown in these example classes:
+
+.Substitution of XmlConfig/XmlData Classes Example
+[source,bash]
+----
+package io.quarkus.extest.runtime.graal;
+
+import java.util.Date;
+
+import com.oracle.svm.core.annotate.Substitute;
+import com.oracle.svm.core.annotate.TargetClass;
+
+import io.quarkus.extest.runtime.config.XmlData;
+@TargetClass(XmlConfig.class)
+@Substitute
+final public class Target_XmlConfig {
+    @Substitute
+    private String address;
+    @Substitute
+    private int port;
+    @Substitute
+    private ArrayList<XData> dataList;
+
+    @Substitute
+    public String getAddress() {
+        return address;
+    }
+
+    @Substitute
+    public int getPort() {
+        return port;
+    }
+
+    @Substitute
+    public ArrayList<XData> getDataList() {
+        return dataList;
+    }
+
+    @Substitute
+    @Override
+    public String toString() {
+        return "Target_XmlConfig{" +
+                "address='" + address + '\'' +
+                ", port=" + port +
+                ", dataList=" + dataList +
+                '}';
+    }
+}
+
+@TargetClass(XmlData.class)
+@Substitute
+final public class Target_XmlData {
+    @Substitute
+    private String name;
+    @Substitute
+    private String model;
+    @Substitute
+    private Date date;
+
+    @Substitute
+    public String getName() {
+        return name;
+    }
+
+    @Substitute
+    public String getModel() {
+        return model;
+    }
+
+    @Substitute
+    public Date getDate() {
+        return date;
+    }
+
+    @Substitute
+    @Override
+    public String toString() {
+        return "Target_XmlData{" +
+                "name='" + name + '\'' +
+                ", model='" + model + '\'' +
+                ", date='" + date + '\'' +
+                '}';
+    }
+
+}
 ----

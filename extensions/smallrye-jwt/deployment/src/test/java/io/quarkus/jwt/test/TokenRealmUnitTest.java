@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.security.Permission;
 import java.security.Principal;
 import java.security.PrivateKey;
@@ -14,6 +15,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.wildfly.security.auth.principal.NamePrincipal;
 import org.wildfly.security.auth.realm.token.TokenSecurityRealm;
@@ -40,7 +42,7 @@ public class TokenRealmUnitTest {
 
     @Test
     public void testTokenRealm() throws Exception {
-        KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+        KeyPair keyPair = generateKeyPair();
         PublicKey pk1 = keyPair.getPublic();
         PrivateKey pk1Priv = keyPair.getPrivate();
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
@@ -59,14 +61,13 @@ public class TokenRealmUnitTest {
         RealmIdentity identity = tokenRealm.getRealmIdentity(tokenEvidence);
         assertNotNull(identity);
         assertTrue(identity.exists());
-        AuthorizationIdentity authz = identity.getAuthorizationIdentity();
-        // TODO add proper assertion
-        //System.out.println(authz.getAttributes().keySet());
+        AuthorizationIdentity authorizationIdentity = identity.getAuthorizationIdentity();
+        Assertions.assertNotNull(authorizationIdentity);
     }
 
     @Test
     public void testSecurityDomain() throws Exception {
-        KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+        KeyPair keyPair = generateKeyPair();
         PublicKey pk1 = keyPair.getPublic();
         PrivateKey pk1Priv = keyPair.getPrivate();
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
@@ -116,8 +117,7 @@ public class TokenRealmUnitTest {
         String jwt = TokenUtils.generateTokenString("/Token1.json", pk1Priv, "testTokenRealm");
         BearerTokenEvidence tokenEvidence = new BearerTokenEvidence(jwt);
         SecurityIdentity securityIdentity = securityDomain.authenticate(tokenEvidence);
-        // TODO add proper assertion
-        //System.out.println(securityIdentity.getAttributes().keySet());
+        Assertions.assertNotNull(securityIdentity);
     }
 
     private Principal mpJwtLogic(Attributes claims) {
@@ -129,5 +129,11 @@ public class TokenRealmUnitTest {
             pn = claims.getFirst("sub");
         }
         return new NamePrincipal(pn);
+    }
+
+    private KeyPair generateKeyPair() throws NoSuchAlgorithmException {
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        generator.initialize(2048); // because that's the minimal accepted size
+        return generator.generateKeyPair();
     }
 }

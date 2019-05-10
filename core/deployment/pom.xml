@@ -27,13 +27,13 @@
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>quarkus-core</artifactId>
+    <artifactId>quarkus-core-deployment</artifactId>
     <name>Quarkus - Core - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils-core</artifactId>
+            <artifactId>commons-beanutils</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.invocation</groupId>
@@ -67,7 +67,12 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-runtime</artifactId>
+            <artifactId>quarkus-bootstrap-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus.gizmo</groupId>
@@ -78,6 +83,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

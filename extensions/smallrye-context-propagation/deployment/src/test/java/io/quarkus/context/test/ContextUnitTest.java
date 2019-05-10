@@ -12,7 +12,7 @@ import io.restassured.RestAssured;
 
 public class ContextUnitTest {
     private static Class[] testClasses = {
-            ContextEndpoint.class, RequestBean.class, ContextEntity.class, TestResources.class, CompletionExceptionMapper.class
+            ContextEndpoint.class, RequestBean.class, ContextEntity.class, TestResources.class, CompletionExceptionMapper.class, TransactionalBean.class
     };
 
     @RegisterExtension
@@ -54,6 +54,12 @@ public class ContextUnitTest {
         RestAssured.when().get("/context/transaction3").then()
                 .statusCode(Response.Status.CONFLICT.getStatusCode());
         RestAssured.when().get("/context/transaction4").then()
+                .statusCode(Response.Status.OK.getStatusCode());
+    }
+
+    @Test()
+    public void testTransactionNewContextPropagation() {
+        RestAssured.when().get("/context/transaction-new").then()
                 .statusCode(Response.Status.OK.getStatusCode());
     }
 }

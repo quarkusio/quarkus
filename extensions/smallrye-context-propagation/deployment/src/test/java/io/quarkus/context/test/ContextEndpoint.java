@@ -6,7 +6,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.inject.Inject;
-import javax.servlet.SingleThreadModel;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.Transactional;
@@ -90,6 +89,9 @@ public class ContextEndpoint {
         });
     }
 
+    @Inject
+    TransactionalBean txBean;
+
     @Transactional
     @GET
     @Path("/transaction")
@@ -155,5 +157,21 @@ public class ContextEndpoint {
         Assertions.assertEquals(1, ContextEntity.deleteAll());
 
         return "OK";
+    }
+
+    @Transactional
+    @GET
+    @Path("/transaction-new")
+    public CompletionStage<String> transactionNewTest() throws SystemException {
+        CompletableFuture<String> ret = all.completedFuture("OK");
+
+        Transaction t1 = Panache.getTransactionManager().getTransaction();
+        Assertions.assertNotNull(t1);
+
+        txBean.doInTx();
+
+        // We should see the transaction already committed even if we're async
+        Assertions.assertEquals(1, ContextEntity.deleteAll());
+        return ret;
     }
 }

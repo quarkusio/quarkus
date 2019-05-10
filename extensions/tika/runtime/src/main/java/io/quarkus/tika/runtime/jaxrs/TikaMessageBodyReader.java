@@ -2,6 +2,8 @@ package io.quarkus.tika.runtime.jaxrs;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Arrays;
@@ -52,7 +54,11 @@ public class TikaMessageBodyReader implements MessageBodyReader<TikaContent> {
             parser.parse(tikaStream, tikaHandler, tikaMetadata, context);
             return new TikaContent(tikaHandler.toString().trim(), convert(tikaMetadata));
         } catch (Exception e) {
-            throw new IOException(e);
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            return new TikaContent(sw.toString(), null);
+            //throw new IOException(e);
         }
     }
 

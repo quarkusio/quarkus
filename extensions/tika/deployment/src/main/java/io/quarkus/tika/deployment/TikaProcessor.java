@@ -11,6 +11,7 @@ import org.apache.tika.parser.Parser;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
@@ -21,8 +22,14 @@ public class TikaProcessor {
 
     private static final Set<String> NATIVE_READY_PARSERS = Arrays.stream(new String[] {
             "org.apache.tika.parser.txt.TXTParser",
-            "org.apache.tika.parser.odf.OpenDocumentParser"
+            "org.apache.tika.parser.odf.OpenDocumentParser",
+            "org.apache.tika.parser.pdf.PDFParser"
     }).collect(Collectors.toSet());
+
+    @BuildStep
+    public void produceRuntimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> resource) {
+        resource.produce(new RuntimeInitializedClassBuildItem("org.apache.pdfbox.pdmodel.font.PDType1Font"));
+    }
 
     @BuildStep
     void produceTikaJaxrsProvider(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
@@ -33,6 +40,18 @@ public class TikaProcessor {
     public void produceTikaCoreResources(BuildProducer<SubstrateResourceBuildItem> resource) throws Exception {
         resource.produce(new SubstrateResourceBuildItem("org/apache/tika/mime/tika-mimetypes.xml"));
         resource.produce(new SubstrateResourceBuildItem("org/apache/tika/parser/external/tika-external-parsers.xml"));
+    }
+
+    @BuildStep
+    public void produceTikaParsersResources(BuildProducer<SubstrateResourceBuildItem> resource) throws Exception {
+        resource.produce(new SubstrateResourceBuildItem("org/apache/tika/parser/pdf/PDFParser.properties"));
+    }
+
+    @BuildStep
+    public void producePdfBoxResources(BuildProducer<SubstrateResourceBuildItem> resource) throws Exception {
+        resource.produce(new SubstrateResourceBuildItem("org/apache/pdfbox/resources/glyphlist/additional.txt"));
+        resource.produce(new SubstrateResourceBuildItem("org/apache/pdfbox/resources/glyphlist/glyphlist.txt"));
+        resource.produce(new SubstrateResourceBuildItem("org/apache/pdfbox/resources/glyphlist/zapfdingbats.txt"));
     }
 
     @BuildStep

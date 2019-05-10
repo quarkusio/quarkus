@@ -117,7 +117,7 @@ public class ListExtensionsTest {
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
             System.setOut(printStream);
             new ListExtensions(model)
-                    .listExtensions();
+                    .listExtensions(true, "full");
         } finally {
             System.setOut(out);
         }
@@ -131,7 +131,10 @@ public class ListExtensionsTest {
                 agroal = true;
             } else if (line.contains(" RESTEasy  ")) {
                 assertTrue(line.startsWith("update"), "RESTEasy should list as having an update: " + line);
-                assertTrue(line.endsWith(getPluginVersion()), "RESTEasy should list as having an update: " + line);
+                assertTrue(
+                        line.endsWith(
+                                String.format("%-16s %s", getPluginVersion(), "https://quarkus.io/guides/rest-json-guide")),
+                        "RESTEasy should list as having an update: " + line);
                 resteasy = true;
             } else if (line.contains(" Hibernate Validator  ")) {
                 assertTrue(line.startsWith("   "), "Hibernate Validator should not list as anything: " + line);

@@ -52,6 +52,8 @@ public final class BeanConfigurator<T> {
 
     private final ClassInfo implClass;
 
+    private Type providerType;
+
     private final Set<Type> types;
 
     private final Set<AnnotationInstance> qualifiers;
@@ -115,8 +117,6 @@ public final class BeanConfigurator<T> {
         return this;
     }
 
-    // TODO other supported param types
-
     public BeanConfigurator<T> types(Class<?>... types) {
         for (Class<?> type : types) {
             this.types.add(Type.create(DotName.createSimple(type.getName()), Kind.CLASS));
@@ -159,10 +159,14 @@ public final class BeanConfigurator<T> {
         return this;
     }
 
+    public BeanConfigurator<T> providerType(Type providerType) {
+        this.providerType = providerType;
+        return this;
+    }
+
     public <U extends T> BeanConfigurator<U> creator(Class<? extends BeanCreator<U>> creatorClazz) {
         return creator(mc -> {
             // return new FooBeanCreator().create(context, params)
-            // TODO verify, optimize, etc.
             ResultHandle paramsHandle = mc.readInstanceField(
                     FieldDescriptor.of(mc.getMethodDescriptor().getDeclaringClass(), "params", Map.class),
                     mc.getThis());
@@ -183,7 +187,6 @@ public final class BeanConfigurator<T> {
     public <U extends T> BeanConfigurator<U> destroyer(Class<? extends BeanDestroyer<U>> destroyerClazz) {
         return destroyer(mc -> {
             // new FooBeanDestroyer().destroy(instance, context, params)
-            // TODO verify, optimize, etc.
             ResultHandle paramsHandle = mc.readInstanceField(
                     FieldDescriptor.of(mc.getMethodDescriptor().getDeclaringClass(), "params", Map.class),
                     mc.getThis());
@@ -207,7 +210,8 @@ public final class BeanConfigurator<T> {
      */
     public void done() {
         // TODO sanity checks
-        beanConsumer.accept(new BeanInfo.Builder().implClazz(implClass).beanDeployment(beanDeployment).scope(scope).types(types)
+        beanConsumer.accept(new BeanInfo.Builder().implClazz(implClass).providerType(providerType)
+                .beanDeployment(beanDeployment).scope(scope).types(types)
                 .qualifiers(qualifiers)
                 .alternativePriority(alternativePriority).name(name).creator(creatorConsumer).destroyer(destroyerConsumer)
                 .params(params).build());

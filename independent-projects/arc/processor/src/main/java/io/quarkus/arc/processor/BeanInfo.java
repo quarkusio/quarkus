@@ -50,6 +50,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final ClassInfo implClazz;
 
+    private final Type providerType;
+
     private final Optional<AnnotationTarget> target;
 
     private final BeanDeployment beanDeployment;
@@ -89,12 +91,14 @@ public class BeanInfo implements InjectionTargetInfo {
             List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority,
             List<StereotypeInfo> stereotypes,
             String name) {
-        this(null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer, alternativePriority,
+        this(null, null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer,
+                alternativePriority,
                 stereotypes, name, null, null,
                 Collections.emptyMap());
     }
 
-    BeanInfo(ClassInfo implClazz, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types,
+    BeanInfo(ClassInfo implClazz, Type providerType, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope,
+            Set<Type> types,
             Set<AnnotationInstance> qualifiers,
             List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority,
             List<StereotypeInfo> stereotypes,
@@ -102,27 +106,13 @@ public class BeanInfo implements InjectionTargetInfo {
             Map<String, Object> params) {
         this.target = Optional.ofNullable(target);
         if (implClazz == null && target != null) {
-            switch (target.kind()) {
-                case CLASS:
-                    implClazz = target.asClass();
-                    break;
-                case FIELD:
-                    Type fieldType = target.asField().type();
-                    if (fieldType.kind() != org.jboss.jandex.Type.Kind.PRIMITIVE) {
-                        implClazz = beanDeployment.getIndex().getClassByName(fieldType.name());
-                    }
-                    break;
-                case METHOD:
-                    Type returnType = target.asMethod().returnType();
-                    if (returnType.kind() != org.jboss.jandex.Type.Kind.PRIMITIVE) {
-                        implClazz = beanDeployment.getIndex().getClassByName(returnType.name());
-                    }
-                    break;
-                default:
-                    break;
-            }
+            implClazz = initImplClazz(target, beanDeployment);
         }
         this.implClazz = implClazz;
+        if (providerType == null) {
+            providerType = initProviderType(target, implClazz);
+        }
+        this.providerType = providerType;
         this.beanDeployment = beanDeployment;
         this.scope = scope != null ? scope : BuiltinScope.DEPENDENT.getInfo();
         this.types = types;
@@ -169,7 +159,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
     /**
      *
-     * @return the impl class or null in case of a producer of a primitive type
+     * @return the impl class or null in case of a producer of a primitive type or an array
      */
     public ClassInfo getImplClazz() {
         return implClazz;
@@ -211,21 +201,7 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     Type getProviderType() {
-        if (target.isPresent()) {
-            switch (target.get().kind()) {
-                case CLASS:
-                    return Types.getProviderType(target.get().asClass());
-                case FIELD:
-                    return target.get().asField().type();
-                case METHOD:
-                    return target.get().asMethod().returnType();
-                default:
-                    break;
-            }
-        } else if (implClazz != null) {
-            return Type.create(implClazz.name(), org.jboss.jandex.Type.Kind.CLASS);
-        }
-        throw new IllegalStateException("Cannot infer the provider type");
+        return providerType;
     }
 
     public ScopeInfo getScope() {
@@ -488,6 +464,48 @@ public class BeanInfo implements InjectionTargetInfo {
         return builder.toString();
     }
 
+    private Type initProviderType(AnnotationTarget target, ClassInfo implClazz) {
+        if (target != null) {
+            switch (target.kind()) {
+                case CLASS:
+                    return Types.getProviderType(target.asClass());
+                case FIELD:
+                    return target.asField().type();
+                case METHOD:
+                    return target.asMethod().returnType();
+                default:
+                    break;
+            }
+        } else if (implClazz != null) {
+            return Type.create(implClazz.name(), org.jboss.jandex.Type.Kind.CLASS);
+        }
+        throw new IllegalStateException("Cannot infer the provider type");
+    }
+
+    private ClassInfo initImplClazz(AnnotationTarget target, BeanDeployment beanDeployment) {
+        switch (target.kind()) {
+            case CLASS:
+                return target.asClass();
+            case FIELD:
+                Type fieldType = target.asField().type();
+                if (fieldType.kind() != org.jboss.jandex.Type.Kind.PRIMITIVE
+                        && fieldType.kind() != org.jboss.jandex.Type.Kind.ARRAY) {
+                    return beanDeployment.getIndex().getClassByName(fieldType.name());
+                }
+                break;
+            case METHOD:
+                Type returnType = target.asMethod().returnType();
+                if (returnType.kind() != org.jboss.jandex.Type.Kind.PRIMITIVE
+                        && returnType.kind() != org.jboss.jandex.Type.Kind.ARRAY) {
+                    return beanDeployment.getIndex().getClassByName(returnType.name());
+                }
+                break;
+            default:
+                break;
+        }
+        return null;
+    }
+
     static class InterceptionInfo {
 
         static final InterceptionInfo EMPTY = new InterceptionInfo(Collections.emptyList(), Collections.emptySet());
@@ -510,6 +528,8 @@ public class BeanInfo implements InjectionTargetInfo {
     static class Builder {
 
         private ClassInfo implClazz;
+
+        private Type providerType;
 
         private AnnotationTarget target;
 
@@ -546,6 +566,11 @@ public class BeanInfo implements InjectionTargetInfo {
 
         Builder implClazz(ClassInfo implClazz) {
             this.implClazz = implClazz;
+            return this;
+        }
+
+        Builder providerType(Type providerType) {
+            this.providerType = providerType;
             return this;
         }
 
@@ -620,7 +645,8 @@ public class BeanInfo implements InjectionTargetInfo {
         }
 
         BeanInfo build() {
-            return new BeanInfo(implClazz, target, beanDeployment, scope, types, qualifiers, injections, declaringBean,
+            return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
+                    declaringBean,
                     disposer, alternativePriority,
                     stereotypes, name, creatorConsumer, destroyerConsumer, params);
         }

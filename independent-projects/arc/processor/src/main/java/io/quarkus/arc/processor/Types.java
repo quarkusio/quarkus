@@ -38,6 +38,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
@@ -136,7 +137,6 @@ final class Types {
     }
 
     static Type getProviderType(ClassInfo classInfo) {
-        // TODO hack
         List<TypeVariable> typeParameters = classInfo.typeParameters();
         if (!typeParameters.isEmpty()) {
             return ParameterizedType.create(classInfo.name(), typeParameters.toArray(new Type[] {}), null);
@@ -148,7 +148,7 @@ final class Types {
     static Set<Type> getProducerMethodTypeClosure(MethodInfo producerMethod, BeanDeployment beanDeployment) {
         Set<Type> types;
         Type returnType = producerMethod.returnType();
-        if (returnType.kind() == Kind.PRIMITIVE) {
+        if (returnType.kind() == Kind.PRIMITIVE || returnType.kind() == Kind.ARRAY) {
             types = new HashSet<>();
             types.add(returnType);
             types.add(OBJECT_TYPE);
@@ -176,7 +176,7 @@ final class Types {
     static Set<Type> getProducerFieldTypeClosure(FieldInfo producerField, BeanDeployment beanDeployment) {
         Set<Type> types;
         Type fieldType = producerField.type();
-        if (fieldType.kind() == Kind.PRIMITIVE) {
+        if (fieldType.kind() == Kind.PRIMITIVE || fieldType.kind() == Kind.ARRAY) {
             types = new HashSet<>();
             types.add(fieldType);
             types.add(OBJECT_TYPE);
@@ -295,6 +295,36 @@ final class Types {
 
     static String getSimpleName(String className) {
         return className.contains(".") ? className.substring(className.lastIndexOf(".") + 1, className.length()) : className;
+    }
+
+    static Type box(Type type) {
+        if (type.kind() == Kind.PRIMITIVE) {
+            return box(type.asPrimitiveType().primitive());
+        }
+        return type;
+    }
+
+    static Type box(Primitive primitive) {
+        switch (primitive) {
+            case BOOLEAN:
+                return Type.create(DotNames.BOOLEAN, Kind.CLASS);
+            case DOUBLE:
+                return Type.create(DotNames.DOUBLE, Kind.CLASS);
+            case FLOAT:
+                return Type.create(DotNames.FLOAT, Kind.CLASS);
+            case LONG:
+                return Type.create(DotNames.LONG, Kind.CLASS);
+            case INT:
+                return Type.create(DotNames.INTEGER, Kind.CLASS);
+            case BYTE:
+                return Type.create(DotNames.BYTE, Kind.CLASS);
+            case CHAR:
+                return Type.create(DotNames.CHARACTER, Kind.CLASS);
+            case SHORT:
+                return Type.create(DotNames.SHORT, Kind.CLASS);
+            default:
+                throw new IllegalArgumentException("Unsupported primitive: " + primitive);
+        }
     }
 
 }

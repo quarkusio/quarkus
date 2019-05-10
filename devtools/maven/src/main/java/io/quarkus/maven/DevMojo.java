@@ -59,7 +59,7 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalMavenProject;
 import io.quarkus.deployment.ApplicationInfoUtil;
 import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
@@ -232,8 +232,8 @@ public class DevMojo extends AbstractMojo {
 
             final AppModel appModel;
             try {
-                final LocalProject localProject = LocalProject.loadWorkspace(outputDirectory.toPath());
-                for (LocalProject project : localProject.getSelfWithLocalDeps()) {
+                final LocalMavenProject localProject = LocalMavenProject.loadWorkspace(outputDirectory.toPath());
+                for (LocalMavenProject project : localProject.getSelfWithLocalDeps()) {
                     String sourcePath = null;
                     String classesPath = null;
                     String resourcePath = null;

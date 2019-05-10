@@ -30,7 +30,15 @@ public class MicroProfileConfigTestCase {
 
     @Test
     public void testMicroprofileConfigGetPropertyNames() {
-        RestAssured.when().get("/microprofile-config/get-property-names").then()
-                .body(is("OK"));
+        RestAssured
+                .when().get("/microprofile-config/get-property-names")
+                .then().body(is("OK"));
+    }
+
+    @Test
+    public void testMicroprofileConfigGetCustomValue() {
+        RestAssured
+                .when().get("/microprofile-config/get-custom-value")
+                .then().body(is("456"));
     }
 }

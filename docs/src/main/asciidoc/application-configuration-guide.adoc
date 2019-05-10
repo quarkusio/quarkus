@@ -193,6 +193,71 @@ or `org.eclipse.microprofile.config.spi.ConfigSourceProvider`.  Create a
 https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html[service file] for the
 class and it will be detected and installed at application startup.
 
+=== Custom configuration converters
+
+You can also use your custom types as a configuration values. This can be done by implementing `org.eclipse.microprofile.config.spi.Converter<T>`
+and adding its fully qualified class name in file `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
+
+Let us assume you have a custom type like this one:
+
+[source,java]
+----
+package org.acme.config;
+
+public class MicroProfileCustomValue {
+
+    private final int number;
+
+    public MicroProfileCustomValue(int number) {
+        this.number = number;
+    };
+
+    public int getNumber() {
+        return number;
+    }
+}
+----
+
+The corresponding converter will look like the one below. Please note that your custom converter class must be `public` and must have
+a `public` no-argument constructor. It also must not be `abstract`.
+
+
+[source,java]
+----
+package org.acme.config;
+
+import org.eclipse.microprofile.config.spi.Converter;
+
+public class MicroProfileCustomValueConverter implements Converter<MicroProfileCustomValue> {
+
+    @Override
+    public MicroProfileCustomValue convert(String value) {
+        return new MicroProfileCustomValue(Integer.valueOf(value));
+    }
+}
+----
+
+Then you need to include fully qualified class name of converter in file `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
+If you have more converters simply add their class names in this file as well. Single fully qualified class name per line, for example:
+
+[source,shell]
+----
+org.acme.config.MicroProfileCustomValueConverter
+org.acme.config.SomeOtherConverter
+org.acme.config.YetAnotherConverter
+----
+
+Please note that `SomeOtherConverter` and `YetAnotherConverter` was added just for a demonstration. If you include in this file classes
+which are not available in runtime, the converters loading will fail.
+
+After this is done you can use your custom type as a configuration value:
+
+[source,java]
+----
+@ConfigProperty(name = "configuration.value.name")
+MicroProfileCustomValue value;
+----
+
 == More info on how to configure
 
 {project-name} relies on Eclipse MicroProfile and inherit its features.

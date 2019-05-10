@@ -7,8 +7,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.UndeclaredThrowableException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -20,12 +18,15 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Properties;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
-import java.util.regex.Pattern;
+
+import javax.annotation.Priority;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
@@ -36,9 +37,6 @@ import org.eclipse.microprofile.config.spi.Converter;
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.Opcodes;
-import org.wildfly.common.net.CidrAddress;
-import org.wildfly.security.ssl.CipherSuiteSelector;
-import org.wildfly.security.ssl.Protocol;
 
 import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.deployment.ApplicationArchive;
@@ -49,7 +47,6 @@ import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.BuildTimeConfigurationBuildItem;
 import io.quarkus.deployment.builditem.BuildTimeRunTimeFixedConfigurationBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
-import io.quarkus.deployment.builditem.ConfigurationCustomConverterBuildItem;
 import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
@@ -78,18 +75,12 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.AbstractRawDefaultConfigSource;
 import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSource;
 import io.quarkus.runtime.configuration.BuildTimeConfigFactory;
-import io.quarkus.runtime.configuration.CidrAddressConverter;
 import io.quarkus.runtime.configuration.ConverterFactory;
+import io.quarkus.runtime.configuration.ConverterSupport;
 import io.quarkus.runtime.configuration.DefaultConfigSource;
 import io.quarkus.runtime.configuration.ExpandingConfigSource;
-import io.quarkus.runtime.configuration.InetAddressConverter;
-import io.quarkus.runtime.configuration.InetSocketAddressConverter;
 import io.quarkus.runtime.configuration.NameIterator;
-import io.quarkus.runtime.configuration.PathConverter;
-import io.quarkus.runtime.configuration.RegexConverter;
 import io.quarkus.runtime.configuration.SimpleConfigurationProviderResolver;
-import io.quarkus.runtime.configuration.ssl.CipherSuiteSelectorConverter;
-import io.quarkus.runtime.configuration.ssl.ProtocolConverter;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -164,57 +155,31 @@ public class ConfigurationSetup {
             NameIterator.class);
     private static final MethodDescriptor ARDCS_CTOR = MethodDescriptor.ofConstructor(AbstractRawDefaultConfigSource.class);
 
+    private static final MethodDescriptor CS_POPULATE_CONVERTERS = MethodDescriptor.ofMethod(ConverterSupport.class,
+            "populateConverters", void.class, ConfigBuilder.class);
+
     private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
     private static final String[] NO_STRINGS = new String[0];
 
     public ConfigurationSetup() {
     }
 
-    @BuildStep
-    public void setUpConverters(BuildProducer<ConfigurationCustomConverterBuildItem> configurationTypes) {
-        configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
-                200,
-                InetSocketAddress.class,
-                InetSocketAddressConverter.class));
-        configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
-                200,
-                CidrAddress.class,
-                CidrAddressConverter.class));
-        configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
-                200,
-                InetAddress.class,
-                InetAddressConverter.class));
-        configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
-                200,
-                Pattern.class,
-                RegexConverter.class));
-        configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
-                200,
-                CipherSuiteSelector.class,
-                CipherSuiteSelectorConverter.class));
-        configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
-                200,
-                Protocol.class,
-                ProtocolConverter.class));
-        configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
-                200,
-                Path.class,
-                PathConverter.class));
-    }
-
     /**
      * Run before anything that consumes configuration; sets up the main configuration definition instance.
      *
-     * @param converters the converters to set up
      * @param runTimeConfigConsumer the run time config consumer
      * @param buildTimeConfigConsumer the build time config consumer
      * @param buildTimeRunTimeConfigConsumer the build time/run time fixed config consumer
+     * @param resourceConsumer
+     * @param niResourceConsumer
+     * @param runTimeDefaultConsumer
      * @param extensionClassLoaderBuildItem the extension class loader build item
      * @param archiveRootBuildItem the application archive root
+     * @throws IOException
+     * @throws ClassNotFoundException
      */
     @BuildStep
     public void initializeConfiguration(
-            List<ConfigurationCustomConverterBuildItem> converters,
             Consumer<RunTimeConfigurationBuildItem> runTimeConfigConsumer,
             Consumer<BuildTimeConfigurationBuildItem> buildTimeConfigConsumer,
             Consumer<BuildTimeRunTimeFixedConfigurationBuildItem> buildTimeRunTimeConfigConsumer,
@@ -223,10 +188,12 @@ public class ConfigurationSetup {
             Consumer<RunTimeConfigurationDefaultBuildItem> runTimeDefaultConsumer,
             ExtensionClassLoaderBuildItem extensionClassLoaderBuildItem,
             ArchiveRootBuildItem archiveRootBuildItem) throws IOException, ClassNotFoundException {
+
         // set up the configuration definitions
         final ConfigDefinition buildTimeConfig = new ConfigDefinition(FieldDescriptor.of("Bogus", "No field", "Nothing"));
         final ConfigDefinition buildTimeRunTimeConfig = new ConfigDefinition(BUILD_TIME_CONFIG_FIELD);
         final ConfigDefinition runTimeConfig = new ConfigDefinition(RUN_TIME_CONFIG_FIELD);
+
         // populate it with all known types
         for (Class<?> clazz : ServiceUtil.classesNamedIn(extensionClassLoaderBuildItem.getExtensionClassLoader(),
                 CONFIG_ROOTS_LIST)) {
@@ -248,7 +215,8 @@ public class ConfigurationSetup {
         }
 
         // now prepare & load the build configuration
-        SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
+        final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
+
         // expand properties
         final ExpandingConfigSource.Cache cache = new ExpandingConfigSource.Cache();
         builder.withWrapper(ExpandingConfigSource.wrapper(cache));
@@ -257,12 +225,18 @@ public class ConfigurationSetup {
         final DefaultValuesConfigurationSource defaultSource = new DefaultValuesConfigurationSource(
                 buildTimeConfig.getLeafPatterns());
         builder.withSources(inJar, defaultSource);
-        for (ConfigurationCustomConverterBuildItem converter : converters) {
-            withConverterHelper(builder, converter.getType(), converter.getPriority(), converter.getConverter());
-        }
-        final SmallRyeConfig src = (SmallRyeConfig) builder.addDefaultSources()
-                .addDiscoveredSources().addDiscoveredConverters().build();
+
+        // populate builder with all converters loaded from ServiceLoader 
+        ConverterSupport.populateConverters(builder);
+
+        final SmallRyeConfig src = (SmallRyeConfig) builder
+                .addDefaultSources()
+                .addDiscoveredSources()
+                .addDiscoveredConverters()
+                .build();
+
         SmallRyeConfigProviderResolver.instance().registerConfig(src, Thread.currentThread().getContextClassLoader());
+
         final Set<String> unmatched = new HashSet<>();
         ConfigDefinition.loadConfiguration(cache, src, unmatched,
                 buildTimeConfig,
@@ -330,32 +304,6 @@ public class ConfigurationSetup {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> void withConverterHelper(final SmallRyeConfigBuilder builder, final Class<T> type, final int priority,
-            final Class<? extends Converter<?>> converterClass) {
-        try {
-            builder.withConverter(type, priority,
-                    ((Class<? extends Converter<T>>) converterClass).getDeclaredConstructor().newInstance());
-        } catch (InstantiationException e) {
-            throw toError(e);
-        } catch (IllegalAccessException e) {
-            throw toError(e);
-        } catch (NoSuchMethodException e) {
-            throw toError(e);
-        } catch (InvocationTargetException e) {
-            try {
-                throw e.getCause();
-            } catch (RuntimeException | Error e2) {
-                throw e2;
-            } catch (Throwable t) {
-                throw new UndeclaredThrowableException(t);
-            }
-        }
-        // Constructor.newInstance() can also throw an IllegalArgumentException,
-        // or a SecurityException, both of which already are RuntimeException,
-        // so we do not catch those and just let them propagate.
-    }
-
     /**
      * Add a config sources for {@code application.properties}.
      */
@@ -417,7 +365,6 @@ public class ConfigurationSetup {
             Consumer<GeneratedClassBuildItem> classConsumer,
             Consumer<RuntimeInitializedClassBuildItem> runTimeInitConsumer,
             Consumer<BytecodeRecorderObjectLoaderBuildItem> objectLoaderConsumer,
-            List<ConfigurationCustomConverterBuildItem> converters,
             List<RunTimeConfigurationSourceBuildItem> runTimeSources) {
         final ClassOutput classOutput = new ClassOutput() {
             public void write(final String name, final byte[] data) {
@@ -552,14 +499,7 @@ public class ConfigurationSetup {
                 carc.invokeVirtualMethod(SRCB_WITH_SOURCES, builder, defaultSourceArray);
 
                 // custom run time converters
-                for (ConfigurationCustomConverterBuildItem converter : converters) {
-                    carc.invokeVirtualMethod(
-                            SRCB_WITH_CONVERTER,
-                            builder,
-                            carc.loadClass(converter.getType()),
-                            carc.load(converter.getPriority()),
-                            carc.newInstance(MethodDescriptor.ofConstructor(converter.getConverter())));
-                }
+                carc.invokeStaticMethod(CS_POPULATE_CONVERTERS, builder);
 
                 // property expansion
                 final ResultHandle cache = carc.newInstance(ECS_CACHE_CONSTRUCT);

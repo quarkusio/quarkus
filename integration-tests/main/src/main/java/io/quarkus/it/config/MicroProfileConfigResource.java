@@ -21,6 +21,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
  * Test some MicroProfile config primitives.
@@ -31,17 +32,24 @@ import org.eclipse.microprofile.config.Config;
 @Path("/microprofile-config")
 public class MicroProfileConfigResource {
 
+    @ConfigProperty(name = "microprofile.custom.value")
+    MicroProfileCustomValue value;
+
     @Inject
     Config config;
 
     @GET
     @Path("/get-property-names")
-    public String manual() throws Exception {
+    public String getPropertyNames() throws Exception {
         if (!config.getPropertyNames().iterator().hasNext()) {
             return "No config property found. Some were expected.";
         }
-
         return "OK";
     }
 
+    @GET
+    @Path("/get-custom-value")
+    public String getCustomValue() {
+        return Integer.toString(value.getNumber());
+    }
 }

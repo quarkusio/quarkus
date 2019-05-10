@@ -392,8 +392,8 @@ extensions may use the full range of configuration types made available by Small
 * A `List` or `Optional` of any of the above types
 * `OptionalInt`, `OptionalLong`, `OptionalDouble`
 
-In addition, custom converters may be registered by build extensions using the `io.quarkus.deployment.builditem.ConfigurationCustomConverterBuildItem`
-class.
+In addition, custom converters may be registered by adding their fully qualified class name in file
+`META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
 
 Though these implicit converters use reflection, Quarkus will automatically ensure that they are loaded at the appropriate time.
 

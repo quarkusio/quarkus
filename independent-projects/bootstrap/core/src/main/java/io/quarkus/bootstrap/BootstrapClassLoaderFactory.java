@@ -35,8 +35,11 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.BuilderInfo;
+import io.quarkus.bootstrap.resolver.BuilderInfos;
+import io.quarkus.bootstrap.resolver.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalMavenProject;
 
 /**
  *
@@ -68,8 +71,8 @@ public class BootstrapClassLoaderFactory {
                 urls[i] = deps.get(i).getArtifact().getPath().toUri().toURL();
                 ++i;
             }
-            for(Path p : extraPaths) {
-                if(p == null) {
+            for (Path p : extraPaths) {
+                if (p == null) {
                     continue;
                 }
                 urls[i++] = p.toUri().toURL();
@@ -148,11 +151,11 @@ public class BootstrapClassLoaderFactory {
      * WARNING: this method is creating a classloader by resolving all the dependencies on every call,
      * without consulting the cache.
      *
-     * @param hierarchical  whether the deployment classloader should use the classloader built using
-     * the user-defined application dependencies as its parent or all the dependencies should be loaded
-     * by the same classloader
-     * @return  classloader that is able to load both user-defined and deployment dependencies
-     * @throws BootstrapException  in case of a failure
+     * @param hierarchical whether the deployment classloader should use the classloader built using
+     *        the user-defined application dependencies as its parent or all the dependencies should be loaded
+     *        by the same classloader
+     * @return classloader that is able to load both user-defined and deployment dependencies
+     * @throws BootstrapException in case of a failure
      */
     public URLClassLoader newAllInclusiveClassLoader(boolean hierarchical) throws BootstrapException {
         if (appClasses == null) {
@@ -160,17 +163,18 @@ public class BootstrapClassLoaderFactory {
         }
         try {
             final MavenArtifactResolver.Builder mvnBuilder = MavenArtifactResolver.builder();
-            if(offline != null) {
+            if (offline != null) {
                 mvnBuilder.setOffline(offline);
             }
-            final LocalProject localProject;
+            final LocalMavenProject localProject;
             if (localProjectsDiscovery) {
-                localProject = LocalProject.loadWorkspace(appClasses);
+                localProject = LocalMavenProject.loadWorkspace(appClasses);
                 mvnBuilder.setWorkspace(localProject.getWorkspace());
             } else {
-                localProject = LocalProject.load(appClasses);
+                localProject = LocalMavenProject.load(appClasses);
             }
-            final AppModel appModel = new BootstrapAppModelResolver(mvnBuilder.build()).resolveModel(localProject.getAppArtifact());
+            final AppModel appModel = new BootstrapAppModelResolver(mvnBuilder.build())
+                    .resolveModel(localProject.getAppArtifact());
             if (hierarchical) {
                 final URLClassLoader cl = new URLClassLoader(toURLs(appModel.getUserDependencies(), appCp), parent);
                 try {
@@ -196,10 +200,10 @@ public class BootstrapClassLoaderFactory {
         }
         final URLClassLoader ucl;
         Path cachedCpPath = null;
-        final LocalProject localProject = localProjectsDiscovery || enableClasspathCache
-                ? LocalProject.loadWorkspace(appClasses)
-                : LocalProject.load(appClasses);
-        try {
+        try (BuilderInfo bi = BuilderInfos.find(appClasses)
+                .withClasspathCaching(enableClasspathCache)
+                .withLocalProjectsDiscovery(localProjectsDiscovery)) {
+            final LocalProject localProject = bi.getLocalProject();
             if (enableClasspathCache) {
                 cachedCpPath = resolveCachedCpPath(localProject);
                 if (Files.exists(cachedCpPath)) {
@@ -223,40 +227,38 @@ public class BootstrapClassLoaderFactory {
                                     localProject.getAppArtifact());
                         }
                     } catch (IOException e) {
-                        log.warn("Failed to read deployment classpath cache from " + cachedCpPath + " for " + localProject.getAppArtifact(), e);
+                        log.warn("Failed to read deployment classpath cache from " + cachedCpPath + " for "
+                                + localProject.getAppArtifact(), e);
                     }
                 }
             }
-            final MavenArtifactResolver.Builder mvn = MavenArtifactResolver.builder()
-                    .setWorkspace(localProject.getWorkspace());
-            if (offline != null) {
-                mvn.setOffline(offline);
-            }
-            final URL[] urls = toURLs(new BootstrapAppModelResolver(mvn.build()).resolveModel(localProject.getAppArtifact()).getDeploymentDependencies(), Collections.emptyList());
-            if(cachedCpPath != null) {
+            boolean isOffline = offline != null && offline.booleanValue();
+            List<AppDependency> deployDeps = bi.getDeploymentDependencies(isOffline);
+            final URL[] urls = toURLs(deployDeps, Collections.emptyList());
+            if (cachedCpPath != null) {
                 persistCp(localProject, urls, cachedCpPath);
             }
             ucl = new URLClassLoader(urls, parent);
         } catch (AppModelResolverException e) {
-            throw new BootstrapException("Failed to create the deployment classloader for " + localProject.getAppArtifact(), e);
+            throw new BootstrapException("Failed to create the deployment classloader for path " + appClasses, e);
         }
         return ucl;
     }
 
     private static boolean matchesInt(String line, int value) {
-        if(line == null) {
+        if (line == null) {
             return false;
         }
         try {
             return Integer.parseInt(line) == value;
-        } catch(NumberFormatException e) {
+        } catch (NumberFormatException e) {
             // does not match
         }
         return false;
     }
 
     private static void debug(String msg, Object... args) {
-        if(log.isDebugEnabled()) {
+        if (log.isDebugEnabled()) {
             log.debug(String.format(msg, args));
         }
     }

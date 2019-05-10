@@ -39,7 +39,7 @@ import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalMavenWorkspace;
 
 /**
  *
@@ -54,7 +54,7 @@ public class MavenArtifactResolver {
         private RepositorySystemSession repoSession;
         private List<RemoteRepository> remoteRepos = null;
         private Boolean offline;
-        private LocalWorkspace workspace;
+        private LocalMavenWorkspace workspace;
 
         private Builder() {
         }
@@ -84,7 +84,7 @@ public class MavenArtifactResolver {
             return this;
         }
 
-        public Builder setWorkspace(LocalWorkspace workspace) {
+        public Builder setWorkspace(LocalMavenWorkspace workspace) {
             this.workspace = workspace;
             return this;
         }

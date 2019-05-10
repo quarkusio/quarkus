@@ -64,6 +64,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
     private static final String QUARKUS_PREFIX = "quarkus.";
 
     private static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("linux");
+    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
 
     private Path outputDir;
 
@@ -345,12 +346,13 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                     throw new AppCreatorException("GRAALVM_HOME was not set");
                 }
             }
-            nativeImage = Collections.singletonList(graalvmHome + File.separator + "bin" + File.separator + "native-image");
+            String imageName = IS_WINDOWS ? "native-image.cmd" : "native-image";
+            nativeImage = Collections.singletonList(graalvmHome + File.separator + "bin" + File.separator + imageName);
+
         }
 
         try {
-            List<String> command = new ArrayList<>();
-            command.addAll(nativeImage);
+            List<String> command = new ArrayList<>(nativeImage);
             if (cleanupServer) {
                 List<String> cleanup = new ArrayList<>(nativeImage);
                 cleanup.add("--server-shutdown");
@@ -396,7 +398,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                 enableAllSecurityServices = true;
             }
             if (additionalBuildArgs != null) {
-                additionalBuildArgs.forEach(command::add);
+                command.addAll(additionalBuildArgs);
             }
             command.add("-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
             command.add("-jar");
@@ -468,7 +470,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             } else {
                 command.add("-H:-JNI");
             }
-            if (!enableServer) {
+            if (!enableServer && !IS_WINDOWS) {
                 command.add("--no-server");
             }
             if (enableVMInspection) {

@@ -118,6 +118,8 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private boolean addAllCharsets;
 
+    private boolean reportExceptionStackTraces;
+
     public NativeImagePhase setAddAllCharsets(boolean addAllCharsets) {
         this.addAllCharsets = addAllCharsets;
         return this;
@@ -272,6 +274,11 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
         return this;
     }
 
+    public NativeImagePhase setReportExceptionStackTraces(boolean reportExceptionStackTraces) {
+        this.reportExceptionStackTraces = reportExceptionStackTraces;
+        return this;
+    }
+
     @Override
     public void register(OutcomeProviderRegistration registration) throws AppCreatorException {
         registration.provides(NativeImageOutcome.class);
@@ -415,6 +422,9 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
             if (reportErrorsAtRuntime) {
                 command.add("-H:+ReportUnsupportedElementsAtRuntime");
+            }
+            if (reportExceptionStackTraces) {
+                command.add("-H:+ReportExceptionStackTraces");
             }
             if (debugSymbols) {
                 command.add("-g");
@@ -686,6 +696,9 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                         break;
                     case "additional-build-args":
                         t.setAdditionalBuildArgs(Arrays.asList(value.split(",")));
+                        break;
+                    case "report-exception-stack-traces":
+                        t.setReportExceptionStackTraces(Boolean.parseBoolean(value));
                         break;
                     default:
                         return false;

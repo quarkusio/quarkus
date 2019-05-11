@@ -1,0 +1,272 @@
+
+Building my first Quarkus Extension
+-----------------------------------
+
+https://quarkus.io/extensions/[Quarkus extensions] enhance your application just as projects dependencies do. The role of the extensions is to do all the technical piping to make third-party libraries/technologies Quarkus-compatible. This is how you can use your battle-tested ecosystem and take advantage of Quarkus perfomance and native compilation
+
+Prerequisites
+~~~~~~~~~~~~~
+
+To complete this guide, you need:
+
+* less than 30 minutes
+
+* https://github.com/quarkusio/quarkus[Quarkus sources ]
+
+* an IDE
+
+* JDK 1.8+ installed with JAVA_HOME configured appropriately
+
+* Apache Maven 3.5.3+
+
+Basic Concepts
+~~~~~~~~~~~~~~
+
+First thing first, we will need to start some basic concepts.
+
+* JVM mode Vs Native mode
+  ** Quarkus is before all a Java framework, that means you can develop, package and run classic JAR application, that's what we call *JVM mode*.
+  ** Thanks to https://graalvm.org/[GraalVM] you can compile your Java application into machine specific code (like you do in Go or C++) and that's what we call *Native Mode*.
+
+The operation of compiling Java bytecode into a native system-specific machine code is named *Ahead of Time Compilation* (aka. AoT).
+
+* Build time Vs. Run time
+  ** The Build time corresponds to all the actions you apply to your Java source files to convert them into something runnable (class files, jar/war, native images). Usually this stage is composed by the compilation, annotation processing, bytecode generation, etc. At this point, everything is under developer's scope and control.
+  ** The Run time is all the actions that happens when you execute your application. It's obviously focused on starting your business-oriented actions but it relies on a lot of technical actions like loading libraries and configuration files, scanning the application's classpath, configuring the dependency injection, setting up your Object-Relationnal Mapping, instanciating your REST controllers, etc.
+
+Usually, Java frameworks do their bootstrapping during the Run time before actually starting your application "Business oriented layer". During the bootstrap frameworks dynamically collect metadata by scanning the classpath to find configurations, entity definitions, dependency injection binding, etc. in order to instanciate through reflection the proper obejcts. The main consequences are:
+
+* Delaying the readiness of your application: you need to wait couple of seconds before actually serve a business request.
+
+* Having a peak of resource consumption at bootstrap: In a constrained environment, you will need to size the needed resources based on your technical boostrap need rather than your actual business needs.
+
+Quarkus' pilosophy is to prevent as much as possible slow and memory intensive dynamic code execution by shifting left these actions and eventually do them during the build time . A Quarkus extension is a Java piece of code acting as an adapter layer for your favorite libary or technology.
+
+Description of a Quarkus extension
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A Quarkus extension consists of two parts:
+
+* Runtime module : Represent the capabilities the extension's developer exposes to the application's developer (an authentication filter, an enhanced data layer API, etc).
+
+* Deployment module: Used during the Augmentation Build time, it describes how to "deploy" a framework
+following Quarkus philosophy. In other words, it applies all the Quarkus optimization to yoir application before actually running it.
+
+At this point, you should have understand that most of the magic will happen at the Augmentation Build time thanks to the deployment module.
+
+Quarkus Application Bootstrap
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are three distinct bootstrap phases of a Quarkus application.
+
+* Augmentation: During the build time, the Quarkus extensions will load and scan your application's bytecode (including the dependencies) and configuration. Once all the metadata collected, the extensions can pre-process the frameworks bootstrap actions like your ORM, DI or REST controllers configurations. The result of the bootstrap is directly recorded into bytecode and will be part of your final application package.
+
+* Static Init: During the run time, Quarkus will execute first a static init method which contains some extensions actions/configurations. When you will do your native packaging, this static method will be pre-process during the build time and the eventual generated objects will be serialized in the final native executable, so this code will not be executed in a native node (Imagine you execute a Fibonacci function during this phase, the result of the computation will be directly recorded in the native executable). In a JVM mode, there is no much difference.
+
+* Runtime Init: Well nothing fancy here, we do classic run time code executation. So, the more code you run on the 2 above phases, the faster your application will be.
+
+Now that everything is explained, we can start coding !!
+
+Maven setup
+~~~~~~~~~~~
+
+=== The parent module
+At the moment, all the extensions are hosted in the https://github.com/quarkusio/quarkus[Quarkus repository].
+
+[source, shell]
+---------------
+$ git clone https://github.com/quarkusio/quarkus.git
+$ cd ./quarkus/extensions
+$ mkdir smallrye-health
+---------------
+
+Your extension should be a multi-module project. So let's start by the parent `pom.xml`.
+[source, xml]
+---------------
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>quarkus-build-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../../build-parent/pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>quarkus-smallrye-health-parent</artifactId>
+    <name>Quarkus - SmallRye Health</name>
+
+    <packaging>pom</packaging>
+    <modules>
+        <module>deployment</module>
+        <module>runtime</module>
+    </modules>
+</project>
+---------------
+
+Your extensions is a child project of `quarkus-build-parent` and declares 2 sub-modules deployment and runtime. It's time now to create them.
+
+=== The Deployment module
+[source, shell]
+---------------
+$ mkdir -p ./deployment/src/main/java/
+---------------
+Let's have a look to the deployment's `pom.xml`.
+[source, xml]
+-------------
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>quarkus-smallrye-health-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>quarkus-smallrye-health-deployment</artifactId>
+    <name>Quarkus - SmallRye Health - Deployment</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
+                            <version>${project.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
+-------------
+
+The key points are:
+
+* By conventon, the deployment module has the `-deployment` suffix (`quarkus-smallrye-health-deployment`).
+* The deployment module depends on the `quarkus-core-deployment`. We will see later which dependencies are convenient to add.
+* We add  the `quarkus-extension-processor` to the compiler annotation processors.
+
+=== The Runtime module
+[source, shell]
+---------------
+$ mkdir -p ./runtime/src/main/java/
+---------------
+Let's create the runtime's `pom.xml`.
+[source, xml]
+-------------
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>quarkus-smallrye-health-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>quarkus-smallrye-health</artifactId>
+    <name>Quarkus - SmallRye Health - Runtime</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
+                            <version>${project.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+-------------
+
+The key points are:
+
+* By convention, the runtime module has no suffix (`quarkus-smallrye-health`).
+* The deployment module depends on the `quarkus-core`. We will see later which dependencies are convenient to add.
+* We add  the `quarkus-bootstrap-maven-plugin` to generate the Quarkus extension descriptor included into the runtime artifact.
+* We add  the `quarkus-extension-processor` to the compiler annotation processors.
+
+=== Registering your extension.
+At this point, your extension is almost initialized. You need to declare your sub-modules to be used by other extensions. You should add to the `quarkus/build-parent/pom.xml`.
+
+[source, xml]
+-------------
+...
+<dependencyManagement>
+  <dependencies>
+  ...
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-smallrye-health</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-smallrye-health-deployment</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  ...
+  <dependencies>
+<dependencyManagement>
+...
+-------------
+
+To make your extension visible when the developer's list all Quarkus's extensions you should update the `quarkus/devtools/common/src/main/filtered/extensions.json` file.
+
+[source, json]
+--------------
+[
+...
+  {
+    "name": "SmallRye Health",
+    "labels": [
+      "smallrye-health",
+      "health-check",
+      "health",
+      "microprofile-health",
+      "microprofile-health-check"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-health"
+  },
+...
+]
+--------------

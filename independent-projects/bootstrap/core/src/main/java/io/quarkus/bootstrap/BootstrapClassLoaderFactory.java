@@ -35,9 +35,8 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
-import io.quarkus.bootstrap.resolver.BuilderInfo;
-import io.quarkus.bootstrap.resolver.BuilderInfos;
 import io.quarkus.bootstrap.resolver.LocalProject;
+import io.quarkus.bootstrap.resolver.LocalProjects;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalMavenProject;
 
@@ -200,10 +199,10 @@ public class BootstrapClassLoaderFactory {
         }
         final URLClassLoader ucl;
         Path cachedCpPath = null;
-        try (BuilderInfo bi = BuilderInfos.find(appClasses)
+        try (LocalProject localProject = LocalProjects.dir(appClasses)
                 .withClasspathCaching(enableClasspathCache)
-                .withLocalProjectsDiscovery(localProjectsDiscovery)) {
-            final LocalProject localProject = bi.getLocalProject();
+                .withLocalProjectsDiscovery(localProjectsDiscovery)
+                .build()) {
             if (enableClasspathCache) {
                 cachedCpPath = resolveCachedCpPath(localProject);
                 if (Files.exists(cachedCpPath)) {
@@ -232,8 +231,7 @@ public class BootstrapClassLoaderFactory {
                     }
                 }
             }
-            boolean isOffline = offline != null && offline.booleanValue();
-            List<AppDependency> deployDeps = bi.getDeploymentDependencies(isOffline);
+            List<AppDependency> deployDeps = localProject.getArtifactResolver().getDeploymentDependencies(offline);
             final URL[] urls = toURLs(deployDeps, Collections.emptyList());
             if (cachedCpPath != null) {
                 persistCp(localProject, urls, cachedCpPath);

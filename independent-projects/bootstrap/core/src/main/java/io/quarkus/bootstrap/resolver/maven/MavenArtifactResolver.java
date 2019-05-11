@@ -38,7 +38,12 @@ import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
+
+import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
+import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalMavenProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalMavenWorkspace;
 
 /**
@@ -47,6 +52,17 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalMavenWorkspace;
  */
 public class MavenArtifactResolver {
 
+    public static List<AppDependency> getDeploymentDependencies(LocalMavenProject localProject, Boolean offline)
+            throws BootstrapDependencyProcessingException, AppModelResolverException {
+        final MavenArtifactResolver.Builder mvn = MavenArtifactResolver.builder()
+                .setWorkspace(localProject.getWorkspace());
+        if (offline != null) {
+            mvn.setOffline(offline);
+        }
+        return new BootstrapAppModelResolver(mvn.build()).resolveModel(localProject.getAppArtifact())
+                .getDeploymentDependencies();
+    }
+    
     public static class Builder {
 
         private Path repoHome;

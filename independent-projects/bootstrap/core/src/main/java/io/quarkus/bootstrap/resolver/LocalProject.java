@@ -18,12 +18,13 @@ package io.quarkus.bootstrap.resolver;
 
 import java.nio.file.Path;
 
+import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.model.AppArtifact;
 
 /**
  * Defines the build context of a local project.
  */
-public interface LocalProject {
+public interface LocalProject extends AutoCloseable {
     /**
      * Returns builder's output directory.
      * 
@@ -37,4 +38,13 @@ public interface LocalProject {
     String getGroupId();
     String getArtifactId();
     String getVersion();
+    
+    /**
+     * Returns an artifact resolver for this project.
+     * @return an artifact resolver for this project.
+     */
+    ArtifactResolver getArtifactResolver();
+    
+    @Override
+    void close() throws BootstrapException;
 }

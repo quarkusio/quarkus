@@ -35,7 +35,9 @@ import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.resolver.ArtifactResolver;
 import io.quarkus.bootstrap.resolver.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 
 /**
  *
@@ -259,5 +261,15 @@ public class LocalMavenProject implements LocalProject {
 
     private AppArtifactKey getKey(Dependency dep) {
         return new AppArtifactKey(PROJECT_GROUPID.equals(dep.getGroupId()) ? getGroupId() : dep.getGroupId(), dep.getArtifactId());
+    }
+
+    @Override
+    public ArtifactResolver getArtifactResolver() {
+        return offline -> MavenArtifactResolver.getDeploymentDependencies(this, offline);
+    }
+
+    @Override
+    public void close() {
+        // Does nothing for Maven
     }
 }

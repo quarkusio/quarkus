@@ -266,7 +266,7 @@ public class UndertowDeploymentTemplate {
                                 factory.instanceFactory(listenerClass))));
     }
 
-    public void addServltInitParameter(RuntimeValue<DeploymentInfo> info, String name, String value) {
+    public void addServletInitParameter(RuntimeValue<DeploymentInfo> info, String name, String value) {
         info.getValue().addInitParameter(name, value);
     }
 

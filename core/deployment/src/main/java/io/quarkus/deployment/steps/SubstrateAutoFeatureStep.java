@@ -65,7 +65,7 @@ public class SubstrateAutoFeatureStep {
                         tc.load(i), tc.load(false), cl);
                 tc.writeArrayValue(array, 0, clazz);
                 tc.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization",
-                        "delayClassInitialization", void.class, Class[].class), array);
+                        "initializeAtRunTime", void.class, Class[].class), array);
 
                 CatchBlockCreator cc = tc.addCatch(Throwable.class);
                 cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());

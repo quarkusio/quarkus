@@ -333,8 +333,7 @@ public CompletionStage<Response> create(Fruit fruit) {
 
 === Result metadata
 
-A `PgRowSet` does not only hold your data in memory.
-It also gives you some information about the data itself, such as:
+A `PgRowSet` does not only hold your data in memory, it also gives you some information about the data itself, such as:
 
 * the number of rows affected by the query (inserted/deleted/updated/retrieved depending on the query type),
 * the column names.

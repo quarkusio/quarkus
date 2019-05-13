@@ -118,7 +118,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private boolean addAllCharsets;
 
-    private boolean reportExceptionStackTraces;
+    private boolean reportExceptionStackTraces = true;
 
     public NativeImagePhase setAddAllCharsets(boolean addAllCharsets) {
         this.addAllCharsets = addAllCharsets;

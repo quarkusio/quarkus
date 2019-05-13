@@ -86,7 +86,7 @@ public class QuarkusNative extends QuarkusTask {
 
     private boolean addAllCharsets = false;
 
-    private boolean reportExceptionStackTraces = false;
+    private boolean reportExceptionStackTraces = true;
 
     public QuarkusNative() {
         super("Building a native image");

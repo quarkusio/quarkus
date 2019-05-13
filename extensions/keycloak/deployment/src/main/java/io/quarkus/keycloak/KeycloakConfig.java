@@ -334,7 +334,7 @@ public final class KeycloakConfig {
         /**
          * Specifies how policies are enforced.
          */
-        @ConfigItem(name = "enable", defaultValue = "true")
+        @ConfigItem(name = "enable", defaultValue = "false")
         boolean enable;
 
         /**

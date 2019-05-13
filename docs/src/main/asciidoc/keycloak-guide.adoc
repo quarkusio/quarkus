@@ -188,6 +188,7 @@ quarkus.keycloak.auth-server-url=http://localhost:8180/auth
 quarkus.keycloak.resource=backend-service
 quarkus.keycloak.bearer-only=true
 quarkus.keycloak.credentials.secret=secret
+quarkus.keycloak.policy-enforcer.enable=true
 quarkus.keycloak.policy-enforcer.enforcement-mode=PERMISSIVE
 ----
 

@@ -135,6 +135,9 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private boolean enableFallbackImages;
 
+    @Parameter(defaultValue = "true")
+    private boolean reportExceptionStackTraces;
+
     public NativeImageMojo() {
         MojoLogger.logSupplier = this::getLog;
     }
@@ -175,7 +178,8 @@ public class NativeImageMojo extends AbstractMojo {
                         .setFullStackTraces(fullStackTraces)
                         .setGraalvmHome(graalvmHome)
                         .setNativeImageXmx(nativeImageXmx)
-                        .setReportErrorsAtRuntime(reportErrorsAtRuntime))
+                        .setReportErrorsAtRuntime(reportErrorsAtRuntime)
+                        .setReportExceptionStackTraces(reportExceptionStackTraces))
 
                 .build()) {
 

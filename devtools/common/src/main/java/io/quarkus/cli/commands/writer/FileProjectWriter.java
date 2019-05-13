@@ -55,7 +55,7 @@ public class FileProjectWriter implements ProjectWriter {
     @Override
     public void write(String path, String content) throws IOException {
         final Path outputPath = Paths.get(root + "/" + path);
-        Files.write(outputPath, content.getBytes());
+        Files.write(outputPath, content.getBytes("UTF-8"));
     }
 
     @Override

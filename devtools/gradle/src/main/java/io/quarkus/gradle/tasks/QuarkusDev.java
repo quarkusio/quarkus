@@ -29,6 +29,7 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -310,7 +311,7 @@ public class QuarkusDev extends QuarkusTask {
     }
 
     private void copyOutputToConsole(InputStream is) {
-        try (InputStreamReader isr = new InputStreamReader(is);
+        try (InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);
                 BufferedReader br = new BufferedReader(isr)) {
             String line;
             while ((line = br.readLine()) != null) {

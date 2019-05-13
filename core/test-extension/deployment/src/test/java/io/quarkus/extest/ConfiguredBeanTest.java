@@ -212,8 +212,10 @@ public class ConfiguredBeanTest {
                 new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
             String reply = reader.readLine();
             Assertions.assertEquals("testRuntimeXmlConfigService-ack", reply);
+        } finally {
+            os.close();
+            socket.close();
         }
-        socket.close();
     }
 
     @Test

@@ -51,7 +51,8 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
     public Collection<LoadableResource> scanForResources() {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         try (InputStream resource = classLoader.getResourceAsStream(MIGRATIONS_LIST_FILE);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(resource)))) {
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(Objects.requireNonNull(resource), StandardCharsets.UTF_8))) {
             List<String> migrations = reader.lines().collect(Collectors.toList());
             Set<LoadableResource> resources = new HashSet<>();
             for (String file : migrations) {

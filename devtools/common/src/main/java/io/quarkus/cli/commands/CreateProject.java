@@ -134,7 +134,7 @@ public class CreateProject {
         addNativeProfile(model);
         ByteArrayOutputStream pomOutputStream = new ByteArrayOutputStream();
         MojoUtils.write(model, pomOutputStream);
-        writer.write(POM_PATH, pomOutputStream.toString());
+        writer.write(POM_PATH, pomOutputStream.toString("UTF-8"));
 
         return true;
     }

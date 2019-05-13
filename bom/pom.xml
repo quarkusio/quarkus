@@ -53,7 +53,7 @@
         <smallrye-jwt.version>1.1.4</smallrye-jwt.version>
         <smallrye-reactive-streams-operators.version>1.0.3</smallrye-reactive-streams-operators.version>
         <smallrye-converter-api.version>1.0.3</smallrye-converter-api.version>
-        <smallrye-reactive-messaging.version>0.0.7</smallrye-reactive-messaging.version>
+        <smallrye-reactive-messaging.version>0.0.8</smallrye-reactive-messaging.version>
         <smallrye-rest-client.version>1.2.2</smallrye-rest-client.version>
         <swagger-ui.version>3.20.9</swagger-ui.version>
         <javax.activation.version>1.1.1</javax.activation.version>

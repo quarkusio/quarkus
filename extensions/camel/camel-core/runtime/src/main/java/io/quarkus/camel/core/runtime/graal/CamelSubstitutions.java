@@ -32,6 +32,7 @@ class CamelSubstitutions {
 @Substitute
 final class Target_com_sun_beans_WeakCache<K, V> {
 
+    @Substitute
     private Map<K, Reference<V>> map = new WeakHashMap<>();
 
     @Substitute

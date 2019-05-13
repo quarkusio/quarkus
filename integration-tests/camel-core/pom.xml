@@ -116,7 +116,7 @@
             <id>native-image</id>
             <activation>
                 <property>
-                    <name>native-camel</name>
+                    <name>native</name>
                 </property>
             </activation>
             <build>

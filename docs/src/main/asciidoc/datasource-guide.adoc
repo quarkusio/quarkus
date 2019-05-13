@@ -105,6 +105,59 @@ include::../../../../extensions/agroal/deployment/src/test/resources/application
 
 There are other configuration options, detailed below.
 
+=== JDBC URL configurations
+
+Each of the supported databases contains different JDBC URL configuration options.
+Going into each of those options is beyond the scope of this document, but it gives an overview of each database URL and link to the official documentation.
+
+==== H2
+
+`jdbc:h2:{ {.|mem:}[name] | [file:]fileName | {tcp|ssl}:[//]server[:port][,server2[:port]]/name }[;key=value...]`
+
+Example:: `jdbc:h2:tcp://localhost/~/test`, `jdbc:h2:mem:myDB`
+
+H2 is an embedded database.
+It can run as a server, based on a file, or live completely in memory.
+All of these options are available as listed above.
+You can find more information at the https://h2database.com/html/features.html?highlight=url&search=url#database_url[official documentation].
+
+==== PostgreSQL
+
+PostgreSQL only runs as a server, as do the rest of the databases below.
+As such, you must specify connection details, or use the defaults.
+
+`jdbc:postgresql:[//][host][:port][/database][?key=value...]`
+
+Example:: `jdbc:postgresql://localhost/test`
+
+Defaults for the different parts are as follows:
+
+`host`:: localhost
+`port`:: 5432
+`database`:: same name as the username
+
+The https://jdbc.postgresql.org/documentation/head/connect.html[official documentation] go into more detail and list optional parameters as well.
+
+==== MariaDB/MySQL
+
+`jdbc:(mysql|mariadb):[replication:|failover:|sequential:|aurora:]//<hostDescription>[,<hostDescription>...]/[database][?<key1>=<value1>[&<key2>=<value2>]]`
+ hostDescription:: `<host>[:<portnumber>]  or address=(host=<host>)[(port=<portnumber>)][(type=(master|slave))]`
+
+Example:: `jdbc:mysql://localhost:3306/test`
+
+You can find more information about this feature and others detailed in the https://mariadb.com/kb/en/library/about-mariadb-connector-j/[official documentation].
+
+==== Microsoft SQL Server
+
+Microsoft SQL Server takes a connection URL in the following form:
+
+`jdbc:sqlserver://[serverName[\instanceName][:portNumber]][;property=value[;property=value]]`
+
+Example:: `jdbc:sqlserver://localhost:1433;databaseName=AdventureWorks`
+
+The Microsoft SQL Server JDBC driver works essentially the same as the others.
+More details can be found in the https://docs.microsoft.com/en-us/sql/connect/jdbc/connecting-to-sql-server-with-the-jdbc-driver?view=sql-server-2017[official documentation].
+
 == Injecting a Datasource
 
 Because {project-name} uses CDI, injecting a datasource is very simple:

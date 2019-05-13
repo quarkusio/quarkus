@@ -45,7 +45,7 @@ public class ZipProjectWriter implements ProjectWriter {
 
     @Override
     public void write(String path, String content) throws IOException {
-        byte[] contentBytes = content.getBytes();
+        byte[] contentBytes = content.getBytes("UTF-8");
         contentByPath.put(path, contentBytes);
     }
 

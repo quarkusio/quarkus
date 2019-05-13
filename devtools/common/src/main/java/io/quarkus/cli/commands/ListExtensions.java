@@ -32,7 +32,7 @@ public class ListExtensions {
     public void listExtensions(boolean all, String format) {
         Consumer<String[]> currentFormatter = "simple".equalsIgnoreCase(format) ? this::simpleFormatter : this::fullFormatter;
         String extensionStatus = all ? "available" : "installable";
-        System.out.println(String.format("\nCurrent Quarkus extensions %s: ", extensionStatus));
+        System.out.println(String.format("%nCurrent Quarkus extensions %s: ", extensionStatus));
         if (!"simple".equalsIgnoreCase(format)) {
             currentFormatter.accept(new String[] { "Status", "Extension", "ArtifactId", "Updated Version", "Guide" });
         }

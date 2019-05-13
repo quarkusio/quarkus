@@ -72,7 +72,7 @@ public class AddExtensions {
         if (updated) {
             ByteArrayOutputStream pomOutputStream = new ByteArrayOutputStream();
             MojoUtils.write(model, pomOutputStream);
-            writer.write(pom, pomOutputStream.toString());
+            writer.write(pom, pomOutputStream.toString("UTF-8"));
         }
 
         return updated;

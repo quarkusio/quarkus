@@ -1,13 +1,17 @@
 package io.quarkus.maven.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
+import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
@@ -50,6 +54,33 @@ public class PackageIT extends MojoTestBase {
         final File targetDir = getTargetDir();
         assertThat(getNumberOfFilesEndingWith(targetDir, ".jar")).isEqualTo(1);
         assertThat(getNumberOfFilesEndingWith(targetDir, ".original")).isEqualTo(1);
+    }
+
+    @Test
+    public void testCustomPackaging()
+            throws MavenInvocationException, FileNotFoundException, InterruptedException {
+        testDir = initProject("projects/custom-packaging-plugin", "projects/custom-packaging-plugin");
+
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(Collections.singletonList("install"),
+                Collections.emptyMap());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        testDir = initProject("projects/custom-packaging-app", "projects/custom-packaging-app");
+
+        running = new RunningInvoker(testDir, false);
+        result = running.execute(Collections.singletonList("package"),
+                Collections.emptyMap());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        final File targetDir = getTargetDir();
+        final File[] files = targetDir.listFiles(f -> f.getName().endsWith(".jar"));
+        Set<String> jarNames = new HashSet<>(files.length);
+        for (File f : files) {
+            jarNames.add(f.getName());
+        }
+        assertEquals(new HashSet<>(Arrays.asList(new String[] { "acme-custom-packaging-app-1.0-SNAPSHOT-runner.jar",
+                "acme-custom-packaging-app-1.0-SNAPSHOT.jar" })), jarNames);
     }
 
     private int getNumberOfFilesEndingWith(File dir, String suffix) {

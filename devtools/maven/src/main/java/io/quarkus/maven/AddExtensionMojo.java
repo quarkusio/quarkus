@@ -2,6 +2,7 @@ package io.quarkus.maven;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -55,7 +56,9 @@ public class AddExtensionMojo extends AbstractMojo {
         if (extensions != null && !extensions.isEmpty()) {
             ext.addAll(extensions);
         } else {
-            ext.add(extension);
+            // Parse the "extension" just in case it contains several comma-separated values
+            // https://github.com/quarkusio/quarkus/issues/2393
+            ext.addAll(Arrays.stream(extension.split(",")).map(s -> s.trim()).collect(Collectors.toSet()));
         }
 
         try {

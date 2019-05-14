@@ -32,6 +32,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.kubernetes.spi.KubernetesHealthPathBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthServlet;
@@ -92,5 +93,10 @@ class SmallRyeHealthProcessor {
 
         template.registerHealthCheckResponseProvider(
                 (Class<? extends HealthCheckResponseProvider>) recorder.classProxy(providers.iterator().next()));
+    }
+
+    @BuildStep
+    public void kubernetes(BuildProducer<KubernetesHealthPathBuildItem> healthPathItemProducer) {
+        healthPathItemProducer.produce(new KubernetesHealthPathBuildItem(health.path));
     }
 }

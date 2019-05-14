@@ -120,8 +120,8 @@ With that you may create your `FruitResource` skeleton and `@Inject` a `io.react
 .src/main/java/org/acme/vertx/FruitResource.java
 ----
 @Path("fruits")
-@Produces("application/json")
-@Consumes("application/json")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class FruitResource {
 
     @Inject

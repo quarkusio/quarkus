@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -24,6 +25,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesHealthPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 
 class KubernetesProcessor {
@@ -37,7 +39,8 @@ class KubernetesProcessor {
     @BuildStep
     public void build(ApplicationInfoBuildItem applicationInfo,
             KubernetesConfig kubernetesConfig,
-            List<KubernetesPortBuildItem> kubernetesPortBuildItems) throws UnsupportedEncodingException {
+            List<KubernetesPortBuildItem> kubernetesPortBuildItems,
+            Optional<KubernetesHealthPathBuildItem> kubernetesHealthPathBuildItem) throws UnsupportedEncodingException {
 
         if (kubernetesPortBuildItems.isEmpty()) {
             return;
@@ -61,7 +64,7 @@ class KubernetesProcessor {
         session.setWriter(sessionWriter);
 
         final Map<String, Integer> ports = verifyPorts(kubernetesPortBuildItems);
-        enableKubernetes(applicationInfo, kubernetesConfig, ports);
+        enableKubernetes(applicationInfo, kubernetesConfig, ports, kubernetesHealthPathBuildItem.map(i -> i.getPath()));
 
         // write the generated resources to the filesystem
         final Map<String, String> generatedResourcesMap = session.close();
@@ -97,7 +100,7 @@ class KubernetesProcessor {
     }
 
     private void enableKubernetes(ApplicationInfoBuildItem applicationInfo, KubernetesConfig kubernetesConfig,
-            Map<String, Integer> portsMap) {
+            Map<String, Integer> portsMap, Optional<String> httpProbePath) {
         final Map<String, Object> kubernetesProperties = new HashMap<>();
         kubernetesProperties.put("group", kubernetesConfig.group);
         kubernetesProperties.put("name", applicationInfo.getName());
@@ -112,6 +115,12 @@ class KubernetesProcessor {
         }
 
         kubernetesProperties.put("ports", toArray(ports));
+        if (httpProbePath.isPresent()) {
+            Map<String, Object> probeProperties = new HashMap<>();
+            probeProperties.put("httpActionPath", httpProbePath.get());
+            kubernetesProperties.put("livenessProbe", probeProperties);
+            kubernetesProperties.put("readinessProbe", probeProperties);
+        }
 
         final DefaultKubernetesApplicationGenerator generator = new DefaultKubernetesApplicationGenerator();
         final Map<String, Object> generatorInput = new HashMap<>();

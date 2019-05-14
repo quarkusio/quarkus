@@ -198,7 +198,7 @@ We prefer listing services explicitly as it produces better optimised binaries. 
 The default in GraalVM seems meant to optimise for short lived processes.
 
 Quarkus defaults to server applications, so we switch to a better default by setting
- `-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime`.
+ `-H:InitialCollectionPolicy'=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime'`.
 
 === Others ...
 

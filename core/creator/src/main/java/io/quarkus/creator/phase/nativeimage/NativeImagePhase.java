@@ -407,7 +407,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             if (additionalBuildArgs != null) {
                 command.addAll(additionalBuildArgs);
             }
-            command.add("-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
+            command.add("-H:InitialCollectionPolicy='com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime'"); //the default collection policy results in full GC's 50% of the time
             command.add("-jar");
             command.add(runnerJarName);
             //https://github.com/oracle/graal/issues/660

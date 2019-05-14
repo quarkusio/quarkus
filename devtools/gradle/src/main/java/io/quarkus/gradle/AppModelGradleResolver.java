@@ -135,10 +135,6 @@ public class AppModelGradleResolver implements AppModelResolver {
             for (ResolvedArtifact a : rc.getResolvedArtifacts()) {
                 final ModuleVersionIdentifier userVersion = userModules.get(getModuleId(a));
                 if (userVersion != null) {
-                    if (!userVersion.equals(a.getModuleVersion().getId())) {
-                        project.getLogger().warn("User dependency " + userVersion + " overrides Quarkus platform dependency "
-                                + a.getModuleVersion().getId());
-                    }
                     continue;
                 }
                 deploymentDeps.add(toAppDependency(a));

@@ -213,6 +213,38 @@ In a separated terminal or the embedded terminal, go to the project root and run
 
 Open the project directory in VS Code. If you have installed the Java Extension Pack (grouping a set of Java extensions), the project is loaded as a Maven project.
 
+== Logging Quarkus application build classpath tree
+
+Usually, dependencies of an application (which is a Maven project) could be displayed using `mvn dependency:tree` command. In case of a Quarkus application, however, this command will list only the runtime dependencies of the application.
+Given that the Quarkus build process adds deployment dependencies of the extensions used in the application to the original application classpath, it could be useful to know which dependencies and which versions end up on the build classpath.
+Luckily, the `quarkus-bootstrap` Maven plugin includes the `build-tree` goal which displays the build dependency tree for the application.
+
+To be able to use it, the following plugin configuration has to be added to the `pom.xml`:
+
+[source,xml,subs=attributes+]
+----
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <version>${quarkus.version}</version>
+            </plugin>
+----
+
+Now you should be able to execute `mvn quarkus-bootstrap:build-tree` on your project and see something like:
+
+[source,shell,subs=attributes+]
+----
+[INFO] --- quarkus-bootstrap-maven-plugin:{quarkus-version}:build-tree (default-cli) @ getting-started ---
+[INFO] org.acme:getting-started:jar:1.0-SNAPSHOT
+[INFO] └─ io.quarkus:quarkus-resteasy-deployment:jar:{quarkus-version} (compile)
+[INFO]    ├─ io.quarkus:quarkus-resteasy-server-common-deployment:jar:{quarkus-version} (compile)
+[INFO]    │  ├─ io.quarkus:quarkus-core-deployment:jar:{quarkus-version} (compile)
+[INFO]    │  │  ├─ commons-beanutils:commons-beanutils:jar:1.9.3 (compile)
+[INFO]    │  │  │  ├─ commons-logging:commons-logging:jar:1.2 (compile)
+[INFO]    │  │  │  └─ commons-collections:commons-collections:jar:3.2.2 (compile)
+...
+----
+
 == Building a native executable
 
 Native executables make {project-name} applications ideal for containers and serverless workloads.

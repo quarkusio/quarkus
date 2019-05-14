@@ -17,6 +17,7 @@
 package io.quarkus.dev;
 
 import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -68,14 +69,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     }
 
     @Override
-    public Path getSourcesDir() {
-        //TODO: fix all these
-        for (DevModeContext.ModuleInfo i : context.getModules()) {
-            if (i.getSourcePath() != null) {
-                return Paths.get(i.getSourcePath());
-            }
-        }
-        return null;
+    public List<Path> getSourcesDir() {
+        return context.getModules().stream().flatMap(m -> m.getSourcePaths().stream()).map(Paths::get).collect(toList());
     }
 
     @Override
@@ -125,9 +120,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     boolean checkForChangedClasses() throws IOException {
 
         for (DevModeContext.ModuleInfo i : context.getModules()) {
-            if (i.getSourcePath() != null) {
+            for (String sourcePath : i.getSourcePaths()) {
                 final Set<File> changedSourceFiles;
-                try (final Stream<Path> sourcesStream = Files.walk(Paths.get(i.getSourcePath()))) {
+                try (final Stream<Path> sourcesStream = Files.walk(Paths.get(sourcePath))) {
                     changedSourceFiles = sourcesStream
                             .parallel()
                             .filter(p -> matchingHandledExtension(p).isPresent())
@@ -139,7 +134,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                 if (!changedSourceFiles.isEmpty()) {
                     log.info("Changed source files detected, recompiling " + changedSourceFiles);
                     try {
-                        compiler.compile(i.getSourcePath(), changedSourceFiles.stream()
+                        compiler.compile(sourcePath, changedSourceFiles.stream()
                                 .collect(groupingBy(this::getFileExtension, Collectors.toSet())));
                     } catch (Exception e) {
                         DevModeMain.deploymentProblem = e;
@@ -234,24 +229,31 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
             if (recent) {
                 return true;
             }
-            if (module.getSourcePath() == null || module.getClassesPath() == null) {
+            if (module.getSourcePaths().isEmpty() || module.getClassesPath() == null) {
                 return false;
             }
-            Path sourcesDir = Paths.get(module.getSourcePath());
-            Path classesDir = Paths.get(module.getClassesPath());
 
-            Optional<String> matchingExtension = matchingHandledExtension(p);
-            if (matchingExtension.isPresent()) {
-                String pathName = sourcesDir.relativize(p).toString();
-                String classFileName = pathName.substring(0, pathName.length() - matchingExtension.get().length()) + ".class";
-                Path classFile = classesDir.resolve(classFileName);
-                if (!Files.exists(classFile)) {
-                    return true;
+            for (String sourcePath : module.getSourcePaths()) {
+
+                Path sourcesDir = Paths.get(sourcePath);
+                Path classesDir = Paths.get(module.getClassesPath());
+
+                if (sourcesDir.startsWith(p)) {
+                    Optional<String> matchingExtension = matchingHandledExtension(p);
+                    if (matchingExtension.isPresent()) {
+                        String pathName = sourcesDir.relativize(p).toString();
+                        String classFileName = pathName.substring(0, pathName.length() - matchingExtension.get().length())
+                                + ".class";
+                        Path classFile = classesDir.resolve(classFileName);
+                        if (!Files.exists(classFile)) {
+                            return true;
+                        }
+                        return sourceMod > Files.getLastModifiedTime(classFile).toMillis();
+                    }
                 }
-                return sourceMod > Files.getLastModifiedTime(classFile).toMillis();
-            } else {
-                return false;
             }
+
+            return false;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

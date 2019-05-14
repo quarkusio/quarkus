@@ -115,11 +115,13 @@ public class HotReplacementWebsocketEndpoint {
                         !m.resources.isEmpty()) {
                     if (hrc.getSourcesDir() != null) {
                         for (Map.Entry<String, byte[]> i : m.srcFiles.entrySet()) {
-                            Path path = hrc.getSourcesDir().resolve(i.getKey());
-                            Files.createDirectories(path.getParent());
-                            try (FileOutputStream out = new FileOutputStream(
-                                    path.toFile())) {
-                                out.write(i.getValue());
+                            for (Path sourcesDir : hrc.getSourcesDir()) {
+                                Path path = sourcesDir.resolve(i.getKey());
+                                Files.createDirectories(path.getParent());
+                                try (FileOutputStream out = new FileOutputStream(
+                                        path.toFile())) {
+                                    out.write(i.getValue());
+                                }
                             }
                         }
                     }

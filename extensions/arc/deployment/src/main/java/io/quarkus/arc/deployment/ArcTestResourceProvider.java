@@ -24,19 +24,26 @@ public class ArcTestResourceProvider implements TestResourceProvider {
         while (c != Object.class) {
             for (Field field : c.getDeclaredFields()) {
                 if (field.isAnnotationPresent(Inject.class) || field.isAnnotationPresent(ConfigProperty.class)) {
+                    Object instance;
+
                     try {
-                        Set<Annotation> qualifiers = new HashSet<>();
-                        Set<Annotation> annotations = new HashSet<>();
-                        for (Annotation a : field.getAnnotations()) {
-                            annotations.add(a);
-                            if (a.annotationType().isAnnotationPresent(Qualifier.class)) {
-                                qualifiers.add(a);
+                        if (field.getType().equals(BeanManager.class)) {
+                            instance = beanManager;
+                        } else {
+                            Set<Annotation> qualifiers = new HashSet<>();
+                            Set<Annotation> annotations = new HashSet<>();
+                            for (Annotation a : field.getAnnotations()) {
+                                annotations.add(a);
+                                if (a.annotationType().isAnnotationPresent(Qualifier.class)) {
+                                    qualifiers.add(a);
+                                }
                             }
+                            instance = beanManager.getInjectableReference(
+                                    new InjectionPointImpl(field.getGenericType(), field.getGenericType(),
+                                            qualifiers, null, annotations, field, -1),
+                                    beanManager.createCreationalContext(null));
                         }
-                        Object instance = beanManager.getInjectableReference(
-                                new InjectionPointImpl(field.getGenericType(), field.getGenericType(),
-                                        qualifiers, null, annotations, field, -1),
-                                beanManager.createCreationalContext(null));
+
                         // Set the field value
                         field.setAccessible(true);
                         try {

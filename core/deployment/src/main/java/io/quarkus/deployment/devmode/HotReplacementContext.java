@@ -7,7 +7,7 @@ public interface HotReplacementContext {
 
     Path getClassesDir();
 
-    Path getSourcesDir();
+    List<Path> getSourcesDir();
 
     List<Path> getResourcesDir();
 

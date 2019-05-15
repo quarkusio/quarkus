@@ -1,14 +1,14 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-/**
- * @author Emmanuel Bernard emmanuel@hibernate.org
- */
 @ConfigRoot
 public class HibernateOrmConfig {
     /**
@@ -68,6 +68,11 @@ public class HibernateOrmConfig {
     public HibernateOrmConfigLog log;
 
     /**
+     * Caching configuration
+     */
+    public Map<String, HibernateOrmConfigCache> cache;
+
+    /**
      * Statistics configuration.
      */
     @ConfigItem(defaultValue = "false")
@@ -82,7 +87,8 @@ public class HibernateOrmConfig {
                 query.isAnyPropertySet() ||
                 database.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||
-                log.isAnyPropertySet();
+                log.isAnyPropertySet() ||
+                !cache.isEmpty();
     }
 
     @ConfigGroup
@@ -196,5 +202,38 @@ public class HibernateOrmConfig {
         public boolean isAnyPropertySet() {
             return sql || jdbcWarnings.isPresent();
         }
+    }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigCache {
+        /**
+         * The cache expiration configuration.
+         */
+        @ConfigItem
+        public HibernateOrmConfigCacheExpiration expiration;
+
+        /**
+         * The cache memory storage configuration.
+         */
+        @ConfigItem
+        public HibernateOrmConfigCacheMemory memory;
+    }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigCacheExpiration {
+        /**
+         * The maximum time in seconds before an object is considered expired.
+         */
+        @ConfigItem
+        public OptionalLong maxIdle;
+    }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigCacheMemory {
+        /**
+         * The maximum number of objects kept in memory.
+         */
+        @ConfigItem
+        public OptionalLong objectCount;
     }
 }

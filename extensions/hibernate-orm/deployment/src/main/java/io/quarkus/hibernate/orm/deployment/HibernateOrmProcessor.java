@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -40,7 +41,6 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceUnit;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.H2Dialect;
@@ -65,7 +65,6 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.ResourceAnnotationBuildItem;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -465,15 +464,10 @@ public final class HibernateOrmProcessor {
                                 });
 
                 // Caching
-                // FIXME: this should use a Map as soon as Map support is complete
-                String prefix = HIBERNATE_ORM_CONFIG_PREFIX + "cache.";
-                for (String propName : ConfigProvider.getConfig().getPropertyNames()) {
-                    if (propName.startsWith(prefix)) {
-                        String value = QuarkusConfig.getString(propName, null, false);
-                        String hibernateKey = propName.replace(HIBERNATE_ORM_CONFIG_PREFIX, "hibernate.")
-                                .replace("\"", "");
-                        desc.getProperties().setProperty(hibernateKey, value);
-                    }
+                Map<String, String> cacheConfigEntries = HibernateConfigUtil
+                        .getCacheConfigEntries(hibernateConfig);
+                for (Entry<String, String> entry : cacheConfigEntries.entrySet()) {
+                    desc.getProperties().setProperty(entry.getKey(), entry.getValue());
                 }
 
                 descriptors.add(desc);

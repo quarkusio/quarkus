@@ -21,9 +21,9 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
 
     private static final Logger log = Logger.getLogger(QuarkusInfinispanRegionFactory.class);
 
-    private static final String PREFIX = "hibernate.cache.";
-    private static final String OBJECT_COUNT_SUFFIX = ".memory.object-count";
-    private static final String MAX_IDLE_SUFFIX = ".expiration.max-idle";
+    public static final String PREFIX = "hibernate.cache.";
+    public static final String OBJECT_COUNT_SUFFIX = ".memory.object-count";
+    public static final String MAX_IDLE_SUFFIX = ".expiration.max-idle";
 
     private final Map<String, InternalCache> caches = new HashMap<>();
 

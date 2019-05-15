@@ -118,6 +118,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     }
 
     boolean checkForChangedClasses() throws IOException {
+        boolean hasChanges = false;
 
         for (DevModeContext.ModuleInfo i : context.getModules()) {
             for (String sourcePath : i.getSourcePaths()) {
@@ -126,7 +127,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                     changedSourceFiles = sourcesStream
                             .parallel()
                             .filter(p -> matchingHandledExtension(p).isPresent())
-                            .filter(p -> wasRecentlyModified(p, i))
+                            .filter(p -> wasRecentlyModified(p))
                             .map(Path::toFile)
                             //Needing a concurrent Set, not many standard options:
                             .collect(Collectors.toCollection(ConcurrentSkipListSet::new));
@@ -136,6 +137,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                     try {
                         compiler.compile(sourcePath, changedSourceFiles.stream()
                                 .collect(groupingBy(this::getFileExtension, Collectors.toSet())));
+                        hasChanges = true;
                     } catch (Exception e) {
                         DevModeMain.deploymentProblem = e;
                         return false;
@@ -144,18 +146,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
             }
         }
 
-        for (DevModeContext.ModuleInfo i : context.getModules()) {
-            if (i.getClassesPath() != null) {
-                try (final Stream<Path> classesStream = Files.walk(Paths.get(i.getClassesPath()))) {
-                    if (classesStream.parallel().anyMatch(p -> p.toString().endsWith(".class") && wasRecentlyModified(p, i))) {
-                        // At least one class was recently modified
-                        lastChange = System.currentTimeMillis();
-                        return true;
-                    }
-                }
-            }
+        if (hasChanges) {
+            lastChange = System.currentTimeMillis();
         }
-        return false;
+
+        return hasChanges;
     }
 
     private Optional<String> matchingHandledExtension(Path p) {
@@ -222,38 +217,10 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
         return configFilesHaveChanged;
     }
 
-    private boolean wasRecentlyModified(final Path p, DevModeContext.ModuleInfo module) {
+    private boolean wasRecentlyModified(final Path p) {
         try {
             long sourceMod = Files.getLastModifiedTime(p).toMillis();
-            boolean recent = sourceMod > lastChange;
-            if (recent) {
-                return true;
-            }
-            if (module.getSourcePaths().isEmpty() || module.getClassesPath() == null) {
-                return false;
-            }
-
-            for (String sourcePath : module.getSourcePaths()) {
-
-                Path sourcesDir = Paths.get(sourcePath);
-                Path classesDir = Paths.get(module.getClassesPath());
-
-                if (sourcesDir.startsWith(p)) {
-                    Optional<String> matchingExtension = matchingHandledExtension(p);
-                    if (matchingExtension.isPresent()) {
-                        String pathName = sourcesDir.relativize(p).toString();
-                        String classFileName = pathName.substring(0, pathName.length() - matchingExtension.get().length())
-                                + ".class";
-                        Path classFile = classesDir.resolve(classFileName);
-                        if (!Files.exists(classFile)) {
-                            return true;
-                        }
-                        return sourceMod > Files.getLastModifiedTime(classFile).toMillis();
-                    }
-                }
-            }
-
-            return false;
+            return sourceMod > lastChange;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -288,5 +255,4 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
         }
         return this;
     }
-
 }

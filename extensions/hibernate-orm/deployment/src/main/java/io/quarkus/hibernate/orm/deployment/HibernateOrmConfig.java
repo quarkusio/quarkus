@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -8,9 +9,6 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-/**
- * @author Emmanuel Bernard emmanuel@hibernate.org
- */
 @ConfigRoot
 public class HibernateOrmConfig {
     /**
@@ -72,7 +70,7 @@ public class HibernateOrmConfig {
     /**
      * Caching configuration
      */
-    public Map<String, CacheConfig> cache;
+    public Map<String, HibernateOrmConfigCache> cache;
 
     /**
      * Statistics configuration.
@@ -207,45 +205,35 @@ public class HibernateOrmConfig {
     }
 
     @ConfigGroup
-    public static class CacheConfig {
+    public static class HibernateOrmConfigCache {
         /**
-         * Cache expiration config
+         * The cache expiration configuration.
          */
         @ConfigItem
-        public ExpirationConfig expiration;
+        public HibernateOrmConfigCacheExpiration expiration;
 
         /**
-         * Cache memory config
+         * The cache memory storage configuration.
          */
         @ConfigItem
-        public MemoryConfig memory;
+        public HibernateOrmConfigCacheMemory memory;
     }
 
     @ConfigGroup
-    public static class ExpirationConfig {
+    public static class HibernateOrmConfigCacheExpiration {
         /**
-         * Indicates maximum idle time in seconds
+         * The maximum time in seconds before an object is considered expired.
          */
         @ConfigItem
         public OptionalLong maxIdle;
     }
 
     @ConfigGroup
-    public static class MemoryConfig {
+    public static class HibernateOrmConfigCacheMemory {
         /**
-         * The size of each region can be customized
+         * The maximum number of objects kept in memory.
          */
         @ConfigItem
         public OptionalLong objectCount;
-    }
-
-    public static class CacheConfigEntry {
-        public String key;
-        public String value;
-
-        public CacheConfigEntry(String key, String value) {
-            this.key = key;
-            this.value = value;
-        }
     }
 }

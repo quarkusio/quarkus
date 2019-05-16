@@ -1,6 +1,7 @@
 package logging;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 import java.util.Arrays;
 import java.util.logging.Formatter;
@@ -15,11 +16,13 @@ import org.jboss.logmanager.handlers.SizeRotatingFileHandler;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.runtime.logging.InitialConfigurator;
 import io.quarkus.test.QuarkusUnitTest;
 
+@DisabledOnOs(WINDOWS)
 public class SizeRotatingLoggingTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()

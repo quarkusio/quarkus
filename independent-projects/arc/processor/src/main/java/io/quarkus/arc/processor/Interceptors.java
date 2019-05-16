@@ -47,7 +47,7 @@ final class Interceptors {
             throw new DefinitionException("Interceptor has no bindings: " + interceptorClass);
         }
         return new InterceptorInfo(interceptorClass, beanDeployment, bindings,
-                Injection.forBean(interceptorClass, beanDeployment), priority);
+                Injection.forBean(interceptorClass, null, beanDeployment), priority);
     }
 
 }

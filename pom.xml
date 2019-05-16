@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>34</version>
+        <version>35</version>
     </parent>
 
     <groupId>io.quarkus</groupId>

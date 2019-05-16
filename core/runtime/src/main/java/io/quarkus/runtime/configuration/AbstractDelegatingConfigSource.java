@@ -48,4 +48,8 @@ public abstract class AbstractDelegatingConfigSource implements ConfigSource {
     public String getName() {
         return delegate.getName();
     }
+
+    public int getOrdinal() {
+        return delegate.getOrdinal();
+    }
 }

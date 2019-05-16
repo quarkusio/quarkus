@@ -93,7 +93,6 @@ public class QuarkusTestExtension
         try {
             appCl = BootstrapClassLoaderFactory.newInstance()
                     .setAppClasses(appClassLocation)
-                    .addToClassPath(testClassLocation)
                     .setParent(getClass().getClassLoader())
                     .setOffline(PropertyUtils.getBooleanOrNull(BootstrapClassLoaderFactory.PROP_OFFLINE))
                     .setLocalProjectsDiscovery(

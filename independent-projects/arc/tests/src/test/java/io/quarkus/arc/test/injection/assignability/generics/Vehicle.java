@@ -1,4 +1,4 @@
-package io.quarkus.arc.test.injection.generics;
+package io.quarkus.arc.test.injection.assignability.generics;
 
 import javax.inject.Inject;
 

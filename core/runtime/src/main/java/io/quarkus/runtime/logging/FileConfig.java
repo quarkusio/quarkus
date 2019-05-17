@@ -72,6 +72,8 @@ public class FileConfig {
 
         /**
          * File handler rotation file suffix.
+         *
+         * Example fileSuffix: .yyyy-MM-dd
          */
         @ConfigItem
         Optional<String> fileSuffix;

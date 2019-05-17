@@ -20,6 +20,7 @@ import io.quarkus.runtime.Application;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Template;
+import io.quarkus.runtime.execution.Execution;
 
 @Template
 public class AmazonLambdaTemplate {

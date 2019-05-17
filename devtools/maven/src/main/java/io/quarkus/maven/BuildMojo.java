@@ -118,7 +118,7 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.finalName}")
     private String finalName;
 
-    @Parameter(defaultValue = "io.quarkus.runner.GeneratedMain")
+    @Parameter(defaultValue = "io.quarkus.runtime.Quarkus")
     private String mainClass;
 
     @Parameter(defaultValue = "true")

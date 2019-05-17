@@ -49,6 +49,7 @@ import io.quarkus.creator.config.reader.PropertiesHandler;
 import io.quarkus.creator.outcome.OutcomeProviderRegistration;
 import io.quarkus.creator.phase.augment.AugmentOutcome;
 import io.quarkus.creator.phase.curate.CurateOutcome;
+import io.quarkus.runtime.Quarkus;
 
 /**
  * Based on the provided {@link io.quarkus.creator.phase.augment.AugmentOutcome},
@@ -58,7 +59,7 @@ import io.quarkus.creator.phase.curate.CurateOutcome;
  */
 public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJarOutcome {
 
-    private static final String DEFAULT_MAIN_CLASS = "io.quarkus.runner.GeneratedMain";
+    private static final String DEFAULT_MAIN_CLASS = Quarkus.class.getName();
 
     private static final Logger log = Logger.getLogger(RunnerJarPhase.class);
 
@@ -134,11 +135,11 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
     }
 
     /**
-     * Main class name fir the runnable JAR. If none is set by the user
-     * io.quarkus.runner.GeneratedMain will be use by default.
+     * Main class name fir the runnable JAR. If none is set by the user,
+     * {@link Quarkus} will be use by default.
      *
      * @param mainClass main class name for the runnable JAR
-     * @return
+     * @return this phase instance
      */
     public RunnerJarPhase setMainClass(String mainClass) {
         this.mainClass = mainClass;

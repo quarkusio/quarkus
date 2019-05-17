@@ -68,12 +68,16 @@ public abstract class ApplicationPropertiesConfigSource extends PropertiesConfig
     }
 
     public static final class InFileSystem extends ApplicationPropertiesConfigSource {
-        public InFileSystem() {
-            super(openStream(), 260);
+
+        public InFileSystem(final Path path) {
+            super(openStream(path), 260);
         }
 
-        private static InputStream openStream() {
-            final Path path = Paths.get("config", APPLICATION_PROPERTIES);
+        public InFileSystem() {
+            this(Paths.get("config", APPLICATION_PROPERTIES));
+        }
+
+        private static InputStream openStream(Path path) {
             if (Files.exists(path)) {
                 try {
                     return Files.newInputStream(path);

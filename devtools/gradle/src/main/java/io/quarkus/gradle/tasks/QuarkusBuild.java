@@ -20,6 +20,7 @@ import io.quarkus.creator.phase.augment.AugmentPhase;
 import io.quarkus.creator.phase.curate.CurateOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarPhase;
+import io.quarkus.runtime.Quarkus;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -32,7 +33,7 @@ public class QuarkusBuild extends QuarkusTask {
 
     private String libDir;
 
-    private String mainClass = "io.quarkus.runner.GeneratedMain";
+    private String mainClass = Quarkus.class.getName();
 
     private boolean useStaticInit = true;
 

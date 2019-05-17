@@ -14,10 +14,10 @@ import org.graalvm.nativeimage.ImageInfo;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.ClassOutputBuildItem;
+import io.quarkus.deployment.builditem.ExecutionHandlerBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
@@ -39,18 +39,18 @@ import io.quarkus.runtime.Application;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
 import io.quarkus.runtime.Timing;
+import io.quarkus.runtime.execution.SupplierExecutionHandler;
 
 class MainClassBuildStep {
 
     private static final String APP_CLASS = "io.quarkus.runner.ApplicationImpl";
-    private static final String MAIN_CLASS = "io.quarkus.runner.GeneratedMain";
     private static final String STARTUP_CONTEXT = "STARTUP_CONTEXT";
     private static final String JAVA_LIBRARY_PATH = "java.library.path";
     private static final String JAVAX_NET_SSL_TRUST_STORE = "javax.net.ssl.trustStore";
 
     private static final AtomicInteger COUNT = new AtomicInteger();
 
-    @BuildStep
+    //    @BuildStep
     MainClassBuildItem build(List<StaticBytecodeRecorderBuildItem> staticInitTasks,
             List<ObjectSubstitutionBuildItem> substitutions,
             List<MainBytecodeRecorderBuildItem> mainMethod,
@@ -60,6 +60,7 @@ class MainClassBuildStep {
             List<FeatureBuildItem> features,
             BuildProducer<ApplicationClassNameBuildItem> appClassNameProducer,
             List<BytecodeRecorderObjectLoaderBuildItem> loaders,
+            BuildProducer<ExecutionHandlerBuildItem> executionHandlers,
             ClassOutputBuildItem classOutput) {
 
         String appClassName = APP_CLASS + COUNT.incrementAndGet();
@@ -188,9 +189,7 @@ class MainClassBuildStep {
                     recorder.registerObjectLoader(item.getObjectLoader());
                 }
                 recorder.writeBytecode(classOutput.getClassOutput());
-                ResultHandle dup = tryBlock.newInstance(ofConstructor(recorder.getClassName()));
-                tryBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup,
-                        startupContext);
+                executionHandlers.produce(new ExecutionHandlerBuildItem(new SupplierExecutionHandler(recorder.getClassName())));
             }
         }
 
@@ -220,23 +219,7 @@ class MainClassBuildStep {
         // Finish application class
         file.close();
 
-        // Main class
-
-        file = new ClassCreator(ClassOutput.gizmoAdaptor(classOutput.getClassOutput(), true), MAIN_CLASS, null,
-                Object.class.getName());
-
-        mv = file.getMethodCreator("main", void.class, String[].class);
-        mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
-
-        final ResultHandle appClassInstance = mv.newInstance(ofConstructor(appClassName));
-        // run the app
-        mv.invokeVirtualMethod(ofMethod(Application.class, "run", void.class, String[].class), appClassInstance,
-                mv.getMethodParam(0));
-
-        mv.returnValue(null);
-
-        file.close();
-        return new MainClassBuildItem(MAIN_CLASS);
+        return new MainClassBuildItem();
     }
 
 }

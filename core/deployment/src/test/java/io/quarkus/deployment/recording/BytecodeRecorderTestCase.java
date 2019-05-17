@@ -19,7 +19,7 @@ import io.quarkus.deployment.ClassOutput;
 import io.quarkus.gizmo.TestClassLoader;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
-import io.quarkus.runtime.StartupTask;
+import io.quarkus.runtime.execution.ClassicExecutionHandler;
 
 public class BytecodeRecorderTestCase {
 
@@ -201,7 +201,7 @@ public class BytecodeRecorderTestCase {
         generator.accept(recorder);
         recorder.writeBytecode(new TestClassOutput(tcl));
 
-        StartupTask task = (StartupTask) tcl.loadClass(TEST_CLASS).newInstance();
+        ClassicExecutionHandler task = (ClassicExecutionHandler) tcl.loadClass(TEST_CLASS).newInstance();
         task.deploy(new StartupContext());
         Assert.assertEquals(expected.length, TestTemplate.RESULT.size());
         for (Object i : expected) {

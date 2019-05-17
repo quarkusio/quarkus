@@ -40,6 +40,7 @@ import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.objectweb.asm.Opcodes;
 import org.wildfly.common.Assert;
 
 import io.quarkus.deployment.ClassOutput;
@@ -56,7 +57,7 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.ObjectSubstitution;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
-import io.quarkus.runtime.StartupTask;
+import io.quarkus.runtime.execution.ClassicExecutionHandler;
 
 /**
  * A class that can be used to record invocations to bytecode so they can be replayed later. This is done through the
@@ -273,10 +274,18 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     public void writeBytecode(ClassOutput classOutput) {
         try {
-            ClassCreator file = ClassCreator.builder().classOutput(ClassOutput.gizmoAdaptor(classOutput, true))
-                    .className(className)
-                    .superClass(Object.class).interfaces(StartupTask.class).build();
-            MethodCreator mainMethod = file.getMethodCreator("deploy", void.class, StartupContext.class);
+            ClassCreator file;
+            MethodCreator mainMethod;
+            final ClassCreator.Builder builder = ClassCreator.builder().classOutput(ClassOutput.gizmoAdaptor(classOutput, true))
+                    .className(className);
+            if (staticInit) {
+                file = builder.superClass(Object.class).build();
+                mainMethod = file.getMethodCreator("initialize", void.class, StartupContext.class);
+                mainMethod.setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
+            } else {
+                file = builder.superClass(ClassicExecutionHandler.class).build();
+                mainMethod = file.getMethodCreator("deploy", void.class, StartupContext.class);
+            }
             //now create instances of all the classes we invoke on and store them in variables as well
             Map<Class, DeferredArrayStoreParameter> classInstanceVariables = new HashMap<>();
 
@@ -306,7 +315,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 if (set instanceof StoredMethodCall) {
                     StoredMethodCall call = (StoredMethodCall) set;
                     if (!classInstanceVariables.containsKey(call.theClass)) {
-                        //this is a new template, create a deffered value that will allocate an array position for
+                        //this is a new template, create a deferred value that will allocate an array position for
                         //the template
                         DeferredArrayStoreParameter value = new DeferredArrayStoreParameter() {
                             @Override
@@ -360,7 +369,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                             ResultHandle[] params = new ResultHandle[call.parameters.length];
 
                             //now we actually load the arguments
-                            //this will retreive them from the array and create a ResultHandle
+                            //this will retrieve them from the array and create a ResultHandle
                             //(or possible re-use an existing ResultHandler if there is already one for the current method)
                             for (int i = 0; i < call.parameters.length; ++i) {
                                 params[i] = context.loadDeferred(call.deferredParameters[i]);
@@ -372,8 +381,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
                             if (call.method.getReturnType() != void.class) {
                                 if (call.returnedProxy != null) {
-                                    //if the invocation had a return valye put it in the startup context
-                                    //to make it availible to other recorders (and also this recorder)
+                                    //if the invocation had a return value put it in the startup context
+                                    //to make it available to other recorders (and also this recorder)
                                     method.invokeVirtualMethod(
                                             ofMethod(StartupContext.class, "putValue", void.class, String.class, Object.class),
                                             method.getMethodParam(0), method.load(call.proxyId), callResult);
@@ -1569,8 +1578,14 @@ public class BytecodeRecorderImpl implements RecorderContext {
             currentCount = 0;
             currentMethod = classCreator.getMethodCreator(mainMethod.getMethodDescriptor().getName() + "_" + (methodCount++),
                     mainMethod.getMethodDescriptor().getReturnType(), StartupContext.class, Object[].class);
-            mainMethod.invokeVirtualMethod(currentMethod.getMethodDescriptor(), mainMethod.getThis(),
-                    mainMethod.getMethodParam(0), deferredParameterArray);
+            if (staticInit) {
+                currentMethod.setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
+                mainMethod.invokeStaticMethod(currentMethod.getMethodDescriptor(),
+                        mainMethod.getMethodParam(0), deferredParameterArray);
+            } else {
+                mainMethod.invokeVirtualMethod(currentMethod.getMethodDescriptor(), mainMethod.getThis(),
+                        mainMethod.getMethodParam(0), deferredParameterArray);
+            }
             currentMethodCache = new HashMap<>();
             allMethods.add(currentMethod);
         }

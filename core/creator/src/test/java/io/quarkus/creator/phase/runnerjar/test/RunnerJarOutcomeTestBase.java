@@ -21,11 +21,12 @@ import java.util.stream.Stream;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
+import io.quarkus.runtime.Quarkus;
 
 public abstract class RunnerJarOutcomeTestBase extends CreatorOutcomeTestBase {
 
     private static final String LIB_PREFIX = "lib/";
-    private static final String MAIN_CLS = "io.quarkus.runner.GeneratedMain";
+    private static final String MAIN_CLS = Quarkus.class.getName();
 
     protected List<String> expectedLib = new ArrayList<>();
 

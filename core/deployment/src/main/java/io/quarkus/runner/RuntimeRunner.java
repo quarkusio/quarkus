@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -19,10 +20,15 @@ import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.ExecutionChainBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
-import io.quarkus.runtime.Application;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.runtime.execution.AsynchronousExitException;
+import io.quarkus.runtime.execution.CloseableExecutionContext;
+import io.quarkus.runtime.execution.Execution;
+import io.quarkus.runtime.execution.ExecutionChain;
+import io.quarkus.runtime.execution.ExecutionContext;
 
 /**
  * Class that can be used to run quarkus directly, executing the build and runtime
@@ -66,6 +72,7 @@ public class RuntimeRunner implements Runnable, Closeable {
     public void close() throws IOException {
         if (closeTask != null) {
             closeTask.close();
+            closeTask = null;
         }
     }
 
@@ -89,7 +96,8 @@ public class RuntimeRunner implements Runnable, Closeable {
                 builder.addBuildChainCustomizer(i);
             }
             builder.addFinal(BytecodeTransformerBuildItem.class)
-                    .addFinal(ApplicationClassNameBuildItem.class);
+                    .addFinal(ApplicationClassNameBuildItem.class)
+                    .addFinal(ExecutionChainBuildItem.class);
 
             BuildResult result = builder.build().run();
             List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems = result
@@ -103,15 +111,30 @@ public class RuntimeRunner implements Runnable, Closeable {
                 transformerTarget.setTransformers(functions);
             }
 
-            final Application application;
-            Class<? extends Application> appClass = loader
-                    .loadClass(result.consume(ApplicationClassNameBuildItem.class).getClassName())
-                    .asSubclass(Application.class);
             ClassLoader old = Thread.currentThread().getContextClassLoader();
+            final ExecutionContext ctxt;
             try {
                 Thread.currentThread().setContextClassLoader(loader);
-                application = appClass.newInstance();
-                application.start(null);
+                ExecutionChain chain = result.consume(ExecutionChainBuildItem.class).getChain();
+                ctxt = (ExecutionContext) Class.forName("io.quarkus.runtime.generated.Init", true, loader)
+                        .getDeclaredMethod("getInitialContext").invoke(null);
+                try {
+                    chain.startAsynchronously(ctxt);
+                } catch (Throwable t) {
+                    ctxt.optionallyAs(CloseableExecutionContext.class).ifPresent(c -> {
+                        try {
+                            c.close();
+                        } catch (RuntimeException re) {
+                            re.addSuppressed(t);
+                            throw re;
+                        } catch (Exception e2) {
+                            RuntimeException re = new RuntimeException(e2);
+                            re.addSuppressed(t);
+                            throw re;
+                        }
+                    });
+                    throw t;
+                }
             } finally {
                 Thread.currentThread().setContextClassLoader(old);
             }
@@ -119,13 +142,45 @@ public class RuntimeRunner implements Runnable, Closeable {
             closeTask = new Closeable() {
                 @Override
                 public void close() {
-                    application.stop();
+                    Execution.requestExit(0);
+                    try {
+                        Execution.awaitExit();
+                    } catch (AsynchronousExitException ignored) {
+                    } catch (ExecutionException e) {
+                        ctxt.optionallyAs(CloseableExecutionContext.class).ifPresent(c -> {
+                            try {
+                                c.close();
+                            } catch (RuntimeException re) {
+                                re.addSuppressed(e.getCause());
+                                throw re;
+                            } catch (Exception e2) {
+                                RuntimeException re = new RuntimeException(e2);
+                                re.addSuppressed(e.getCause());
+                                throw re;
+                            }
+                        });
+                        // this sucks but we're using java.io.Closeable; maybe change to AutoCloseable?
+                        throw new RuntimeException(e.getCause());
+                    }
+                    ctxt.optionallyAs(CloseableExecutionContext.class).ifPresent(c -> {
+                        try {
+                            c.close();
+                        } catch (RuntimeException re) {
+                            throw re;
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
                 }
             };
 
         } catch (RuntimeException e) {
             throw e;
+        } catch (ExecutionException e) {
+            // eh
+            throw new RuntimeException(e.getCause());
         } catch (Exception e) {
+            // eh
             throw new RuntimeException(e);
         }
     }

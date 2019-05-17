@@ -56,7 +56,8 @@ import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.deployment.builditem.MainClassBuildItem;
+import io.quarkus.deployment.builditem.ExecutionChainBuildItem;
+import io.quarkus.deployment.builditem.QuarkusApplicationBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateOutputBuildItem;
 import io.quarkus.gizmo.NullWriter;
 import io.smallrye.config.PropertiesConfigSource;
@@ -320,7 +321,8 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                 builder.setOutput(classOutput);
                 builder.addFinal(BytecodeTransformerBuildItem.class)
                         .addFinal(ApplicationArchivesBuildItem.class)
-                        .addFinal(MainClassBuildItem.class)
+                        .addFinal(ExecutionChainBuildItem.class)
+                        .addFinal(QuarkusApplicationBuildItem.class)
                         .addFinal(SubstrateOutputBuildItem.class);
                 result = builder.build().run();
             } finally {

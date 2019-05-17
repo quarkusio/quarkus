@@ -4,6 +4,7 @@ import java.io.PrintStream;
 import java.time.Instant;
 import java.util.Map;
 
+import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 
@@ -42,13 +43,15 @@ public final class DiagnosticPrinter {
                 w.print("daemon ");
             w.print("prio=");
             w.print(thread.getPriority());
-            w.print(" tid=");
-            if (Target_PosixJavaThreads.hasThreadIdentifier(thread)) {
-                final long nativeId = Target_PosixJavaThreads.getPthreadIdentifier(thread).rawValue();
-                w.print("0x");
-                w.println(Long.toHexString(nativeId));
-            } else {
-                w.println("(unknown)");
+            if (ImageInfo.inImageRuntimeCode()) {
+                w.print(" tid=");
+                if (Target_PosixJavaThreads.hasThreadIdentifier(thread)) {
+                    final long nativeId = Target_PosixJavaThreads.getPthreadIdentifier(thread).rawValue();
+                    w.print("0x");
+                    w.println(Long.toHexString(nativeId));
+                } else {
+                    w.println("(unknown)");
+                }
             }
             w.print("   java.lang.thread.State: ");
             w.println(thread.getState());

@@ -22,6 +22,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.builditem.QuarkusApplicationBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
@@ -33,6 +34,7 @@ public class QuarkusAugmentor {
     private final ClassLoader classLoader;
     private final Path root;
     private final Set<Class<? extends BuildItem>> finalResults;
+    private final Set<Enum<?>> finalEnums;
     private final List<Consumer<BuildChainBuilder>> buildChainCustomizers;
     private final LaunchMode launchMode;
     private final List<Path> additionalApplicationArchives;
@@ -43,6 +45,7 @@ public class QuarkusAugmentor {
         this.classLoader = builder.classLoader;
         this.root = builder.root;
         this.finalResults = new HashSet<>(builder.finalResults);
+        this.finalEnums = new HashSet<>(builder.finalEnums);
         this.buildChainCustomizers = new ArrayList<>(builder.buildChainCustomizers);
         this.launchMode = builder.launchMode;
         this.additionalApplicationArchives = new ArrayList<>(builder.additionalApplicationArchives);
@@ -73,8 +76,12 @@ public class QuarkusAugmentor {
             for (Class<? extends BuildItem> i : finalResults) {
                 chainBuilder.addFinal(i);
             }
+            for (Enum<?> item : finalEnums) {
+                chainBuilder.addFinal(item);
+            }
             chainBuilder.addFinal(GeneratedClassBuildItem.class)
-                    .addFinal(GeneratedResourceBuildItem.class);
+                    .addFinal(GeneratedResourceBuildItem.class)
+                    .addFinal(QuarkusApplicationBuildItem.class);
 
             for (Consumer<BuildChainBuilder> i : buildChainCustomizers) {
                 i.accept(chainBuilder);
@@ -121,6 +128,7 @@ public class QuarkusAugmentor {
         ClassLoader classLoader;
         Path root;
         Set<Class<? extends BuildItem>> finalResults = new HashSet<>();
+        Set<Enum<?>> finalEnums = new HashSet<>();
         private final List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
         LaunchMode launchMode = LaunchMode.NORMAL;
         LiveReloadBuildItem liveReloadState = new LiveReloadBuildItem();
@@ -172,6 +180,11 @@ public class QuarkusAugmentor {
 
         public <T extends BuildItem> Builder addFinal(Class<T> clazz) {
             finalResults.add(clazz);
+            return this;
+        }
+
+        public Builder addFinal(Enum<?> item) {
+            finalEnums.add(item);
             return this;
         }
 

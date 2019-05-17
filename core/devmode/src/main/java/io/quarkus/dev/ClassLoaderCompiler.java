@@ -129,10 +129,14 @@ public class ClassLoaderCompiler {
                             + "'. It is advised that this module be compiled before launching dev mode");
                     continue;
                 }
-                i.getSourcePaths().forEach(s -> {
-                    this.compilationContexts.put(s,
+                i.getSourcePaths().forEach(sourcePath -> {
+                    this.compilationContexts.put(sourcePath,
                             new CompilationProvider.Context(
-                                    classPathElements, new File(i.getClassesPath())));
+                                    i.getName(),
+                                    classPathElements,
+                                    new File(i.getProjectDirectory()),
+                                    new File(sourcePath),
+                                    new File(i.getClassesPath())));
                 });
             }
         }

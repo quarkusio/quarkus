@@ -25,10 +25,18 @@ public class PropertyTestUtil {
         System.setProperty("quarkus.log.file.path", getLogFileLocation());
     }
 
+    public static void setLogFileProperty(String logFileName) {
+        System.setProperty("quarkus.log.file.path", getLogFileLocation(logFileName));
+    }
+
     public static String getLogFileLocation() {
+        return getLogFileLocation("quarkus.log");
+    }
+
+    private static String getLogFileLocation(String logFileName) {
         if (Files.isDirectory(Paths.get("build"))) {
-            return "build" + File.separator + "quarkus.log";
+            return "build" + File.separator + logFileName;
         }
-        return "target" + File.separator + "quarkus.log";
+        return "target" + File.separator + logFileName;
     }
 }

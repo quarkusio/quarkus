@@ -98,6 +98,12 @@ If you have generated the application from the previous tutorial, you can find i
 </profiles>
 ----
 
+[TIP]
+====
+You can provide additional options for `native-image` command using `<additionalBuildArgs>foo,bar</additionalBuildArgs>`
+configuration element. Provided options have to be `,` separated.
+====
+
 We use a profile because, you will see very soon, packaging the native executable takes a _few_ seconds.
 
 Create a native executable using: `./mvnw package -Pnative`.

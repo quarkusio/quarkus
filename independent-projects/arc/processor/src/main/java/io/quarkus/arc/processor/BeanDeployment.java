@@ -578,20 +578,24 @@ public class BeanDeployment {
                     // Disposers are not inherited
                     disposerMethods.add(method);
                 } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES)) {
-                    // TODO observers are inherited
                     syncObserverMethods.add(method);
-                    if (!hasBeanDefiningAnnotation) {
-                        LOGGER.debugf("Observer method found but %s has no bean defining annotation - using @Dependent",
-                                beanClass);
+                    if (!Modifier.isAbstract(beanClass.flags())) {
+                        // add only concrete classes
                         beanClasses.add(beanClass);
+                        if (!hasBeanDefiningAnnotation) {
+                            LOGGER.debugf("Observer method found but %s has no bean defining annotation - using @Dependent",
+                                    beanClass);
+                        }
                     }
                 } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES_ASYNC)) {
-                    // TODO observers are inherited
                     asyncObserverMethods.add(method);
-                    if (!hasBeanDefiningAnnotation) {
-                        LOGGER.debugf("Observer method found but %s has no bean defining annotation - using @Dependent",
-                                beanClass);
+                    if (!Modifier.isAbstract(beanClass.flags())) {
+                        // add only concrete classes
                         beanClasses.add(beanClass);
+                        if (!hasBeanDefiningAnnotation) {
+                            LOGGER.debugf("Observer method found but %s has no bean defining annotation - using @Dependent",
+                                    beanClass);
+                        }
                     }
                 }
             }

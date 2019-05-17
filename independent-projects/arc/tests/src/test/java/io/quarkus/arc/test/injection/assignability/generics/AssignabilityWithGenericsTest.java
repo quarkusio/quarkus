@@ -11,6 +11,7 @@ import java.util.Map;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Observes;
+import javax.enterprise.event.ObservesAsync;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import org.junit.Rule;
@@ -88,7 +89,7 @@ public class AssignabilityWithGenericsTest {
             // inject-ability is verified at bootstrap
         }
 
-        public void observeSomethingElse(@Observes String event, K injectedInstance) {
+        public void observeSomethingElse(@ObservesAsync String event, K injectedInstance) {
             // inject-ability is verified at bootstrap
         }
     }

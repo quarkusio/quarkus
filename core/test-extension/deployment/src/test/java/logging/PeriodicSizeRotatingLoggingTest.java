@@ -1,7 +1,6 @@
 package logging;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 import java.util.Arrays;
 import java.util.logging.Formatter;
@@ -16,18 +15,17 @@ import org.jboss.logmanager.handlers.PeriodicSizeRotatingFileHandler;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.runtime.logging.InitialConfigurator;
 import io.quarkus.test.QuarkusUnitTest;
 
-@DisabledOnOs(WINDOWS)
 public class PeriodicSizeRotatingLoggingTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("application-periodic-size-file-log-rotating.properties", "application.properties"));
+                    .addAsResource("application-periodic-size-file-log-rotating.properties", "application.properties"))
+            .setLogFileName("PeriodicSizeRotatingLoggingTest.log");
 
     @Test
     public void periodicSizeRotatingConfigurationTest() {

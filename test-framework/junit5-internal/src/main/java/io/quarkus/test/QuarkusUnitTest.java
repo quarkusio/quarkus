@@ -81,6 +81,7 @@ public class QuarkusUnitTest
     private Consumer<Throwable> assertException;
     private Supplier<JavaArchive> archiveProducer;
     private Runnable afterUndeployListener;
+    private String logFileName;
 
     private final RestAssuredURLManager restAssuredURLManager;
 
@@ -114,6 +115,11 @@ public class QuarkusUnitTest
 
     public QuarkusUnitTest setArchiveProducer(Supplier<JavaArchive> archiveProducer) {
         this.archiveProducer = archiveProducer;
+        return this;
+    }
+
+    public QuarkusUnitTest setLogFileName(String logFileName) {
+        this.logFileName = logFileName;
         return this;
     }
 
@@ -178,7 +184,11 @@ public class QuarkusUnitTest
             throw new RuntimeException("QuarkusUnitTest does not have archive producer set");
         }
 
-        PropertyTestUtil.setLogFileProperty();
+        if (logFileName != null) {
+            PropertyTestUtil.setLogFileProperty(logFileName);
+        } else {
+            PropertyTestUtil.setLogFileProperty();
+        }
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         if (store.get(TestResourceManager.class.getName()) == null) {
             TestResourceManager manager = new TestResourceManager(extensionContext.getRequiredTestClass());

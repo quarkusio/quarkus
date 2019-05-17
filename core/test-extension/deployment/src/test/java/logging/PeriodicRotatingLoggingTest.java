@@ -24,7 +24,8 @@ public class PeriodicRotatingLoggingTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("application-periodic-file-log-rotating.properties", "application.properties"));
+                    .addAsResource("application-periodic-file-log-rotating.properties", "application.properties"))
+            .setLogFileName("PeriodicRotatingLoggingTest.log");
 
     @Test
     public void periodicRotatingConfigurationTest() {

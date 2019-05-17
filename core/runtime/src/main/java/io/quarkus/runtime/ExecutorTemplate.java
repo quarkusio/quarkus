@@ -61,7 +61,7 @@ public class ExecutorTemplate {
         final int cpus = ProcessorInfo.availableProcessors();
         // run time config variables
         builder.setCorePoolSize(threadPoolConfig.coreThreads);
-        builder.setMaximumPoolSize(threadPoolConfig.maxThreads <= 0 ? 8 * cpus : threadPoolConfig.maxThreads);
+        builder.setMaximumPoolSize(threadPoolConfig.maxThreads.orElse(8 * cpus));
         builder.setMaximumQueueSize(threadPoolConfig.queueSize);
         builder.setGrowthResistance(threadPoolConfig.growthResistance);
         builder.setKeepAliveTime(threadPoolConfig.keepAliveTime);

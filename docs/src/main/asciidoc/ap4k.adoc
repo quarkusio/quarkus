@@ -1,4 +1,4 @@
-= {project-name} - Generating Kubernetes resources
+= Generating Kubernetes resources
 
 This guide covers generating Kubernetes resources based on sane defaults and user supplied configuration.
 

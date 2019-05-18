@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.Dependency;
@@ -17,7 +20,6 @@ import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 
 import io.quarkus.dependencies.Extension;
-import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 
 public class ListExtensions {
@@ -29,20 +31,35 @@ public class ListExtensions {
         this.model = model;
     }
 
-    public void listExtensions(boolean all, String format) {
-        Consumer<String[]> currentFormatter = "simple".equalsIgnoreCase(format) ? this::simpleFormatter : this::fullFormatter;
-        String extensionStatus = all ? "available" : "installable";
-        System.out.println(String.format("%nCurrent Quarkus extensions %s: ", extensionStatus));
-        if (!"simple".equalsIgnoreCase(format)) {
-            currentFormatter.accept(new String[] { "Status", "Extension", "ArtifactId", "Updated Version", "Guide" });
-        }
-
+    public void listExtensions(boolean all, String format, String search) {
         final Map<String, Dependency> installed = findInstalled();
 
-        loadExtensions().forEach(extension -> display(extension, installed, all, currentFormatter));
+        Stream<Extension> extensionsStream = loadExtensions().stream();
+        if (search != null && !"*".equalsIgnoreCase(search)) {
+            final Pattern searchPattern = Pattern.compile(".*" + search + ".*", Pattern.CASE_INSENSITIVE);
+            extensionsStream = extensionsStream.filter(e -> filterBySearch(searchPattern, e));
+        }
+        List<Extension> loadedExtensions = extensionsStream.collect(Collectors.toList());
 
-        System.out.println("\nAdd an extension to your project by adding the dependency to your " +
-                "project or use `mvn quarkus:add-extension -Dextensions=\"artifactId\"`");
+        if (loadedExtensions.isEmpty()) {
+            System.out.println("No extension found with this pattern");
+        } else {
+            Consumer<String[]> currentFormatter = "simple".equalsIgnoreCase(format) ? this::simpleFormatter
+                    : this::fullFormatter;
+            String extensionStatus = all ? "available" : "installable";
+            System.out.println(String.format("%nCurrent Quarkus extensions %s: ", extensionStatus));
+            if (!"simple".equalsIgnoreCase(format)) {
+                currentFormatter.accept(new String[] { "Status", "Extension", "ArtifactId", "Updated Version", "Guide" });
+            }
+
+            loadedExtensions.forEach(extension -> display(extension, installed, all, currentFormatter));
+            System.out.println("\nAdd an extension to your project by adding the dependency to your " +
+                    "project or use `mvn quarkus:add-extension -Dextensions=\"artifactId\"`");
+        }
+    }
+
+    private boolean filterBySearch(final Pattern searchPattern, Extension e) {
+        return searchPattern.matcher(e.getName()).matches();
     }
 
     private void simpleFormatter(String[] cols) {

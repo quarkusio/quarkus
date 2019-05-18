@@ -2,6 +2,7 @@ package io.quarkus.runtime;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -21,11 +22,11 @@ public class ThreadPoolConfig {
     public int coreThreads;
 
     /**
-     * The maximum number of threads. If this is not specified or <= to zero then
+     * The maximum number of threads. If this is not specified then
      * it will be automatically sized to 4 * the number of available processors
      */
-    @ConfigItem(defaultValue = "0")
-    public int maxThreads;
+    @ConfigItem
+    public OptionalInt maxThreads;
 
     /**
      * The queue size. For most applications this should be unbounded
@@ -69,9 +70,9 @@ public class ThreadPoolConfig {
     public Optional<Duration> shutdownCheckInterval;
 
     /**
-     * The amount of time in milliseconds a thread will stay alive with no work. Defaults to 1 second
+     * The amount of time a thread will stay alive with no work.
      */
-    @ConfigItem(defaultValue = "PT1S")
+    @ConfigItem(defaultValue = "PT30S")
     public Duration keepAliveTime;
 
 }

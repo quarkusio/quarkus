@@ -64,13 +64,13 @@ public class DataSourceRuntimeConfig {
     /**
      * The interval at which we validate idle connections in the background
      */
-    @ConfigItem(defaultValue = "PT2M")
+    @ConfigItem(defaultValue = "2M")
     public Optional<Duration> backgroundValidationInterval;
 
     /**
      * The timeout before cancelling the acquisition of a new connection
      */
-    @ConfigItem(defaultValue = "PT5S")
+    @ConfigItem(defaultValue = "5")
     public Optional<Duration> acquisitionTimeout;
 
     /**
@@ -82,7 +82,7 @@ public class DataSourceRuntimeConfig {
     /**
      * The interval at which we try to remove idle connections.
      */
-    @ConfigItem(defaultValue = "PT5M")
+    @ConfigItem(defaultValue = "5M")
     public Optional<Duration> idleRemovalInterval;
 
     /**

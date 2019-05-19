@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;

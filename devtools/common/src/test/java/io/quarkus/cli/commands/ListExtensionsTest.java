@@ -125,6 +125,7 @@ public class ListExtensionsTest {
         boolean resteasy = false;
         boolean hibernateValidator = false;
         final String output = baos.toString();
+        boolean checkGuideInLineAfter = false;
         for (String line : output.split("\r?\n")) {
             if (line.contains(" Agroal ")) {
                 assertTrue(line.startsWith("current"), "Agroal should list as current: " + line);
@@ -133,12 +134,18 @@ public class ListExtensionsTest {
                 assertTrue(line.startsWith("update"), "RESTEasy should list as having an update: " + line);
                 assertTrue(
                         line.endsWith(
-                                String.format("%-16s %s", getPluginVersion(), "https://quarkus.io/guides/rest-json-guide")),
+                                String.format("%-16s", getPluginVersion())),
                         "RESTEasy should list as having an update: " + line);
                 resteasy = true;
             } else if (line.contains(" Hibernate Validator  ")) {
                 assertTrue(line.startsWith("   "), "Hibernate Validator should not list as anything: " + line);
                 hibernateValidator = true;
+            } else if (checkGuideInLineAfter) {
+                checkGuideInLineAfter = false;
+                assertTrue(
+                        line.endsWith(
+                                String.format("%s", "https://quarkus.io/guides/rest-json-guide")),
+                        "RESTEasy should list as having an guide: " + line);
             }
         }
 

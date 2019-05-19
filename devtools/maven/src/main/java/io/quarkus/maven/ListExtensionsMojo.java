@@ -31,7 +31,7 @@ public class ListExtensionsMojo extends AbstractMojo {
     /**
      * display in simplified format.
      */
-    @Parameter(property = "quarkus.extension.format", alias = "quarkus.extension.format", defaultValue = "full")
+    @Parameter(property = "quarkus.extension.format", alias = "quarkus.extension.format", defaultValue = "simple")
     protected String format;
 
     @Override

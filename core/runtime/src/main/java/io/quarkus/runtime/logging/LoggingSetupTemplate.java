@@ -73,13 +73,13 @@ public class LoggingSetupTemplate {
             if (rotationConfig.maxFileSize.isPresent() && rotationConfig.fileSuffix.isPresent()) {
                 PeriodicSizeRotatingFileHandler periodicSizeRotatingFileHandler = new PeriodicSizeRotatingFileHandler();
                 periodicSizeRotatingFileHandler.setSuffix(rotationConfig.fileSuffix.get());
-                periodicSizeRotatingFileHandler.setRotateSize(rotationConfig.maxFileSize.getAsLong());
+                periodicSizeRotatingFileHandler.setRotateSize(rotationConfig.maxFileSize.get().asLongValue());
                 periodicSizeRotatingFileHandler.setRotateOnBoot(rotationConfig.rotateOnBoot);
                 periodicSizeRotatingFileHandler.setMaxBackupIndex(rotationConfig.maxBackupIndex);
                 handler = periodicSizeRotatingFileHandler;
             } else if (rotationConfig.maxFileSize.isPresent()) {
                 SizeRotatingFileHandler sizeRotatingFileHandler = new SizeRotatingFileHandler(
-                        rotationConfig.maxFileSize.getAsLong(), rotationConfig.maxBackupIndex);
+                        rotationConfig.maxFileSize.get().asLongValue(), rotationConfig.maxBackupIndex);
                 sizeRotatingFileHandler.setRotateOnBoot(rotationConfig.rotateOnBoot);
                 handler = sizeRotatingFileHandler;
             } else if (rotationConfig.fileSuffix.isPresent()) {

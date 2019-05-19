@@ -23,6 +23,7 @@ import java.util.logging.Level;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.configuration.MemorySize;
 
 @ConfigGroup
 public class FileConfig {
@@ -62,7 +63,7 @@ public class FileConfig {
          * The maximum file size of the log file after which a rotation is executed.
          */
         @ConfigItem
-        OptionalLong maxFileSize;
+        Optional<MemorySize> maxFileSize;
 
         /**
          * The maximum number of backups to keep.

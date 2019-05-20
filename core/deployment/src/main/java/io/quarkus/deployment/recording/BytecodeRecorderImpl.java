@@ -181,10 +181,11 @@ public class BytecodeRecorderImpl implements RecorderContext {
             if (existingProxyClasses.containsKey(theClass)) {
                 return theClass.cast(existingProxyClasses.get(theClass));
             }
+            String proxyName = getClass().getName() + "$$RecordingProxyProxy" + COUNT.incrementAndGet();
             ProxyFactory<T> factory = new ProxyFactory<T>(new ProxyConfiguration<T>()
                     .setSuperClass(theClass)
                     .setClassLoader(classLoader)
-                    .setProxyName(getClass().getName() + "$$RecordingProxyProxy" + COUNT.incrementAndGet()));
+                    .setProxyName(proxyName));
             try {
                 T recordingProxy = factory.newInstance(new InvocationHandler() {
                     @Override
@@ -192,6 +193,11 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         StoredMethodCall storedMethodCall = new StoredMethodCall(theClass, method, args);
                         storedMethodCalls.add(storedMethodCall);
                         Class<?> returnType = method.getReturnType();
+                        if (method.getName().equals("toString")
+                                && method.getParameterTypes().length == 0
+                                && returnType.equals(String.class)) {
+                            return proxyName;
+                        }
                         if (returnType.isPrimitive()) {
                             return 0;
                         }

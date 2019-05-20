@@ -64,6 +64,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 
@@ -87,6 +88,9 @@ public class ArcAnnotationProcessor {
 
     @Inject
     BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods;
+
+    @Inject
+    BuildProducer<ReflectiveClassBuildItem> reflectiveClasses;
 
     @Inject
     BuildProducer<ReflectiveFieldBuildItem> reflectiveFields;
@@ -263,6 +267,11 @@ public class ArcAnnotationProcessor {
 
         BeanProcessor beanProcessor = builder.build();
         BeanDeployment beanDeployment = beanProcessor.process();
+
+        // Register all qualifiers for reflection to support type-safe resolution at runtime in native image
+        for (ClassInfo qualifier : beanDeployment.getQualifiers()) {
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, qualifier.name().toString()));
+        }
 
         ArcContainer container = arcTemplate.getContainer(shutdown);
         BeanContainer beanContainer = arcTemplate.initBeanContainer(container,

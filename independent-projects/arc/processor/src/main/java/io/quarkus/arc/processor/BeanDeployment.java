@@ -249,7 +249,7 @@ public class BeanDeployment {
         long start = System.currentTimeMillis();
         // Validate the bean deployment
         List<Throwable> errors = new ArrayList<>();
-        validateBeans(errors);
+        validateBeans(errors, validators);
         ValidationContextImpl validationContext = new ValidationContextImpl(buildContext);
         for (BeanDeploymentValidator validator : validators) {
             validator.validate(validationContext);
@@ -467,7 +467,7 @@ public class BeanDeployment {
         }
     }
 
-    private void validateBeans(List<Throwable> errors) {
+    private void validateBeans(List<Throwable> errors, List<BeanDeploymentValidator> validators) {
         Map<String, List<BeanInfo>> namedBeans = new HashMap<>();
 
         for (BeanInfo bean : beans) {
@@ -479,7 +479,7 @@ public class BeanDeployment {
                 }
                 named.add(bean);
             }
-            bean.validate(errors);
+            bean.validate(errors, validators);
         }
 
         if (!namedBeans.isEmpty()) {

@@ -52,10 +52,11 @@ public class Injection {
      * @param beanDeployment
      * @return the list of injections
      */
-    static List<Injection> forBean(AnnotationTarget beanTarget, BeanInfo declaringBean, BeanDeployment beanDeployment) {
+    static List<Injection> forBean(AnnotationTarget beanTarget, BeanInfo declaringBean, BeanDeployment beanDeployment,
+            InjectionPointModifier transformer) {
         if (Kind.CLASS.equals(beanTarget.kind())) {
             List<Injection> injections = new ArrayList<>();
-            forClassBean(beanTarget.asClass(), beanTarget.asClass(), beanDeployment, injections);
+            forClassBean(beanTarget.asClass(), beanTarget.asClass(), beanDeployment, injections, transformer);
             return injections;
         } else if (Kind.METHOD.equals(beanTarget.kind())) {
             if (beanTarget.asMethod().parameters().isEmpty()) {
@@ -65,13 +66,13 @@ public class Injection {
             return Collections.singletonList(
                     new Injection(beanTarget.asMethod(),
                             InjectionPointInfo.fromMethod(beanTarget.asMethod(), declaringBean.getImplClazz(),
-                                    beanDeployment)));
+                                    beanDeployment, transformer)));
         }
         throw new IllegalArgumentException("Unsupported annotation target");
     }
 
     private static void forClassBean(ClassInfo beanClass, ClassInfo classInfo, BeanDeployment beanDeployment,
-            List<Injection> injections) {
+            List<Injection> injections, InjectionPointModifier transformer) {
 
         List<AnnotationInstance> injectAnnotations = getAllInjectionPoints(beanDeployment, classInfo, DotNames.INJECT);
 
@@ -82,11 +83,12 @@ public class Injection {
                     injections
                             .add(new Injection(injectTarget, Collections
                                     .singletonList(
-                                            InjectionPointInfo.fromField(injectTarget.asField(), beanClass, beanDeployment))));
+                                            InjectionPointInfo.fromField(injectTarget.asField(), beanClass, beanDeployment,
+                                                    transformer))));
                     break;
                 case METHOD:
                     injections.add(new Injection(injectTarget,
-                            InjectionPointInfo.fromMethod(injectTarget.asMethod(), beanClass, beanDeployment)));
+                            InjectionPointInfo.fromMethod(injectTarget.asMethod(), beanClass, beanDeployment, transformer)));
                     break;
                 default:
                     LOGGER.warn("Unsupported @Inject target ignored: " + injectAnnotation.target());
@@ -117,7 +119,7 @@ public class Injection {
                 if (nonNoargConstrs.size() == 1) {
                     final MethodInfo injectTarget = nonNoargConstrs.get(0);
                     injections.add(new Injection(injectTarget,
-                            InjectionPointInfo.fromMethod(injectTarget.asMethod(), beanClass, beanDeployment)));
+                            InjectionPointInfo.fromMethod(injectTarget.asMethod(), beanClass, beanDeployment, transformer)));
                 }
             }
         }
@@ -134,7 +136,7 @@ public class Injection {
                         injections.add(new Injection(resourceAnnotationInstance.target(), Collections
                                 .singletonList(InjectionPointInfo
                                         .fromResourceField(resourceAnnotationInstance.target().asField(), beanClass,
-                                                beanDeployment))));
+                                                beanDeployment, transformer))));
                     }
                     // TODO setter injection
                 }
@@ -144,21 +146,24 @@ public class Injection {
         if (!classInfo.superName().equals(DotNames.OBJECT)) {
             ClassInfo info = beanDeployment.getIndex().getClassByName(classInfo.superName());
             if (info != null) {
-                forClassBean(beanClass, info, beanDeployment, injections);
+                forClassBean(beanClass, info, beanDeployment, injections, transformer);
             }
         }
 
     }
 
-    static Injection forDisposer(MethodInfo disposerMethod, ClassInfo beanClass, BeanDeployment beanDeployment) {
+    static Injection forDisposer(MethodInfo disposerMethod, ClassInfo beanClass, BeanDeployment beanDeployment,
+            InjectionPointModifier transformer) {
         return new Injection(disposerMethod, InjectionPointInfo.fromMethod(disposerMethod, beanClass, beanDeployment,
-                annotations -> annotations.stream().anyMatch(a -> a.name().equals(DotNames.DISPOSES))));
+                annotations -> annotations.stream().anyMatch(a -> a.name().equals(DotNames.DISPOSES)), transformer));
     }
 
-    static Injection forObserver(MethodInfo observerMethod, ClassInfo beanClass, BeanDeployment beanDeployment) {
+    static Injection forObserver(MethodInfo observerMethod, ClassInfo beanClass, BeanDeployment beanDeployment,
+            InjectionPointModifier transformer) {
         return new Injection(observerMethod, InjectionPointInfo.fromMethod(observerMethod, beanClass, beanDeployment,
                 annotations -> annotations.stream()
-                        .anyMatch(a -> a.name().equals(DotNames.OBSERVES) || a.name().equals(DotNames.OBSERVES_ASYNC))));
+                        .anyMatch(a -> a.name().equals(DotNames.OBSERVES) || a.name().equals(DotNames.OBSERVES_ASYNC)),
+                transformer));
     }
 
     final AnnotationTarget target;

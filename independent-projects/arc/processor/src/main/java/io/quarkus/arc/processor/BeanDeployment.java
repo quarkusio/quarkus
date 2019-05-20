@@ -81,6 +81,8 @@ public class BeanDeployment {
 
     private final AnnotationStore annotationStore;
 
+    private final InjectionPointModifier injectionPointTransformer;
+
     private final Set<DotName> resourceAnnotations;
 
     private final List<InjectionPointInfo> injectionPoints;
@@ -94,11 +96,12 @@ public class BeanDeployment {
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             List<AnnotationsTransformer> annotationTransformers) {
         this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyList(), null, false, null, Collections.emptyMap());
+                Collections.emptyList(), Collections.emptyList(), null, false, null, Collections.emptyMap());
     }
 
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             List<AnnotationsTransformer> annotationTransformers,
+            List<InjectionPointsTransformer> injectionPointsTransformers,
             Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars,
             List<ContextRegistrar> contextRegistrars,
             BuildContextImpl buildContext, boolean removeUnusedBeans, List<Predicate<BeanInfo>> unusedExclusions,
@@ -111,13 +114,13 @@ public class BeanDeployment {
         this.resourceAnnotations = new HashSet<>(resourceAnnotations);
         this.index = index;
         this.annotationStore = new AnnotationStore(annotationTransformers, buildContext);
-        this.removeUnusedBeans = removeUnusedBeans;
-        this.unusedExclusions = removeUnusedBeans ? unusedExclusions : null;
-        this.removedBeans = new HashSet<>();
-
         if (buildContext != null) {
             buildContext.putInternal(Key.ANNOTATION_STORE.asString(), annotationStore);
         }
+        this.injectionPointTransformer = new InjectionPointModifier(injectionPointsTransformers, buildContext);
+        this.removeUnusedBeans = removeUnusedBeans;
+        this.unusedExclusions = removeUnusedBeans ? unusedExclusions : null;
+        this.removedBeans = new HashSet<>();
 
         // Note that custom scope annotation is a bean defining annotation
         // ComponentsProviderGenerator must be aware of the custom contexts
@@ -618,7 +621,7 @@ public class BeanDeployment {
         List<BeanInfo> beans = new ArrayList<>();
         Map<ClassInfo, BeanInfo> beanClassToBean = new HashMap<>();
         for (ClassInfo beanClass : beanClasses) {
-            BeanInfo classBean = Beans.createClassBean(beanClass, this);
+            BeanInfo classBean = Beans.createClassBean(beanClass, this, injectionPointTransformer);
             beans.add(classBean);
             beanClassToBean.put(beanClass, classBean);
             injectionPoints.addAll(classBean.getAllInjectionPoints());
@@ -628,7 +631,8 @@ public class BeanDeployment {
         for (MethodInfo disposerMethod : disposerMethods) {
             BeanInfo declaringBean = beanClassToBean.get(disposerMethod.declaringClass());
             if (declaringBean != null) {
-                Injection injection = Injection.forDisposer(disposerMethod, declaringBean.getImplClazz(), this);
+                Injection injection = Injection.forDisposer(disposerMethod, declaringBean.getImplClazz(), this,
+                        injectionPointTransformer);
                 disposers.add(new DisposerInfo(declaringBean, disposerMethod, injection));
                 injectionPoints.addAll(injection.injectionPoints);
             }
@@ -638,7 +642,7 @@ public class BeanDeployment {
             BeanInfo declaringBean = beanClassToBean.get(producerMethod.declaringClass());
             if (declaringBean != null) {
                 BeanInfo producerMethodBean = Beans.createProducerMethod(producerMethod, declaringBean, this,
-                        findDisposer(declaringBean, producerMethod, disposers));
+                        findDisposer(declaringBean, producerMethod, disposers), injectionPointTransformer);
                 beans.add(producerMethodBean);
                 injectionPoints.addAll(producerMethodBean.getAllInjectionPoints());
             }
@@ -655,7 +659,8 @@ public class BeanDeployment {
         for (MethodInfo observerMethod : syncObserverMethods) {
             BeanInfo declaringBean = beanClassToBean.get(observerMethod.declaringClass());
             if (declaringBean != null) {
-                Injection injection = Injection.forObserver(observerMethod, declaringBean.getImplClazz(), this);
+                Injection injection = Injection.forObserver(observerMethod, declaringBean.getImplClazz(), this,
+                        injectionPointTransformer);
                 observers.add(new ObserverInfo(declaringBean, observerMethod, injection, false));
                 injectionPoints.addAll(injection.injectionPoints);
             }
@@ -663,7 +668,8 @@ public class BeanDeployment {
         for (MethodInfo observerMethod : asyncObserverMethods) {
             BeanInfo declaringBean = beanClassToBean.get(observerMethod.declaringClass());
             if (declaringBean != null) {
-                Injection injection = Injection.forObserver(observerMethod, declaringBean.getImplClazz(), this);
+                Injection injection = Injection.forObserver(observerMethod, declaringBean.getImplClazz(), this,
+                        injectionPointTransformer);
                 observers.add(new ObserverInfo(declaringBean, observerMethod, injection, true));
                 injectionPoints.addAll(injection.injectionPoints);
             }
@@ -722,7 +728,7 @@ public class BeanDeployment {
         }
         List<InterceptorInfo> interceptors = new ArrayList<>();
         for (ClassInfo interceptorClass : interceptorClasses) {
-            interceptors.add(Interceptors.createInterceptor(interceptorClass, this));
+            interceptors.add(Interceptors.createInterceptor(interceptorClass, this, injectionPointTransformer));
         }
         if (LOGGER.isTraceEnabled()) {
             for (InterceptorInfo interceptor : interceptors) {

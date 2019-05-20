@@ -124,6 +124,7 @@ public class ArcAnnotationProcessor {
             List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<AnnotationsTransformerBuildItem> annotationTransformers,
+            List<InjectionPointTransformerBuildItem> injectionPointTransformers,
             ShutdownContextBuildItem shutdown, List<AdditionalStereotypeBuildItem> additionalStereotypeBuildItems,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicates,
             BuildProducer<FeatureBuildItem> feature)
@@ -204,8 +205,13 @@ public class ArcAnnotationProcessor {
                 reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
             }
         });
+        // register all annotation transformers
         for (AnnotationsTransformerBuildItem transformerItem : annotationTransformers) {
             builder.addAnnotationTransformer(transformerItem.getAnnotationsTransformer());
+        }
+        // register all injection point transformers
+        for (InjectionPointTransformerBuildItem transformerItem : injectionPointTransformers) {
+            builder.addInjectionPointTransformer(transformerItem.getInjectionPointsTransformer());
         }
 
         builder.setOutput(new ResourceOutput() {

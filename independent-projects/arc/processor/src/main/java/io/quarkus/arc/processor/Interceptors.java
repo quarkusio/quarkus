@@ -33,7 +33,8 @@ final class Interceptors {
      * @param beanDeployment
      * @return a new interceptor info
      */
-    static InterceptorInfo createInterceptor(ClassInfo interceptorClass, BeanDeployment beanDeployment) {
+    static InterceptorInfo createInterceptor(ClassInfo interceptorClass, BeanDeployment beanDeployment,
+            InjectionPointModifier transformer) {
         Set<AnnotationInstance> bindings = new HashSet<>();
         Integer priority = 0;
         for (AnnotationInstance annotation : interceptorClass.classAnnotations()) {
@@ -47,7 +48,7 @@ final class Interceptors {
             throw new DefinitionException("Interceptor has no bindings: " + interceptorClass);
         }
         return new InterceptorInfo(interceptorClass, beanDeployment, bindings,
-                Injection.forBean(interceptorClass, null, beanDeployment), priority);
+                Injection.forBean(interceptorClass, null, beanDeployment, transformer), priority);
     }
 
 }

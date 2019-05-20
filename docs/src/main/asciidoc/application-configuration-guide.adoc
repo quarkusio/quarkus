@@ -237,7 +237,7 @@ public class MicroProfileCustomValueConverter implements Converter<MicroProfileC
 }
 ----
 
-Then you need to include fully qualified class name of converter in file `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
+Then you need to include fully qualified class name of converter in a service file `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
 If you have more converters simply add their class names in this file as well. Single fully qualified class name per line, for example:
 
 [source,shell]
@@ -260,17 +260,17 @@ MicroProfileCustomValue value;
 
 ==== Converter priority
 
-In some cases you may want to use custom converter to convert type which is already converted
-by a different converter. In such case you can use `javax.annotation.Priority` annotation to
-change converters precedence and make your custom converter of higher priority then the other
+In some cases you may want to use a custom converter to convert a type which is already converted
+by a different converter. In such cases, you can use the `javax.annotation.Priority` annotation to
+change converters precedence and make your custom converter of higher priority than the other
 on the list.
 
-By default, if no `@Priority` can be found on a converter, it's registered with priority of 100
-and all {project-name} core converters are registered with priority of 200, so depending on which
-converter you would like to replace, you need to set higher value.
+By default, if no `@Priority` can be found on a converter, it's registered with a priority of 100
+and all {project-name} core converters are registered with a priority of 200, so depending on which
+converter you would like to replace, you need to set a higher value.
 
-To demonstrate the idea let us implement custom converter which will take precedence over 
-`MicroProfileCustomValueConverter` implemented in previous example.
+To demonstrate the idea let us implement a custom converter which will take precedence over 
+`MicroProfileCustomValueConverter` implemented in the previous example.
 
 [source,java]
 ----
@@ -301,7 +301,7 @@ Since it converts the same value type (namely `MicroProfileCustomValue`) and has
 of 150, it will be used instead of a `MicroProfileCustomValueConverter` which has a default
 priority of 100.
 
-NOTE: This new converter also needs to be listed in a service file.
+NOTE: This new converter also needs to be listed in a service file, i.e. `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
 
 == More info on how to configure
 

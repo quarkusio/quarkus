@@ -53,6 +53,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -176,7 +177,8 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<ResteasyServerConfigBuildItem> resteasyServerConfig,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
-            CombinedIndexBuildItem combinedIndexBuildItem) throws Exception {
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) throws Exception {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         resource.produce(new SubstrateResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
@@ -190,7 +192,7 @@ public class ResteasyServerCommonProcessor {
             throw createMultipleApplicationsException(applicationPaths);
         }
 
-        Collection<AnnotationInstance> paths = index.getAnnotations(ResteasyDotNames.PATH);
+        Collection<AnnotationInstance> paths = beanArchiveIndexBuildItem.getIndex().getAnnotations(ResteasyDotNames.PATH);
 
         if (paths.isEmpty()) {
             // no detected @Path, bail out

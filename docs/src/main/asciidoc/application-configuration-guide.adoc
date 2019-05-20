@@ -237,7 +237,7 @@ public class MicroProfileCustomValueConverter implements Converter<MicroProfileC
 }
 ----
 
-Then you need to include fully qualified class name of converter in file `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
+Then you need to include fully qualified class name of converter in a service file `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
 If you have more converters simply add their class names in this file as well. Single fully qualified class name per line, for example:
 
 [source,shell]
@@ -257,6 +257,51 @@ After this is done you can use your custom type as a configuration value:
 @ConfigProperty(name = "configuration.value.name")
 MicroProfileCustomValue value;
 ----
+
+==== Converter priority
+
+In some cases you may want to use a custom converter to convert a type which is already converted
+by a different converter. In such cases, you can use the `javax.annotation.Priority` annotation to
+change converters precedence and make your custom converter of higher priority than the other
+on the list.
+
+By default, if no `@Priority` can be found on a converter, it's registered with a priority of 100
+and all {project-name} core converters are registered with a priority of 200, so depending on which
+converter you would like to replace, you need to set a higher value.
+
+To demonstrate the idea let us implement a custom converter which will take precedence over 
+`MicroProfileCustomValueConverter` implemented in the previous example.
+
+[source,java]
+----
+package org.acme.config;
+
+import javax.annotation.Priority;
+import org.eclipse.microprofile.config.spi.Converter;
+
+@Priority(150)
+public class MyCustomConverter implements Converter<MicroProfileCustomValue> {
+
+    @Override
+    public MicroProfileCustomValue convert(String value) {
+
+        final int secretNumber;
+        if (value.startsFrom("OBF:")) {
+            secretNumber = Integer.valueOf(SecretDecoder.decode(value));
+        } else {
+            secretNumber = Integer.valueOf(value);
+        }
+
+        return new MicroProfileCustomValue(secretNumber);
+    }
+}
+----
+
+Since it converts the same value type (namely `MicroProfileCustomValue`) and has a priority
+of 150, it will be used instead of a `MicroProfileCustomValueConverter` which has a default
+priority of 100.
+
+NOTE: This new converter also needs to be listed in a service file, i.e. `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
 
 == More info on how to configure
 

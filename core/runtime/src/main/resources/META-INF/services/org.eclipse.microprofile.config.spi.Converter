@@ -6,4 +6,5 @@ io.quarkus.runtime.configuration.ssl.CipherSuiteSelectorConverter
 io.quarkus.runtime.configuration.ssl.ProtocolConverter
 io.quarkus.runtime.configuration.PathConverter
 io.quarkus.runtime.configuration.DurationConverter
+io.quarkus.runtime.configuration.MemorySizeConverter
 io.quarkus.runtime.logging.LevelConverter

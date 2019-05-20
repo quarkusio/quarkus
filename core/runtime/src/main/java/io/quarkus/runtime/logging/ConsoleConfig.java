@@ -39,7 +39,7 @@ public class ConsoleConfig {
     /**
      * The console log level
      */
-    @ConfigItem(defaultValue = "INFO")
+    @ConfigItem(defaultValue = "ALL")
     Level level;
 
     /**

@@ -22,7 +22,7 @@ Console logging is enabled by default.  To configure or disable it, the followin
 |Property Name|Default|Description
 |quarkus.log.console.enable|true|Determine whether console logging is enabled.
 |quarkus.log.console.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n|The format pattern to use for logging to the console; see <<format_string>>.
-|quarkus.log.console.level|INFO|The minimum log level to display to the console.
+|quarkus.log.console.level|ALL|The minimum log level to display to the console.
 |quarkus.log.console.color|true|Allow color rendering to be used on the console, if it is supported by the terminal.
 |===
 

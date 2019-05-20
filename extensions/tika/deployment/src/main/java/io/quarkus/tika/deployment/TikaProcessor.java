@@ -21,6 +21,7 @@ import io.quarkus.tika.runtime.jaxrs.TikaMessageBodyReader;
 public class TikaProcessor {
 
     private static final Set<String> NATIVE_READY_PARSERS = Arrays.stream(new String[] {
+    		"org.apache.tika.parser.csv.TextAndCSVParser",
             "org.apache.tika.parser.txt.TXTParser",
             "org.apache.tika.parser.odf.OpenDocumentParser",
             "org.apache.tika.parser.pdf.PDFParser"

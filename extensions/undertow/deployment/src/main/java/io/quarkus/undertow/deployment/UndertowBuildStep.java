@@ -138,7 +138,6 @@ public class UndertowBuildStep {
     public static final DotName DECLARE_ROLES = DotName.createSimple(DeclareRoles.class.getName());
     public static final DotName MULTIPART_CONFIG = DotName.createSimple(MultipartConfig.class.getName());
     public static final DotName SERVLET_SECURITY = DotName.createSimple(ServletSecurity.class.getName());
-    public static final String WEB_XML = "META-INF/web.xml";
     protected static final String META_INF_RESOURCES = "META-INF/resources";
 
     @Inject
@@ -188,50 +187,6 @@ public class UndertowBuildStep {
     void runtimeReinit(BuildProducer<RuntimeReinitializedClassBuildItem> producer) {
         producer.produce(new RuntimeReinitializedClassBuildItem("org.wildfly.common.net.HostName"));
         producer.produce(new RuntimeReinitializedClassBuildItem("org.wildfly.common.os.Process"));
-    }
-
-    @BuildStep
-    HotDeploymentConfigFileBuildItem configFile() {
-        return new HotDeploymentConfigFileBuildItem(WEB_XML);
-    }
-
-    @BuildStep
-    WebMetadataBuildItem createWebMetadata(ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            Consumer<AdditionalBeanBuildItem> additionalBeanBuildItemConsumer) throws Exception {
-
-        WebMetaData result;
-        Path webXml = applicationArchivesBuildItem.getRootArchive().getChildPath(WEB_XML);
-        if (webXml != null) {
-            Set<String> additionalBeans = new HashSet<>();
-
-            final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
-            MetaDataElementParser.DTDInfo dtdInfo = new MetaDataElementParser.DTDInfo();
-            inputFactory.setXMLResolver(dtdInfo);
-            try (FileInputStream in = new FileInputStream(webXml.toFile())) {
-                final XMLStreamReader xmlReader = inputFactory.createXMLStreamReader(in);
-                result = WebMetaDataParser.parse(xmlReader, dtdInfo, PropertyReplacers.noop());
-            }
-            if (result.getServlets() != null) {
-                for (ServletMetaData i : result.getServlets()) {
-                    additionalBeans.add(i.getServletClass());
-                }
-            }
-            if (result.getFilters() != null) {
-                for (FilterMetaData i : result.getFilters()) {
-                    additionalBeans.add(i.getFilterClass());
-                }
-            }
-            if (result.getListeners() != null) {
-                for (ListenerMetaData i : result.getListeners()) {
-                    additionalBeans.add(i.getListenerClass());
-                }
-            }
-            additionalBeanBuildItemConsumer
-                    .accept(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(additionalBeans).build());
-        } else {
-            result = new WebMetaData();
-        }
-        return new WebMetadataBuildItem(result);
     }
 
     @BuildStep

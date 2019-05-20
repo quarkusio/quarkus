@@ -18,6 +18,7 @@
 package io.quarkus.creator.phase.augment;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
@@ -265,7 +266,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
             ClassOutput classOutput = new ClassOutput() {
                 @Override
                 public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {
-                    String location = className.replace('.', '/');
+                    String location = className.replace('.', File.separatorChar);
                     final Path p = wiringClassesDirectory.resolve(location + ".class");
                     Files.createDirectories(p.getParent());
                     try (OutputStream out = Files.newOutputStream(p)) {
@@ -327,7 +328,8 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                             if (!pathName.endsWith(".class")) {
                                 return;
                             }
-                            final String className = pathName.substring(0, pathName.length() - 6).replace('/', '.');
+                            final String className = pathName.substring(0, pathName.length() - 6).replace(File.separatorChar,
+                                    '.');
                             final List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = bytecodeTransformers
                                     .get(className);
                             if (visitors == null || visitors.isEmpty()) {

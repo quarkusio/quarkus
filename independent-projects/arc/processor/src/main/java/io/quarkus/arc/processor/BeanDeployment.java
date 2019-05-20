@@ -578,6 +578,7 @@ public class BeanDeployment {
                     // Disposers are not inherited
                     disposerMethods.add(method);
                 } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES)) {
+                    // TODO observers are inherited
                     syncObserverMethods.add(method);
                     if (!Modifier.isAbstract(beanClass.flags())) {
                         // add only concrete classes
@@ -588,6 +589,7 @@ public class BeanDeployment {
                         }
                     }
                 } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES_ASYNC)) {
+                    // TODO observers are inherited
                     asyncObserverMethods.add(method);
                     if (!Modifier.isAbstract(beanClass.flags())) {
                         // add only concrete classes

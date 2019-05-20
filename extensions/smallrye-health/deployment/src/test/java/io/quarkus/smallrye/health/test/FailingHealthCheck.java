@@ -6,12 +6,14 @@ import java.util.Optional;
 
 import javax.enterprise.context.Dependent;
 
-import org.eclipse.microprofile.health.Health;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.eclipse.microprofile.health.Liveness;
+import org.eclipse.microprofile.health.Readiness;
 
 @Dependent
-@Health
+@Liveness
+@Readiness
 public class FailingHealthCheck implements HealthCheck {
 
     @Override

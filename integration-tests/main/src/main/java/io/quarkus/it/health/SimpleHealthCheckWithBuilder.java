@@ -1,10 +1,10 @@
 package io.quarkus.it.health;
 
-import org.eclipse.microprofile.health.Health;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.eclipse.microprofile.health.Liveness;
 
-@Health
+@Liveness
 public class SimpleHealthCheckWithBuilder implements HealthCheck {
 
     @Override

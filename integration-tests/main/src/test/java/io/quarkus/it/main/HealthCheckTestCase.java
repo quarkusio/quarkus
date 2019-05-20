@@ -2,8 +2,8 @@ package io.quarkus.it.main;
 
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.health.Health;
 import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.eclipse.microprofile.health.Liveness;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.wildfly.common.Assert;
@@ -16,7 +16,7 @@ import io.quarkus.test.junit.SubstrateTest;
 public class HealthCheckTestCase {
 
     @Inject
-    @Health
+    @Liveness
     SimpleHealthCheck checkks;
 
     @Test

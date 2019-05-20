@@ -46,7 +46,7 @@
         <maven-wrapper.version>0.7.6</maven-wrapper.version>
 
         <!-- MicroProfile TCK versions -->
-        <microprofile-health-api.version>1.0</microprofile-health-api.version>
+        <microprofile-health-api.version>2.0.1</microprofile-health-api.version>
         <microprofile-config-api.version>1.3</microprofile-config-api.version>
         <microprofile-rest-client-api.version>1.2.1</microprofile-rest-client-api.version>
     </properties>

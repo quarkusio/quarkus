@@ -16,11 +16,11 @@ public class HealthTestCase {
     @Test
     public void testHealthCheck() {
         try {
-            RestAssured.when().get("/health").then()
+            RestAssured.when().get("/health/live").then()
                     .contentType(ContentType.JSON)
                     .header("Content-Type", Matchers.containsString("charset=UTF-8"))
-                    .body("outcome", is("UP"),
-                            "checks.state", containsInAnyOrder("UP", "UP"),
+                    .body("status", is("UP"),
+                            "checks.status", containsInAnyOrder("UP", "UP"),
                             "checks.name", containsInAnyOrder("basic", "basic-with-builder"));
         } finally {
             RestAssured.reset();

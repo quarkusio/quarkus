@@ -51,6 +51,7 @@
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+        <jacoco.version>0.8.3</jacoco.version>
     </properties>
 
     <modules>
@@ -164,6 +165,137 @@
                                 <goals>
                                     <goal>sign</goal>
                                 </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <!--
+            JaCoCo based code coverage analysis
+
+            mvn -Pjacoco clean verify
+            mvn antrun:run@jacoco-all-in-one-report -Pjacoco-report
+            open target/jacoco-report/index.html
+        -->
+        <profile>
+            <id>jacoco</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>${jacoco.version}</version>
+                        <executions>
+                            <execution>
+                                <id>jacoco-prepare</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                                <configuration>
+                                    <destFile>${project.build.directory}/jacoco.exec</destFile>
+                                    <includes>
+                                        <include>*</include>
+                                    </includes>
+                                    <excludes>
+                                        <exclude>io.quarkus.it.*</exclude>
+                                    </excludes>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>jacoco-report-per-module</id>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                                <configuration>
+                                    <dataFile>${project.build.directory}/jacoco.exec</dataFile>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>jacoco-report</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <phase>process-test-resources</phase>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>org.jacoco</groupId>
+                                            <artifactId>org.jacoco.ant</artifactId>
+                                            <version>${jacoco.version}</version>
+                                        </artifactItem>
+                                    </artifactItems>
+                                    <stripVersion>true</stripVersion>
+                                    <outputDirectory>${project.build.directory}/jacoco-jars</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.jacoco</groupId>
+                                <artifactId>org.jacoco.ant</artifactId>
+                                <version>${jacoco.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>jacoco-all-in-one-report</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <target>
+                                        <taskdef name="report" classname="org.jacoco.ant.ReportTask">
+                                            <classpath path="${project.build.directory}/jacoco-jars/org.jacoco.ant.jar"/>
+                                        </taskdef>
+                                        <echo>Creating JaCoCo for Quarkus code coverage reports</echo>
+                                        <report>
+                                            <executiondata>
+                                                <fileset dir="${basedir}">
+                                                    <include name="**/target/jacoco.exec"/>
+                                                </fileset>
+                                            </executiondata>
+                                            <structure name="JaCoCo for Quarkus">
+                                                <classfiles>
+                                                    <fileset dir="${basedir}">
+                                                        <include name="**/*${project.version}.jar"/>
+                                                        <exclude name="**/target/lib/*.jar"/>
+                                                        <exclude name="independent-projects/**/*.jar"/>
+                                                        <exclude name="integration-tests/**/*.jar"/>
+                                                        <exclude name="**/*quarkus-cli-${project.version}.jar"/>
+                                                    </fileset>
+                                                </classfiles>
+                                                <sourcefiles encoding="UTF-8">
+                                                    <dirset dir="${basedir}">
+                                                        <include name="**/src/main/java"/>
+                                                    </dirset>
+                                                </sourcefiles>
+                                            </structure>
+                                            <html destdir="target/jacoco-report"/>
+                                            <xml destfile="target/jacoco-report/report.xml"/>
+                                        </report>
+                                    </target>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

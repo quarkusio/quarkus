@@ -114,7 +114,7 @@ final class Beans {
         }
 
         BeanInfo bean = new BeanInfo(beanClass, beanDeployment, scope, types, qualifiers,
-                Injection.forBean(beanClass, beanDeployment), null, null,
+                Injection.forBean(beanClass, null, beanDeployment), null, null,
                 isAlternative ? alternativePriority : null, stereotypes, name);
         return bean;
     }
@@ -197,7 +197,7 @@ final class Beans {
         }
 
         BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, types, qualifiers,
-                Injection.forBean(producerMethod, beanDeployment), declaringBean,
+                Injection.forBean(producerMethod, declaringBean, beanDeployment), declaringBean,
                 disposer, alternativePriority, stereotypes, name);
         return bean;
     }

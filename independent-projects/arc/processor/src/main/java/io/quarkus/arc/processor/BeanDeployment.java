@@ -580,18 +580,24 @@ public class BeanDeployment {
                 } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES)) {
                     // TODO observers are inherited
                     syncObserverMethods.add(method);
-                    if (!hasBeanDefiningAnnotation) {
-                        LOGGER.debugf("Observer method found but %s has no bean defining annotation - using @Dependent",
-                                beanClass);
+                    if (!Modifier.isAbstract(beanClass.flags())) {
+                        // add only concrete classes
                         beanClasses.add(beanClass);
+                        if (!hasBeanDefiningAnnotation) {
+                            LOGGER.debugf("Observer method found but %s has no bean defining annotation - using @Dependent",
+                                    beanClass);
+                        }
                     }
                 } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES_ASYNC)) {
                     // TODO observers are inherited
                     asyncObserverMethods.add(method);
-                    if (!hasBeanDefiningAnnotation) {
-                        LOGGER.debugf("Observer method found but %s has no bean defining annotation - using @Dependent",
-                                beanClass);
+                    if (!Modifier.isAbstract(beanClass.flags())) {
+                        // add only concrete classes
                         beanClasses.add(beanClass);
+                        if (!hasBeanDefiningAnnotation) {
+                            LOGGER.debugf("Observer method found but %s has no bean defining annotation - using @Dependent",
+                                    beanClass);
+                        }
                     }
                 }
             }
@@ -622,7 +628,7 @@ public class BeanDeployment {
         for (MethodInfo disposerMethod : disposerMethods) {
             BeanInfo declaringBean = beanClassToBean.get(disposerMethod.declaringClass());
             if (declaringBean != null) {
-                Injection injection = Injection.forDisposer(disposerMethod, this);
+                Injection injection = Injection.forDisposer(disposerMethod, declaringBean.getImplClazz(), this);
                 disposers.add(new DisposerInfo(declaringBean, disposerMethod, injection));
                 injectionPoints.addAll(injection.injectionPoints);
             }
@@ -649,7 +655,7 @@ public class BeanDeployment {
         for (MethodInfo observerMethod : syncObserverMethods) {
             BeanInfo declaringBean = beanClassToBean.get(observerMethod.declaringClass());
             if (declaringBean != null) {
-                Injection injection = Injection.forObserver(observerMethod, this);
+                Injection injection = Injection.forObserver(observerMethod, declaringBean.getImplClazz(), this);
                 observers.add(new ObserverInfo(declaringBean, observerMethod, injection, false));
                 injectionPoints.addAll(injection.injectionPoints);
             }
@@ -657,7 +663,7 @@ public class BeanDeployment {
         for (MethodInfo observerMethod : asyncObserverMethods) {
             BeanInfo declaringBean = beanClassToBean.get(observerMethod.declaringClass());
             if (declaringBean != null) {
-                Injection injection = Injection.forObserver(observerMethod, this);
+                Injection injection = Injection.forObserver(observerMethod, declaringBean.getImplClazz(), this);
                 observers.add(new ObserverInfo(declaringBean, observerMethod, injection, true));
                 injectionPoints.addAll(injection.injectionPoints);
             }

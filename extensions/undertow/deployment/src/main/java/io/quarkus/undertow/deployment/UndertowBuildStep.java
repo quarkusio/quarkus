@@ -116,6 +116,7 @@ import io.quarkus.undertow.runtime.ServletSecurityInfoProxy;
 import io.quarkus.undertow.runtime.ServletSecurityInfoSubstitution;
 import io.quarkus.undertow.runtime.UndertowDeploymentTemplate;
 import io.quarkus.undertow.runtime.filters.CORSTemplate;
+import io.quarkus.undertow.runtime.UndertowHandlersConfServletExtension;
 import io.undertow.Undertow;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
@@ -198,6 +199,17 @@ public class UndertowBuildStep {
     @BuildStep
     public void kubernetes(HttpConfig config, BuildProducer<KubernetesPortBuildItem> portProducer) {
         portProducer.produce(new KubernetesPortBuildItem(config.port, "http"));
+    }
+
+    /**
+     * Register the undertow-handlers.conf file
+     */
+    @BuildStep
+    @Record(STATIC_INIT)
+    public void registerUndertowHandlersConf(BuildProducer<ServletExtensionBuildItem> producer) {
+        if (UndertowHandlersConfServletExtension.existsConfFile()) {
+            producer.produce(new ServletExtensionBuildItem(new UndertowHandlersConfServletExtension()));
+        }
     }
 
     @Record(STATIC_INIT)

@@ -55,6 +55,7 @@
         <module>elytron-security</module>
         <module>camel-core</module>
         <module>camel-salesforce</module>
+        <module>camel-servlet</module>
         <module>camel-aws-s3</module>
         <module>camel-aws-sqs</module>
         <module>flyway</module>

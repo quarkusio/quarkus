@@ -1,0 +1,13 @@
+package org.drools.project
+
+import io.quarkus.it.kogito.drools.Person
+import io.quarkus.it.kogito.drools.Result
+
+rule R when
+        $r : Result()
+        $p1 : Person( name == "Mark" )
+        $p2 : Person( name != "Mark", age > $p1.age )
+    then
+        $r.setValue( $p2.getName() + " is older than " + $p1.getName());
+end
+

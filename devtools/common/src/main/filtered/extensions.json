@@ -188,6 +188,17 @@
     "guide": "https://quarkus.io/guides/keycloak-guide"
   },
   {
+    "name": "Kogito",
+    "labels": [
+      "kogito",
+      "drools",
+      "jbpm"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kogito",
+    "guide": "https://quarkus.io/guides/kogito-guide"
+  },
+  {
     "name": "Kotlin",
     "labels": [
       "kotlin"

@@ -2,7 +2,7 @@ package io.quarkus.deployment.builditem;
 
 import java.util.Objects;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Describes a functionality provided by an extension. The info is displayed to users.
@@ -17,17 +17,21 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String CAMEL_NETTY4_HTTP = "camel-netty4-http";
     public static final String CAMEL_SALESFORCE = "camel-salesforce";
     public static final String CDI = "cdi";
+    public static final String ELASTICSEARCH_REST_CLIENT = "elasticsearch-rest-client";
     public static final String FLYWAY = "flyway";
     public static final String HIBERNATE_ORM = "hibernate-orm";
     public static final String HIBERNATE_VALIDATOR = "hibernate-validator";
+    public static final String HIBERNATE_SEARCH_ELASTICSEARCH = "hibernate-search-elasticsearch";
     public static final String INFINISPAN_CLIENT = "infinispan-client";
     public static final String JAEGER = "jaeger";
     public static final String JDBC_H2 = "jdbc-h2";
     public static final String JDBC_MARIADB = "jdbc-mariadb";
     public static final String JDBC_POSTGRESQL = "jdbc-postgresql";
     public static final String JDBC_MSSQL = "jdbc-mssql";
+    public static final String KEYCLOAK = "keycloak";
     public static final String KOTLIN = "kotlin";
     public static final String NARAYANA_JTA = "narayana-jta";
+    public static final String REACTIVE_PG_CLIENT = "reactive-pg-client";
     public static final String RESTEASY = "resteasy";
     public static final String RESTEASY_JSONB = "resteasy-jsonb";
     public static final String SCHEDULER = "scheduler";

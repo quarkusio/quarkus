@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Properties;
 
 import org.eclipse.aether.artifact.Artifact;
@@ -63,7 +64,6 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
 
     @Override
     public boolean visitEnter(DependencyNode node) {
-
         final Artifact artifact = node.getArtifact();
         if(!artifact.getExtension().equals("jar")) {
             return true;
@@ -86,6 +86,11 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
         return processChildren;
     }
 
+    @Override
+    public boolean visitLeave(DependencyNode node) {
+        return true;
+    }
+
     private boolean processMetaInfDir(Path metaInfDir) throws BootstrapDependencyProcessingException {
         if (!Files.exists(metaInfDir)) {
             return false;
@@ -103,7 +108,7 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
         if(rtProps == null) {
             return;
         }
-        log.debugf("Processing platform dependency %s", node);
+        log.debugf("Processing Quarkus extension %s", node);
 
         String value = rtProps.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
         if(value != null) {
@@ -112,11 +117,17 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
     }
 
     private void replaceWith(DependencyNode depNode) throws BootstrapDependencyProcessingException {
-        //BootstrapDependencyGraphTransformer.log("Replacing dependency " + depNode.getArtifact(), depNode);
+        List<DependencyNode> children = depNode.getChildren();
+        if (children.isEmpty()) {
+            throw new BootstrapDependencyProcessingException(
+                    "No dependencies collected for Quarkus extension deployment artifact " + depNode.getArtifact()
+                            + " while at least the corresponding runtime artifact " + node.getArtifact() + " is expected");
+        }
+        log.debugf("Injecting deployment dependency %s", depNode);
         node.setData(INJECTED_DEPENDENCY, node.getArtifact());
         node.setArtifact(depNode.getArtifact());
         node.getDependency().setArtifact(depNode.getArtifact());
-        node.setChildren(depNode.getChildren());
+        node.setChildren(children);
         injectedDeps = true;
     }
 
@@ -156,11 +167,6 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
             throw new BootstrapDependencyProcessingException("Failed to load " + path, e);
         }
         return rtProps;
-    }
-
-    @Override
-    public boolean visitLeave(DependencyNode node) {
-        return true;
     }
 
     public static Artifact toArtifact(String str) {

@@ -18,8 +18,11 @@
 package io.quarkus.maven;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -28,6 +31,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.MavenProjectHelper;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -45,6 +49,9 @@ import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarPhase;
 
 /**
+ * Build the application.
+ * <p>
+ * You can build a native application runner with {@code native-image}
  *
  * @author Alexey Loubyansky
  */
@@ -58,6 +65,9 @@ public class BuildMojo extends AbstractMojo {
      */
     @Component
     private RepositorySystem repoSystem;
+
+    @Component
+    private MavenProjectHelper projectHelper;
 
     /**
      * The current repository/network configuration of Maven.
@@ -128,13 +138,35 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(property = "uberJar", defaultValue = "false")
     private boolean uberJar;
 
+    /**
+     * When using the uberJar option, this array specifies entries that should
+     * be excluded from the final jar. The entries are relative to the root of
+     * the file. An example of this configuration could be:
+     * <code><pre>
+     * &#x3C;configuration&#x3E;
+     *   &#x3C;uberJar&#x3E;true&#x3C;/uberJar&#x3E;
+     *   &#x3C;ignoredEntries&#x3E;
+     *     &#x3C;ignoredEntry&#x3E;META-INF/BC2048KE.SF&#x3C;/ignoredEntry&#x3E;
+     *     &#x3C;ignoredEntry&#x3E;META-INF/BC2048KE.DSA&#x3C;/ignoredEntry&#x3E;
+     *     &#x3C;ignoredEntry&#x3E;META-INF/BC1024KE.SF&#x3C;/ignoredEntry&#x3E;
+     *     &#x3C;ignoredEntry&#x3E;META-INF/BC1024KE.DSA&#x3C;/ignoredEntry&#x3E;
+     *   &#x3C;/ignoredEntries&#x3E;
+     * &#x3C;/configuration&#x3E;
+     * </pre></code>
+     */
+    @Parameter(property = "ignoredEntries")
+    private String[] ignoredEntries;
+
     public BuildMojo() {
         MojoLogger.logSupplier = this::getLog;
     }
 
     @Override
     public void execute() throws MojoExecutionException {
-        final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion());
+        final Artifact projectArtifact = project.getArtifact();
+        final AppArtifact appArtifact = new AppArtifact(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
+                projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),
+                projectArtifact.getVersion());
         final AppModel appModel;
         final BootstrapAppModelResolver modelResolver;
         try {
@@ -159,7 +191,9 @@ public class BuildMojo extends AbstractMojo {
                         .setLibDir(libDir.toPath())
                         .setFinalName(finalName)
                         .setMainClass(mainClass)
-                        .setUberJar(uberJar))
+                        .setUberJar(uberJar)
+                        .setUserConfiguredIgnoredEntries(
+                                this.ignoredEntries == null ? Collections.emptySet() : Arrays.asList(this.ignoredEntries)))
                 .setWorkDir(buildDir.toPath())
                 .build()) {
 
@@ -170,7 +204,13 @@ public class BuildMojo extends AbstractMojo {
                     .build());
 
             // resolve the outcome we need here
-            appCreator.resolveOutcome(RunnerJarOutcome.class);
+            RunnerJarOutcome result = appCreator.resolveOutcome(RunnerJarOutcome.class);
+            Artifact original = project.getArtifact();
+            original.setFile(result.getOriginalJar().toFile());
+            if (uberJar) {
+                projectHelper.attachArtifact(project, result.getRunnerJar().toFile(), "runner");
+            }
+
         } catch (AppCreatorException e) {
             throw new MojoExecutionException("Failed to build a runnable JAR", e);
         }

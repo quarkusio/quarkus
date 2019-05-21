@@ -26,6 +26,7 @@ Using the community edition is enough.
 Version {graalvm-version} is required.
 * The `GRAALVM_HOME` environment variable configured appropriately
 * Apache Maven 3.5.3+
+* A working C developer environment (see the note below for details)
 * A running Docker
 * The code of the application developed in the link:getting-started-guide.html[Getting Started Guide].
 
@@ -40,7 +41,13 @@ On MacOS, point the variable to the `Home` sub-directory:
 `export GRAALVM_HOME=$HOME/Development/graalvm/Contents/Home/`
 ====
 
+[NOTE]
+====
+What does having a working C developer environment mean?
 
+ * On Linux, you will need GCC, the glibc and zlib headers (on common distributions: `sudo dnf install gcc glibc-devel zlib-devel` or `sudo apt-get install build-essential libz-dev`).
+ * On macOS, execute `xcode-select --install`.
+====
 
 == Solution
 
@@ -91,12 +98,18 @@ If you have generated the application from the previous tutorial, you can find i
 </profiles>
 ----
 
+[TIP]
+====
+You can provide additional options for `native-image` command using `<additionalBuildArgs>foo,bar</additionalBuildArgs>`
+configuration element. Provided options have to be `,` separated.
+====
+
 We use a profile because, you will see very soon, packaging the native executable takes a _few_ seconds.
 
 Create a native executable using: `./mvnw package -Pnative`.
 
-In addition to the regular files, the build also produces `target/quarkus-quickstart-runner`.
-You can run it using: `./target/quarkus-quickstart-runner`.
+In addition to the regular files, the build also produces `target/getting-started-1.0-SNAPSHOT-runner`.
+You can run it using: `./target/getting-started-1.0-SNAPSHOT-runner`.
 
 == Testing the native executable
 
@@ -148,35 +161,30 @@ public class NativeGreetingResourceIT extends GreetingResourceTest { // <2>
 The executable is retrieved using the `native.image.path` system property configured in the _Failsafe Maven Plugin_.
 <2> We extend our previous tests, but you can also implement your tests
 
-To see the `NativeGreetingResourceIT` run against the native executable, runs `./mvnw verify -Pnative`:
+To see the `NativeGreetingResourceIT` run against the native executable, use `./mvnw verify -Pnative`:
 [source,shell]
 ----
 ./mvnw verify -Pnative
 ...
-[quarkus-quickstart-runner:50955]     universe:     391.96 ms
-[quarkus-quickstart-runner:50955]      (parse):     904.37 ms
-[quarkus-quickstart-runner:50955]     (inline):   1,143.32 ms
-[quarkus-quickstart-runner:50955]    (compile):   6,228.44 ms
-[quarkus-quickstart-runner:50955]      compile:   9,130.58 ms
-[quarkus-quickstart-runner:50955]        image:   2,101.42 ms
-[quarkus-quickstart-runner:50955]        write:     803.18 ms
-[quarkus-quickstart-runner:50955]      [total]:  33,520.15 ms
+[getting-started-1.0-SNAPSHOT-runner:18820]     universe:     587.26 ms
+[getting-started-1.0-SNAPSHOT-runner:18820]      (parse):   2,247.59 ms
+[getting-started-1.0-SNAPSHOT-runner:18820]     (inline):   1,985.70 ms
+[getting-started-1.0-SNAPSHOT-runner:18820]    (compile):  14,922.77 ms
+[getting-started-1.0-SNAPSHOT-runner:18820]      compile:  20,361.28 ms
+[getting-started-1.0-SNAPSHOT-runner:18820]        image:   2,228.30 ms
+[getting-started-1.0-SNAPSHOT-runner:18820]        write:     364.35 ms
+[getting-started-1.0-SNAPSHOT-runner:18820]      [total]:  52,777.76 ms
 [INFO]
-[INFO] --- maven-failsafe-plugin:2.22.0:integration-test (default) @ quarkus-quickstart-native ---
+[INFO] --- maven-failsafe-plugin:2.22.1:integration-test (default) @ getting-started ---
 [INFO]
 [INFO] -------------------------------------------------------
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
-[INFO] Running org.acme.quickstart.GreetingResourceIT
-Executing [.../getting-started/target/quarkus-quickstart-runner, -Dquarkus.http.port=8081, -Dtest.url=http://localhost:8081, -Dquarkus.log.file.path=target/quarkus.log]
-2019-02-28 16:52:42,020 INFO  [io.quarkus] (main) Quarkus started in 0.007s. Listening on: http://localhost:8080
-2019-02-28 16:52:42,021 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.081 s - in org.acme.quickstart.GreetingResourceIT
-[INFO]
-[INFO] Results:
-[INFO]
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
-
+[INFO] Running org.acme.quickstart.NativeGreetingResourceIT
+Executing [/data/home/gsmet/git/quarkus-quickstarts/getting-started/target/getting-started-1.0-SNAPSHOT-runner, -Dquarkus.http.port=8081, -Dtest.url=http://localhost:8081, -Dquarkus.log.file.path=build/quarkus.log]
+2019-04-15 11:33:20,348 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 0.002s. Listening on: http://[::]:8081
+2019-04-15 11:33:20,348 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.387 s - in org.acme.quickstart.NativeGreetingResourceIT
 ...
 ----
 
@@ -202,17 +210,22 @@ By default, the native executable is tailored for your operating system (Linux, 
 Because the container may not use the same _executable_ format as the one produced by your operating system,
 we will instruct the Maven build to produce an executable from inside a container:
 
+[source, shell]
+----
+./mvnw package -Pnative -Dnative-image.docker-build=true
+----
+
+[TIP]
+====
+You can also select the container runtime to use with:
 [source,shell]
 ----
+# Docker
 ./mvnw package -Pnative -Dnative-image.container-runtime=docker
-----
-
-Or if you'd like to use podman:
-
-[source,shell]
-----
+# Podman
 ./mvnw package -Pnative -Dnative-image.container-runtime=podman
 ----
+====
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a container.
@@ -232,14 +245,14 @@ Then, if you didn't delete the generated native executable, you can build the do
 
 [source,shell]
 ----
-docker build -f src/main/docker/Dockerfile.native -t quarkus-quickstart/quickstart .
+docker build -f src/main/docker/Dockerfile.native -t quarkus-quickstart/getting-started .
 ----
 
 And finally, run it with:
 
 [source,shell]
 ----
-docker run -i --rm -p 8080:8080 quarkus-quickstart/quickstart
+docker run -i --rm -p 8080:8080 quarkus-quickstart/getting-started
 ----
 
 NOTE: Interested by tiny Docker images, check the {quarkus-images-url}/graalvm-{graalvm-version}/distroless[distroless] version.

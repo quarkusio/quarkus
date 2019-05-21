@@ -1,5 +1,5 @@
 plugins {
-    id 'com.gradle.build-scan' version '2.2.1'
+    id 'com.gradle.build-scan' version '2.3'
     id 'com.gradle.plugin-publish' version '0.10.1'
     id 'java-gradle-plugin'
 }
@@ -16,15 +16,20 @@ compileJava   {
 }
 
 repositories {
-    //Needs latest from local snapshots too:
-    mavenLocal()
+    maven { url 'target/dependencies/' }
     mavenCentral()
-    jcenter()
 }
 
 dependencies {
-    compile fileTree(dir: 'target/dependencies/compile', include: '*.jar')
-    testCompile fileTree(dir: 'target/dependencies/test', include: '*.jar')
+    compile "io.quarkus:quarkus-bootstrap-core:${version}"
+    compile "io.quarkus:quarkus-devtools-common:${version}"
+    compile "io.quarkus:quarkus-devtools-common-core:${version}"
+    compile "io.quarkus:quarkus-development-mode:${version}"
+    compile "io.quarkus:quarkus-creator:${version}"
+
+    testCompile 'org.junit.jupiter:junit-jupiter-api:5.4.1'
+    testCompile 'org.junit.jupiter:junit-jupiter-params:5.4.1'
+    testCompile 'org.junit.jupiter:junit-jupiter-engine:5.4.1'
 }
 
 test {
@@ -34,21 +39,8 @@ test {
     useJUnitPlatform()
 }
 
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
 javadoc {
     options.addStringOption('encoding', 'UTF-8')
-}
-task javadocJar(type: Jar) {
-    classifier = "javadoc"
-    from javadoc
-}
-
-artifacts {
-    archives sourcesJar
-    archives javadocJar
 }
 
 gradlePlugin {

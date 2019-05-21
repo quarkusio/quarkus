@@ -33,18 +33,18 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.jboss.builder.BuildChainBuilder;
-import org.jboss.builder.BuildContext;
-import org.jboss.builder.BuildStepBuilder;
-import org.jboss.builder.ConsumeFlag;
-import org.jboss.builder.ConsumeFlags;
-import org.jboss.builder.ProduceFlag;
-import org.jboss.builder.ProduceFlags;
-import org.jboss.builder.item.BuildItem;
-import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.builder.item.SimpleBuildItem;
 import org.wildfly.common.function.Functions;
 
+import io.quarkus.builder.BuildChainBuilder;
+import io.quarkus.builder.BuildContext;
+import io.quarkus.builder.BuildStepBuilder;
+import io.quarkus.builder.ConsumeFlag;
+import io.quarkus.builder.ConsumeFlags;
+import io.quarkus.builder.ProduceFlag;
+import io.quarkus.builder.ProduceFlags;
+import io.quarkus.builder.item.BuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -470,67 +470,68 @@ public final class ExtensionLoader {
                     .andThen(BuildStepBuilder::build);
             final BiConsumer<BuildContext, Object> finalStepInstanceSetup = stepInstanceSetup;
             final String name = clazz.getName() + "#" + method.getName();
-            chainConfig = chainConfig.andThen(bcb -> finalStepConfig.accept(bcb.addBuildStep(new org.jboss.builder.BuildStep() {
-                public void execute(final BuildContext bc) {
-                    Object[] ctorArgs = new Object[ctorParamFns.size()];
-                    for (int i = 0; i < ctorArgs.length; i++) {
-                        ctorArgs[i] = ctorParamFns.get(i).apply(bc);
-                    }
-                    Object instance;
-                    try {
-                        instance = constructor.newInstance(ctorArgs);
-                    } catch (InstantiationException e) {
-                        throw ReflectUtil.toError(e);
-                    } catch (IllegalAccessException e) {
-                        throw ReflectUtil.toError(e);
-                    } catch (InvocationTargetException e) {
-                        try {
-                            throw e.getCause();
-                        } catch (RuntimeException | Error e2) {
-                            throw e2;
-                        } catch (Throwable t) {
-                            throw new IllegalStateException(t);
-                        }
-                    }
-                    finalStepInstanceSetup.accept(bc, instance);
-                    Object[] methodArgs = new Object[methodParamFns.size()];
-                    BytecodeRecorderImpl bri = isRecorder
-                            ? new BytecodeRecorderImpl(recordAnnotation.value() == ExecutionTime.STATIC_INIT,
-                                    clazz.getSimpleName(), method.getName())
-                            : null;
-                    for (int i = 0; i < methodArgs.length; i++) {
-                        methodArgs[i] = methodParamFns.get(i).apply(bc, bri);
-                    }
-                    Object result;
-                    try {
-                        result = method.invoke(instance, methodArgs);
-                    } catch (IllegalAccessException e) {
-                        throw ReflectUtil.toError(e);
-                    } catch (InvocationTargetException e) {
-                        try {
-                            throw e.getCause();
-                        } catch (RuntimeException | Error e2) {
-                            throw e2;
-                        } catch (Throwable t) {
-                            throw new IllegalStateException(t);
-                        }
-                    }
-                    resultConsumer.accept(bc, result);
-                    if (isRecorder) {
-                        // commit recorded data
-                        if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
-                            bc.produce(new StaticBytecodeRecorderBuildItem(bri));
-                        } else {
-                            bc.produce(new MainBytecodeRecorderBuildItem(bri));
+            chainConfig = chainConfig
+                    .andThen(bcb -> finalStepConfig.accept(bcb.addBuildStep(new io.quarkus.builder.BuildStep() {
+                        public void execute(final BuildContext bc) {
+                            Object[] ctorArgs = new Object[ctorParamFns.size()];
+                            for (int i = 0; i < ctorArgs.length; i++) {
+                                ctorArgs[i] = ctorParamFns.get(i).apply(bc);
+                            }
+                            Object instance;
+                            try {
+                                instance = constructor.newInstance(ctorArgs);
+                            } catch (InstantiationException e) {
+                                throw ReflectUtil.toError(e);
+                            } catch (IllegalAccessException e) {
+                                throw ReflectUtil.toError(e);
+                            } catch (InvocationTargetException e) {
+                                try {
+                                    throw e.getCause();
+                                } catch (RuntimeException | Error e2) {
+                                    throw e2;
+                                } catch (Throwable t) {
+                                    throw new IllegalStateException(t);
+                                }
+                            }
+                            finalStepInstanceSetup.accept(bc, instance);
+                            Object[] methodArgs = new Object[methodParamFns.size()];
+                            BytecodeRecorderImpl bri = isRecorder
+                                    ? new BytecodeRecorderImpl(recordAnnotation.value() == ExecutionTime.STATIC_INIT,
+                                            clazz.getSimpleName(), method.getName())
+                                    : null;
+                            for (int i = 0; i < methodArgs.length; i++) {
+                                methodArgs[i] = methodParamFns.get(i).apply(bc, bri);
+                            }
+                            Object result;
+                            try {
+                                result = method.invoke(instance, methodArgs);
+                            } catch (IllegalAccessException e) {
+                                throw ReflectUtil.toError(e);
+                            } catch (InvocationTargetException e) {
+                                try {
+                                    throw e.getCause();
+                                } catch (RuntimeException | Error e2) {
+                                    throw e2;
+                                } catch (Throwable t) {
+                                    throw new IllegalStateException(t);
+                                }
+                            }
+                            resultConsumer.accept(bc, result);
+                            if (isRecorder) {
+                                // commit recorded data
+                                if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
+                                    bc.produce(new StaticBytecodeRecorderBuildItem(bri));
+                                } else {
+                                    bc.produce(new MainBytecodeRecorderBuildItem(bri));
+                                }
+
+                            }
                         }
 
-                    }
-                }
-
-                public String toString() {
-                    return name;
-                }
-            })));
+                        public String toString() {
+                            return name;
+                        }
+                    })));
         }
         return chainConfig;
     }

@@ -19,9 +19,10 @@ package io.quarkus.arc.deployment;
 import java.util.List;
 import java.util.Set;
 
-import org.jboss.builder.item.SimpleBuildItem;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+
+import io.quarkus.builder.item.SimpleBuildItem;
 
 public final class BeanArchiveIndexBuildItem extends SimpleBuildItem {
 

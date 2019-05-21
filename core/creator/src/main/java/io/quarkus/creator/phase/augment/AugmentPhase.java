@@ -18,13 +18,19 @@
 package io.quarkus.creator.phase.augment;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.CopyOption;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,7 +44,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.Config;
-import org.jboss.builder.BuildResult;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -49,6 +54,7 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.builder.BuildResult;
 import io.quarkus.creator.AppCreationPhase;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
@@ -197,6 +203,17 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         //lets default to appClassesDir for now
         if (configDir == null)
             configDir = appClassesDir;
+        else {
+            //if we use gradle we copy the configDir contents to appClassesDir
+            try {
+                if (!Files.isSameFile(configDir, appClassesDir)) {
+                    Files.walkFileTree(configDir,
+                            new CopyDirVisitor(configDir, appClassesDir, StandardCopyOption.REPLACE_EXISTING));
+                }
+            } catch (IOException e) {
+                throw new AppCreatorException("Failed while copying files from " + configDir + " to " + appClassesDir, e);
+            }
+        }
 
         transformedClassesDir = IoUtils
                 .mkdirs(transformedClassesDir == null ? outputDir.resolve("transformed-classes") : transformedClassesDir);
@@ -231,6 +248,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         } catch (BootstrapDependencyProcessingException e) {
             throw new AppCreatorException("Failed to resolve application build classpath", e);
         }
+
         URLClassLoader runnerClassLoader = null;
         try {
             // we need to make sure all the deployment artifacts are on the class path
@@ -248,7 +266,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
             ClassOutput classOutput = new ClassOutput() {
                 @Override
                 public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {
-                    String location = className.replace('.', '/');
+                    String location = className.replace('.', File.separatorChar);
                     final Path p = wiringClassesDirectory.resolve(location + ".class");
                     Files.createDirectories(p.getParent());
                     try (OutputStream out = Files.newOutputStream(p)) {
@@ -287,11 +305,9 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
             if (!bytecodeTransformerBuildItems.isEmpty()) {
                 final Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = new HashMap<>(
                         bytecodeTransformerBuildItems.size());
-                if (!bytecodeTransformerBuildItems.isEmpty()) {
-                    for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
-                        bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
-                                .add(i.getVisitorFunction());
-                    }
+                for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
+                    bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
+                            .add(i.getVisitorFunction());
                 }
 
                 // now copy all the contents to the runner jar
@@ -309,10 +325,11 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                                 return;
                             }
                             final String pathName = appClassesDir.relativize(path).toString();
-                            if (!pathName.endsWith(".class") || bytecodeTransformers.isEmpty()) {
+                            if (!pathName.endsWith(".class")) {
                                 return;
                             }
-                            final String className = pathName.substring(0, pathName.length() - 6).replace('/', '.');
+                            final String className = pathName.substring(0, pathName.length() - 6).replace(File.separatorChar,
+                                    '.');
                             final List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = bytecodeTransformers
                                     .get(className);
                             if (visitors == null || visitors.isEmpty()) {
@@ -399,5 +416,32 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                 .map("transformed-classes", (AugmentPhase t, String value) -> t.setTransformedClassesDir(Paths.get(value)))
                 .map("wiring-classes", (AugmentPhase t, String value) -> t.setWiringClassesDir(Paths.get(value)))
                 .map("config", (AugmentPhase t, String value) -> t.setConfigDir(Paths.get(value)));
+    }
+
+    public static class CopyDirVisitor extends SimpleFileVisitor<Path> {
+        private final Path fromPath;
+        private final Path toPath;
+        private final CopyOption copyOption;
+
+        public CopyDirVisitor(Path fromPath, Path toPath, CopyOption copyOption) {
+            this.fromPath = fromPath;
+            this.toPath = toPath;
+            this.copyOption = copyOption;
+        }
+
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            Path targetPath = toPath.resolve(fromPath.relativize(dir));
+            if (!Files.exists(targetPath)) {
+                Files.createDirectory(targetPath);
+            }
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            Files.copy(file, toPath.resolve(fromPath.relativize(file)), copyOption);
+            return FileVisitResult.CONTINUE;
+        }
     }
 }

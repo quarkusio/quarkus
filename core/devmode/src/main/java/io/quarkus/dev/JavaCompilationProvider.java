@@ -23,8 +23,8 @@ public class JavaCompilationProvider implements CompilationProvider {
     private static final List<String> COMPILER_OPTIONS = Arrays.asList("-g", "-parameters");
 
     @Override
-    public String handledExtension() {
-        return ".java";
+    public Set<String> handledExtensions() {
+        return Collections.singleton(".java");
     }
 
     @Override

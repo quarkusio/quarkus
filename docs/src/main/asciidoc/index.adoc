@@ -38,6 +38,7 @@ include::quarkus-intro.adoc[tag=intro]
 * link:writing-native-applications-tips.html[Tips for writing native applications] _(advanced)_
 * link:performance-measure.html[Measuring Performance] _(advanced)_
 * link:cdi-reference.html[Contexts and Dependency Injection] _(advanced)_
+* link:keycloak-guide.html[Using Keycloak]
 
 * link:faq.html[FAQs]
 

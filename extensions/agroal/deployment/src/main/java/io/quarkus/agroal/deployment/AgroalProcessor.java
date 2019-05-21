@@ -27,7 +27,6 @@ import java.util.Set;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -195,7 +194,7 @@ class AgroalProcessor {
         if (agroalBuildTimeConfig.defaultDataSource.driver.isPresent()) {
             MethodCreator defaultDataSourceMethodCreator = classCreator.getMethodCreator("createDefaultDataSource",
                     AgroalDataSource.class);
-            defaultDataSourceMethodCreator.addAnnotation(Singleton.class);
+            defaultDataSourceMethodCreator.addAnnotation(ApplicationScoped.class);
             defaultDataSourceMethodCreator.addAnnotation(Produces.class);
             defaultDataSourceMethodCreator.addAnnotation(Default.class);
 

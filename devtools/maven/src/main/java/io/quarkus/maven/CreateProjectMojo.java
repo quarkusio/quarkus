@@ -53,6 +53,7 @@ import org.fusesource.jansi.Ansi;
 
 import io.quarkus.cli.commands.AddExtensions;
 import io.quarkus.cli.commands.CreateProject;
+import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
 import io.quarkus.maven.utilities.MojoUtils;
@@ -140,13 +141,13 @@ public class CreateProjectMojo extends AbstractMojo {
 
         boolean success;
         try {
-            final SourceType sourceType = determineSourceType(extensions);
+            final SourceType sourceType = CreateProject.determineSourceType(extensions);
             sanitizeOptions(sourceType);
 
             final Map<String, Object> context = new HashMap<>();
             context.put("path", path);
 
-            success = new CreateProject(projectRoot)
+            success = new CreateProject(new FileProjectWriter(projectRoot))
                     .groupId(projectGroupId)
                     .artifactId(projectArtifactId)
                     .version(projectVersion)
@@ -156,7 +157,8 @@ public class CreateProjectMojo extends AbstractMojo {
 
             File createdPomFile = new File(projectRoot, "pom.xml");
             if (success) {
-                new AddExtensions(createdPomFile)
+                File pomFile = new File(createdPomFile.getAbsolutePath());
+                new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
                         .addExtensions(extensions);
             }
 
@@ -197,14 +199,8 @@ public class CreateProjectMojo extends AbstractMojo {
                             pluginManager));
         } catch (Exception e) {
             // no reason to fail if the wrapper could not be created
-            getLog().error("Unable to install the Maven wrapper (./mvnw) in the project");
+            getLog().error("Unable to install the Maven wrapper (./mvnw) in the project", e);
         }
-    }
-
-    private SourceType determineSourceType(Set<String> extensions) {
-        return extensions.stream().anyMatch(e -> e.toLowerCase().contains("kotlin"))
-                ? SourceType.KOTLIN
-                : SourceType.JAVA;
     }
 
     private void askTheUserForMissingValues() throws MojoExecutionException {

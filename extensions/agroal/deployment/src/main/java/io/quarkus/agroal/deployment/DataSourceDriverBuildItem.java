@@ -1,6 +1,6 @@
 package io.quarkus.agroal.deployment;
 
-import org.jboss.builder.item.SimpleBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  */

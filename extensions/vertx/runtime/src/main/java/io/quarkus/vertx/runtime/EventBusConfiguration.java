@@ -61,7 +61,7 @@ public class EventBusConfiguration {
     /**
      * The connect timeout.
      */
-    @ConfigItem(defaultValue = "PT60S")
+    @ConfigItem(defaultValue = "60")
     public Duration connectTimeout;
 
     /**
@@ -85,7 +85,7 @@ public class EventBusConfiguration {
     /**
      * The reconnection interval in milliseconds.
      */
-    @ConfigItem(defaultValue = "PT1S")
+    @ConfigItem(defaultValue = "1")
     public Duration reconnectInterval;
 
     /**

@@ -5,11 +5,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * This build item is used to exclude beans that would be normally removed if the config property

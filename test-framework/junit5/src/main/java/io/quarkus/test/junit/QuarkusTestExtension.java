@@ -37,25 +37,25 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import org.jboss.builder.BuildChainBuilder;
-import org.jboss.builder.BuildContext;
-import org.jboss.builder.BuildStep;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
-import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 import org.junit.platform.commons.JUnitException;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.opentest4j.TestAbortedException;
 
 import io.quarkus.bootstrap.BootstrapClassLoaderFactory;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.util.PropertyUtils;
+import io.quarkus.builder.BuildChainBuilder;
+import io.quarkus.builder.BuildContext;
+import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
@@ -74,10 +74,13 @@ import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 public class QuarkusTestExtension
-        implements BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
+        implements BeforeEachCallback, AfterEachCallback, TestInstanceFactory, BeforeAllCallback {
 
     private URLClassLoader appCl;
     private ClassLoader originalCl;
+    private static boolean failedBoot;
+
+    private final RestAssuredURLManager restAssuredURLManager = new RestAssuredURLManager(false);
 
     private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
 
@@ -90,7 +93,6 @@ public class QuarkusTestExtension
         try {
             appCl = BootstrapClassLoaderFactory.newInstance()
                     .setAppClasses(appClassLocation)
-                    .addToClassPath(testClassLocation)
                     .setParent(getClass().getClassLoader())
                     .setOffline(PropertyUtils.getBooleanOrNull(BootstrapClassLoaderFactory.PROP_OFFLINE))
                     .setLocalProjectsDiscovery(
@@ -258,19 +260,26 @@ public class QuarkusTestExtension
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
-        RestAssuredURLManager.clearURL();
+        restAssuredURLManager.clearURL();
         TestScopeManager.setup();
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        RestAssuredURLManager.setURL();
+        restAssuredURLManager.setURL();
         TestScopeManager.tearDown();
     }
 
     @Override
     public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
             throws TestInstantiationException {
+        if (failedBoot) {
+            try {
+                return extensionContext.getRequiredTestClass().newInstance();
+            } catch (Exception e) {
+                throw new TestInstantiationException("Boot failed", e);
+            }
+        }
         ExtensionContext root = extensionContext.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
         ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
@@ -278,20 +287,28 @@ public class QuarkusTestExtension
         boolean substrateTest = extensionContext.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
         if (state == null) {
             TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
-            testResourceManager.start();
+            try {
+                Map<String, String> systemProps = testResourceManager.start();
 
-            if (substrateTest) {
-                NativeImageLauncher launcher = new NativeImageLauncher(extensionContext.getRequiredTestClass());
-                try {
-                    launcher.start();
-                } catch (IOException e) {
-                    throw new JUnitException("Quarkus native image start failed, original cause: " + e);
+                if (substrateTest) {
+                    NativeImageLauncher launcher = new NativeImageLauncher(extensionContext.getRequiredTestClass());
+                    launcher.addSystemProperties(systemProps);
+                    try {
+                        launcher.start();
+                    } catch (IOException e) {
+                        throw new JUnitException("Quarkus native image start failed, original cause: " + e);
+                    }
+                    state = new ExtensionState(testResourceManager, launcher, true);
+                } else {
+                    state = doJavaStart(extensionContext, testResourceManager);
                 }
-                state = new ExtensionState(testResourceManager, launcher, true);
-            } else {
-                state = doJavaStart(extensionContext, testResourceManager);
+                store.put(ExtensionState.class.getName(), state);
+
+            } catch (RuntimeException e) {
+                testResourceManager.stop();
+                failedBoot = true;
+                throw e;
             }
-            store.put(ExtensionState.class.getName(), state);
         } else {
             if (substrateTest != state.isSubstrate()) {
                 throw new RuntimeException(
@@ -316,6 +333,13 @@ public class QuarkusTestExtension
         final ClassLoader original = thread.getContextClassLoader();
         thread.setContextClassLoader(cl);
         return original;
+    }
+
+    @Override
+    public void beforeAll(ExtensionContext context) throws Exception {
+        if (failedBoot) {
+            throw new TestAbortedException("Not running test as boot failed");
+        }
     }
 
     class ExtensionState implements ExtensionContext.Store.CloseableResource {

@@ -31,13 +31,13 @@ public class VertxConfiguration {
     /**
      * The maximum amount of time the event loop can be blocked.
      */
-    @ConfigItem(defaultValue = "PT2S")
+    @ConfigItem(defaultValue = "2")
     public Duration maxEventLoopExecuteTime;
 
     /**
      * The amount of time before a warning is displayed if the event loop is blocked.
      */
-    @ConfigItem(defaultValue = "PT2S")
+    @ConfigItem(defaultValue = "2")
     public Duration warningExceptionTime;
 
     /**
@@ -49,7 +49,7 @@ public class VertxConfiguration {
     /**
      * The maximum amount of time the worker thread can be blocked.
      */
-    @ConfigItem(defaultValue = "PT60S")
+    @ConfigItem(defaultValue = "60")
     public Duration maxWorkerExecuteTime;
 
     /**

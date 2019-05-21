@@ -16,8 +16,9 @@
 
 package io.quarkus.deployment.builditem.substrate;
 
-import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.Type;
+
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Attempts to register a complete type hierarchy for reflection.

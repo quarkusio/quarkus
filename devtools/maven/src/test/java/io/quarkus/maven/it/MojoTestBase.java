@@ -12,8 +12,10 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -73,15 +75,34 @@ public class MojoTestBase {
         } catch (IOException e) {
             throw new RuntimeException("Cannot copy project resources", e);
         }
-
-        File pom = new File(out, "pom.xml");
-        try {
-            filter(pom, VARIABLES);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+        filterPom(out);
 
         return out;
+    }
+
+    private static void filterPom(File out) {
+
+        File pom = new File(out, "pom.xml");
+        if (pom.exists()) {
+            try {
+                filter(pom, VARIABLES);
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+        for (File i : out.listFiles()) {
+            if (i.isDirectory()) {
+                pom = new File(i, "pom.xml");
+                if (pom.exists()) {
+                    try {
+                        filter(pom, VARIABLES);
+                    } catch (IOException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                }
+            }
+        }
+
     }
 
     public static void installPluginToLocalRepository(File local) {
@@ -224,5 +245,15 @@ public class MojoTestBase {
     public static String get() throws IOException {
         URL url = new URL("http://localhost:8080");
         return IOUtils.toString(url, "UTF-8");
+    }
+
+    public static void assertThatOutputWorksCorrectly(String logs) {
+        assertThat(logs.isEmpty()).isFalse();
+        String infoLogLevel = "INFO";
+        assertThat(logs.contains(infoLogLevel)).isTrue();
+        Predicate<String> datePattern = Pattern.compile("\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2},\\d{3}\\s").asPredicate();
+        assertThat(datePattern.test(logs)).isTrue();
+        assertThat(logs.contains("features: [cdi, resteasy, undertow-websockets]")).isTrue();
+        assertThat(logs.contains("JBoss Threads version")).isFalse();
     }
 }

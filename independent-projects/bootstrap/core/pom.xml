@@ -31,6 +31,10 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.maven</groupId>
+            <artifactId>maven-embedder</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
             <artifactId>maven-settings-builder</artifactId>
         </dependency>
         <dependency>
@@ -61,4 +65,25 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -20,7 +20,8 @@ package io.quarkus.creator.phase.nativeimage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,6 +64,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
     private static final String QUARKUS_PREFIX = "quarkus.";
 
     private static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("linux");
+    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
 
     private Path outputDir;
 
@@ -86,6 +88,8 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private boolean enableIsolates;
 
+    private boolean enableFallbackImages;
+
     private String graalvmHome;
 
     private boolean enableServer;
@@ -98,7 +102,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private String nativeImageXmx;
 
-    private String builderImage = "quay.io/quarkus/centos-quarkus-native-image:graalvm-1.0.0-rc14";
+    private String builderImage = "quay.io/quarkus/centos-quarkus-native-image:graalvm-1.0.0-rc16";
 
     private String containerRuntime = "";
 
@@ -113,6 +117,8 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
     private List<String> additionalBuildArgs;
 
     private boolean addAllCharsets;
+
+    private boolean reportExceptionStackTraces = true;
 
     public NativeImagePhase setAddAllCharsets(boolean addAllCharsets) {
         this.addAllCharsets = addAllCharsets;
@@ -171,6 +177,11 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     public NativeImagePhase setEnableIsolates(boolean enableIsolates) {
         this.enableIsolates = enableIsolates;
+        return this;
+    }
+
+    public NativeImagePhase setEnableFallbackImages(boolean enableFallbackImages) {
+        this.enableFallbackImages = enableFallbackImages;
         return this;
     }
 
@@ -263,6 +274,11 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
         return this;
     }
 
+    public NativeImagePhase setReportExceptionStackTraces(boolean reportExceptionStackTraces) {
+        this.reportExceptionStackTraces = reportExceptionStackTraces;
+        return this;
+    }
+
     @Override
     public void register(OutcomeProviderRegistration registration) throws AppCreatorException {
         registration.provides(NativeImageOutcome.class);
@@ -313,6 +329,14 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm quarkus/graalvm-native-image"
             nativeImage = new ArrayList<>();
             Collections.addAll(nativeImage, containerRuntime, "run", "-v", outputDir.toAbsolutePath() + ":/project:z", "--rm");
+
+            if (IS_LINUX & "docker".equals(containerRuntime)) {
+                String uid = getLinuxID("-ur");
+                String gid = getLinuxID("-gr");
+                if (uid != null & gid != null & !"".equals(uid) & !"".equals(gid)) {
+                    Collections.addAll(nativeImage, "--user", uid.concat(":").concat(gid));
+                }
+            }
             nativeImage.addAll(containerRuntimeOptions);
             nativeImage.add(this.builderImage);
         } else {
@@ -329,12 +353,13 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                     throw new AppCreatorException("GRAALVM_HOME was not set");
                 }
             }
-            nativeImage = Collections.singletonList(graalvmHome + File.separator + "bin" + File.separator + "native-image");
+            String imageName = IS_WINDOWS ? "native-image.cmd" : "native-image";
+            nativeImage = Collections.singletonList(graalvmHome + File.separator + "bin" + File.separator + imageName);
+
         }
 
         try {
-            List<String> command = new ArrayList<>();
-            command.addAll(nativeImage);
+            List<String> command = new ArrayList<>(nativeImage);
             if (cleanupServer) {
                 List<String> cleanup = new ArrayList<>(nativeImage);
                 cleanup.add("--server-shutdown");
@@ -380,15 +405,26 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                 enableAllSecurityServices = true;
             }
             if (additionalBuildArgs != null) {
-                additionalBuildArgs.forEach(command::add);
+                command.addAll(additionalBuildArgs);
             }
             command.add("-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
             command.add("-jar");
             command.add(runnerJarName);
             //https://github.com/oracle/graal/issues/660
             command.add("-J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1");
+            if (enableFallbackImages) {
+                command.add("-H:FallbackThreshold=5");
+            } else {
+                //Default: be strict as those fallback images aren't very useful
+                //and tend to cover up real problems.
+                command.add("-H:FallbackThreshold=0");
+            }
+
             if (reportErrorsAtRuntime) {
                 command.add("-H:+ReportUnsupportedElementsAtRuntime");
+            }
+            if (reportExceptionStackTraces) {
+                command.add("-H:+ReportExceptionStackTraces");
             }
             if (debugSymbols) {
                 command.add("-g");
@@ -444,7 +480,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             } else {
                 command.add("-H:-JNI");
             }
-            if (!enableServer) {
+            if (!enableServer && !IS_WINDOWS) {
                 command.add("--no-server");
             }
             if (enableVMInspection) {
@@ -497,13 +533,60 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
     private boolean isThisGraalVMRCObsolete() {
         final String vmName = System.getProperty("java.vm.name");
         log.info("Running Quarkus native-image plugin on " + vmName);
-        final List<String> obsoleteGraalVmVersions = Arrays.asList("-rc9", "-rc10", "-rc11", "-rc12", "-rc13");
+        final List<String> obsoleteGraalVmVersions = Arrays.asList("-rc9", "-rc10", "-rc11", "-rc12", "-rc13", "-rc14",
+                "-rc15");
         final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(vmName::contains);
         if (vmVersionIsObsolete) {
-            log.error("Out of date RC build of GraalVM detected! Please upgrade to RC14");
+            log.error("Out of date RC build of GraalVM detected! Please upgrade to GraalVM RC16");
             return true;
         }
         return false;
+    }
+
+    private static String getLinuxID(String option) {
+        Process process;
+
+        try {
+            StringBuilder responseBuilder = new StringBuilder();
+            String line;
+
+            ProcessBuilder idPB = new ProcessBuilder().command("id", option);
+            idPB.redirectError(new File("/dev/null"));
+            idPB.redirectInput(new File("/dev/null"));
+
+            process = idPB.start();
+            try (InputStream inputStream = process.getInputStream()) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+                    while ((line = reader.readLine()) != null) {
+                        responseBuilder.append(line);
+                    }
+                    safeWaitFor(process);
+                    return responseBuilder.toString();
+                }
+            } catch (Throwable t) {
+                safeWaitFor(process);
+                throw t;
+            }
+        } catch (IOException e) { //from process.start()
+            //swallow and return null id
+            return null;
+        }
+    }
+
+    static void safeWaitFor(Process process) {
+        boolean intr = false;
+        try {
+            for (;;)
+                try {
+                    process.waitFor();
+                    return;
+                } catch (InterruptedException ex) {
+                    intr = true;
+                }
+        } finally {
+            if (intr)
+                Thread.currentThread().interrupt();
+        }
     }
 
     private static String detectNoPIE() {
@@ -578,6 +661,9 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                     case "enable-isolates":
                         t.setEnableIsolates(Boolean.parseBoolean(value));
                         break;
+                    case "enable-fallback-images":
+                        t.setEnableFallbackImages(Boolean.parseBoolean(value));
+                        break;
                     case "graalvm-home":
                         t.setGraalvmHome(value);
                         break;
@@ -610,6 +696,9 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                         break;
                     case "additional-build-args":
                         t.setAdditionalBuildArgs(Arrays.asList(value.split(",")));
+                        break;
+                    case "report-exception-stack-traces":
+                        t.setReportExceptionStackTraces(Boolean.parseBoolean(value));
                         break;
                     default:
                         return false;

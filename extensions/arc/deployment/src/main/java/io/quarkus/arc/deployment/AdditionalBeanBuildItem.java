@@ -23,8 +23,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.DotName;
+
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * This build item is used to specify one or more additional bean classes to be analyzed.
@@ -61,9 +62,6 @@ public final class AdditionalBeanBuildItem extends MultiBuildItem {
     }
 
     AdditionalBeanBuildItem(List<String> beanClasses, boolean removable, DotName defaultScope) {
-        if (beanClasses.isEmpty()) {
-            throw new IllegalArgumentException("No bean classes specified");
-        }
         this.beanClasses = beanClasses;
         this.removable = removable;
         this.defaultScope = defaultScope;

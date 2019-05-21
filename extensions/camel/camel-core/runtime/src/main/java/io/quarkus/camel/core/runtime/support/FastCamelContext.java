@@ -83,7 +83,7 @@ public class FastCamelContext extends DefaultCamelContext {
             Properties props = ((org.apache.camel.component.properties.PropertiesComponent) comp).getInitialProperties();
             if (props != null) {
                 String pfx = CamelRuntime.PFX_CAMEL + type + "." + name;
-                log.info("Binding {} {} with prefix {}", type, name, pfx);
+                log.debug("Binding {} {} with prefix {}", type, name, pfx);
                 RuntimeSupport.bindProperties(this, props, result, pfx);
             }
         }

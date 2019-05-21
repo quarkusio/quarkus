@@ -9,33 +9,73 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Consumer;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 
 import io.quarkus.dependencies.Extension;
-import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 
 public class ListExtensions {
-    private static final String FORMAT = "%-8s %-20s %-50s %s";
+    private static final String FULL_FORMAT = "%-8s %-50s %-50s %-25s\n%s";
+    private static final String SIMPLE_FORMAT = "%-50s %-50s\n%s";
     private Model model;
 
     public ListExtensions(final Model model) {
         this.model = model;
     }
 
-    public void listExtensions() {
-        System.out.println("\nCurrent Quarkus extensions available: ");
-        System.out.println(String.format(FORMAT, "Status", "Extension", "ArtifactId", "Updated Version"));
-
+    public void listExtensions(boolean all, String format, String search) {
         final Map<String, Dependency> installed = findInstalled();
 
-        loadExtensions().forEach(extension -> display(extension, installed));
+        Stream<Extension> extensionsStream = loadExtensions().stream();
+        if (search != null && !"*".equalsIgnoreCase(search)) {
+            final Pattern searchPattern = Pattern.compile(".*" + search + ".*", Pattern.CASE_INSENSITIVE);
+            extensionsStream = extensionsStream.filter(e -> filterBySearch(searchPattern, e));
+        }
+        List<Extension> loadedExtensions = extensionsStream.collect(Collectors.toList());
+
+        if (loadedExtensions.isEmpty()) {
+            System.out.println("No extension found with this pattern");
+        } else {
+            Consumer<String[]> currentFormatter = "simple".equalsIgnoreCase(format) ? this::simpleFormatter
+                    : this::fullFormatter;
+            String extensionStatus = all ? "available" : "installable";
+            System.out.println(String.format("%nCurrent Quarkus extensions %s: ", extensionStatus));
+            if (!"simple".equalsIgnoreCase(format)) {
+                currentFormatter.accept(new String[] { "Status", "Extension", "ArtifactId", "Updated Version", "Guide" });
+            }
+
+            loadedExtensions.forEach(extension -> display(extension, installed, all, currentFormatter));
+            System.out.println("\nAdd an extension to your project by adding the dependency to your " +
+                    "project or use `mvn quarkus:add-extension -Dextensions=\"artifactId\"`");
+        }
     }
 
-    private void display(Extension extension, final Map<String, Dependency> installed) {
+    private boolean filterBySearch(final Pattern searchPattern, Extension e) {
+        return searchPattern.matcher(e.getName()).matches();
+    }
+
+    private void simpleFormatter(String[] cols) {
+        System.out.println(String.format(SIMPLE_FORMAT, cols[1], cols[2], cols[4]));
+    }
+
+    private void fullFormatter(String[] cols) {
+        System.out.println(String.format(FULL_FORMAT, cols[0], cols[1], cols[2], cols[3], cols[4]));
+    }
+
+    private void display(Extension extension, final Map<String, Dependency> installed, boolean all,
+            Consumer<String[]> formatter) {
+
+        if (!all && installed.containsKey(String.format("%s:%s", extension.getGroupId(), extension.getArtifactId()))) {
+            return;
+        }
         final Dependency dependency = installed.get(String.format("%s:%s", extension.getGroupId(), extension.getArtifactId()));
 
         String label = "";
@@ -43,15 +83,17 @@ public class ListExtensions {
 
         final String extracted = extractVersion(dependency);
         if (extracted != null) {
-            if (MojoUtils.getPluginVersion().equalsIgnoreCase(extracted)) {
+            if (getPluginVersion().equalsIgnoreCase(extracted)) {
                 label = "current";
+                version = String.format("%s", extracted);
             } else {
                 label = "update";
                 version = String.format("%s <> %s", extracted, getPluginVersion());
             }
         }
 
-        System.out.println(String.format(FORMAT, label, extension.getName(), extension.getArtifactId(), version));
+        String guide = StringUtils.defaultString(extension.getGuide(), "");
+        formatter.accept(new String[] { label, extension.getName(), extension.getArtifactId(), version, guide });
     }
 
     private String extractVersion(final Dependency dependency) {

@@ -469,12 +469,12 @@ mvn package -Pnative
 
 There are many other facets of {project-name} using Vert.x underneath:
 
-* The event bus is the connecting tissue of Vert.x application.
-{project-name} integrates it so different beans can interact asynchronous messages.
+* The event bus is the connecting tissue of Vert.x applications.
+{project-name} integrates it so different beans can interact with asynchronous messages.
 This part is covered in the link:async-message-passing.html[Async Message Passing documentation].
 
 * Data streaming and Apache Kafka are a important parts of modern systems.
 {project-name} integrates data streaming using Reactive Messaging.
 More details on link:kafka-guide.html[Interacting with Kafka].
 
-
+* Learn how to implement highly performant, low-overhead database applications on {project-name} with the link:reactive-postgres-client.html[Reactive Postgres Client].

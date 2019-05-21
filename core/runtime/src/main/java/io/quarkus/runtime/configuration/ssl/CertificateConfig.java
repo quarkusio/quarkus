@@ -35,4 +35,10 @@ public class CertificateConfig {
      */
     @ConfigItem
     public Optional<String> keyStoreFileType;
+
+    /**
+     * A parameter to specify the password of the key store file. If not given, the default ("password") is used.
+     */
+    @ConfigItem(defaultValue = "password")
+    public String keyStorePassword;
 }

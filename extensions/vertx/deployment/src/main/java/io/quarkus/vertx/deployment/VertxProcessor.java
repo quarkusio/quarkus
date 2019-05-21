@@ -57,6 +57,7 @@ import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
@@ -116,6 +117,11 @@ class VertxProcessor {
     private static final MethodDescriptor AXLE_MESSAGE_NEW_INSTANCE = MethodDescriptor.ofMethod(
             io.vertx.axle.core.eventbus.Message.class,
             "newInstance", io.vertx.axle.core.eventbus.Message.class, Message.class);
+    private static final MethodDescriptor MESSAGE_REPLY = MethodDescriptor.ofMethod(Message.class, "reply", void.class,
+            Object.class);
+    private static final MethodDescriptor MESSAGE_BODY = MethodDescriptor.ofMethod(Message.class, "body", Object.class);
+    private static final MethodDescriptor INSTANCE_HANDLE_DESTROY = MethodDescriptor.ofMethod(InstanceHandle.class, "destroy",
+            void.class);
 
     @Inject
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
@@ -136,7 +142,7 @@ class VertxProcessor {
             List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
-            VertxConfiguration config) {
+            VertxConfiguration config, BuildProducer<ServiceStartBuildItem> serviceStart) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX));
         Map<String, ConsumeEvent> messageConsumerConfigurations = new HashMap<>();
         ClassOutput classOutput = new ClassOutput() {
@@ -156,6 +162,7 @@ class VertxProcessor {
         RuntimeValue<Vertx> vertx = template.configureVertx(beanContainer.getValue(), config, messageConsumerConfigurations,
                 launchMode.getLaunchMode(),
                 shutdown);
+        serviceStart.produce(new ServiceStartBuildItem("vertx"));
         return new VertxBuildItem(vertx);
     }
 
@@ -308,8 +315,7 @@ class VertxProcessor {
                     beanInstanceHandle, axleMessageHandle);
         } else {
             // Parameter is payload
-            ResultHandle bodyHandle = invoke.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(Message.class, "body", Object.class), messageHandle);
+            ResultHandle bodyHandle = invoke.invokeInterfaceMethod(MESSAGE_BODY, messageHandle);
             ResultHandle replyHandle = invoke.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(),
                             method.returnType().name().toString(), paramType.name().toString()),
@@ -320,7 +326,7 @@ class VertxProcessor {
                     FunctionCreator func = invoke.createFunction(Consumer.class);
                     BytecodeCreator funcBytecode = func.getBytecode();
                     funcBytecode.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(Message.class, "reply", void.class, Object.class),
+                            MESSAGE_REPLY,
                             messageHandle,
                             funcBytecode.getMethodParam(0));
                     funcBytecode.returnValue(null);
@@ -331,17 +337,14 @@ class VertxProcessor {
                             replyHandle, func.getInstance());
                 } else {
                     // Message.reply(returnValue)
-                    invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(Message.class, "reply", void.class, Object.class),
-                            messageHandle,
-                            replyHandle);
+                    invoke.invokeInterfaceMethod(MESSAGE_REPLY, messageHandle, replyHandle);
                 }
             }
         }
 
         // handle.destroy() - destroy dependent instance afterwards
         if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
-            invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "destroy", void.class),
-                    instanceHandle);
+            invoke.invokeInterfaceMethod(INSTANCE_HANDLE_DESTROY, instanceHandle);
         }
     }
 

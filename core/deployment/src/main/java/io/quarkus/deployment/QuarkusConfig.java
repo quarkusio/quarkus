@@ -24,8 +24,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.builder.item.SimpleBuildItem;
 
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 
 public final class QuarkusConfig extends SimpleBuildItem {

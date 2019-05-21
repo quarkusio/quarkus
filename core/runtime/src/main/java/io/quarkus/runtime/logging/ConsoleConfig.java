@@ -39,7 +39,7 @@ public class ConsoleConfig {
     /**
      * The console log level
      */
-    @ConfigItem(defaultValue = "INFO")
+    @ConfigItem(defaultValue = "ALL")
     Level level;
 
     /**
@@ -48,4 +48,9 @@ public class ConsoleConfig {
     @ConfigItem(defaultValue = "true")
     boolean color;
 
+    /**
+     * Specify how much the colors should be darkened
+     */
+    @ConfigItem(defaultValue = "0")
+    int darken;
 }

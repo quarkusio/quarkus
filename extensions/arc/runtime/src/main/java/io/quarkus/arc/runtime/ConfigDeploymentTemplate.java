@@ -16,7 +16,6 @@
 
 package io.quarkus.arc.runtime;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -24,7 +23,7 @@ import java.util.Set;
 import javax.enterprise.inject.spi.DeploymentException;
 
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
 import io.quarkus.runtime.annotations.Template;
 
@@ -34,20 +33,53 @@ import io.quarkus.runtime.annotations.Template;
 @Template
 public class ConfigDeploymentTemplate {
 
-    public void validateConfigProperties(Map<String, Set<Class<?>>> properties) {
-        Config config = ConfigProvider.getConfig();
-        for (Entry<String, Set<Class<?>>> entry : properties.entrySet()) {
-            Set<Class<?>> propertyTypes = entry.getValue();
-            for (Class<?> propertyType : propertyTypes) {
-                // Copy SmallRye logic - for collections, we only check if the property config exists without trying to convert it
-                if (Collection.class.isAssignableFrom(propertyType)) {
-                    propertyType = String.class;
+    public void validateConfigProperties(Map<String, Set<String>> properties) {
+        Config config = ConfigProviderResolver.instance().getConfig();
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        if (cl == null) {
+            ConfigDeploymentTemplate.class.getClassLoader();
+        }
+        for (Entry<String, Set<String>> entry : properties.entrySet()) {
+            Set<String> propertyTypes = entry.getValue();
+            for (String propertyType : propertyTypes) {
+                Class<?> propertyClass = load(propertyType, cl);
+                // For parameterized types and arrays, we only check if the property config exists without trying to convert it
+                if (propertyClass.isArray() || propertyClass.getTypeParameters().length > 0) {
+                    propertyClass = String.class;
                 }
-                if (!config.getOptionalValue(entry.getKey(), propertyType).isPresent()) {
+                if (!config.getOptionalValue(entry.getKey(), propertyClass).isPresent()) {
                     throw new DeploymentException(
                             "No config value of type " + entry.getValue() + " exists for: " + entry.getKey());
                 }
             }
+        }
+    }
+
+    private Class<?> load(String className, ClassLoader cl) {
+        switch (className) {
+            case "boolean":
+                return boolean.class;
+            case "byte":
+                return byte.class;
+            case "short":
+                return short.class;
+            case "int":
+                return int.class;
+            case "long":
+                return long.class;
+            case "float":
+                return float.class;
+            case "double":
+                return double.class;
+            case "char":
+                return char.class;
+            case "void":
+                return void.class;
+        }
+        try {
+            return Class.forName(className, true, cl);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Unable to load the config property type: " + className);
         }
     }
 

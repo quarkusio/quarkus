@@ -37,11 +37,6 @@ import java.util.function.Supplier;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
 
-import org.jboss.builder.BuildChainBuilder;
-import org.jboss.builder.BuildContext;
-import org.jboss.builder.BuildException;
-import org.jboss.builder.BuildStep;
-import org.jboss.builder.item.BuildItem;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
@@ -56,6 +51,11 @@ import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
+import io.quarkus.builder.BuildChainBuilder;
+import io.quarkus.builder.BuildContext;
+import io.quarkus.builder.BuildException;
+import io.quarkus.builder.BuildStep;
+import io.quarkus.builder.item.BuildItem;
 import io.quarkus.runner.RuntimeRunner;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;
@@ -78,16 +78,34 @@ public class QuarkusUnitTest
 
     private RuntimeRunner runtimeRunner;
     private Path deploymentDir;
-    private Class<? extends Throwable> expectedException;
+    private Consumer<Throwable> assertException;
     private Supplier<JavaArchive> archiveProducer;
     private Runnable afterUndeployListener;
+    private String logFileName;
 
-    public Class<? extends Throwable> getExpectedException() {
-        return expectedException;
-    }
+    private final RestAssuredURLManager restAssuredURLManager;
 
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
-        this.expectedException = expectedException;
+        return assertException(t -> {
+            assertEquals(expectedException,
+                    t.getClass(), "Build failed with wrong exception");
+        });
+    }
+
+    public QuarkusUnitTest() {
+        this(false);
+    }
+
+    public static QuarkusUnitTest withSecuredConnection() {
+        return new QuarkusUnitTest(true);
+    }
+
+    private QuarkusUnitTest(boolean useSecureConnection) {
+        this.restAssuredURLManager = new RestAssuredURLManager(useSecureConnection);
+    }
+
+    public QuarkusUnitTest assertException(Consumer<Throwable> assertException) {
+        this.assertException = assertException;
         return this;
     }
 
@@ -100,6 +118,12 @@ public class QuarkusUnitTest
         return this;
     }
 
+    public QuarkusUnitTest setLogFileName(String logFileName) {
+        this.logFileName = logFileName;
+        return this;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
             throws TestInstantiationException {
         try {
@@ -116,7 +140,7 @@ public class QuarkusUnitTest
             return factory.newInstance(new InvocationHandler() {
                 @Override
                 public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                    if (expectedException != null) {
+                    if (assertException != null) {
                         return null;
                     }
                     Method realMethod = actualTestInstance.getClass().getMethod(method.getName(), method.getParameterTypes());
@@ -160,7 +184,11 @@ public class QuarkusUnitTest
             throw new RuntimeException("QuarkusUnitTest does not have archive producer set");
         }
 
-        PropertyTestUtil.setLogFileProperty();
+        if (logFileName != null) {
+            PropertyTestUtil.setLogFileProperty(logFileName);
+        } else {
+            PropertyTestUtil.setLogFileProperty();
+        }
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         if (store.get(TestResourceManager.class.getName()) == null) {
             TestResourceManager manager = new TestResourceManager(extensionContext.getRequiredTestClass());
@@ -218,8 +246,8 @@ public class QuarkusUnitTest
 
             try {
                 runtimeRunner.run();
-                if (expectedException != null) {
-                    fail("Build did not fail");
+                if (assertException != null) {
+                    fail("The build was expected to fail");
                 }
                 started = true;
                 Instance<?> factory;
@@ -234,15 +262,13 @@ public class QuarkusUnitTest
                 extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).put(testClass.getName(), actualTest);
             } catch (Exception e) {
                 started = false;
-                if (expectedException != null) {
+                if (assertException != null) {
                     if (e instanceof RuntimeException) {
                         Throwable cause = e.getCause();
                         if (cause != null && cause instanceof BuildException) {
-                            assertEquals(expectedException,
-                                    cause.getCause().getClass(), "Build failed with wrong exception");
+                            assertException.accept(cause.getCause());
                         } else if (cause != null) {
-                            assertEquals(expectedException,
-                                    cause.getClass(), "Build failed with wrong exception");
+                            assertException.accept(cause);
                         } else {
                             fail("Unable to unwrap build exception from: " + e);
                         }
@@ -299,12 +325,12 @@ public class QuarkusUnitTest
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
-        RestAssuredURLManager.clearURL();
+        restAssuredURLManager.clearURL();
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        RestAssuredURLManager.setURL();
+        restAssuredURLManager.setURL();
     }
 
     public Runnable getAfterUndeployListener() {

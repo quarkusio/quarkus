@@ -201,8 +201,7 @@ public class ModelUtils {
 
     public static Model readModel(final Path pomXml) throws IOException {
         try(BufferedReader reader = Files.newBufferedReader(pomXml)) {
-            final MavenXpp3Reader xpp3Reader = new MavenXpp3Reader();
-            return xpp3Reader.read(reader);
+            return new MavenXpp3Reader().read(reader);
         } catch (XmlPullParserException e) {
             throw new IOException("Failed to parse application POM model", e);
         }

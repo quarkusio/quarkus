@@ -27,10 +27,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
+import org.infinispan.client.hotrod.annotation.ClientListener;
 import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import org.infinispan.client.hotrod.exceptions.HotRodClientException;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
@@ -38,6 +38,11 @@ import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
 import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
 import org.infinispan.commons.util.Util;
+import org.infinispan.protostream.BaseMarshaller;
+import org.infinispan.protostream.EnumMarshaller;
+import org.infinispan.protostream.FileDescriptorSource;
+import org.infinispan.protostream.MessageMarshaller;
+import org.infinispan.protostream.RawProtobufMarshaller;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
@@ -58,8 +63,9 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.infinispan.client.runtime.InfinispanClientConfiguration;
+import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanClientProducer;
+import io.quarkus.infinispan.client.runtime.InfinispanClientRuntimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanTemplate;
 
 class InfinispanClientProcessor {
@@ -69,8 +75,13 @@ class InfinispanClientProcessor {
     private static final String HOTROD_CLIENT_PROPERTIES = META_INF + File.separator + "/hotrod-client.properties";
     private static final String PROTO_EXTENSION = ".proto";
 
+    /**
+     * The Infinispan client build time configuration.
+     */
+    InfinispanClientBuildTimeConfig infinispanClient;
+
     @BuildStep
-    PropertiesBuildItem setup(ApplicationArchivesBuildItem applicationArchivesBuildItem,
+    InfinispanPropertiesBuildItem setup(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<HotDeploymentConfigFileBuildItem> hotDeployment,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
@@ -79,7 +90,7 @@ class InfinispanClientProcessor {
             ApplicationIndexBuildItem applicationIndexBuildItem) throws ClassNotFoundException, IOException {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.INFINISPAN_CLIENT));
-        additionalBeans.produce(new AdditionalBeanBuildItem(InfinispanClientProducer.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(InfinispanClientProducer.class));
         systemProperties.produce(new SystemPropertyBuildItem("io.netty.noUnsafe", "true"));
         hotDeployment.produce(new HotDeploymentConfigFileBuildItem(HOTROD_CLIENT_PROPERTIES));
 
@@ -144,7 +155,7 @@ class InfinispanClientProcessor {
         // Add any user project listeners to allow reflection in native code
         Index index = applicationIndexBuildItem.getIndex();
         List<AnnotationInstance> listenerInstances = index.getAnnotations(
-                DotName.createSimple("org.infinispan.client.hotrod.annotation.ClientListener"));
+                DotName.createSimple(ClientListener.class.getName()));
         for (AnnotationInstance instance : listenerInstances) {
             AnnotationTarget target = instance.target();
             if (target.kind() == AnnotationTarget.Kind.CLASS) {
@@ -164,7 +175,7 @@ class InfinispanClientProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 "org.infinispan.client.hotrod.impl.consistenthash.SegmentConsistentHash"));
 
-        return new PropertiesBuildItem(properties);
+        return new InfinispanPropertiesBuildItem(properties);
     }
 
     private Properties loadFromStream(InputStream stream) {
@@ -177,26 +188,16 @@ class InfinispanClientProcessor {
         return properties;
     }
 
-    /**
-     * The Infinispan client configuration, if set.
-     */
-    InfinispanClientConfiguration infinispanClient;
-
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    BeanContainerListenerBuildItem build(InfinispanTemplate template, PropertiesBuildItem builderBuildItem) {
+    BeanContainerListenerBuildItem build(InfinispanTemplate template, InfinispanPropertiesBuildItem builderBuildItem) {
         Properties properties = builderBuildItem.getProperties();
-        InfinispanClientConfiguration conf = infinispanClient;
-        final Optional<String> serverList = conf.serverList;
+        InfinispanClientBuildTimeConfig conf = infinispanClient;
         if (log.isDebugEnabled()) {
             log.debugf("Applying micro profile configuration: %s", conf);
         }
-        if (serverList.isPresent()) {
-            // Retain the hotrod-client.properties definition if clashes
-            properties.putIfAbsent(ConfigurationProperties.SERVER_LIST, serverList.get());
-        }
         int maxEntries = conf.nearCacheMaxEntries;
-        // Only write the entries if is a valid number and it isn't already configured
+        // Only write the entries if it is a valid number and it isn't already configured
         if (maxEntries > 0 && !properties.containsKey(ConfigurationProperties.NEAR_CACHE_MODE)) {
             // This is already empty so no need for putIfAbsent
             properties.put(ConfigurationProperties.NEAR_CACHE_MODE, NearCacheMode.INVALIDATED.toString());
@@ -206,10 +207,20 @@ class InfinispanClientProcessor {
         return new BeanContainerListenerBuildItem(template.configureInfinispan(properties));
     }
 
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    void configureRuntimeProperties(InfinispanTemplate template,
+            InfinispanClientRuntimeConfig infinispanClientRuntimeConfig) {
+        template.configureRuntimeProperties(infinispanClientRuntimeConfig);
+    }
+
     private static final Set<DotName> UNREMOVABLE_BEANS = Collections.unmodifiableSet(
             new HashSet<>(Arrays.asList(
-                    DotName.createSimple("org.infinispan.protostream.MessageMarshaller"),
-                    DotName.createSimple("org.infinispan.protostream.FileDescriptorSource"))));
+                    DotName.createSimple(BaseMarshaller.class.getName()),
+                    DotName.createSimple(EnumMarshaller.class.getName()),
+                    DotName.createSimple(MessageMarshaller.class.getName()),
+                    DotName.createSimple(RawProtobufMarshaller.class.getName()),
+                    DotName.createSimple(FileDescriptorSource.class.getName()))));
 
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {

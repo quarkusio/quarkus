@@ -16,6 +16,8 @@
 
 package io.quarkus.arc.test.interceptors.aroundconstruct;
 
+import static org.junit.Assert.assertNotNull;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.test.ArcTestContainer;
@@ -38,8 +40,8 @@ public class AroundConstructTest {
 
     @Test
     public void testInterception() {
-        ArcContainer arc = Arc.container();
-        SimpleBean simpleBean = arc.instance(SimpleBean.class).get();
+        SimpleBean simpleBean = Arc.container().instance(SimpleBean.class).get();
+        assertNotNull(simpleBean);
         Assert.assertTrue(INTERCEPTOR_CALLED.get());
     }
 

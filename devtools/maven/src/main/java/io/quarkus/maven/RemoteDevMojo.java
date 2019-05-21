@@ -46,8 +46,7 @@ import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
- * The dev mojo, that connects to a remote host
- * <p>
+ * The dev mojo, that connects to a remote host.
  */
 @Mojo(name = "remote-dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class RemoteDevMojo extends AbstractMojo {
@@ -90,18 +89,8 @@ public class RemoteDevMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
-        boolean found = false;
-        for (Plugin i : project.getBuildPlugins()) {
-            if (i.getGroupId().equals(MojoUtils.getPluginGroupId())
-                    && i.getArtifactId().equals(MojoUtils.getPluginArtifactId())) {
-                for (PluginExecution p : i.getExecutions()) {
-                    if (p.getGoals().contains("build")) {
-                        found = true;
-                        break;
-                    }
-                }
-            }
-        }
+        boolean found = MojoUtils.checkProjectForMavenBuildPlugin(project);
+
         if (!found) {
             getLog().warn("The quarkus-maven-plugin build goal was not configured for this project, " +
                     "skipping quarkus:remote-dev as this is assumed to be a support library. If you want to run Quarkus remote-dev"
@@ -143,17 +132,21 @@ public class RemoteDevMojo extends AbstractMojo {
             }
         }
 
-        Optional<String> url = ConfigProvider.getConfig().getOptionalValue("quarkus.hot-reload.url", String.class);
-        Optional<String> password = ConfigProvider.getConfig().getOptionalValue("quarkus.hot-reload.password",
+        Optional<String> url = ConfigProvider.getConfig().getOptionalValue("quarkus.live-reload.url", String.class);
+        Optional<String> password = ConfigProvider.getConfig().getOptionalValue("quarkus.live-reload.password",
                 String.class);
         if (!url.isPresent()) {
-            throw new MojoFailureException("To use remote-dev you must specify quarkus.hot-reload.url");
+            throw new MojoFailureException("To use remote-dev you must specify quarkus.live-reload.url");
         }
         if (!password.isPresent()) {
-            throw new MojoFailureException("To use remote-dev you must specify quarkus.hot-reload.password");
+            throw new MojoFailureException("To use remote-dev you must specify quarkus.live-reload.password");
         }
         System.out.println(sources);
-        AgentRunner runner = new AgentRunner(resources, sources, classes, url.get() + "/quarkus/hot-reload",
+        String remotePath = url.get();
+        if (remotePath.endsWith("/")) {
+            remotePath = remotePath.substring(0, remotePath.length() - 1);
+        }
+        AgentRunner runner = new AgentRunner(resources, sources, classes, remotePath + "/quarkus/live-reload",
                 password.get());
 
         runner.run();

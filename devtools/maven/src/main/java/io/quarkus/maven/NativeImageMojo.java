@@ -36,6 +36,9 @@ import io.quarkus.creator.phase.nativeimage.NativeImageOutcome;
 import io.quarkus.creator.phase.nativeimage.NativeImagePhase;
 import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 
+/**
+ * Build a native executable of your application.
+ */
 @Mojo(name = "native-image", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class NativeImageMojo extends AbstractMojo {
 
@@ -129,6 +132,12 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private boolean addAllCharsets;
 
+    @Parameter(defaultValue = "false")
+    private boolean enableFallbackImages;
+
+    @Parameter(defaultValue = "true")
+    private boolean reportExceptionStackTraces;
+
     public NativeImageMojo() {
         MojoLogger.logSupplier = this::getLog;
     }
@@ -158,6 +167,7 @@ public class NativeImageMojo extends AbstractMojo {
                         .setDumpProxies(dumpProxies)
                         .setEnableAllSecurityServices(enableAllSecurityServices)
                         .setEnableCodeSizeReporting(enableCodeSizeReporting)
+                        .setEnableFallbackImages(enableFallbackImages)
                         .setEnableHttpsUrlHandler(enableHttpsUrlHandler)
                         .setEnableHttpUrlHandler(enableHttpUrlHandler)
                         .setEnableIsolates(enableIsolates)
@@ -168,7 +178,8 @@ public class NativeImageMojo extends AbstractMojo {
                         .setFullStackTraces(fullStackTraces)
                         .setGraalvmHome(graalvmHome)
                         .setNativeImageXmx(nativeImageXmx)
-                        .setReportErrorsAtRuntime(reportErrorsAtRuntime))
+                        .setReportErrorsAtRuntime(reportErrorsAtRuntime)
+                        .setReportExceptionStackTraces(reportExceptionStackTraces))
 
                 .build()) {
 
@@ -202,6 +213,7 @@ public class NativeImageMojo extends AbstractMojo {
                     })
                     .pushOutcome(RunnerJarOutcome.class, new RunnerJarOutcome() {
                         final Path runnerJar = buildDir.toPath().resolve(finalName + "-runner.jar");
+                        final Path originalJar = buildDir.toPath().resolve(finalName + ".jar");
 
                         @Override
                         public Path getRunnerJar() {
@@ -211,6 +223,11 @@ public class NativeImageMojo extends AbstractMojo {
                         @Override
                         public Path getLibDir() {
                             return runnerJar.getParent().resolve("lib");
+                        }
+
+                        @Override
+                        public Path getOriginalJar() {
+                            return originalJar;
                         }
                     })
                     // resolve the outcome of the native image phase

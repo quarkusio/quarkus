@@ -16,9 +16,8 @@
 
 package io.quarkus.arc.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
-
 import io.quarkus.arc.processor.BeanRegistrar;
+import io.quarkus.builder.item.MultiBuildItem;
 
 public final class BeanRegistrarBuildItem extends MultiBuildItem {
 

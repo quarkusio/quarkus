@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
@@ -86,11 +87,11 @@ public class RuntimeXmlConfigService {
         }
 
         void run() throws IOException {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
             String command = reader.readLine();
             log.infof("Received command: %s", command);
             String reply = command + "-ack";
-            os.write(reply.getBytes());
+            os.write(reply.getBytes("UTF-8"));
         }
     }
 }

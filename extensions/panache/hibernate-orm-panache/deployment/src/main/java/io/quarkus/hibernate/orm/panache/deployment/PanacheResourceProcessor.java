@@ -16,7 +16,6 @@
 
 package io.quarkus.hibernate.orm.panache.deployment;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -36,8 +35,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
@@ -45,9 +42,6 @@ import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 
-/**
- *
- */
 public final class PanacheResourceProcessor {
 
     private static final DotName DOTNAME_PANACHE_REPOSITORY_BASE = DotName.createSimple(PanacheRepositoryBase.class.getName());
@@ -55,22 +49,19 @@ public final class PanacheResourceProcessor {
     private static final DotName DOTNAME_PANACHE_ENTITY_BASE = DotName.createSimple(PanacheEntityBase.class.getName());
     private static final DotName DOTNAME_PANACHE_ENTITY = DotName.createSimple(PanacheEntity.class.getName());
 
-    private static final Set<DotName> UNREMOVABLE_BEANS = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList(
-                    DotName.createSimple(EntityManager.class.getName())
-
-            )));
+    private static final Set<DotName> UNREMOVABLE_BEANS = Collections.singleton(
+            DotName.createSimple(EntityManager.class.getName()));
 
     @BuildStep
     List<AdditionalJpaModelBuildItem> produceModel() {
         // only useful for the index resolution: hibernate will register it to be transformed, but BuildMojo
         // only transforms classes from the application jar, so we do our own transforming
-        return Arrays.asList(
+        return Collections.singletonList(
                 new AdditionalJpaModelBuildItem(PanacheEntity.class));
     }
 
     @BuildStep
-    UnremovableBeanBuildItem ensureBeanLookupAvailible() {
+    UnremovableBeanBuildItem ensureBeanLookupAvailable() {
         return new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
             @Override
             public boolean test(BeanInfo beanInfo) {
@@ -136,17 +127,4 @@ public final class PanacheResourceProcessor {
         }
     }
 
-    static final class ProcessorClassOutput implements ClassOutput {
-        private final BuildProducer<GeneratedClassBuildItem> producer;
-
-        ProcessorClassOutput(BuildProducer<GeneratedClassBuildItem> producer) {
-            this.producer = producer;
-        }
-
-        @Override
-        public void write(final String name, final byte[] data) {
-            producer.produce(new GeneratedClassBuildItem(false, name, data));
-        }
-
-    }
 }

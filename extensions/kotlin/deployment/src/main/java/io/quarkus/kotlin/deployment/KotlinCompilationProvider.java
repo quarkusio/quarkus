@@ -2,6 +2,7 @@ package io.quarkus.kotlin.deployment;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -19,8 +20,8 @@ import io.quarkus.dev.CompilationProvider;
 public class KotlinCompilationProvider implements CompilationProvider {
 
     @Override
-    public String handledExtension() {
-        return ".kt";
+    public Set<String> handledExtensions() {
+        return Collections.singleton(".kt");
     }
 
     @Override

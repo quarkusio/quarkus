@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import javax.json.bind.annotation.JsonbTransient;
 import javax.persistence.Transient;
 
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
@@ -57,6 +58,7 @@ public abstract class PanacheEntityBase {
      *
      * @return true if this entity is persistent in the database.
      */
+    @JsonbTransient
     public boolean isPersistent() {
         return JpaOperations.isPersistent(this);
     }

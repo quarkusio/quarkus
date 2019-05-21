@@ -16,6 +16,8 @@
 package io.quarkus.gradle.tasks;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Input;
@@ -50,6 +52,8 @@ public class QuarkusBuild extends QuarkusTask {
     private boolean useStaticInit = true;
 
     private boolean uberJar = false;
+
+    private List<String> ignoredEntries = new ArrayList<>();
 
     public QuarkusBuild() {
         super("Quarkus builds a runner jar based on the build jar");
@@ -128,6 +132,18 @@ public class QuarkusBuild extends QuarkusTask {
         this.uberJar = uberJar;
     }
 
+    @Optional
+    @Input
+    public List<String> getIgnoredEntries() {
+        return ignoredEntries;
+    }
+
+    @Option(description = "When using the uber-jar option, this option can be used to "
+            + "specify one or more entries that should be excluded from the final jar", option = "ignored-entry")
+    public void setIgnoredEntries(List<String> ignoredEntries) {
+        this.ignoredEntries.addAll(ignoredEntries);
+    }
+
     @TaskAction
     public void buildQuarkus() {
         getLogger().lifecycle("building quarkus runner");
@@ -152,7 +168,8 @@ public class QuarkusBuild extends QuarkusTask {
                         .setLibDir(getLibDir().toPath())
                         .setFinalName(extension().finalName())
                         .setMainClass(getMainClass())
-                        .setUberJar(isUberJar()))
+                        .setUberJar(isUberJar())
+                        .setUserConfiguredIgnoredEntries(getIgnoredEntries()))
                 .setWorkDir(getProject().getBuildDir().toPath())
                 .build()) {
 

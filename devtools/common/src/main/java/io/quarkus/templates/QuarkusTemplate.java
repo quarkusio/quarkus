@@ -1,8 +1,9 @@
 package io.quarkus.templates;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+
+import io.quarkus.cli.commands.writer.ProjectWriter;
 
 public interface QuarkusTemplate {
     String PROJECT_GROUP_ID = "project_groupId";
@@ -13,8 +14,9 @@ public interface QuarkusTemplate {
     String SOURCE_TYPE = "source_type";
     String CLASS_NAME = "class_name";
     String RESOURCE_PATH = "path";
+    String ADDITIONAL_GITIGNORE_ENTRIES = "additional_gitignore_entries";
 
     String getName();
 
-    void generate(final File projectRoot, Map<String, Object> parameters) throws IOException;
+    void generate(final ProjectWriter writer, Map<String, Object> parameters) throws IOException;
 }

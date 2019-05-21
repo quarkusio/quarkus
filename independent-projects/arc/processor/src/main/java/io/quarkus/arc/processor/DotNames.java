@@ -21,6 +21,7 @@ import java.util.Optional;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
+import javax.enterprise.context.control.ActivateRequestContext;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
 import javax.enterprise.event.ObservesAsync;
@@ -87,6 +88,7 @@ public final class DotNames {
     public static final DotName EXTENSION = create(Extension.class);
     public static final DotName OPTIONAL = create(Optional.class);
     public static final DotName NAMED = create(Named.class);
+    public static final DotName ACTIVATE_REQUEST_CONTEXT = create(ActivateRequestContext.class);
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);
@@ -96,6 +98,7 @@ public final class DotNames {
     public static final DotName INTEGER = create(Integer.class);
     public static final DotName LONG = create(Long.class);
     public static final DotName SHORT = create(Short.class);
+    public static final DotName STRING = create(String.class);
 
     private DotNames() {
     }

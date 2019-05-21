@@ -76,6 +76,8 @@ public class QuarkusNative extends QuarkusTask {
 
     private boolean enableVMInspection = false;
 
+    private boolean enableFallbackImages = false;
+
     private boolean fullStackTraces = true;
 
     private boolean disableReports;
@@ -83,6 +85,8 @@ public class QuarkusNative extends QuarkusTask {
     private List<String> additionalBuildArgs;
 
     private boolean addAllCharsets = false;
+
+    private boolean reportExceptionStackTraces = true;
 
     public QuarkusNative() {
         super("Building a native image");
@@ -147,6 +151,19 @@ public class QuarkusNative extends QuarkusTask {
     @Input
     public boolean isEnableHttpUrlHandler() {
         return enableHttpUrlHandler;
+    }
+
+    @Optional
+    @Input
+    private boolean isEnableFallbackImages() {
+        return enableFallbackImages;
+    }
+
+    @Option(description = "Enable the GraalVM native image compiler to generate Fallback Images in case of compilation error. "
+            +
+            "Careful: these are not as efficient as normal native images.", option = "enable-fallback-images")
+    public void setEnableFallbackImages(boolean enableFallbackImages) {
+        this.enableFallbackImages = enableFallbackImages;
     }
 
     @Option(description = "Specify if http url handler is enabled", option = "enable-http-url-handler")
@@ -357,6 +374,17 @@ public class QuarkusNative extends QuarkusTask {
         this.additionalBuildArgs = additionalBuildArgs;
     }
 
+    @Optional
+    @Input
+    public boolean isReportExceptionStackTraces() {
+        return reportExceptionStackTraces;
+    }
+
+    @Option(description = "Show exception stack traces for exceptions during image building", option = "report-exception-stack-traces")
+    public void setReportExceptionStackTraces(boolean reportExceptionStackTraces) {
+        this.reportExceptionStackTraces = reportExceptionStackTraces;
+    }
+
     @TaskAction
     public void buildNative() {
         getLogger().lifecycle("building native image");
@@ -384,10 +412,12 @@ public class QuarkusNative extends QuarkusTask {
                         .setEnableRetainedHeapReporting(isEnableRetainedHeapReporting())
                         .setEnableServer(isEnableServer())
                         .setEnableVMInspection(isEnableVMInspection())
+                        .setEnableFallbackImages(isEnableFallbackImages())
                         .setFullStackTraces(isFullStackTraces())
                         .setGraalvmHome(getGraalvmHome())
                         .setNativeImageXmx(getNativeImageXmx())
-                        .setReportErrorsAtRuntime(isReportErrorsAtRuntime()))
+                        .setReportErrorsAtRuntime(isReportErrorsAtRuntime())
+                        .setReportExceptionStackTraces(isReportExceptionStackTraces()))
 
                 .build()) {
 
@@ -417,6 +447,7 @@ public class QuarkusNative extends QuarkusTask {
                 }
             }).pushOutcome(RunnerJarOutcome.class, new RunnerJarOutcome() {
                 final Path runnerJar = getProject().getBuildDir().toPath().resolve(extension().finalName() + "-runner.jar");
+                final Path originalJar = getProject().getBuildDir().toPath().resolve(extension().finalName() + ".jar");
 
                 @Override
                 public Path getRunnerJar() {
@@ -426,6 +457,11 @@ public class QuarkusNative extends QuarkusTask {
                 @Override
                 public Path getLibDir() {
                     return runnerJar.getParent().resolve("lib");
+                }
+
+                @Override
+                public Path getOriginalJar() {
+                    return originalJar;
                 }
             }).resolveOutcome(NativeImageOutcome.class);
 

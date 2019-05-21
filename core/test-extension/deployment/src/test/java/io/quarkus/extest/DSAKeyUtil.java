@@ -32,7 +32,7 @@ public class DSAKeyUtil {
         byte[] encoded = publicKey.getEncoded();
         X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(encoded);
         DSAPublicKey publicKey1 = (DSAPublicKey) keyFactory.generatePublic(publicKeySpec);
-        System.out.printf("keys are equal: %s\n", publicKey1.equals(publicKey));
+        System.out.printf("keys are equal: %s%n", publicKey1.equals(publicKey));
 
         String base64 = Base64.getEncoder().encodeToString(encoded);
         System.out.println(base64);

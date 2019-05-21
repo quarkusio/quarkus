@@ -18,8 +18,9 @@ package io.quarkus.deployment.builditem.substrate;
 
 import java.lang.reflect.Field;
 
-import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.FieldInfo;
+
+import io.quarkus.builder.item.MultiBuildItem;
 
 public final class ReflectiveFieldBuildItem extends MultiBuildItem {
 

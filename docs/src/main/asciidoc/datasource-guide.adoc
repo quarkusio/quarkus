@@ -1,0 +1,262 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+
+include::./attributes.adoc[]
+= {project-name} - Datasources
+
+Many projects that use data require connections to a database.
+The main way of obtaining connections to a database is to use a datasource.
+
+In {project-name}, the out of the box datasource and connection pooling implementation is https://agroal.github.io/[Agroal].
+
+This guide will explain how to:
+
+* configure a datasource, or multiple datasources
+* how to obtain a reference to those datasources in code
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 10 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.5.3+
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,shell,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=agroal-datasources\
+    -DclassName="org.acme.datasource.GreetingResource" \
+    -Dpath="/hello"
+----
+
+It generates:
+
+* the Maven structure
+* a landing page accessible on `http://localhost:8080`
+* example `Dockerfile` files for both `native` and `jvm` modes
+* the application configuration file
+* an `org.acme.datasource.GreetingResource` resource
+* an associated test
+
+== Adding maven dependencies
+
+Next, you will need to add the `quarkus-agroal` dependency to your project.
+
+
+You can add it using a simple Maven command:
+
+[source,shell]
+----
+./mvnw quarkus:add-extension -Dextensions="agroal"
+----
+
+[NOTE]
+====
+Agroal comes as a transitive dependency of the Hibernate ORM extension so if you are using Hibernate ORM,
+you don't need to add the Agroal extension dependency explicitly.
+====
+
+You will also need to add the database connector library of choice.
+
+Quarkus provides driver extensions for:
+
+* H2 - jdbc-h2
+* PostgreSQL - jdbc-postgresql
+* MariaDB (and MySQL) - jdbc-mariadb
+* Microsoft SQL Server - jdbc-mssql
+
+[NOTE]
+====
+In JVM mode, simply adding your driver of choice is sufficient.
+Extensions are mostly useful to support GraalVM native images.
+====
+
+As usual, you can install the extension using `add-extension`.
+
+To install the PostgreSQL driver dependency for instance, just run the following command:
+
+[source,shell]
+----
+./mvnw quarkus:add-extension -Dextensions="jdbc-postgresql"
+----
+
+== Configuring the datasource
+
+Once the dependencies are added to your pom.xml file, you'll need to configure Agroal.
+
+This is done in the `src/main/resources/application.properties` file.
+
+A viable configuration file would be:
+
+[source,properties]
+--
+include::../../../../extensions/agroal/deployment/src/test/resources/application-default-datasource.properties[tag=basic]
+--
+
+There are other configuration options, detailed below.
+
+=== JDBC URL configurations
+
+Each of the supported databases contains different JDBC URL configuration options.
+Going into each of those options is beyond the scope of this document, but it gives an overview of each database URL and link to the official documentation.
+
+==== H2
+
+`jdbc:h2:{ {.|mem:}[name] | [file:]fileName | {tcp|ssl}:[//]server[:port][,server2[:port]]/name }[;key=value...]`
+
+Example:: `jdbc:h2:tcp://localhost/~/test`, `jdbc:h2:mem:myDB`
+
+H2 is an embedded database.
+It can run as a server, based on a file, or live completely in memory.
+All of these options are available as listed above.
+You can find more information at the https://h2database.com/html/features.html?highlight=url&search=url#database_url[official documentation].
+
+==== PostgreSQL
+
+PostgreSQL only runs as a server, as do the rest of the databases below.
+As such, you must specify connection details, or use the defaults.
+
+`jdbc:postgresql:[//][host][:port][/database][?key=value...]`
+
+Example:: `jdbc:postgresql://localhost/test`
+
+Defaults for the different parts are as follows:
+
+`host`:: localhost
+`port`:: 5432
+`database`:: same name as the username
+
+The https://jdbc.postgresql.org/documentation/head/connect.html[official documentation] go into more detail and list optional parameters as well.
+
+==== MariaDB/MySQL
+
+`jdbc:(mysql|mariadb):[replication:|failover:|sequential:|aurora:]//<hostDescription>[,<hostDescription>...]/[database][?<key1>=<value1>[&<key2>=<value2>]]`
+ hostDescription:: `<host>[:<portnumber>]  or address=(host=<host>)[(port=<portnumber>)][(type=(master|slave))]`
+
+Example:: `jdbc:mysql://localhost:3306/test`
+
+You can find more information about this feature and others detailed in the https://mariadb.com/kb/en/library/about-mariadb-connector-j/[official documentation].
+
+==== Microsoft SQL Server
+
+Microsoft SQL Server takes a connection URL in the following form:
+
+`jdbc:sqlserver://[serverName[\instanceName][:portNumber]][;property=value[;property=value]]`
+
+Example:: `jdbc:sqlserver://localhost:1433;databaseName=AdventureWorks`
+
+The Microsoft SQL Server JDBC driver works essentially the same as the others.
+More details can be found in the https://docs.microsoft.com/en-us/sql/connect/jdbc/connecting-to-sql-server-with-the-jdbc-driver?view=sql-server-2017[official documentation].
+
+== Injecting a Datasource
+
+Because {project-name} uses CDI, injecting a datasource is very simple:
+
+[source,java,indent=0]
+--
+include::../../../../extensions/agroal/deployment/src/test/java/io/quarkus/agroal/test/DefaultDataSourceConfigTest.java[tag=injection]
+--
+
+In the above example, the type is `AgroalDataSource` which is a subtype of `javax.sql.DataSource`.
+Because of this, you can also use `javax.sql.DataSource`.
+
+== Multiple Datasources
+
+Agroal allows you to configure multiple datasources.
+It works exactly the same way as a single datasource, with one important change: a name.
+
+[source,properties]
+--
+include::../../../../extensions/agroal/deployment/src/test/resources/application-multiple-datasources.properties[]
+--
+
+Notice there's an extra bit in the key.
+The syntax is as follows: `quarkus.datasource.[optional name.][datasource property]`.
+
+=== Named Datasource Injection
+
+When using multiple datasources, each `DataSource` also has the `io.quarkus.agroal.DataSource` qualifier with the name of the datasource in the property as the value.
+Using the above properties to configure three different datasources, you can also inject each one as follows:
+
+[source,java,indent=0]
+--
+include::../../../../extensions/agroal/deployment/src/test/java/io/quarkus/agroal/test/MultipleDataSourcesConfigTest.java[tag=injection]
+--
+
+== Agroal Configuration Reference
+
+|===
+|Configuration key|Java type|Example
+
+|quarkus.datasource.driver
+|String (class name)
+|org.h2.Driver, com.mysql.jdbc.Driver
+
+|quarkus.datasource.url
+|String (JDBC Connection URL)
+|jdbc:h2:tcp://localhost/mem:default, jdbc:mysql://hostname:port/dbname
+
+|quarkus.datasource.username
+|String
+|Fred, Bill, inventory_user
+
+|quarkus.datasource.password
+|String
+|correct horse battery staple, Tr0ub4dor&3
+
+
+|quarkus.datasource.min-size
+|Integer
+|5, 12, 42
+
+|quarkus.datasource.max-size
+|Integer
+|5, 12, 42
+
+|quarkus.datasource.initial-size
+|Integer
+|5, 12, 42
+
+|quarkus.datasource.background-validation-interval
+|java.time.Duration
+|PT3M, PT56S, 
+
+|quarkus.datasource.acquisition-timeout
+|java.time.Duration
+|PT3M, PT56S - see note below
+
+|quarkus.datasource.leak-detection-interval
+|java.time.Duration
+|PT3M, PT56S - see note below
+
+|quarkus.datasource.idle-removal-interval
+|java.time.Duration
+|PT3M, PT56S - see note below
+
+|quarkus.datasource.transaction-isolation-level
+|io.quarkus.agroal.runtime.TransactionIsolationLevel (enum)
+|none, read-committed, read-uncommitted, repeatable-read, serializable
+
+|quarkus.datasource.xa
+|Boolean
+|True or False
+|===
+
+[NOTE]
+====
+The format for durations uses the standard `java.time` format.
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+
+You can also provide duration values starting with a number. In this case, if the value consists only of a `number`, the converter treats the value as seconds. Otherwise, `PT` is implicit appended to the value to obtain a standard `java.time` format.
+====
+

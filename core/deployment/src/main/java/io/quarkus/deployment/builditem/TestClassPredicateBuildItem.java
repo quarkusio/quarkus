@@ -2,7 +2,7 @@ package io.quarkus.deployment.builditem;
 
 import java.util.function.Predicate;
 
-import org.jboss.builder.item.SimpleBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  * This is an optional build item that allows extensions to distinguish test classes from application classes. It is only

@@ -16,7 +16,6 @@
 
 package io.quarkus.arc.processor;
 
-import static io.quarkus.arc.processor.DotNames.*;
 import static java.util.Collections.singletonList;
 import static org.jboss.jandex.Type.Kind.*;
 import static org.jboss.jandex.Type.Kind.CLASS;
@@ -82,17 +81,18 @@ class BeanResolver {
     }
 
     boolean matches(Type requiredType, Type beanType) {
+        return matchesNoBoxing(Types.box(requiredType), Types.box(beanType));
+    }
 
+    boolean matchesNoBoxing(Type requiredType, Type beanType) {
         if (requiredType == beanType) {
             return true;
         }
 
-        // TODO box types
-
         if (ARRAY.equals(requiredType.kind())) {
             if (ARRAY.equals(beanType.kind())) {
                 // Array types are considered to match only if their element types are identical
-                return matches(requiredType.asArrayType().component(), beanType.asArrayType().component());
+                return matchesNoBoxing(requiredType.asArrayType().component(), beanType.asArrayType().component());
             }
         } else if (CLASS.equals(requiredType.kind())) {
             if (CLASS.equals(beanType.kind())) {
@@ -133,57 +133,8 @@ class BeanResolver {
                 }
                 return true;
             }
-        } else if (PRIMITIVE.equals(requiredType.kind())) {
-            return primitiveMatch(requiredType.asPrimitiveType().primitive(), beanType);
         }
         return false;
-    }
-
-    static boolean primitiveMatch(PrimitiveType.Primitive requiredType, Type beanType) {
-        switch (requiredType) {
-            case INT:
-                return (beanType.kind() == CLASS && beanType.asClassType().name().equals(INTEGER))
-                        || (beanType.kind() == PRIMITIVE
-                                && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.INT);
-
-            case LONG:
-                return (beanType.kind() == CLASS && beanType.asClassType().name().equals(LONG))
-                        || (beanType.kind() == PRIMITIVE
-                                && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.LONG);
-
-            case SHORT:
-                return (beanType.kind() == CLASS && beanType.asClassType().name().equals(SHORT))
-                        || (beanType.kind() == PRIMITIVE
-                                && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.SHORT);
-
-            case BYTE:
-                return (beanType.kind() == CLASS && beanType.asClassType().name().equals(BYTE))
-                        || (beanType.kind() == PRIMITIVE
-                                && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.BYTE);
-
-            case FLOAT:
-                return (beanType.kind() == CLASS && beanType.asClassType().name().equals(FLOAT))
-                        || (beanType.kind() == PRIMITIVE
-                                && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.FLOAT);
-
-            case DOUBLE:
-                return (beanType.kind() == CLASS && beanType.asClassType().name().equals(DOUBLE))
-                        || (beanType.kind() == PRIMITIVE
-                                && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.DOUBLE);
-
-            case CHAR:
-                return (beanType.kind() == CLASS && beanType.asClassType().name().equals(CHARACTER))
-                        || (beanType.kind() == PRIMITIVE
-                                && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.CHAR);
-
-            case BOOLEAN:
-                return (beanType.kind() == CLASS && beanType.asClassType().name().equals(BOOLEAN))
-                        || (beanType.kind() == PRIMITIVE
-                                && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.BOOLEAN);
-
-            default:
-                throw new IllegalArgumentException("Not supported yet");
-        }
     }
 
     boolean parametersMatch(Type requiredParameter, Type beanParameter) {

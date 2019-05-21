@@ -54,15 +54,10 @@
             <artifactId>asm-analysis</artifactId>
         </dependency>
 
+        <!-- test dependencies -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus.gizmo</groupId>
-            <artifactId>gizmo</artifactId>
-            <type>test-jar</type>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

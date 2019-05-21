@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.eclipse.aether.RepositoryException;
 import org.eclipse.aether.artifact.Artifact;
@@ -40,11 +41,11 @@ import org.eclipse.aether.util.graph.transformer.ConflictIdSorter;
 import org.eclipse.aether.util.graph.transformer.ConflictMarker;
 import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 import org.eclipse.aether.version.Version;
-
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.resolver.maven.BuildDependencyGraphVisitor;
 import io.quarkus.bootstrap.resolver.maven.DeploymentInjectingDependencyVisitor;
 import io.quarkus.bootstrap.resolver.maven.DeploymentInjectionException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
@@ -57,9 +58,28 @@ import io.quarkus.bootstrap.resolver.maven.SimpleDependencyGraphTransformationCo
 public class BootstrapAppModelResolver implements AppModelResolver {
 
     protected final MavenArtifactResolver mvn;
+    protected Consumer<String> buildTreeConsumer;
+    protected boolean devmode;
 
     public BootstrapAppModelResolver(MavenArtifactResolver mvn) throws AppModelResolverException {
         this.mvn = mvn;
+    }
+
+    public void setBuildTreeLogger(Consumer<String> buildTreeConsumer) {
+        this.buildTreeConsumer = buildTreeConsumer;
+    }
+
+    /**
+     * Indicates whether application should be resolved to set up the dev mode.
+     * The important difference between the dev mode and the usual build is that
+     * in the dev mode the user application will have to be compiled, so the classpath
+     * will have to include dependencies of scope provided.
+     *
+     * @param devmode  whether the resolver is going to be used to set up the dev mode
+     */
+    public BootstrapAppModelResolver setDevMode(boolean devmode) {
+        this.devmode = devmode;
+        return this;
     }
 
     public void addRemoteRepositories(List<RemoteRepository> repos) {
@@ -86,22 +106,63 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     }
 
     @Override
-    public AppModel resolveModel(AppArtifact coords) throws AppModelResolverException {
-        return injectDeploymentDependencies(coords, mvn.resolveDependencies(toAetherArtifact(coords)).getRoot());
+    public List<AppDependency> resolveUserDependencies(AppArtifact appArtifact, List<AppDependency> deps) throws AppModelResolverException {
+        final List<Dependency> mvnDeps;
+        if(deps.isEmpty()) {
+            mvnDeps = Collections.emptyList();
+        } else {
+            mvnDeps = new ArrayList<>(deps.size());
+            for (AppDependency dep : deps) {
+                mvnDeps.add(new Dependency(toAetherArtifact(dep.getArtifact()), dep.getScope()));
+            }
+        }
+        final List<AppDependency> result = new ArrayList<>();
+        final TreeDependencyVisitor visitor = new TreeDependencyVisitor(new DependencyVisitor() {
+            @Override
+            public boolean visitEnter(DependencyNode node) {
+                return true;
+            }
+
+            @Override
+            public boolean visitLeave(DependencyNode node) {
+                final Dependency dep = node.getDependency();
+                if(dep != null) {
+                    result.add(new AppDependency(toAppArtifact(dep.getArtifact()), dep.getScope(), dep.isOptional()));
+                }
+                return true;
+            }});
+        mvn.resolveDependencies(toAetherArtifact(appArtifact), mvnDeps).getRoot().accept(visitor);
+        return result;
     }
 
     @Override
-    public AppModel resolveModel(AppArtifact root, List<AppDependency> coords) throws AppModelResolverException {
-        final List<Dependency> mvnDeps = new ArrayList<>(coords.size());
-        for(AppDependency dep : coords) {
-            mvnDeps.add(new Dependency(toAetherArtifact(dep.getArtifact()), dep.getScope()));
+    public AppModel resolveModel(AppArtifact appArtifact) throws AppModelResolverException {
+        return devmode ? injectDeploymentDependencies(appArtifact,
+                mvn.resolveDependencies(toAetherArtifact(appArtifact), "test").getRoot())
+                : doResolveModel(appArtifact, Collections.emptyList());
+    }
+
+    @Override
+    public AppModel resolveModel(AppArtifact appArtifact, List<AppDependency> directDeps) throws AppModelResolverException {
+        final List<Dependency> mvnDeps;
+        if(directDeps.isEmpty()) {
+            mvnDeps = Collections.emptyList();
+        } else {
+            mvnDeps = new ArrayList<>(directDeps.size());
+            for (AppDependency dep : directDeps) {
+                mvnDeps.add(new Dependency(toAetherArtifact(dep.getArtifact()), dep.getScope()));
+            }
         }
-        return injectDeploymentDependencies(root, mvn.resolveDependencies(toAetherArtifact(root), mvnDeps).getRoot());
+        return doResolveModel(appArtifact, mvnDeps);
+    }
+
+    private AppModel doResolveModel(AppArtifact appArtifact, final List<Dependency> directMvnDeps) throws AppModelResolverException {
+        return injectDeploymentDependencies(appArtifact, mvn.resolveDependencies(toAetherArtifact(appArtifact), directMvnDeps).getRoot());
     }
 
     @Override
     public List<String> listLaterVersions(AppArtifact appArtifact, String upToVersion, boolean inclusive) throws AppModelResolverException {
-        final VersionRangeResult rangeResult = resolveVersionRangeResult(appArtifact, upToVersion, inclusive);
+        final VersionRangeResult rangeResult = resolveVersionRangeResult(appArtifact, appArtifact.getVersion(), false, upToVersion, inclusive);
         final List<Version> resolvedVersions = rangeResult.getVersions();
         final List<String> versions = new ArrayList<>(resolvedVersions.size());
         for (Version v : resolvedVersions) {
@@ -111,11 +172,11 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     }
 
     @Override
-    public String getNextVersion(AppArtifact appArtifact, String upToVersion, boolean inclusive) throws AppModelResolverException {
-        final VersionRangeResult rangeResult = resolveVersionRangeResult(appArtifact, upToVersion, inclusive);
+    public String getNextVersion(AppArtifact appArtifact, String fromVersion, boolean fromVersionIncluded, String upToVersion, boolean upToVersionInclusive) throws AppModelResolverException {
+        final VersionRangeResult rangeResult = resolveVersionRangeResult(appArtifact, fromVersion, fromVersionIncluded, upToVersion, upToVersionInclusive);
         final List<Version> versions = rangeResult.getVersions();
         if(versions.isEmpty()) {
-            return appArtifact.getVersion();
+            return null;
         }
         Version next = versions.get(0);
         for(int i = 1; i < versions.size(); ++i) {
@@ -129,7 +190,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     @Override
     public String getLatestVersion(AppArtifact appArtifact, String upToVersion, boolean inclusive) throws AppModelResolverException {
-        final VersionRangeResult rangeResult = resolveVersionRangeResult(appArtifact, upToVersion, inclusive);
+        final VersionRangeResult rangeResult = resolveVersionRangeResult(appArtifact, appArtifact.getVersion(), false, upToVersion, inclusive);
         final List<Version> versions = rangeResult.getVersions();
         if(versions.isEmpty()) {
             return appArtifact.getVersion();
@@ -157,7 +218,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
         final Set<AppArtifactKey> appDeps = new HashSet<>();
         final List<AppDependency> userDeps = new ArrayList<>();
-        TreeDependencyVisitor visitor = new TreeDependencyVisitor(new DependencyVisitor() {
+        final TreeDependencyVisitor visitor = new TreeDependencyVisitor(new DependencyVisitor() {
             @Override
             public boolean visitEnter(DependencyNode node) {
                 return true;
@@ -167,7 +228,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             public boolean visitLeave(DependencyNode node) {
                 final Dependency dep = node.getDependency();
                 if(dep != null) {
-                    final AppArtifact appArtifact = BootstrapAppModelResolver.toAppArtifact(dep.getArtifact());
+                    final AppArtifact appArtifact = toAppArtifact(dep.getArtifact());
                     appDeps.add(appArtifact.getKey());
                     userDeps.add(new AppDependency(appArtifact, dep.getScope(), dep.isOptional()));
                 }
@@ -196,55 +257,9 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             } catch (RepositoryException e) {
                 throw new AppModelResolverException("Failed to normalize the dependency graph", e);
             }
-            List<DependencyNode> deploymentDepNodes = new ArrayList<>();
-            final List<ArtifactRequest> requests = new ArrayList<>();
-            visitor = new TreeDependencyVisitor(new DependencyVisitor() {
-                DependencyNode deploymentNode;
-                DependencyNode runtimeNode;
-                Artifact runtimeArtifact;
-                @Override
-                public boolean visitEnter(DependencyNode node) {
-                    final Dependency dep = node.getDependency();
-                    if(dep != null) {
-                        if(deploymentNode == null) {
-                            runtimeArtifact = DeploymentInjectingDependencyVisitor.getInjectedDependency(node);
-                            if(runtimeArtifact != null) {
-                                deploymentNode = node;
-                            }
-                        } else if(runtimeArtifact != null && runtimeNode == null && runtimeArtifact.equals(dep.getArtifact())) {
-                            runtimeNode = node;
-                        }
-                    }
-                    return true;
-                }
-
-                @Override
-                public boolean visitLeave(DependencyNode node) {
-                    final Dependency dep = node.getDependency();
-                    if (dep != null) {
-                        final Artifact artifact = dep.getArtifact();
-                        if (artifact.getFile() == null) {
-                            requests.add(new ArtifactRequest(node));
-                        }
-                        if (deploymentNode != null) {
-                            if (runtimeNode == null && !appDeps.contains(new AppArtifactKey(artifact.getGroupId(),
-                                    artifact.getArtifactId(), artifact.getClassifier(), artifact.getExtension()))) {
-                                deploymentDepNodes.add(node);
-                            } else if (runtimeNode == node) {
-                                runtimeNode = null;
-                                runtimeArtifact = null;
-                            }
-                            if (deploymentNode == node) {
-                                deploymentNode = null;
-                            }
-                        }
-                    }
-                    return true;
-                }
-            });
-            for(DependencyNode child : root.getChildren()) {
-                child.accept(visitor);
-            }
+            final BuildDependencyGraphVisitor buildDepsVisitor = new BuildDependencyGraphVisitor(appDeps, buildTreeConsumer);
+            buildDepsVisitor.visit(root);
+            final List<ArtifactRequest> requests = buildDepsVisitor.getArtifactRequests();
             if(!requests.isEmpty()) {
                 final List<ArtifactResult> results = mvn.resolve(requests);
                 // update the artifacts in the graph
@@ -254,6 +269,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                         result.getRequest().getDependencyNode().setArtifact(artifact);
                     }
                 }
+                final List<DependencyNode> deploymentDepNodes = buildDepsVisitor.getDeploymentNodes();
                 deploymentDeps = new ArrayList<>(deploymentDepNodes.size());
                 for (DependencyNode dep : deploymentDepNodes) {
                     deploymentDeps.add(new AppDependency(BootstrapAppModelResolver.toAppArtifact(dep.getArtifact()),
@@ -265,11 +281,13 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         return new AppModel(appArtifact, userDeps, deploymentDeps);
     }
 
-    private VersionRangeResult resolveVersionRangeResult(AppArtifact appArtifact, String upToVersion, boolean inclusive)
+    private VersionRangeResult resolveVersionRangeResult(AppArtifact appArtifact, String fromVersion, boolean fromVersionIncluded, String upToVersion, boolean upToVersionIncluded)
             throws AppModelResolverException {
         return mvn.resolveVersionRange(new DefaultArtifact(appArtifact.getGroupId(),
                 appArtifact.getArtifactId(), appArtifact.getType(),
-                '(' + appArtifact.getVersion() + ',' + (upToVersion == null ? ')' : upToVersion + (inclusive ? ']' : ')'))));
+                (fromVersionIncluded ? '[' : '(')
+                + fromVersion + ','
+                + (upToVersion == null ? ')' : upToVersion + (upToVersionIncluded ? ']' : ')'))));
     }
 
     static List<AppDependency> toAppDepList(DependencyNode rootNode) {

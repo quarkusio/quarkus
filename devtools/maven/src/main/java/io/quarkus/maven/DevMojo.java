@@ -16,28 +16,33 @@
 
 package io.quarkus.maven;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Plugin;
-import org.apache.maven.model.PluginExecution;
-import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -47,33 +52,32 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.toolchain.Toolchain;
 import org.apache.maven.toolchain.ToolchainManager;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 
+import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.deployment.ApplicationInfoUtil;
-import io.quarkus.dev.ClassLoaderCompiler;
+import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
-import io.quarkus.dev.RuntimeCompilationSetup;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.utilities.JavaBinFinder;
 
 /**
- * The dev mojo, that runs a quarkus app in a forked process
+ * The dev mojo, that runs a quarkus app in a forked process. A background compilation process is launched and any changes are
+ * automatically reflected in your running application.
  * <p>
+ * You can use this dev mode in a remote container environment with {@code remote-dev}.
  */
 @Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class DevMojo extends AbstractMojo {
-
-    private static final String RESOURCES_PROP = "quarkus-internal.undertow.resources";
-
     /**
      * The directory for compiled classes.
      */
@@ -160,18 +164,8 @@ public class DevMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
-        boolean found = false;
-        for (Plugin i : project.getBuildPlugins()) {
-            if (i.getGroupId().equals(MojoUtils.getPluginGroupId())
-                    && i.getArtifactId().equals(MojoUtils.getPluginArtifactId())) {
-                for (PluginExecution p : i.getExecutions()) {
-                    if (p.getGoals().contains("build")) {
-                        found = true;
-                        break;
-                    }
-                }
-            }
-        }
+        boolean found = MojoUtils.checkProjectForMavenBuildPlugin(project);
+
         if (!found) {
             getLog().warn("The quarkus-maven-plugin build goal was not configured for this project, " +
                     "skipping quarkus:dev as this is assumed to be a support library. If you want to run quarkus dev" +
@@ -180,7 +174,7 @@ public class DevMojo extends AbstractMojo {
         }
 
         if (!sourceDir.isDirectory()) {
-            throw new MojoFailureException("The `src/main/java` directory is required, please create it.");
+            getLog().warn("The `src/main/java` directory does not exist");
         }
 
         if (!buildDir.isDirectory() || !new File(buildDir, "classes").isDirectory()) {
@@ -189,7 +183,7 @@ public class DevMojo extends AbstractMojo {
 
         try {
             List<String> args = new ArrayList<>();
-            String javaTool = findJavaTool();
+            String javaTool = JavaBinFinder.findBin();
             getLog().debug("Using javaTool: " + javaTool);
             args.add(javaTool);
             if (debug == null) {
@@ -223,22 +217,6 @@ public class DevMojo extends AbstractMojo {
             if (jvmArgs != null) {
                 args.addAll(Arrays.asList(jvmArgs.split(" ")));
             }
-            //we don't want to just copy every system property, as a lot of them are set by the JVM
-            for (Map.Entry<Object, Object> i : System.getProperties().entrySet()) {
-                if (i.getKey().toString().startsWith("quarkus.")) {
-                    args.add("-D" + i.getKey() + "=" + i.getValue());
-                }
-            }
-
-            for (Resource r : project.getBuild().getResources()) {
-                File f = new File(r.getDirectory());
-                File servletRes = new File(f, "META-INF/resources");
-                if (servletRes.exists()) {
-                    args.add("-D" + RESOURCES_PROP + "=" + servletRes.getAbsolutePath());
-                    getLog().debug("Using servlet resources: " + servletRes.getAbsolutePath());
-                    break;
-                }
-            }
 
             // the following flags reduce startup time and are acceptable only for dev purposes
             args.add("-XX:TieredStopAtLevel=1");
@@ -250,30 +228,74 @@ public class DevMojo extends AbstractMojo {
             //this stuff does not change
             // Do not include URIs in the manifest, because some JVMs do not like that
             StringBuilder classPathManifest = new StringBuilder();
-            StringBuilder classPath = new StringBuilder();
+            DevModeContext devModeContext = new DevModeContext();
+            for (Map.Entry<Object, Object> e : System.getProperties().entrySet()) {
+                devModeContext.getSystemProperties().put(e.getKey().toString(), (String) e.getValue());
+            }
 
             final AppModel appModel;
+            Map<String, MavenProject> projectMap = session.getProjectMap();
             try {
-                final LocalProject localProject = LocalProject
-                        .resolveLocalProjectWithWorkspace(LocalProject.locateCurrentProjectDir(outputDirectory.toPath()));
+                final LocalProject localProject = LocalProject.loadWorkspace(outputDirectory.toPath());
+                for (LocalProject project : localProject.getSelfWithLocalDeps()) {
+                    AppArtifact appArtifact = project.getAppArtifact();
+                    MavenProject mavenProject = projectMap.get(String.format("%s:%s:%s",
+                            appArtifact.getGroupId(), appArtifact.getArtifactId(), appArtifact.getVersion()));
+                    String sourcePath = null;
+                    String classesPath = null;
+                    String resourcePath = null;
+
+                    List<String> sourcePaths = mavenProject.getCompileSourceRoots().stream()
+                            .map(Paths::get)
+                            .filter(Files::isDirectory)
+                            .map(src -> src.toAbsolutePath().toString())
+                            .collect(Collectors.toList());
+
+                    Path classesDir = project.getClassesDir();
+                    if (Files.isDirectory(classesDir)) {
+                        classesPath = classesDir.toAbsolutePath().toString();
+                    }
+                    Path resourcesSourcesDir = project.getResourcesSourcesDir();
+                    if (Files.isDirectory(resourcesSourcesDir)) {
+                        resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
+                    }
+                    DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(
+                            project.getArtifactId(),
+                            mavenProject.getBasedir().getPath(),
+                            sourcePaths,
+                            classesPath,
+                            resourcePath);
+                    devModeContext.getModules().add(moduleInfo);
+                }
+
+                /*
+                 * TODO: support multiple resources dirs for config hot deployment
+                 * String resources = null;
+                 * for (Resource i : project.getBuild().getResources()) {
+                 * resources = i.getDirectory();
+                 * break;
+                 * }
+                 */
+
                 appModel = new BootstrapAppModelResolver(MavenArtifactResolver.builder()
                         .setRepositorySystem(repoSystem)
                         .setRepositorySystemSession(repoSession)
                         .setRemoteRepositories(repos)
                         .setWorkspace(localProject.getWorkspace())
                         .build())
+                                .setDevMode(true)
                                 .resolveModel(localProject.getAppArtifact());
             } catch (Exception e) {
                 throw new MojoExecutionException("Failed to resolve Quarkus application model", e);
             }
             for (AppDependency appDep : appModel.getAllDependencies()) {
-                addToClassPaths(classPathManifest, classPath, appDep.getArtifact().getPath().toFile());
+                addToClassPaths(classPathManifest, devModeContext, appDep.getArtifact().getPath().toFile());
             }
 
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
             File wiringClassesDirectory = new File(buildDir, "wiring-devmode");
             wiringClassesDirectory.mkdirs();
-            addToClassPaths(classPathManifest, classPath, wiringClassesDirectory);
+            addToClassPaths(classPathManifest, devModeContext, wiringClassesDirectory);
 
             //we also want to add the maven plugin jar to the class path
             //this allows us to just directly use classes, without messing around copying them
@@ -294,7 +316,7 @@ public class DevMojo extends AbstractMojo {
             } else {
                 throw new MojoFailureException("Unsupported DevModeMain artifact URL:" + classFile);
             }
-            addToClassPaths(classPathManifest, classPath, path);
+            addToClassPaths(classPathManifest, devModeContext, path);
 
             //now we need to build a temporary jar to actually run
 
@@ -315,24 +337,17 @@ public class DevMojo extends AbstractMojo {
                 out.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"));
                 manifest.write(out);
 
-                out.putNextEntry(new ZipEntry(ClassLoaderCompiler.DEV_MODE_CLASS_PATH));
-                out.write(classPath.toString().getBytes(StandardCharsets.UTF_8));
-            }
-            String resources = null;
-            for (Resource i : project.getBuild().getResources()) {
-                //todo: support multiple resources dirs for config hot deployment
-                resources = i.getDirectory();
-                break;
+                out.putNextEntry(new ZipEntry(DevModeMain.DEV_MODE_CONTEXT));
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                ObjectOutputStream obj = new ObjectOutputStream(new DataOutputStream(bytes));
+                obj.writeObject(devModeContext);
+                obj.close();
+                out.write(bytes.toByteArray());
             }
 
             outputDirectory.mkdirs();
             ApplicationInfoUtil.writeApplicationInfoProperties(appModel.getAppArtifact(), outputDirectory.toPath());
 
-            addProperty(args, RuntimeCompilationSetup.PROP_RUNNER_CLASSES, outputDirectory.getAbsolutePath());
-            addProperty(args, RuntimeCompilationSetup.PROP_RUNNER_SOURCES, sourceDir.getAbsolutePath());
-            if (resources != null) {
-                addProperty(args, RuntimeCompilationSetup.PROP_RUNNER_RESOURCES, new File(resources).getAbsolutePath());
-            }
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
             args.add(outputDirectory.getAbsolutePath());
@@ -355,7 +370,10 @@ public class DevMojo extends AbstractMojo {
                 }
             }, "Development Mode Shutdown Hook"));
             try {
-                p.waitFor();
+                int ret = p.waitFor();
+                if (ret != 0) {
+                    throw new MojoFailureException("JVM exited with error code: " + ret);
+                }
             } catch (Exception e) {
                 p.destroy();
                 throw e;
@@ -366,119 +384,18 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
-    private static void addProperty(List<String> args, String name, Object value) {
-        args.add("-D" + name + "=" + value);
-    }
-
-    /**
-     * Search for the java command in the order:
-     * 1. maven-toolchains plugin configuration
-     * 2. java.home location
-     * 3. java[.exe] on the system path
-     *
-     * @return the java command to use
-     */
-    protected String findJavaTool() {
-        String java = null;
-
-        // See if a toolchain is configured
-        if (getToolchainManager() != null) {
-            Toolchain toolchain = getToolchainManager().getToolchainFromBuildContext("jdk", getSession());
-            if (toolchain != null) {
-                java = toolchain.findTool("java");
-                getLog().debug("JVM from toolchain: " + java);
-            }
-        }
-        if (java == null) {
-            // use the same JVM as the one used to run Maven (the "java.home" one)
-            java = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
-            File javaCheck = new File(java);
-            getLog().debug("Checking: " + javaCheck.getAbsolutePath());
-            if (!javaCheck.canExecute()) {
-                getLog().debug(javaCheck.getAbsolutePath() + " is not executable");
-
-                java = null;
-                // Try executable extensions if windows
-                if (OS.determineOS() == OS.WINDOWS && System.getenv().containsKey("PATHEXT")) {
-                    String extpath = System.getenv("PATHEXT");
-                    String[] exts = extpath.split(";");
-                    for (String ext : exts) {
-                        File winExe = new File(javaCheck.getAbsolutePath() + ext);
-                        getLog().debug("Checking: " + winExe.getAbsolutePath());
-                        if (winExe.canExecute()) {
-                            java = winExe.getAbsolutePath();
-                            getLog().debug("Executable: " + winExe.getAbsolutePath());
-                            break;
-                        }
-                    }
-                }
-                // Fallback to java on the path
-                if (java == null) {
-                    if (OS.determineOS() == OS.WINDOWS) {
-                        java = "java.exe";
-                    } else {
-                        java = "java";
-                    }
-                }
-            }
-        }
-        getLog().debug("findJavaTool, selected JVM: " + java);
-        return java;
-    }
-
-    private void addToClassPaths(StringBuilder classPathManifest, StringBuilder classPath, File file) {
+    private void addToClassPaths(StringBuilder classPathManifest, DevModeContext classPath, File file) {
         URI uri = file.toPath().toAbsolutePath().toUri();
+        try {
+            classPath.getClassPath().add(uri.toURL());
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
         String path = uri.getRawPath();
         classPathManifest.append(path);
-        classPath.append(uri.toString());
         if (file.isDirectory()) {
             classPathManifest.append("/");
-            classPath.append("/");
         }
         classPathManifest.append(" ");
-        classPath.append(" ");
-    }
-
-    /**
-     * Enum to classify the os.name system property
-     */
-    static enum OS {
-        WINDOWS,
-        LINUX,
-        MAC,
-        OTHER;
-
-        private String version;
-
-        public String getVersion() {
-            return version;
-        }
-
-        public void setVersion(String version) {
-            this.version = version;
-        }
-
-        static OS determineOS() {
-            OS os = OS.OTHER;
-            String osName = System.getProperty("os.name");
-            osName = osName.toLowerCase();
-            if (osName.contains("windows")) {
-                os = OS.WINDOWS;
-            } else if (osName.contains("linux")
-                    || osName.contains("freebsd")
-                    || osName.contains("unix")
-                    || osName.contains("sunos")
-                    || osName.contains("solaris")
-                    || osName.contains("aix")) {
-                os = OS.LINUX;
-            } else if (osName.contains("mac os")) {
-                os = OS.MAC;
-            } else {
-                os = OS.OTHER;
-            }
-
-            os.setVersion(System.getProperty("os.version"));
-            return os;
-        }
     }
 }

@@ -119,7 +119,7 @@ Let's continue with a simple CDI bean, that would work as a repository of our co
 
 [source,java]
 ----
-package com.acme.faulttolerance;
+package org.acme.faulttolerance;
 
 import java.util.ArrayList;
 import java.util.Collections;

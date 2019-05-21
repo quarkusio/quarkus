@@ -20,13 +20,18 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -36,15 +41,16 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceUnit;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.H2Dialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.PostgreSQL95Dialect;
+import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 import org.hibernate.loader.BatchFetchStyle;
+import org.hibernate.service.spi.ServiceContributor;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.CompositeIndex;
@@ -59,7 +65,6 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.ResourceAnnotationBuildItem;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -79,6 +84,9 @@ import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.IoUtil;
+import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationBuildItem;
+import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerFactoryProducer;
 import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerProducer;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmTemplate;
@@ -115,39 +123,30 @@ public final class HibernateOrmProcessor {
         return new HotDeploymentConfigFileBuildItem("META-INF/persistence.xml");
     }
 
-    @BuildStep
-    void doParseAndRegisterSubstrateResources(BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceProducer,
-            BuildProducer<SubstrateResourceBuildItem> resourceProducer,
-            BuildProducer<HotDeploymentConfigFileBuildItem> hotDeploymentProducer,
-            BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
-            ArchiveRootBuildItem root,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            Optional<DataSourceDriverBuildItem> driverBuildItem) throws IOException {
-        List<ParsedPersistenceXmlDescriptor> descriptors = loadOriginalXMLParsedDescriptors();
-        handleHibernateORMWithNoPersistenceXml(descriptors, resourceProducer, hotDeploymentProducer, systemPropertyProducer,
-                root, driverBuildItem, applicationArchivesBuildItem);
-        for (ParsedPersistenceXmlDescriptor i : descriptors) {
-            persistenceProducer.produce(new PersistenceUnitDescriptorBuildItem(i));
-        }
-    }
-
+    @SuppressWarnings("unchecked")
     @BuildStep
     @Record(STATIC_INIT)
     public void build(RecorderContext recorder, HibernateOrmTemplate template,
-            List<PersistenceUnitDescriptorBuildItem> descItems,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             List<NonJpaModelBuildItem> nonJpaModelBuildItems,
             CombinedIndexBuildItem index,
             ApplicationIndexBuildItem applicationIndex,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            ArchiveRootBuildItem archiveRoot,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            Optional<DataSourceDriverBuildItem> driverBuildItem,
             BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorProducer,
+            BuildProducer<SubstrateResourceBuildItem> resourceProducer,
+            BuildProducer<HotDeploymentConfigFileBuildItem> hotDeploymentProducer,
+            BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<JpaEntitiesBuildItem> domainObjectsProducer,
-            BuildProducer<BeanContainerListenerBuildItem> beanContainerListener) throws Exception {
+            BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
+            List<HibernateOrmIntegrationBuildItem> integrations) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_ORM));
 
-        List<ParsedPersistenceXmlDescriptor> descriptors = descItems.stream()
-                .map(PersistenceUnitDescriptorBuildItem::getDescriptor).collect(Collectors.toList());
+        List<ParsedPersistenceXmlDescriptor> explicitDescriptors = loadOriginalXMLParsedDescriptors();
 
         // build a composite index with additional jpa model classes
         Indexer indexer = new Indexer();
@@ -161,7 +160,8 @@ public final class HibernateOrmProcessor {
         Set<String> nonJpaModelClasses = nonJpaModelBuildItems.stream()
                 .map(NonJpaModelBuildItem::getClassName)
                 .collect(Collectors.toSet());
-        JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, descriptors, compositeIndex, nonJpaModelClasses);
+        JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, explicitDescriptors, compositeIndex,
+                nonJpaModelClasses);
         final JpaEntitiesBuildItem domainObjects = scavenger.discoverModelAndRegisterForReflection();
 
         // remember how to run the enhancers later
@@ -172,17 +172,28 @@ public final class HibernateOrmProcessor {
             return;
         }
 
-        for (String className : domainObjects.getClassNames()) {
+        template.callHibernateFeatureInit();
+
+        // handle the implicit persistence unit
+        List<ParsedPersistenceXmlDescriptor> allDescriptors = new ArrayList<>(explicitDescriptors.size() + 1);
+        allDescriptors.addAll(explicitDescriptors);
+        handleHibernateORMWithNoPersistenceXml(allDescriptors, resourceProducer, hotDeploymentProducer, systemPropertyProducer,
+                archiveRoot, driverBuildItem, applicationArchivesBuildItem);
+
+        for (ParsedPersistenceXmlDescriptor descriptor : allDescriptors) {
+            persistenceUnitDescriptorProducer.produce(new PersistenceUnitDescriptorBuildItem(descriptor));
+        }
+
+        for (String className : domainObjects.getEntityClassNames()) {
             template.addEntity(className);
         }
         template.enlistPersistenceUnit();
-        template.callHibernateFeatureInit();
 
         //set up the scanner, as this scanning has already been done we need to just tell it about the classes we
         //have discovered. This scanner is bytecode serializable and is passed directly into the template
         QuarkusScanner scanner = new QuarkusScanner();
         Set<ClassDescriptor> classDescriptors = new HashSet<>();
-        for (String i : domainObjects.getClassNames()) {
+        for (String i : domainObjects.getAllModelClassNames()) {
             QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(i,
                     ClassDescriptor.Categorization.MODEL);
             classDescriptors.add(desc);
@@ -192,7 +203,25 @@ public final class HibernateOrmProcessor {
         //now we serialize the XML and class list to bytecode, to remove the need to re-parse the XML on JVM startup
         recorder.registerNonDefaultConstructor(ParsedPersistenceXmlDescriptor.class.getDeclaredConstructor(URL.class),
                 (i) -> Collections.singletonList(i.getPersistenceUnitRootUrl()));
-        beanContainerListener.produce(new BeanContainerListenerBuildItem(template.initMetadata(descriptors, scanner)));
+
+        // inspect service files for additional integrators
+        Collection<Class<? extends Integrator>> integratorClasses = new LinkedHashSet<>();
+        for (String integratorClassName : ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+                "META-INF/services/org.hibernate.integrator.spi.Integrator")) {
+            integratorClasses.add((Class<? extends Integrator>) recorder.classProxy(integratorClassName));
+        }
+
+        // inspect service files for service contributors
+        Collection<Class<? extends ServiceContributor>> serviceContributorClasses = new LinkedHashSet<>();
+        for (String serviceContributorClassName : ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+                "META-INF/services/org.hibernate.service.spi.ServiceContributor")) {
+            serviceContributorClasses
+                    .add((Class<? extends ServiceContributor>) recorder.classProxy(serviceContributorClassName));
+        }
+
+        beanContainerListener
+                .produce(new BeanContainerListenerBuildItem(
+                        template.initMetadata(allDescriptors, scanner, integratorClasses, serviceContributorClasses)));
     }
 
     @BuildStep
@@ -217,13 +246,13 @@ public final class HibernateOrmProcessor {
     @BuildStep
     void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceAnnotations,
             BuildProducer<GeneratedResourceBuildItem> resources,
-            JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) {
+            JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) throws UnsupportedEncodingException {
         if (!hasEntities(jpaEntities, nonJpaModels)) {
             return;
         }
 
         resources.produce(new GeneratedResourceBuildItem("META-INF/services/io.quarkus.arc.ResourceReferenceProvider",
-                JPAResourceReferenceProvider.class.getName().getBytes()));
+                JPAResourceReferenceProvider.class.getName().getBytes("UTF-8")));
         resourceAnnotations.produce(new ResourceAnnotationBuildItem(PERSISTENCE_CONTEXT));
         resourceAnnotations.produce(new ResourceAnnotationBuildItem(PERSISTENCE_UNIT));
     }
@@ -288,7 +317,8 @@ public final class HibernateOrmProcessor {
     @Record(RUNTIME_INIT)
     public void startPersistenceUnits(HibernateOrmTemplate template, BeanContainerBuildItem beanContainer,
             Optional<DataSourceInitializedBuildItem> dataSourceInitialized,
-            JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) throws Exception {
+            JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels,
+            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationsRuntimeConfigured) throws Exception {
         if (!hasEntities(jpaEntities, nonJpaModels)) {
             return;
         }
@@ -297,7 +327,7 @@ public final class HibernateOrmProcessor {
     }
 
     private boolean hasEntities(JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) {
-        return !jpaEntities.getClassNames().isEmpty() || !nonJpaModels.isEmpty();
+        return !jpaEntities.getEntityClassNames().isEmpty() || !nonJpaModels.isEmpty();
     }
 
     private boolean isUserDefinedProducerMissing(IndexView index, DotName annotationName) {
@@ -434,15 +464,10 @@ public final class HibernateOrmProcessor {
                                 });
 
                 // Caching
-                // FIXME: this should use a Map as soon as Map support is complete
-                String prefix = HIBERNATE_ORM_CONFIG_PREFIX + "cache.";
-                for (String propName : ConfigProvider.getConfig().getPropertyNames()) {
-                    if (propName.startsWith(prefix)) {
-                        String value = QuarkusConfig.getString(propName, null, false);
-                        String hibernateKey = propName.replace(HIBERNATE_ORM_CONFIG_PREFIX, "hibernate.")
-                                .replace("\"", "");
-                        desc.getProperties().setProperty(hibernateKey, value);
-                    }
+                Map<String, String> cacheConfigEntries = HibernateConfigUtil
+                        .getCacheConfigEntries(hibernateConfig);
+                for (Entry<String, String> entry : cacheConfigEntries.entrySet()) {
+                    desc.getProperties().setProperty(entry.getKey(), entry.getValue());
                 }
 
                 descriptors.add(desc);
@@ -483,7 +508,7 @@ public final class HibernateOrmProcessor {
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             BuildProducer<GeneratedClassBuildItem> additionalClasses) {
         HibernateEntityEnhancer hibernateEntityEnhancer = new HibernateEntityEnhancer();
-        for (String i : domainObjects.getClassNames()) {
+        for (String i : domainObjects.getAllModelClassNames()) {
             transformers.produce(new BytecodeTransformerBuildItem(i, hibernateEntityEnhancer));
         }
         for (AdditionalJpaModelBuildItem additionalJpaModel : additionalJpaModelBuildItems) {

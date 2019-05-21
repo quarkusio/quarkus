@@ -37,6 +37,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 import io.quarkus.bootstrap.BootstrapConstants;
 
 /**
+ * Generates Quarkus extension descriptor for the runtime artifact.
  *
  * @author Alexey Loubyansky
  */

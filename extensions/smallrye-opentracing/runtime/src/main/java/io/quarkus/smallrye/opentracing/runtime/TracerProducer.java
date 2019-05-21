@@ -16,9 +16,9 @@
 
 package io.quarkus.smallrye.opentracing.runtime;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.InjectionPoint;
 
 import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;
@@ -29,10 +29,8 @@ import io.opentracing.util.GlobalTracer;
 @Dependent
 public class TracerProducer {
     @Produces
-    @Dependent
-    Tracer tracer(InjectionPoint ip) {
-        Tracer tracer = GlobalTracer.get();
-        System.err.println("producing tracer: " + tracer + " for " + ip);
-        return tracer;
+    @ApplicationScoped
+    Tracer tracer() {
+        return GlobalTracer.get();
     }
 }

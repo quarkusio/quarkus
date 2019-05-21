@@ -32,6 +32,28 @@ plugins {
 }
 ----
 
+=== Gradle configuration for a local SNAPSHOT version of Quarkus
+
+This paragraph is relevant for those who want to use a locally built version of Quarkus, instead of an official release. It appears the configuration described above will not work in this case due to an issue in Gradle. There is a workaround though that looks a bit more verbose but nevertheless works for both locally built and offically released versions.
+
+[source,groovy,subs=attributes+]
+----
+buildscript {
+    repositories {
+        mavenLocal()
+    }
+    dependencies {
+        classpath "io.quarkus:quarkus-gradle-plugin:${quarkus-version}"
+    }
+}
+
+plugins {
+    id 'java'
+}
+
+apply plugin: 'io.quarkus'
+----
+
 [[project-creation]]
 == Creating a new project
 
@@ -42,20 +64,21 @@ Here is a complete sample file for a simple REST project:
 ----
 plugins {
     id 'java'
-    id 'io.quarkus.' version '{quarkus-version}' <1>
+    id 'io.quarkus' version '{quarkus-version}' // <1>
 }
 
 repositories {
     mavenCentral()
 }
 
-dependencies { <2>
-    implementation 'io.quarkus:quarkus-resteasy:{quarkus-version}'
+dependencies { // <2>
+    implementation enforcedPlatform('io.quarkus:quarkus-bom:{quarkus-version}')
+    implementation 'io.quarkus:quarkus-resteasy'
 }
 ----
 
 <1> The {project-name} plugin needs to be applied.
-<2> This dependency is needed for a REST application similar to the getting started example.
+<2> We include the {project-name} BOM using Gradle's link:https://docs.gradle.org/5.4.1/userguide/managing_transitive_dependencies.html#sec:bom_import[relevant syntax] and add RESTEasy dependency since we are developing a REST application similar to the getting started example.
 {project-name} also need this dependency for running tests, to provide this we use the `implementation` configuration.
 
 Here's the same build script, using the Gradle Kotlin DSL:
@@ -72,7 +95,8 @@ repositories {
 }
 
 dependencies {
-    implementation("io.quarkus:quarkus-resteasy:{quarkus-version}")
+    implementation(enforcedPlatform("io.quarkus:quarkus-bom:{quarkus-version}"))
+    implementation("io.quarkus:quarkus-resteasy")
 }
 ----
 
@@ -208,4 +232,23 @@ To create an executable that will run in a container, use the following:
 The produced executable will be a 64 bit Linux executable, so depending on your operating system
 it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
+
+== Building Uber-Jars
+
+Quarkus Gradle plugin supports the generation of Uber-Jars by specifying an `--uber-jar` argument as follows:
+
+[source,shell]
+----
+./gradlew quarkusBuild --uber-jar
+----
+
+When building an Uber-Jar you can specify entries that you want to exclude from the generated jar by using the `--ignored-entry` argument:
+
+[source,shell]
+----
+./gradlew quarkusBuild --uber-jar --ignored-entry=META-INF/file1.txt
+----
+
+The entries are relative to the root of the generated Uber-Jar. You can specify multiple entries by adding extra `--ignored-entry` arguments.
+
 

@@ -13,7 +13,9 @@ import org.hibernate.bytecode.enhance.spi.EnhancerConstants;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -45,7 +47,9 @@ public class PanacheJpaEntityEnhancer implements BiFunction<String, ClassVisitor
 
     public final static String JPA_OPERATIONS_NAME = JpaOperations.class.getName();
     public final static String JPA_OPERATIONS_BINARY_NAME = JPA_OPERATIONS_NAME.replace('.', '/');
-    public final static String JPA_OPERATIONS_SIGNATURE = "L" + JPA_OPERATIONS_BINARY_NAME + ";";
+
+    private static final String JAXB_TRANSIENT_BINARY_NAME = "javax/xml/bind/annotation/XmlTransient";
+    private static final String JAXB_TRANSIENT_SIGNATURE = "L" + JAXB_TRANSIENT_BINARY_NAME + ";";
 
     private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
     final Map<String, EntityModel> entities = new HashMap<>();
@@ -70,6 +74,32 @@ public class PanacheJpaEntityEnhancer implements BiFunction<String, ClassVisitor
             this.entities = entities;
             EntityModel entityModel = entities.get(className);
             fields = entityModel != null ? entityModel.fields : null;
+        }
+
+        @Override
+        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+            FieldVisitor superVisitor = super.visitField(access, name, descriptor, signature, value);
+            if (fields == null || !fields.containsKey(name))
+                return superVisitor;
+            // if we have a mapped field, let's add some annotations
+            return new FieldVisitor(Opcodes.ASM6, superVisitor) {
+                private Set<String> descriptors = new HashSet<>();
+
+                @Override
+                public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+                    descriptors.add(descriptor);
+                    return super.visitAnnotation(descriptor, visible);
+                }
+
+                @Override
+                public void visitEnd() {
+                    // add the @JaxbTransient property to the field so that Jackson prefers the generated getter
+                    // jsonb will already use the getter so we're good
+                    if (!descriptors.contains(JAXB_TRANSIENT_SIGNATURE))
+                        super.visitAnnotation(JAXB_TRANSIENT_SIGNATURE, true);
+                    super.visitEnd();
+                }
+            };
         }
 
         @Override

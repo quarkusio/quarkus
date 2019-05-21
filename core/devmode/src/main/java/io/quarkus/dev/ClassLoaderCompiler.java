@@ -16,21 +16,18 @@
 
 package io.quarkus.dev;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -39,19 +36,27 @@ import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
+import org.jboss.logging.Logger;
+
 /**
  * Class that handles compilation of source files
- *
+ * 
  * @author Stuart Douglas
  */
 public class ClassLoaderCompiler {
 
-    public static final String DEV_MODE_CLASS_PATH = "META-INF/dev-mode-class-path.txt";
+    private static final Logger log = Logger.getLogger(ClassLoaderCompiler.class);
+
     private final List<CompilationProvider> compilationProviders;
-    private final CompilationProvider.Context compilationContext;
+    /**
+     * map of compilation contexts to source directories
+     */
+    private final Map<String, CompilationProvider.Context> compilationContexts = new HashMap<>();
     private final Set<String> allHandledExtensions;
 
-    public ClassLoaderCompiler(ClassLoader classLoader, File outputDirectory, List<CompilationProvider> compilationProviders)
+    public ClassLoaderCompiler(ClassLoader classLoader,
+            List<CompilationProvider> compilationProviders,
+            DevModeContext context)
             throws IOException {
         this.compilationProviders = compilationProviders;
 
@@ -64,23 +69,19 @@ public class ClassLoaderCompiler {
             c = c.getParent();
         }
 
-        try (InputStream devModeCp = classLoader.getResourceAsStream(DEV_MODE_CLASS_PATH)) {
-            BufferedReader r = new BufferedReader(new InputStreamReader(devModeCp, StandardCharsets.UTF_8));
-            String cp = r.readLine();
-            for (String i : cp.split(" ")) {
-                urls.add(new URI(i).toURL());
-            }
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+        urls.addAll(context.getClassPath());
 
         Set<String> parsedFiles = new HashSet<>();
         Deque<String> toParse = new ArrayDeque<>();
         for (URL url : urls) {
-            toParse.add(new File(url.getPath()).getAbsolutePath());
+            toParse.add(new File(URLDecoder.decode(url.getPath(), StandardCharsets.UTF_8.name())).getAbsolutePath());
         }
         Set<File> classPathElements = new HashSet<>();
-        classPathElements.add(outputDirectory);
+        for (DevModeContext.ModuleInfo i : context.getModules()) {
+            if (i.getClassesPath() != null) {
+                classPathElements.add(new File(i.getClassesPath()));
+            }
+        }
         while (!toParse.isEmpty()) {
             String s = toParse.poll();
             if (!parsedFiles.contains(s)) {
@@ -121,11 +122,27 @@ public class ClassLoaderCompiler {
                 }
             }
         }
-
-        this.compilationContext = new CompilationProvider.Context(classPathElements, outputDirectory);
+        for (DevModeContext.ModuleInfo i : context.getModules()) {
+            if (!i.getSourcePaths().isEmpty()) {
+                if (i.getClassesPath() == null) {
+                    log.warn("No classes directory found for module '" + i.getName()
+                            + "'. It is advised that this module be compiled before launching dev mode");
+                    continue;
+                }
+                i.getSourcePaths().forEach(sourcePath -> {
+                    this.compilationContexts.put(sourcePath,
+                            new CompilationProvider.Context(
+                                    i.getName(),
+                                    classPathElements,
+                                    new File(i.getProjectDirectory()),
+                                    new File(sourcePath),
+                                    new File(i.getClassesPath())));
+                });
+            }
+        }
         this.allHandledExtensions = new HashSet<>();
         for (CompilationProvider compilationProvider : compilationProviders) {
-            allHandledExtensions.add(compilationProvider.handledExtension());
+            allHandledExtensions.addAll(compilationProvider.handledExtensions());
         }
     }
 
@@ -133,10 +150,11 @@ public class ClassLoaderCompiler {
         return allHandledExtensions;
     }
 
-    public void compile(Map<String, Set<File>> extensionToChangedFiles) {
+    public void compile(String sourceDir, Map<String, Set<File>> extensionToChangedFiles) {
+        CompilationProvider.Context compilationContext = compilationContexts.get(sourceDir);
         for (String extension : extensionToChangedFiles.keySet()) {
             for (CompilationProvider compilationProvider : compilationProviders) {
-                if (extension.equals(compilationProvider.handledExtension())) {
+                if (compilationProvider.handledExtensions().contains(extension)) {
                     compilationProvider.compile(extensionToChangedFiles.get(extension), compilationContext);
                     break;
                 }

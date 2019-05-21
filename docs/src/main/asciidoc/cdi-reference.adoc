@@ -6,6 +6,10 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 = {project-name} - Contexts and Dependency Injection
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+:toc:
 
 :numbered:
 :sectnums:
@@ -77,7 +81,7 @@ public class CounterBean {
     }
 
     @Inject
-    CounterBean(CounterService service) { <2>
+    CounterBean(CounterService service) { // <2>
       this.service = service;
     }
 }

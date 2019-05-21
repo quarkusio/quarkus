@@ -64,8 +64,8 @@ If you use the default `path`, the URL is: http://localhost:8080/hello.
 The project is either generated in the current directory or in a directory named after the passed artifactId.
 If the current directory is empty, the project is generated in-place.
 
-A `Dockerfile` is also generated in `src/main/docker`.
-Instructions to build the image and run the container are written in the `Dockerfile`.
+A pair of Dockerfiles for native and jvm mode are also generated in `src/main/docker`.
+Instructions to build the image and run the container are written in those Dockerfiles.
 
 == Dealing with extensions
 
@@ -84,6 +84,25 @@ You can enable an extension using:
 ----
 
 Extensions are passed using a comma-separated list.
+
+The extension name is the GAV name of the extension: e.g. `io.quarkus:quarkus-agroal`.
+But you can pass a partial name and Quarkus will do its best to find the right extension.
+For example, `agroal`, `Agroal` or `agro`  will expand to `io.quarkus:quarkus-agroal`.
+If no extension is found or if more than one extensions match, you will see a red check mark  ❌ in the command result.
+
+[source,shell]
+----
+$ mvn quarkus:add-extensions -Dextensions=jdbc,agroal,non-exist-ent
+[...]
+❌ Multiple extensions matching 'jdbc'
+     * io.quarkus:quarkus-jdbc-h2
+     * io.quarkus:quarkus-jdbc-mariadb
+     * io.quarkus:quarkus-jdbc-postgresql
+     Be more specific e.g using the exact name or the full gav.
+✅ Adding extension io.quarkus:quarkus-agroal
+❌ Cannot find a dependency matching 'non-exist-ent', maybe a typo?
+[...]
+----
 
 == Development mode
 
@@ -114,6 +133,10 @@ Hit `CTRL+C` to stop the application.
 It is possible to use development mode remotely, so that you can run Quarkus in a container environment (such as Openshift)
 and have changes made to your local files become immediately visible.
 
+This allows you to develop in the same environment you will actually run your app in, and with access to the same services.
+
+WARNING: Do not use this in production. This should only be used in a development environment. You should not run production application in dev mode.
+
 To do this you must have the `quarkus-undertow-websockets` extension installed:
 
 [source,shell]
@@ -123,8 +146,8 @@ To do this you must have the `quarkus-undertow-websockets` extension installed:
 
 You must also have the following config properties set:
 
-- `quarkus.hot-reload.password`
-- `quarkus.hot-reload.url`
+- `quarkus.live-reload.password`
+- `quarkus.live-reload.url`
 
 These can be set via `application.properties`, or any other way (e.g. system properties, environment vars etc). The
 password must be set on both the local and remote processes, while the url only needs to be set on the local host.
@@ -133,7 +156,7 @@ Start Quarkus in dev mode on the remote host. Now you need to connect your local
 
 [source,shell]
 ----
-./mvnw quarkus:remote-dev -Dquarkus.hot-reload.url=http://my-remote-host:8080
+./mvnw quarkus:remote-dev -Dquarkus.live-reload.url=http://my-remote-host:8080
 ----
 
 Now every time you refresh the browser you should see any changes you have made locally immediately visible in the remote
@@ -189,6 +212,38 @@ In a separated terminal or the embedded terminal, go to the project root and run
 **Visual Studio Code**
 
 Open the project directory in VS Code. If you have installed the Java Extension Pack (grouping a set of Java extensions), the project is loaded as a Maven project.
+
+== Logging Quarkus application build classpath tree
+
+Usually, dependencies of an application (which is a Maven project) could be displayed using `mvn dependency:tree` command. In case of a Quarkus application, however, this command will list only the runtime dependencies of the application.
+Given that the Quarkus build process adds deployment dependencies of the extensions used in the application to the original application classpath, it could be useful to know which dependencies and which versions end up on the build classpath.
+Luckily, the `quarkus-bootstrap` Maven plugin includes the `build-tree` goal which displays the build dependency tree for the application.
+
+To be able to use it, the following plugin configuration has to be added to the `pom.xml`:
+
+[source,xml,subs=attributes+]
+----
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <version>${quarkus.version}</version>
+            </plugin>
+----
+
+Now you should be able to execute `mvn quarkus-bootstrap:build-tree` on your project and see something like:
+
+[source,shell,subs=attributes+]
+----
+[INFO] --- quarkus-bootstrap-maven-plugin:{quarkus-version}:build-tree (default-cli) @ getting-started ---
+[INFO] org.acme:getting-started:jar:1.0-SNAPSHOT
+[INFO] └─ io.quarkus:quarkus-resteasy-deployment:jar:{quarkus-version} (compile)
+[INFO]    ├─ io.quarkus:quarkus-resteasy-server-common-deployment:jar:{quarkus-version} (compile)
+[INFO]    │  ├─ io.quarkus:quarkus-core-deployment:jar:{quarkus-version} (compile)
+[INFO]    │  │  ├─ commons-beanutils:commons-beanutils:jar:1.9.3 (compile)
+[INFO]    │  │  │  ├─ commons-logging:commons-logging:jar:1.2 (compile)
+[INFO]    │  │  │  └─ commons-collections:commons-collections:jar:3.2.2 (compile)
+...
+----
 
 == Building a native executable
 
@@ -333,3 +388,65 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 <2> Use the {project-name} Maven plugin that will hook into the build process
 <3> Use a native profile and plugin to activate GraalVM compilation
 <4> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@SubstrateTest` will be run against the native executable. See the link:building-native-image-guide.html[Native executable guide] for more info.
+
+[[uber-jar-maven]]
+=== Uber-Jar Creation
+
+Quarkus Maven plugin supports the generation of Uber-Jars by specifying an `<uberJar>` configuration option in your `pom.xml`.
+
+[source,xml,subs=attributes+]
+----
+<build>
+    <plugins>
+        <plugin> 
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-maven-plugin</artifactId>
+            <version>${quarkus.version}</version>
+            <configuration>
+                <uberJar>true</uberJar> <1>
+            </configuration>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>build</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+----
+
+<1> Specifies that we want to build an Uber-Jar instead of a regular one. The regular jar will still be present in the `target` directory but it will be renamed to contain the `.original` suffix.
+
+When building an Uber-Jar you can specify entries that you want to exclude from the generated jar by using the `<ignoredEntries>` configuration option.
+
+[source,xml,subs=attributes+]
+----
+<build>
+    <plugins>
+        <plugin> 
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-maven-plugin</artifactId>
+            <version>${quarkus.version}</version>
+            <configuration>
+                <uberJar>true</uberJar>
+                <ignoredEntries>
+                    <ignoredEntry>META-INF/DEPENDENCIES.txt</ignoredEntry> <1>
+                </ignoredEntries>
+            </configuration>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>build</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+----
+
+<1> The entries are relative to the root of the generated Uber-Jar. You can specify multiple entries by adding extra `<ignoredEntry>` elements.
+
+

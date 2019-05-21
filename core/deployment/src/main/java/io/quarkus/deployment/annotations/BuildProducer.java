@@ -1,6 +1,6 @@
 package io.quarkus.deployment.annotations;
 
-import org.jboss.builder.item.BuildItem;
+import io.quarkus.builder.item.BuildItem;
 
 /**
  * An interface that can be injected to produce {@link BuildItem} instances

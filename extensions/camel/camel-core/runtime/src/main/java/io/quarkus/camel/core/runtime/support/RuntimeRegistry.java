@@ -72,7 +72,7 @@ public class RuntimeRegistry extends HashMap<String, Map<Class<?>, Object>> impl
             }
         }
         if (answer instanceof RuntimeValue) {
-            log.info("Creating {} for name {}", type.toString(), name);
+            log.debug("Creating {} for name {}", type.toString(), name);
             answer = ((RuntimeValue) answer).getValue();
         }
         try {

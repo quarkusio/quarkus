@@ -1,10 +1,10 @@
 package io.quarkus.vertx.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.builder.item.MultiBuildItem;
 
 public final class EventConsumerBusinessMethodItem extends MultiBuildItem {
 

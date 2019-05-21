@@ -1,0 +1,2 @@
+io.quarkus.runtime.configuration.ConverterSupportTest$MyPojoUnoConverter
+io.quarkus.runtime.configuration.ConverterSupportTest$MyPojoDuoConverter

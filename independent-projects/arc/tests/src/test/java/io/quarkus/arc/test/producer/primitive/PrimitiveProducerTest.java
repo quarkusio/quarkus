@@ -30,15 +30,18 @@ import org.junit.Test;
 public class PrimitiveProducerTest {
 
     @Rule
-    public ArcTestContainer container = new ArcTestContainer(IntProducer.class, LongProducer.class, PrimitiveConsumer.class);
+    public ArcTestContainer container = new ArcTestContainer(IntProducer.class, LongProducer.class, StringArrayProducer.class,
+            PrimitiveConsumer.class);
 
     @Test
     public void testPrimitiveProducers() {
         assertEquals(Long.valueOf(10), Arc.container().instance(Long.class).get());
         assertEquals(Integer.valueOf(10), Arc.container().instance(Integer.class).get());
         PrimitiveConsumer consumer = Arc.container().instance(PrimitiveConsumer.class).get();
-        assertEquals(10, consumer.getIntFoo());
-        assertEquals(10l, consumer.getLongFoo());
+        assertEquals(10, consumer.intFoo);
+        assertEquals(10l, consumer.longFoo);
+        assertEquals(2, consumer.strings.length);
+        assertEquals("foo", consumer.strings[0]);
     }
 
     @Dependent
@@ -59,6 +62,14 @@ public class PrimitiveProducerTest {
 
     }
 
+    @Dependent
+    static class StringArrayProducer {
+
+        @Produces
+        String[] strings = { "foo", "bar" };
+
+    }
+
     @Singleton
     static class PrimitiveConsumer {
 
@@ -68,13 +79,8 @@ public class PrimitiveProducerTest {
         @Inject
         long longFoo;
 
-        int getIntFoo() {
-            return intFoo;
-        }
-
-        long getLongFoo() {
-            return longFoo;
-        }
+        @Inject
+        String[] strings;
 
     }
 }

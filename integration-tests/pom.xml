@@ -48,6 +48,7 @@
         <module>jpa-h2</module>
         <module>jpa-mssql</module>
         <module>hibernate-orm-panache</module>
+        <module>hibernate-search-elasticsearch</module>
         <module>vertx</module>
         <module>spring-di</module>
         <module>infinispan-cache-jpa</module>
@@ -56,7 +57,10 @@
         <module>camel-salesforce</module>
         <module>camel-aws-s3</module>
         <module>flyway</module>
+        <module>keycloak</module>
+        <module>reactive-pg-client</module>
         <module>test-extension</module>
+        <module>amazon-lambda</module>
     </modules>
 
     <build>

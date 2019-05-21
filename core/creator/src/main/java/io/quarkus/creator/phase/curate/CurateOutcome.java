@@ -157,14 +157,14 @@ public class CurateOutcome {
         return persisted;
     }
 
-    public void persist(AppCreator ctx) throws AppCreatorException {
+    public void persist(AppCreator creator) throws AppCreatorException {
         if (persisted || loadedFromState && !hasUpdatedDeps()) {
             log.info("Skipping provisioning state persistence");
             return;
         }
         log.info("Persisting provisioning state");
 
-        final Path stateDir = ctx.createWorkDir("state");
+        final Path stateDir = creator.createWorkDir("state");
         final Path statePom = stateDir.resolve("pom.xml");
 
         final AppArtifact appArtifact = initialModel.getAppArtifact();

@@ -42,6 +42,6 @@ public class DependencyPresentTwiceInTheGraphWithDifferentClassifierAndTypeTestC
                 .addDependency(commonClient2),
                 true);
 
-        installAsDep(new TsArtifact(TsArtifact.DEFAULT_GROUP_ID, "common", "", "doc", "3"), true);
+        installAsDep(new TsArtifact(TsArtifact.DEFAULT_GROUP_ID, "common", "", "jar", "3"), true);
     }
 }

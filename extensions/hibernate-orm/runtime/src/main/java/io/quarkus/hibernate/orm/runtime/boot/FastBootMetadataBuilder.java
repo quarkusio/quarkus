@@ -40,7 +40,9 @@ import static org.hibernate.jpa.AvailableSettings.COLLECTION_CACHE_PREFIX;
 import static org.hibernate.jpa.AvailableSettings.PERSISTENCE_UNIT_NAME;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
@@ -67,6 +69,7 @@ import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.boot.spi.MetadataBuilderContributor;
 import org.hibernate.boot.spi.MetadataBuilderImplementor;
 import org.hibernate.boot.spi.MetadataImplementor;
+import org.hibernate.cache.internal.CollectionCacheInvalidator;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Environment;
 import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
@@ -75,6 +78,7 @@ import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.engine.transaction.jta.platform.internal.JBossStandAloneJtaPlatform;
 import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
+import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.EntityManagerMessageLogger;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
@@ -87,9 +91,13 @@ import org.hibernate.jpa.spi.IdentifierGeneratorStrategyProvider;
 import org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl;
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
 import org.hibernate.service.internal.AbstractServiceRegistryImpl;
+import org.hibernate.service.internal.ProvidedService;
+import org.hibernate.service.spi.ServiceContributor;
 import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
+import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
 import io.quarkus.hibernate.orm.runtime.recording.RecordableBootstrap;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.recording.RecordingDialectFactory;
@@ -109,10 +117,14 @@ public class FastBootMetadataBuilder {
     private final ManagedResources managedResources;
     private final MetadataBuilderImplementor metamodelBuilder;
     private final Object validatorFactory;
+    private final Collection<Class<? extends Integrator>> additionalIntegrators;
+    private final Collection<ProvidedService> providedServices;
 
     @SuppressWarnings("unchecked")
-    public FastBootMetadataBuilder(final PersistenceUnitDescriptor persistenceUnit, Scanner scanner) {
+    public FastBootMetadataBuilder(final PersistenceUnitDescriptor persistenceUnit, Scanner scanner,
+            Collection<Class<? extends Integrator>> additionalIntegrators) {
         this.persistenceUnit = persistenceUnit;
+        this.additionalIntegrators = additionalIntegrators;
         final ClassLoaderService providedClassLoaderService = FlatClassLoaderService.INSTANCE;
 
         // Copying semantics from: new EntityManagerFactoryBuilderImpl( unit,
@@ -138,6 +150,8 @@ public class FastBootMetadataBuilder {
         ssrBuilder.applySettings(buildTimeSettings.getSettings());
         this.standardServiceRegistry = ssrBuilder.build();
         registerIdentifierGenerators(standardServiceRegistry);
+
+        this.providedServices = ssrBuilder.getProvidedServices();
 
         final MetadataSources metadataSources = new MetadataSources(bsr);
         addPUManagedClassNamesToMetadataSources(persistenceUnit, metadataSources);
@@ -280,6 +294,8 @@ public class FastBootMetadataBuilder {
         mergedSettings.configurationValues.put(org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY,
                 QuarkusInfinispanRegionFactory.class.getName());
 
+        HibernateOrmIntegrations.contributeBootProperties((k, v) -> mergedSettings.configurationValues.put(k, v));
+
         return mergedSettings;
     }
 
@@ -300,11 +316,17 @@ public class FastBootMetadataBuilder {
                 metamodelBuilder.getBootstrapContext(),
                 metamodelBuilder.getMetadataBuildingOptions() //INTERCEPT & DESTROY :)
         );
+
+        IntegrationSettings.Builder integrationSettingsBuilder = new IntegrationSettings.Builder();
+        HibernateOrmIntegrations.onMetadataInitialized(fullMeta, metamodelBuilder.getBootstrapContext(),
+                (k, v) -> integrationSettingsBuilder.put(k, v));
+
         Dialect dialect = extractDialect();
         JtaPlatform jtaPlatform = extractJtaPlatform();
         destroyServiceRegistry(fullMeta);
         MetadataImplementor storeableMetadata = trimBootstrapMetadata(fullMeta);
-        return new RecordedState(dialect, jtaPlatform, storeableMetadata, buildTimeSettings);
+        return new RecordedState(dialect, jtaPlatform, storeableMetadata, buildTimeSettings, getIntegrators(),
+                providedServices, integrationSettingsBuilder.build());
     }
 
     private void destroyServiceRegistry(MetadataImplementor fullMeta) {
@@ -350,6 +372,22 @@ public class FastBootMetadataBuilder {
         DialectFactory service = standardServiceRegistry.getService(DialectFactory.class);
         RecordingDialectFactory casted = (RecordingDialectFactory) service;
         return casted.getDialect();
+    }
+
+    private Collection<Integrator> getIntegrators() {
+        LinkedHashSet<Integrator> integrators = new LinkedHashSet<>();
+        integrators.add(new BeanValidationIntegrator());
+        integrators.add(new CollectionCacheInvalidator());
+
+        for (Class<? extends Integrator> integratorClass : additionalIntegrators) {
+            try {
+                integrators.add(integratorClass.getConstructor().newInstance());
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Unable to instantiate integrator " + integratorClass, e);
+            }
+        }
+
+        return integrators;
     }
 
     @SuppressWarnings("rawtypes")

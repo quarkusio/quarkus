@@ -59,29 +59,28 @@ The injection uses the `@ConfigProperty` annotation.
 [source,java]
 ----
 @ConfigProperty(name = "greeting.message")
-private String message;
+String message;
 ----
 
-Edit the `org.acme.config.GreetingResource`, and introduce the 3 following configuration properties:
+NOTE: When injecting a configured value, you can use `@Inject @ConfigProperty` or just `@ConfigProperty`.
+The `@Inject` annotation is not necessary for members annotated with `@ConfigProperty`, a behavior which differs from https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config]
+
+Edit the `org.acme.config.GreetingResource`, and introduce the following configuration properties:
 
 [source,java]
 ----
-@ConfigProperty(name = "greeting.message")
-private String message;
+@ConfigProperty(name = "greeting.message") <1>
+String message;
 
-@ConfigProperty(name = "greeting.suffix", defaultValue="!")
-private String suffix;
+@ConfigProperty(name = "greeting.suffix", defaultValue="!") <2>
+String suffix;
 
-@ConfigProperty(name = "greeting.name")
-private Optional<String> name;
+@ConfigProperty(name = "greeting.name") 
+Optional<String> name; <3>
 ----
-
-NOTE: When injecting a configured value, you can use `@Inject @ConfigProperty(...)` or just `@ConfigProperty(...)`.
-The `@Inject` annotation is not necessary for members annotated with `@ConfigProperty`, a behavior which differs from https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config]
-
-If you do not provide a value for the first property, it will have a `null` value.
-The second property injects the given default value if the configuration file does not provide a value.
-The third property is optional. The injected `Optional` is empty as the configuration file does not provide a value.
+<1> If you do not provide a value for this property, the application startup fails with `javax.enterprise.inject.spi.DeploymentException: No config value of type [class java.lang.String] exists for: greeting.message`.
+<2> The default value is injected if the configuration does not provide a value for `greeting.suffix`.
+<3> This property is optional - an empty `Optional` is injected if the configuration does not provide a value for `greeting.name`.
 
 Now, modify the `hello` method to use the injected properties:
 
@@ -185,6 +184,124 @@ You can override these runtime properties with the following mechanisms (in decr
   * for a native executable: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; ./target/myapp-runner`
 
 NOTE: Environment variables names are following the conversion rules of link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[Eclipse MicroProfile]
+
+=== Custom configuration sources
+
+You can also introduce custom configuration sources in the standard MicroProfile Config manner.  To
+do this, you must provide a class which implements either `org.eclipse.microprofile.config.spi.ConfigSource`
+or `org.eclipse.microprofile.config.spi.ConfigSourceProvider`.  Create a
+https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html[service file] for the
+class and it will be detected and installed at application startup.
+
+=== Custom configuration converters
+
+You can also use your custom types as a configuration values. This can be done by implementing `org.eclipse.microprofile.config.spi.Converter<T>`
+and adding its fully qualified class name in file `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
+
+Let us assume you have a custom type like this one:
+
+[source,java]
+----
+package org.acme.config;
+
+public class MicroProfileCustomValue {
+
+    private final int number;
+
+    public MicroProfileCustomValue(int number) {
+        this.number = number;
+    };
+
+    public int getNumber() {
+        return number;
+    }
+}
+----
+
+The corresponding converter will look like the one below. Please note that your custom converter class must be `public` and must have
+a `public` no-argument constructor. It also must not be `abstract`.
+
+
+[source,java]
+----
+package org.acme.config;
+
+import org.eclipse.microprofile.config.spi.Converter;
+
+public class MicroProfileCustomValueConverter implements Converter<MicroProfileCustomValue> {
+
+    @Override
+    public MicroProfileCustomValue convert(String value) {
+        return new MicroProfileCustomValue(Integer.valueOf(value));
+    }
+}
+----
+
+Then you need to include fully qualified class name of converter in a service file `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
+If you have more converters simply add their class names in this file as well. Single fully qualified class name per line, for example:
+
+[source,shell]
+----
+org.acme.config.MicroProfileCustomValueConverter
+org.acme.config.SomeOtherConverter
+org.acme.config.YetAnotherConverter
+----
+
+Please note that `SomeOtherConverter` and `YetAnotherConverter` was added just for a demonstration. If you include in this file classes
+which are not available in runtime, the converters loading will fail.
+
+After this is done you can use your custom type as a configuration value:
+
+[source,java]
+----
+@ConfigProperty(name = "configuration.value.name")
+MicroProfileCustomValue value;
+----
+
+==== Converter priority
+
+In some cases you may want to use a custom converter to convert a type which is already converted
+by a different converter. In such cases, you can use the `javax.annotation.Priority` annotation to
+change converters precedence and make your custom converter of higher priority than the other
+on the list.
+
+By default, if no `@Priority` can be found on a converter, it's registered with a priority of 100
+and all {project-name} core converters are registered with a priority of 200, so depending on which
+converter you would like to replace, you need to set a higher value.
+
+To demonstrate the idea let us implement a custom converter which will take precedence over 
+`MicroProfileCustomValueConverter` implemented in the previous example.
+
+[source,java]
+----
+package org.acme.config;
+
+import javax.annotation.Priority;
+import org.eclipse.microprofile.config.spi.Converter;
+
+@Priority(150)
+public class MyCustomConverter implements Converter<MicroProfileCustomValue> {
+
+    @Override
+    public MicroProfileCustomValue convert(String value) {
+
+        final int secretNumber;
+        if (value.startsFrom("OBF:")) {
+            secretNumber = Integer.valueOf(SecretDecoder.decode(value));
+        } else {
+            secretNumber = Integer.valueOf(value);
+        }
+
+        return new MicroProfileCustomValue(secretNumber);
+    }
+}
+----
+
+Since it converts the same value type (namely `MicroProfileCustomValue`) and has a priority
+of 150, it will be used instead of a `MicroProfileCustomValueConverter` which has a default
+priority of 100.
+
+NOTE: This new converter also needs to be listed in a service file, i.e. `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
 
 == More info on how to configure
 

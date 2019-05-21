@@ -20,8 +20,10 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class DefaultDataSourceConfigTest {
 
+    //tag::injection[]
     @Inject
     AgroalDataSource defaultDataSource;
+    //end::injection[]
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(

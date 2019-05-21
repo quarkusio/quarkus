@@ -1,6 +1,6 @@
 package io.quarkus.deployment.builditem;
 
-import org.jboss.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * This is an optional build item that allows us to track annotations that will define test classes

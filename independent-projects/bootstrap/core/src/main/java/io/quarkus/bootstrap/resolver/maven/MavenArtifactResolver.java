@@ -5,7 +5,13 @@ package io.quarkus.bootstrap.resolver.maven;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
 import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
@@ -32,7 +38,6 @@ import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
-
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 
@@ -138,8 +143,16 @@ public class MavenArtifactResolver {
         return localRepoManager;
     }
 
+    public RepositorySystem getSystem() {
+        return repoSystem;
+    }
+
     public RepositorySystemSession getSession() {
         return repoSession;
+    }
+
+    public List<RemoteRepository> getRepositories() {
+        return remoteRepos;
     }
 
     public void addRemoteRepositories(List<RemoteRepository> repos) {
@@ -188,28 +201,16 @@ public class MavenArtifactResolver {
     }
 
     public CollectResult collectDependencies(Artifact artifact) throws AppModelResolverException {
-        try {
-            return repoSystem.collectDependencies(repoSession, newCollectRequest(artifact));
-        } catch (DependencyCollectionException e) {
-            throw new AppModelResolverException("Failed to collect dependencies for " + artifact, e);
-        }
+        return collectDependencies(artifact, Collections.emptyList());
     }
 
     public DependencyResult resolveDependencies(Artifact artifact) throws AppModelResolverException {
-        try {
-            return repoSystem.resolveDependencies(repoSession,
-                    new DependencyRequest()
-                    .setCollectRequest(newCollectRequest(artifact)));
-        } catch (DependencyResolutionException e) {
-            throw new AppModelResolverException("Failed to resolve dependencies for " + artifact, e);
-        }
+        return resolveDependencies(artifact, Collections.emptyList());
     }
 
     public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps) throws AppModelResolverException {
         final CollectRequest request = newCollectRequest(artifact);
-        for(Dependency dep : deps) {
-            request.addDependency(dep);
-        }
+        request.setDependencies(deps);
         try {
             return repoSystem.collectDependencies(repoSession, request);
         } catch (DependencyCollectionException e) {
@@ -219,12 +220,36 @@ public class MavenArtifactResolver {
 
     public DependencyResult resolveDependencies(Artifact artifact, List<Dependency> deps) throws AppModelResolverException {
         final CollectRequest request = newCollectRequest(artifact);
-        for(Dependency dep : deps) {
-            request.addDependency(dep);
-        }
+        request.setDependencies(deps);
         try {
             return repoSystem.resolveDependencies(repoSession,
                     new DependencyRequest().setCollectRequest(request));
+        } catch (DependencyResolutionException e) {
+            throw new AppModelResolverException("Failed to resolve dependencies for " + artifact, e);
+        }
+    }
+
+    public DependencyResult resolveDependencies(Artifact artifact, String... excludedScopes) throws AppModelResolverException {
+        final ArtifactDescriptorResult descr = resolveDescriptor(artifact);
+        List<Dependency> deps = descr.getDependencies();
+        if(excludedScopes.length > 0) {
+            final Set<String> excluded = new HashSet<>(Arrays.asList(excludedScopes));
+            deps = new ArrayList<>(deps.size());
+            for(Dependency dep : descr.getDependencies()) {
+                if(excluded.contains(dep.getScope())) {
+                    continue;
+                }
+                deps.add(dep);
+            }
+        }
+        try {
+            return repoSystem.resolveDependencies(repoSession,
+                    new DependencyRequest().setCollectRequest(
+                            new CollectRequest()
+                            .setRootArtifact(artifact)
+                            .setDependencies(deps)
+                            .setManagedDependencies(descr.getManagedDependencies())
+                            .setRepositories(descr.getRepositories())));
         } catch (DependencyResolutionException e) {
             throw new AppModelResolverException("Failed to resolve dependencies for " + artifact, e);
         }

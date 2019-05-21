@@ -30,22 +30,18 @@
     <name>Quarkus - Integration Tests - Flyway</name>
     <description>Module that contains Flyway related tests</description>
     <dependencies>
-        <!-- Enables the Flyway capabilities -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-flyway</artifactId>
         </dependency>
-        <!-- We'll be using the H2 database -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-h2</artifactId>
         </dependency>
-        <!-- .. and some REST endpoints -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy</artifactId>
         </dependency>
-
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

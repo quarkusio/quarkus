@@ -43,12 +43,12 @@ public class ClusterConfiguration {
     /**
      * The ping interval.
      */
-    @ConfigItem(defaultValue = "PT20S")
+    @ConfigItem(defaultValue = "20")
     public Duration pingInterval;
 
     /**
      * The ping reply interval.
      */
-    @ConfigItem(defaultValue = "PT20S")
+    @ConfigItem(defaultValue = "20")
     public Duration pingReplyInterval;
 }

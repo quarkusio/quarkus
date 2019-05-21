@@ -18,7 +18,6 @@ package io.quarkus.deployment.logging;
 
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import org.jboss.logmanager.EmbeddedConfigurator;
@@ -27,7 +26,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ConfigurationCustomConverterBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -35,12 +33,9 @@ import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildIte
 import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
 import io.quarkus.runtime.logging.InitialConfigurator;
-import io.quarkus.runtime.logging.LevelConverter;
 import io.quarkus.runtime.logging.LogConfig;
 import io.quarkus.runtime.logging.LoggingSetupTemplate;
 
-/**
- */
 public final class LoggingResourceProcessor {
 
     @BuildStep
@@ -103,11 +98,9 @@ public final class LoggingResourceProcessor {
         setupTemplate.initializeLoggingForImageBuild();
     }
 
+    // This is specifically to help out with presentations, to allow an env var to always override this value
     @BuildStep
-    ConfigurationCustomConverterBuildItem setUpLevelConverter() {
-        return new ConfigurationCustomConverterBuildItem(
-                200,
-                Level.class,
-                LevelConverter.class);
+    void setUpDarkeningDefault(Consumer<RunTimeConfigurationDefaultBuildItem> rtcConsumer) {
+        rtcConsumer.accept(new RunTimeConfigurationDefaultBuildItem("quarkus.log.console.darken", "0"));
     }
 }

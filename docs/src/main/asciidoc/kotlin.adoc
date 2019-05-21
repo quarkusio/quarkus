@@ -33,11 +33,12 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=rest-kotlin \
     -DclassName="org.acme.rest.GreetingResource" \
     -Dpath="/greeting" \
-    -Dextensions="kotlin"
+    -Dextensions="kotlin,resteasy-jsonb"
 ----
 
 When adding `kotlin` to the extensions list, the Maven plugin will generate a project that is properly
 configured to work with Kotlin. Furthermore  the `org.acme.rest.GreetingResource` class is implemented as Kotlin source code (as is the case with the generated tests).
+The addition of `resteasy-jsonb` in the extension list results in importing the RESTEasy/JAX-RS and JSON-B extensions.
 
 `GreetingResource.kt` looks like this:
 
@@ -59,7 +60,57 @@ class GreetingResource {
 }
 ----
 
-== Important configuration points
+=== Update code
+
+In order to show a more practical example of Kotlin usage we will add a simple link:https://kotlinlang.org/docs/reference/data-classes.html[data class] called `Greeting.kt` like so:
+
+[source,kotlin]
+----
+package org.acme.rest
+
+data class Greeting(val message: String = "")
+----
+
+We also update the `GreetingResource.kt` like so:
+
+[source,kotlin]
+----
+import javax.ws.rs.GET
+import javax.ws.rs.Path
+import javax.ws.rs.Produces
+import javax.ws.rs.core.MediaType
+
+@Path("/greeting")
+class GreetingResource {
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    fun hello() = Greeting("hello")
+}
+----
+
+With these changes in place the `/greeting` endpoint will reply with a JSON object instead of a simple String.
+
+To make the test pass, we also need to update `GreetingResourceTest.kt` like so:
+
+[source,kotlin]
+----
+@QuarkusTest
+open class GreetingResourceTest {
+
+    @Test
+    fun testHelloEndpoint() {
+        given()
+          .`when`().get("/greeting")
+          .then()
+             .statusCode(200)
+             .body("message", equalTo("hello"))
+    }
+
+}
+----
+
+== Important Maven configuration points
 
 The generated `pom.xml` contains the following modifications compared to its counterpart when Kotlin is not selected:
 
@@ -129,16 +180,16 @@ code and immediately see their changes reflected.
 
 To see this feature in action, first execute: `./mvnw compile quarkus:dev`
 
-When executing an HTTP GET request against `http://localhost:8080/greeting`, you should get `hello` as a response.
+When executing an HTTP GET request against `http://localhost:8080/greeting`, you see a JSON message with the value `hello` as its `message` field.
 
 Now using your favorite editor or IDE, update `GreetingResource.kt` and change the `hello` method to the following:
 
 [source,kotlin]
 ----
-fun hello() = "hi"
+fun hello() = Greeting("hi")
 ----
 
-When you now execute an HTTP GET request against `http://localhost:8080/greeting`, you should see `hi` as a response.
+When you now execute an HTTP GET request against `http://localhost:8080/greeting`, you should see a JSON message with the value `hi` as its `message` field.
 
 One thing to note is that the live reload feature is not available when making changes to both Java and Kotlin source that have dependencies on each other. We hope to alleviate this limitation in the future.
 

@@ -1,20 +1,24 @@
-= {project-name} - Deploying an Application to Kubernetes and OpenShift
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
 
-This guide covers:
+include::./attributes.adoc[]
 
-* The deployment of the application to Kubernetes
-* The deployment of the application to OpenShift (TODO)
+= {project-name} - Generating Kubernetes resources
+
+This guide covers generating Kubernetes resources based on sane defaults and user supplied configuration.
 
 == Prerequisites
 
 To complete this guide, you need:
 
-* roughly 15 minutes
+* roughly 10 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
-* access to a Kubernetes or OpenShift cluster (Minikube and Minishift are both viable options)
-* have the following binaries on your PATH: `docker` (for building and pushing images), `kubectl` (for deploying to Kubernetes) and `oc` (for deploying to OpenShift)
+* access to a Kubernetes or cluster (Minikube is a viable options)
 
 == Creating the Maven project
 

@@ -1,8 +1,7 @@
 package io.quarkus.arc.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
-
 import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.builder.item.MultiBuildItem;
 
 public final class AnnotationsTransformerBuildItem extends MultiBuildItem {
 

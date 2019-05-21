@@ -5,6 +5,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import io.quarkus.builder.item.BuildItem;
+
 /**
  * Indicates that this {@link BuildStep} method will also output recorded bytecode.
  *
@@ -30,7 +32,7 @@ public @interface Record {
 
     /**
      * If this is true then the bytecode produced by this method will be considered to be optional,
-     * and will only be created if this build step also produces another {@link org.jboss.builder.item.BuildItem}
+     * and will only be created if this build step also produces another {@link BuildItem}
      * that is consumed by the build.
      *
      * If a method is optional it must be capable of producing at least one other item

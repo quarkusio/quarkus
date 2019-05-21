@@ -165,7 +165,7 @@ Every result is sent to the `my-data-stream` in-memory stream.
 
 == The price resource
 
-Finally, let's bind our stream to a Jax-RS resource.
+Finally, let's bind our stream to a JAX-RS resource.
 Creates the `src/main/java/org/acme/quarkus/sample/PriceResource.java` file with the following content:
 
 [source, java]
@@ -189,6 +189,12 @@ public class PriceResource {
 
     @Inject
     @Stream("my-data-stream") Publisher<Double> prices; // <1>
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "hello";
+    }
 
     @GET
     @Path("/stream")

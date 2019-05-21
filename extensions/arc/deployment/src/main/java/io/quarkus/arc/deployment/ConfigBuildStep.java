@@ -5,28 +5,32 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.inject.Inject;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 
-import io.quarkus.arc.processor.AnnotationsTransformer;
-import io.quarkus.arc.processor.BeanDeploymentValidator;
+import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.arc.runtime.ConfigBeanCreator;
 import io.quarkus.arc.runtime.ConfigDeploymentTemplate;
+import io.quarkus.arc.runtime.QuarkusConfigProducer;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
-import io.smallrye.config.inject.ConfigProducer;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 
 /**
  * MicroProfile Config related build steps.
@@ -34,111 +38,93 @@ import io.smallrye.config.inject.ConfigProducer;
 public class ConfigBuildStep {
 
     private static final DotName CONFIG_PROPERTY_NAME = DotName.createSimple(ConfigProperty.class.getName());
+    private static final DotName SET_NAME = DotName.createSimple(Set.class.getName());
+    private static final DotName LIST_NAME = DotName.createSimple(List.class.getName());
 
     @BuildStep
     AdditionalBeanBuildItem bean() {
-        return new AdditionalBeanBuildItem(ConfigProducer.class);
+        return new AdditionalBeanBuildItem(QuarkusConfigProducer.class);
     }
 
     @BuildStep
-    BeanDeploymentValidatorBuildItem collectMandatoryConfigProperties(BuildProducer<ConfigPropertyBuildItem> configProperties) {
+    BeanRegistrarBuildItem analyzeConfigPropertyInjectionPoints(BuildProducer<ConfigPropertyBuildItem> configProperties,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
-        return new BeanDeploymentValidatorBuildItem(new BeanDeploymentValidator() {
+        return new BeanRegistrarBuildItem(new BeanRegistrar() {
 
             @Override
-            public void validate(ValidationContext validationContext) {
-                ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+            public void register(RegistrationContext context) {
+                Set<Type> customBeanTypes = new HashSet<>();
 
-                for (InjectionPointInfo injectionPoint : validationContext.get(Key.INJECTION_POINTS)) {
+                for (InjectionPointInfo injectionPoint : context.get(Key.INJECTION_POINTS)) {
                     if (injectionPoint.hasDefaultedQualifier()) {
                         // Defaulted qualifier means no @ConfigProperty
                         continue;
                     }
-                    if (DotNames.OPTIONAL.equals(injectionPoint.getRequiredType().name())) {
-                        // Never validate Optional values
-                        continue;
-                    }
-                    AnnotationInstance configProperty = injectionPoint.getRequiredQualifiers().stream()
-                            .filter(a -> a.name().equals(CONFIG_PROPERTY_NAME))
-                            .findFirst().orElse(null);
+
+                    AnnotationInstance configProperty = injectionPoint.getRequiredQualifier(CONFIG_PROPERTY_NAME);
                     if (configProperty != null) {
+                        AnnotationValue nameValue = configProperty.value("name");
                         AnnotationValue defaultValue = configProperty.value("defaultValue");
+                        String propertyName;
+                        if (nameValue != null) {
+                            propertyName = nameValue.asString();
+                        } else {
+                            // org.acme.Foo.config
+                            if (injectionPoint.isField()) {
+                                FieldInfo field = injectionPoint.getTarget().asField();
+                                propertyName = getPropertyName(field.name(), field.declaringClass());
+                            } else if (injectionPoint.isParam()) {
+                                MethodInfo method = injectionPoint.getTarget().asMethod();
+                                propertyName = getPropertyName(method.parameterName(injectionPoint.getPosition()),
+                                        method.declaringClass());
+                            } else {
+                                throw new IllegalStateException("Unsupported injection point target: " + injectionPoint);
+                            }
+                        }
+
+                        // Register a custom bean for injection points that are not handled by ConfigProducer
+                        Type requiredType = injectionPoint.getRequiredType();
+                        if (!isHandledByProducers(requiredType)) {
+                            customBeanTypes.add(requiredType);
+                        }
+
+                        if (DotNames.OPTIONAL.equals(requiredType.name())) {
+                            // Never validate Optional values
+                            continue;
+                        }
                         if (defaultValue != null && !ConfigProperty.UNCONFIGURED_VALUE.equals(defaultValue.asString())) {
                             // No need to validate properties with default values
                             continue;
                         }
-                        String propertyName = configProperty.value("name").asString();
-                        Class<?> propertyType;
-
-                        if (injectionPoint.getRequiredType().kind() == Type.Kind.PRIMITIVE) {
-                            switch (injectionPoint.getRequiredType().asPrimitiveType().primitive()) {
-                                case BOOLEAN:
-                                    propertyType = Boolean.TYPE;
-                                    break;
-                                case BYTE:
-                                    propertyType = Byte.TYPE;
-                                    break;
-                                case CHAR:
-                                    propertyType = Character.TYPE;
-                                    break;
-                                case DOUBLE:
-                                    propertyType = Double.TYPE;
-                                    break;
-                                case INT:
-                                    propertyType = Integer.TYPE;
-                                    break;
-                                case FLOAT:
-                                    propertyType = Float.TYPE;
-                                    break;
-                                case LONG:
-                                    propertyType = Long.TYPE;
-                                    break;
-                                case SHORT:
-                                    propertyType = Short.TYPE;
-                                    break;
-                                default:
-                                    throw new IllegalArgumentException(
-                                            "Not a supported primitive type: "
-                                                    + injectionPoint.getRequiredType().asPrimitiveType().primitive());
-                            }
-                        } else {
-                            try {
-                                propertyType = tccl.loadClass(injectionPoint.getRequiredType().name().toString());
-                            } catch (ClassNotFoundException e) {
-                                throw new IllegalStateException("Unable to load the config property type: " + injectionPoint,
-                                        e);
-                            }
+                        String propertyType = requiredType.name().toString();
+                        if (requiredType.kind() != Kind.ARRAY && requiredType.kind() != Kind.PRIMITIVE) {
+                            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, propertyType));
                         }
                         configProperties.produce(new ConfigPropertyBuildItem(propertyName, propertyType));
                     }
+                }
+
+                for (Type type : customBeanTypes) {
+                    if (type.kind() != Kind.ARRAY) {
+                        // Implicit converters are most likely used
+                        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, type.name().toString()));
+                    }
+                    context.configure(
+                            type.kind() == Kind.ARRAY ? DotName.createSimple(ConfigBeanCreator.class.getName()) : type.name())
+                            .creator(ConfigBeanCreator.class)
+                            .providerType(type)
+                            .types(type)
+                            .qualifiers(AnnotationInstance.create(CONFIG_PROPERTY_NAME, null, Collections.emptyList()))
+                            .param("requiredType", type.name().toString()).done();
                 }
             }
         });
     }
 
-    /**
-     * Uses {@link AnnotationsTransformer} to automatically add {@code @Inject} to all fields that have {@code @ConfigProperty}
-     * on them, but are missing
-     * {@code @Inject}.
-     *
-     * @author Matej Novotny
-     */
     @BuildStep
-    void annotationTransformer(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) throws Exception {
-        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-            @Override
-            public boolean appliesTo(AnnotationTarget.Kind kind) {
-                return kind == AnnotationTarget.Kind.FIELD;
-            }
-
-            @Override
-            public void transform(TransformationContext transformationContext) {
-                if (transformationContext.getTarget().asField().hasAnnotation(CONFIG_PROPERTY_NAME)
-                        && !transformationContext.getTarget().asField().hasAnnotation(DotNames.INJECT)) {
-                    transformationContext.transform().add(Inject.class).done();
-                }
-            }
-        }));
+    AutoInjectAnnotationBuildItem autoInjectConfigProperty() {
+        return new AutoInjectAnnotationBuildItem(CONFIG_PROPERTY_NAME);
     }
 
     @BuildStep
@@ -147,10 +133,42 @@ public class ConfigBuildStep {
             BeanContainerBuildItem beanContainer) {
         // IMPL NOTE: we do depend on BeanContainerBuildItem to make sure that the BeanDeploymentValidator finished its processing
 
-        Map<String, Set<Class<?>>> propNamesToClasses = configProperties.stream().collect(
+        Map<String, Set<String>> propNamesToClasses = configProperties.stream().collect(
                 groupingBy(ConfigPropertyBuildItem::getPropertyName,
                         mapping(ConfigPropertyBuildItem::getPropertyType, toSet())));
         template.validateConfigProperties(propNamesToClasses);
+    }
+
+    private String getPropertyName(String name, ClassInfo declaringClass) {
+        StringBuilder builder = new StringBuilder();
+        if (declaringClass.enclosingClass() == null) {
+            builder.append(declaringClass.name());
+        } else {
+            builder.append(declaringClass.enclosingClass()).append(".").append(declaringClass.simpleName());
+        }
+        return builder.append(".").append(name).toString();
+    }
+
+    private boolean isHandledByProducers(Type type) {
+        if (type.kind() == Kind.ARRAY) {
+            return false;
+        }
+        if (type.kind() == Kind.PRIMITIVE) {
+            switch (type.asPrimitiveType().primitive()) {
+                case BOOLEAN:
+                case DOUBLE:
+                case FLOAT:
+                case LONG:
+                case INT:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        return DotNames.STRING.equals(type.name()) || DotNames.OPTIONAL.equals(type.name()) || SET_NAME.equals(type.name())
+                || LIST_NAME.equals(type.name()) || DotNames.LONG.equals(type.name()) || DotNames.FLOAT.equals(type.name())
+                || DotNames.INTEGER.equals(type.name()) || DotNames.BOOLEAN.equals(type.name())
+                || DotNames.DOUBLE.equals(type.name());
     }
 
 }

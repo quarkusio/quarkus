@@ -68,8 +68,9 @@ public class OpenApiServlet extends HttpServlet {
         String oai = getCachedOaiString(format);
 
         addCorsResponseHeaders(resp);
-        resp.addHeader("Content-Type", format.getMimeType());
-        resp.getOutputStream().print(oai);
+        resp.setHeader("Content-Type", format.getMimeType());
+        resp.setCharacterEncoding("UTF-8");
+        resp.getWriter().print(oai);
     }
 
     void setOpenApiDocument(OpenApiDocument document) {
@@ -89,10 +90,10 @@ public class OpenApiServlet extends HttpServlet {
     }
 
     private static void addCorsResponseHeaders(HttpServletResponse response) {
-        response.addHeader("Access-Control-Allow-Origin", "*");
-        response.addHeader("Access-Control-Allow-Credentials", "true");
-        response.addHeader("Access-Control-Allow-Methods", ALLOWED_METHODS);
-        response.addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-        response.addHeader("Access-Control-Max-Age", "86400");
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Credentials", "true");
+        response.setHeader("Access-Control-Allow-Methods", ALLOWED_METHODS);
+        response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        response.setHeader("Access-Control-Max-Age", "86400");
     }
 }

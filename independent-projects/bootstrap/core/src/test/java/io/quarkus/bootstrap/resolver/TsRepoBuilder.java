@@ -21,6 +21,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
@@ -40,7 +41,7 @@ public class TsRepoBuilder {
         return new TsRepoBuilder(resolver, workDir);
     }
 
-    private final Path workDir;
+    protected final Path workDir;
     private final BootstrapAppModelResolver resolver;
 
     private TsRepoBuilder(BootstrapAppModelResolver resolver, Path workDir) {
@@ -49,18 +50,44 @@ public class TsRepoBuilder {
     }
 
     public void install(TsArtifact artifact) {
-        install(artifact, null);
+        try {
+            install(artifact, artifact.content == null ? null : artifact.content.getPath(workDir));
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to initialize content for " + artifact, e);
+        }
     }
 
     public void install(TsArtifact artifact, Path p) {
         final Path pomXml = workDir.resolve(artifact.getArtifactFileName() + ".pom");
+        if(Files.exists(pomXml)) {
+            // assume it's already installed
+            return;
+        }
         try {
             ModelUtils.persistModel(pomXml, artifact.getPomModel());
         } catch (Exception e) {
             error("Failed to persist pom.xml for " + artifact, e);
         }
         install(artifact.toPomArtifact().toAppArtifact(), pomXml);
-        install(artifact.toAppArtifact(), p == null ? newTxt(artifact) : p);
+        if(p == null) {
+            switch(artifact.type) {
+                case TsArtifact.TYPE_JAR:
+                    try {
+                        p = newJar()
+                                .addMavenMetadata(artifact, pomXml)
+                                .getPath(workDir);
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Failed to install " + artifact, e);
+                    }
+                    break;
+                case TsArtifact.TYPE_TXT:
+                    p = newTxt(artifact);
+                    break;
+                default:
+                    throw new IllegalStateException("Unsupported artifact type " + artifact.type);
+            }
+        }
+        install(artifact.toAppArtifact(), p);
     }
 
     protected void install(AppArtifact artifact, Path file) {
@@ -84,4 +111,7 @@ public class TsRepoBuilder {
         return tmpFile;
     }
 
+    public TsJar newJar() {
+        return new TsJar(workDir.resolve(UUID.randomUUID().toString()));
+    }
 }

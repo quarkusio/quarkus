@@ -9,6 +9,8 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.inject.Inject;
 import javax.inject.Qualifier;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.CurrentInjectionPointProvider.InjectionPointImpl;
 import io.quarkus.deployment.test.TestResourceProvider;
@@ -21,20 +23,27 @@ public class ArcTestResourceProvider implements TestResourceProvider {
         BeanManager beanManager = Arc.container().beanManager();
         while (c != Object.class) {
             for (Field field : c.getDeclaredFields()) {
-                if (field.isAnnotationPresent(Inject.class)) {
+                if (field.isAnnotationPresent(Inject.class) || field.isAnnotationPresent(ConfigProperty.class)) {
+                    Object instance;
+
                     try {
-                        Set<Annotation> qualifiers = new HashSet<>();
-                        Set<Annotation> annotations = new HashSet<>();
-                        for (Annotation a : field.getAnnotations()) {
-                            annotations.add(a);
-                            if (a.annotationType().isAnnotationPresent(Qualifier.class)) {
-                                qualifiers.add(a);
+                        if (field.getType().equals(BeanManager.class)) {
+                            instance = beanManager;
+                        } else {
+                            Set<Annotation> qualifiers = new HashSet<>();
+                            Set<Annotation> annotations = new HashSet<>();
+                            for (Annotation a : field.getAnnotations()) {
+                                annotations.add(a);
+                                if (a.annotationType().isAnnotationPresent(Qualifier.class)) {
+                                    qualifiers.add(a);
+                                }
                             }
+                            instance = beanManager.getInjectableReference(
+                                    new InjectionPointImpl(field.getGenericType(), field.getGenericType(),
+                                            qualifiers, null, annotations, field, -1),
+                                    beanManager.createCreationalContext(null));
                         }
-                        Object instance = beanManager.getInjectableReference(
-                                new InjectionPointImpl(field.getGenericType(), field.getGenericType(),
-                                        qualifiers, null, annotations, field, -1),
-                                beanManager.createCreationalContext(null));
+
                         // Set the field value
                         field.setAccessible(true);
                         try {

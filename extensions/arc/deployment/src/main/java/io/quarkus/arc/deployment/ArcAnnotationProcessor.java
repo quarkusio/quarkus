@@ -58,6 +58,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
@@ -83,13 +84,13 @@ public class ArcAnnotationProcessor {
     BuildProducer<GeneratedResourceBuildItem> generatedResource;
 
     @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
-
-    @Inject
     List<AdditionalBeanBuildItem> additionalBeans;
 
     @Inject
     BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods;
+
+    @Inject
+    BuildProducer<ReflectiveClassBuildItem> reflectiveClasses;
 
     @Inject
     BuildProducer<ReflectiveFieldBuildItem> reflectiveFields;
@@ -128,6 +129,7 @@ public class ArcAnnotationProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<AnnotationsTransformerBuildItem> annotationTransformers,
             ShutdownContextBuildItem shutdown, List<AdditionalStereotypeBuildItem> additionalStereotypeBuildItems,
+            List<ApplicationClassPredicateBuildItem> applicationClassPredicates,
             BuildProducer<FeatureBuildItem> feature)
             throws Exception {
 
@@ -145,6 +147,14 @@ public class ArcAnnotationProcessor {
                 }
                 if (generatedClassNames.contains(dotName)) {
                     return true;
+                }
+                if (!applicationClassPredicates.isEmpty()) {
+                    String className = dotName.toString();
+                    for (ApplicationClassPredicateBuildItem predicate : applicationClassPredicates) {
+                        if (predicate.test(className)) {
+                            return true;
+                        }
+                    }
                 }
                 return false;
             }
@@ -257,6 +267,11 @@ public class ArcAnnotationProcessor {
 
         BeanProcessor beanProcessor = builder.build();
         BeanDeployment beanDeployment = beanProcessor.process();
+
+        // Register all qualifiers for reflection to support type-safe resolution at runtime in native image
+        for (ClassInfo qualifier : beanDeployment.getQualifiers()) {
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, qualifier.name().toString()));
+        }
 
         ArcContainer container = arcTemplate.getContainer(shutdown);
         BeanContainer beanContainer = arcTemplate.initBeanContainer(container,

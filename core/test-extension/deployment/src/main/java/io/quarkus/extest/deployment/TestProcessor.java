@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.Provider;
@@ -48,10 +49,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
-import io.quarkus.extest.runtime.IConfigConsumer;
-import io.quarkus.extest.runtime.RuntimeXmlConfigService;
-import io.quarkus.extest.runtime.TestAnnotation;
-import io.quarkus.extest.runtime.TestTemplate;
+import io.quarkus.extest.runtime.*;
 import io.quarkus.extest.runtime.beans.CommandServlet;
 import io.quarkus.extest.runtime.beans.PublicKeyProducer;
 import io.quarkus.extest.runtime.config.ObjectOfValue;
@@ -153,11 +151,12 @@ public final class TestProcessor {
      * @param template - runtime template
      * @param shutdownContextBuildItem - ShutdownContext information
      * @param serviceBuildItem - previously created RuntimeXmlConfigService container
+     * @return ServiceStartBuildItem - build item indicating the RuntimeXmlConfigService startuup
      * @throws IOException - on failure
      */
     @BuildStep
     @Record(RUNTIME_INIT)
-    void startRuntimeService(TestTemplate template, ShutdownContextBuildItem shutdownContextBuildItem,
+    ServiceStartBuildItem startRuntimeService(TestTemplate template, ShutdownContextBuildItem shutdownContextBuildItem,
             RuntimeServiceBuildItem serviceBuildItem) throws IOException {
         if (serviceBuildItem != null) {
             log.info("Registering service start");
@@ -165,6 +164,7 @@ public final class TestProcessor {
         } else {
             log.info("No RuntimeServiceBuildItem seen, check config.xml");
         }
+        return new ServiceStartBuildItem("RuntimeXmlConfigService");
     }
 
     /**
@@ -184,7 +184,7 @@ public final class TestProcessor {
         if (is == null) {
             throw new IOException("Failed to load resource: " + path);
         }
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
         String base64 = reader.readLine();
         reader.close();
         byte[] encoded = Base64.getDecoder().decode(base64);
@@ -426,5 +426,16 @@ public final class TestProcessor {
             classes.produce(new ReflectiveClassBuildItem(true, true, className));
             log.debugf("Register SUN.provider class: %s", className);
         }
+    }
+
+    @BuildStep
+    void registerFinalFieldReflectionObject(BuildProducer<ReflectiveClassBuildItem> classes) {
+        ReflectiveClassBuildItem finalField = ReflectiveClassBuildItem
+                .builder(FinalFieldReflectionObject.class.getName())
+                .methods(true)
+                .fields(true)
+                .finalFieldsWritable(true)
+                .build();
+        classes.produce(finalField);
     }
 }

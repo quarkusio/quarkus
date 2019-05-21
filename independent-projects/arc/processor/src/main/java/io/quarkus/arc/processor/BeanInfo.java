@@ -16,6 +16,7 @@
 
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationRule;
 import io.quarkus.arc.processor.Methods.MethodKey;
 import io.quarkus.gizmo.MethodCreator;
 import java.lang.reflect.Modifier;
@@ -328,7 +329,7 @@ public class BeanInfo implements InjectionTargetInfo {
         return params;
     }
 
-    void validate(List<Throwable> errors) {
+    void validate(List<Throwable> errors, List<BeanDeploymentValidator> validators) {
         if (isClassBean()) {
             ClassInfo beanClass = target.get().asClass();
             String classifier = scope.isNormal() ? "Normal scoped" : null;
@@ -338,12 +339,16 @@ public class BeanInfo implements InjectionTargetInfo {
             if (Modifier.isFinal(beanClass.flags()) && classifier != null) {
                 errors.add(new DefinitionException(String.format("%s bean must not be final: %s", classifier, this)));
             }
+
             MethodInfo noArgsConstructor = beanClass.method(Methods.INIT);
-            // Note that spec also requires no-arg constructor for intercepted beans but intercepted subclasses should work fine with non-private @Inject
-            // constructors so we only validate normal scoped beans
-            if (scope.isNormal() && noArgsConstructor == null) {
-                errors.add(new DefinitionException(String
-                        .format("Normal scoped beans must declare a non-private constructor with no parameters: %s", this)));
+            if (!ValidationRule.NO_ARGS_CONSTRUCTOR.skipFor(validators, this)) {
+                // Note that spec also requires no-arg constructor for intercepted beans but intercepted subclasses should work fine with non-private @Inject
+                // constructors so we only validate normal scoped beans
+                if (scope.isNormal() && noArgsConstructor == null) {
+                    errors.add(new DefinitionException(String
+                            .format("Normal scoped beans must declare a non-private constructor with no parameters: %s",
+                                    this)));
+                }
             }
             if (noArgsConstructor != null && Modifier.isPrivate(noArgsConstructor.flags()) && classifier != null) {
                 errors.add(

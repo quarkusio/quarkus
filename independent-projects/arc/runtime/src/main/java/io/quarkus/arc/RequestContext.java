@@ -147,17 +147,17 @@ class RequestContext implements ManagedContext {
         Map<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
         if (ctx != null) {
             synchronized (ctx) {
+                // Fire an event with qualifier @BeforeDestroyed(RequestScoped.class) if there are any observers for it
+                fireIfNotEmpty(beforeDestroyedNotifier);
                 for (InstanceHandle<?> instance : ctx.values()) {
                     try {
-                        // Fire an event with qualifier @BeforeDestroyed(RequestScoped.class) if there are any observers for it
-                        fireIfNotEmpty(beforeDestroyedNotifier);
                         instance.destroy();
-                        // Fire an event with qualifier @Destroyed(RequestScoped.class) if there are any observers for it
-                        fireIfNotEmpty(destroyedNotifier);
                     } catch (Exception e) {
                         throw new IllegalStateException("Unable to destroy instance" + instance.get(), e);
                     }
                 }
+                // Fire an event with qualifier @Destroyed(RequestScoped.class) if there are any observers for it
+                fireIfNotEmpty(destroyedNotifier);
                 ctx.clear();
             }
         }

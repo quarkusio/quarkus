@@ -14,32 +14,21 @@
  * limitations under the License.
  */
 
-package io.quarkus.arc.test.requestcontext;
+package io.quarkus.arc.test.contexts.request;
 
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.RequestScoped;
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.control.ActivateRequestContext;
+import javax.inject.Inject;
 
-@RequestScoped
-public class Controller {
+@ApplicationScoped
+public class ControllerClient {
 
-    static final AtomicBoolean DESTROYED = new AtomicBoolean();
+    @Inject
+    Controller controller;
 
-    private String id;
-
-    @PostConstruct
-    void init() {
-        id = UUID.randomUUID().toString();
+    @ActivateRequestContext
+    String getControllerId() {
+        return controller.getId();
     }
 
-    @PreDestroy
-    void destroy() {
-        DESTROYED.set(true);
-    }
-
-    String getId() {
-        return id;
-    }
 }

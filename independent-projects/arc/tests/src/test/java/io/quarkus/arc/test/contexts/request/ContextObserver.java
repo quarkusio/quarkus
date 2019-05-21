@@ -1,4 +1,4 @@
-package io.quarkus.arc.test.requestcontext;
+package io.quarkus.arc.test.contexts.request;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;

@@ -47,7 +47,6 @@ public class PanacheJpaEntityEnhancer implements BiFunction<String, ClassVisitor
 
     public final static String JPA_OPERATIONS_NAME = JpaOperations.class.getName();
     public final static String JPA_OPERATIONS_BINARY_NAME = JPA_OPERATIONS_NAME.replace('.', '/');
-    public final static String JPA_OPERATIONS_SIGNATURE = "L" + JPA_OPERATIONS_BINARY_NAME + ";";
 
     private static final String JAXB_TRANSIENT_BINARY_NAME = "javax/xml/bind/annotation/XmlTransient";
     private static final String JAXB_TRANSIENT_SIGNATURE = "L" + JAXB_TRANSIENT_BINARY_NAME + ";";

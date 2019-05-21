@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-package io.quarkus.arc.test.requestcontext;
+package io.quarkus.arc.test.contexts.request.propagation;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.control.ActivateRequestContext;
-import javax.inject.Inject;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.PreDestroy;
+import javax.enterprise.context.Dependent;
 
-@ApplicationScoped
-public class ControllerClient {
+@Dependent
+public class SuperButton {
 
-    @Inject
-    Controller controller;
+    static final AtomicBoolean DESTROYED = new AtomicBoolean();
 
-    @ActivateRequestContext
-    String getControllerId() {
-        return controller.getId();
+    @PreDestroy
+    void destroy() {
+        DESTROYED.set(true);
     }
 
 }

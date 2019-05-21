@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.arc.test.requestcontext.propagation;
+package io.quarkus.arc.test.contexts.request.propagation;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -25,7 +25,6 @@ import static org.junit.Assert.fail;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ContextInstanceHandle;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.test.ArcTestContainer;
 import java.util.Collection;

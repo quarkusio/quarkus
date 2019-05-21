@@ -14,24 +14,20 @@
  * limitations under the License.
  */
 
-package io.quarkus.arc.test.requestcontext.propagation;
+package io.quarkus.arc.test.contexts.request;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
 
 @RequestScoped
-public class SuperController {
+public class Controller {
 
     static final AtomicBoolean DESTROYED = new AtomicBoolean();
 
     private String id;
-
-    @Inject
-    SuperButton button;
 
     @PostConstruct
     void init() {
@@ -46,9 +42,4 @@ public class SuperController {
     String getId() {
         return id;
     }
-
-    SuperButton getButton() {
-        return button;
-    }
-
 }

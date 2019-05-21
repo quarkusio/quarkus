@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.arc.test.requestcontext;
+package io.quarkus.arc.test.contexts.request;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

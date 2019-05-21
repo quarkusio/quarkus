@@ -209,7 +209,7 @@ configuration to register the "SunRsaSign" and "SunJCE" security providers:
 .Example Security Providers Configuration
 [source,properties]
 ----
-quarkus.security-providers=SunRsaSign,SunJCE
+quarkus.security.security-providers=SunRsaSign,SunJCE
 ...
 ----
 

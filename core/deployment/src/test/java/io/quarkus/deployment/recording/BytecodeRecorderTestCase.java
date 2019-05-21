@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.junit.Assert;
@@ -58,11 +59,11 @@ public class BytecodeRecorderTestCase {
         runTest(recorder -> {
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.intArray(4, 5, 6);
-        }, (Object) new int[] { 4, 5, 6 });
+        }, (Object) new int[]{4, 5, 6});
         runTest(recorder -> {
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.doubleArray(4, 5, 6);
-        }, (Object) new double[] { 4, 5, 6 });
+        }, (Object) new double[]{4, 5, 6});
     }
 
     @Test
@@ -87,6 +88,36 @@ public class BytecodeRecorderTestCase {
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.bean(new TestJavaBean("A string", 99));
         }, new TestJavaBean("A string", 99));
+    }
+
+    @Test
+    public void testLargeCollection() throws Exception {
+
+        List<TestJavaBean> beans = new ArrayList<>();
+        for (int i = 0; i < 10000; ++i) {
+            beans.add(new TestJavaBean("A string", 99));
+        }
+
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.list(beans);
+        }, beans);
+    }
+
+
+    @Test
+    public void testLargeNumberOfInvocations() throws Exception {
+        List<TestJavaBean> beans = new ArrayList<>();
+        for (int i = 0; i < 10000; ++i) {
+            beans.add(new TestJavaBean("A string", 99));
+        }
+
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            for(TestJavaBean i : beans) {
+                template.bean(i);
+            }
+        }, beans);
     }
 
     @Test

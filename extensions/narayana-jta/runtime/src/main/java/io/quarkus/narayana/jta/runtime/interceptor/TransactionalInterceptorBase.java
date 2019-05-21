@@ -111,7 +111,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     protected boolean handleIfAsyncStarted(TransactionManager tm, Transaction tx, InvocationContext ic) throws SystemException {
         ArcContainer arcContainer = Arc.container();
-        if (arcContainer.isCurrentRequestAsync()) {
+        if (arcContainer.isCurrentRequestAsync(ic.getMethod())) {
             // Suspend the transaction to remove it from the main request thread
             tm.suspend();
             arcContainer.getAsyncRequestNotifier().handle((v, t) -> {

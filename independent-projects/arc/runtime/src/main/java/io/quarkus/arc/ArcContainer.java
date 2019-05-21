@@ -17,6 +17,7 @@
 package io.quarkus.arc;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
@@ -139,10 +140,11 @@ public interface ArcContainer {
      * Indicates if there is a current request, and it has been turned asynchronous.
      * This uses the information provided by the currently registered
      * {@link AsyncRequestStatusProvider}.
+     * @param method 
      * 
      * @return true if there is a current request, and it has been turned asynchronous.
      */
-    boolean isCurrentRequestAsync();
+    boolean isCurrentRequestAsync(Method method);
 
     /**
      * <p>

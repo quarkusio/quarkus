@@ -18,6 +18,7 @@ package io.quarkus.arc;
 
 import io.quarkus.arc.ArcCDIProvider.ArcCDI;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -612,8 +613,8 @@ class ArcContainerImpl implements ArcContainer {
     }
 
     @Override
-    public boolean isCurrentRequestAsync() {
-        return asyncRequestStatusProvider != null && asyncRequestStatusProvider.isCurrentRequestAsync();
+    public boolean isCurrentRequestAsync(Method method) {
+        return asyncRequestStatusProvider != null && asyncRequestStatusProvider.isCurrentRequestAsync(method);
     }
 
     @Override

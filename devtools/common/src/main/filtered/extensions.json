@@ -188,6 +188,15 @@
     "guide": "https://quarkus.io/guides/keycloak-guide"
   },
   {
+    "name": "Kogito",
+    "labels": [
+      "kogito"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kogito",
+    "guide": "https://quarkus.io/guides/kogito"
+  },
+  {
     "name": "Kotlin",
     "labels": [
       "kotlin"

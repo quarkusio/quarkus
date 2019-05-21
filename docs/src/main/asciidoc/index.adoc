@@ -41,6 +41,7 @@ include::quarkus-intro.adoc[tag=intro]
 * link:performance-measure.html[Measuring Performance] _(advanced)_
 * link:cdi-reference.html[Contexts and Dependency Injection] _(advanced)_
 * link:keycloak-guide.html[Using Keycloak]
+* link:kogito-guide.html[Using Kogito (business automation with processes and rules)]
 
 * link:faq.html[FAQs]
 
@@ -80,5 +81,3 @@ We are in an incubation phase, so we don't have a 1.0.0 release yet.
 == License
 
 This project is licensed under the Apache Software License 2.0 - see the https://github.com/quarkus-project/quarkus/blob/master/LICENSE.txt[License file] for details.
-
-

@@ -730,6 +730,16 @@
                 <artifactId>quarkus-keycloak-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-kogito</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-kogito-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Miscellaneous -->
             <dependency>

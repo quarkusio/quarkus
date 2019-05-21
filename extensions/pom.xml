@@ -111,6 +111,9 @@
 
         <!-- Database migrations -->
         <module>flyway</module>
+
+        <!-- kogito -->
+        <module>kogito</module>
     </modules>
 
 </project>

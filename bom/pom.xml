@@ -162,6 +162,7 @@
         <bootstrap.version>3.1.0</bootstrap.version>
         <keycloak.version>6.0.1</keycloak.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
+        <kogito.version>0.1.0</kogito.version>
     </properties>
 
     <dependencyManagement>
@@ -246,7 +247,7 @@
             </dependency>
 
             <!-- Quarkus extensions -->
-
+         
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-agroal</artifactId>
@@ -507,6 +508,12 @@
                 <artifactId>quarkus-keycloak</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-kogito</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            
 
             <!-- Quarkus test dependencies -->
 
@@ -1949,6 +1956,38 @@
                 <groupId>org.webjars</groupId>
                 <artifactId>bootstrap</artifactId>
                 <version>${bootstrap.version}</version>
+            </dependency>
+            
+            <!-- Kogito -->
+            <dependency>
+                <groupId>org.kie.kogito</groupId>
+                <artifactId>kogito-codegen</artifactId>
+                <version>${kogito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.kie.kogito</groupId>
+                <artifactId>drools-core-static</artifactId>
+                <version>${kogito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.kie.kogito</groupId>
+                <artifactId>drools-model-compiler</artifactId>
+                <version>${kogito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.kie.kogito</groupId>
+                <artifactId>kogito-api</artifactId>
+                <version>${kogito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.kie.kogito</groupId>
+                <artifactId>drools-core</artifactId>
+                <version>${kogito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.kie.kogito</groupId>
+                <artifactId>jbpm-flow</artifactId>
+                <version>${kogito.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

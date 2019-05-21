@@ -1,0 +1,18 @@
+package org.drools.simple.candrink
+
+import io.quarkus.kogito.drools.Person
+import io.quarkus.kogito.drools.Result
+
+rule R1 when
+        $r : Result()
+        $p : Person( age >= 18 )
+    then
+        $r.setValue( $p.getName() + " can drink");
+end
+
+rule R2 when
+        $r : Result()
+        $p : Person( age < 18 )
+    then
+        $r.setValue( $p.getName() + " can NOT drink");
+end

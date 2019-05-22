@@ -32,7 +32,7 @@ import io.quarkus.runtime.ResourceHelper;
 
 public class SubstrateAutoFeatureStep {
 
-    private static final String GRAAL_AUTOFEATURE = "io.quarkus/runner/AutoFeature";
+    private static final String GRAAL_AUTOFEATURE = "io/quarkus/runner/AutoFeature";
     private static final MethodDescriptor IMAGE_SINGLETONS_LOOKUP = ofMethod(ImageSingletons.class, "lookup", Object.class,
             Class.class);
     private static final MethodDescriptor INITIALIZE_AT_RUN_TIME = ofMethod(RuntimeClassInitializationSupport.class,

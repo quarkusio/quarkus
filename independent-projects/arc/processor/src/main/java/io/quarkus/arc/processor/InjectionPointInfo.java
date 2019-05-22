@@ -43,30 +43,34 @@ import org.jboss.jandex.TypeVariable;
  */
 public class InjectionPointInfo {
 
-    static InjectionPointInfo fromField(FieldInfo field, ClassInfo beanClass, BeanDeployment beanDeployment) {
+    static InjectionPointInfo fromField(FieldInfo field, ClassInfo beanClass, BeanDeployment beanDeployment,
+            InjectionPointModifier transformer) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         for (AnnotationInstance annotation : beanDeployment.getAnnotations(field)) {
             if (beanDeployment.getQualifier(annotation.name()) != null) {
                 qualifiers.add(annotation);
             }
         }
-        return new InjectionPointInfo(
-                resolveType(field.type(), beanClass, field.declaringClass(), beanDeployment),
-                qualifiers.isEmpty() ? Collections.emptySet() : qualifiers, field, -1);
+        Type type = resolveType(field.type(), beanClass, field.declaringClass(), beanDeployment);
+        return new InjectionPointInfo(type,
+                transformer.applyTransformers(type, field, qualifiers), field, -1);
     }
 
-    static InjectionPointInfo fromResourceField(FieldInfo field, ClassInfo beanClass, BeanDeployment beanDeployment) {
-        return new InjectionPointInfo(
-                resolveType(field.type(), beanClass, field.declaringClass(), beanDeployment),
-                new HashSet<>(field.annotations()), InjectionPointKind.RESOURCE, field, -1);
-    }
-
-    static List<InjectionPointInfo> fromMethod(MethodInfo method, ClassInfo beanClass, BeanDeployment beanDeployment) {
-        return fromMethod(method, beanClass, beanDeployment, null);
+    static InjectionPointInfo fromResourceField(FieldInfo field, ClassInfo beanClass, BeanDeployment beanDeployment,
+            InjectionPointModifier transformer) {
+        Type type = resolveType(field.type(), beanClass, field.declaringClass(), beanDeployment);
+        return new InjectionPointInfo(type,
+                transformer.applyTransformers(type, field, new HashSet<>(field.annotations())),
+                InjectionPointKind.RESOURCE, field, -1);
     }
 
     static List<InjectionPointInfo> fromMethod(MethodInfo method, ClassInfo beanClass, BeanDeployment beanDeployment,
-            Predicate<Set<AnnotationInstance>> skipPredicate) {
+            InjectionPointModifier transformer) {
+        return fromMethod(method, beanClass, beanDeployment, null, transformer);
+    }
+
+    static List<InjectionPointInfo> fromMethod(MethodInfo method, ClassInfo beanClass, BeanDeployment beanDeployment,
+            Predicate<Set<AnnotationInstance>> skipPredicate, InjectionPointModifier transformer) {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
         for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
             Type paramType = iterator.next();
@@ -82,9 +86,10 @@ public class InjectionPointInfo {
                     paramQualifiers.add(paramAnnotation);
                 }
             }
-            injectionPoints.add(new InjectionPointInfo(
-                    resolveType(paramType, beanClass, method.declaringClass(), beanDeployment),
-                    paramQualifiers, method, position));
+            Type type = resolveType(paramType, beanClass, method.declaringClass(), beanDeployment);
+            injectionPoints.add(new InjectionPointInfo(type,
+                    transformer.applyTransformers(type, method, paramQualifiers),
+                    method, position));
         }
         return injectionPoints;
     }

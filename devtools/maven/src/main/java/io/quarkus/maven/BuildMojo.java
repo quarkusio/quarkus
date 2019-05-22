@@ -117,6 +117,12 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.directory}/wiring-classes")
     private File wiringClassesDirectory;
 
+    /**
+     * The directory for generated source files.
+     */
+    @Parameter(defaultValue = "${project.build.directory}/generated-sources")
+    private File generatedSourcesDirectory;
+
     @Parameter(defaultValue = "${project.build.directory}")
     private File buildDir;
 
@@ -186,7 +192,8 @@ public class BuildMojo extends AbstractMojo {
                         .setAppClassesDir(outputDirectory.toPath())
                         .setConfigDir(outputDirectory.toPath())
                         .setTransformedClassesDir(transformedClassesDirectory.toPath())
-                        .setWiringClassesDir(wiringClassesDirectory.toPath()))
+                        .setWiringClassesDir(wiringClassesDirectory.toPath())
+                        .setGeneratedSourcesDir(generatedSourcesDirectory.toPath()))
                 .addPhase(new RunnerJarPhase()
                         .setLibDir(libDir.toPath())
                         .setFinalName(finalName)

@@ -1,5 +1,7 @@
 package io.quarkus.context.test;
 
+import static org.hamcrest.Matchers.equalTo;
+
 import javax.ws.rs.core.Response;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -12,7 +14,8 @@ import io.restassured.RestAssured;
 
 public class ContextUnitTest {
     private static Class[] testClasses = {
-            ContextEndpoint.class, RequestBean.class, ContextEntity.class, TestResources.class, CompletionExceptionMapper.class, TransactionalBean.class
+            ContextEndpoint.class, RequestBean.class, ContextEntity.class, TestResources.class, CompletionExceptionMapper.class,
+            TransactionalBean.class
     };
 
     @RegisterExtension
@@ -60,6 +63,24 @@ public class ContextUnitTest {
     @Test()
     public void testTransactionNewContextPropagation() {
         RestAssured.when().get("/context/transaction-new").then()
+                .statusCode(Response.Status.OK.getStatusCode());
+    }
+
+    @Test()
+    public void testTransactionContextPropagationSingle() {
+        RestAssured.when().get("/context/transaction-single").then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body(equalTo("OK"));
+        RestAssured.when().get("/context/transaction-single2").then()
+                .statusCode(Response.Status.OK.getStatusCode());
+    }
+
+    @Test()
+    public void testTransactionContextPropagationPublisher() {
+        RestAssured.when().get("/context/transaction-publisher").then()
+                .statusCode(Response.Status.OK.getStatusCode())
+                .body(equalTo("OK"));
+        RestAssured.when().get("/context/transaction-publisher2").then()
                 .statusCode(Response.Status.OK.getStatusCode());
     }
 }

@@ -60,9 +60,11 @@ class SmallRyeContextPropagationProcessor {
                         e);
             }
         }
+        System.err.println("looking up exts");
         for (Class<?> extension : ServiceUtil.classesNamedIn(SmallRyeContextPropagationTemplate.class.getClassLoader(),
                 "META-INF/services/" + ContextManagerExtension.class.getName())) {
             try {
+                System.err.println("Found ext: " + extension);
                 discoveredExtensions.add((ContextManagerExtension) extension.newInstance());
             } catch (InstantiationException | IllegalAccessException e) {
                 throw new RuntimeException("Failed to instantiate declared ThreadContextProvider class: " + extension.getName(),

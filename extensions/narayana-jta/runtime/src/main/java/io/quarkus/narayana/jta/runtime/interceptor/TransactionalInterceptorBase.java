@@ -18,7 +18,10 @@ package io.quarkus.narayana.jta.runtime.interceptor;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
 import javax.interceptor.InvocationContext;
@@ -28,13 +31,15 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
+import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.jboss.tm.usertx.client.ServerVMClientUserTransaction;
+import org.reactivestreams.Publisher;
 
 import com.arjuna.ats.jta.logging.jtaLogger;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.runtime.InterceptorBindings;
+import io.smallrye.reactive.converters.ReactiveTypeConverter;
+import io.smallrye.reactive.converters.Registry;
 
 /**
  * @author paul.robinson@redhat.com 02/05/2013
@@ -90,51 +95,141 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     }
 
     protected Object invokeInOurTx(InvocationContext ic, TransactionManager tm) throws Exception {
+        return invokeInOurTx(ic, tm, () -> {
+        });
+    }
+
+    protected Object invokeInOurTx(InvocationContext ic, TransactionManager tm, RunnableWithException afterEndTransaction)
+            throws Exception {
 
         tm.begin();
         Transaction tx = tm.getTransaction();
         boolean throwing = false;
+        Object ret = null;
 
         try {
-            return ic.proceed();
+            ret = ic.proceed();
         } catch (Exception e) {
-            handleException(ic, e, tx);
             throwing = true;
+            handleException(ic, e, tx);
         } finally {
-            // do not listen to async notifications if we're throwing
-            if (throwing || !handleIfAsyncStarted(tm, tx, ic)) {
-                endTransaction(tm, tx);
+            // handle asynchronously if not throwing
+            if (!throwing && ret != null) {
+                ReactiveTypeConverter<Object> converter = null;
+                if (ret instanceof CompletionStage == false
+                        && ret instanceof Publisher == false) {
+                    @SuppressWarnings({ "rawtypes", "unchecked" })
+                    Optional<ReactiveTypeConverter<Object>> lookup = Registry.lookup((Class) ret.getClass());
+                    if (lookup.isPresent()) {
+                        converter = lookup.get();
+                        if (converter.emitAtMostOneItem()) {
+                            ret = converter.toCompletionStage(ret);
+                        } else {
+                            ret = converter.toRSPublisher(ret);
+                        }
+                    }
+                }
+                if (ret instanceof CompletionStage) {
+                    ret = handleAsync(tm, tx, ic, ret, afterEndTransaction);
+                    // convert back
+                    if (converter != null)
+                        ret = converter.fromCompletionStage((CompletionStage<?>) ret);
+                } else if (ret instanceof Publisher) {
+                    ret = handleAsync(tm, tx, ic, ret, afterEndTransaction);
+                    // convert back
+                    if (converter != null)
+                        ret = converter.fromPublisher((Publisher<?>) ret);
+                } else {
+                    // not async: handle synchronously
+                    endTransaction(tm, tx, afterEndTransaction);
+                }
+            } else {
+                // throwing or null: handle synchronously
+                endTransaction(tm, tx, afterEndTransaction);
             }
         }
-        throw new RuntimeException("UNREACHABLE");
+        return ret;
     }
 
-    protected boolean handleIfAsyncStarted(TransactionManager tm, Transaction tx, InvocationContext ic) throws SystemException {
-        ArcContainer arcContainer = Arc.container();
-        if (arcContainer.isCurrentRequestAsync(ic.getMethod())) {
-            // Suspend the transaction to remove it from the main request thread
-            tm.suspend();
-            arcContainer.getAsyncRequestNotifier().handle((v, t) -> {
+    protected Object handleAsync(TransactionManager tm, Transaction tx, InvocationContext ic, Object ret,
+            RunnableWithException afterEndTransaction) throws Exception {
+        // Suspend the transaction to remove it from the main request thread
+        tm.suspend();
+        afterEndTransaction.run();
+        if (ret instanceof CompletionStage) {
+            return ((CompletionStage<?>) ret).handle((v, t) -> {
                 try {
-                    // Verify if this thread's transaction is the right one
-                    Transaction currentTransaction = tm.getTransaction();
-                    // If not, install the right transaction
-                    if (currentTransaction != tx) {
-                        tm.suspend();
-                        tm.resume(tx);
-                    }
+                    doInTransaction(tm, tx, () -> {
+                        if (t != null)
+                            handleExceptionNoThrow(ic, t, tx);
+                        endTransaction(tm, tx, () -> {
+                        });
+                    });
+                } catch (RuntimeException e) {
                     if (t != null)
-                        handleExceptionNoThrow(ic, t, tx);
-                    endTransaction(tm, tx);
-                    // FIXME: should we restore the previous transaction?
+                        e.addSuppressed(t);
+                    throw e;
                 } catch (Exception e) {
-                    jtaLogger.logger.error("Failed to end async transaction", e);
+                    CompletionException x = new CompletionException(e);
+                    if (t != null)
+                        x.addSuppressed(t);
+                    throw x;
                 }
-                return null;
+                // pass-through the previous results
+                if (t instanceof RuntimeException)
+                    throw (RuntimeException) t;
+                if (t != null)
+                    throw new CompletionException(t);
+                return v;
             });
-            return true;
+        } else if (ret instanceof Publisher) {
+            ret = ReactiveStreams.fromPublisher(((Publisher<?>) ret))
+                    .onError(t -> {
+                        try {
+                            doInTransaction(tm, tx, () -> handleExceptionNoThrow(ic, t, tx));
+                        } catch (RuntimeException e) {
+                            e.addSuppressed(t);
+                            throw e;
+                        } catch (Exception e) {
+                            RuntimeException x = new RuntimeException(e);
+                            x.addSuppressed(t);
+                            throw x;
+                        }
+                        // pass-through the previous result
+                        if (t instanceof RuntimeException)
+                            throw (RuntimeException) t;
+                        throw new RuntimeException(t);
+                    }).onTerminate(() -> {
+                        try {
+                            doInTransaction(tm, tx, () -> endTransaction(tm, tx, () -> {
+                            }));
+                        } catch (RuntimeException e) {
+                            throw e;
+                        } catch (Exception e) {
+                            RuntimeException x = new RuntimeException(e);
+                            throw x;
+                        }
+                    })
+                    .buildRs();
         }
-        return false;
+        return ret;
+    }
+
+    private void doInTransaction(TransactionManager tm, Transaction tx, RunnableWithException f) throws Exception {
+        // Verify if this thread's transaction is the right one
+        Transaction currentTransaction = tm.getTransaction();
+        // If not, install the right transaction
+        if (currentTransaction != tx) {
+            if (currentTransaction != null)
+                tm.suspend();
+            tm.resume(tx);
+        }
+        f.run();
+        if (currentTransaction != tx) {
+            tm.suspend();
+            if (currentTransaction != null)
+                tm.resume(currentTransaction);
+        }
     }
 
     protected Object invokeInCallerTx(InvocationContext ic, Transaction tx) throws Exception {
@@ -154,6 +249,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     protected void handleExceptionNoThrow(InvocationContext ic, Throwable e, Transaction tx)
             throws IllegalStateException, SystemException {
+        e.printStackTrace();
 
         Transactional transactional = getTransactional(ic);
 
@@ -182,8 +278,8 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         throw e;
     }
 
-    protected void endTransaction(TransactionManager tm, Transaction tx) throws Exception {
-
+    protected void endTransaction(TransactionManager tm, Transaction tx, RunnableWithException afterEndTransaction)
+            throws Exception {
         if (tx != tm.getTransaction()) {
             throw new RuntimeException(jtaLogger.i18NLogger.get_wrong_tx_on_thread());
         }
@@ -193,6 +289,8 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         } else {
             tm.commit();
         }
+
+        afterEndTransaction.run();
     }
 
     protected boolean setUserTransactionAvailable(boolean available) {

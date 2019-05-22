@@ -10,7 +10,7 @@ import java.lang.reflect.Method;
 public interface AsyncRequestStatusProvider {
 
     /**
-     * @param method 
+     * @param method
      * @return true if there is a request ongoing and it has been turned asynchronous.
      */
     boolean isCurrentRequestAsync(Method method);

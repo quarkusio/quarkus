@@ -4,8 +4,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
+import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.Transactional;
@@ -16,16 +18,20 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.context.ThreadContext;
+import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
+import org.jboss.resteasy.annotations.Stream;
+import org.jboss.resteasy.annotations.Stream.MODE;
 import org.junit.jupiter.api.Assertions;
+import org.reactivestreams.Publisher;
 import org.wildfly.common.Assert;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.panache.Panache;
+import io.reactivex.Single;
 
 @Path("/context")
 @Produces(MediaType.TEXT_PLAIN)
@@ -129,7 +135,7 @@ public class ContextEndpoint {
         Assertions.assertEquals(1, ContextEntity.deleteAll());
 
         return ret.thenApplyAsync(text -> {
-            throw new WebApplicationException(Response.status(Status.CONFLICT).build());
+            throw new WebApplicationException(Response.status(Response.Status.CONFLICT).build());
         });
     }
 
@@ -137,7 +143,8 @@ public class ContextEndpoint {
     @GET
     @Path("/transaction3")
     public CompletionStage<String> transactionTest3() throws SystemException {
-        CompletableFuture<String> ret = all.failedFuture(new WebApplicationException(Response.status(Status.CONFLICT).build()));
+        CompletableFuture<String> ret = all
+                .failedFuture(new WebApplicationException(Response.status(Response.Status.CONFLICT).build()));
 
         // check that the second transaction was not committed
         Assertions.assertEquals(1, ContextEntity.count());
@@ -172,6 +179,85 @@ public class ContextEndpoint {
 
         // We should see the transaction already committed even if we're async
         Assertions.assertEquals(1, ContextEntity.deleteAll());
+        return ret;
+    }
+
+    @Transactional
+    @GET
+    @Path("/transaction-single")
+    public Single<String> transactionSingle() throws SystemException {
+        ContextEntity entity = new ContextEntity();
+        entity.name = "Stef";
+        entity.persist();
+        Transaction t1 = Panache.getTransactionManager().getTransaction();
+        Assertions.assertNotNull(t1);
+        // our entity
+        Assertions.assertEquals(1, ContextEntity.count());
+
+        return txBean.doInTxSingle()
+                // this makes sure we get executed in another scheduler
+                .delay(100, TimeUnit.MILLISECONDS)
+                .map(text -> {
+                    // make sure we don't see the other transaction's entity
+                    Transaction t2;
+                    try {
+                        t2 = Panache.getTransactionManager().getTransaction();
+                    } catch (SystemException e) {
+                        throw new RuntimeException(e);
+                    }
+                    Assertions.assertEquals(t1, t2);
+                    Assertions.assertEquals(Status.STATUS_ACTIVE, t2.getStatus());
+                    return text;
+                });
+    }
+
+    @Transactional
+    @GET
+    @Path("/transaction-single2")
+    public Single<String> transactionSingle2() throws SystemException {
+        Single<String> ret = Single.just("OK");
+        // now delete both entities
+        Assertions.assertEquals(2, ContextEntity.deleteAll());
+        return ret;
+    }
+
+    @Transactional
+    @GET
+    @Path("/transaction-publisher")
+    @Stream(value = MODE.RAW)
+    public Publisher<String> transactionPublisher() throws SystemException {
+        ContextEntity entity = new ContextEntity();
+        entity.name = "Stef";
+        entity.persist();
+        Transaction t1 = Panache.getTransactionManager().getTransaction();
+        Assertions.assertNotNull(t1);
+        // our entity
+        Assertions.assertEquals(1, ContextEntity.count());
+
+        return txBean.doInTxPublisher()
+                // this makes sure we get executed in another scheduler
+                .delay(100, TimeUnit.MILLISECONDS)
+                .map(text -> {
+                    // make sure we don't see the other transaction's entity
+                    Transaction t2;
+                    try {
+                        t2 = Panache.getTransactionManager().getTransaction();
+                    } catch (SystemException e) {
+                        throw new RuntimeException(e);
+                    }
+                    Assertions.assertEquals(t1, t2);
+                    Assertions.assertEquals(Status.STATUS_ACTIVE, t2.getStatus());
+                    return text;
+                });
+    }
+
+    @Transactional
+    @GET
+    @Path("/transaction-publisher2")
+    public Publisher<String> transactionPublisher2() throws SystemException {
+        Publisher<String> ret = ReactiveStreams.of("OK").buildRs();
+        // now delete both entities
+        Assertions.assertEquals(2, ContextEntity.deleteAll());
         return ret;
     }
 }

@@ -18,7 +18,6 @@ package io.quarkus.runtime.logging;
 
 import java.io.File;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.logging.Level;
 
 import io.quarkus.runtime.annotations.ConfigGroup;

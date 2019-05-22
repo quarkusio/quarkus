@@ -17,7 +17,6 @@ package io.quarkus.keycloak;
 
 import org.keycloak.adapters.AdapterDeploymentContext;
 import org.keycloak.adapters.KeycloakDeployment;
-import org.keycloak.representations.adapters.config.AdapterConfig;
 
 /**
  * An extension to Keycloak default {@code AdapterDeploymentContext} so that any additional requirement on how

@@ -7,6 +7,7 @@ public class TikaContent {
 
     public TikaContent(String content, Metadata metadata) {
         this.content = content;
+        this.metadata = metadata;
     }
 
     public String getText() {

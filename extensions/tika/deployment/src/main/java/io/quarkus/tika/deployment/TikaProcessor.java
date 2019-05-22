@@ -16,12 +16,13 @@ import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
-import io.quarkus.tika.runtime.jaxrs.TikaMessageBodyReader;
+import io.quarkus.tika.runtime.jaxrs.TikaContentReader;
+import io.quarkus.tika.runtime.jaxrs.TikaMetadataReader;
 
 public class TikaProcessor {
 
     private static final Set<String> NATIVE_READY_PARSERS = Arrays.stream(new String[] {
-    		"org.apache.tika.parser.csv.TextAndCSVParser",
+            "org.apache.tika.parser.csv.TextAndCSVParser",
             "org.apache.tika.parser.txt.TXTParser",
             "org.apache.tika.parser.odf.OpenDocumentParser",
             "org.apache.tika.parser.pdf.PDFParser"
@@ -35,7 +36,8 @@ public class TikaProcessor {
 
     @BuildStep
     void produceTikaJaxrsProvider(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
-        providers.produce(new ResteasyJaxrsProviderBuildItem(TikaMessageBodyReader.class.getName()));
+        providers.produce(new ResteasyJaxrsProviderBuildItem(TikaContentReader.class.getName()));
+        providers.produce(new ResteasyJaxrsProviderBuildItem(TikaMetadataReader.class.getName()));
     }
 
     @BuildStep

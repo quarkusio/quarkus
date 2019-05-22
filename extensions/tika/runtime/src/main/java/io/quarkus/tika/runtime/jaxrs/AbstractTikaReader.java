@@ -11,48 +11,41 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.Provider;
 
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
-import org.apache.tika.sax.ToTextContentHandler;
 import org.xml.sax.ContentHandler;
 
 import io.quarkus.tika.TikaContent;
 
-@Provider
-public class TikaMessageBodyReader implements MessageBodyReader<TikaContent> {
+public abstract class AbstractTikaReader<T> implements MessageBodyReader<T> {
+    private Class<T> tikaClass;
+
+    protected AbstractTikaReader(Class<T> tikaClass) {
+        this.tikaClass = tikaClass;
+    }
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return type == TikaContent.class;
+        return tikaClass == type;
     }
 
-    @Override
-    public TikaContent readFrom(Class<TikaContent> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
-            throws IOException, WebApplicationException {
-        return createTikaContent(mediaType, entityStream);
-    }
-
-    private TikaContent createTikaContent(MediaType mediaType, InputStream entityStream) throws IOException {
+    protected TikaContent createTikaContent(MediaType mediaType, InputStream entityStream, ContentHandler tikaHandler)
+            throws IOException {
         Parser parser = new AutoDetectParser();
         ParseContext context = new ParseContext();
         context.set(Parser.class, parser);
         org.apache.tika.metadata.Metadata tikaMetadata = new org.apache.tika.metadata.Metadata();
         tikaMetadata.set(Metadata.CONTENT_TYPE, mediaType.toString());
 
-        ContentHandler tikaHandler = new ToTextContentHandler();
         try (InputStream tikaStream = TikaInputStream.get(entityStream)) {
             parser.parse(tikaStream, tikaHandler, tikaMetadata, context);
-            return new TikaContent(tikaHandler.toString().trim(), convert(tikaMetadata));
+            return new TikaContent(tikaHandler == null ? null : tikaHandler.toString().trim(), convert(tikaMetadata));
         } catch (Exception e) {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
@@ -62,7 +55,7 @@ public class TikaMessageBodyReader implements MessageBodyReader<TikaContent> {
         }
     }
 
-    private io.quarkus.tika.Metadata convert(org.apache.tika.metadata.Metadata tikaMetadata) {
+    protected io.quarkus.tika.Metadata convert(org.apache.tika.metadata.Metadata tikaMetadata) {
         Map<String, List<String>> map = new HashMap<>();
         for (String name : tikaMetadata.names()) {
             map.put(name, Arrays.asList(tikaMetadata.getValues(name)));

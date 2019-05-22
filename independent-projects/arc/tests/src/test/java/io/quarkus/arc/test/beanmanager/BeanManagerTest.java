@@ -157,6 +157,7 @@ public class BeanManagerTest {
         assertNull(injectableReference.injectionPoint.getBean());
     }
 
+    @SuppressWarnings("serial")
     @Test
     public void testResolveInterceptors() {
         BeanManager beanManager = Arc.container().beanManager();
@@ -165,7 +166,9 @@ public class BeanManagerTest {
         interceptors = beanManager.resolveInterceptors(InterceptionType.AROUND_CONSTRUCT, new DummyBinding.Literal(true, true));
         assertTrue(interceptors.isEmpty());
         // alpha is @Nonbinding
-        interceptors = beanManager.resolveInterceptors(InterceptionType.AROUND_INVOKE, new DummyBinding.Literal(false, true));
+        interceptors = beanManager.resolveInterceptors(InterceptionType.AROUND_INVOKE, new DummyBinding.Literal(false, true),
+                new AnnotationLiteral<UselessBinding>() {
+                });
         assertEquals(2, interceptors.size());
         assertEquals(DummyInterceptor.class, interceptors.get(0).getBeanClass());
         assertEquals(LowPriorityInterceptor.class, interceptors.get(1).getBeanClass());
@@ -253,6 +256,14 @@ public class BeanManagerTest {
             }
 
         }
+
+    }
+
+    @Target({ TYPE, METHOD })
+    @Retention(RUNTIME)
+    @Documented
+    @InterceptorBinding
+    public @interface UselessBinding {
 
     }
 

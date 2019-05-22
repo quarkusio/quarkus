@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import org.apache.camel.CamelContext;
 import org.apache.camel.Producer;
 import org.apache.camel.builder.xml.XPathBuilder;
 import org.apache.camel.converter.jaxp.DomConverter;
@@ -74,6 +75,16 @@ final class Target_java_beans_Introspector {
     @Alias
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FromAlias)
     private static Target_com_sun_beans_WeakCache<Class<?>, Method[]> declaredMethodCache = new Target_com_sun_beans_WeakCache<>();
+
+}
+
+@TargetClass(className = "org.apache.camel.model.ModelHelper")
+final class Target_org_apache_camel_model_ModelHelper {
+
+    @Substitute
+    private static XmlConverter newXmlConverter(CamelContext context) {
+        return new XmlConverter();
+    }
 
 }
 

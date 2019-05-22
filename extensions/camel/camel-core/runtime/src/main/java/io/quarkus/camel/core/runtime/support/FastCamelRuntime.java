@@ -5,14 +5,18 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import javax.xml.bind.JAXBException;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.Route;
 import org.apache.camel.RoutesBuilder;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.ShutdownableService;
 import org.apache.camel.component.properties.PropertiesComponent;
+import org.apache.camel.impl.DefaultModelJAXBContextFactory;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.RouteDefinition;
+import org.apache.camel.spi.ModelJAXBContextFactory;
 import org.apache.camel.spi.Registry;
 import org.apache.camel.support.ResourceHelper;
 import org.apache.camel.util.ObjectHelper;
@@ -43,10 +47,30 @@ public class FastCamelRuntime implements CamelRuntime {
     protected List<RoutesBuilder> builders;
     protected BuildTime buildTimeConfig;
     protected Runtime runtimeConfig;
+    protected ModelJAXBContextFactory jaxbContextFactory;
 
     @Override
     public void init(BuildTime buildTimeConfig) {
         this.buildTimeConfig = buildTimeConfig;
+
+        if (buildTimeConfig.disableJaxb) {
+            jaxbContextFactory = () -> {
+                throw new UnsupportedOperationException();
+            };
+        } else {
+            jaxbContextFactory = new DefaultModelJAXBContextFactory();
+            // The creation of the JAXB context is very time consuming, so always prepare it
+            // when running in native mode, but lazy create it in java mode so that we don't
+            // waste time if using java routes
+            if (ImageInfo.inImageBuildtimeCode()) {
+                try {
+                    jaxbContextFactory.newJAXBContext();
+                } catch (JAXBException e) {
+                    throw RuntimeCamelException.wrapRuntimeCamelException(e);
+                }
+            }
+        }
+
         if (!buildTimeConfig.deferInitPhase) {
             doInit();
         }
@@ -77,6 +101,7 @@ public class FastCamelRuntime implements CamelRuntime {
             RuntimeSupport.bindProperties(properties, context, PFX_CAMEL_CONTEXT);
 
             context.setLoadTypeConverters(false);
+            context.setModelJAXBContextFactory(jaxbContextFactory);
 
             PropertiesComponent pc = createPropertiesComponent(properties);
             RuntimeSupport.bindProperties(pc.getInitialProperties(), pc, PFX_CAMEL_PROPERTIES);
@@ -84,18 +109,6 @@ public class FastCamelRuntime implements CamelRuntime {
 
             this.context.getTypeConverterRegistry().setInjector(this.context.getInjector());
             fireEvent(InitializingEvent.class, new InitializingEvent());
-            if (buildTimeConfig.disableJaxb) {
-                this.context.setModelJAXBContextFactory(() -> {
-                    throw new UnsupportedOperationException();
-                });
-            } else {
-                // The creation of the JAXB context is very time consuming, so always prepare it
-                // when running in native mode, but lazy create it in java mode so that we don't
-                // waste time if using java routes
-                if (ImageInfo.inImageBuildtimeCode()) {
-                    context.adapt(ModelCamelContext.class).getModelJAXBContextFactory().newJAXBContext();
-                }
-            }
             this.context.init();
             fireEvent(InitializedEvent.class, new InitializedEvent());
 

@@ -16,6 +16,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.graalvm.nativeimage.ImageSingletons;
+import org.graalvm.nativeimage.hosted.Feature;
+import org.graalvm.nativeimage.hosted.RuntimeReflection;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 
 import io.quarkus.deployment.ClassOutput;
@@ -39,7 +41,10 @@ public class SubstrateAutoFeatureStep {
             "initializeAtRunTime", void.class, Class.class, String.class);
     private static final MethodDescriptor RERUN_INITIALIZATION = ofMethod(RuntimeClassInitializationSupport.class,
             "rerunInitialization", void.class, Class.class, String.class);
-    static final String RUNTIME_REFLECTION = "org/graalvm/nativeimage/RuntimeReflection";
+    static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
+    static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
+    static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
+    static final String LOCALIZATION_SUPPORT = "com.oracle.svm.core.jdk.LocalizationSupport";
 
     @BuildStep
     SubstrateOutputBuildItem generateFeature(ClassOutputBuildItem output,
@@ -53,12 +58,11 @@ public class SubstrateAutoFeatureStep {
             List<ReflectiveClassBuildItem> reflectiveClassBuildItems,
             List<ServiceProviderBuildItem> serviceProviderBuildItems) {
         ClassCreator file = new ClassCreator(ClassOutput.gizmoAdaptor(output.getClassOutput(), true), GRAAL_AUTOFEATURE, null,
-                Object.class.getName(), "org/graalvm/nativeimage/Feature");
-        file.addAnnotation("com/oracle/svm/core/annotate/AutomaticFeature");
+                Object.class.getName(), Feature.class.getName());
+        file.addAnnotation("com.oracle.svm.core.annotate.AutomaticFeature");
 
         //MethodCreator afterReg = file.getMethodCreator("afterRegistration", void.class, "org.graalvm.nativeimage.Feature$AfterRegistrationAccess");
-        MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V",
-                "org/graalvm/nativeimage/Feature$BeforeAnalysisAccess");
+        MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V", BEFORE_ANALYSIS_ACCESS);
         TryBlock overallCatch = beforeAn.tryBlock();
         //TODO: at some point we are going to need to break this up, as if it get too big it will hit the method size limit
 
@@ -103,7 +107,7 @@ public class SubstrateAutoFeatureStep {
         }
 
         if (!proxies.isEmpty()) {
-            ResultHandle proxySupportClass = overallCatch.loadClass("com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry");
+            ResultHandle proxySupportClass = overallCatch.loadClass(DYNAMIC_PROXY_REGISTRY);
             ResultHandle proxySupport = overallCatch.invokeStaticMethod(
                     IMAGE_SINGLETONS_LOOKUP,
                     proxySupportClass);
@@ -116,7 +120,7 @@ public class SubstrateAutoFeatureStep {
                     overallCatch.writeArrayValue(array, i++, clazz);
 
                 }
-                overallCatch.invokeInterfaceMethod(ofMethod("com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry",
+                overallCatch.invokeInterfaceMethod(ofMethod(DYNAMIC_PROXY_REGISTRY,
                         "addProxyClass", void.class, Class[].class), proxySupport, array);
             }
         }
@@ -134,7 +138,7 @@ public class SubstrateAutoFeatureStep {
         }
 
         if (!resourceBundles.isEmpty()) {
-            ResultHandle locClass = overallCatch.loadClass("com.oracle.svm.core.jdk.LocalizationSupport");
+            ResultHandle locClass = overallCatch.loadClass(LOCALIZATION_SUPPORT);
 
             ResultHandle params = overallCatch.marshalAsArray(Class.class, overallCatch.loadClass(String.class));
             ResultHandle registerMethod = overallCatch.invokeVirtualMethod(
@@ -257,7 +261,7 @@ public class SubstrateAutoFeatureStep {
                 }
             }
             CatchBlockCreator cc = tc.addCatch(Throwable.class);
-            //cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+            cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
             mv.returnValue(null);
         }
         CatchBlockCreator print = overallCatch.addCatch(Throwable.class);

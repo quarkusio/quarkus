@@ -17,4 +17,13 @@ public interface ObjectLoader {
      * @return the result handle of the value, or {@code null} if this loader cannot load the given object
      */
     ResultHandle load(BytecodeCreator body, Object obj, boolean staticInit);
+
+    /**
+     * Returns true if this object loader can handle the given object
+     *
+     * @param obj The object
+     * @param staticInit If this is static init phase
+     * @return true if this loader can handle the object
+     */
+    boolean canHandleObject(Object obj, boolean staticInit);
 }

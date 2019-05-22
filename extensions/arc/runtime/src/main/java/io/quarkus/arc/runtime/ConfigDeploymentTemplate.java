@@ -47,9 +47,13 @@ public class ConfigDeploymentTemplate {
                 if (propertyClass.isArray() || propertyClass.getTypeParameters().length > 0) {
                     propertyClass = String.class;
                 }
-                if (!config.getOptionalValue(entry.getKey(), propertyClass).isPresent()) {
-                    throw new DeploymentException(
-                            "No config value of type " + entry.getValue() + " exists for: " + entry.getKey());
+                try {
+                    if (!config.getOptionalValue(entry.getKey(), propertyClass).isPresent()) {
+                        throw new DeploymentException(
+                                "No config value of type " + entry.getValue() + " exists for: " + entry.getKey());
+                    }
+                } catch (IllegalArgumentException e) {
+                    throw new DeploymentException(e);
                 }
             }
         }

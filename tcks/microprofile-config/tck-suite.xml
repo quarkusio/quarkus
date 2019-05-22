@@ -1,0 +1,38 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="microprofile-config-TCK" verbose="2"
+    configfailurepolicy="continue">
+
+    <test name="microprofile-config 1.2 TCK">
+        <packages>
+            <package
+                name="org.eclipse.microprofile.config.tck.*">
+            </package>
+        </packages>
+
+        <classes>
+            <!-- Custom converters -->
+            <class
+                name="org.eclipse.microprofile.config.tck.ArrayConverterTest">
+                <methods>
+                    <exclude name=".*" />
+                </methods>
+            </class>
+            <class
+                name="org.eclipse.microprofile.config.tck.ConfigProviderTest">
+                <methods>
+                    <!-- io.quarkus.runtime.configuration.ExpandingConfigSource 
+                        is not serializable -->
+                    <exclude
+                        name="testInjectedConfigSerializable" />
+                    <!-- The property MAVEN_CMD_LINE_ARGS did not have the 
+                        expected value. expected [clean test] but found [ clean test] -->
+                    <exclude name="testEnvironmentConfigSource" />
+                    <!-- expected [clean test] but found [ clean test] -->
+                    <exclude name="testPropertyConfigSource" />
+                </methods>
+            </class>
+
+        </classes>
+    </test>
+
+</suite>

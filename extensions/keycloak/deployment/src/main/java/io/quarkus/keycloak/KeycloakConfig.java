@@ -93,21 +93,21 @@ public final class KeycloakConfig {
      * string
      */
     @ConfigItem(name = "cors-allowed-headers")
-    String corsAllowedHeaders;
+    Optional<String> corsAllowedHeaders;
 
     /**
      * If CORS is enabled, this sets the value of the Access-Control-Allow-Methods header. This should be a comma-separated
      * string
      */
     @ConfigItem(name = "cors-allowed-methods")
-    String corsAllowedMethods;
+    Optional<String> corsAllowedMethods;
 
     /**
      * If CORS is enabled, this sets the value of the Access-Control-Expose-Headers header. This should be a comma-separated
      * string
      */
     @ConfigItem(name = "cors-exposed-headers")
-    String corsExposedHeaders;
+    Optional<String> corsExposedHeaders;
 
     /**
      * This should be set to true for services. If enabled the adapter will not attempt to authenticate users,

@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.jar.Attributes;
@@ -241,15 +242,25 @@ public class DevMojo extends AbstractMojo {
                     AppArtifact appArtifact = project.getAppArtifact();
                     MavenProject mavenProject = projectMap.get(String.format("%s:%s:%s",
                             appArtifact.getGroupId(), appArtifact.getArtifactId(), appArtifact.getVersion()));
-                    String sourcePath = null;
+                    // no information about this project from Maven. Skip.
+
+                    String projectDirectory = null;
+                    List<String> sourcePaths = null;
                     String classesPath = null;
                     String resourcePath = null;
 
-                    List<String> sourcePaths = mavenProject.getCompileSourceRoots().stream()
-                            .map(Paths::get)
-                            .filter(Files::isDirectory)
-                            .map(src -> src.toAbsolutePath().toString())
-                            .collect(Collectors.toList());
+                    if (mavenProject == null) {
+                        projectDirectory = localProject.getDir().toAbsolutePath().toString();
+                        sourcePaths = Collections.singletonList(
+                                localProject.getSourcesSourcesDir().toAbsolutePath().toString());
+                    } else {
+                        projectDirectory = mavenProject.getBasedir().getPath();
+                        sourcePaths = mavenProject.getCompileSourceRoots().stream()
+                                .map(Paths::get)
+                                .filter(Files::isDirectory)
+                                .map(src -> src.toAbsolutePath().toString())
+                                .collect(Collectors.toList());
+                    }
 
                     Path classesDir = project.getClassesDir();
                     if (Files.isDirectory(classesDir)) {
@@ -261,7 +272,7 @@ public class DevMojo extends AbstractMojo {
                     }
                     DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(
                             project.getArtifactId(),
-                            mavenProject.getBasedir().getPath(),
+                            projectDirectory,
                             sourcePaths,
                             classesPath,
                             resourcePath);

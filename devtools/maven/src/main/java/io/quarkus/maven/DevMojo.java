@@ -250,7 +250,7 @@ public class DevMojo extends AbstractMojo {
                     String resourcePath = null;
 
                     if (mavenProject == null) {
-                        projectDirectory = localProject.getRawModel().getProjectDirectory().getPath();
+                        projectDirectory = localProject.getDir().toAbsolutePath().toString();
                         sourcePaths = Collections.singletonList(
                                 localProject.getSourcesSourcesDir().toAbsolutePath().toString());
                     } else {

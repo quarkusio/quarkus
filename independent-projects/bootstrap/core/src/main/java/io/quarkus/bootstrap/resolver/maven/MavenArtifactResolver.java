@@ -24,6 +24,7 @@ import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.LocalRepository;
+import org.eclipse.aether.repository.MirrorSelector;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
@@ -40,6 +41,8 @@ import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  *
@@ -136,7 +139,14 @@ public class MavenArtifactResolver {
         }
 
         this.repoSession = newSession;
-        this.remoteRepos = builder.remoteRepos == null ? MavenRepoInitializer.getRemoteRepos() : builder.remoteRepos;
+
+        final MirrorSelector mirrorSelector = new ProxifiedAwareMirrorSelector(newSession.getMirrorSelector(), newSession.getProxySelector());
+        this.remoteRepos = Collections.unmodifiableList(
+                (builder.remoteRepos == null ? MavenRepoInitializer.getRemoteRepos() : builder.remoteRepos)
+                        .stream()
+                        .map(mirrorSelector::getMirror)
+                        .collect(toList())
+        );
     }
 
     public MavenLocalRepositoryManager getLocalRepositoryManager() {

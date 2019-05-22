@@ -494,9 +494,11 @@ class ArcContainerImpl implements ArcContainer {
     }
 
     private boolean hasAllInterceptionBindings(InjectableInterceptor<?> interceptor, Annotation[] interceptorBindings) {
-        for (Annotation binding : interceptorBindings) {
+        // The method or constructor has all the interceptor bindings of the interceptor
+        List<Annotation> bindings = Arrays.asList(interceptorBindings);
+        for (Annotation binding : interceptor.getInterceptorBindings()) {
             // The resolution rules are the same for qualifiers
-            if (!Qualifiers.hasQualifier(interceptor.getInterceptorBindings(), binding)) {
+            if (!Qualifiers.hasQualifier(bindings, binding)) {
                 return false;
             }
         }

@@ -42,30 +42,10 @@ public final class Qualifiers {
     }
 
     static boolean hasQualifier(InjectableBean<?> bean, Annotation requiredQualifier) {
-
-        Class<? extends Annotation> requiredQualifierClass = requiredQualifier.annotationType();
-        Method[] members = requiredQualifierClass.getDeclaredMethods();
-
-        for (Annotation qualifier : bean.getQualifiers()) {
-            Class<? extends Annotation> qualifierClass = qualifier.annotationType();
-            if (qualifierClass.equals(requiredQualifier.annotationType())) {
-                boolean matches = true;
-                for (Method value : members) {
-                    if (!value.isAnnotationPresent(Nonbinding.class)
-                            && !invoke(value, requiredQualifier).equals(invoke(value, qualifier))) {
-                        matches = false;
-                        break;
-                    }
-                }
-                if (matches) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return hasQualifier(bean.getQualifiers(), requiredQualifier);
     }
 
-    static boolean hasQualifier(Set<Annotation> qualifiers, Annotation requiredQualifier) {
+    static boolean hasQualifier(Iterable<Annotation> qualifiers, Annotation requiredQualifier) {
 
         Class<? extends Annotation> requiredQualifierClass = requiredQualifier.annotationType();
         Method[] members = requiredQualifierClass.getDeclaredMethods();

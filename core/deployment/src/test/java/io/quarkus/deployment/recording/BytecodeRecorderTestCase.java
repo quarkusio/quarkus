@@ -16,6 +16,7 @@
 
 package io.quarkus.deployment.recording;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,11 +60,11 @@ public class BytecodeRecorderTestCase {
         runTest(recorder -> {
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.intArray(4, 5, 6);
-        }, (Object) new int[]{4, 5, 6});
+        }, (Object) new int[] { 4, 5, 6 });
         runTest(recorder -> {
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.doubleArray(4, 5, 6);
-        }, (Object) new double[]{4, 5, 6});
+        }, (Object) new double[] { 4, 5, 6 });
     }
 
     @Test
@@ -104,6 +105,19 @@ public class BytecodeRecorderTestCase {
         }, beans);
     }
 
+    @Test
+    public void testLargeArray() throws Exception {
+
+        List<TestJavaBean> beans = new ArrayList<>();
+        for (int i = 0; i < 1000; ++i) {
+            beans.add(new TestJavaBean("A string", 99));
+        }
+
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.array(beans.toArray());
+        }, (Object) beans.toArray());
+    }
 
     @Test
     public void testLargeNumberOfInvocations() throws Exception {
@@ -114,10 +128,10 @@ public class BytecodeRecorderTestCase {
 
         runTest(recorder -> {
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
-            for(TestJavaBean i : beans) {
+            for (TestJavaBean i : beans) {
                 template.bean(i);
             }
-        }, beans);
+        }, beans.toArray());
     }
 
     @Test
@@ -157,6 +171,8 @@ public class BytecodeRecorderTestCase {
                     Assert.assertArrayEquals((int[]) i, (int[]) TestTemplate.RESULT.poll());
                 } else if (i instanceof double[]) {
                     Assert.assertArrayEquals((double[]) i, (double[]) TestTemplate.RESULT.poll(), 0);
+                } else if (i instanceof Object[]) {
+                    Assert.assertArrayEquals((Object[]) i, (Object[]) TestTemplate.RESULT.poll());
                 } else {
                     throw new RuntimeException("not implemented");
                 }

@@ -68,7 +68,7 @@
         <javax.xml.bind.version>2.3.1</javax.xml.bind.version>
         <jboss-jaxrs-api_2.1_spec.version>1.0.2.Final</jboss-jaxrs-api_2.1_spec.version>
         <javax.ws.rs-api.version>2.1.1</javax.ws.rs-api.version>
-        <asm.version>6.2.1</asm.version>
+        <asm.version>7.1</asm.version>
         <cdi-api.version>2.0.SP1</cdi-api.version>
         <jboss-metadata-web.version>11.0.0.Final</jboss-metadata-web.version>
         <maven-core.version>3.5.4</maven-core.version>

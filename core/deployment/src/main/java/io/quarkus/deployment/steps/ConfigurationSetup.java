@@ -574,6 +574,23 @@ public class ConfigurationSetup {
 
         objectLoaderConsumer.accept(new BytecodeRecorderObjectLoaderBuildItem(new ObjectLoader() {
             public ResultHandle load(final BytecodeCreator body, final Object obj, final boolean staticInit) {
+                if (!canHandleObject(obj, staticInit)) {
+                    return null;
+                }
+                boolean buildTime = false;
+                ConfigDefinition.RootInfo rootInfo = runTimeConfigDef.getInstanceInfo(obj);
+                if (rootInfo == null) {
+                    rootInfo = buildTimeConfigDef.getInstanceInfo(obj);
+                    buildTime = true;
+                }
+                final FieldDescriptor fieldDescriptor = rootInfo.getFieldDescriptor();
+                final ResultHandle configRoot = body
+                        .readStaticField(buildTime ? BUILD_TIME_CONFIG_FIELD : RUN_TIME_CONFIG_FIELD);
+                return body.readInstanceField(fieldDescriptor, configRoot);
+            }
+
+            @Override
+            public boolean canHandleObject(Object obj, boolean staticInit) {
                 boolean buildTime = false;
                 ConfigDefinition.RootInfo rootInfo = runTimeConfigDef.getInstanceInfo(obj);
                 if (rootInfo == null) {
@@ -588,13 +605,9 @@ public class ConfigurationSetup {
                                 objClass.getName());
                         throw new IllegalStateException(msg);
                     }
-                    return null;
+                    return false;
                 }
-
-                final FieldDescriptor fieldDescriptor = rootInfo.getFieldDescriptor();
-                final ResultHandle configRoot = body
-                        .readStaticField(buildTime ? BUILD_TIME_CONFIG_FIELD : RUN_TIME_CONFIG_FIELD);
-                return body.readInstanceField(fieldDescriptor, configRoot);
+                return true;
             }
         }));
 

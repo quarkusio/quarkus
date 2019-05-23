@@ -18,6 +18,7 @@
     <modules>
         <module>camel-core</module>
         <module>camel-aws-s3</module>
+        <module>camel-aws-sqs</module>
         <module>camel-salesforce</module>
         <module>camel-netty4-http</module>
         <module>camel-infinispan</module>

@@ -16,6 +16,7 @@
 
 package io.quarkus.runner;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,6 +43,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassReader;
@@ -62,6 +65,9 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
     private volatile Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = null;
 
     private final List<Path> applicationClassDirectories;
+
+    private final Map<String, Path> applicationClasses;
+
     private final Path frameworkClassesPath;
     private final Path transformerCache;
 
@@ -76,6 +82,24 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
     public RuntimeClassLoader(ClassLoader parent, List<Path> applicationClassesDirectories, Path frameworkClassesDirectory,
             Path transformerCache) {
         super(parent);
+        try {
+            Map<String, Path> applicationClasses = new HashMap<>();
+            for (Path i : applicationClassesDirectories) {
+                if (Files.isDirectory(i)) {
+                    Files.walk(i).forEach(new Consumer<Path>() {
+                        @Override
+                        public void accept(Path path) {
+                            if (path.toString().endsWith(".class")) {
+                                applicationClasses.put(i.relativize(path).toString().replace('\\', '/'), path);
+                            }
+                        }
+                    });
+                }
+            }
+            this.applicationClasses = applicationClasses;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         this.applicationClassDirectories = applicationClassesDirectories;
         this.frameworkClassesPath = frameworkClassesDirectory;
         this.transformerCache = transformerCache;
@@ -296,7 +320,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
             throw new RuntimeException("Can't process class files larger than Integer.MAX_VALUE bytes");
         }
         final int intLength = (int) fileLength;
-        try (FileInputStream in = new FileInputStream(file)) {
+        try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
             //Might be large but we need a single byte[] at the end of things, might as well allocate it in one shot:
             ByteArrayOutputStream out = new ByteArrayOutputStream(intLength);
             final int reasonableBufferSize = Math.min(intLength, 2048);
@@ -369,14 +393,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
 
     private Path getClassInApplicationClassPaths(String name) {
         final String fileName = name.replace('.', '/') + ".class";
-        Path classLocation;
-        for (Path i : applicationClassDirectories) {
-            classLocation = i.resolve(fileName);
-            if (Files.exists(classLocation)) {
-                return classLocation;
-            }
-        }
-        return null;
+        return applicationClasses.get(fileName);
     }
 
     private URL findApplicationResource(String name) {

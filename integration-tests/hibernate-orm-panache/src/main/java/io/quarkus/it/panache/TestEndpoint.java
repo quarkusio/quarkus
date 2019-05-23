@@ -146,6 +146,7 @@ public class TestEndpoint {
 
         Person byId = Person.findById(person.id);
         Assertions.assertEquals(person, byId);
+        Assertions.assertEquals("Person<" + person.id + ">", byId.toString());
 
         person.delete();
         Assertions.assertEquals(0, Person.count());

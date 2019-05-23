@@ -55,7 +55,7 @@ public class BeanInfoTypesTest {
         DotName fooName = name(Foo.class);
 
         ClassInfo fooClass = index.getClassByName(fooName);
-        BeanInfo fooBean = Beans.createClassBean(fooClass, deployment);
+        BeanInfo fooBean = Beans.createClassBean(fooClass, deployment, null);
         Set<Type> types = fooBean.getTypes();
         // Foo, AbstractList<String>, AbstractCollection<String>, List<String>, Collection<String>, Iterable<String>
         assertEquals(6, types.size());

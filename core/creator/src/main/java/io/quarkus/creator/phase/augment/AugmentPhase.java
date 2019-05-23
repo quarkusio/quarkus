@@ -18,10 +18,13 @@
 package io.quarkus.creator.phase.augment;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Writer;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -29,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -68,6 +72,7 @@ import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateOutputBuildItem;
+import io.quarkus.gizmo.NullWriter;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
@@ -87,6 +92,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
     private Path appClassesDir;
     private Path transformedClassesDir;
     private Path wiringClassesDir;
+    private Path generatedSourcesDir;
     private Path configDir;
 
     /**
@@ -148,6 +154,18 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
      */
     public AugmentPhase setConfigDir(Path configDir) {
         this.configDir = configDir;
+        return this;
+    }
+
+    /**
+     * The directory for generated source files. If none is set, then
+     * no source file generation will be done.
+     *
+     * @param generatedSourcesDir the directory for generated source files
+     * @return this phase instance
+     */
+    public AugmentPhase setGeneratedSourcesDir(final Path generatedSourcesDir) {
+        this.generatedSourcesDir = generatedSourcesDir;
         return this;
     }
 
@@ -265,7 +283,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
             ClassOutput classOutput = new ClassOutput() {
                 @Override
                 public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {
-                    String location = className.replace('.', '/');
+                    String location = className.replace('.', File.separatorChar);
                     final Path p = wiringClassesDirectory.resolve(location + ".class");
                     Files.createDirectories(p.getParent());
                     try (OutputStream out = Files.newOutputStream(p)) {
@@ -279,6 +297,22 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                     Files.createDirectories(p.getParent());
                     try (OutputStream out = Files.newOutputStream(p)) {
                         out.write(data);
+                    }
+                }
+
+                @Override
+                public Writer writeSource(final String className) {
+                    String location = className.replace('.', '/');
+                    final Path basePath = AugmentPhase.this.generatedSourcesDir;
+                    if (basePath == null)
+                        return NullWriter.INSTANCE;
+                    final Path path = basePath.resolve("gizmo").resolve(location + ".zig");
+                    try {
+                        Files.createDirectories(path.getParent());
+                        return Files.newBufferedWriter(path, StandardCharsets.UTF_8, StandardOpenOption.CREATE,
+                                StandardOpenOption.TRUNCATE_EXISTING);
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Failed to write source file", e);
                     }
                 }
             };
@@ -327,7 +361,8 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                             if (!pathName.endsWith(".class")) {
                                 return;
                             }
-                            final String className = pathName.substring(0, pathName.length() - 6).replace('/', '.');
+                            final String className = pathName.substring(0, pathName.length() - 6).replace(File.separatorChar,
+                                    '.');
                             final List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = bytecodeTransformers
                                     .get(className);
                             if (visitors == null || visitors.isEmpty()) {

@@ -30,10 +30,12 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
@@ -65,6 +67,12 @@ public class ApplicationArchiveBuildStep {
 
     // At least Jandex 2.1 is needed
     private static final int REQUIRED_INDEX_VERSION = 8;
+
+    /**
+     * When running in hot deployment mode we know that java archives will never change, there is no need
+     * to re-index them each time. We cache them here to reduce the hot reload time.
+     */
+    private static final Map<Path, Index> archiveCache = new HashMap<>();
 
     IndexDependencyConfiguration config;
 
@@ -217,22 +225,32 @@ public class ApplicationArchiveBuildStep {
     }
 
     private static Index handleJarPath(Path path) throws IOException {
-        try (JarFile file = new JarFile(path.toFile())) {
-            ZipEntry existing = file.getEntry(JANDEX_INDEX);
-            if (existing != null) {
-                try (InputStream in = file.getInputStream(existing)) {
-                    IndexReader reader = new IndexReader(in);
-                    if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
-                        LOGGER.warnf("Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency",
-                                path);
+        return archiveCache.computeIfAbsent(path, new Function<Path, Index>() {
+            @Override
+            public Index apply(Path path) {
+                try {
+                    try (JarFile file = new JarFile(path.toFile())) {
+                        ZipEntry existing = file.getEntry(JANDEX_INDEX);
+                        if (existing != null) {
+                            try (InputStream in = file.getInputStream(existing)) {
+                                IndexReader reader = new IndexReader(in);
+                                if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
+                                    LOGGER.warnf(
+                                            "Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency",
+                                            path);
+                                    return indexJar(file);
+                                } else {
+                                    return reader.read();
+                                }
+                            }
+                        }
                         return indexJar(file);
-                    } else {
-                        return reader.read();
                     }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             }
-            return indexJar(file);
-        }
+        });
     }
 
     private static Index indexJar(JarFile file) throws IOException {

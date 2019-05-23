@@ -117,7 +117,7 @@ public class ListExtensionsTest {
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
             System.setOut(printStream);
             new ListExtensions(model)
-                    .listExtensions(true, "full");
+                    .listExtensions(true, "full", null);
         } finally {
             System.setOut(out);
         }
@@ -150,5 +150,74 @@ public class ListExtensionsTest {
         }
 
         assertTrue(agroal && resteasy && hibernateValidator);
+    }
+
+    @Test
+    public void searchUnexpected() throws IOException {
+        final File pom = new File("target/list-extensions-test", "pom.xml");
+
+        CreateProjectTest.delete(pom.getParentFile());
+        final HashMap<String, Object> context = new HashMap<>();
+
+        new CreateProject(new FileProjectWriter(pom.getParentFile()))
+                .groupId(getPluginGroupId())
+                .artifactId("add-extension-test")
+                .version("0.0.1-SNAPSHOT")
+                .doCreateProject(context);
+
+        File pomFile = new File(pom.getAbsolutePath());
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+                .addExtensions(new HashSet<>(asList("commons-io:commons-io:2.5", "Agroal")));
+
+        Model model = readPom(pom);
+
+        final PrintStream out = System.out;
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
+            System.setOut(printStream);
+            new ListExtensions(model)
+                    .listExtensions(true, "full", "unexpectedSearch");
+        } finally {
+            System.setOut(out);
+        }
+        final String output = baos.toString();
+        Assertions.assertEquals(String.format("No extension found with this pattern%n"), output,
+                "search to unexpected extension must return a message");
+    }
+
+    @Test
+    public void searchRest() throws IOException {
+        final File pom = new File("target/list-extensions-test", "pom.xml");
+
+        CreateProjectTest.delete(pom.getParentFile());
+        final HashMap<String, Object> context = new HashMap<>();
+
+        new CreateProject(new FileProjectWriter(pom.getParentFile()))
+                .groupId(getPluginGroupId())
+                .artifactId("add-extension-test")
+                .version("0.0.1-SNAPSHOT")
+                .doCreateProject(context);
+
+        File pomFile = new File(pom.getAbsolutePath());
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+                .addExtensions(new HashSet<>(asList("commons-io:commons-io:2.5", "Agroal")));
+
+        Model model = readPom(pom);
+
+        final PrintStream out = System.out;
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
+            System.setOut(printStream);
+            new ListExtensions(model)
+                    .listExtensions(true, "full", "Rest");
+        } finally {
+            System.setOut(out);
+        }
+        final String output = baos.toString();
+        int nbLine = 0;
+        for (String line : output.split("\r?\n")) {
+            ++nbLine;
+        }
+        Assertions.assertTrue(nbLine > 7, "search to unexpected extension must return a message");
     }
 }

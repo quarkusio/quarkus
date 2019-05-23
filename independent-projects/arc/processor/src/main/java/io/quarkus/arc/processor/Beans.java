@@ -51,7 +51,7 @@ final class Beans {
      * @param beanDeployment
      * @return a new bean info
      */
-    static BeanInfo createClassBean(ClassInfo beanClass, BeanDeployment beanDeployment) {
+    static BeanInfo createClassBean(ClassInfo beanClass, BeanDeployment beanDeployment, InjectionPointModifier transformer) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         List<ScopeInfo> scopes = new ArrayList<>();
         Set<Type> types = Types.getClassBeanTypeClosure(beanClass, Collections.emptyMap(), beanDeployment);
@@ -114,7 +114,7 @@ final class Beans {
         }
 
         BeanInfo bean = new BeanInfo(beanClass, beanDeployment, scope, types, qualifiers,
-                Injection.forBean(beanClass, beanDeployment), null, null,
+                Injection.forBean(beanClass, null, beanDeployment, transformer), null, null,
                 isAlternative ? alternativePriority : null, stereotypes, name);
         return bean;
     }
@@ -128,7 +128,7 @@ final class Beans {
      * @return a new bean info
      */
     static BeanInfo createProducerMethod(MethodInfo producerMethod, BeanInfo declaringBean, BeanDeployment beanDeployment,
-            DisposerInfo disposer) {
+            DisposerInfo disposer, InjectionPointModifier transformer) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         List<ScopeInfo> scopes = new ArrayList<>();
         Set<Type> types = Types.getProducerMethodTypeClosure(producerMethod, beanDeployment);
@@ -197,7 +197,7 @@ final class Beans {
         }
 
         BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, types, qualifiers,
-                Injection.forBean(producerMethod, beanDeployment), declaringBean,
+                Injection.forBean(producerMethod, declaringBean, beanDeployment, transformer), declaringBean,
                 disposer, alternativePriority, stereotypes, name);
         return bean;
     }

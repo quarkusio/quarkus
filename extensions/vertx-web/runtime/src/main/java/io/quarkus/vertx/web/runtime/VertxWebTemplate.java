@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.enterprise.event.Event;
 
@@ -78,7 +79,7 @@ public class VertxWebTemplate {
                 routes.add(addRoute(router, handler, route));
             }
         }
-        // Make it also possible to register the route handlers programatically
+        // Make it also possible to register the route handlers programmatically
         Event<Object> event = Arc.container().beanManager().getEvent();
         event.select(Router.class).fire(router);
 
@@ -88,17 +89,27 @@ public class VertxWebTemplate {
             // Http server configuration
             HttpServerOptions httpServerOptions = createHttpServerOptions(vertxHttpConfiguration, launchMode);
             event.select(HttpServerOptions.class).fire(httpServerOptions);
+            AtomicReference<Throwable> failure = new AtomicReference<>();
             server = vertx.createHttpServer(httpServerOptions).requestHandler(router)
                     .listen(ar -> {
                         if (ar.succeeded()) {
                             // TODO log proper message
                             Timing.setHttpServer(String.format(
                                     "Listening on: http://%s:%s", httpServerOptions.getHost(), httpServerOptions.getPort()));
-                            latch.countDown();
+
+                        } else {
+                            // We can't throw an exception from here as we are on the event loop.
+                            // We store the failure in a reference.
+                            // The reference will be checked in the main thread, and the failure re-thrown.
+                            failure.set(ar.cause());
                         }
+                        latch.countDown();
                     });
             try {
                 latch.await();
+                if (failure.get() != null) {
+                    throw new IllegalStateException("Unable to start the HTTP server", failure.get());
+                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Unable to start the HTTP server", e);

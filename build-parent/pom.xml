@@ -46,7 +46,7 @@
         <graal-sdk.version-for-documentation>1.0.0-rc16</graal-sdk.version-for-documentation>
         <rest-assured.version>3.3.0</rest-assured.version>
         <axle-client.version>0.0.4</axle-client.version>
-        <vertx.version>3.6.3</vertx.version>
+        <vertx.version>3.7.0</vertx.version>
 
         <!-- Enable APT by default for Eclipse -->
         <m2e.apt.activation>jdt_apt</m2e.apt.activation>
@@ -59,6 +59,10 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-vesion>3.6.1</proposed-maven-vesion>
         <maven-wrapper.version>0.7.6</maven-wrapper.version>
+        
+        <!-- MicroProfile TCK versions -->
+        <microprofile-health-api.version>1.0</microprofile-health-api.version>
+        <microprofile-config-api.version>1.3</microprofile-config-api.version>
     </properties>
 
     <dependencyManagement>
@@ -229,6 +233,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-camel-aws-s3-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-camel-aws-sqs</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-camel-aws-sqs-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

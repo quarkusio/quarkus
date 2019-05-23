@@ -18,6 +18,7 @@
 package io.quarkus.creator.phase.runnerjar;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -333,13 +334,14 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                 try {
                     final String relativePath = toUri(wiringClassesDir.relativize(path));
                     if (Files.isDirectory(path)) {
-                        if (!seen.containsKey(relativePath + "/") && !relativePath.isEmpty()) {
-                            seen.put(relativePath + "/", "Current Application");
+                        if (!seen.containsKey(relativePath + File.separator) && !relativePath.isEmpty()) {
+                            seen.put(relativePath + File.separator, "Current Application");
                             addDir(runnerZipFs, relativePath);
                         }
                         return;
                     }
-                    if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
+                    if (relativePath.startsWith("META-INF" + File.separator + "services" + File.separator)
+                            && relativePath.length() > 18) {
                         if (Files.size(path) > Integer.MAX_VALUE) {
                             throw new RuntimeException("Can't process class files larger than Integer.MAX_VALUE bytes");
                         }

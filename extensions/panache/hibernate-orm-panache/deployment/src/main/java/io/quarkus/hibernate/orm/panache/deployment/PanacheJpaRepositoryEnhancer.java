@@ -21,11 +21,9 @@ public class PanacheJpaRepositoryEnhancer implements BiFunction<String, ClassVis
 
     public final static String PANACHE_REPOSITORY_BASE_NAME = PanacheRepositoryBase.class.getName();
     public final static String PANACHE_REPOSITORY_BASE_BINARY_NAME = PANACHE_REPOSITORY_BASE_NAME.replace('.', '/');
-    public final static String PANACHE_REPOSITORY_BASE_SIGNATURE = "L" + PANACHE_REPOSITORY_BASE_BINARY_NAME + ";";
 
     public final static String PANACHE_REPOSITORY_NAME = PanacheRepository.class.getName();
     public final static String PANACHE_REPOSITORY_BINARY_NAME = PANACHE_REPOSITORY_NAME.replace('.', '/');
-    public final static String PANACHE_REPOSITORY_SIGNATURE = "L" + PANACHE_REPOSITORY_BINARY_NAME + ";";
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {

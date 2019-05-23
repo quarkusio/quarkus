@@ -99,7 +99,7 @@ quarkus.security.file.enabled=true
 quarkus.security.file.users=test-users.properties
 quarkus.security.file.roles=test-roles.properties
 quarkus.security.file.auth-mechanism=BASIC
-quarkus.security.file.auth-mechanism=MyRealm
+quarkus.security.file.realm-name=MyRealm
 --
 
 ==== Users.properties
@@ -209,7 +209,7 @@ configuration to register the "SunRsaSign" and "SunJCE" security providers:
 .Example Security Providers Configuration
 [source,properties]
 ----
-quarkus.security-providers=SunRsaSign,SunJCE
+quarkus.security.security-providers=SunRsaSign,SunJCE
 ...
 ----
 

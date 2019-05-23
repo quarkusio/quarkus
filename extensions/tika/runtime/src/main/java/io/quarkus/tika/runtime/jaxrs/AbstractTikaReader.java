@@ -19,11 +19,13 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
+import org.jboss.logging.Logger;
 import org.xml.sax.ContentHandler;
 
 import io.quarkus.tika.TikaContent;
 
 public abstract class AbstractTikaReader<T> implements MessageBodyReader<T> {
+    private static final Logger LOG = Logger.getLogger(AbstractTikaReader.class.getName());
     private Class<T> tikaClass;
 
     protected AbstractTikaReader(Class<T> tikaClass) {
@@ -47,12 +49,16 @@ public abstract class AbstractTikaReader<T> implements MessageBodyReader<T> {
             parser.parse(tikaStream, tikaHandler, tikaMetadata, context);
             return new TikaContent(tikaHandler == null ? null : tikaHandler.toString().trim(), convert(tikaMetadata));
         } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            return new TikaContent(sw.toString(), null);
-            //throw new IOException(e);
+            logExceptionTrace(e, mediaType);
+            throw new IOException(e);
         }
+    }
+
+    private static void logExceptionTrace(Exception e, MediaType mt) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        e.printStackTrace(pw);
+        LOG.warnf("%s stream can not be parsed: %s", mt.toString(), sw.toString());
     }
 
     protected io.quarkus.tika.Metadata convert(org.apache.tika.metadata.Metadata tikaMetadata) {

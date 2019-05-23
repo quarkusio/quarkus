@@ -65,7 +65,7 @@ final class Methods {
                 }
                 methods.computeIfAbsent(new Methods.MethodKey(method), key -> {
                     // If parameterized try to resolve the type variables
-                    Type returnType = resolveType(key.method.returnType(), resolvedTypeParameters);
+                    Type returnType = key.method.returnType();
                     Type[] params = new Type[key.method.parameters().size()];
                     for (int i = 0; i < params.length; i++) {
                         params[i] = resolveType(key.method.parameters().get(i), resolvedTypeParameters);

@@ -982,9 +982,11 @@ public class BeanGenerator extends AbstractGenerator {
                             create.load(injectedField.name()), instanceHandle, referenceHandle);
 
                 } else {
+                    // We cannot use injectionPoint.getRequiredType() because it might be a resolved parameterize type and we could get NoSuchFieldError
+                    String fieldType = injectionPoint.getTarget().asField().type().name().toString();
                     create.writeInstanceField(
                             FieldDescriptor.of(providerTypeName, injectedField.name(),
-                                    injectionPoint.getRequiredType().name().toString()),
+                                    fieldType),
                             instanceHandle, referenceHandle);
                 }
             }

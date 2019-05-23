@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.context.runtime.context.provider;
+package io.quarkus.arc.runtime.context;
 
 import java.util.Collection;
 import java.util.Map;

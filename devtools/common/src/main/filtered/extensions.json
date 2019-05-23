@@ -264,6 +264,18 @@
     "guide": "https://quarkus.io/guides/security-guide"
   },
   {
+    "name": "SmallRye Context Propagation",
+    "labels": [
+      "smallrye-context-propagation",
+      "microprofile-context-propagation",
+      "context-propagation",
+      "context",
+      "reactive"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-context-propagation"
+  },
+  {
     "name": "SmallRye Fault Tolerance",
     "labels": [
       "smallrye-fault-tolerance",

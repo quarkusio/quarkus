@@ -131,7 +131,7 @@ class MailerImplTest {
 
     @Test
     void testInlineAttachment() throws MessagingException, IOException {
-        String cid = "<" + UUID.randomUUID().toString() + "@acme>";
+        String cid = UUID.randomUUID().toString() + "@acme";
         mailer.send(Mail.withHtml(TO, "Test", "testInlineAttachment")
                 .addInlineAttachment("inline.txt", "my inlined text".getBytes(), TEXT_CONTENT_TYPE, cid)).toCompletableFuture()
                 .join();
@@ -142,7 +142,7 @@ class MailerImplTest {
         assertThat(msg.getSubject()).isEqualTo("Test");
         assertThat(msg.getFrom()[0].toString()).isEqualTo(FROM);
 
-        String value = getInlineAttachment(cid, (MimeMultipart) actual.getMimeMessage().getContent());
+        String value = getInlineAttachment("<" + cid + ">", (MimeMultipart) actual.getMimeMessage().getContent());
         assertThat(value).isEqualTo("my inlined text");
     }
 

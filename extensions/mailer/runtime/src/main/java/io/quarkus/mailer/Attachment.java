@@ -35,10 +35,10 @@ public class Attachment {
      * @param contentType the content type
      */
     public Attachment(String name, File file, String contentType) {
-        this.name = name;
-        this.file = file;
-        this.contentType = contentType;
-        this.disposition = DISPOSITION_ATTACHMENT;
+        setName(name)
+                .setFile(file)
+                .setContentType(contentType)
+                .setDisposition(DISPOSITION_ATTACHMENT);
     }
 
     /**
@@ -50,11 +50,11 @@ public class Attachment {
      * @param contentId the content id
      */
     public Attachment(String name, File file, String contentType, String contentId) {
-        this.name = name;
-        this.file = file;
-        this.contentId = contentId;
-        this.contentType = contentType;
-        this.disposition = DISPOSITION_INLINE;
+        setName(name)
+                .setFile(file)
+                .setContentType(contentType)
+                .setContentId(contentId)
+                .setDisposition(DISPOSITION_INLINE);
     }
 
     /**
@@ -65,10 +65,10 @@ public class Attachment {
      * @param contentType the content type
      */
     public Attachment(String name, byte[] data, String contentType) {
-        this.name = name;
-        this.data = data;
-        this.contentType = contentType;
-        this.disposition = DISPOSITION_ATTACHMENT;
+        setName(name)
+                .setData(data)
+                .setContentType(contentType)
+                .setDisposition(DISPOSITION_ATTACHMENT);
     }
 
     /**
@@ -80,11 +80,11 @@ public class Attachment {
      * @param contentId the content id
      */
     public Attachment(String name, byte[] data, String contentType, String contentId) {
-        this.name = name;
-        this.data = data;
-        this.contentType = contentType;
-        this.contentId = contentId;
-        this.disposition = DISPOSITION_INLINE;
+        setName(name)
+                .setData(data)
+                .setContentType(contentType)
+                .setContentId(contentId)
+                .setDisposition(DISPOSITION_INLINE);
     }
 
     /**
@@ -97,11 +97,11 @@ public class Attachment {
      * @param disposition the disposition
      */
     public Attachment(String name, byte[] data, String contentType, String description, String disposition) {
-        this.name = name;
-        this.data = data;
-        this.contentType = contentType;
-        this.description = description;
-        this.disposition = disposition;
+        setName(name)
+                .setData(data)
+                .setContentType(contentType)
+                .setDescription(description)
+                .setDisposition(disposition);
     }
 
     public String getName() {
@@ -163,7 +163,12 @@ public class Attachment {
     }
 
     public Attachment setContentId(String contentId) {
-        this.contentId = contentId;
+        if (contentId != null && !(contentId.startsWith("<") && contentId.endsWith(">"))) {
+            // Auto-wrap the content id between < and >.
+            this.contentId = "<" + contentId + ">";
+        } else {
+            this.contentId = contentId;
+        }
         return this;
     }
 

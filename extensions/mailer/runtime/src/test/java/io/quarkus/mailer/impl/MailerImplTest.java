@@ -37,7 +37,7 @@ class MailerImplTest {
     @BeforeAll
     static void startWiser() {
         wiser = new Wiser();
-        wiser.setPort(1537);
+        wiser.setPort(0);
         wiser.start();
 
         vertx = Vertx.vertx();
@@ -55,7 +55,7 @@ class MailerImplTest {
         mailer.configure(Optional.of(FROM), Optional.empty(), Optional.of(false));
         mailer.vertx = vertx;
         mailer.client = MailClient.createShared(mailer.vertx,
-                new MailConfig().setPort(1537));
+                new MailConfig().setPort(wiser.getServer().getPort()));
 
         wiser.getMessages().clear();
     }

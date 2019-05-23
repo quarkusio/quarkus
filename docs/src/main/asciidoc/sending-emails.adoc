@@ -1,0 +1,205 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+
+include::./attributes.adoc[]
+= {project-name} - Sending emails
+
+This guide demonstrates how your {project-name} application can send emails using an SMTP server.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* The SMTP hostname, port and credentials, and an email address
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.5.3+
+* GraalVM installed if you want to run in native mode.
+
+== Architecture
+
+In this guide, we are going to see how you can send emails from a {project-name} application.
+It covers simple emails, attachments, inlined attachments, the reactive vs. imperative APIs...
+
+== Creating the Maven Project
+
+Create a new project with the following command:
+
+[source, subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=sending-email-quickstart \
+    -Dextensions="mailer"
+----
+
+If you already have an existing project, add the `mailer` extension:
+
+[source]
+----
+mvn quarkus:add-extensions -Dextensions="mailer"
+----
+
+== Configuring the mailer
+
+The {project-name} mailer is using SMTP. In the `src/main/resources/application.properties` file, you need to configure the host, port, username, password as well as the other configuration aspect.
+Note that the password can also be configured using system properties and environment variables.
+
+Here is an example using _sendgrid_:
+
+[source]
+----
+quarkus.mailer.from=test@quarkus.io
+quarkus.mailer.host=smtp.sendgrid.net
+quarkus.mailer.port=465
+quarkus.mailer.ssl=true
+quarkus.mailer.username=....
+quarkus.mailer.password=....
+----
+
+The following table lists the properties that can be configured:
+
+[cols=*,options="header"]
+|===
+
+| Property | Type | Comment
+
+| from | String | the default _from_ address, without, all emails will need an explicit value
+| mock | Boolean | if set to `true`, the emails are not sent, just printed on the console.
+| bounceAddress | String | the default bounce address
+| host | String | the SMTP server host name
+| port | Integer | the SMTP server port
+| username | String | the username
+| password | String | the password
+| ssl | Boolean | Enables or disables SSL
+| trustAll | Boolean | Set whether to trust all certificates
+| maxPoolSize | Integer | Set the maximum pool size
+| ownHostName | String | The hostname to be used for `HELO/EHLO` and the `Message-ID`
+| keepAlive | Boolean | Set if connection pool is enabled, default is `true`
+| disableEsmtp | Boolean | Set if ESMTP should be tried as first command (EHLO).
+| startTLS | `NONE`, `OPTIONAL`, `REQUIRED` | Set the TLS security mode
+| login | `DISABLED`, `OPTIONAL`, `REQUIRED` | Set the login mode for the connection
+| authMethods | space-separated list | Set the allowed auth methods
+| keyStore | String | Path of the key store
+| keyStorePassword | String | Key store password
+|===
+
+== Sending simple emails
+
+In a JAX-RS resource, or in a bean, you can inject the mailer as follows:
+
+[source, java]
+----
+@Inject
+Mailer mailer;
+
+@Inject
+ReactiveMailer reactiveMailer;
+----
+
+There are 2 APIs:
+
+* `io.quarkus.mailer.Mailer` provides the imperative (blocking and synchronous) API;
+* `io.quarkus.mailer.ReactiveMailer` provides the reactive (non-blocking and asynchronous) API
+
+NOTE: `Mailer` is implemented on top of `ReactiveMailer`
+
+To send a simple email, proceed as follows:
+
+[source, java]
+----
+@GET
+@Path("/simple")
+public Response sendASimpleEmail() {
+    mailer.send(Mail.withText("to@acme.org", "A simple email from quarkus", "This is my body"));
+    return Response.accepted().build();
+}
+
+@GET
+@Path("/async")
+public CompletionStage<Response> sendASimpleEmailAsync() {
+    return reactiveMailer.send(
+            Mail.withText("to@acme.org", "A reactive email from quarkus", "This is my body"))
+            .thenApply(x -> Response.accepted().build());
+}
+----
+
+You can create new `io.quarkus.mailer.Mail` instances from the constructor or from the `Mail.withText` and
+`Mail.withHtml` helper methods. The `Mail` instance lets you add recipients (to, cc, or bcc), set the subject,
+headers, sender (from) address...
+
+You can also send several `Mail` objects in one call:
+
+[source, java]
+----
+mailer.send(mail1, mail2, mail3);
+----
+
+== Sending attachments
+
+To send attachment, just use the `addAttachment` methods on the `io.quarkus.mailer.Mail` instance:
+
+[source,java]
+----
+@GET
+@Path("/attachment")
+public Response sendEmailWithAttachment() {
+    mailer.send(Mail.withText("to@acme.org", "An email from quarkus with attachment",
+            "This is my body")
+            .addAttachment("my-file.txt",
+                "content of my file".getBytes(), "text/plain"));
+    return Response.accepted().build();
+}
+----
+
+Attachments can be created from raw bytes (as shown in the snippet) or files.
+When using a file, the content is read asynchronously.
+
+== Sending HTML emails with inlined attachments
+
+When sending HTML email, you can add inlined attachments.
+For example, you can send an image with your email, and this email will be displayed in the mail content.
+
+[source, java]
+----
+@GET
+@Path("/html")
+public Response sendingHTML() {
+    String body = "<strong>Hello!</strong>" + "\n" +
+        "<p>Here is an image for you: <img src=\"cid:my-image@quarkus.io\"/></p>" +
+        "<p>Regards</p>";
+    mailer.send(Mail.withHtml("to@acme.org", "An email in HTML", body)
+        .addInlineAttachment("quarkus-logo.png",
+            new File("quarkus-logo.png"),
+            "image/png", "<my-image@quarkus.io>"));
+    return Response.accepted().build();
+}
+----
+
+Note the _content-id_ format and reference.
+When you create the inline attachment, the content-id must be structured as follows: `<id@domain>`.
+When referenced, for instance in the `src` attribute, use `cid:id@domain` (without the `<` and `>`).
+
+== Using the underlying Vert.x Mail Client
+
+The Quarkus Mailer is implemented on top of the https://vertx.io/docs/vertx-mail-client/java/[Vert.x Mail Client], providing an asynchronous and non-blocking way to send emails.
+You can inject the client directly:
+
+[source, java]
+----
+@Inject MailClient client;
+----
+
+Are exposed:
+
+* the Axle client (`io.vertx.axle.ext.mail.MailClient`), using `CompletionStage` and Reactive Streams `Publisher`
+* the RX Java 2 client (`io.vertx.reactivex.ext.mail.MailClient`)
+* the bare client (`io.vertx.ext.mail.MailClient`)
+
+The retrieved instance is configured using the configuration key presented above.
+
+

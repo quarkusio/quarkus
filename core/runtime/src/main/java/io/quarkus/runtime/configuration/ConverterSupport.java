@@ -12,8 +12,6 @@ import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.logging.Logger;
 
-import io.smallrye.config.SmallRyeConfigBuilder;
-
 /**
  * This small utility class is a tool which helps populating SmallRye {@link ConfigBuilder} with
  * {@link Converter} implementations loaded from {@link ServiceLoader}.

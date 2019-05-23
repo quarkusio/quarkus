@@ -1,7 +1,5 @@
 package io.quarkus.maven;
 
-import io.quarkus.maven.BuildTreeMojo;
-
 public class BuildTreeMojoTest extends TreeMojoTestBase {
 
     @Override

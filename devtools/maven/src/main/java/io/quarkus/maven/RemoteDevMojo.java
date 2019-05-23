@@ -23,8 +23,6 @@ import java.nio.file.Paths;
 import java.util.Optional;
 
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Plugin;
-import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;

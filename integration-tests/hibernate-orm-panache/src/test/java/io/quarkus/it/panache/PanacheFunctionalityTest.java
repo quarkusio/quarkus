@@ -21,7 +21,6 @@ import static org.hamcrest.Matchers.is;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.it.panache.Person;
 import io.quarkus.test.junit.DisabledOnSubstrate;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;

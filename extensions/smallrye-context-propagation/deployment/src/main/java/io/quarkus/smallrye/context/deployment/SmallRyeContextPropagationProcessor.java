@@ -26,10 +26,12 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationProvider;
 import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationTemplate;
@@ -60,7 +62,6 @@ class SmallRyeContextPropagationProcessor {
                         e);
             }
         }
-        System.err.println("looking up exts");
         for (Class<?> extension : ServiceUtil.classesNamedIn(SmallRyeContextPropagationTemplate.class.getClassLoader(),
                 "META-INF/services/" + ContextManagerExtension.class.getName())) {
             try {
@@ -79,7 +80,10 @@ class SmallRyeContextPropagationProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void build(SmallRyeContextPropagationTemplate template,
             BeanContainerBuildItem beanContainer,
-            ExecutorBuildItem executorBuildItem) {
+            ExecutorBuildItem executorBuildItem,
+            BuildProducer<FeatureBuildItem> feature) {
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_CONTEXT_PROPAGATION));
+
         template.configureRuntime(beanContainer.getValue(), executorBuildItem.getExecutorProxy());
     }
 }

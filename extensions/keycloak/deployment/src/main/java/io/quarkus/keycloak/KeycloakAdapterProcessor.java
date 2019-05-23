@@ -74,9 +74,9 @@ public class KeycloakAdapterProcessor {
         config.setUseResourceRoleMappings(keycloakConfig.useResourceRoleMappings);
         config.setCors(keycloakConfig.cors);
         config.setCorsMaxAge(keycloakConfig.corsMaxAge);
-        config.setCorsAllowedHeaders(keycloakConfig.corsAllowedHeaders);
-        config.setCorsAllowedMethods(keycloakConfig.corsAllowedMethods);
-        config.setCorsExposedHeaders(keycloakConfig.corsExposedHeaders);
+        config.setCorsAllowedHeaders(keycloakConfig.corsAllowedHeaders.orElse(null));
+        config.setCorsAllowedMethods(keycloakConfig.corsAllowedMethods.orElse(null));
+        config.setCorsExposedHeaders(keycloakConfig.corsExposedHeaders.orElse(null));
         config.setBearerOnly(keycloakConfig.bearerOnly);
         config.setAutodetectBearerOnly(keycloakConfig.autodetectBearerOnly);
         config.setPublicClient(keycloakConfig.publicClient);

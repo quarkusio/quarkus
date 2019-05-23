@@ -20,6 +20,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -32,6 +33,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
@@ -51,18 +53,21 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.resteasy.deployment.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
 import io.quarkus.smallrye.openapi.runtime.OpenApiServlet;
-import io.quarkus.smallrye.openapi.runtime.SmallRyeOpenApiTemplate;
 import io.quarkus.undertow.deployment.ServletBuildItem;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
+import io.smallrye.openapi.api.OpenApiDocument;
+import io.smallrye.openapi.runtime.OpenApiProcessor;
 import io.smallrye.openapi.runtime.OpenApiStaticFile;
 import io.smallrye.openapi.runtime.io.OpenApiSerializer;
 import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
@@ -194,11 +199,11 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    @Record(STATIC_INIT)
-    public BeanContainerListenerBuildItem build(SmallRyeOpenApiTemplate template,
-            ApplicationArchivesBuildItem archivesBuildItem,
+    public void build(ApplicationArchivesBuildItem archivesBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<FeatureBuildItem> feature,
-            Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig) throws Exception {
+            Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
+            BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
+            BuildProducer<SubstrateResourceBuildItem> substrateResourceBuildItemBuildProducer) throws Exception {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
         OpenAPI staticModel = generateStaticModel(archivesBuildItem);
         OpenAPI annotationModel;
@@ -207,7 +212,13 @@ public class SmallRyeOpenApiProcessor {
         } else {
             annotationModel = null;
         }
-        return new BeanContainerListenerBuildItem(template.setupModel(staticModel, annotationModel));
+        OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel);
+        for (OpenApiSerializer.Format format : OpenApiSerializer.Format.values()) {
+            String name = OpenApiServlet.BASE_NAME + format;
+            resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name,
+                    OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8)));
+            substrateResourceBuildItemBuildProducer.produce(new SubstrateResourceBuildItem(name));
+        }
     }
 
     @BuildStep
@@ -273,4 +284,33 @@ public class SmallRyeOpenApiProcessor {
         }
     }
 
+    public OpenApiDocument loadDocument(OpenAPI staticModel, OpenAPI annotationModel) {
+        Config config = ConfigProvider.getConfig();
+        OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
+
+        OpenAPI readerModel = OpenApiProcessor.modelFromReader(openApiConfig,
+                Thread.currentThread().getContextClassLoader());
+
+        OpenApiDocument document = createDocument(openApiConfig);
+        if (annotationModel != null) {
+            document.modelFromAnnotations(annotationModel);
+        }
+        document.modelFromReader(readerModel);
+        document.modelFromStaticFile(staticModel);
+        document.filter(filter(openApiConfig));
+        document.initialize();
+        return document;
+    }
+
+    private OpenApiDocument createDocument(OpenApiConfig openApiConfig) {
+        OpenApiDocument document = OpenApiDocument.INSTANCE;
+        document.reset();
+        document.config(openApiConfig);
+        return document;
+    }
+
+    private OASFilter filter(OpenApiConfig openApiConfig) {
+        return OpenApiProcessor.getFilter(openApiConfig,
+                Thread.currentThread().getContextClassLoader());
+    }
 }

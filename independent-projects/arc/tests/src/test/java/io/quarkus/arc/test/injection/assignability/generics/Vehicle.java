@@ -6,4 +6,8 @@ public abstract class Vehicle<T extends Engine> {
 
     @Inject
     T eng;
+
+    public T getEngine() {
+        return eng;
+    }
 }

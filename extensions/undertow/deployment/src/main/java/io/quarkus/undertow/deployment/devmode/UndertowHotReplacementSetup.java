@@ -37,6 +37,11 @@ public class UndertowHotReplacementSetup implements HotReplacementSetup {
         UndertowDeploymentTemplate.setHotDeploymentResources(resources);
     }
 
+    @Override
+    public void handleFailedInitialStart() {
+        UndertowDeploymentTemplate.startServerAfterFailedStart();
+    }
+
     private HandlerWrapper createHandlerWrapper() {
         return new HandlerWrapper() {
             @Override

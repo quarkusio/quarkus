@@ -14,8 +14,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.vertx.ext.mail.MailClient;
 
+@SuppressWarnings("WeakerAccess")
 public class InjectionTest {
 
+    @SuppressWarnings("unused")
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
@@ -53,7 +55,7 @@ public class InjectionTest {
         @Inject
         MailClient client;
 
-        public void verify() {
+        void verify() {
             Assertions.assertNotNull(client);
         }
     }
@@ -64,7 +66,7 @@ public class InjectionTest {
         @Inject
         io.vertx.axle.ext.mail.MailClient client;
 
-        public void verify() {
+        void verify() {
             Assertions.assertNotNull(client);
         }
     }
@@ -75,7 +77,7 @@ public class InjectionTest {
         @Inject
         io.vertx.reactivex.ext.mail.MailClient client;
 
-        public void verify() {
+        void verify() {
             Assertions.assertNotNull(client);
         }
     }
@@ -86,7 +88,7 @@ public class InjectionTest {
         @Inject
         ReactiveMailer mailer;
 
-        public CompletionStage<Void> verify() {
+        CompletionStage<Void> verify() {
             return mailer.send(Mail.withText("quarkus@quarkus.io", "test mailer", "reactive test!"));
         }
     }
@@ -97,7 +99,7 @@ public class InjectionTest {
         @Inject
         Mailer mailer;
 
-        public void verify() {
+        void verify() {
             mailer.send(Mail.withText("quarkus@quarkus.io", "test mailer", "blocking test!"));
         }
     }

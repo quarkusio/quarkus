@@ -23,7 +23,7 @@ To complete this guide, you need:
 == Architecture
 
 In this guide, we are going to see how you can send emails from a {project-name} application.
-It covers simple emails, attachments, inlined attachments, the reactive vs. imperative APIs...
+It covers simple emails, attachments, inlined attachments, the reactive and imperative APIs...
 
 == Creating the Maven Project
 
@@ -106,9 +106,19 @@ There are 2 APIs:
 * `io.quarkus.mailer.Mailer` provides the imperative (blocking and synchronous) API;
 * `io.quarkus.mailer.ReactiveMailer` provides the reactive (non-blocking and asynchronous) API
 
-NOTE: `Mailer` is implemented on top of `ReactiveMailer`
+NOTE: The two APIs are equivalent feature-wise. Actually the `Mailer` implementation is built on top of `ReactiveMailer` implementation.
 
 To send a simple email, proceed as follows:
+
+[source, java]
+----
+// Imperative API:
+mailer.send(Mail.withText("to@acme.org", "A simple email from quarkus", "This is my body."));
+// Reactive API:
+CompletionStage<Void> stage = reactiveMailer.send(Mail.withText("to@acme.org", "A reactive email from quarkus", "This is my body."));
+----
+
+For example, you can use the `Mailer` in a JAX-RS endpoint as follows:
 
 [source, java]
 ----
@@ -126,6 +136,14 @@ public CompletionStage<Response> sendASimpleEmailAsync() {
             Mail.withText("to@acme.org", "A reactive email from quarkus", "This is my body"))
             .thenApply(x -> Response.accepted().build());
 }
+----
+
+With such a JAX-RS resource, you can check that everything is working with:
+
+[source, bash]
+----
+curl http://localhost:8080/simple
+curl http://localhost:8080/async
 ----
 
 You can create new `io.quarkus.mailer.Mail` instances from the constructor or from the `Mail.withText` and
@@ -157,12 +175,11 @@ public Response sendEmailWithAttachment() {
 ----
 
 Attachments can be created from raw bytes (as shown in the snippet) or files.
-When using a file, the content is read asynchronously.
 
 == Sending HTML emails with inlined attachments
 
 When sending HTML email, you can add inlined attachments.
-For example, you can send an image with your email, and this email will be displayed in the mail content.
+For example, you can send an image with your email, and this image will be displayed in the mail content.
 
 [source, java]
 ----
@@ -181,25 +198,30 @@ public Response sendingHTML() {
 ----
 
 Note the _content-id_ format and reference.
-When you create the inline attachment, the content-id must be structured as follows: `<id@domain>`.
-When referenced, for instance in the `src` attribute, use `cid:id@domain` (without the `<` and `>`).
+By spec, when you create the inline attachment, the content-id must be structured as follows: `<id@domain>`.
+If you don't wrap your content-id between `<>`, it is automatically wrapped for you.
+When you want to reference your attachment, for instance in the `src` attribute, use `cid:id@domain` (without the `<` and `>`).
 
 == Using the underlying Vert.x Mail Client
 
 The Quarkus Mailer is implemented on top of the https://vertx.io/docs/vertx-mail-client/java/[Vert.x Mail Client], providing an asynchronous and non-blocking way to send emails.
-You can inject the client directly:
+If you need fine control on how the mail is sent, for instance if you need to retrieve the message ids, you can inject the underlying client, and use it directly:
 
 [source, java]
 ----
 @Inject MailClient client;
 ----
 
-Are exposed:
+Three API flavors are exposed:
 
 * the Axle client (`io.vertx.axle.ext.mail.MailClient`), using `CompletionStage` and Reactive Streams `Publisher`
 * the RX Java 2 client (`io.vertx.reactivex.ext.mail.MailClient`)
 * the bare client (`io.vertx.ext.mail.MailClient`)
 
-The retrieved instance is configured using the configuration key presented above.
+Check the link:using-vertx.html[Using Vert.x guide] for further details about these different APIs and how to select the most suitable for you.
+
+The retrieved `MailClient` is configured using the configuration key presented above.
+You can also create your own instance, and pass your own configuration.
+
 
 

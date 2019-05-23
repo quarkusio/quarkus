@@ -30,10 +30,6 @@
         </dependency>
 
         <dependency>
-            <groupId>io.smallrye</groupId>
-            <artifactId>smallrye-context-propagation</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
@@ -58,13 +54,19 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.smallrye</groupId>
-            <artifactId>smallrye-context-propagation-jta</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- For Single tests -->        
+        <dependency>
+            <groupId>io.reactivex.rxjava2</groupId>
+            <artifactId>rxjava</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.smallrye</groupId>
-            <artifactId>smallrye-context-propagation-propagators-rxjava2</artifactId>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-rxjava2</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -73,6 +75,7 @@
             <version>1.0.4</version>
             <scope>test</scope>
         </dependency>
+        <!-- For DB -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-panache-deployment</artifactId>
@@ -91,16 +94,6 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.reactivex.rxjava2</groupId>
-            <artifactId>rxjava</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-rxjava2</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

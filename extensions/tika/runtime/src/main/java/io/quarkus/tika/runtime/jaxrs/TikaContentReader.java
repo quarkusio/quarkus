@@ -10,21 +10,20 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 
-import org.apache.tika.sax.ToTextContentHandler;
-
-import io.quarkus.tika.TikaContent;
+import io.quarkus.tika.Content;
+import io.quarkus.tika.Parser;
 
 @Provider
-public class TikaContentReader extends AbstractTikaReader<TikaContent> {
+public class TikaContentReader extends AbstractTikaReader<Content> {
 
     public TikaContentReader() {
-        super(TikaContent.class);
+        super(Content.class);
     }
 
     @Override
-    public TikaContent readFrom(Class<TikaContent> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+    public Content readFrom(Class<Content> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        return createTikaContent(mediaType, entityStream, new ToTextContentHandler());
+        return new Parser().getContent(entityStream, mediaType.toString());
     }
 }

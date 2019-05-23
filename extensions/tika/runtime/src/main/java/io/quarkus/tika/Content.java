@@ -1,11 +1,11 @@
 package io.quarkus.tika;
 
-public class TikaContent {
+public class Content {
 
     private String content;
     private Metadata metadata;
 
-    public TikaContent(String content, Metadata metadata) {
+    public Content(String content, Metadata metadata) {
         this.content = content;
         this.metadata = metadata;
     }

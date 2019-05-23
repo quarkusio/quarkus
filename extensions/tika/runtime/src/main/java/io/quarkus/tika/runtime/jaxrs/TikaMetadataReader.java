@@ -10,10 +10,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 
-import org.xml.sax.ContentHandler;
-import org.xml.sax.helpers.DefaultHandler;
-
 import io.quarkus.tika.Metadata;
+import io.quarkus.tika.Parser;
 
 @Provider
 public class TikaMetadataReader extends AbstractTikaReader<Metadata> {
@@ -26,12 +24,6 @@ public class TikaMetadataReader extends AbstractTikaReader<Metadata> {
     public Metadata readFrom(Class<Metadata> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        return createTikaContent(mediaType, entityStream, getContentHandler(mediaType)).getMetadata();
-    }
-
-    private ContentHandler getContentHandler(MediaType mediaType) {
-        // PDFParser is optimized to return the metadata only if no ContentHandler is set.
-        // In all other cases use the handler which ignores the reported text.
-        return mediaType.getSubtype().equals("pdf") ? null : new DefaultHandler();
+        return new Parser().getMetadata(entityStream, mediaType.toString());
     }
 }

@@ -849,6 +849,13 @@
                                             <exclude>jakarta.json.bind:jakarta.json.bind-api</exclude>
                                             <exclude>jakarta.json:jakarta.json-api</exclude>
                                         </excludes>
+                                        <includes>
+                                            <!--
+                                            Exception for the in-memory mail server (subethasmtp).
+                                            Only accepted in the test scope
+                                             -->
+                                            <include>javax.activation:activation:*:jar:test</include>
+                                        </includes>
                                     </bannedDependencies>
                                 </rules>
                             </configuration>

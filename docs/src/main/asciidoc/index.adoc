@@ -34,6 +34,7 @@ include::quarkus-intro.adoc[tag=intro]
 * link:kotlin.html[Using Kotlin]
 * link:health-guide.html[Using MicroProfile Health]
 * link:fault-tolerance-guide.html[Using Fault Tolerance]
+* link:context-propagation-guide.html[Context Propagation]
 * link:extension-authors-guide.html[Write Your Own Extension] _(advanced)_
 * link:writing-native-applications-tips.html[Tips for writing native applications] _(advanced)_
 * link:performance-measure.html[Measuring Performance] _(advanced)_

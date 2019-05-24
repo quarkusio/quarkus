@@ -3,7 +3,6 @@ package io.quarkus.camel.infinispan.runtime.graal;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.apache.camel.component.infinispan.InfinispanConfiguration;
 import org.apache.camel.component.infinispan.InfinispanManager;
 import org.apache.camel.util.ObjectHelper;
 import org.infinispan.commons.api.BasicCache;

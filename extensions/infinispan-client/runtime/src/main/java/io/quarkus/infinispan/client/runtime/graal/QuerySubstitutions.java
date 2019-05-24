@@ -1,15 +1,12 @@
 package io.quarkus.infinispan.client.runtime.graal;
 
 import java.io.IOException;
-import java.util.function.BooleanSupplier;
 
 import org.infinispan.protostream.SerializationContext;
 import org.infinispan.query.remote.client.impl.MarshallerRegistration;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-
-import io.quarkus.infinispan.client.runtime.InfinispanClientProducer;
 
 /**
  * Class that has all the query substitutions necessary to remove code that is loaded when proto marshaller is in use

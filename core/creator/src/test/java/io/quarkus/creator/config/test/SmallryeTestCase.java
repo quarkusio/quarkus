@@ -20,9 +20,6 @@ package io.quarkus.creator.config.test;
 import static org.junit.Assert.assertEquals;
 
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import org.eclipse.microprofile.config.Config;
 import org.junit.Test;

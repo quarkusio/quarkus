@@ -6,8 +6,6 @@ import java.util.NoSuchElementException;
 
 import org.junit.Test;
 
-import io.quarkus.runtime.configuration.NameIterator;
-
 /**
  */
 public class NameIteratorTestCase {

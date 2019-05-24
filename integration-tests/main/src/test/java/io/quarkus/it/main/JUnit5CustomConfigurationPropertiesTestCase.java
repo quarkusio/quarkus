@@ -48,7 +48,7 @@ public class JUnit5CustomConfigurationPropertiesTestCase {
     public static class CustomProperties implements TestConfigurationInitializer {
 
         @Override
-        public Map<String, String> initilize() {
+        public Map<String, String> initialize() {
             return ConfigurationTestPropertiesBuilder
                     .configuration(
                             "test.key1=value1",

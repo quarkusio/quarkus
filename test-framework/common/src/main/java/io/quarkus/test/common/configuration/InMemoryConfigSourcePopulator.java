@@ -26,18 +26,31 @@ import io.quarkus.runtime.configuration.ExpandingConfigSource;
  */
 public final class InMemoryConfigSourcePopulator {
 
+    private ClassLoader classLoader;
+    private InMemoryConfigSource inMemoryConfigSource;
+
+    public InMemoryConfigSourcePopulator(ClassLoader classLoader) {
+        this.classLoader = classLoader;
+    }
+
     public void populate(final Class<?> testClass) {
 
-        final InMemoryConfigSource inMemoryConfigSource = findInMemoryConfigSource();
-        if (inMemoryConfigSource != null) {
+        this.inMemoryConfigSource = findInMemoryConfigSource(classLoader);
+        if (this.inMemoryConfigSource != null) {
             final ConfigurationPropertiesExtractor configurationPropertiesExtractor = new ConfigurationPropertiesExtractor();
-            inMemoryConfigSource.addProperties(configurationPropertiesExtractor.extract(testClass));
+            this.inMemoryConfigSource.addProperties(configurationPropertiesExtractor.extract(testClass));
         }
     }
 
-    private InMemoryConfigSource findInMemoryConfigSource() {
+    public void clean() {
+        if (this.inMemoryConfigSource != null) {
+            this.inMemoryConfigSource.clean();
+        }
+    }
 
-        final Iterable<ConfigSource> configSources = ConfigProvider.getConfig().getConfigSources();
+    private InMemoryConfigSource findInMemoryConfigSource(ClassLoader classLoader) {
+
+        final Iterable<ConfigSource> configSources = ConfigProvider.getConfig(classLoader).getConfigSources();
 
         for (ConfigSource configSource : configSources) {
             if (InMemoryConfigSource.NAME.equals(configSource.getName())) {

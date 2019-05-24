@@ -56,6 +56,7 @@ public class MicroProfileConfigResource {
         return Integer.toString(value.getNumber());
     }
 
+    @GET
     @Path("/{property}")
     @Produces(MediaType.TEXT_PLAIN)
     public String getProperty(@PathParam("property") String property) {

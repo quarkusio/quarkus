@@ -30,7 +30,8 @@ public class InMemoryConfigSourcePopulatorTestCase {
     @Test
     public void testPopulateConfigurationPropertiesFromAnnotations() {
 
-        final InMemoryConfigSourcePopulator inMemoryConfigSourcePopulator = new InMemoryConfigSourcePopulator();
+        final InMemoryConfigSourcePopulator inMemoryConfigSourcePopulator = new InMemoryConfigSourcePopulator(
+                Thread.currentThread().getContextClassLoader());
         inMemoryConfigSourcePopulator.populate(AnnotationOnlyProperties.class);
 
         final String greetingPrefix = QuarkusConfig.getString("greeting.prefix", null, false);
@@ -43,7 +44,8 @@ public class InMemoryConfigSourcePopulatorTestCase {
     @Test
     public void testPopulateConfigurationPropertiesFromInitializer() {
 
-        final InMemoryConfigSourcePopulator inMemoryConfigSourcePopulator = new InMemoryConfigSourcePopulator();
+        final InMemoryConfigSourcePopulator inMemoryConfigSourcePopulator = new InMemoryConfigSourcePopulator(
+                Thread.currentThread().getContextClassLoader());
         inMemoryConfigSourcePopulator.populate(AnnotationOnlyInitilizer.class);
 
         final String greetingPrefix = QuarkusConfig.getString("greeting.prefix", null, false);
@@ -55,7 +57,8 @@ public class InMemoryConfigSourcePopulatorTestCase {
     @Test
     public void testPopulateConfigurationPropertiesFromInitializerAndAnnotations() {
 
-        final InMemoryConfigSourcePopulator inMemoryConfigSourcePopulator = new InMemoryConfigSourcePopulator();
+        final InMemoryConfigSourcePopulator inMemoryConfigSourcePopulator = new InMemoryConfigSourcePopulator(
+                Thread.currentThread().getContextClassLoader());
         inMemoryConfigSourcePopulator.populate(AnnotionWithInitializerAndProperties.class);
 
         final String greetingPrefix = QuarkusConfig.getString("greeting.prefix", null, false);
@@ -87,7 +90,7 @@ public class InMemoryConfigSourcePopulatorTestCase {
         }
 
         @Override
-        public Map<String, String> initilize() {
+        public Map<String, String> initialize() {
             final Map<String, String> map = new HashMap<>();
             map.put("greeting.prefix", "Good Bye");
             return map;

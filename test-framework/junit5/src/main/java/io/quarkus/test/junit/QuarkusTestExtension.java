@@ -37,6 +37,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -78,11 +79,12 @@ import io.quarkus.test.common.configuration.TestConfiguration;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 public class QuarkusTestExtension
-        implements BeforeEachCallback, AfterEachCallback, TestInstanceFactory, BeforeAllCallback {
+        implements BeforeEachCallback, AfterEachCallback, TestInstanceFactory, BeforeAllCallback, AfterAllCallback {
 
     private URLClassLoader appCl;
     private ClassLoader originalCl;
     private static boolean failedBoot;
+    private InMemoryConfigSourcePopulator inMemoryConfigSourcePopulator;
 
     private final RestAssuredURLManager restAssuredURLManager = new RestAssuredURLManager(false);
 
@@ -336,8 +338,8 @@ public class QuarkusTestExtension
     }
 
     private void populateTestConfigurationPropertiesForNoneSubstrateTests(final ExtensionContext extensionContext) {
-        final InMemoryConfigSourcePopulator inMemoryConfigSourcePopulator = new InMemoryConfigSourcePopulator();
-        inMemoryConfigSourcePopulator.populate(extensionContext.getRequiredTestClass());
+        this.inMemoryConfigSourcePopulator = new InMemoryConfigSourcePopulator(this.appCl);
+        this.inMemoryConfigSourcePopulator.populate(extensionContext.getRequiredTestClass());
     }
 
     private Map<String, String> extractTestConfigurationPropertiesForSubstrateTests(final ExtensionContext extensionContext) {
@@ -357,6 +359,17 @@ public class QuarkusTestExtension
         if (failedBoot) {
             throw new TestAbortedException("Not running test as boot failed");
         }
+    }
+
+    @Override
+    public void afterAll(ExtensionContext extensionContext) throws Exception {
+        if (this.inMemoryConfigSourcePopulator != null) {
+            cleanTestConfigurationProperties();
+        }
+    }
+
+    private void cleanTestConfigurationProperties() {
+        this.inMemoryConfigSourcePopulator.clean();
     }
 
     class ExtensionState implements ExtensionContext.Store.CloseableResource {

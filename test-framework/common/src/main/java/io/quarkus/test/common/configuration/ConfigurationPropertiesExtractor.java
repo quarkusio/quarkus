@@ -60,7 +60,7 @@ public class ConfigurationPropertiesExtractor {
         if (testConfiguration != null) {
             final TestConfigurationInitializer testConfigurationInitializer = instantiateTestConfiguration(
                     testConfiguration.value());
-            configurationProperties.putAll(testConfigurationInitializer.initilize());
+            configurationProperties.putAll(testConfigurationInitializer.initialize());
         }
 
         return configurationProperties;

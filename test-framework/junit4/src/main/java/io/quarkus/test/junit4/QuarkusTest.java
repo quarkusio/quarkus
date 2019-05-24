@@ -46,6 +46,7 @@ public class QuarkusTest extends AbstractQuarkusTestRunner {
     private static class QuarkusRunListener extends AbstractQuarkusRunListener {
 
         private RuntimeRunner runtimeRunner;
+        private InMemoryConfigSourcePopulator inMemoryConfigSourcePopulator;
 
         QuarkusRunListener(Class<?> testClass, RunNotifier runNotifier) {
             super(testClass, runNotifier);
@@ -77,13 +78,18 @@ public class QuarkusTest extends AbstractQuarkusTestRunner {
         }
 
         private void populateTestConfigurationPropertiesForNoneSubstrateTests() {
-            final InMemoryConfigSourcePopulator inMemoryConfigSourcePopulator = new InMemoryConfigSourcePopulator();
-            inMemoryConfigSourcePopulator.populate(getTestClass());
+            this.inMemoryConfigSourcePopulator = new InMemoryConfigSourcePopulator(runtimeRunner.getLoader());
+            this.inMemoryConfigSourcePopulator.populate(getTestClass());
         }
 
         @Override
         protected void stopQuarkus() throws IOException {
+            cleanTestConfigurationProperties();
             runtimeRunner.close();
+        }
+
+        private void cleanTestConfigurationProperties() {
+            this.inMemoryConfigSourcePopulator.clean();
         }
     }
 }

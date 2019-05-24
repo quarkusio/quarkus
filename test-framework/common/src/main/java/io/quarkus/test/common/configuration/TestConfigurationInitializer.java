@@ -19,9 +19,14 @@ package io.quarkus.test.common.configuration;
 import java.util.Map;
 
 /**
- * +
+ *
  * Interface that allows to set configuration properties at test runtime.
  */
 public interface TestConfigurationInitializer {
-    Map<String, String> initilize();
+    /**
+     * Method to initialize the test configuration.
+     * 
+     * @return Map of properties to be used.
+     */
+    Map<String, String> initialize();
 }

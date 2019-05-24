@@ -74,6 +74,10 @@ public class RuntimeRunner implements Runnable, Closeable {
         }
     }
 
+    public ClassLoader getLoader() {
+        return loader;
+    }
+
     @Override
     public void close() throws IOException {
         if (closeTask != null) {

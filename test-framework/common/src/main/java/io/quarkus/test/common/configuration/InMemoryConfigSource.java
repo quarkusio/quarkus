@@ -27,11 +27,11 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 public class InMemoryConfigSource implements ConfigSource {
 
     static final String NAME = "MemoryConfigSource";
-    private static final Map<String, String> PROPERTIES = new HashMap<>();
+    private final Map<String, String> properties = new HashMap<>();
 
     @Override
     public Map<String, String> getProperties() {
-        return PROPERTIES;
+        return properties;
     }
 
     @Override
@@ -42,8 +42,8 @@ public class InMemoryConfigSource implements ConfigSource {
 
     @Override
     public String getValue(final String propertyName) {
-        if (PROPERTIES.containsKey(propertyName)) {
-            return PROPERTIES.get(propertyName);
+        if (properties.containsKey(propertyName)) {
+            return properties.get(propertyName);
         }
         return null;
     }
@@ -54,7 +54,11 @@ public class InMemoryConfigSource implements ConfigSource {
     }
 
     void addProperties(final Map<String, String> properties) {
-        PROPERTIES.putAll(properties);
+        this.properties.putAll(properties);
+    }
+
+    void clean() {
+        this.properties.clear();
     }
 
 }

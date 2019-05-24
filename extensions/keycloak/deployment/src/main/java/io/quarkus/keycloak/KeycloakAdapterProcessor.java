@@ -27,7 +27,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.elytron.security.deployment.AuthConfigBuildItem;
 import io.quarkus.elytron.security.runtime.AuthConfig;
 import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
@@ -39,13 +39,13 @@ public class KeycloakAdapterProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     BeanContainerListenerBuildItem configureAdapter(KeycloakTemplate template, BuildProducer<AuthConfigBuildItem> authConfig,
-            BuildProducer<HotDeploymentConfigFileBuildItem> resources,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> resources,
             BuildProducer<ServletExtensionBuildItem> servletExtension) {
         // configure login info
         authConfig.produce(new AuthConfigBuildItem(new AuthConfig("KEYCLOAK", "KEYCLOAK", Object.class)));
 
         // in case keycloak.json is used, register it as a hot deployment config file
-        resources.produce(new HotDeploymentConfigFileBuildItem("keycloak.json"));
+        resources.produce(new HotDeploymentWatchedFileBuildItem("keycloak.json"));
 
         AdapterConfig adapterConfig = null;
 

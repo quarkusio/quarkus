@@ -38,7 +38,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
@@ -58,8 +58,6 @@ class CamelProcessor {
             GenericFileProcessStrategy.class);
 
     private static final List<Class<? extends Annotation>> CAMEL_REFLECTIVE_ANNOTATIONS = Arrays.asList();
-
-    private static final Class<? extends Annotation> CAMEL_CONVERTER_ANNOTATION = Converter.class;
 
     @Inject
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
@@ -113,12 +111,12 @@ class CamelProcessor {
     }
 
     @BuildStep
-    List<HotDeploymentConfigFileBuildItem> configFile() {
+    List<HotDeploymentWatchedFileBuildItem> configFile() {
         return buildTimeConfig.routesUris.stream()
                 .map(String::trim)
                 .filter(s -> s.startsWith("file:"))
                 .map(s -> s.substring("file:".length()))
-                .map(HotDeploymentConfigFileBuildItem::new)
+                .map(HotDeploymentWatchedFileBuildItem::new)
                 .collect(Collectors.toList());
     }
 

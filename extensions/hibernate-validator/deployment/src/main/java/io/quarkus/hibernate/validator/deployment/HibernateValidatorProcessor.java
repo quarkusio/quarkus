@@ -44,7 +44,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
@@ -61,8 +61,8 @@ class HibernateValidatorProcessor {
     private static final DotName VALID = DotName.createSimple(Valid.class.getName());
 
     @BuildStep
-    HotDeploymentConfigFileBuildItem configFile() {
-        return new HotDeploymentConfigFileBuildItem("META-INF/validation.xml");
+    HotDeploymentWatchedFileBuildItem configFile() {
+        return new HotDeploymentWatchedFileBuildItem("META-INF/validation.xml");
     }
 
     @BuildStep

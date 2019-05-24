@@ -76,7 +76,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
-import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
@@ -119,8 +119,8 @@ public final class HibernateOrmProcessor {
     HibernateOrmConfig hibernateConfig;
 
     @BuildStep
-    HotDeploymentConfigFileBuildItem configFile() {
-        return new HotDeploymentConfigFileBuildItem("META-INF/persistence.xml");
+    HotDeploymentWatchedFileBuildItem configFile() {
+        return new HotDeploymentWatchedFileBuildItem("META-INF/persistence.xml");
     }
 
     @SuppressWarnings("unchecked")
@@ -137,7 +137,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorProducer,
             BuildProducer<SubstrateResourceBuildItem> resourceProducer,
-            BuildProducer<HotDeploymentConfigFileBuildItem> hotDeploymentProducer,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentProducer,
             BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<JpaEntitiesBuildItem> domainObjectsProducer,
@@ -350,7 +350,7 @@ public final class HibernateOrmProcessor {
     private void handleHibernateORMWithNoPersistenceXml(
             List<ParsedPersistenceXmlDescriptor> descriptors,
             BuildProducer<SubstrateResourceBuildItem> resourceProducer,
-            BuildProducer<HotDeploymentConfigFileBuildItem> hotDeploymentProducer,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentProducer,
             BuildProducer<SystemPropertyBuildItem> systemProperty,
             ArchiveRootBuildItem root,
             Optional<DataSourceDriverBuildItem> driverBuildItem,
@@ -441,7 +441,7 @@ public final class HibernateOrmProcessor {
                         .ofNullable(applicationArchivesBuildItem.getRootArchive().getChildPath(importFile));
 
                 // we enroll for hot deployment even if the file does not exist
-                hotDeploymentProducer.produce(new HotDeploymentConfigFileBuildItem(importFile));
+                hotDeploymentProducer.produce(new HotDeploymentWatchedFileBuildItem(importFile));
 
                 // enlist resource if present
                 loadScriptPath

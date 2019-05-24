@@ -4,7 +4,6 @@
 package io.quarkus.bootstrap.resolver.maven;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,7 +11,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -24,7 +22,6 @@ import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.LocalRepository;
-import org.eclipse.aether.repository.MirrorSelector;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
@@ -42,14 +39,13 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.Optional.ofNullable;
+
 
 /**
- *
  * @author Alexey Loubyansky
  */
 public class MavenArtifactResolver {
-
     public static class Builder {
 
         private Path repoHome;
@@ -101,38 +97,37 @@ public class MavenArtifactResolver {
         return new Builder();
     }
 
-    protected final RepositorySystem repoSystem;
-    protected final RepositorySystemSession repoSession;
-    protected final List<RemoteRepository> remoteRepos;
-    protected final MavenLocalRepositoryManager localRepoManager;
+    private final RepositorySystem repoSystem;
+    private final RepositorySystemSession repoSession;
+    private final List<RemoteRepository> remoteRepos;
+    private final MavenLocalRepositoryManager localRepoManager;
 
     private MavenArtifactResolver(Builder builder) throws AppModelResolverException {
+        final MavenRepoInitializer mavenRepoInitializer = new MavenRepoInitializer.Builder()
+                .setupFrommavenCommandLine()
+                .offline(builder.offline)
+                .build();
+
+        this.repoSystem = ofNullable(builder.repoSystem)
+                .orElse(mavenRepoInitializer.getRepositorySystem(builder.workspace));
 
 
-        this.repoSystem = builder.repoSystem == null ? MavenRepoInitializer.getRepositorySystem(
-                (builder.offline == null
-                        ? (builder.repoSession == null ? MavenRepoInitializer.getSettings().isOffline()
-                                : builder.repoSession.isOffline())
-                        : builder.offline),
-                builder.workspace) : builder.repoSystem;
-        final DefaultRepositorySystemSession newSession = builder.repoSession == null ? MavenRepoInitializer.newSession(repoSystem) : new DefaultRepositorySystemSession(builder.repoSession);
-        if(builder.offline != null) {
-            newSession.setOffline(builder.offline);
-        }
+        final DefaultRepositorySystemSession newSession = ofNullable(builder.repoSession)
+                .map(DefaultRepositorySystemSession::new)
+                .orElse(mavenRepoInitializer.newSession(repoSystem));
 
-        if(builder.repoHome != null) {
-            final MavenLocalRepositoryManager appCreatorLocalRepoManager = new MavenLocalRepositoryManager(
-                    repoSystem.newLocalRepositoryManager(newSession, new LocalRepository(builder.repoHome.toString())),
-                    Paths.get(MavenRepoInitializer.getLocalRepo(MavenRepoInitializer.getSettings())));
-            newSession.setLocalRepositoryManager(appCreatorLocalRepoManager);
-            localRepoManager = appCreatorLocalRepoManager;
-        } else {
-            localRepoManager = null;
-        }
+        localRepoManager = ofNullable(builder.repoHome)
+                .map(repoName -> {
+                    MavenLocalRepositoryManager mavenLocalRepositoryManager =
+                            new MavenLocalRepositoryManager(
+                                    repoSystem.newLocalRepositoryManager(newSession, new LocalRepository(builder.repoHome.toString())),
+                                    mavenRepoInitializer.getLocalRepo().getBasedir().toPath()
+                            );
+                    newSession.setLocalRepositoryManager(mavenLocalRepositoryManager);
+                    return mavenLocalRepositoryManager;
+                })
+                .orElse(null);
 
-        if(newSession.getCache() == null) {
-            newSession.setCache(new DefaultRepositoryCache());
-        }
 
         if (builder.workspace != null) {
             newSession.setWorkspaceReader(builder.workspace);
@@ -140,13 +135,8 @@ public class MavenArtifactResolver {
 
         this.repoSession = newSession;
 
-        final MirrorSelector mirrorSelector = new ProxifiedAwareMirrorSelector(newSession.getMirrorSelector(), newSession.getProxySelector());
-        this.remoteRepos = Collections.unmodifiableList(
-                (builder.remoteRepos == null ? MavenRepoInitializer.getRemoteRepos() : builder.remoteRepos)
-                        .stream()
-                        .map(mirrorSelector::getMirror)
-                        .collect(toList())
-        );
+        this.remoteRepos = ofNullable(builder.remoteRepos)
+                .orElse(mavenRepoInitializer.getRemoteRepos());
     }
 
     public MavenLocalRepositoryManager getLocalRepositoryManager() {
@@ -173,8 +163,8 @@ public class MavenArtifactResolver {
         try {
             return repoSystem.resolveArtifact(repoSession,
                     new ArtifactRequest()
-                    .setArtifact(artifact)
-                    .setRepositories(remoteRepos));
+                            .setArtifact(artifact)
+                            .setRepositories(remoteRepos));
         } catch (ArtifactResolutionException e) {
             throw new AppModelResolverException("Failed to resolve artifact " + artifact, e);
         }
@@ -193,7 +183,7 @@ public class MavenArtifactResolver {
         try {
             return repoSystem.readArtifactDescriptor(repoSession,
                     new ArtifactDescriptorRequest()
-                    .setArtifact(artifact));
+                            .setArtifact(artifact));
         } catch (ArtifactDescriptorException e) {
             throw new AppModelResolverException("Failed to read descriptor of " + artifact, e);
         }
@@ -203,14 +193,14 @@ public class MavenArtifactResolver {
         try {
             return repoSystem.resolveVersionRange(repoSession,
                     new VersionRangeRequest()
-                    .setArtifact(artifact)
-                    .setRepositories(remoteRepos));
+                            .setArtifact(artifact)
+                            .setRepositories(remoteRepos));
         } catch (VersionRangeResolutionException ex) {
             throw new AppModelResolverException("Failed to resolve version range for " + artifact, ex);
         }
     }
 
-    public CollectResult collectDependencies(Artifact artifact) throws AppModelResolverException {
+    CollectResult collectDependencies(Artifact artifact) throws AppModelResolverException {
         return collectDependencies(artifact, Collections.emptyList());
     }
 
@@ -218,7 +208,8 @@ public class MavenArtifactResolver {
         return resolveDependencies(artifact, Collections.emptyList());
     }
 
-    public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps) throws AppModelResolverException {
+    public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps) throws
+            AppModelResolverException {
         final CollectRequest request = newCollectRequest(artifact);
         request.setDependencies(deps);
         try {
@@ -228,7 +219,8 @@ public class MavenArtifactResolver {
         }
     }
 
-    public DependencyResult resolveDependencies(Artifact artifact, List<Dependency> deps) throws AppModelResolverException {
+    public DependencyResult resolveDependencies(Artifact artifact, List<Dependency> deps) throws
+            AppModelResolverException {
         final CollectRequest request = newCollectRequest(artifact);
         request.setDependencies(deps);
         try {
@@ -239,14 +231,15 @@ public class MavenArtifactResolver {
         }
     }
 
-    public DependencyResult resolveDependencies(Artifact artifact, String... excludedScopes) throws AppModelResolverException {
+    public DependencyResult resolveDependencies(Artifact artifact, String... excludedScopes) throws
+            AppModelResolverException {
         final ArtifactDescriptorResult descr = resolveDescriptor(artifact);
         List<Dependency> deps = descr.getDependencies();
-        if(excludedScopes.length > 0) {
+        if (excludedScopes.length > 0) {
             final Set<String> excluded = new HashSet<>(Arrays.asList(excludedScopes));
             deps = new ArrayList<>(deps.size());
-            for(Dependency dep : descr.getDependencies()) {
-                if(excluded.contains(dep.getScope())) {
+            for (Dependency dep : descr.getDependencies()) {
+                if (excluded.contains(dep.getScope())) {
                     continue;
                 }
                 deps.add(dep);
@@ -256,10 +249,10 @@ public class MavenArtifactResolver {
             return repoSystem.resolveDependencies(repoSession,
                     new DependencyRequest().setCollectRequest(
                             new CollectRequest()
-                            .setRootArtifact(artifact)
-                            .setDependencies(deps)
-                            .setManagedDependencies(descr.getManagedDependencies())
-                            .setRepositories(descr.getRepositories())));
+                                    .setRootArtifact(artifact)
+                                    .setDependencies(deps)
+                                    .setManagedDependencies(descr.getManagedDependencies())
+                                    .setRepositories(descr.getRepositories())));
         } catch (DependencyResolutionException e) {
             throw new AppModelResolverException("Failed to resolve dependencies for " + artifact, e);
         }

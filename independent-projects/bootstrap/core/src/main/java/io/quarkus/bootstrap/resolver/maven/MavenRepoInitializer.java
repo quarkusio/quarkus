@@ -16,15 +16,12 @@
  */
 package io.quarkus.bootstrap.resolver.maven;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.StringTokenizer;
-
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.util.PropertyUtils;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.ParseException;
 import org.apache.maven.cli.CLIManager;
+import org.apache.maven.model.Repository;
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.building.ModelProblemCollector;
 import org.apache.maven.model.building.ModelProblemCollectorRequest;
@@ -37,124 +34,371 @@ import org.apache.maven.model.profile.activation.OperatingSystemProfileActivator
 import org.apache.maven.model.profile.activation.PropertyProfileActivator;
 import org.apache.maven.model.resolution.WorkspaceModelResolver;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
-import org.apache.maven.settings.Mirror;
 import org.apache.maven.settings.Profile;
-import org.apache.maven.settings.Repository;
 import org.apache.maven.settings.Settings;
 import org.apache.maven.settings.SettingsUtils;
-import org.apache.maven.settings.building.DefaultSettingsBuilderFactory;
-import org.apache.maven.settings.building.DefaultSettingsBuildingRequest;
-import org.apache.maven.settings.building.SettingsBuildingException;
-import org.apache.maven.settings.building.SettingsBuildingResult;
-import org.apache.maven.settings.building.SettingsProblem;
+import org.apache.maven.settings.building.*;
+import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
-import org.eclipse.aether.repository.ArtifactRepository;
-import org.eclipse.aether.repository.Authentication;
-import org.eclipse.aether.repository.LocalRepository;
-import org.eclipse.aether.repository.Proxy;
-import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.repository.RepositoryPolicy;
+import org.eclipse.aether.repository.*;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
-import org.eclipse.aether.util.repository.DefaultMirrorSelector;
 import org.eclipse.aether.util.repository.DefaultProxySelector;
 import org.jboss.logging.Logger;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.util.PropertyUtils;
+
+import java.io.File;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
+import static java.util.Collections.unmodifiableList;
 
 /**
- *
  * @author Alexey Loubyansky
  */
 public class MavenRepoInitializer {
+    private static final Logger LOG = Logger.getLogger(MavenRepoInitializer.class);
 
-    private static final String DEFAULT_REMOTE_REPO_ID = "central";
-    private static final String DEFAULT_REMOTE_REPO_URL = "https://repo.maven.apache.org/maven2";
+    /**
+     * Default remote repository (Maven central)
+     */
+    private static final RemoteRepository MAVEN_CENTRAL_REPOSITORY =
+            new RemoteRepository.Builder(
+                    "central",
+                    "default",
+                    "https://repo.maven.apache.org/maven2")
+                    .setReleasePolicy(new RepositoryPolicy(true, RepositoryPolicy.UPDATE_POLICY_DAILY, RepositoryPolicy.CHECKSUM_POLICY_WARN))
+                    .setSnapshotPolicy(new RepositoryPolicy(false, RepositoryPolicy.UPDATE_POLICY_DAILY, RepositoryPolicy.CHECKSUM_POLICY_WARN))
+                    .build();
+
+    private static final ProxySelector NULL_PROXY_SELECTOR = new ProxySelector() {
+        @Override
+        public Proxy getProxy(RemoteRepository repository) {
+            return null;
+        }
+    };
+
 
     private static final String BASEDIR = "basedir";
     private static final String MAVEN_CMD_LINE_ARGS = "MAVEN_CMD_LINE_ARGS";
     private static final String DOT_M2 = ".m2";
-    private static final String MAVEN_HOME = "maven.home";
-    private static final String M2_HOME = "M2_HOME";
+    private static final String SYS_MAVEN_HOME = "maven.home";
+
+    /**
+     * Environnment variable name where value indicate where maven is installed.
+     *
+     * @see "https://issues.apache.org/jira/browse/MNG-5607"
+     */
+    private static final String ENV_MAVEN_HOME = "MAVEN_HOME";
+
     private static final String SETTINGS_XML = "settings.xml";
 
-    private static final String userHome = PropertyUtils.getUserHome();
-    private static final File userMavenConfigurationHome = new File(userHome, DOT_M2);
-    private static final String envM2Home = System.getenv(M2_HOME);
-    private static final File USER_SETTINGS_FILE;
-    private static final File GLOBAL_SETTINGS_FILE;
+    private static final String USER_HOME = PropertyUtils.getUserHome();
+    private static final File USER_MAVEN_CONFIGURATION_HOME = new File(USER_HOME, DOT_M2);
 
-    private static final CommandLine mvnArgs;
+    private static final String ENV_MAVEN_PROJECT_BASEDIR = "MAVEN_PROJECTBASEDIR";
 
-    static {
-        final String mvnCmd = System.getenv(MAVEN_CMD_LINE_ARGS);
-        String userSettings = null;
-        String globalSettings = null;
-        if(mvnCmd != null) {
-            final CLIManager mvnCli = new CLIManager();
+    private static final DefaultProfileSelector DEFAULT_PROFILE_SELECTOR = new DefaultProfileSelector()
+            .addProfileActivator(new PropertyProfileActivator())
+            .addProfileActivator(new JdkVersionProfileActivator())
+            .addProfileActivator(new OperatingSystemProfileActivator())
+            .addProfileActivator(new FileProfileActivator().setPathTranslator(new DefaultPathTranslator()));
+
+    private static final String DEFAULT_LOCAL_REPOSITORY_DIRECTORY_NAME = "repository";
+
+    private static class Mapper {
+        private static Function<? super org.apache.maven.model.RepositoryPolicy, RepositoryPolicy> MODEL_REPOSITORY_POLICY_TO_AETHER_REPOSITORY_POLICY = modelPolicy ->
+                createAetherRepositoryPolicy(
+                        modelPolicy.isEnabled(),
+                        modelPolicy.getUpdatePolicy(),
+                        modelPolicy.getChecksumPolicy()
+                );
+
+        private static Function<? super org.apache.maven.settings.RepositoryPolicy, RepositoryPolicy> SETTINGS_REPOSITORY_POLICY_TO_AETHER_REPOSITORY_POLICY = settingsPolicy ->
+                createAetherRepositoryPolicy(
+                        settingsPolicy.isEnabled(),
+                        settingsPolicy.getUpdatePolicy(),
+                        settingsPolicy.getChecksumPolicy()
+                );
+
+        static Function<Repository, RemoteRepository> MAVEN_REPOSITORY_TO_AETHER_REMOTE_REPOSITORY = mavenRepository -> {
+            final RemoteRepository.Builder repoBuilder = new RemoteRepository.Builder(
+                    mavenRepository.getId(),
+                    mavenRepository.getLayout(),
+                    mavenRepository.getUrl()
+            );
+
+            // Set release policy if defined
+            ofNullable(mavenRepository.getReleases())
+                    .map(MODEL_REPOSITORY_POLICY_TO_AETHER_REPOSITORY_POLICY)
+                    .ifPresent(repoBuilder::setReleasePolicy);
+
+            // Set snapshot policy if defined
+            ofNullable(mavenRepository.getSnapshots())
+                    .map(MODEL_REPOSITORY_POLICY_TO_AETHER_REPOSITORY_POLICY)
+                    .ifPresent(repoBuilder::setSnapshotPolicy);
+
+            return repoBuilder.build();
+        };
+
+        static Function<org.apache.maven.settings.Repository, RemoteRepository> SETTINGS_REPOSITORY_TO_AETHER_REMOTE_REPOSITORY = settingsRepository -> {
+            final RemoteRepository.Builder repoBuilder = new RemoteRepository.Builder(
+                    settingsRepository.getId(),
+                    settingsRepository.getLayout(),
+                    settingsRepository.getUrl()
+            );
+
+            // Set release policy if defined
+            ofNullable(settingsRepository.getReleases())
+                    .map(SETTINGS_REPOSITORY_POLICY_TO_AETHER_REPOSITORY_POLICY)
+                    .ifPresent(repoBuilder::setReleasePolicy);
+
+            // Set snapshot policy if defined
+            ofNullable(settingsRepository.getSnapshots())
+                    .map(SETTINGS_REPOSITORY_POLICY_TO_AETHER_REPOSITORY_POLICY)
+                    .ifPresent(repoBuilder::setSnapshotPolicy);
+
+            return repoBuilder.build();
+        };
+
+
+        private static Function<? super org.apache.maven.settings.Proxy, Authentication> EXTRACTOR_AUTHENTICATION = settingsProxy -> {
+            if (settingsProxy.getUsername() == null) {
+                return null;
+            }
+            return new AuthenticationBuilder()
+                    .addUsername(settingsProxy.getUsername())
+                    .addPassword(settingsProxy.getPassword())
+                    .build();
+
+        };
+
+        /**
+         * Convert a non-null {@link org.apache.maven.settings.Proxy} to a Aether {@link Proxy}.
+         */
+        private static Function<org.apache.maven.settings.Proxy, Proxy> SETTINGS_PROXY_TO_AETHER_PROXY = settingsProxy ->
+                new Proxy(
+                        settingsProxy.getProtocol(),
+                        settingsProxy.getHost(),
+                        settingsProxy.getPort(),
+                        EXTRACTOR_AUTHENTICATION.apply(settingsProxy)
+                );
+        /**
+         * Convert a {@link org.apache.maven.settings.Proxy} to a Aether {@link ProxySelector}. If <code>null</code>, a "Null Proxy Selector" is returned.
+         */
+        static final Function<org.apache.maven.settings.Proxy, ProxySelector> SETTINGS_PROXY_TO_AETHER_PROXY_SELECTOR = settingsProxy ->
+                ofNullable(settingsProxy)
+                        .map(SETTINGS_PROXY_TO_AETHER_PROXY)
+                        .map(proxy -> (ProxySelector) new DefaultProxySelector().add(proxy, settingsProxy.getNonProxyHosts()))
+                        .orElse(NULL_PROXY_SELECTOR);
+
+        private static RepositoryPolicy createAetherRepositoryPolicy(boolean enabled, String updatePolicy, String checksumPolicy) {
+            return new RepositoryPolicy(
+                    enabled,
+                    isEmpty(updatePolicy) ? RepositoryPolicy.UPDATE_POLICY_DAILY : updatePolicy,
+                    isEmpty(checksumPolicy) ? RepositoryPolicy.CHECKSUM_POLICY_WARN : checksumPolicy
+            );
+        }
+    }
+
+    public static class Builder {
+        private CommandLine mvnCmdLine;
+        private boolean offline;
+        private String updatePolicy;
+        private Settings settings;
+        private String checksumPolicy;
+        private List<String> profileOptionValues = new ArrayList<>();
+
+        public Builder() {
+        }
+
+        Builder offline(Boolean offline) {
+            this.offline = offline != null && offline;
+            return this;
+        }
+
+        /**
+         * Configure builder from {@value #MAVEN_CMD_LINE_ARGS} env variable
+         */
+        Builder setupFrommavenCommandLine() {
+            String mvnCmdLineStr = System.getenv(MAVEN_CMD_LINE_ARGS);
+            if (mvnCmdLineStr == null || mvnCmdLineStr.isEmpty()) {
+                LOG.warnf("Env var '%s' is not defined", MAVEN_CMD_LINE_ARGS);
+                return this;
+            }
             try {
-                mvnArgs = mvnCli.parse(mvnCmd.split("\\s+"));
-            } catch (ParseException e) {
+                CommandLine mavenCmdLine = new CLIManager().parse(mvnCmdLineStr.split("\\s+"));
+                return mavenCommandLine(mavenCmdLine);
+            } catch (ParseException | AppModelResolverException e) {
                 throw new IllegalStateException("Failed to parse Maven command line arguments", e);
             }
-            userSettings = mvnArgs.getOptionValue(CLIManager.ALTERNATE_USER_SETTINGS);
-            globalSettings = mvnArgs.getOptionValue(CLIManager.ALTERNATE_GLOBAL_SETTINGS);
-        } else {
-            mvnArgs = null;
         }
 
-        File f = userSettings != null ? resolveUserSettings(userSettings) : new File(userMavenConfigurationHome, SETTINGS_XML);
-        USER_SETTINGS_FILE = f != null && f.exists() ? f : null;
+        Builder mavenCommandLine(CommandLine mvnCmdLine) throws AppModelResolverException {
+            this.mvnCmdLine = mvnCmdLine;
+            this.offline = mvnCmdLine.hasOption(CLIManager.OFFLINE);
 
-        f = globalSettings != null ? resolveUserSettings(globalSettings) : new File(PropertyUtils.getProperty(MAVEN_HOME, envM2Home != null ? envM2Home : ""), "conf/settings.xml");
-        GLOBAL_SETTINGS_FILE = f != null && f.exists() ? f : null;
+            final File userSettingsFile = ofNullable(mvnCmdLine.getOptionValue(CLIManager.ALTERNATE_USER_SETTINGS))
+                    .map(MavenRepoInitializer::resolveSettings)
+                    .filter(File::exists)
+                    .orElse(new File(
+                            USER_MAVEN_CONFIGURATION_HOME,
+                            SETTINGS_XML
+                    ));
+
+            final File globalSettingsFile = ofNullable(mvnCmdLine.getOptionValue(CLIManager.ALTERNATE_GLOBAL_SETTINGS))
+                    .map(MavenRepoInitializer::resolveSettings)
+                    .filter(File::exists)
+                    .orElse(new File(
+                            PropertyUtils.getProperty(SYS_MAVEN_HOME, ofNullable(System.getenv(ENV_MAVEN_HOME)).orElse("")),
+                            "conf/settings.xml"
+                    ));
+
+
+            if (mvnCmdLine.hasOption(CLIManager.SUPRESS_SNAPSHOT_UPDATES)) {
+                updatePolicy = RepositoryPolicy.UPDATE_POLICY_NEVER;
+            } else if (mvnCmdLine.hasOption(CLIManager.UPDATE_SNAPSHOTS)) {
+                updatePolicy = RepositoryPolicy.UPDATE_POLICY_ALWAYS;
+            }
+            if (mvnCmdLine.hasOption(CLIManager.CHECKSUM_FAILURE_POLICY)) {
+                checksumPolicy = RepositoryPolicy.CHECKSUM_POLICY_FAIL;
+            } else if (mvnCmdLine.hasOption(CLIManager.CHECKSUM_WARNING_POLICY)) {
+                checksumPolicy = RepositoryPolicy.CHECKSUM_POLICY_WARN;
+            }
+
+            ofNullable(mvnCmdLine.getOptionValues(CLIManager.ACTIVATE_PROFILES))
+                    .map(Arrays::asList)
+                    .ifPresent(profileOptionValues::addAll);
+
+            settings = createSettings(globalSettingsFile, userSettingsFile, offline);
+            return this;
+        }
+
+        public MavenRepoInitializer build() {
+            return new MavenRepoInitializer(this);
+        }
+
+        private static Settings createSettings(File globalSettingsFile, File userSettingsFile, boolean isOffline) throws AppModelResolverException {
+            try {
+                final DefaultSettingsBuildingRequest defaultSettingsBuildingRequest = new DefaultSettingsBuildingRequest()
+                        .setSystemProperties(System.getProperties())
+                        .setUserSettingsFile(userSettingsFile)
+                        .setGlobalSettingsFile(globalSettingsFile);
+
+                final SettingsBuildingResult result = new DefaultSettingsBuilderFactory()
+                        .newInstance()
+                        .build(defaultSettingsBuildingRequest);
+
+                for (SettingsProblem problem : result.getProblems()) {
+                    switch (problem.getSeverity()) {
+                        case ERROR:
+                        case FATAL:
+                            throw new AppModelResolverException("Settings problem encountered at " + problem.getLocation(), problem.getException());
+                        default:
+                            LOG.warn("Settings problem encountered at " + problem.getLocation(), problem.getException());
+                    }
+                }
+                Settings settings = result.getEffectiveSettings();
+                if (isOffline) {
+                    settings.setOffline(true);
+                }
+                return settings;
+            } catch (SettingsBuildingException e) {
+                throw new AppModelResolverException("Failed to initialize Maven repository settings", e);
+            }
+        }
+
+        Builder settings(Settings settings) {
+            this.settings = settings;
+            return this;
+        }
+
+        ProxySelector getProxySelector() {
+            return ofNullable(settings.getActiveProxy())
+                    .map(Mapper.SETTINGS_PROXY_TO_AETHER_PROXY_SELECTOR)
+                    .orElse(NULL_PROXY_SELECTOR);
+        }
+
+        MirrorSelector getMirrorSelector(ProxySelector proxySelector) {
+            return new ProxyAwareMirrorSelector(
+                    settings.getMirrors(),
+                    proxySelector
+            );
+        }
     }
 
-    private static File resolveUserSettings(String settingsArg) {
+    private final String updatePolicy;
+    private final String checksumPolicy;
+    private final List<String> profileOptionValues;
+    private final Settings settings;
+    private final MirrorSelector mirrorSelector;
+    private final ProxySelector proxySelector;
+
+    private List<RemoteRepository> _remoteRepos;
+
+
+    private MavenRepoInitializer(Builder builder) {
+        this.updatePolicy = builder.updatePolicy;
+        this.checksumPolicy = builder.checksumPolicy;
+        this.profileOptionValues = unmodifiableList(builder.profileOptionValues);
+        this.settings = builder.settings;
+        this.proxySelector = builder.getProxySelector();
+        this.mirrorSelector = builder.getMirrorSelector(this.proxySelector);
+    }
+
+
+    /**
+     * Resolve XML Maven Settings file.
+     * Resolution of relative path is made from (in order):
+     * <ol>
+     * <li>Root project base dir (from env {@value #ENV_MAVEN_PROJECT_BASEDIR}.</li>
+     * <li>current module project base dir (from système property {@value #BASEDIR} )</li>
+     * <li>user home directory</li>
+     * </ol>
+     *
+     * @param settingsArg XML Maven Settings file absolute or relative path.
+     * @return XML Maven Settings file, or <code>null</code>
+     */
+    private static File resolveSettings(String settingsArg) {
         File userSettings = new File(settingsArg);
-        if(userSettings.exists()) {
+        if (userSettings.exists()) {
             return userSettings;
         }
-        String base = System.getenv("MAVEN_PROJECTBASEDIR"); // Root project base dir
-        if(base != null) {
-            userSettings = new File(base, settingsArg);
-            if(userSettings.exists()) {
-                return userSettings;
-            }
-        }
-        base = PropertyUtils.getProperty(BASEDIR); // current module project base dir
-        if(base != null) {
-            userSettings = new File(base, settingsArg);
-            if(userSettings.exists()) {
-                return userSettings;
-            }
-        }
-        userSettings = new File(userHome, settingsArg);
-        if(userSettings.exists()) {
-            return userSettings;
-        }
-        return null;
+        return Stream
+                .of(
+                        // Root project base dir
+                        System.getenv(ENV_MAVEN_PROJECT_BASEDIR),
+                        // current module project base dir
+                        PropertyUtils.getProperty(BASEDIR),
+                        // user home directory
+                        USER_HOME
+                )
+                // only if perperty if defined
+                .filter(Objects::nonNull)
+                // try to resolve relative settings file
+                .map(base -> new File(base, settingsArg))
+                // is settings file exists ?
+                .filter(File::exists)
+                // stop on first existing file found
+                .findFirst()
+                // return null if file not found with all bases
+                .orElse(null);
     }
 
-    private static List<RemoteRepository> remoteRepos;
-    private static Settings settings;
 
-    private static final Logger log = Logger.getLogger(MavenRepoInitializer.class);
-
-    public static RepositorySystem getRepositorySystem() {
-        return getRepositorySystem(false, null);
-    }
-
-    public static RepositorySystem getRepositorySystem(boolean offline, WorkspaceModelResolver wsModelResolver) {
-
+    RepositorySystem getRepositorySystem(WorkspaceModelResolver wsModelResolver) {
         final DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
-        if(!offline) {
+        if (!settings.isOffline()) {
             locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
             locator.addService(TransporterFactory.class, FileTransporterFactory.class);
             locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
@@ -163,72 +407,49 @@ public class MavenRepoInitializer {
         locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler() {
             @Override
             public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
-                log.error("Failed to initialize " + impl.getName() + " as a service implementing " + type.getName(), exception);
+                LOG.error("Failed to initialize " + impl.getName() + " as a service implementing " + type.getName(), exception);
             }
         });
 
         return locator.getService(RepositorySystem.class);
     }
 
-    public static DefaultRepositorySystemSession newSession(RepositorySystem system) throws AppModelResolverException {
-        return newSession(system, getSettings());
-    }
 
-    public static DefaultRepositorySystemSession newSession(RepositorySystem system, Settings settings) {
+    DefaultRepositorySystemSession newSession(RepositorySystem system) {
         final DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
 
-        final org.apache.maven.settings.Proxy proxy = settings.getActiveProxy();
-        if (proxy != null) {
-            session.setProxySelector(new DefaultProxySelector()
-                    .add(toAetherProxy(proxy), proxy.getNonProxyHosts()));
-        }
+        ofNullable(proxySelector)
+                .ifPresent(session::setProxySelector);
 
-        final List<Mirror> mirrors = settings.getMirrors();
-        if(mirrors != null && !mirrors.isEmpty()) {
-            final DefaultMirrorSelector ms = new DefaultMirrorSelector();
-            for(Mirror m : mirrors) {
-                ms.add(m.getId(), m.getUrl(), m.getLayout(), false, m.getMirrorOf(), m.getMirrorOfLayouts());
-            }
-            session.setMirrorSelector(ms);
-        }
-        final String localRepoPath = getLocalRepo(settings);
-        session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, new LocalRepository(localRepoPath)));
+
+        session.setMirrorSelector(mirrorSelector);
+        session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, getLocalRepo()));
 
         session.setOffline(settings.isOffline());
-
-        if(mvnArgs != null) {
-            if(!session.isOffline() && mvnArgs.hasOption(CLIManager.OFFLINE)) {
-                session.setOffline(true);
-            }
-            if(mvnArgs.hasOption(CLIManager.SUPRESS_SNAPSHOT_UPDATES)) {
-                session.setUpdatePolicy(RepositoryPolicy.UPDATE_POLICY_NEVER);
-            } else if(mvnArgs.hasOption(CLIManager.UPDATE_SNAPSHOTS)) {
-                session.setUpdatePolicy(RepositoryPolicy.UPDATE_POLICY_ALWAYS);
-            }
-            if(mvnArgs.hasOption(CLIManager.CHECKSUM_FAILURE_POLICY)) {
-                session.setChecksumPolicy(RepositoryPolicy.CHECKSUM_POLICY_FAIL);
-            } else if(mvnArgs.hasOption(CLIManager.CHECKSUM_WARNING_POLICY)) {
-                session.setChecksumPolicy(RepositoryPolicy.CHECKSUM_POLICY_WARN);
-            }
+        session.setUpdatePolicy(updatePolicy);
+        session.setChecksumPolicy(checksumPolicy);
+        if (session.getCache() == null) {
+            session.setCache(new DefaultRepositoryCache());
         }
-
         return session;
     }
 
-    public static List<RemoteRepository> getRemoteRepos() throws AppModelResolverException {
-        if(remoteRepos != null) {
-            return remoteRepos;
+    List<RemoteRepository> getRemoteRepos() throws AppModelResolverException {
+        if (_remoteRepos != null) {
+            return _remoteRepos;
         }
-        return remoteRepos = Collections.unmodifiableList(getRemoteRepos(getSettings()));
+        return initRemoteRepos();
     }
 
-    public static List<RemoteRepository> getRemoteRepos(Settings settings) throws AppModelResolverException {
+    private synchronized List<RemoteRepository> initRemoteRepos() throws AppModelResolverException {
+        if (_remoteRepos != null) {
+            return _remoteRepos;
+        }
+
         final List<RemoteRepository> remotes = new ArrayList<>();
 
-        final Proxy proxy = toAetherProxy(settings.getActiveProxy());
-
         final int profilesTotal = settings.getProfiles().size();
-        if(profilesTotal > 0) {
+        if (profilesTotal > 0) {
             List<org.apache.maven.model.Profile> modelProfiles = new ArrayList<>(profilesTotal);
             for (Profile profile : settings.getProfiles()) {
                 modelProfiles.add(SettingsUtils.convertFromSettingsProfile(profile));
@@ -236,203 +457,147 @@ public class MavenRepoInitializer {
 
             final List<String> activeProfiles = new ArrayList<>(0);
             final List<String> inactiveProfiles = new ArrayList<>(0);
-            if(mvnArgs != null) {
-                final String[] profileOptionValues = mvnArgs.getOptionValues(CLIManager.ACTIVATE_PROFILES);
-                if (profileOptionValues != null && profileOptionValues.length > 0) {
-                    for (String profileOptionValue : profileOptionValues) {
-                        final StringTokenizer profileTokens = new StringTokenizer(profileOptionValue, ",");
-                        while (profileTokens.hasMoreTokens()) {
-                            final String profileAction = profileTokens.nextToken().trim();
-                            if(profileAction.isEmpty()) {
-                                continue;
-                            }
-                            final char c = profileAction.charAt(0);
-                            if (c == '-' || c == '!') {
-                                inactiveProfiles.add(profileAction.substring(1));
-                            } else if (c == '+') {
-                                activeProfiles.add(profileAction.substring(1));
-                            } else {
-                                activeProfiles.add(profileAction);
-                            }
-                        }
+            for (String profileOptionValue : profileOptionValues) {
+                final StringTokenizer profileTokens = new StringTokenizer(profileOptionValue, ",");
+                while (profileTokens.hasMoreTokens()) {
+                    final String profileAction = profileTokens.nextToken().trim();
+                    if (profileAction.isEmpty()) {
+                        continue;
+                    }
+                    final char c = profileAction.charAt(0);
+                    if (c == '-' || c == '!') {
+                        inactiveProfiles.add(profileAction.substring(1));
+                    } else if (c == '+') {
+                        activeProfiles.add(profileAction.substring(1));
+                    } else {
+                        activeProfiles.add(profileAction);
                     }
                 }
             }
 
-            final String basedir = PropertyUtils.getProperty(BASEDIR);
             final DefaultProfileActivationContext context = new DefaultProfileActivationContext()
                     .setActiveProfileIds(activeProfiles)
                     .setInactiveProfileIds(inactiveProfiles)
                     .setSystemProperties(System.getProperties())
-                    .setProjectDirectory(basedir == null ? new File("") : new File(basedir));
-            final DefaultProfileSelector profileSelector = new DefaultProfileSelector()
-                    .addProfileActivator(new PropertyProfileActivator())
-                    .addProfileActivator(new JdkVersionProfileActivator())
-                    .addProfileActivator(new OperatingSystemProfileActivator())
-                    .addProfileActivator(new FileProfileActivator().setPathTranslator(new DefaultPathTranslator()));
-            modelProfiles = profileSelector.getActiveProfiles(modelProfiles, context, new ModelProblemCollector() {
+                    .setProjectDirectory(
+                            ofNullable(PropertyUtils.getProperty(BASEDIR))
+                                    .map(File::new)
+                                    .orElse(new File(""))
+                    );
+            modelProfiles = DEFAULT_PROFILE_SELECTOR.getActiveProfiles(modelProfiles, context, new ModelProblemCollector() {
                 public void add(ModelProblemCollectorRequest req) {
-                    log.error("Failed to activate a Maven profile: " + req.getMessage());
+                    LOG.error("Failed to activate a Maven profile: " + req.getMessage());
                 }
             });
-            for(org.apache.maven.model.Profile modelProfile : modelProfiles) {
-                addProfileRepos(modelProfile, remotes, proxy);
+            for (org.apache.maven.model.Profile modelProfile : modelProfiles) {
+                remotes.addAll(extractRepositoryFromProfile(modelProfile));
             }
         }
 
         // then it's the ones under active profiles
-        final List<String> activeProfiles = settings.getActiveProfiles();
-        if (!activeProfiles.isEmpty()) {
-            for (String profileName : activeProfiles) {
-                final Profile profile = getProfile(profileName, settings);
-                if(profile != null) {
-                    addProfileRepos(profile, remotes, proxy);
-                }
-            }
-        }
+        settings.getActiveProfiles()
+                .stream()
+                // Get Profile by name
+                .map(this::getProfileByName)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                // Extract Remote repository defined in profile
+                .map(MavenRepoInitializer::extractRepositoryFromSettingsProfile)
+                .forEach(remotes::addAll);
+
         // central must be there
-        if (remotes.isEmpty() || !includesDefaultRepo(remotes)) {
-            remotes.add(new RemoteRepository.Builder(DEFAULT_REMOTE_REPO_ID, "default", DEFAULT_REMOTE_REPO_URL)
-                    .setReleasePolicy(new RepositoryPolicy(true, RepositoryPolicy.UPDATE_POLICY_DAILY, RepositoryPolicy.CHECKSUM_POLICY_WARN))
-                    .setSnapshotPolicy(new RepositoryPolicy(false, RepositoryPolicy.UPDATE_POLICY_DAILY, RepositoryPolicy.CHECKSUM_POLICY_WARN))
-                    .setProxy(proxy)
-                    .build());
+        if (!includesDefaultRepo(remotes)) {
+            remotes.add(MAVEN_CENTRAL_REPOSITORY);
         }
 
-        return remotes;
+        _remoteRepos = unmodifiableList(
+                remotes.stream()
+                        .map(this::enhanceRemoteRepository)
+                        .collect(toList())
+        );
+        if (LOG.isDebugEnabled()) {
+            LOG.debugf(
+                    "Collected Remote Repoitories: %s",
+                    _remoteRepos.stream()
+                            .map(this::remoteRepositoryToStringInfo
+                            )
+                            .collect(Collectors.joining("\n- ", "\n- ", ""))
+            );
+        }
+
+        return _remoteRepos;
     }
 
     /**
-     * Convert a {@link org.apache.maven.settings.Proxy} to a {@link Proxy}.
-     * @param proxy Maven proxy settings, may be {@code null}.
-     * @return Aether repository proxy or {@code null} if given {@link org.apache.maven.settings.Proxy} is {@code null}.
+     * Replace repo with it's mirror if applicable, and ensure proxy is set-up if needed.
+     *
+     * @param remoteRepository Repository to enhance
+     * @return Enhanced Repository
      */
-    private static Proxy toAetherProxy(org.apache.maven.settings.Proxy proxy) {
-        if (proxy == null) {
-            return null;
-        }
-        Authentication auth = null;
-        if (proxy.getUsername() != null) {
-            auth = new AuthenticationBuilder()
-                    .addUsername(proxy.getUsername())
-                    .addPassword(proxy.getPassword())
-                    .build();
-        }
-        return new Proxy(proxy.getProtocol(), proxy.getHost(), proxy.getPort(), auth);
+    private RemoteRepository enhanceRemoteRepository(RemoteRepository remoteRepository) {
+        return new RemoteRepository.Builder(
+                // Get target repository (itself or mirror if applicable)
+                ofNullable(mirrorSelector.getMirror(remoteRepository))
+                        .orElse(remoteRepository)
+        )
+                // Setup proxy if needed
+                .setProxy(proxySelector.getProxy(remoteRepository))
+                .build();
     }
 
-    private static Profile getProfile(String name, Settings settings) throws AppModelResolverException {
-        final Profile profile = settings.getProfilesAsMap().get(name);
-        if(profile == null) {
-            unrecognizedProfile(name, true);
-        }
-        return profile;
+    private String remoteRepositoryToStringInfo(RemoteRepository remoteRepository) {
+        return remoteRepository
+                + ofNullable(remoteRepository.getProxy()).map(p -> " via proxy: " + p).orElse("")
+                + of(remoteRepository.getMirroredRepositories())
+                .filter(mirroredRepositories -> !mirroredRepositories.isEmpty())
+                .map(mirroredRepositories -> " ; mirror of: " + mirroredRepositories)
+                .orElse("");
     }
 
-    private static void unrecognizedProfile(String name, boolean activate) {
-        final StringBuilder buf = new StringBuilder();
-        buf.append("The requested Maven profile \"").append(name).append("\" could not be ");
-        if(!activate) {
-            buf.append("de");
+
+    private Optional<Profile> getProfileByName(String name) {
+        Profile result = settings.getProfilesAsMap().get(name);
+        if (result == null) {
+            LOG.warn("The requested Maven profile \"" + name + "\" does not exist.");
         }
-        buf.append("activated because it does not exist.");
-        log.warn(buf.toString());
+        return ofNullable(result);
     }
 
-    private static void addProfileRepos(final org.apache.maven.model.Profile profile, final List<RemoteRepository> all, final Proxy proxy) {
-        final List<org.apache.maven.model.Repository> repositories = profile.getRepositories();
-        for (org.apache.maven.model.Repository repo : repositories) {
-            final RemoteRepository.Builder repoBuilder = new RemoteRepository.Builder(repo.getId(), repo.getLayout(), repo.getUrl());
-            org.apache.maven.model.RepositoryPolicy policy = repo.getReleases();
-            if (policy != null) {
-                repoBuilder.setReleasePolicy(toAetherRepoPolicy(policy));
-            }
-            policy = repo.getSnapshots();
-            if (policy != null) {
-                repoBuilder.setSnapshotPolicy(toAetherRepoPolicy(policy));
-            }
-            repoBuilder.setProxy(proxy);
-            all.add(repoBuilder.build());
-        }
+    private static List<RemoteRepository> extractRepositoryFromProfile(final org.apache.maven.model.Profile profile) {
+        return profile.getRepositories().stream()
+                .map(Mapper.MAVEN_REPOSITORY_TO_AETHER_REMOTE_REPOSITORY)
+                .collect(toList());
     }
 
-    private static void addProfileRepos(final Profile profile, final List<RemoteRepository> all, final Proxy proxy) {
-        final List<Repository> repositories = profile.getRepositories();
-        for (Repository repo : repositories) {
-            final RemoteRepository.Builder repoBuilder = new RemoteRepository.Builder(repo.getId(), repo.getLayout(), repo.getUrl());
-            org.apache.maven.settings.RepositoryPolicy policy = repo.getReleases();
-            if (policy != null) {
-                repoBuilder.setReleasePolicy(toAetherRepoPolicy(policy));
-            }
-            policy = repo.getSnapshots();
-            if (policy != null) {
-                repoBuilder.setSnapshotPolicy(toAetherRepoPolicy(policy));
-            }
-            repoBuilder.setProxy(proxy);
-            all.add(repoBuilder.build());
-        }
+    private static List<RemoteRepository> extractRepositoryFromSettingsProfile(final Profile profile) {
+        return profile.getRepositories().stream()
+                .map(Mapper.SETTINGS_REPOSITORY_TO_AETHER_REMOTE_REPOSITORY)
+                .collect(toList());
     }
 
-    public static Settings getSettings() throws AppModelResolverException {
-        if(settings != null) {
-            return settings;
-        }
-        final Settings effectiveSettings;
-        try {
-            final SettingsBuildingResult result = new DefaultSettingsBuilderFactory()
-                    .newInstance().build(new DefaultSettingsBuildingRequest()
-                            .setSystemProperties(System.getProperties())
-                            .setUserSettingsFile(USER_SETTINGS_FILE)
-                            .setGlobalSettingsFile(GLOBAL_SETTINGS_FILE));
-            final List<SettingsProblem> problems = result.getProblems();
-            if(!problems.isEmpty()) {
-                for(SettingsProblem problem : problems) {
-                    switch(problem.getSeverity()) {
-                        case ERROR:
-                        case FATAL:
-                            throw new AppModelResolverException("Settings problem encountered at " + problem.getLocation(), problem.getException());
-                        default:
-                            log.warn("Settings problem encountered at " + problem.getLocation(), problem.getException());
-                    }
-                }
-            }
-            effectiveSettings = result.getEffectiveSettings();
-        } catch (SettingsBuildingException e) {
-            throw new AppModelResolverException("Failed to initialize Maven repository settings", e);
-        }
-
-        return settings = effectiveSettings;
-    }
-
-    public static String getLocalRepo(Settings settings) {
-        final String localRepo = settings.getLocalRepository();
-        return localRepo == null ? getDefaultLocalRepo() : localRepo;
+    /**
+     * Get local Maven repository. If not configured in settings, take the default repository (in user Maven
+     * configuration home) named {@value #DEFAULT_LOCAL_REPOSITORY_DIRECTORY_NAME}
+     *
+     * @return
+     */
+    LocalRepository getLocalRepo() {
+        return new LocalRepository(
+                ofNullable(settings.getLocalRepository())
+                        .orElse(getDefaultLocalRepo())
+        );
     }
 
     private static String getDefaultLocalRepo() {
-        return new File(userMavenConfigurationHome, "repository").getAbsolutePath();
+        return new File(USER_MAVEN_CONFIGURATION_HOME, DEFAULT_LOCAL_REPOSITORY_DIRECTORY_NAME).getAbsolutePath();
     }
 
     private static boolean includesDefaultRepo(List<RemoteRepository> repositories) {
-        for (ArtifactRepository repository : repositories) {
-            if(repository.getId().equals(DEFAULT_REMOTE_REPO_ID)) {
-                return true;
-            }
-        }
-        return false;
+        return repositories.stream()
+                .map(RemoteRepository::getId)
+                .anyMatch(id -> MAVEN_CENTRAL_REPOSITORY.getId().equals(id));
     }
 
-    private static RepositoryPolicy toAetherRepoPolicy(org.apache.maven.model.RepositoryPolicy modelPolicy) {
-        return new RepositoryPolicy(modelPolicy.isEnabled(),
-                isEmpty(modelPolicy.getUpdatePolicy()) ? RepositoryPolicy.UPDATE_POLICY_DAILY : modelPolicy.getUpdatePolicy(),
-                        isEmpty(modelPolicy.getChecksumPolicy()) ? RepositoryPolicy.CHECKSUM_POLICY_WARN : modelPolicy.getChecksumPolicy());
-    }
-
-    private static RepositoryPolicy toAetherRepoPolicy(org.apache.maven.settings.RepositoryPolicy settingsPolicy) {
-        return new RepositoryPolicy(settingsPolicy.isEnabled(),
-                isEmpty(settingsPolicy.getUpdatePolicy()) ? RepositoryPolicy.UPDATE_POLICY_DAILY : settingsPolicy.getUpdatePolicy(),
-                        isEmpty(settingsPolicy.getChecksumPolicy()) ? RepositoryPolicy.CHECKSUM_POLICY_WARN : settingsPolicy.getChecksumPolicy());
-    }
 
     private static boolean isEmpty(String str) {
         return str == null || str.isEmpty();

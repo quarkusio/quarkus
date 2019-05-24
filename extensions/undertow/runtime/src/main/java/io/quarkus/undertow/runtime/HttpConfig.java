@@ -23,6 +23,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.ssl.ServerSslConfig;
+import io.quarkus.undertow.runtime.filters.CORSConfig;
 
 /**
  * Configuration which applies to the HTTP server.
@@ -70,6 +71,11 @@ public class HttpConfig {
      * The SSL config
      */
     public ServerSslConfig ssl;
+
+    /**
+     * The CORS config
+     */
+    public CORSConfig cors;
 
     public int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort : port;

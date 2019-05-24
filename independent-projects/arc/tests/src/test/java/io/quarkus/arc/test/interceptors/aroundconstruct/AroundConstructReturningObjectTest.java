@@ -20,7 +20,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.test.ArcTestContainer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Singleton;

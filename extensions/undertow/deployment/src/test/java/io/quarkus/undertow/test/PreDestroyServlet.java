@@ -17,7 +17,6 @@
 package io.quarkus.undertow.test;
 
 import java.io.IOException;
-import java.security.MessageDigest;
 
 import javax.annotation.PreDestroy;
 import javax.servlet.ServletException;

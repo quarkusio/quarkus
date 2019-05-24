@@ -199,6 +199,9 @@
                     <groupId>net.revelc.code</groupId>
                     <artifactId>impsort-maven-plugin</artifactId>
                     <version>1.2.0</version>
+                    <configuration>
+                        <removeUnused>true</removeUnused>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -257,11 +260,11 @@
                         </executions>
                     </plugin>
                     <plugin>
-                        <!-- ## IMPORTANT ## In your ~/.m2/settings.xml you 
-                            need to add and edit the following profile: <profile> <id>release</id> <properties> 
-                            <gpg.useagent>false</gpg.useagent> <gpg.executable>/usr/local/Cellar/gnupg@1.4/1.4.23_1/bin/gpg1</gpg.executable> 
-                            <- use gpg1 on Mac OS X <gpg.homedir>~/.gnupg</gpg.homedir> <- Update to 
-                            your own directory <gpg.passphrase>******</gpg.passphrase> <- Add your passphrase 
+                        <!-- ## IMPORTANT ## In your ~/.m2/settings.xml you
+                            need to add and edit the following profile: <profile> <id>release</id> <properties>
+                            <gpg.useagent>false</gpg.useagent> <gpg.executable>/usr/local/Cellar/gnupg@1.4/1.4.23_1/bin/gpg1</gpg.executable>
+                            <- use gpg1 on Mac OS X <gpg.homedir>~/.gnupg</gpg.homedir> <- Update to
+                            your own directory <gpg.passphrase>******</gpg.passphrase> <- Add your passphrase
                             </properties> </profile> -->
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
@@ -311,6 +314,9 @@
                                 </goals>
                             </execution>
                         </executions>
+                        <configuration>
+                            <removeUnused>true</removeUnused>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
@@ -340,6 +346,9 @@
                     <plugin>
                         <groupId>net.revelc.code</groupId>
                         <artifactId>impsort-maven-plugin</artifactId>
+                        <configuration>
+                            <removeUnused>true</removeUnused>
+                        </configuration>
                         <executions>
                             <execution>
                                 <id>check-imports</id>

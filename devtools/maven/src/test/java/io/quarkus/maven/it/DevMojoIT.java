@@ -205,6 +205,14 @@ public class DevMojoIT extends MojoTestBase {
         assertThat(greeting).containsIgnoringCase("hello");
     }
 
+    private void runAndExpectError() throws FileNotFoundException, MavenInvocationException {
+        assertThat(testDir).isDirectory();
+        running = new RunningInvoker(testDir, false);
+        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
+
+        getHttpErrorResponse();
+    }
+
     @Test
     public void testThatTheApplicationIsReloadedOnConfigChange() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-config-change");
@@ -336,6 +344,39 @@ public class DevMojoIT extends MojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("carambar"));
+    }
+
+    @Test
+    public void testThatApplicationRecoversStartupIssue() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic", "projects/project-classic-run-startup-issue");
+
+        // Edit the JAX-RS resource to be package private
+        File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        filter(source, ImmutableMap.of("public class HelloResource", "class HelloResource"));
+
+        runAndExpectError();
+        // Wait until we get the error page
+        AtomicReference<String> last = new AtomicReference<>();
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> {
+                    String content = getHttpResponse("/app/hello", true);
+                    last.set(content);
+                    return content.contains("Error restarting Quarkus");
+                });
+
+        assertThat(last.get()).containsIgnoringCase("Error restarting Quarkus");
+
+        filter(source, ImmutableMap.of("class HelloResource", "public class HelloResource"));
+
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> {
+                    String content = getHttpResponse("/app/hello", true);
+                    last.set(content);
+                    return content.equals("hello");
+                });
+        assertThat(last.get()).isEqualTo("hello");
     }
 
     @Test

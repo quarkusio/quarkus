@@ -48,11 +48,14 @@ import org.xnio.XnioWorker;
 
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.ExecutorTemplate;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.runtime.Timing;
 import io.quarkus.runtime.annotations.Template;
+import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.undertow.Undertow;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
@@ -110,6 +113,22 @@ public class UndertowDeploymentTemplate {
 
     public static void setHotDeploymentResources(List<Path> resources) {
         hotDeploymentResourcePaths = resources;
+    }
+
+    public static void startServerAfterFailedStart() {
+        try {
+            HttpConfig config = new HttpConfig();
+            ConfigInstantiator.handleObject(config);
+
+            ThreadPoolConfig threadPoolConfig = new ThreadPoolConfig();
+            ConfigInstantiator.handleObject(threadPoolConfig);
+
+            ExecutorService service = ExecutorTemplate.createDevModeExecutorForFailedStart(threadPoolConfig);
+            //we can't really do
+            doServerStart(config, LaunchMode.DEVELOPMENT, config.ssl.toSSLContext(), service);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,

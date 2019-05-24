@@ -137,6 +137,12 @@
             <artifactId>quarkus-kafka-client</artifactId>
         </dependency>
 
+        <!-- Context Propagation -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-context-propagation</artifactId>
+        </dependency>
+
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

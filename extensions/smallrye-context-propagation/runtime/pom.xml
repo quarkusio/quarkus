@@ -19,32 +19,37 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-smallrye-reactive-streams-operators-parent</artifactId>
+        <artifactId>quarkus-smallrye-context-propagation-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
+        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-smallrye-reactive-streams-operators-deployment</artifactId>
-    <name>Quarkus - SmallRye Reactive Streams Operators - Deployment</name>
+    <artifactId>quarkus-smallrye-context-propagation</artifactId>
+    <name>Quarkus - SmallRye Context Propagation - Runtime</name>
 
     <dependencies>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-deployment</artifactId>
+            <groupId>io.smallrye</groupId>
+            <artifactId>smallrye-context-propagation</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-context-propagation-deployment</artifactId>
+            <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
+            <artifactId>quarkus-arc</artifactId>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
@@ -59,5 +64,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

@@ -46,11 +46,7 @@ public class TransactionalInterceptorRequiresNew extends TransactionalIntercepto
     protected Object doIntercept(TransactionManager tm, Transaction tx, InvocationContext ic) throws Exception {
         if (tx != null) {
             tm.suspend();
-            try {
-                return invokeInOurTx(ic, tm);
-            } finally {
-                tm.resume(tx);
-            }
+            return invokeInOurTx(ic, tm, () -> tm.resume(tx));
         } else {
             return invokeInOurTx(ic, tm);
         }

@@ -150,6 +150,11 @@ public class NativeImageMojo extends AbstractMojo {
                     "Please ensure that the 'build' goal has been properly configured for the project - since it is a prerequisite of the 'native-image' goal");
         }
 
+        if (project.getPackaging().equals("pom")) {
+            getLog().info("Type of the artifact is POM, skipping native-image goal");
+            return;
+        }
+
         try (AppCreator appCreator = AppCreator.builder()
                 // configure the build phase we want the app to go through
                 .addPhase(new NativeImagePhase()

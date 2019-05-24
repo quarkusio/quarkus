@@ -7,6 +7,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.elytron.security.runtime.SecurityContextPrincipal;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -16,7 +17,7 @@ import io.restassured.RestAssured;
 public class BasicAuthTestCase {
     static Class[] testClasses = {
             TestSecureServlet.class, TestApplication.class, RolesEndpointClassLevel.class,
-            ParametrizedPathsResource.class, SubjectExposingResource.class
+            ParametrizedPathsResource.class, SubjectExposingResource.class, SecurityContextPrincipal.class
     };
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -110,6 +111,14 @@ public class BasicAuthTestCase {
     public void testJaxrsUserRoleSuccess() {
         RestAssured.given().auth().preemptive().basic("scott", "jb0ss")
                 .when().get("/jaxrs-secured/subject/secured").then()
+                .statusCode(200)
+                .body(equalTo("scott"));
+    }
+
+    @Test
+    public void testJaxrsInjectedPrincipalSuccess() {
+        RestAssured.given().auth().preemptive().basic("scott", "jb0ss")
+                .when().get("/jaxrs-secured/subject/principalSecured").then()
                 .statusCode(200)
                 .body(equalTo("scott"));
     }

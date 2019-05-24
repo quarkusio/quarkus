@@ -50,6 +50,7 @@ import org.wildfly.security.credential.PasswordCredential;
 import org.wildfly.security.password.interfaces.ClearPassword;
 import org.wildfly.security.permission.PermissionVerifier;
 
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Template;
 import io.undertow.security.idm.IdentityManager;
@@ -298,5 +299,21 @@ public class SecurityTemplate {
                 }
             }
         };
+    }
+
+    public ServletExtension configureSecurityContextPrincipalHandler(BeanContainer container) {
+        SecurityContextPrincipalExtension extension = container.instance(SecurityContextPrincipalExtension.class);
+        return extension;
+        /*
+         * this ends up putting the SecurityContext class into the RuntimeClassLoader while the SecurityContextPrincipalHandler
+         * is loaded by the Launcher$AppClassLoade
+         * return new ServletExtension() {
+         * 
+         * @Override
+         * public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
+         * deploymentInfo.addInnerHandlerChainWrapper(SecurityContextPrincipalHandler::new);
+         * }
+         * };
+         */
     }
 }

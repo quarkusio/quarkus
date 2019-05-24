@@ -27,6 +27,8 @@ import org.jboss.logging.Logger;
 import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.auth.server.SecurityRealm;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -39,6 +41,7 @@ import io.quarkus.elytron.security.runtime.AuthConfig;
 import io.quarkus.elytron.security.runtime.MPRealmConfig;
 import io.quarkus.elytron.security.runtime.PropertiesRealmConfig;
 import io.quarkus.elytron.security.runtime.SecurityConfig;
+import io.quarkus.elytron.security.runtime.SecurityContextPrincipal;
 import io.quarkus.elytron.security.runtime.SecurityTemplate;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
@@ -77,6 +80,12 @@ class SecurityDeploymentProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.SECURITY);
+    }
+
+    @BuildStep
+    void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        AdditionalBeanBuildItem.Builder unremovable = AdditionalBeanBuildItem.builder().setUnremovable();
+        unremovable.addBeanClass(SecurityContextPrincipal.class);
     }
 
     /**
@@ -287,6 +296,13 @@ class SecurityDeploymentProcessor {
         }
 
         extension.produce(new ServletExtensionBuildItem(template.configureLoginConfig(allAuthConfigs)));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    ServletExtensionBuildItem addSecurityContextPrincipalHandler(SecurityTemplate template, BeanContainerBuildItem container) {
+        log.debugf("addSecurityContextPrincipalHandler");
+        return new ServletExtensionBuildItem(template.configureSecurityContextPrincipalHandler(container.getValue()));
     }
 
     /**

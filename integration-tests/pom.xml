@@ -54,6 +54,7 @@
         <module>infinispan-cache-jpa</module>
         <module>elytron-security</module>
         <module>camel-core</module>
+        <module>camel-jdbc</module>
         <module>camel-salesforce</module>
         <module>camel-aws-s3</module>
         <module>camel-aws-sqs</module>

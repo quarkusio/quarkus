@@ -32,6 +32,10 @@ public class RuntimeCompilationSetup {
         if (!context.getModules().isEmpty()) {
             ServiceLoader<CompilationProvider> serviceLoader = ServiceLoader.load(CompilationProvider.class);
             List<CompilationProvider> compilationProviders = new ArrayList<>();
+            for (CompilationProvider provider : serviceLoader) {
+                compilationProviders.add(provider);
+                context.getModules().forEach(moduleInfo -> moduleInfo.addSourcePaths(provider.handleSourcePaths()));
+            }
             serviceLoader.iterator().forEachRemaining(compilationProviders::add);
             ClassLoaderCompiler compiler;
             try {

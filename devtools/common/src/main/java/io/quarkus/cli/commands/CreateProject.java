@@ -192,6 +192,7 @@ public class CreateProject {
 
     private void addMainPluginConfig(Model model) {
         if (!hasPlugin(model)) {
+            Build build = createBuildSectionIfRequired(model);
             Plugin plugin = plugin(getPluginGroupId(), getPluginArtifactId(), QUARKUS_VERSION_PROPERTY);
             if (isParentPom(model)) {
                 addPluginManagementSection(model, plugin);
@@ -201,32 +202,31 @@ public class CreateProject {
             PluginExecution pluginExec = new PluginExecution();
             pluginExec.addGoal("build");
             plugin.addExecution(pluginExec);
-            Build build = createBuildSectionIfRequired(model);
             build.getPlugins().add(plugin);
         }
     }
 
     private boolean hasPlugin(final Model model) {
         List<Plugin> plugins = null;
-        if (isParentPom(model)) {
-            final PluginManagement management = model.getBuild().getPluginManagement();
-            if (management != null) {
-                plugins = management.getPlugins();
-            }
-        } else {
-            final Build build = model.getBuild();
-            if (build != null) {
+        final Build build = model.getBuild();
+        if (build != null) {
+            if (isParentPom(model)) {
+                final PluginManagement management = build.getPluginManagement();
+                if (management != null) {
+                    plugins = management.getPlugins();
+                }
+            } else {
                 plugins = build.getPlugins();
             }
         }
-        return plugins != null && model.getBuild().getPlugins()
+        return plugins != null && build.getPlugins()
                 .stream()
                 .anyMatch(p -> p.getGroupId().equalsIgnoreCase(getPluginGroupId()) &&
                         p.getArtifactId().equalsIgnoreCase(getPluginArtifactId()));
     }
 
     private void addPluginManagementSection(Model model, Plugin plugin) {
-        if (model.getBuild().getPluginManagement() != null) {
+        if (model.getBuild() != null && model.getBuild().getPluginManagement() != null) {
             if (model.getBuild().getPluginManagement().getPlugins() == null) {
                 model.getBuild().getPluginManagement().setPlugins(new ArrayList<>());
             }

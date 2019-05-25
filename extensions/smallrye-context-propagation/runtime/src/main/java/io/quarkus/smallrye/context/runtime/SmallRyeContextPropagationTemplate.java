@@ -3,7 +3,6 @@ package io.quarkus.smallrye.context.runtime;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
-import org.eclipse.microprofile.context.spi.ContextManager;
 import org.eclipse.microprofile.context.spi.ContextManagerExtension;
 import org.eclipse.microprofile.context.spi.ContextManagerProvider;
 import org.eclipse.microprofile.context.spi.ThreadContextProvider;

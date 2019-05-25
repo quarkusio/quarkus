@@ -8,7 +8,7 @@ public interface CompilationProvider {
 
     Set<String> handledExtensions();
 
-    default Set<String> handleSourcePaths() {
+    default Set<String> handledSourcePaths() {
         return Collections.emptySet();
     }
 

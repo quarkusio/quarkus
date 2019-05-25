@@ -91,6 +91,12 @@ public class DevModeMain {
         //TODO: we can't handle an exception on startup with hot replacement, as Undertow might not have started
 
         doStart();
+        if (deploymentProblem != null) {
+            log.error("Failed to start Quarkus, attempting to start hot replacement endpoint to recover");
+            if (runtimeUpdatesProcessor != null) {
+                runtimeUpdatesProcessor.startupFailed();
+            }
+        }
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {

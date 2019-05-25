@@ -1,12 +1,8 @@
 package io.quarkus.deployment.steps;
 
-import static io.quarkus.deployment.util.ReflectUtil.toError;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.UndeclaredThrowableException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -18,15 +14,11 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Properties;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
-
-import javax.annotation.Priority;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;

@@ -92,7 +92,6 @@ import org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLoca
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
 import org.hibernate.service.internal.AbstractServiceRegistryImpl;
 import org.hibernate.service.internal.ProvidedService;
-import org.hibernate.service.spi.ServiceContributor;
 import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;

@@ -40,6 +40,7 @@ import java.util.stream.Stream;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.devmode.HotReplacementContext;
+import io.quarkus.deployment.devmode.HotReplacementSetup;
 import io.quarkus.runtime.Timing;
 
 public class RuntimeUpdatesProcessor implements HotReplacementContext {
@@ -53,6 +54,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
 
     private static final Logger log = Logger.getLogger(RuntimeUpdatesProcessor.class.getPackage().getName());
     private final List<Runnable> preScanSteps = new CopyOnWriteArrayList<>();
+    private final List<HotReplacementSetup> hotReplacementSetup = new ArrayList<>();
 
     public RuntimeUpdatesProcessor(DevModeContext context, ClassLoaderCompiler compiler) {
         this.context = context;
@@ -254,5 +256,15 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
             }
         }
         return this;
+    }
+
+    public void addHotReplacementSetup(HotReplacementSetup service) {
+        hotReplacementSetup.add(service);
+    }
+
+    public void startupFailed() {
+        for (HotReplacementSetup i : hotReplacementSetup) {
+            i.handleFailedInitialStart();
+        }
     }
 }

@@ -1,7 +1,6 @@
 package io.quarkus.smallrye.jwt.runtime;
 
 import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**

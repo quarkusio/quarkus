@@ -49,6 +49,7 @@ public class RuntimeCompilationSetup {
 
             for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class)) {
                 service.setupHotDeployment(processor);
+                processor.addHotReplacementSetup(service);
             }
             return processor;
         }

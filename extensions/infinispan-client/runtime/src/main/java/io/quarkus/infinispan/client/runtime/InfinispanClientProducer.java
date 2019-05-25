@@ -32,7 +32,6 @@ import org.infinispan.commons.util.Util;
 import org.infinispan.counter.api.CounterManager;
 import org.infinispan.protostream.BaseMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
-import org.infinispan.protostream.MessageMarshaller;
 import org.infinispan.protostream.SerializationContext;
 import org.infinispan.query.remote.client.ProtobufMetadataManagerConstants;
 import org.infinispan.query.remote.client.impl.MarshallerRegistration;

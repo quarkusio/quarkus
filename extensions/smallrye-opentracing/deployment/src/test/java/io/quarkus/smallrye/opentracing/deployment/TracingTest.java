@@ -16,7 +16,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
-import io.opentracing.util.GlobalTracer;
 import io.opentracing.util.GlobalTracerTestUtil;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;

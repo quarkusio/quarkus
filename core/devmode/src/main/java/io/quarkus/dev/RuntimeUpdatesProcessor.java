@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -104,10 +105,10 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
         }
 
         boolean classChanged = checkForChangedClasses();
-        boolean configFileChanged = checkForFileChange();
+        Set<String> configFileChanged = checkForFileChange();
 
-        if (classChanged || configFileChanged) {
-            DevModeMain.restartApp();
+        if (classChanged || !configFileChanged.isEmpty()) {
+            DevModeMain.restartApp(configFileChanged);
             log.infof("Hot replace total time: %ss ", Timing.convertToBigDecimalSeconds(System.nanoTime() - startNanoseconds));
             return true;
         }
@@ -168,8 +169,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
         return name.substring(lastIndexOf);
     }
 
-    private boolean checkForFileChange() {
-        boolean filesHaveChanged = false;
+    private Set<String> checkForFileChange() {
+        Set<String> ret = new HashSet<>();
         for (DevModeContext.ModuleInfo module : context.getModules()) {
             boolean doCopy = true;
             String rootPath = module.getResourcePath();
@@ -190,7 +191,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                         long value = Files.getLastModifiedTime(file).toMillis();
                         Long existing = watchedFileTimestamps.get(file);
                         if (value > existing) {
-                            filesHaveChanged = true;
+                            ret.add(path);
                             log.infof("File change detected: %s", file);
                             if (doCopy) {
                                 Path target = classesDir.resolve(path);
@@ -216,7 +217,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
             }
         }
 
-        return filesHaveChanged;
+        return ret;
     }
 
     private boolean wasRecentlyModified(final Path p) {

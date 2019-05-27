@@ -88,4 +88,8 @@ public class TestTemplate {
     public void array(Object[] toArray) {
         RESULT.add(toArray);
     }
+
+    public void object(Object obj) {
+        RESULT.add(obj);
+    }
 }

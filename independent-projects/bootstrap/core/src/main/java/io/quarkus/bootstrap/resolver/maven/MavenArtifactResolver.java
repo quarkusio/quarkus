@@ -208,7 +208,7 @@ public class MavenArtifactResolver {
         return resolveDependencies(artifact, Collections.emptyList());
     }
 
-    public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps) throws
+    private CollectResult collectDependencies(Artifact artifact, List<Dependency> deps) throws
             AppModelResolverException {
         final CollectRequest request = newCollectRequest(artifact);
         request.setDependencies(deps);

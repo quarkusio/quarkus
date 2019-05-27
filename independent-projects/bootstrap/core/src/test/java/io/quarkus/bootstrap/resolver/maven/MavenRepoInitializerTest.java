@@ -1,12 +1,16 @@
 package io.quarkus.bootstrap.resolver.maven;
 
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import org.apache.commons.cli.ParseException;
 import org.apache.maven.settings.*;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import static org.eclipse.aether.repository.RepositoryPolicy.CHECKSUM_POLICY_WARN;
 import static org.eclipse.aether.repository.RepositoryPolicy.UPDATE_POLICY_DAILY;
@@ -49,7 +53,6 @@ public class MavenRepoInitializerTest {
         baseSettings.addProfile(profile);
         baseSettings.addActiveProfile("foo-profile");
 
-
         localProxy = new Proxy();
         localProxy.setActive(true);
         localProxy.setProtocol("http");
@@ -73,6 +76,7 @@ public class MavenRepoInitializerTest {
         MavenRepoInitializer mavenRepoInitializer = new MavenRepoInitializer.Builder()
                 .settings(settings)
                 .build();
+
 
         List<RemoteRepository> repos = mavenRepoInitializer.getRemoteRepos();
         assertEquals(2, repos.size());
@@ -129,5 +133,38 @@ public class MavenRepoInitializerTest {
         assertNotNull(repos.get(1).getProxy());
         assertEquals(1, repos.get(1).getMirroredRepositories().size());
         assertEquals("central", repos.get(1).getMirroredRepositories().get(0).getId());
+    }
+
+    @Test
+    public void parse_keystore_properties_fromCommandLine_should_be_exported_as_properties() throws ParseException {
+        String input = " -Dval1" +
+                " -Dval2=" +
+                " -Djavax.net.ssl.trustStoreType=Windows-ROOT" +
+                " -Djavax.net.ssl.trustStore=NONE" +
+                " -Djavax.net.ssl.keyStoreType=Windows-MY" +
+                " -Djavax.net.ssl.keyStoreAlias=default-cert" +
+                " -Djavax.net.ssl.keyStore=NONE" +
+                " -Djava.net.useSystemProxies=true" +
+                "  -Dmaven.artifact.threads=20  ";
+
+        Map<String, String> expected = new TreeMap<>();
+        expected.put("javax.net.ssl.trustStoreType", "Windows-ROOT");
+        expected.put("javax.net.ssl.trustStore", "NONE");
+        expected.put("javax.net.ssl.keyStoreType", "Windows-MY");
+        expected.put("javax.net.ssl.keyStoreAlias", "default-cert");
+        expected.put("javax.net.ssl.keyStore", "NONE");
+        expected.put("java.net.useSystemProxies", "true");
+        expected.put("val1", "true");
+        expected.put("val2", "true");
+        expected.put("maven.artifact.threads", "20");
+
+        Map<String, String> result = new TreeMap<>();
+        result.putAll(
+                MavenRepoInitializer.Builder.parseJavaPropertiesFromCommandLine(input)
+                        .entrySet()
+                        .stream()
+                        .collect(Collectors.toMap(e -> e.getKey().toString(), e -> e.getValue().toString()))
+        );
+        assertEquals(expected, result);
     }
 }

@@ -1,9 +1,13 @@
 package io.quarkus.bootstrap.resolver.maven;
 
+import org.apache.maven.settings.Mirror;
 import org.eclipse.aether.repository.MirrorSelector;
 import org.eclipse.aether.repository.Proxy;
 import org.eclipse.aether.repository.ProxySelector;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.util.repository.DefaultMirrorSelector;
+
+import java.util.List;
 
 import static java.util.Optional.ofNullable;
 
@@ -11,18 +15,29 @@ import static java.util.Optional.ofNullable;
  * Retrieve mirror for a {@link RemoteRepository} if applicable, and setup proxy if applicable.
  */
 
-class ProxifiedAwareMirrorSelector implements MirrorSelector {
+class ProxyAwareMirrorSelector implements MirrorSelector {
     private final ProxySelector proxySelector;
     private final MirrorSelector wrappedMirrorSelector;
 
-    /**
-     * Default constructor.
-     *
-     * @param wrappedMirrorSelector Use to retrieve mirror for the remoteRepository, may be {@code null}.
-     * @param proxySelector
-     */
-    ProxifiedAwareMirrorSelector(MirrorSelector wrappedMirrorSelector, ProxySelector proxySelector) {
-        this.wrappedMirrorSelector = wrappedMirrorSelector;
+    private static MirrorSelector createMirrorSelector(List<Mirror> mirrors) {
+        DefaultMirrorSelector ms = new DefaultMirrorSelector();
+        if (mirrors != null) {
+            for (Mirror m : mirrors) {
+                ms.add(
+                        m.getId(),
+                        m.getUrl(),
+                        m.getLayout(),
+                        false,
+                        m.getMirrorOf(),
+                        m.getMirrorOfLayouts()
+                );
+            }
+        }
+        return ms;
+    }
+
+    ProxyAwareMirrorSelector(List<Mirror> mirrors, ProxySelector proxySelector) {
+        this.wrappedMirrorSelector = createMirrorSelector(mirrors);
         this.proxySelector = proxySelector;
     }
 

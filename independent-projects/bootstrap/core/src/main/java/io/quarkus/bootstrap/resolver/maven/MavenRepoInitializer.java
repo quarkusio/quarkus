@@ -17,6 +17,7 @@
 package io.quarkus.bootstrap.resolver.maven;
 
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.ParseException;
@@ -53,15 +54,17 @@ import org.eclipse.aether.util.repository.DefaultProxySelector;
 import org.jboss.logging.Logger;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Collections.unmodifiableList;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
-import static java.util.Collections.unmodifiableList;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * @author Alexey Loubyansky
@@ -90,9 +93,10 @@ public class MavenRepoInitializer {
 
 
     private static final String BASEDIR = "basedir";
-    private static final String MAVEN_CMD_LINE_ARGS = "MAVEN_CMD_LINE_ARGS";
+    private static final String ENV_MAVEN_CMD_LINE_ARGS = "MAVEN_CMD_LINE_ARGS";
     private static final String DOT_M2 = ".m2";
     private static final String SYS_MAVEN_HOME = "maven.home";
+    private static final String ENV_MAVEN_OPTS = "MAVEN_OPTS";
 
     /**
      * Environnment variable name where value indicate where maven is installed.
@@ -212,12 +216,26 @@ public class MavenRepoInitializer {
     }
 
     public static class Builder {
+        private static final File DEFAULT_USER_SETTINGS_FILE = new File(USER_MAVEN_CONFIGURATION_HOME, SETTINGS_XML);
+        private static final File DEFAULT_GLOBAL_SETTINGS_FILE = new File(
+                PropertyUtils.getProperty(SYS_MAVEN_HOME, ofNullable(System.getenv(ENV_MAVEN_HOME)).orElse("")),
+                "conf/settings.xml"
+        );
+        /**
+         * Custom project java properties config File
+         *
+         * @see "https://github.com/apache/maven/blob/maven-3.6.1/apache-maven/src/bin/mvn#L175"
+         */
+        private static final String MVN_JVM_CONFIG = ".mvn/jvm.config";
+
         private CommandLine mvnCmdLine;
         private boolean offline;
         private String updatePolicy;
-        private Settings settings;
         private String checksumPolicy;
         private List<String> profileOptionValues = new ArrayList<>();
+        private File userSettingsFile = DEFAULT_USER_SETTINGS_FILE;
+        private File globalSettingsFile = DEFAULT_GLOBAL_SETTINGS_FILE;
+        private Settings _settings = null;
 
         public Builder() {
         }
@@ -228,12 +246,12 @@ public class MavenRepoInitializer {
         }
 
         /**
-         * Configure builder from {@value #MAVEN_CMD_LINE_ARGS} env variable
+         * Configure builder from {@value #ENV_MAVEN_CMD_LINE_ARGS} env variable
          */
         Builder setupFrommavenCommandLine() {
-            String mvnCmdLineStr = System.getenv(MAVEN_CMD_LINE_ARGS);
+            String mvnCmdLineStr = System.getenv(ENV_MAVEN_CMD_LINE_ARGS);
             if (mvnCmdLineStr == null || mvnCmdLineStr.isEmpty()) {
-                LOG.warnf("Env var '%s' is not defined", MAVEN_CMD_LINE_ARGS);
+                LOG.debugf("Env var '%s' is not defined", ENV_MAVEN_CMD_LINE_ARGS);
                 return this;
             }
             try {
@@ -248,22 +266,16 @@ public class MavenRepoInitializer {
             this.mvnCmdLine = mvnCmdLine;
             this.offline = mvnCmdLine.hasOption(CLIManager.OFFLINE);
 
-            final File userSettingsFile = ofNullable(mvnCmdLine.getOptionValue(CLIManager.ALTERNATE_USER_SETTINGS))
+            userSettingsFile = ofNullable(mvnCmdLine.getOptionValue(CLIManager.ALTERNATE_USER_SETTINGS))
                     .map(MavenRepoInitializer::resolveSettings)
                     .filter(File::exists)
-                    .orElse(new File(
-                            USER_MAVEN_CONFIGURATION_HOME,
-                            SETTINGS_XML
-                    ));
+                    .orElse(DEFAULT_USER_SETTINGS_FILE);
 
-            final File globalSettingsFile = ofNullable(mvnCmdLine.getOptionValue(CLIManager.ALTERNATE_GLOBAL_SETTINGS))
+
+            globalSettingsFile = ofNullable(mvnCmdLine.getOptionValue(CLIManager.ALTERNATE_GLOBAL_SETTINGS))
                     .map(MavenRepoInitializer::resolveSettings)
                     .filter(File::exists)
-                    .orElse(new File(
-                            PropertyUtils.getProperty(SYS_MAVEN_HOME, ofNullable(System.getenv(ENV_MAVEN_HOME)).orElse("")),
-                            "conf/settings.xml"
-                    ));
-
+                    .orElse(DEFAULT_GLOBAL_SETTINGS_FILE);
 
             if (mvnCmdLine.hasOption(CLIManager.SUPRESS_SNAPSHOT_UPDATES)) {
                 updatePolicy = RepositoryPolicy.UPDATE_POLICY_NEVER;
@@ -280,7 +292,6 @@ public class MavenRepoInitializer {
                     .map(Arrays::asList)
                     .ifPresent(profileOptionValues::addAll);
 
-            settings = createSettings(globalSettingsFile, userSettingsFile, offline);
             return this;
         }
 
@@ -288,11 +299,13 @@ public class MavenRepoInitializer {
             return new MavenRepoInitializer(this);
         }
 
-        private static Settings createSettings(File globalSettingsFile, File userSettingsFile, boolean isOffline) throws AppModelResolverException {
+
+        private Settings createSettings() {
             try {
                 final DefaultSettingsBuildingRequest defaultSettingsBuildingRequest = new DefaultSettingsBuildingRequest()
-                        .setSystemProperties(System.getProperties())
+                        .setSystemProperties(getJVMProperties())
                         .setUserSettingsFile(userSettingsFile)
+                        .setSystemProperties(readPropertiesFromMavenOpts())
                         .setGlobalSettingsFile(globalSettingsFile);
 
                 final SettingsBuildingResult result = new DefaultSettingsBuilderFactory()
@@ -309,32 +322,106 @@ public class MavenRepoInitializer {
                     }
                 }
                 Settings settings = result.getEffectiveSettings();
-                if (isOffline) {
+                if (offline) {
                     settings.setOffline(true);
                 }
                 return settings;
-            } catch (SettingsBuildingException e) {
-                throw new AppModelResolverException("Failed to initialize Maven repository settings", e);
+            } catch (SettingsBuildingException | AppModelResolverException e) {
+                throw new IllegalStateException("Failed to initialize Maven repository settings", e);
             }
         }
 
+        private Properties getJVMProperties() {
+            Properties properties = new Properties();
+            // Readm MAVEN_OPTS
+            properties.putAll(System.getProperties());
+            return properties;
+        }
+
+        static Properties parseJavaPropertiesFromCommandLine(String cmdLineStr) {
+            CLIManager cliManager = new CLIManager();
+            CommandLine cmdLine = null;
+            try {
+                cmdLine = cliManager.parse(cmdLineStr.split("\\s+"));
+            } catch (ParseException e) {
+                throw new IllegalArgumentException(e);
+            }
+            Properties properties = new Properties();
+            properties.putAll(
+                    Arrays.stream(cmdLine.getOptionValues(CLIManager.SET_SYSTEM_PROPERTY))
+                            .map(item -> {
+                                int startIdx = item.indexOf("=");
+                                final String key;
+                                final String value;
+                                if (startIdx < 0) {
+                                    key = item;
+                                    value = "true";
+                                } else if ((startIdx + 1) == item.length()) {
+                                    key = item.substring(0, startIdx);
+                                    value = "true";
+                                } else {
+                                    key = item.substring(0, startIdx);
+                                    value = item.substring(startIdx + 1);
+                                }
+                                return new String[]{key, value};
+                            })
+                            .collect(toMap(e -> e[0], e -> e[1])));
+            return properties;
+        }
+
+        private Properties readPropertiesFromMavenOpts() {
+            Properties props = new Properties();
+
+            ofNullable(System.getenv("ENV_MAVEN_OPTS"))
+                    .map(Builder::parseJavaPropertiesFromCommandLine)
+                    .ifPresent(props::putAll);
+
+
+            // Concat properties with properties defined in .mvn/jvm.properties (if exists), like: https://github.com/apache/maven/blob/maven-3.6.1/apache-maven/src/bin/mvn#L175
+            ofNullable(System.getenv(ENV_MAVEN_PROJECT_BASEDIR))
+                    .map(baseDir -> new File(baseDir, MVN_JVM_CONFIG))
+                    .filter(File::exists)
+                    .map(File::toPath)
+                    .map(jvmConfigPath -> {
+                        try {
+                            return IoUtils.readFile(jvmConfigPath);
+                        } catch (IOException e) {
+                            LOG.warn("Unable to read: " + MVN_JVM_CONFIG, e);
+                            return null;
+                        }
+                    })
+                    .map(Builder::parseJavaPropertiesFromCommandLine)
+                    .ifPresent(props::putAll);
+            ;
+            return props;
+        }
+
+
         Builder settings(Settings settings) {
-            this.settings = settings;
+            this._settings = settings;
             return this;
         }
 
+        private Settings getSettings() {
+            if (_settings == null) {
+                _settings = createSettings();
+            }
+            return _settings;
+        }
+
         ProxySelector getProxySelector() {
-            return ofNullable(settings.getActiveProxy())
+            return ofNullable(getSettings().getActiveProxy())
                     .map(Mapper.SETTINGS_PROXY_TO_AETHER_PROXY_SELECTOR)
                     .orElse(NULL_PROXY_SELECTOR);
         }
 
         MirrorSelector getMirrorSelector(ProxySelector proxySelector) {
             return new ProxyAwareMirrorSelector(
-                    settings.getMirrors(),
+                    getSettings().getMirrors(),
                     proxySelector
             );
         }
+
     }
 
     private final String updatePolicy;
@@ -351,7 +438,7 @@ public class MavenRepoInitializer {
         this.updatePolicy = builder.updatePolicy;
         this.checksumPolicy = builder.checksumPolicy;
         this.profileOptionValues = unmodifiableList(builder.profileOptionValues);
-        this.settings = builder.settings;
+        this.settings = builder.getSettings();
         this.proxySelector = builder.getProxySelector();
         this.mirrorSelector = builder.getMirrorSelector(this.proxySelector);
     }

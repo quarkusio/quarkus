@@ -2,16 +2,12 @@ package io.quarkus.context.test;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 import javax.transaction.Transactional.TxType;
 
-import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.junit.jupiter.api.Assertions;
-import org.reactivestreams.Publisher;
 
-import io.quarkus.hibernate.orm.panache.Panache;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 

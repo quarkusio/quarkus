@@ -24,6 +24,7 @@ import java.util.OptionalInt;
 
 import org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchIndexLifecycleStrategyName;
 import org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchIndexStatus;
+import org.hibernate.search.mapper.orm.cfg.HibernateOrmAutomaticIndexingSynchronizationStrategyName;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -89,6 +90,12 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         DiscoveryConfig discovery;
 
         /**
+         * Configuration for the automatic indexing.
+         */
+        @ConfigItem
+        AutomaticIndexing automaticIndexing;
+
+        /**
          * The default configuration for the Elasticsearch indexes.
          */
         @ConfigItem
@@ -134,6 +141,29 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * The scheme that should be used for the new nodes discovered.
          */
         Optional<String> defaultScheme;
+    }
+
+    @ConfigGroup
+    public static class AutomaticIndexing {
+
+        /**
+         * The synchronization strategy to use when indexing automatically.
+         * <p>
+         * Defines the status for which you wait before considering the operation completed by Hibernate Search.
+         * <p>
+         * Can be either one of "queued", "committed" or "searchable".
+         * <p>
+         * Using "searchable" is recommend in unit tests.
+         */
+        Optional<HibernateOrmAutomaticIndexingSynchronizationStrategyName> synchronizationStrategy;
+
+        /**
+         * Whether to check if dirty properties are relevant to indexing before actually reindexing an entity.
+         * <p>
+         * When enabled, re-indexing of an entity is skipped if the only changes are on properties that are not used when
+         * indexing.
+         */
+        Optional<Boolean> enableDirtyCheck;
     }
 
     @ConfigGroup

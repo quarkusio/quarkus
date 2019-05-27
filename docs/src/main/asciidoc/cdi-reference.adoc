@@ -283,5 +283,7 @@ An unused bean:
 * does not declare an observer,
 * does not declare any producer which is eligible for injection to any injection point,
 * is not directly eligible for injection into any `javax.enterprise.inject.Instance` or `javax.inject.Provider` injection point
+
+Users can instruct the container to not remove any of their specific beans (even if they satisfy all the rules specified above) by annotating them with `io.quarkus.arc.Unremovable`.
  
-The extensions can eliminate possible false positives by producing `UnremovableBeanBuildItem`.
+Furthermore, extensions can eliminate possible false positives by producing `UnremovableBeanBuildItem`.

@@ -97,6 +97,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -115,8 +116,8 @@ import io.quarkus.undertow.runtime.ServletProducer;
 import io.quarkus.undertow.runtime.ServletSecurityInfoProxy;
 import io.quarkus.undertow.runtime.ServletSecurityInfoSubstitution;
 import io.quarkus.undertow.runtime.UndertowDeploymentTemplate;
-import io.quarkus.undertow.runtime.filters.CORSTemplate;
 import io.quarkus.undertow.runtime.UndertowHandlersConfServletExtension;
+import io.quarkus.undertow.runtime.filters.CORSTemplate;
 import io.undertow.Undertow;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
@@ -206,9 +207,21 @@ public class UndertowBuildStep {
      */
     @BuildStep
     @Record(STATIC_INIT)
-    public void registerUndertowHandlersConf(BuildProducer<ServletExtensionBuildItem> producer) {
-        if (UndertowHandlersConfServletExtension.existsConfFile()) {
+    public void registerUndertowHandlersConf(BuildProducer<ServletExtensionBuildItem> producer,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFile,
+            BuildProducer<SubstrateResourceBuildItem> substrateResourceBuildItemBuildProducer) {
+        //we always watch the file, so if it gets added we restart
+        watchedFile.produce(
+                new HotDeploymentWatchedFileBuildItem(UndertowHandlersConfServletExtension.META_INF_UNDERTOW_HANDLERS_CONF));
+
+        //check for the file in the handlers dir
+        Path handlerPath = applicationArchivesBuildItem.getRootArchive()
+                .getChildPath(UndertowHandlersConfServletExtension.META_INF_UNDERTOW_HANDLERS_CONF);
+        if (handlerPath != null) {
             producer.produce(new ServletExtensionBuildItem(new UndertowHandlersConfServletExtension()));
+            substrateResourceBuildItemBuildProducer.produce(
+                    new SubstrateResourceBuildItem(UndertowHandlersConfServletExtension.META_INF_UNDERTOW_HANDLERS_CONF));
         }
     }
 

@@ -18,12 +18,7 @@ import io.undertow.servlet.api.DeploymentInfo;
  */
 public class UndertowHandlersConfServletExtension implements ServletExtension {
 
-    private static final String META_INF_UNDERTOW_HANDLERS_CONF = "META-INF/undertow-handlers.conf";
-
-    public static boolean existsConfFile() {
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        return classLoader.getResource(META_INF_UNDERTOW_HANDLERS_CONF) != null;
-    }
+    public static final String META_INF_UNDERTOW_HANDLERS_CONF = "META-INF/undertow-handlers.conf";
 
     @Override
     public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {

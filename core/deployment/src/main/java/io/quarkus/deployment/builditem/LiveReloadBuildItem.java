@@ -11,7 +11,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
  * A build item that can be used to query the live reload state.
  *
  *
- * It can also be used to store context that that is persistent between hot reloads.
+ * It can also be used to store context information that is persistent between hot reloads.
  */
 public final class LiveReloadBuildItem extends SimpleBuildItem {
 
@@ -45,7 +45,7 @@ public final class LiveReloadBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * If this is a live reload this set contains the set config resources that have changed
+     * If this is a live reload this set contains the config resources that have changed
      *
      */
     public Set<String> getChangedResources() {

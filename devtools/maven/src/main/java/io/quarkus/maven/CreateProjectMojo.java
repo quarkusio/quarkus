@@ -245,10 +245,7 @@ public class CreateProjectMojo extends AbstractMojo {
                             .replace("_", ".") + ".HelloResource";
                     className = prompter.promptWithDefaultValue("Set the resource classname", defaultResourceName);
                     if (StringUtils.isBlank(path)) {
-                        String[] resourceClassName = StringUtils.splitByCharacterTypeCamelCase(
-                                className.substring(className.lastIndexOf(".")));
-                        path = prompter.promptWithDefaultValue("Set the resource path ",
-                                "/" + resourceClassName[1].toLowerCase());
+                        path = prompter.promptWithDefaultValue("Set the resource path ", CreateUtils.getDerivedPath(className));
                     }
                 } else {
                     className = null;

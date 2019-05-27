@@ -43,8 +43,9 @@ class SmallRyeContextPropagationProcessor {
     private static final Logger log = Logger.getLogger(SmallRyeContextPropagationProcessor.class.getName());
 
     @BuildStep
-    AdditionalBeanBuildItem registerBean() {
-        return AdditionalBeanBuildItem.builder().addBeanClass(SmallRyeContextPropagationProvider.class).build();
+    void registerBean(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans
+                .produce(AdditionalBeanBuildItem.unremovableOf(SmallRyeContextPropagationProvider.class));
     }
 
     @BuildStep

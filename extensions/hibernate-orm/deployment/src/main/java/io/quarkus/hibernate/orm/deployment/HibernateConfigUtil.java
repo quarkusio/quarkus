@@ -38,7 +38,7 @@ public class HibernateConfigUtil {
 
             if (cacheConfig.expiration.maxIdle.isPresent()) {
                 cacheRegionsConfigEntries.put(getCacheConfigKey(regionName, EXPIRATION_MAX_IDLE),
-                        String.valueOf(cacheConfig.expiration.maxIdle.getAsLong()));
+                        String.valueOf(cacheConfig.expiration.maxIdle.get().getSeconds()));
             }
             if (cacheConfig.memory.objectCount.isPresent()) {
                 cacheRegionsConfigEntries.put(getCacheConfigKey(regionName, MEMORY_OBJECT_COUNT),

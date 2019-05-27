@@ -127,7 +127,7 @@ public class InjectionPointTransformerTest {
         @Override
         public void transform(TransformationContext transformationContext) {
             AnnotationTarget.Kind kind = transformationContext.getTarget().kind();
-            if (AnnotationTarget.Kind.FIELD.equals(transformationContext.getTarget().kind())) {
+            if (AnnotationTarget.Kind.FIELD.equals(kind)) {
                 FieldInfo fieldInfo = transformationContext.getTarget().asField();
                 // with this we should be able to filter out only fields we want to affect
                 if (fieldInfo.declaringClass().name().equals(DotName.createSimple(SimpleConsumer.class.getName()))
@@ -135,7 +135,7 @@ public class InjectionPointTransformerTest {
                     transformationContext.transform().add(MyQualifier.class).done();
                 }
 
-            } else if (AnnotationTarget.Kind.METHOD.equals(transformationContext.getTarget().kind())) {
+            } else if (AnnotationTarget.Kind.METHOD.equals(kind)) {
                 MethodInfo methodInfo = transformationContext.getTarget().asMethod();
                 DotName anotherQualifierDotName = DotName.createSimple(AnotherQualifier.class.getName());
                 if (methodInfo.declaringClass().name()
@@ -147,7 +147,7 @@ public class InjectionPointTransformerTest {
                             .done();
                 }
             } else {
-                throw new IllegalStateException("Unexpected injection point kind: " + transformationContext.getTarget().kind());
+                throw new IllegalStateException("Unexpected injection point kind: " + kind);
             }
         }
     }

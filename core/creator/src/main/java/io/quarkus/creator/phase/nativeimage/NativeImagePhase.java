@@ -412,12 +412,10 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             command.add(runnerJarName);
             //https://github.com/oracle/graal/issues/660
             command.add("-J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1");
-            if (enableFallbackImages) {
-                command.add("-H:FallbackThreshold=5");
-            } else {
+            if (!enableFallbackImages) {
                 //Default: be strict as those fallback images aren't very useful
                 //and tend to cover up real problems.
-                command.add("-H:FallbackThreshold=0");
+                command.add("--no--fallback");
             }
 
             if (reportErrorsAtRuntime) {

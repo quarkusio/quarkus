@@ -1,9 +1,8 @@
 package io.quarkus.runtime.configuration;
 
-import java.util.AbstractSet;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.wildfly.common.Assert;
@@ -12,8 +11,17 @@ import org.wildfly.common.Assert;
  * A configuration source which supports deployment profiles.
  */
 public class DeploymentProfileConfigSource extends AbstractDelegatingConfigSource {
+
     private final String profilePrefix;
-    private NamesSet namesSet;
+
+    public static UnaryOperator<ConfigSource> wrapper() {
+        return new UnaryOperator<ConfigSource>() {
+            @Override
+            public ConfigSource apply(ConfigSource configSource) {
+                return new DeploymentProfileConfigSource(configSource, ProfileManager.getActiveProfile());
+            }
+        };
+    }
 
     /**
      * Construct a new instance.
@@ -28,81 +36,29 @@ public class DeploymentProfileConfigSource extends AbstractDelegatingConfigSourc
     }
 
     public Set<String> getPropertyNames() {
-        final NamesSet namesSet = this.namesSet;
-        if (namesSet == null)
-            return this.namesSet = new NamesSet(getDelegate().getPropertyNames());
-        return namesSet;
+        Set<String> propertyNames = delegate.getPropertyNames();
+        //if a key is only present in a profile we still want the unprofiled key name to show up
+        Set<String> ret = new HashSet<>(propertyNames);
+        for (String i : propertyNames) {
+            if (i.startsWith(profilePrefix)) {
+                ret.add(i.substring(profilePrefix.length()));
+            }
+        }
+        return ret;
     }
 
     public String getValue(final String name) {
         final ConfigSource delegate = getDelegate();
-        if (name.startsWith("%")) {
-            // disallow "cheating"
-            return null;
+        final String nameWithProfile = profilePrefix + name;
+        String result = delegate.getValue(nameWithProfile);
+        if (result != null) {
+            return result;
         } else {
-            final String nameWithProfile = profilePrefix + name;
-            return delegate.getPropertyNames().contains(nameWithProfile) ? delegate.getValue(nameWithProfile)
-                    : delegate.getValue(name);
+            return delegate.getValue(name);
         }
     }
 
     public String getName() {
         return delegate.getName();
-    }
-
-    final class NamesSet extends AbstractSet<String> {
-        private final Set<String> delegateSet;
-
-        NamesSet(final Set<String> delegateSet) {
-            this.delegateSet = delegateSet;
-        }
-
-        public Iterator<String> iterator() {
-            return new Itr(delegateSet.iterator());
-        }
-
-        public int size() {
-            // very slow, unfortunately
-            int cnt = 0;
-            for (String ignored : this)
-                cnt++;
-            return cnt;
-        }
-
-        final class Itr implements Iterator<String> {
-            private final Iterator<String> iterator;
-            private String next;
-
-            Itr(final Iterator<String> iterator) {
-                this.iterator = iterator;
-            }
-
-            public boolean hasNext() {
-                final String profilePrefix = DeploymentProfileConfigSource.this.profilePrefix;
-                final Iterator<String> iterator = this.iterator;
-                while (next == null) {
-                    if (!iterator.hasNext())
-                        return false;
-                    final String test = iterator.next();
-                    if (test.startsWith("%")) {
-                        final int prefixLen = profilePrefix.length();
-                        if (test.startsWith(profilePrefix)) {
-                            next = test.substring(prefixLen);
-                            return true;
-                        }
-                    } else if (!delegateSet.contains(profilePrefix + test)) {
-                        next = test;
-                        return true;
-                    }
-                }
-                return true;
-            }
-
-            public String next() {
-                if (!hasNext())
-                    throw new NoSuchElementException();
-                return next;
-            }
-        }
     }
 }

@@ -38,6 +38,7 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ProfileManager;
 
 /**
  * Class that can be used to run quarkus directly, executing the build and runtime
@@ -87,6 +88,7 @@ public class RuntimeRunner implements Runnable, Closeable {
     @Override
     public void run() {
         Thread.currentThread().setContextClassLoader(loader);
+        ProfileManager.setLaunchMode(launchMode);
         try {
             QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder();
             builder.setRoot(target);

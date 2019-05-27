@@ -383,8 +383,13 @@ public class DevMojo extends AbstractMojo {
 
         if (mavenProject == null) {
             projectDirectory = localProject.getDir().toAbsolutePath().toString();
-            sourcePaths = Collections.singleton(
-                    localProject.getSourcesSourcesDir().toAbsolutePath().toString());
+            Path sourcePath = localProject.getSourcesSourcesDir().toAbsolutePath();
+            if (Files.isDirectory(sourcePath)) {
+                sourcePaths = Collections.singleton(
+                        sourcePath.toString());
+            } else {
+                sourcePaths = Collections.emptySet();
+            }
         } else {
             projectDirectory = mavenProject.getBasedir().getPath();
             sourcePaths = mavenProject.getCompileSourceRoots().stream()

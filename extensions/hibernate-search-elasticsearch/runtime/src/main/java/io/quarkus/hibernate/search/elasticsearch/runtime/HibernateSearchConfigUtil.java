@@ -15,6 +15,12 @@ public class HibernateSearchConfigUtil {
         propertyCollector.accept(configKey(configPath), value);
     }
 
+    public static void addConfig(BiConsumer<String, Object> propertyCollector, String configPath, Optional<?> value) {
+        if (value.isPresent()) {
+            propertyCollector.accept(configKey(configPath), value.get());
+        }
+    }
+
     public static <T> void addBackendConfig(BiConsumer<String, Object> propertyCollector, String backendName, String configPath,
             T value) {
         propertyCollector.accept(backendConfigKey(backendName, configPath), value);

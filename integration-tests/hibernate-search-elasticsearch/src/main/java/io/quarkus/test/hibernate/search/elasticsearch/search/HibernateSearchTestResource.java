@@ -39,10 +39,8 @@ public class HibernateSearchTestResource {
         SearchSession searchSession = Search.getSearchSession(entityManager);
 
         List<Person> person = searchSession.search(Person.class)
-                .asEntity()
                 .predicate(f -> f.match().onField("name").matching("john"))
                 .sort(f -> f.byField("name_sort"))
-                .toQuery()
                 .fetchHits();
 
         assertEquals(2, person.size());
@@ -50,10 +48,8 @@ public class HibernateSearchTestResource {
         assertEquals("John Irving", person.get(1).getName());
 
         person = searchSession.search(Person.class)
-                .asEntity()
                 .predicate(f -> f.nested().onObjectField("address").nest(f.match().onField("address.city").matching("london")))
                 .sort(f -> f.byField("name_sort"))
-                .toQuery()
                 .fetchHits();
 
         assertEquals(1, person.size());

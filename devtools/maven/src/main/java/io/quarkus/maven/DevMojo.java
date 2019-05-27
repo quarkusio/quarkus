@@ -373,7 +373,7 @@ public class DevMojo extends AbstractMojo {
     private void addProject(DevModeContext devModeContext, LocalProject localProject) {
 
         String projectDirectory = null;
-        List<String> sourcePaths = null;
+        Set<String> sourcePaths = null;
         String classesPath = null;
         String resourcePath = null;
 

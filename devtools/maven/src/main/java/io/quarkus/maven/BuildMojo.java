@@ -169,6 +169,12 @@ public class BuildMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
+
+        if (project.getPackaging().equals("pom")) {
+            getLog().info("Type of the artifact is POM, skipping build goal");
+            return;
+        }
+
         final Artifact projectArtifact = project.getArtifact();
         final AppArtifact appArtifact = new AppArtifact(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
                 projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),

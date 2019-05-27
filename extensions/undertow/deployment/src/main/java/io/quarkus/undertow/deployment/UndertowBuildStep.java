@@ -108,12 +108,14 @@ import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.undertow.runtime.HttpBuildConfig;
 import io.quarkus.undertow.runtime.HttpConfig;
 import io.quarkus.undertow.runtime.HttpSessionContext;
 import io.quarkus.undertow.runtime.ServletProducer;
 import io.quarkus.undertow.runtime.ServletSecurityInfoProxy;
 import io.quarkus.undertow.runtime.ServletSecurityInfoSubstitution;
 import io.quarkus.undertow.runtime.UndertowDeploymentTemplate;
+import io.quarkus.undertow.runtime.filters.CORSTemplate;
 import io.undertow.Undertow;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
@@ -145,13 +147,24 @@ public class UndertowBuildStep {
             Consumer<UndertowBuildItem> undertowProducer,
             LaunchModeBuildItem launchMode,
             ExecutorBuildItem executorBuildItem,
+            CORSTemplate corsTemplate,
             HttpConfig config) throws Exception {
+        corsTemplate.setHttpConfig(config);
         RuntimeValue<Undertow> ut = template.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
                 servletDeploymentManagerBuildItem.getDeploymentManager(),
                 config, wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()),
                 launchMode.getLaunchMode());
         undertowProducer.accept(new UndertowBuildItem(ut));
         return new ServiceStartBuildItem("undertow");
+    }
+
+    @BuildStep()
+    @Record(STATIC_INIT)
+    public void buildCorsFilter(CORSTemplate corsTemplate, HttpBuildConfig buildConfig,
+            BuildProducer<ServletExtensionBuildItem> extensionProducer) {
+        if (buildConfig.corsEnabled) {
+            extensionProducer.produce(new ServletExtensionBuildItem(corsTemplate.buildCORSExtension()));
+        }
     }
 
     @BuildStep

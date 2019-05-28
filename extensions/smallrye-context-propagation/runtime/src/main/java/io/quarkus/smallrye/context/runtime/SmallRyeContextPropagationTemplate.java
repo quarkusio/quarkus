@@ -23,10 +23,14 @@ public class SmallRyeContextPropagationTemplate {
     public void configureStaticInit(List<ThreadContextProvider> discoveredProviders,
             List<ContextManagerExtension> discoveredExtensions) {
         // build the manager at static init time
-        ContextManagerProvider contextManagerProvider = new SmallRyeContextManagerProvider();
-        ContextManagerProvider.register(contextManagerProvider);
+        // in the live-reload mode, the provider instance may be already set in the previous start
+        if (ContextManagerProvider.INSTANCE.get() == null) {
+            ContextManagerProvider contextManagerProvider = new SmallRyeContextManagerProvider();
+            ContextManagerProvider.register(contextManagerProvider);
+        }
+
         // do what config we can here, but we need the runtime executor service to finish
-        builder = (SmallRyeContextManager.Builder) contextManagerProvider
+        builder = (SmallRyeContextManager.Builder) ContextManagerProvider.instance()
                 .getContextManagerBuilder();
         builder.withThreadContextProviders(discoveredProviders.toArray(new ThreadContextProvider[0]));
         builder.withContextManagerExtensions(discoveredExtensions.toArray(new ContextManagerExtension[0]));

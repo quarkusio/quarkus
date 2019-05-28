@@ -7,6 +7,11 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 
 import java.util.Locale;
 
+import javax.enterprise.inject.spi.CDI;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
+import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.undertow.UndertowLogger;
 import io.undertow.security.api.AuthenticationMechanism;
@@ -50,6 +55,7 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
                 // Install the JWT principal as the caller
                 Account account = identityManager.verify(credential.getName(), credential);
                 if (account != null) {
+                    preparePrincipalProducer((JsonWebToken) account.getPrincipal());
                     securityContext.authenticationComplete(account, "MP-JWT", false);
                     UndertowLogger.SECURITY_LOGGER.debugf("Authenticated caller(%s) for path(%s) with roles: %s",
                             credential.getName(), exchange.getRequestPath(), account.getRoles());
@@ -66,6 +72,11 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
 
         // No suitable header has been found in this request,
         return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
+    }
+
+    private void preparePrincipalProducer(JsonWebToken jwtPrincipal) {
+        PrincipalProducer principalProducer = CDI.current().select(PrincipalProducer.class).get();
+        principalProducer.setJsonWebToken(jwtPrincipal);
     }
 
     private String getJwtToken(HttpServerExchange exchange) {

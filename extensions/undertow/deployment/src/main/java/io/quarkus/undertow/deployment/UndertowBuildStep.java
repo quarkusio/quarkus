@@ -22,12 +22,14 @@ import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.DENY;
 import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.PERMIT;
 import static javax.servlet.DispatcherType.REQUEST;
 
+import java.io.IOException;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,6 +44,8 @@ import javax.annotation.security.DeclareRoles;
 import javax.annotation.security.RunAs;
 import javax.enterprise.context.SessionScoped;
 import javax.inject.Inject;
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.annotation.HandlesTypes;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.ServletSecurity;
 import javax.servlet.annotation.WebFilter;
@@ -57,6 +61,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Type;
 import org.jboss.metadata.javaee.spec.DescriptionGroupMetaData;
 import org.jboss.metadata.javaee.spec.DescriptionImpl;
 import org.jboss.metadata.javaee.spec.DescriptionsImpl;
@@ -107,6 +112,7 @@ import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildI
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.runtime.HttpBuildConfig;
@@ -136,6 +142,8 @@ public class UndertowBuildStep {
     public static final DotName MULTIPART_CONFIG = DotName.createSimple(MultipartConfig.class.getName());
     public static final DotName SERVLET_SECURITY = DotName.createSimple(ServletSecurity.class.getName());
     protected static final String META_INF_RESOURCES = "META-INF/resources";
+    protected static final String SERVLET_CONTAINER_INITIALIZER = "META-INF/services/javax.servlet.ServletContainerInitializer";
+    protected static final DotName HANDLES_TYPES = DotName.createSimple(HandlesTypes.class.getName());
 
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
@@ -225,6 +233,44 @@ public class UndertowBuildStep {
         }
     }
 
+    /*
+     * look for Servlet container initializers
+     *
+     */
+    @BuildStep
+    public List<ServletContainerInitializerBuildItem> servletContainerInitializer(
+            ApplicationArchivesBuildItem archives,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<AdditionalBeanBuildItem> beans) throws IOException {
+        List<ServletContainerInitializerBuildItem> ret = new ArrayList<>();
+        Set<String> initializers = ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
+                SERVLET_CONTAINER_INITIALIZER);
+        for (String initializer : initializers) {
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(initializer));
+            ClassInfo sci = combinedIndexBuildItem.getIndex().getClassByName(DotName.createSimple(initializer));
+            if (sci != null) {
+                AnnotationInstance handles = sci.classAnnotation(HANDLES_TYPES);
+                Set<String> handledTypes = new HashSet<>();
+                if (handles != null) {
+                    Type[] types = handles.value().asClassArray();
+                    for (Type handledType : types) {
+                        DotName typeName = handledType.asClassType().name();
+                        for (ClassInfo classInfo : combinedIndexBuildItem.getIndex().getAllKnownSubclasses(typeName)) {
+                            handledTypes.add(classInfo.name().toString());
+                        }
+                        for (ClassInfo classInfo : combinedIndexBuildItem.getIndex().getAllKnownImplementors(typeName)) {
+                            handledTypes.add(classInfo.name().toString());
+                        }
+                    }
+                }
+                ret.add(new ServletContainerInitializerBuildItem(initializer, handledTypes));
+            } else {
+                ret.add(new ServletContainerInitializerBuildItem(initializer, Collections.emptySet()));
+            }
+        }
+        return ret;
+    }
+
     @Record(STATIC_INIT)
     @BuildStep()
     public ServletDeploymentManagerBuildItem build(ApplicationArchivesBuildItem applicationArchivesBuildItem,
@@ -233,6 +279,7 @@ public class UndertowBuildStep {
             List<ListenerBuildItem> listeners,
             List<ServletInitParamBuildItem> initParams,
             List<ServletContextAttributeBuildItem> contextParams,
+            List<ServletContainerInitializerBuildItem> servletContainerInitializerBuildItems,
             UndertowDeploymentTemplate template, RecorderContext context,
             List<ServletExtensionBuildItem> extensions,
             BeanContainerBuildItem bc,
@@ -456,6 +503,17 @@ public class UndertowBuildStep {
             reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, i.getListenerClass()));
             template.registerListener(deployment, context.classProxy(i.getListenerClass()), bc.getValue());
         }
+
+        for (ServletContainerInitializerBuildItem sci : servletContainerInitializerBuildItems) {
+            Set<Class<?>> handlesTypes = new HashSet<>();
+            for (String handledType : sci.handlesTypes) {
+                handlesTypes.add(context.classProxy(handledType));
+            }
+
+            template.addServletContainerInitializer(deployment,
+                    (Class<? extends ServletContainerInitializer>) context.classProxy(sci.sciClass), handlesTypes);
+        }
+
         return new ServletDeploymentManagerBuildItem(template.bootServletContainer(deployment, bc.getValue()));
 
     }

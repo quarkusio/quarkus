@@ -49,6 +49,16 @@ public final class AdditionalBeanBuildItem extends MultiBuildItem {
         return new AdditionalBeanBuildItem(Collections.singletonList(beanClass.getName()), false, null);
     }
 
+    /**
+     * Convenient factory method to create an unremovable build item for a single bean class.
+     *
+     * @param beanClass
+     * @return a new build item
+     */
+    public static AdditionalBeanBuildItem unremovableOf(String beanClass) {
+        return new AdditionalBeanBuildItem(Collections.singletonList(beanClass), false, null);
+    }
+
     private final List<String> beanClasses;
     private final boolean removable;
     private final DotName defaultScope;

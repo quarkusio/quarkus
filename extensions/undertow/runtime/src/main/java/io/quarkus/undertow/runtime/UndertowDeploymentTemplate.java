@@ -38,6 +38,7 @@ import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
+import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
@@ -77,6 +78,7 @@ import io.undertow.servlet.api.InstanceFactory;
 import io.undertow.servlet.api.InstanceHandle;
 import io.undertow.servlet.api.ListenerInfo;
 import io.undertow.servlet.api.ServletContainer;
+import io.undertow.servlet.api.ServletContainerInitializerInfo;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
 import io.undertow.servlet.api.ServletStackTraces;
@@ -509,6 +511,11 @@ public class UndertowDeploymentTemplate {
                 });
             }
         };
+    }
+
+    public void addServletContainerInitializer(RuntimeValue<DeploymentInfo> deployment,
+            Class<? extends ServletContainerInitializer> sciClass, Set<Class<?>> handlesTypes) {
+        deployment.getValue().addServletContainerInitializer(new ServletContainerInitializerInfo(sciClass, handlesTypes));
     }
 
     /**

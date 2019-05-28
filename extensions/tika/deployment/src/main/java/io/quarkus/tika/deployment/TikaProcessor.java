@@ -20,12 +20,14 @@ import io.quarkus.tika.runtime.jaxrs.TikaContentReader;
 import io.quarkus.tika.runtime.jaxrs.TikaMetadataReader;
 
 public class TikaProcessor {
-
-    private static final Set<String> NATIVE_READY_PARSERS = Arrays.stream(new String[] {
-            "org.apache.tika.parser.csv.TextAndCSVParser",
-            "org.apache.tika.parser.txt.TXTParser",
-            "org.apache.tika.parser.odf.OpenDocumentParser",
-            "org.apache.tika.parser.pdf.PDFParser"
+    private static final Set<String> NOT_NATIVE_READY_PARSERS = Arrays.stream(new String[] {
+            "org.apache.tika.parser.mat.MatParser",
+            "org.apache.tika.parser.journal.GrobidRESTParser",
+            "org.apache.tika.parser.journal.JournalParser",
+            "org.apache.tika.parser.jdbc.SQLite3Parser",
+            "org.apache.tika.parser.mail.RFC822Parser",
+            "org.apache.tika.parser.pkg.CompressorParser",
+            "org.apache.tika.parser.geo.topic.GeoParser"
     }).collect(Collectors.toSet());
 
     @BuildStep
@@ -72,7 +74,7 @@ public class TikaProcessor {
             Set<String> availableProviderClasses = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
                     "META-INF/services/" + serviceProviderName);
             Predicate<String> pred = p -> !Parser.class.getName().equals(serviceProviderName)
-                    || NATIVE_READY_PARSERS.contains(p);
+                    || !NOT_NATIVE_READY_PARSERS.contains(p);
             serviceProvider.produce(new ServiceProviderBuildItem(serviceProviderName,
                     availableProviderClasses.stream().filter(pred).collect(Collectors.toList())));
         }

@@ -134,30 +134,23 @@ public class ArcAnnotationProcessor {
             BuildProducer<FeatureBuildItem> feature)
             throws Exception {
 
+        if (!arc.isRemoveUnusedBeansFieldValid()) {
+            throw new IllegalArgumentException("Invalid configuration value set for 'quarkus.arc.remove-unused-beans'." +
+                    " Please use one of " + ArcConfig.ALLOWED_REMOVE_UNUSED_BEANS_VALUES);
+        }
+
         feature.produce(new FeatureBuildItem(FeatureBuildItem.CDI));
 
         List<String> additionalBeans = beanArchiveIndex.getAdditionalBeans();
         Set<DotName> generatedClassNames = beanArchiveIndex.getGeneratedClassNames();
         IndexView index = beanArchiveIndex.getIndex();
         BeanProcessor.Builder builder = BeanProcessor.builder();
-        builder.setApplicationClassPredicate(new Predicate<DotName>() {
+        IndexView applicationClassesIndex = applicationArchivesBuildItem.getRootArchive().getIndex();
+        builder.setApplicationClassPredicate(new AbstractCompositeApplicationClassesPredicate<DotName>(
+                applicationClassesIndex, generatedClassNames, applicationClassPredicates) {
             @Override
-            public boolean test(DotName dotName) {
-                if (applicationArchivesBuildItem.getRootArchive().getIndex().getClassByName(dotName) != null) {
-                    return true;
-                }
-                if (generatedClassNames.contains(dotName)) {
-                    return true;
-                }
-                if (!applicationClassPredicates.isEmpty()) {
-                    String className = dotName.toString();
-                    for (ApplicationClassPredicateBuildItem predicate : applicationClassPredicates) {
-                        if (predicate.test(className)) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
+            protected DotName getDotName(DotName dotName) {
+                return dotName;
             }
         });
         builder.addAnnotationTransformer(new AnnotationsTransformer() {
@@ -245,7 +238,16 @@ public class ArcAnnotationProcessor {
         for (BeanDeploymentValidatorBuildItem item : beanDeploymentValidators) {
             builder.addBeanDeploymentValidator(item.getBeanDeploymentValidator());
         }
-        builder.setRemoveUnusedBeans(arc.removeUnusedBeans);
+        builder.setRemoveUnusedBeans(arc.shouldEnableBeanRemoval());
+        if (arc.shouldOnlyKeepAppBeans()) {
+            builder.addRemovalExclusion(new AbstractCompositeApplicationClassesPredicate<BeanInfo>(
+                    applicationClassesIndex, generatedClassNames, applicationClassPredicates) {
+                @Override
+                protected DotName getDotName(BeanInfo bean) {
+                    return bean.getBeanClass();
+                }
+            });
+        }
         builder.addRemovalExclusion(new BeanClassNameExclusion(LifecycleEventRunner.class.getName()));
         for (AdditionalBeanBuildItem additionalBean : this.additionalBeans) {
             if (!additionalBean.isRemovable()) {
@@ -287,5 +289,42 @@ public class ArcAnnotationProcessor {
                         .collect(Collectors.toSet()));
 
         return new BeanContainerBuildItem(beanContainer);
+    }
+
+    private abstract static class AbstractCompositeApplicationClassesPredicate<T> implements Predicate<T> {
+
+        private final IndexView applicationClassesIndex;
+        private final Set<DotName> generatedClassNames;
+        private final List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems;
+
+        protected abstract DotName getDotName(T t);
+
+        private AbstractCompositeApplicationClassesPredicate(IndexView applicationClassesIndex,
+                Set<DotName> generatedClassNames,
+                List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems) {
+            this.applicationClassesIndex = applicationClassesIndex;
+            this.generatedClassNames = generatedClassNames;
+            this.applicationClassPredicateBuildItems = applicationClassPredicateBuildItems;
+        }
+
+        @Override
+        public boolean test(T t) {
+            final DotName dotName = getDotName(t);
+            if (applicationClassesIndex.getClassByName(dotName) != null) {
+                return true;
+            }
+            if (generatedClassNames.contains(dotName)) {
+                return true;
+            }
+            if (!applicationClassPredicateBuildItems.isEmpty()) {
+                String className = dotName.toString();
+                for (ApplicationClassPredicateBuildItem predicate : applicationClassPredicateBuildItems) {
+                    if (predicate.test(className)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
     }
 }

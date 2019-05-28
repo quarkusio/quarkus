@@ -32,7 +32,7 @@ public class TikaProcessor {
 
     @BuildStep
     public void produceRuntimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> resource) {
-        //See https://issues.apache.org/jira/browse/PDFBOX-4548
+        //org.apache.tika.parser.pdf.PDFParser (https://issues.apache.org/jira/browse/PDFBOX-4548)
         resource.produce(new RuntimeInitializedClassBuildItem("org.apache.pdfbox.pdmodel.font.PDType1Font"));
     }
 

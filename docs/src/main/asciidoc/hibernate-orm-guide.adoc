@@ -341,7 +341,7 @@ All regions are bounded by size and time by default. The defaults are `10000` ma
 
 The size of each region can be customized via the `quarkus.hibernate-orm.cache."<region_name>".memory.object-count` property (Replace _<region_name>_ with the actual region name).
 
-To set the maximum idle time, provide the number of seconds via the `quarkus.hibernate-orm.cache."<region_name>".expiration.max-idle` property (Replace _<region_name>_ with the actual region name).
+To set the maximum idle time, provide the duration (see note on duration's format below) via the `quarkus.hibernate-orm.cache."<region_name>".expiration.max-idle` property (Replace _<region_name>_ with the actual region name).
 
 [NOTE]
 ====
@@ -349,6 +349,10 @@ The double quotes are mandatory if your region name contains a dot. For instance
 ```
 quarkus.hibernate-orm.cache."org.acme.MyEntity".memory.object-count=1000
 ```
+
+The format for durations uses the standard `java.time` format.
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+You can also provide duration values starting with a number. In this case, if the value consists only of a `number`, the converter treats the value as seconds. Otherwise, `PT` is implicit appended to the value to obtain a standard `java.time` format.
 ====
 
 === Limitations of Caching

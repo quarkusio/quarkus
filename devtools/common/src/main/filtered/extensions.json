@@ -497,5 +497,16 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-reactive-pg-client"
+  },
+  {
+    "name": "Apache Tika",
+    "labels": [
+      "apache",
+      "tika",
+      "data"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-tika"
   }
+
 ]

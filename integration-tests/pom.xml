@@ -66,6 +66,7 @@
         <module>reactive-pg-client</module>
         <module>test-extension</module>
         <module>amazon-lambda</module>
+        <module>tika</module>
     </modules>
 
     <build>

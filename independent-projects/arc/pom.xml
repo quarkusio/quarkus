@@ -56,7 +56,7 @@
         <version.maven>3.5.2</version.maven>
         <version.jboss-logging>3.3.2.Final</version.jboss-logging>
         <version.javax-annotation>1.3.2</version.javax-annotation>
-        <version.gizmo>1.0.0.Alpha3</version.gizmo>
+        <version.gizmo>1.0.0.Alpha4</version.gizmo>
         <version.jpa>2.2</version.jpa>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
     </properties>

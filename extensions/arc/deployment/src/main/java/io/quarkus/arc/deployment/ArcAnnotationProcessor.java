@@ -47,6 +47,7 @@ import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanDeployment;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanProcessor;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ReflectionRegistration;
 import io.quarkus.arc.processor.ResourceOutput;
 import io.quarkus.arc.runtime.AdditionalBean;
@@ -165,7 +166,11 @@ public class ArcAnnotationProcessor {
                 ClassInfo beanClass = transformationContext.getTarget().asClass();
                 String beanClassName = beanClass.name().toString();
                 if (additionalBeans.contains(beanClassName)) {
-                    // This is an additional bean - try to determine the default scope
+                    if (BuiltinScope.isDeclaredOn(beanClass)) {
+                        // If it declares a built-in scope no action is needed
+                        return;
+                    }
+                    // Try to determine the default scope
                     DotName defaultScope = ArcAnnotationProcessor.this.additionalBeans.stream()
                             .filter(ab -> ab.contains(beanClassName)).findFirst().map(AdditionalBeanBuildItem::getDefaultScope)
                             .orElse(null);

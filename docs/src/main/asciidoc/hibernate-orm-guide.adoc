@@ -256,6 +256,37 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
 </persistence>
 --
 
+== Defining entities in external projects or jars
+
+Hibernate ORM in Quarkus relies on compile-time bytecode enhancements to your entities. If you define your entities in the
+same project where you build your Quarkus application, everything will work fine. If the entities come from external projects
+or jars, you should build those jars with the Jandex Maven plugin, so that your entities will be indexed and found by Quarkus
+and enhanced:
+
+[source,xml]
+--
+<plugin>
+    <groupId>org.jboss.jandex</groupId>
+    <artifactId>jandex-maven-plugin</artifactId>
+    <version>1.0.3</version>
+    <executions>
+        <execution>
+            <id>make-index</id>
+            <goals>
+                <goal>jandex</goal>
+            </goals>
+        </execution>
+    </executions>
+    <dependencies>
+        <dependency>
+            <groupId>org.jboss</groupId>
+            <artifactId>jandex</artifactId>
+            <version>2.1.1.Final</version>
+        </dependency>
+    </dependencies>
+</plugin>
+--
+
 == Caching
 
 Applications that frequently read the same entities can see their performance improved when the Hibernate ORM second-level cache is enabled.

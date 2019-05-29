@@ -45,31 +45,39 @@ public class ExecutorTemplate {
      * In dev mode for now we need the executor to last for the life of the app, as it is used by Undertow. This will likely
      * change
      */
-    static ExecutorService devModeExecutor;
+    static CleanableExecutor devModeExecutor;
 
     public ExecutorService setupRunTime(ShutdownContext shutdownContext, ThreadPoolConfig threadPoolConfig,
             LaunchMode launchMode) {
         if (devModeExecutor != null) {
             return devModeExecutor;
         }
-        final EnhancedQueueExecutor executor = createExecutor(threadPoolConfig);
-
-        Runnable shutdownTask = createShutdownTask(threadPoolConfig, executor);
+        final EnhancedQueueExecutor underlying = createExecutor(threadPoolConfig);
+        ExecutorService executor;
+        Runnable shutdownTask = createShutdownTask(threadPoolConfig, underlying);
         if (launchMode == LaunchMode.DEVELOPMENT) {
-            devModeExecutor = executor;
+            devModeExecutor = new CleanableExecutor(underlying);
+            shutdownContext.addShutdownTask(new Runnable() {
+                @Override
+                public void run() {
+                    devModeExecutor.clean();
+                }
+            });
+            executor = devModeExecutor;
             Runtime.getRuntime().addShutdownHook(new Thread(shutdownTask, "Executor shutdown thread"));
         } else {
             shutdownContext.addShutdownTask(shutdownTask);
+            executor = underlying;
         }
         return executor;
     }
 
     public static ExecutorService createDevModeExecutorForFailedStart(ThreadPoolConfig config) {
-        EnhancedQueueExecutor executor = createExecutor(config);
-        Runnable task = createShutdownTask(config, executor);
-        devModeExecutor = executor;
+        EnhancedQueueExecutor underlying = createExecutor(config);
+        Runnable task = createShutdownTask(config, underlying);
+        devModeExecutor = new CleanableExecutor(underlying);
         Runtime.getRuntime().addShutdownHook(new Thread(task, "Executor shutdown thread"));
-        return executor;
+        return devModeExecutor;
     }
 
     private static Runnable createShutdownTask(ThreadPoolConfig threadPoolConfig, EnhancedQueueExecutor executor) {
@@ -163,4 +171,5 @@ public class ExecutorTemplate {
         builder.setKeepAliveTime(threadPoolConfig.keepAliveTime);
         return builder.build();
     }
+
 }

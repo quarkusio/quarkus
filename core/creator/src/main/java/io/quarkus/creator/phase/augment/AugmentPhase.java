@@ -36,15 +36,16 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
@@ -65,10 +66,12 @@ import io.quarkus.creator.config.reader.MappedPropertiesHandler;
 import io.quarkus.creator.config.reader.PropertiesHandler;
 import io.quarkus.creator.outcome.OutcomeProviderRegistration;
 import io.quarkus.creator.phase.curate.CurateOutcome;
+import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.ApplicationInfoUtil;
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.QuarkusClassWriter;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateOutputBuildItem;
@@ -94,6 +97,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
     private Path wiringClassesDir;
     private Path generatedSourcesDir;
     private Path configDir;
+    private Map<Path, Set<String>> transformedClassesByJar;
 
     /**
      * Output directory for the outcome of this phase.
@@ -187,6 +191,11 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
     @Override
     public Path getConfigDir() {
         return configDir;
+    }
+
+    @Override
+    public Map<Path, Set<String>> getTransformedClassesByJar() {
+        return transformedClassesByJar;
     }
 
     @Override
@@ -326,7 +335,9 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                 builder.setRoot(appClassesDir);
                 builder.setClassLoader(runnerClassLoader);
                 builder.setOutput(classOutput);
-                builder.addFinal(BytecodeTransformerBuildItem.class).addFinal(MainClassBuildItem.class)
+                builder.addFinal(BytecodeTransformerBuildItem.class)
+                        .addFinal(ApplicationArchivesBuildItem.class)
+                        .addFinal(MainClassBuildItem.class)
                         .addFinal(SubstrateOutputBuildItem.class);
                 result = builder.build().run();
             } finally {
@@ -335,7 +346,10 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
 
             final List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems = result
                     .consumeMulti(BytecodeTransformerBuildItem.class);
+            transformedClassesByJar = new HashMap<>();
             if (!bytecodeTransformerBuildItems.isEmpty()) {
+                ApplicationArchivesBuildItem appArchives = result.consume(ApplicationArchivesBuildItem.class);
+
                 final Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = new HashMap<>(
                         bytecodeTransformerBuildItems.size());
                 for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
@@ -344,30 +358,22 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                 }
 
                 // now copy all the contents to the runner jar
-                // I am not 100% sure about this idea, but if we are going to support bytecode transforms it seems
-                // like the cleanest way to do it
-                // at the end of the PoC phase all this needs review
+                // we also record if any additional archives needed transformation
+                // when we copy these archives we will remove the problematic classes
                 final ExecutorService executorPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
                 final ConcurrentLinkedDeque<Future<FutureEntry>> transformed = new ConcurrentLinkedDeque<>();
                 try {
                     ClassLoader transformCl = runnerClassLoader;
-                    Files.walk(appClassesDir).forEach(new Consumer<Path>() {
-                        @Override
-                        public void accept(Path path) {
-                            if (Files.isDirectory(path)) {
-                                return;
-                            }
-                            final String pathName = appClassesDir.relativize(path).toString();
-                            if (!pathName.endsWith(".class")) {
-                                return;
-                            }
-                            final String className = pathName.substring(0, pathName.length() - 6).replace(File.separatorChar,
-                                    '.');
-                            final List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = bytecodeTransformers
-                                    .get(className);
-                            if (visitors == null || visitors.isEmpty()) {
-                                return;
-                            }
+                    for (Map.Entry<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> entry : bytecodeTransformers
+                            .entrySet()) {
+                        String className = entry.getKey();
+                        ApplicationArchive archive = appArchives.containingArchive(entry.getKey());
+                        if (archive != null) {
+                            List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = entry.getValue();
+                            String classFileName = className.replace(".", "/") + ".class";
+                            Path path = archive.getChildPath(classFileName);
+                            transformedClassesByJar.computeIfAbsent(archive.getArchiveLocation(), (a) -> new HashSet<>())
+                                    .add(classFileName);
                             transformed.add(executorPool.submit(new Callable<FutureEntry>() {
                                 @Override
                                 public FutureEntry call() throws Exception {
@@ -386,14 +392,18 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                                             visitor = i.apply(className, visitor);
                                         }
                                         cr.accept(visitor, 0);
-                                        return new FutureEntry(writer.toByteArray(), pathName);
+                                        return new FutureEntry(writer.toByteArray(), classFileName);
                                     } finally {
                                         Thread.currentThread().setContextClassLoader(old);
                                     }
                                 }
                             }));
+                        } else {
+                            log.warnf("Cannot transform %s as it's containing application archive could not be found.",
+                                    entry.getKey());
                         }
-                    });
+                    }
+
                 } finally {
                     executorPool.shutdown();
                 }

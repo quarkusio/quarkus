@@ -16,7 +16,10 @@
 package io.quarkus.gradle.tasks;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Input;
@@ -444,6 +447,11 @@ public class QuarkusNative extends QuarkusTask {
                 @Override
                 public Path getConfigDir() {
                     return extension().outputConfigDirectory().toPath();
+                }
+
+                @Override
+                public Map<Path, Set<String>> getTransformedClassesByJar() {
+                    return Collections.emptyMap();
                 }
             }).pushOutcome(RunnerJarOutcome.class, new RunnerJarOutcome() {
                 final Path runnerJar = getProject().getBuildDir().toPath().resolve(extension().finalName() + "-runner.jar");

@@ -18,7 +18,10 @@ package io.quarkus.maven;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -214,6 +217,11 @@ public class NativeImageMojo extends AbstractMojo {
                         @Override
                         public Path getConfigDir() {
                             return classesDir;
+                        }
+
+                        @Override
+                        public Map<Path, Set<String>> getTransformedClassesByJar() {
+                            return Collections.emptyMap();
                         }
                     })
                     .pushOutcome(RunnerJarOutcome.class, new RunnerJarOutcome() {

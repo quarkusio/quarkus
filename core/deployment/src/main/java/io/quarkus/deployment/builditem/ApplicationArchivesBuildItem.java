@@ -21,6 +21,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.jboss.jandex.DotName;
+
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.ApplicationArchive;
 
@@ -59,6 +61,25 @@ public final class ApplicationArchivesBuildItem extends SimpleBuildItem {
         HashSet<ApplicationArchive> ret = new HashSet<>(applicationArchives);
         ret.add(root);
         return Collections.unmodifiableSet(ret);
+    }
+
+    /**
+     * Returns the archive that contains the given class name, or null if the class cannot be found
+     *
+     * @param className The class name
+     * @return The application archive
+     */
+    public ApplicationArchive containingArchive(String className) {
+        DotName name = DotName.createSimple(className);
+        if (root.getIndex().getClassByName(name) != null) {
+            return root;
+        }
+        for (ApplicationArchive i : applicationArchives) {
+            if (i.getIndex().getClassByName(name) != null) {
+                return i;
+            }
+        }
+        return null;
     }
 
 }

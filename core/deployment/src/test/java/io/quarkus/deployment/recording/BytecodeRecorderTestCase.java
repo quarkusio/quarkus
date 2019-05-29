@@ -201,6 +201,15 @@ public class BytecodeRecorderTestCase {
         }, new TestJavaBean(null, 2));
     }
 
+    @Test
+    public void testRecordingProxyToStringNotNull() {
+        TestClassLoader tcl = new TestClassLoader(getClass().getClassLoader());
+        BytecodeRecorderImpl recorder = new BytecodeRecorderImpl(tcl, false, TEST_CLASS);
+        TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+        Assert.assertNotNull(template.toString());
+        Assert.assertTrue(template.toString().contains("$$RecordingProxyProxy"));
+    }
+
     void runTest(Consumer<BytecodeRecorderImpl> generator, Object... expected) throws Exception {
         TestTemplate.RESULT.clear();
         TestClassLoader tcl = new TestClassLoader(getClass().getClassLoader());

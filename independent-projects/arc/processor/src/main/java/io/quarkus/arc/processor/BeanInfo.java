@@ -389,7 +389,6 @@ public class BeanInfo implements InjectionTargetInfo {
         if (!isInterceptor() && isClassBean()) {
             Map<MethodInfo, InterceptionInfo> interceptedMethods = new HashMap<>();
             Map<MethodKey, Set<AnnotationInstance>> candidates = new HashMap<>();
-            // TODO interceptor bindings are transitive!!!
 
             List<AnnotationInstance> classLevelBindings = new ArrayList<>();
             addClassLevelBindings(target.get().asClass(), classLevelBindings);

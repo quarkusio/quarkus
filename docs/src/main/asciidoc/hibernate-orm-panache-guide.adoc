@@ -285,6 +285,9 @@ If your query does not start with `from`, we support the following additional fo
 - `<singleColumnName>` (and single parameter) which will expand to `from EntityName where <singleColumnName> = ?`
 - `<query>` will expand to `from EntityName where <query>`
 
+NOTE: Naturally, you can also write your queries in plain 
+link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#hql[HQL].
+
 == Query parameters
 
 You can pass query parameters by index (1-based):

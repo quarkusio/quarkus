@@ -113,8 +113,9 @@ To load some SQL statements when Hibernate ORM starts, add a `import.sql` in the
 It contains SQL DML statements (one by line).
 This is useful to have a data set ready for your tests or demos.
 
-WARNING: The `@Transactional` annotation is required on any method that modifies the database. If you forget it you
-will get an exception. It is not required for querying operations.
+WARNING: An active transaction is required for every method that modifies the database. You can create a container managed 
+transaction using the `@Transactional` annotation on any CDI bean. We recommend doing so in your
+REST endpoints where you manipulate entities.
 
 === Properties to refine your Hibernate ORM configuration
 

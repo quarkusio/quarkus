@@ -371,7 +371,7 @@ go back to specifying your ID and using getters and setters if that's your thing
 
 == Transactions
 
-In Quarkus, every method that modifies the database must be run in a transaction. If you try to modify the database 
+In Quarkus, an active transaction is required for any database modification. If you try to modify the database 
 outside a transaction you will get an exception. It is not required for querying operations.
 
 You can annotate any method with `@Transactional` in order to get a transaction. We recommend doing so in your

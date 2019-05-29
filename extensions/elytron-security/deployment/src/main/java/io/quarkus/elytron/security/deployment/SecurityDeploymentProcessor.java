@@ -83,9 +83,8 @@ class SecurityDeploymentProcessor {
     }
 
     @BuildStep
-    void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        AdditionalBeanBuildItem.Builder unremovable = AdditionalBeanBuildItem.builder().setUnremovable();
-        unremovable.addBeanClass(SecurityContextPrincipal.class);
+    AdditionalBeanBuildItem registerAdditionalBeans() {
+        return AdditionalBeanBuildItem.unremovableOf(SecurityContextPrincipal.class);
     }
 
     /**

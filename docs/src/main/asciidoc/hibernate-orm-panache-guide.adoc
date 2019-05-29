@@ -366,6 +366,15 @@ So if Repositories are your thing, you can keep doing them. Even with repositori
 subclasses of `PanacheEntity` in order to get the ID and public fields working, but you can even skip that and
 go back to specifying your ID and using getters and setters if that's your thing. We're not judging.
 
+== Transactions
+
+In Quarkus, every method that modifies the database must be run in a transaction. If you try to modify the database 
+outside a transaction you will get an exception. It is not required for querying operations.
+
+You can annotate any method with `@Transactional` in order to get a transaction. We recommend doing so in your
+REST endpoints where you manipulate entities.
+
+
 == Custom IDs
 
 IDs are often a touchy subject, and not everyone's up for letting them handled by the framework, once again we

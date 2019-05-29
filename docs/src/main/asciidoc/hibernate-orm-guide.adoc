@@ -113,6 +113,9 @@ To load some SQL statements when Hibernate ORM starts, add a `import.sql` in the
 It contains SQL DML statements (one by line).
 This is useful to have a data set ready for your tests or demos.
 
+WARNING: The `@Transactional` annotation is required on any method that modifies the database. If you forget it you
+will get an exception. It is not required for querying operations.
+
 === Properties to refine your Hibernate ORM configuration
 
 There are optional properties useful to refine your `EntityManagerFactory` or guide guesses of {project-name}.

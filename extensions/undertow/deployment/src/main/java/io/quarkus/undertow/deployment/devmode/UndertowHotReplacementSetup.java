@@ -61,21 +61,13 @@ public class UndertowHotReplacementSetup implements HotReplacementSetup {
     }
 
     void handleHotDeploymentRequest(HttpServerExchange exchange, HttpHandler next) throws Exception {
-
-        if (nextUpdate > System.currentTimeMillis()) {
-            if (context.getDeploymentProblem() != null) {
-                handleDeploymentProblem(exchange, context.getDeploymentProblem());
-                return;
-            }
-            next.handleRequest(exchange);
-            return;
-        }
-        synchronized (this) {
-            if (nextUpdate < System.currentTimeMillis()) {
-                context.doScan();
-                // we update at most once every 2s
-                nextUpdate = System.currentTimeMillis() + TWO_SECONDS;
-
+        if (nextUpdate < System.currentTimeMillis()) {
+            synchronized (this) {
+                if (nextUpdate < System.currentTimeMillis()) {
+                    context.doScan(true);
+                    // we update at most once every 2s
+                    nextUpdate = System.currentTimeMillis() + TWO_SECONDS;
+                }
             }
         }
         if (context.getDeploymentProblem() != null) {

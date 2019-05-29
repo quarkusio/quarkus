@@ -20,7 +20,6 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.util.Set;
-import org.jboss.logging.Logger;
 
 /**
  * This code was mainly copied from Weld codebase.
@@ -31,7 +30,6 @@ import org.jboss.logging.Logger;
  * @author Matus Abaffy
  */
 final class BeanTypeAssignabilityRules {
-    private static final Logger log = Logger.getLogger(BeanTypeAssignabilityRules.class);
 
     private BeanTypeAssignabilityRules() {
     }
@@ -69,15 +67,7 @@ final class BeanTypeAssignabilityRules {
     }
 
     private static boolean matches(Class<?> requiredType, Class<?> beanType) {
-        boolean matches = requiredType.equals(beanType);
-        if (!matches && log.isTraceEnabled() && requiredType.getName().equals(beanType.getName())) {
-            StringBuilder tmp = new StringBuilder("requiredType.CL: ");
-            tmp.append(requiredType.getClassLoader());
-            tmp.append("\nbeanType.CL: ");
-            tmp.append(beanType.getClassLoader());
-            log.tracef("Failed to match classes(%s), ClassLoaders: %s", requiredType.getName(), tmp);
-        }
-        return matches;
+        return requiredType.equals(beanType);
     }
 
     /**

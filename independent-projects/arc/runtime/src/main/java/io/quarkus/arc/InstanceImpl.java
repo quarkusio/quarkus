@@ -92,7 +92,7 @@ class InstanceImpl<T> implements Instance<T> {
         if (beans.isEmpty()) {
             throw new UnsatisfiedResolutionException();
         } else if (beans.size() > 1) {
-            throw new AmbiguousResolutionException();
+            throw new AmbiguousResolutionException("Beans: " + beans.toString());
         }
         return getBeanInstance((InjectableBean<T>) beans.iterator().next());
     }

@@ -217,7 +217,8 @@ public class BeanProcessor {
 
         // Generate _ComponentsProvider
         resources.addAll(
-                new ComponentsProviderGenerator().generate(name, beanDeployment, beanToGeneratedName, observerToGeneratedName));
+                new ComponentsProviderGenerator(annotationLiterals).generate(name, beanDeployment, beanToGeneratedName,
+                        observerToGeneratedName));
 
         // Generate AnnotationLiterals
         if (annotationLiterals.hasLiteralsToGenerate()) {

@@ -16,7 +16,6 @@
 
 package io.quarkus.smallrye.faulttolerance.deployment;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,7 +28,6 @@ import org.eclipse.microprofile.faulttolerance.Fallback;
 import org.eclipse.microprofile.faulttolerance.FallbackHandler;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.faulttolerance.Timeout;
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -59,12 +57,6 @@ import io.smallrye.faulttolerance.metrics.MetricsCollectorFactory;
 
 public class SmallRyeFaultToleranceProcessor {
 
-    private static final DotName[] FT_ANNOTATIONS = { DotName.createSimple(Asynchronous.class.getName()),
-            DotName.createSimple(Bulkhead.class.getName()),
-            DotName.createSimple(CircuitBreaker.class.getName()), DotName.createSimple(Fallback.class.getName()),
-            DotName.createSimple(Retry.class.getName()),
-            DotName.createSimple(Timeout.class.getName()) };
-
     @Inject
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
 
@@ -86,6 +78,14 @@ public class SmallRyeFaultToleranceProcessor {
             BuildProducer<FeatureBuildItem> feature) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_FAULT_TOLERANCE));
+
+        Set<DotName> ftAnnotations = new HashSet<>();
+        ftAnnotations.add(DotName.createSimple(Asynchronous.class.getName()));
+        ftAnnotations.add(DotName.createSimple(Bulkhead.class.getName()));
+        ftAnnotations.add(DotName.createSimple(CircuitBreaker.class.getName()));
+        ftAnnotations.add(DotName.createSimple(Fallback.class.getName()));
+        ftAnnotations.add(DotName.createSimple(Retry.class.getName()));
+        ftAnnotations.add(DotName.createSimple(Timeout.class.getName()));
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
@@ -109,43 +109,38 @@ public class SmallRyeFaultToleranceProcessor {
         }
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, true, HystrixCircuitBreaker.Factory.class.getName()));
-        for (DotName annotation : FT_ANNOTATIONS) {
+        for (DotName annotation : ftAnnotations) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, annotation.toString()));
         }
 
-        // Add HystrixCommandBinding to app classes
-        Set<DotName> ftClasses = new HashSet<>();
-        for (DotName annotation : FT_ANNOTATIONS) {
-            Collection<AnnotationInstance> annotationInstances = index.getAnnotations(annotation);
-            for (AnnotationInstance instance : annotationInstances) {
-                if (instance.target().kind() == Kind.CLASS) {
-                    ftClasses.add(instance.target().asClass().name());
-                } else if (instance.target().kind() == Kind.METHOD) {
-                    ftClasses.add(instance.target().asMethod().declaringClass().name());
+        // Add transitive interceptor binding to FT annotations
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(Kind kind) {
+                return kind == Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext context) {
+                if (ftAnnotations.contains(context.getTarget().asClass().name())) {
+                    context.transform().add(HystrixCommandBinding.class).done();
                 }
             }
-        }
-        if (!ftClasses.isEmpty()) {
-            annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-                @Override
-                public boolean appliesTo(Kind kind) {
-                    return kind == Kind.CLASS;
-                }
+        }));
 
-                @Override
-                public void transform(TransformationContext context) {
-                    if (ftClasses.contains(context.getTarget().asClass().name())) {
-                        context.transform().add(HystrixCommandBinding.class).done();
-                    }
-                }
-            }));
-        }
         // Register bean classes
-        additionalBean.produce(new AdditionalBeanBuildItem(HystrixCommandInterceptor.class, HystrixInitializer.class,
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
+        // Also register MP FT annotations so that they are recognized as interceptor bindings
+        // Note that MP FT API jar is nor indexed, nor contains beans.xml so it is not part of the app index
+        for (DotName ftAnnotation : ftAnnotations) {
+            builder.addBeanClass(ftAnnotation.toString());
+        }
+        builder.addBeanClasses(HystrixCommandInterceptor.class, HystrixInitializer.class,
                 DefaultHystrixConcurrencyStrategy.class,
                 QuarkusFaultToleranceOperationProvider.class, QuarkusFallbackHandlerProvider.class,
                 DefaultCommandListenersProvider.class,
-                MetricsCollectorFactory.class));
+                MetricsCollectorFactory.class);
+        additionalBean.produce(builder.build());
     }
 
     @BuildStep

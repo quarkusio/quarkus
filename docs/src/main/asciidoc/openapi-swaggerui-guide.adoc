@@ -211,16 +211,22 @@ Quarkus proposes a `smallrye-openapi` extension compliant with the https://githu
 specification in order to generate your API https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md[OpenAPI v3 specification].
 
 You just need to add the `smallrye-openapi` extension to your Quarkus application:
+
+[source, shell]
 ----
 ./mvnw quarkus:add-extension -Dextensions="smallrye-openapi"
 ----
 
 Now, we are ready to run our application:
+
+[source, shell]
 ----
 ./mvnw compile quarkus:dev
 ----
 
 Once your application is started, you can make a request to the default `/openapi` endpoint:
+
+[source, shell]
 ----
 $ curl http://localhost:8080/openapi
 openapi: 3.0.1
@@ -277,21 +283,36 @@ The UI is automatically generated from your OpenAPI specification.
 
 The Quarkus `smallrye-openapi` extension comes with a `swagger-ui` extension embedding a properly configured Swagger UI page.
 
-NOTE: Swagger UI is only available when Quarkus is started in dev or test mode.
+[NOTE]
+====
+By default, Swagger UI is only available when Quarkus is started in dev or test mode.
+
+If you want to make it available in production too, you can include the following configuration in your `application.properties`:
+[source, properties]
+----
+quarkus.swagger-ui.always-include=true
+----
+====
 
 By default, Swagger UI is accessible at `/swagger-ui`.
 
 You can update this path by setting the `quarkus.swagger-ui.path` property in your `application.properties`:
+
+[source, properties]
 ----
 quarkus.swagger-ui.path=/my-custom-path
 ----
 
 Now, we are ready to run our application:
+
+[source, shell]
 ----
 ./mvnw compile quarkus:dev
 ----
 
 You can check the Swagger UI path in your application's log:
+
+[source]
 ----
 00:00:00,000 INFO  [io.qua.swa.run.SwaggerUiServletExtension] Swagger UI available at /swagger-ui
 ----

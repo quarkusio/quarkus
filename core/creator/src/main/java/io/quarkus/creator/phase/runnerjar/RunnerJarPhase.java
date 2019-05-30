@@ -407,10 +407,11 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                         ZipEntry entry = entries.nextElement();
                         if (!transformedFromThisArchive.contains(entry.getName())) {
                             out.putNextEntry(entry);
-                            InputStream instream = in.getInputStream(entry);
-                            int r = 0;
-                            while ((r = instream.read(buffer)) > 0) {
-                                out.write(buffer, 0, r);
+                            try (InputStream inStream = in.getInputStream(entry)) {
+                                int r = 0;
+                                while ((r = inStream.read(buffer)) > 0) {
+                                    out.write(buffer, 0, r);
+                                }
                             }
                         }
                     }

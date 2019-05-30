@@ -23,8 +23,8 @@ import io.quarkus.dependencies.Extension;
 import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 
 public class ListExtensions {
-    private static final String FULL_FORMAT = "%-8s %-50s %-50s %-25s\n%s";
-    private static final String SIMPLE_FORMAT = "%-50s %-50s\n%s";
+    private static final String FULL_FORMAT = "%-8s %-50s %-50s %-25s%n%s";
+    private static final String SIMPLE_FORMAT = "%-50s %-50s%n%s";
     private Model model;
 
     public ListExtensions(final Model model) {

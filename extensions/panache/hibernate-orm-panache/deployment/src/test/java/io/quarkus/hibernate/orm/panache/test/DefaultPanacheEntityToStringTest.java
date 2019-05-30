@@ -17,7 +17,7 @@ public class DefaultPanacheEntityToStringTest {
         assertEquals("MyPanacheEntity<null>", myPanacheEntityWithNullId.toString());
     }
 
-    class MyPanacheEntity extends PanacheEntity {
+    static class MyPanacheEntity extends PanacheEntity {
         public MyPanacheEntity(Long id) {
             this.id = id;
         }

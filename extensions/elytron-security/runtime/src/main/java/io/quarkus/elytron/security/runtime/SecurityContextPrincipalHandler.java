@@ -15,7 +15,6 @@ public class SecurityContextPrincipalHandler implements HttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        exchange.getSecurityContext().getAuthenticatedAccount();
         Account account = exchange.getSecurityContext().getAuthenticatedAccount();
         if (account != null && account.getPrincipal() != null) {
             // Get the SecurityContextPrincipal bean and set the request

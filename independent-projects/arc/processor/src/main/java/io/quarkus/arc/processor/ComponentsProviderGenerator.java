@@ -34,12 +34,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.objectweb.asm.Type;
 
 /**
@@ -51,6 +56,12 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
     static final String COMPONENTS_PROVIDER_SUFFIX = "_ComponentsProvider";
 
     static final String SETUP_PACKAGE = Arc.class.getPackage().getName() + ".setup";
+
+    protected final AnnotationLiteralProcessor annotationLiterals;
+
+    public ComponentsProviderGenerator(AnnotationLiteralProcessor annotationLiterals) {
+        this.annotationLiterals = annotationLiterals;
+    }
 
     /**
      *
@@ -183,9 +194,24 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             getComponents.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, contextsHandle, contextHandle);
         }
 
+        ResultHandle transitiveBindingsHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+        for (Entry<DotName, Set<AnnotationInstance>> entry : beanDeployment.getTransitiveInterceptorBindings().entrySet()) {
+            ResultHandle bindingsHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            for (AnnotationInstance binding : entry.getValue()) {
+                // Create annotation literals first
+                ClassInfo bindingClass = beanDeployment.getInterceptorBinding(binding.name());
+                getComponents.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
+                        annotationLiterals.process(getComponents, classOutput, bindingClass, binding,
+                                SETUP_PACKAGE));
+            }
+            getComponents.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, transitiveBindingsHandle,
+                    getComponents.loadClass(entry.getKey().toString()), bindingsHandle);
+        }
+
         ResultHandle componentsHandle = getComponents.newInstance(
-                MethodDescriptor.ofConstructor(Components.class, Collection.class, Collection.class, Collection.class),
-                beansHandle, observersHandle, contextsHandle);
+                MethodDescriptor.ofConstructor(Components.class, Collection.class, Collection.class, Collection.class,
+                        Map.class),
+                beansHandle, observersHandle, contextsHandle, transitiveBindingsHandle);
         getComponents.returnValue(componentsHandle);
 
         // Finally write the bytecode

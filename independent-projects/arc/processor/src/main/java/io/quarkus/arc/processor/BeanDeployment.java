@@ -200,6 +200,10 @@ public class BeanDeployment {
         return transitiveInterceptorBindings.get(name);
     }
 
+    Map<DotName, Set<AnnotationInstance>> getTransitiveInterceptorBindings() {
+        return transitiveInterceptorBindings;
+    }
+
     StereotypeInfo getStereotype(DotName name) {
         return stereotypes.get(name);
     }

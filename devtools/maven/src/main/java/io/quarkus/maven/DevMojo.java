@@ -186,7 +186,8 @@ public class DevMojo extends AbstractMojo {
         }
 
         if (!buildDir.isDirectory() || !new File(buildDir, "classes").isDirectory()) {
-            throw new MojoFailureException("The project has no output yet, run `mvn compile quarkus:dev`.");
+            throw new MojoFailureException("The project " + project.getName()
+                    + " has no output yet. Make sure it contains at least one source or resource file and then run `mvn compile quarkus:dev`.");
         }
 
         try {

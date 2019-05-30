@@ -18,7 +18,6 @@ package io.quarkus.runtime.logging;
 
 import java.io.File;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.logging.Level;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -31,7 +30,7 @@ public class FileConfig {
     /**
      * If file logging should be enabled
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     boolean enable;
 
     /**
@@ -51,6 +50,11 @@ public class FileConfig {
      */
     @ConfigItem(defaultValue = "quarkus.log")
     File path;
+
+    /**
+     * File async logging config
+     */
+    AsyncConfig async;
 
     /**
      * File rotation config

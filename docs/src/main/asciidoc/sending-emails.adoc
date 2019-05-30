@@ -70,22 +70,22 @@ The following table lists the properties that can be configured:
 
 | from | String | the default _from_ address, without, all emails will need an explicit value |
 | mock | Boolean | if set to `true`, the emails are not sent, just printed on the console. | `false`
-| bounceAddress | String | the default bounce address |
+| bounce-address | String | the default bounce address |
 | host | String | the SMTP server host name | _mandatory_
 | port | Integer | the SMTP server port | `25`
 | username | String | the username |
 | password | String | the password |
 | ssl | Boolean | Enables or disables SSL | `false`
-| trustAll | Boolean | Set whether to trust all certificates | `false`
-| maxPoolSize | Integer | Configures the maximum number of open connections to the mail server | `10`
-| ownHostName | String | The hostname to be used for `HELO/EHLO` and the `Message-ID` |
-| keepAlive | Boolean | Set if connection pool is enabled. | `true`
-| disableEsmtp | Boolean | Disable ESMTP | `false`
-| startTLS | `NONE`, `OPTIONAL`, `REQUIRED` | Set the TLS security mode | `OPTIONAL`
+| trust-all | Boolean | Set whether to trust all certificates | `false`
+| max-pool-size | Integer | Configures the maximum number of open connections to the mail server | `10`
+| own-host-name | String | The hostname to be used for `HELO/EHLO` and the `Message-ID` |
+| keep-alive | Boolean | Set if connection pool is enabled. | `true`
+| disable-esmtp | Boolean | Disable ESMTP | `false`
+| start-tls | `NONE`, `OPTIONAL`, `REQUIRED` | Set the TLS security mode | `OPTIONAL`
 | login | `DISABLED`, `OPTIONAL`, `REQUIRED` | Set the login mode for the connection | `NONE`
-| authMethods | space-separated list | Set the allowed auth methods, accept all methods if not set |
-| keyStore | String | Path of the key store |
-| keyStorePassword | String | Key store password |
+| auth-methods | space-separated list | Set the allowed auth methods, accept all methods if not set |
+| key-store | String | Path of the key store |
+| key-store-password | String | Key store password |
 |===
 
 == Sending simple emails

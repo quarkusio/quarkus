@@ -41,13 +41,17 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
+import io.quarkus.smallrye.faulttolerance.runtime.SmallryeFaultToleranceTemplate;
 import io.smallrye.faulttolerance.DefaultCommandListenersProvider;
 import io.smallrye.faulttolerance.DefaultHystrixConcurrencyStrategy;
 import io.smallrye.faulttolerance.HystrixCommandBinding;
@@ -155,5 +159,11 @@ public class SmallRyeFaultToleranceProcessor {
         logCleanupFilter.produce(new LogCleanupFilterBuildItem("com.netflix.config.sources.URLConfigurationSource",
                 "No URLs will be polled as dynamic configuration sources.",
                 "To enable URLs as dynamic configuration sources"));
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    public void clearStatic(SmallryeFaultToleranceTemplate template, ShutdownContextBuildItem context) {
+        template.resetCommandContextOnUndeploy(context);
     }
 }

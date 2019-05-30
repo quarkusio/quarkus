@@ -153,8 +153,8 @@ public class AssignabilityWithGenericsTest {
             return param;
         }
 
-        public String ping(T param) {
-            return param.ping().toString();
+        public String ping(T unusedParam) {
+            return this.param.ping().toString();
         }
 
     }

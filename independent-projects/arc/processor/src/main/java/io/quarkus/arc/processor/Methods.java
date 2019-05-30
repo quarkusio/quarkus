@@ -55,8 +55,7 @@ final class Methods {
     private Methods() {
     }
 
-    static void addDelegatingMethods(IndexView index, ClassInfo classInfo, Map<TypeVariable, Type> resolvedTypeParameters,
-            Map<Methods.MethodKey, MethodInfo> methods) {
+    static void addDelegatingMethods(IndexView index, ClassInfo classInfo, Map<Methods.MethodKey, MethodInfo> methods) {
         // TODO support interfaces default methods
         if (classInfo != null) {
             for (MethodInfo method : classInfo.methods()) {
@@ -68,7 +67,7 @@ final class Methods {
                     Type returnType = key.method.returnType();
                     Type[] params = new Type[key.method.parameters().size()];
                     for (int i = 0; i < params.length; i++) {
-                        params[i] = resolveType(key.method.parameters().get(i), resolvedTypeParameters);
+                        params[i] = key.method.parameters().get(i);
                     }
                     List<TypeVariable> typeVariables = key.method.typeParameters();
                     return MethodInfo.create(classInfo, key.method.name(), params, returnType, key.method.flags(),
@@ -81,24 +80,14 @@ final class Methods {
                 ClassInfo interfaceClassInfo = index.getClassByName(interfaceType.name());
                 if (interfaceClassInfo != null) {
                     Map<TypeVariable, Type> resolved = Collections.emptyMap();
-                    if (org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE.equals(interfaceType.kind())) {
-                        resolved = Types.buildResolvedMap(interfaceType.asParameterizedType().arguments(),
-                                interfaceClassInfo.typeParameters(),
-                                resolvedTypeParameters);
-                    }
-                    addDelegatingMethods(index, interfaceClassInfo, resolved, methods);
+                    addDelegatingMethods(index, interfaceClassInfo, methods);
                 }
             }
             if (classInfo.superClassType() != null) {
                 ClassInfo superClassInfo = index.getClassByName(classInfo.superName());
                 if (superClassInfo != null) {
                     Map<TypeVariable, Type> resolved = Collections.emptyMap();
-                    if (org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE.equals(classInfo.superClassType().kind())) {
-                        resolved = Types.buildResolvedMap(classInfo.superClassType().asParameterizedType().arguments(),
-                                superClassInfo.typeParameters(),
-                                resolvedTypeParameters);
-                    }
-                    addDelegatingMethods(index, superClassInfo, resolved, methods);
+                    addDelegatingMethods(index, superClassInfo, methods);
                 }
             }
         }

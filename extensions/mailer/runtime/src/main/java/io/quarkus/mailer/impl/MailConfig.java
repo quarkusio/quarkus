@@ -20,7 +20,7 @@ public class MailConfig {
     /**
      * Enables the mock mode, not sending emails.
      * The content of the emails is printed on the console.
-     *
+     * <p>
      * Disabled by default.
      */
     @ConfigItem
@@ -71,7 +71,8 @@ public class MailConfig {
     public boolean trustAll;
 
     /**
-     * The pool maximum size.
+     * Configures the maximum allowed number of open connections to the mail server
+     * If not set the default is {@code 10}.
      */
     @ConfigItem
     public OptionalInt maxPoolSize;
@@ -92,8 +93,9 @@ public class MailConfig {
     public boolean keepAlive;
 
     /**
-     * Set if ESMTP should be tried as first command (EHLO).
-     * {@code false} by default.
+     * Disable ESMTP. {@code false} by default.
+     * The RFC-1869 states that clients should always attempt {@code EHLO} as first command to determine if ESMTP
+     * is supported, if this returns an error code, {@code HELO} is tried to use the <em>regular</em> SMTP command.
      */
     @ConfigItem
     public boolean disableEsmtp;

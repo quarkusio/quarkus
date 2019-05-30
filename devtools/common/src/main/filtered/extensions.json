@@ -462,6 +462,16 @@
     "guide": "https://quarkus.io/guides/using-vertx"
   },
   {
+    "name": "Mailer",
+    "labels": [
+      "mail",
+      "mailer"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-mailer",
+    "guide": "https://quarkus.io/guides/sending-emails"
+  },
+  {
     "name": "Reactive Postgres Client",
     "labels": [
       "eclipse-vert.x",

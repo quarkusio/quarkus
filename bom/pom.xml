@@ -161,6 +161,7 @@
         <!-- Used for integration tests, to make sure webjars work-->
         <bootstrap.version>3.1.0</bootstrap.version>
         <keycloak.version>6.0.1</keycloak.version>
+        <subethasmtp.version>3.1.7</subethasmtp.version>
     </properties>
 
     <dependencyManagement>
@@ -449,6 +450,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-reactive-pg-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-mailer</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1136,6 +1142,11 @@
                 <version>${assertj.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.subethamail</groupId>
+                <artifactId>subethasmtp</artifactId>
+                <version>${subethasmtp.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>net.minidev</groupId>
                 <artifactId>json-smart</artifactId>
                 <version>${json-smart.version}</version>
@@ -1632,6 +1643,11 @@
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-axle-postgres-client</artifactId>
+                <version>${axle-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-axle-mail-client</artifactId>
                 <version>${axle-client.version}</version>
             </dependency>
             <dependency>

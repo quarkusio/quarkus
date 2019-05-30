@@ -31,6 +31,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String JDBC_MSSQL = "jdbc-mssql";
     public static final String KEYCLOAK = "keycloak";
     public static final String KOTLIN = "kotlin";
+    public static final String MAILER = "mailer";
     public static final String NARAYANA_JTA = "narayana-jta";
     public static final String REACTIVE_PG_CLIENT = "reactive-pg-client";
     public static final String RESTEASY = "resteasy";

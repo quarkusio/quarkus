@@ -177,9 +177,9 @@ public class ReactiveMailerImpl implements ReactiveMailer {
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    void configure(Optional<String> from, Optional<String> bounceAddress, Optional<Boolean> mock) {
+    void configure(Optional<String> from, Optional<String> bounceAddress, boolean mock) {
         this.from = from.orElse(null);
         this.bounceAddress = bounceAddress.orElse(null);
-        this.mock = mock.orElse(false);
+        this.mock = mock;
     }
 }

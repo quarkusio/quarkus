@@ -20,9 +20,11 @@ public class MailConfig {
     /**
      * Enables the mock mode, not sending emails.
      * The content of the emails is printed on the console.
+     *
+     * Disabled by default.
      */
     @ConfigItem
-    public Optional<Boolean> mock;
+    public boolean mock;
 
     /**
      * Configures the default bounce email address.
@@ -56,16 +58,17 @@ public class MailConfig {
 
     /**
      * Enables or disables the SSL on connect.
+     * {@code false} by default.
      */
     @ConfigItem
-    public Optional<Boolean> ssl;
+    public boolean ssl;
 
     /**
      * Set whether to trust all certificates on ssl connect the option is also
-     * applied to {@code STARTTLS} operation
+     * applied to {@code STARTTLS} operation. {@code false} by default.
      */
     @ConfigItem
-    public Optional<Boolean> trustAll;
+    public boolean trustAll;
 
     /**
      * The pool maximum size.
@@ -82,17 +85,18 @@ public class MailConfig {
     /**
      * Set if connection pool is enabled, {@code true} by default.
      * <p>
-     * If the connection pooling is disabled, the max number of sockets is enforced nevertheless
+     * If the connection pooling is disabled, the max number of sockets is enforced nevertheless.
      * <p>
      */
-    @ConfigItem
-    public Optional<Boolean> keepAlive;
+    @ConfigItem(defaultValue = "true")
+    public boolean keepAlive;
 
     /**
      * Set if ESMTP should be tried as first command (EHLO).
+     * {@code false} by default.
      */
     @ConfigItem
-    public Optional<Boolean> disableEsmtp;
+    public boolean disableEsmtp;
 
     /**
      * Set the TLS security mode for the connection.

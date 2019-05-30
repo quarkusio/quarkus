@@ -49,9 +49,9 @@ public class MailConfigTemplate {
     private io.vertx.ext.mail.MailConfig toVertxMailConfig(MailConfig config) {
         io.vertx.ext.mail.MailConfig cfg = new io.vertx.ext.mail.MailConfig();
         config.authMethods.ifPresent(cfg::setAuthMethods);
-        config.disableEsmtp.ifPresent(cfg::setDisableEsmtp);
+        cfg.setDisableEsmtp(config.disableEsmtp);
         cfg.setHostname(config.host);
-        config.keepAlive.ifPresent(cfg::setKeepAlive);
+        cfg.setKeepAlive(config.keepAlive);
         config.keyStore.ifPresent(cfg::setKeyStore);
         config.keyStorePassword.ifPresent(cfg::setKeyStorePassword);
         config.login.ifPresent(s -> cfg.setLogin(LoginOption.valueOf(s.toUpperCase())));
@@ -60,9 +60,9 @@ public class MailConfigTemplate {
         config.username.ifPresent(cfg::setUsername);
         config.password.ifPresent(cfg::setPassword);
         config.port.ifPresent(cfg::setPort);
-        config.ssl.ifPresent(cfg::setSsl);
+        cfg.setSsl(config.ssl);
         config.startTLS.ifPresent(s -> cfg.setStarttls(StartTLSOptions.valueOf(s.toUpperCase())));
-        config.trustAll.ifPresent(cfg::setTrustAll);
+        cfg.setTrustAll(config.trustAll);
         return cfg;
     }
 

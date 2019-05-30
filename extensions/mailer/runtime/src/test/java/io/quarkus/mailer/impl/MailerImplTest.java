@@ -54,7 +54,7 @@ class MailerImplTest {
     @BeforeEach
     void init() {
         mailer = new ReactiveMailerImpl();
-        mailer.configure(Optional.of(FROM), Optional.empty(), Optional.of(false));
+        mailer.configure(Optional.of(FROM), Optional.empty(), false);
         mailer.vertx = vertx;
         mailer.client = MailClient.createShared(mailer.vertx,
                 new MailConfig().setPort(wiser.getServer().getPort()));

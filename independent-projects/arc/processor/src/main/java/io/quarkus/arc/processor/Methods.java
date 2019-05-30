@@ -35,9 +35,10 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.WildcardType;
+import org.jboss.logging.Logger;
 
 final class Methods {
-
+    private static final Logger LOGGER = Logger.getLogger(Methods.class);
     // constructor
     public static final String INIT = "<init>";
     // static initializer
@@ -105,7 +106,13 @@ final class Methods {
     }
 
     private static boolean skipForClientProxy(MethodInfo method) {
-        if (Modifier.isStatic(method.flags()) || Modifier.isFinal(method.flags()) || Modifier.isPrivate(method.flags())) {
+        short flags = method.flags();
+        String className = method.declaringClass().name().toString();
+        if (Modifier.isFinal(flags) && !className.startsWith("java.")) {
+            LOGGER.warn(String.format("Method %s.%s() is final, skipped during generation of corresponding client proxy",
+                    className, method.name()));
+        }
+        if (Modifier.isStatic(flags) || Modifier.isFinal(flags) || Modifier.isPrivate(flags)) {
             return true;
         }
         if (IGNORED_METHODS.contains(method.name())) {
@@ -148,7 +155,14 @@ final class Methods {
     }
 
     private static boolean skipForSubclass(MethodInfo method) {
-        if (Modifier.isStatic(method.flags()) || Modifier.isFinal(method.flags())) {
+        short flags = method.flags();
+        String className = method.declaringClass().name().toString();
+        if (Modifier.isFinal(flags) && !className.startsWith("java.")) {
+            LOGGER.warn(
+                    String.format("Method %s.%s() is final, skipped during generation of corresponding intercepted subclass",
+                            className, method.name()));
+        }
+        if (Modifier.isStatic(flags) || Modifier.isFinal(flags)) {
             return true;
         }
         if (IGNORED_METHODS.contains(method.name())) {

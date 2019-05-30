@@ -180,7 +180,7 @@ public class ListExtensionsTest {
         } finally {
             System.setOut(out);
         }
-        final String output = baos.toString();
+        final String output = baos.toString("UTF-8");
         Assertions.assertEquals(String.format("No extension found with this pattern%n"), output,
                 "search to unexpected extension must return a message");
     }

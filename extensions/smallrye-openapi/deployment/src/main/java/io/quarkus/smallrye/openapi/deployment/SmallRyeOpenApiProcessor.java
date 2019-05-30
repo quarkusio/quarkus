@@ -49,16 +49,15 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.resteasy.deployment.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
 import io.quarkus.smallrye.openapi.runtime.OpenApiServlet;
+import io.quarkus.undertow.deployment.GeneratedWebResourceBuildItem;
 import io.quarkus.undertow.deployment.ServletBuildItem;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
@@ -198,8 +197,7 @@ public class SmallRyeOpenApiProcessor {
     public void build(ApplicationArchivesBuildItem archivesBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<FeatureBuildItem> feature,
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
-            BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
-            BuildProducer<SubstrateResourceBuildItem> substrateResourceBuildItemBuildProducer) throws Exception {
+            BuildProducer<GeneratedWebResourceBuildItem> resourceBuildItemBuildProducer) throws Exception {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
         OpenAPI staticModel = generateStaticModel(archivesBuildItem);
         OpenAPI annotationModel;
@@ -210,10 +208,9 @@ public class SmallRyeOpenApiProcessor {
         }
         OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel);
         for (OpenApiSerializer.Format format : OpenApiSerializer.Format.values()) {
-            String name = OpenApiServlet.BASE_NAME + format;
-            resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name,
+            String name = OpenApiServlet.GENERATED_DOC_BASE + format;
+            resourceBuildItemBuildProducer.produce(new GeneratedWebResourceBuildItem(name,
                     OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8)));
-            substrateResourceBuildItemBuildProducer.produce(new SubstrateResourceBuildItem(name));
         }
     }
 

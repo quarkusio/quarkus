@@ -23,21 +23,17 @@ import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.PERMIT;
 import static javax.servlet.DispatcherType.REQUEST;
 
 import java.io.IOException;
-import java.net.JarURLConnection;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.jar.JarEntry;
 import java.util.stream.Collectors;
 
 import javax.annotation.security.DeclareRoles;
@@ -95,7 +91,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrarBuildItem;
 import io.quarkus.arc.processor.ContextRegistrar;
-import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -132,6 +127,7 @@ import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
 
+//TODO: break this up, it is getting too big
 public class UndertowBuildStep {
 
     public static final DotName WEB_FILTER = DotName.createSimple(WebFilter.class.getName());
@@ -141,7 +137,6 @@ public class UndertowBuildStep {
     public static final DotName DECLARE_ROLES = DotName.createSimple(DeclareRoles.class.getName());
     public static final DotName MULTIPART_CONFIG = DotName.createSimple(MultipartConfig.class.getName());
     public static final DotName SERVLET_SECURITY = DotName.createSimple(ServletSecurity.class.getName());
-    protected static final String META_INF_RESOURCES = "META-INF/resources";
     protected static final String SERVLET_CONTAINER_INITIALIZER = "META-INF/services/javax.servlet.ServletContainerInitializer";
     protected static final DotName HANDLES_TYPES = DotName.createSimple(HandlesTypes.class.getName());
 
@@ -273,8 +268,7 @@ public class UndertowBuildStep {
 
     @Record(STATIC_INIT)
     @BuildStep()
-    public ServletDeploymentManagerBuildItem build(ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            List<ServletBuildItem> servlets,
+    public ServletDeploymentManagerBuildItem build(List<ServletBuildItem> servlets,
             List<FilterBuildItem> filters,
             List<ListenerBuildItem> listeners,
             List<ServletInitParamBuildItem> initParams,
@@ -288,7 +282,7 @@ public class UndertowBuildStep {
             Consumer<ReflectiveClassBuildItem> reflectiveClasses,
             LaunchModeBuildItem launchMode,
             ShutdownContextBuildItem shutdownContext,
-            BuildProducer<SubstrateResourceBuildItem> substrateResourceBuildItemBuildProducer) throws Exception {
+            KnownPathsBuildItem knownPaths) throws Exception {
 
         ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(ServletSecurityInfo.class,
                 ServletSecurityInfoProxy.class, ServletSecurityInfoSubstitution.class);
@@ -296,55 +290,8 @@ public class UndertowBuildStep {
         reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, DefaultServlet.class.getName(),
                 "io.undertow.server.protocol.http.HttpRequestParser$$generated"));
 
-        //we need to check for web resources in order to get welcome files to work
-        //this kinda sucks
-        Set<String> knownFiles = new HashSet<>();
-        Set<String> knownDirectories = new HashSet<>();
-        for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
-            Path resource = i.getChildPath(META_INF_RESOURCES);
-            if (resource != null && Files.exists(resource)) {
-                Files.walk(resource).forEach(new Consumer<Path>() {
-                    @Override
-                    public void accept(Path path) {
-                        // Skip META-INF/resources entry
-                        if (resource.equals(path)) {
-                            return;
-                        }
-                        Path rel = resource.relativize(path);
-                        if (Files.isDirectory(rel)) {
-                            knownDirectories.add(rel.toString());
-                        } else {
-                            knownFiles.add(rel.toString());
-                        }
-                    }
-                });
-            }
-        }
-        Enumeration<URL> resources = getClass().getClassLoader().getResources(META_INF_RESOURCES);
-        while (resources.hasMoreElements()) {
-            URL url = resources.nextElement();
-            if (url.getProtocol().equals("jar")) {
-                JarURLConnection jar = (JarURLConnection) url.openConnection();
-                Enumeration<JarEntry> entries = jar.getJarFile().entries();
-                while (entries.hasMoreElements()) {
-                    JarEntry entry = entries.nextElement();
-                    if (entry.getName().startsWith(META_INF_RESOURCES)) {
-                        String sub = entry.getName().substring(META_INF_RESOURCES.length() + 1);
-                        if (!sub.isEmpty()) {
-                            if (entry.getName().endsWith("/")) {
-                                String dir = sub.substring(0, sub.length() - 1);
-                                knownDirectories.add(dir);
-                            } else {
-                                knownFiles.add(sub);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        substrateResourceBuildItemBuildProducer.produce(new SubstrateResourceBuildItem(
-                knownFiles.stream().map((s) -> META_INF_RESOURCES + "/" + s).collect(Collectors.toList())));
-        RuntimeValue<DeploymentInfo> deployment = template.createDeployment("test", knownFiles, knownDirectories,
+        RuntimeValue<DeploymentInfo> deployment = template.createDeployment("test", knownPaths.knownFiles,
+                knownPaths.knownDirectories,
                 launchMode.getLaunchMode(), shutdownContext);
 
         WebMetaData webMetaData = webMetadataBuildItem.getWebMetaData();

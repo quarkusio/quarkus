@@ -429,7 +429,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
     private URL getQuarkusResource(String name) {
         byte[] data = resources.get(name);
         if (data != null) {
-            String path = "quarkus:" + name + "/";
+            String path = "quarkus:" + name;
 
             try {
                 URL url = new URL(null, path, new URLStreamHandler() {

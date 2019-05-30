@@ -1025,5 +1025,5 @@ Scotts-iMacPro:using-jwt-rbac starksm$ ./target/using-jwt-rbac-runner
 
 The solution repository located in the `using-jwt-rbac` {quickstarts-archive-url}[directory] contains all of the versions we have
 worked through in this quickstart guide as well as some additional endpoints that illustrate subresources with injection
-of `JsonWebToken`s and its claims into those using the CDI APIs. We suggest that you check out the quickstart solutions and
+of ``JsonWebToken``s and their claims into those using the CDI APIs. We suggest that you check out the quickstart solutions and
 explore the `using-jwt-rbac` directory to learn more about the {extension-name} extension features.

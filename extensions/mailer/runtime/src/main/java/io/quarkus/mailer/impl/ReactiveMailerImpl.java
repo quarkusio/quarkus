@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,9 +23,11 @@ import io.quarkus.mailer.Attachment;
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.ReactiveMailer;
 import io.vertx.axle.core.Vertx;
+import io.vertx.axle.core.file.AsyncFile;
 import io.vertx.axle.ext.mail.MailClient;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.file.OpenOptions;
 import io.vertx.ext.mail.MailAttachment;
 import io.vertx.ext.mail.MailMessage;
 
@@ -140,17 +144,29 @@ public class ReactiveMailerImpl implements ReactiveMailer {
             throw new IllegalArgumentException("An attachment must contain either a file or a raw data");
         }
 
-        if (attachment.getData() != null) {
-            attach.setData(Buffer.buffer(attachment.getData()));
-            return CompletableFuture.completedFuture(attach);
+        return getAttachmentStream(vertx, attachment).thenApply(attach::setData);
+    }
+
+    public static CompletionStage<Buffer> getAttachmentStream(Vertx vertx, Attachment attachment) {
+        if (attachment.getFile() != null) {
+            CompletionStage<AsyncFile> open = vertx.fileSystem().open(attachment.getFile().getAbsolutePath(),
+                    new OpenOptions().setRead(true).setCreate(false));
+            return ReactiveStreams
+                    .fromCompletionStage(open)
+                    .flatMap(af -> af.toPublisherBuilder().map(io.vertx.axle.core.buffer.Buffer::getDelegate)
+                            .onTerminate(af::close))
+                    .collect(Buffer::buffer, Buffer::appendBuffer)
+                    .run();
+        } else if (attachment.getData() != null) {
+            Publisher<Byte> data = attachment.getData();
+            return ReactiveStreams.fromPublisher(data)
+                    .collect(Buffer::buffer, Buffer::appendByte)
+                    .run();
         } else {
-            // File, must be read asynchronously
-            CompletionStage<io.vertx.axle.core.buffer.Buffer> stage = vertx.fileSystem()
-                    .readFile(attachment.getFile().getAbsolutePath());
-
-            return stage.thenApply(b -> attach.setData(b.getDelegate()));
+            CompletableFuture<Buffer> future = new CompletableFuture<>();
+            future.completeExceptionally(new IllegalArgumentException("Attachment has no data"));
+            return future;
         }
-
     }
 
     private static CompletionStage<Void> allOf(List<CompletionStage<?>> stages) {

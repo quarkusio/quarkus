@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import javax.mail.BodyPart;
@@ -20,6 +21,7 @@ import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
 
 import io.quarkus.mailer.Mail;
+import io.reactivex.Flowable;
 import io.vertx.axle.core.Vertx;
 import io.vertx.axle.ext.mail.MailClient;
 import io.vertx.ext.mail.MailConfig;
@@ -119,6 +121,36 @@ class MailerImplTest {
         String payload = UUID.randomUUID().toString();
         mailer.send(Mail.withText(TO, "Test", "testAttachment")
                 .addAttachment("my-file.txt", payload.getBytes(), TEXT_CONTENT_TYPE)).toCompletableFuture().join();
+        assertThat(wiser.getMessages()).hasSize(1);
+        WiserMessage actual = wiser.getMessages().get(0);
+        assertThat(getContent(actual)).contains("testAttachment");
+        MimeMessage msg = actual.getMimeMessage();
+        assertThat(msg.getSubject()).isEqualTo("Test");
+        assertThat(msg.getFrom()[0].toString()).isEqualTo(FROM);
+        String value = getAttachment("my-file.txt", (MimeMultipart) actual.getMimeMessage().getContent());
+        assertThat(value).isEqualTo(payload);
+    }
+
+    @Test
+    void testAttachmentAsStream() throws MessagingException, IOException {
+        String payload = UUID.randomUUID().toString();
+        byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
+        Iterable<Byte> iterable = () -> new Iterator<Byte>() {
+            private int index = 0;
+
+            @Override
+            public boolean hasNext() {
+                return bytes.length > index;
+            }
+
+            @Override
+            public Byte next() {
+                return bytes[index++];
+            }
+        };
+
+        mailer.send(Mail.withText(TO, "Test", "testAttachmentAsStream")
+                .addAttachment("my-file.txt", Flowable.fromIterable(iterable), TEXT_CONTENT_TYPE)).toCompletableFuture().join();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains("testAttachment");

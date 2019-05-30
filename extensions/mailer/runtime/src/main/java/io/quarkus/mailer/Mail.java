@@ -3,6 +3,8 @@ package io.quarkus.mailer;
 import java.io.File;
 import java.util.*;
 
+import org.reactivestreams.Publisher;
+
 /**
  * Represents an e-mail.
  * This class encapsulates the various attributes you want to set on an e-mail you are going to send (to, subject,
@@ -367,6 +369,19 @@ public class Mail {
     }
 
     /**
+     * Adds an attachment.
+     *
+     * @param name the name of the attachment, generally a file name.
+     * @param data the binary data to be attached
+     * @param contentType the content type.
+     * @return the current {@link Mail}
+     */
+    public Mail addAttachment(String name, Publisher<Byte> data, String contentType) {
+        this.attachments.add(new Attachment(name, data, contentType));
+        return this;
+    }
+
+    /**
      * Adds an inline attachment.
      *
      * @param name the name of the attachment, generally a file name.
@@ -382,6 +397,21 @@ public class Mail {
     }
 
     /**
+     * Adds an inline attachment.
+     *
+     * @param name the name of the attachment, generally a file name.
+     * @param data the binary data to be attached
+     * @param contentType the content type
+     * @param contentId the content id. It must follows the {@code <some-id@some-domain>} syntax. Then the HTML
+     *        content can reference this attachment using {@code src="cid:some-id@some-domain"}.
+     * @return the current {@link Mail}
+     */
+    public Mail addInlineAttachment(String name, Publisher<Byte> data, String contentType, String contentId) {
+        this.attachments.add(new Attachment(name, data, contentType, contentId));
+        return this;
+    }
+
+    /**
      * Adds an attachment.
      *
      * @param name the name of the attachment, generally a file name.
@@ -392,6 +422,21 @@ public class Mail {
      * @return the current {@link Mail}
      */
     public Mail addAttachment(String name, byte[] data, String contentType, String description, String disposition) {
+        this.attachments.add(new Attachment(name, data, contentType, description, disposition));
+        return this;
+    }
+
+    /**
+     * Adds an attachment.
+     *
+     * @param name the name of the attachment, generally a file name.
+     * @param data the binary data to be attached
+     * @param contentType the content type
+     * @param description the description of the attachment
+     * @param disposition the disposition of the attachment
+     * @return the current {@link Mail}
+     */
+    public Mail addAttachment(String name, Publisher<Byte> data, String contentType, String description, String disposition) {
         this.attachments.add(new Attachment(name, data, contentType, description, disposition));
         return this;
     }

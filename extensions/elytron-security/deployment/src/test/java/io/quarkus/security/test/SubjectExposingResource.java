@@ -5,6 +5,7 @@ import java.security.Principal;
 import javax.annotation.security.DenyAll;
 import javax.annotation.security.PermitAll;
 import javax.annotation.security.RolesAllowed;
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
@@ -18,12 +19,26 @@ import javax.ws.rs.core.SecurityContext;
 @Path("subject")
 public class SubjectExposingResource {
 
+    @Inject
+    Principal principal;
+
     @GET
     @RolesAllowed("Tester")
     @Path("secured")
     public String getSubjectSecured(@Context SecurityContext sec) {
         Principal user = sec.getUserPrincipal();
         String name = user != null ? user.getName() : "anonymous";
+        return name;
+    }
+
+    @GET
+    @RolesAllowed("Tester")
+    @Path("principalSecured")
+    public String getPrincipalSecured(@Context SecurityContext sec) {
+        if (principal == null) {
+            throw new IllegalStateException("No injected principal");
+        }
+        String name = principal.getName();
         return name;
     }
 

@@ -123,12 +123,6 @@ public class ClassPathArtifactResolver implements ArtifactResolver {
 
     public BiFunction<StoredUrl, Matcher, ResolvedArtifact> createMavenResolver(String groupId, String artifactId,
             String classifier) {
-        Pattern filePatten;
-        if (classifier == null || classifier.isEmpty()) {
-            filePatten = Pattern.compile(artifactId + "-(\\d.*)\\.jar");
-        } else {
-            filePatten = Pattern.compile(artifactId + "-" + classifier + "-(\\d.*)\\.jar");
-        }
         return new BiFunction<StoredUrl, Matcher, ResolvedArtifact>() {
             @Override
             public ResolvedArtifact apply(StoredUrl url, Matcher matcher) {

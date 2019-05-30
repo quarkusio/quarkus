@@ -18,7 +18,7 @@ public interface HotReplacementContext {
      * @return {@code true} if a restart was performed, {@code false} otherwise
      * @throws Exception
      */
-    boolean doScan() throws Exception;
+    boolean doScan(boolean userInitiated) throws Exception;
 
     void addPreScanStep(Runnable runnable);
 }

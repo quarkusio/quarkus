@@ -18,7 +18,7 @@ public class CamelHotReplacementSetup implements HotReplacementSetup {
             @Override
             public void run() {
                 try {
-                    context.doScan();
+                    context.doScan(false);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

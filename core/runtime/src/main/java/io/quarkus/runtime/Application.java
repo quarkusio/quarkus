@@ -16,6 +16,8 @@
 
 package io.quarkus.runtime;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
@@ -50,6 +52,7 @@ public abstract class Application {
     private final Condition stateCond = stateLock.newCondition();
 
     private int state = ST_INITIAL;
+    private String[] commandLineParameters;
     private volatile boolean shutdownRequested;
     private static volatile Application currentApplication;
 
@@ -97,6 +100,7 @@ public abstract class Application {
             stateLock.unlock();
         }
         try {
+            this.commandLineParameters = args;
             doStart(args);
         } catch (Throwable t) {
             stateLock.lock();
@@ -180,6 +184,10 @@ public abstract class Application {
 
     public static Application currentApplication() {
         return currentApplication;
+    }
+
+    public List<String> getCommandLineParameters() {
+        return Arrays.asList(commandLineParameters);
     }
 
     protected abstract void doStop();

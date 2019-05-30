@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
@@ -372,7 +373,7 @@ public class DevMojo extends AbstractMojo {
     private void addProject(DevModeContext devModeContext, LocalProject localProject) {
 
         String projectDirectory = null;
-        List<String> sourcePaths = null;
+        Set<String> sourcePaths = null;
         String classesPath = null;
         String resourcePath = null;
 
@@ -381,7 +382,7 @@ public class DevMojo extends AbstractMojo {
 
         if (mavenProject == null) {
             projectDirectory = localProject.getDir().toAbsolutePath().toString();
-            sourcePaths = Collections.singletonList(
+            sourcePaths = Collections.singleton(
                     localProject.getSourcesSourcesDir().toAbsolutePath().toString());
         } else {
             projectDirectory = mavenProject.getBasedir().getPath();
@@ -389,7 +390,7 @@ public class DevMojo extends AbstractMojo {
                     .map(Paths::get)
                     .filter(Files::isDirectory)
                     .map(src -> src.toAbsolutePath().toString())
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toSet());
         }
 
         Path classesDir = localProject.getClassesDir();

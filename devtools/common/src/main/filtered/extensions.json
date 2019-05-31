@@ -91,6 +91,19 @@
     "guide": "https://quarkus.io/guides/hibernate-orm-panache-guide"
   },
   {
+    "name": "Hibernate Search + Elasticsearch",
+    "labels": [
+      "hibernate-search-elasticsearch",
+      "search",
+      "full-text",
+      "hibernate",
+      "elasticsearch"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-hibernate-search-elasticsearch",
+    "guide": "https://quarkus.io/guides/hibernate-search-guide"
+  },
+  {
     "name": "Hibernate Validator",
     "labels": [
       "hibernate-validator",

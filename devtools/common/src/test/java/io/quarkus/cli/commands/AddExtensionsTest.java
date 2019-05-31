@@ -29,7 +29,7 @@ public class AddExtensionsTest {
 
         File pomFile = new File(pom.getAbsolutePath());
         new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
-                .addExtensions(new HashSet<>(asList("jdbc-postgre", "agroal", "arc", " hibernate-validator")));
+                .addExtensions(new HashSet<>(asList("jdbc-postgre", "agroal", "quarkus-arc", " hibernate-validator")));
 
         Model model = MojoUtils.readPom(pom);
         hasDependency(model, "quarkus-agroal");

@@ -39,6 +39,10 @@
             <artifactId>quarkus-resteasy-common</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-deployment</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.oracle.substratevm</groupId>
             <artifactId>svm</artifactId>
         </dependency>

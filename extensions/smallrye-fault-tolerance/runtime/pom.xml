@@ -53,6 +53,19 @@
             <groupId>com.oracle.substratevm</groupId>
             <artifactId>svm</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-context-propagation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye</groupId>
+            <artifactId>smallrye-context-propagation-propagators-rxjava1</artifactId>
+        </dependency>
+        <!-- to avoid dependency divergence between Hystrix and SR Context Propagation-->
+        <dependency>
+            <groupId>io.reactivex</groupId>
+            <artifactId>rxjava</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

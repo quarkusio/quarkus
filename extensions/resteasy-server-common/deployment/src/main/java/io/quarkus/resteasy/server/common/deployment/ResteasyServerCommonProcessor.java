@@ -52,11 +52,13 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
@@ -100,6 +102,12 @@ public class ResteasyServerCommonProcessor {
             // JAX-RS
             DotName.createSimple(Response.class.getName()),
             DotName.createSimple(AsyncResponse.class.getName()),
+
+            // RESTEasy
+            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartInput"),
+            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput"),
+            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartOutput"),
+            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataOutput"),
 
             // Vert-x
             DotName.createSimple("io.vertx.core.json.JsonArray"),
@@ -273,6 +281,46 @@ public class ResteasyServerCommonProcessor {
         }
 
         resteasyServerConfig.produce(new ResteasyServerConfigBuildItem(path, resteasyInitParameters));
+    }
+
+    @BuildStep
+    void processPathInterfaceImplementors(CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        // NOTE: we cannot process @Path interface implementors within the ResteasyServerCommonProcessor.build() method because of build cycles
+        IndexView index = combinedIndexBuildItem.getIndex();
+        Set<DotName> pathInterfaces = new HashSet<>();
+        for (AnnotationInstance annotation : index.getAnnotations(ResteasyDotNames.PATH)) {
+            if (annotation.target().kind() == AnnotationTarget.Kind.CLASS
+                    && Modifier.isInterface(annotation.target().asClass().flags())) {
+                pathInterfaces.add(annotation.target().asClass().name());
+            }
+        }
+        if (pathInterfaces.isEmpty()) {
+            return;
+        }
+        Set<ClassInfo> pathInterfaceImplementors = new HashSet<>();
+        for (DotName iface : pathInterfaces) {
+            for (ClassInfo implementor : index.getAllKnownImplementors(iface)) {
+                pathInterfaceImplementors.add(implementor);
+            }
+        }
+        if (!pathInterfaceImplementors.isEmpty()) {
+            AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder()
+                    .setDefaultScope(resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName() : null)
+                    .setUnremovable();
+            for (ClassInfo implementor : pathInterfaceImplementors) {
+                if (BuiltinScope.isDeclaredOn(implementor)) {
+                    // It has a built-in scope - just mark it as unremovable
+                    unremovableBeans
+                            .produce(new UnremovableBeanBuildItem(new BeanClassNameExclusion(implementor.name().toString())));
+                } else {
+                    // No built-in scope found - add as additional bean
+                    builder.addBeanClass(implementor.name().toString());
+                }
+            }
+            additionalBeans.produce(builder.build());
+        }
     }
 
     @Record(STATIC_INIT)

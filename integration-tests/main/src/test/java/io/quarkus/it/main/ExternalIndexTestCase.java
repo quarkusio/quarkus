@@ -32,4 +32,8 @@ public class ExternalIndexTestCase {
                 .body(is("Shared Resource"));
     }
 
+    @Test
+    public void testTransformedExternalResources() {
+        RestAssured.when().get("/shared/transformed").then().body(is("Transformed Endpoint"));
+    }
 }

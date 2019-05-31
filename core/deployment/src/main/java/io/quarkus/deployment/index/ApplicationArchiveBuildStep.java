@@ -55,6 +55,7 @@ import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildIt
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -67,12 +68,6 @@ public class ApplicationArchiveBuildStep {
 
     // At least Jandex 2.1 is needed
     private static final int REQUIRED_INDEX_VERSION = 8;
-
-    /**
-     * When running in hot deployment mode we know that java archives will never change, there is no need
-     * to re-index them each time. We cache them here to reduce the hot reload time.
-     */
-    private static final Map<Path, Index> archiveCache = new HashMap<>();
 
     IndexDependencyConfiguration config;
 
@@ -89,21 +84,30 @@ public class ApplicationArchiveBuildStep {
     @BuildStep
     ApplicationArchivesBuildItem build(ArchiveRootBuildItem root, ApplicationIndexBuildItem appindex,
             List<AdditionalApplicationArchiveMarkerBuildItem> appMarkers,
-            List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItem) throws IOException {
+            List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItem,
+            LiveReloadBuildItem liveReloadContext) throws IOException {
 
         Set<String> markerFiles = new HashSet<>();
         for (AdditionalApplicationArchiveMarkerBuildItem i : appMarkers) {
             markerFiles.add(i.getFile());
         }
 
+        IndexCache indexCache = liveReloadContext.getContextObject(IndexCache.class);
+        if (indexCache == null) {
+            indexCache = new IndexCache();
+            liveReloadContext.setContextObject(IndexCache.class, indexCache);
+        }
+
         List<ApplicationArchive> applicationArchives = scanForOtherIndexes(Thread.currentThread().getContextClassLoader(),
-                markerFiles, root.getPath(), additionalApplicationArchiveBuildItem);
-        return new ApplicationArchivesBuildItem(new ApplicationArchiveImpl(appindex.getIndex(), root.getPath(), null),
+                markerFiles, root.getPath(), additionalApplicationArchiveBuildItem, indexCache);
+        return new ApplicationArchivesBuildItem(
+                new ApplicationArchiveImpl(appindex.getIndex(), root.getPath(), null, false, root.getPath()),
                 applicationArchives);
     }
 
     private List<ApplicationArchive> scanForOtherIndexes(ClassLoader classLoader, Set<String> applicationArchiveFiles,
-            Path appRoot, List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives) throws IOException {
+            Path appRoot, List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives, IndexCache indexCache)
+            throws IOException {
         Set<Path> dependenciesToIndex = new HashSet<>();
         //get paths that are included via index-dependencies
         dependenciesToIndex.addAll(getIndexDependencyPaths(classLoader));
@@ -119,7 +123,7 @@ public class ApplicationArchiveBuildStep {
             dependenciesToIndex.add(i.getPath());
         }
 
-        return indexPaths(dependenciesToIndex, classLoader);
+        return indexPaths(dependenciesToIndex, classLoader, indexCache);
     }
 
     public List<Path> getIndexDependencyPaths(ClassLoader classLoader) {
@@ -143,7 +147,8 @@ public class ApplicationArchiveBuildStep {
         }
     }
 
-    private static List<ApplicationArchive> indexPaths(Set<Path> dependenciesToIndex, ClassLoader classLoader)
+    private static List<ApplicationArchive> indexPaths(Set<Path> dependenciesToIndex, ClassLoader classLoader,
+            IndexCache indexCache)
             throws IOException {
         List<ApplicationArchive> ret = new ArrayList<>();
 
@@ -151,11 +156,11 @@ public class ApplicationArchiveBuildStep {
             LOGGER.debugf("Indexing dependency: %s", dep);
             if (Files.isDirectory(dep)) {
                 IndexView indexView = handleFilePath(dep);
-                ret.add(new ApplicationArchiveImpl(indexView, dep, null));
+                ret.add(new ApplicationArchiveImpl(indexView, dep, null, false, dep));
             } else {
-                IndexView index = handleJarPath(dep);
+                IndexView index = handleJarPath(dep, indexCache);
                 FileSystem fs = FileSystems.newFileSystem(dep, classLoader);
-                ret.add(new ApplicationArchiveImpl(index, fs.getRootDirectories().iterator().next(), fs));
+                ret.add(new ApplicationArchiveImpl(index, fs.getRootDirectories().iterator().next(), fs, true, dep));
             }
         }
 
@@ -224,8 +229,8 @@ public class ApplicationArchiveBuildStep {
         return indexer.complete();
     }
 
-    private static Index handleJarPath(Path path) throws IOException {
-        return archiveCache.computeIfAbsent(path, new Function<Path, Index>() {
+    private static Index handleJarPath(Path path, IndexCache indexCache) throws IOException {
+        return indexCache.cache.computeIfAbsent(path, new Function<Path, Index>() {
             @Override
             public Index apply(Path path) {
                 try {
@@ -265,5 +270,15 @@ public class ApplicationArchiveBuildStep {
             }
         }
         return indexer.complete();
+    }
+
+    /**
+     * When running in hot deployment mode we know that java archives will never change, there is no need
+     * to re-index them each time. We cache them here to reduce the hot reload time.
+     */
+    private static final class IndexCache {
+
+        final Map<Path, Index> cache = new HashMap<>();
+
     }
 }

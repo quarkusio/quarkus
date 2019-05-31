@@ -67,6 +67,8 @@ public class BeanDeployment {
 
     private final Map<DotName, ClassInfo> interceptorBindings;
 
+    private final Map<DotName, Set<AnnotationInstance>> transitiveInterceptorBindings;
+
     private final Map<DotName, StereotypeInfo> stereotypes;
 
     private final List<BeanInfo> beans;
@@ -128,8 +130,9 @@ public class BeanDeployment {
         registerCustomContexts(contextRegistrars, beanDefiningAnnotations, buildContext);
 
         this.qualifiers = findQualifiers(index);
-        // TODO interceptor bindings are transitive!!!
         this.interceptorBindings = findInterceptorBindings(index);
+        this.transitiveInterceptorBindings = findTransitiveInterceptorBindigs(interceptorBindings.keySet(), index,
+                new HashMap<>());
         this.stereotypes = findStereotypes(index, interceptorBindings, beanDefiningAnnotations, customContexts,
                 additionalStereotypes);
         this.injectionPoints = new ArrayList<>();
@@ -191,6 +194,14 @@ public class BeanDeployment {
 
     ClassInfo getInterceptorBinding(DotName name) {
         return interceptorBindings.get(name);
+    }
+
+    Set<AnnotationInstance> getTransitiveInterceptorBindings(DotName name) {
+        return transitiveInterceptorBindings.get(name);
+    }
+
+    Map<DotName, Set<AnnotationInstance>> getTransitiveInterceptorBindings() {
+        return transitiveInterceptorBindings;
     }
 
     StereotypeInfo getStereotype(DotName name) {
@@ -355,10 +366,47 @@ public class BeanDeployment {
 
     static Map<DotName, ClassInfo> findInterceptorBindings(IndexView index) {
         Map<DotName, ClassInfo> bindings = new HashMap<>();
+        // Note: doesn't use AnnotationStore, this will operate on classes without applying annotation transformers
         for (AnnotationInstance binding : index.getAnnotations(DotNames.INTERCEPTOR_BINDING)) {
             bindings.put(binding.target().asClass().name(), binding.target().asClass());
         }
         return bindings;
+    }
+
+    Map<DotName, Set<AnnotationInstance>> findTransitiveInterceptorBindigs(Collection<DotName> initialBindings, IndexView index,
+            Map<DotName, Set<AnnotationInstance>> result) {
+        // for all known interceptor bindings
+        for (DotName annotationName : initialBindings) {
+            Set<AnnotationInstance> transitiveBindings = new HashSet<>();
+            // for all annotations on them; use AnnotationStore to have up-to-date info
+            for (AnnotationInstance bindingCandidate : annotationStore.getAnnotations(getInterceptorBinding(annotationName))) {
+                // if the annotation is an interceptor binding itself
+                // Note: this verifies it against bindings found without application of transformers
+                if (getInterceptorBinding(bindingCandidate.name()) != null) {
+                    // register as transitive binding
+                    transitiveBindings.add(bindingCandidate);
+                }
+            }
+            if (!transitiveBindings.isEmpty()) {
+                result.computeIfAbsent(annotationName, k -> new HashSet<>()).addAll(transitiveBindings);
+            }
+        }
+        // now iterate over all so we can put together list for arbitrary transitive depth
+        for (DotName name : result.keySet()) {
+            result.put(name, recursiveBuild(name, result));
+        }
+        return result;
+    }
+
+    private Set<AnnotationInstance> recursiveBuild(DotName name, Map<DotName, Set<AnnotationInstance>> transitiveBindingsMap) {
+        Set<AnnotationInstance> result = transitiveBindingsMap.get(name);
+        for (AnnotationInstance instance : transitiveBindingsMap.get(name)) {
+            if (transitiveBindingsMap.containsKey(instance.name())) {
+                // recursively find
+                result.addAll(recursiveBuild(instance.name(), transitiveBindingsMap));
+            }
+        }
+        return result;
     }
 
     Map<DotName, StereotypeInfo> findStereotypes(IndexView index, Map<DotName, ClassInfo> interceptorBindings,
@@ -732,7 +780,8 @@ public class BeanDeployment {
         }
         List<InterceptorInfo> interceptors = new ArrayList<>();
         for (ClassInfo interceptorClass : interceptorClasses) {
-            interceptors.add(Interceptors.createInterceptor(interceptorClass, this, injectionPointTransformer));
+            interceptors
+                    .add(Interceptors.createInterceptor(interceptorClass, this, injectionPointTransformer, annotationStore));
         }
         if (LOGGER.isTraceEnabled()) {
             for (InterceptorInfo interceptor : interceptors) {

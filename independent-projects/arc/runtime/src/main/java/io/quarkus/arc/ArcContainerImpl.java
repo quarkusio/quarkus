@@ -22,9 +22,12 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -65,6 +68,7 @@ class ArcContainerImpl implements ArcContainer {
     private final List<InjectableBean<?>> beans;
     private final List<InjectableInterceptor<?>> interceptors;
     private final List<InjectableObserverMethod<?>> observers;
+    private final Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings;
 
     // List of "ambiguous" contexts that could share a scope
     private final List<InjectableContext> contexts;
@@ -84,6 +88,7 @@ class ArcContainerImpl implements ArcContainer {
         beans = new ArrayList<>();
         interceptors = new ArrayList<>();
         observers = new ArrayList<>();
+        transitiveInterceptorBindings = new HashMap<>();
 
         applicationContext = new ApplicationContext();
         singletonContext = new SingletonContext();
@@ -112,6 +117,10 @@ class ArcContainerImpl implements ArcContainer {
                             "Failed to register a context - built-in singleton context is always active: " + context);
                 }
                 contexts.add(context);
+            }
+            for (Entry<Class<? extends Annotation>, Set<Annotation>> entry : components.getTransitiveInterceptorBindings()
+                    .entrySet()) {
+                transitiveInterceptorBindings.put(entry.getKey(), entry.getValue());
             }
         }
         Collections.sort(interceptors, (i1, i2) -> Integer.compare(i2.getPriority(), i1.getPriority()));
@@ -208,6 +217,11 @@ class ArcContainerImpl implements ArcContainer {
         Objects.requireNonNull(bean);
         requireRunning();
         return bean != null ? (InstanceHandle<T>) beanInstanceHandle(bean, null) : InstanceHandleImpl.unavailable();
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running.get();
     }
 
     @SuppressWarnings("unchecked")
@@ -484,18 +498,28 @@ class ArcContainerImpl implements ArcContainer {
         if (interceptors.isEmpty()) {
             return Collections.emptyList();
         }
+        if (interceptorBindings.length == 0) {
+            throw new IllegalArgumentException("No interceptor bindings");
+        }
         List<Interceptor<?>> interceptors = new ArrayList<>();
+        List<Annotation> bindings = new ArrayList<>();
+        for (Annotation binding : interceptorBindings) {
+            bindings.add(binding);
+            Set<Annotation> transitive = transitiveInterceptorBindings.get(binding.annotationType());
+            if (transitive != null) {
+                bindings.addAll(transitive);
+            }
+        }
         for (InjectableInterceptor<?> interceptor : this.interceptors) {
-            if (interceptor.intercepts(type) && hasAllInterceptionBindings(interceptor, interceptorBindings)) {
+            if (interceptor.intercepts(type) && hasAllInterceptionBindings(interceptor, bindings)) {
                 interceptors.add(interceptor);
             }
         }
         return interceptors;
     }
 
-    private boolean hasAllInterceptionBindings(InjectableInterceptor<?> interceptor, Annotation[] interceptorBindings) {
+    private boolean hasAllInterceptionBindings(InjectableInterceptor<?> interceptor, Iterable<Annotation> bindings) {
         // The method or constructor has all the interceptor bindings of the interceptor
-        List<Annotation> bindings = Arrays.asList(interceptorBindings);
         for (Annotation binding : interceptor.getInterceptorBindings()) {
             // The resolution rules are the same for qualifiers
             if (!Qualifiers.hasQualifier(bindings, binding)) {
@@ -590,5 +614,4 @@ class ArcContainerImpl implements ArcContainer {
         }
 
     }
-
 }

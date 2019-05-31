@@ -46,6 +46,18 @@ public interface ApplicationArchive extends Closeable {
     Path getArchiveRoot();
 
     /**
+     *
+     * @return <code>true</code> if this archive is a jar
+     */
+    boolean isJarArchive();
+
+    /**
+     * If this archive is a jar file it will return the path to the jar file on the file system,
+     * otherwise it will return the directory that this corresponds to.
+     */
+    Path getArchiveLocation();
+
+    /**
      * Convenience method, returns the child path if it exists, otherwise null.
      *
      * @param path The child path

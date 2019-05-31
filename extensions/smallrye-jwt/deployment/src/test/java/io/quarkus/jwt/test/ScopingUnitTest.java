@@ -2,18 +2,14 @@ package io.quarkus.jwt.test;
 
 import java.io.StringReader;
 import java.net.HttpURLConnection;
-import java.util.Base64;
-import java.util.HashMap;
 
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
-import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 

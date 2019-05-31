@@ -41,10 +41,13 @@ public final class RuntimeSupport {
                 .filter(entry -> entry.getValue() != null)
                 .filter(entry -> ((String) entry.getKey()).startsWith(p))
                 .forEach(entry -> {
-                    final String key = ((String) entry.getKey()).substring(p.length());
-                    final Object val = entry.getValue();
+                    String key = ((String) entry.getKey()).substring(p.length());
+                    Object val = entry.getValue();
 
                     try {
+                        if (context != null && val instanceof String) {
+                            val = context.resolvePropertyPlaceholders((String) val);
+                        }
                         IntrospectionSupport.setProperty(context, target, key, val);
                     } catch (Exception ex) {
                         throw new RuntimeException(ex);

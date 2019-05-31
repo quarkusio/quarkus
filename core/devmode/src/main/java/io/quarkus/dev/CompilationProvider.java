@@ -1,11 +1,16 @@
 package io.quarkus.dev;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Set;
 
 public interface CompilationProvider {
 
     Set<String> handledExtensions();
+
+    default Set<String> handledSourcePaths() {
+        return Collections.emptySet();
+    }
 
     void compile(Set<File> files, Context context);
 

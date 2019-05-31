@@ -23,8 +23,10 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,18 +60,75 @@ public class ClassPathArtifactResolver implements ArtifactResolver {
 
     @Override
     public ResolvedArtifact getArtifact(String groupId, String artifactId, String classifier) {
+
         Pattern filePatten;
         if (classifier == null || classifier.isEmpty()) {
             filePatten = Pattern.compile(artifactId + "-(\\d.*)\\.jar");
         } else {
             filePatten = Pattern.compile(artifactId + "-" + classifier + "-(\\d.*)\\.jar");
         }
+        List<BiFunction<StoredUrl, Matcher, ResolvedArtifact>> resolvers = createResolvers(groupId, artifactId, classifier);
         for (StoredUrl url : pathList) {
+
             Matcher matcher = filePatten.matcher(url.fileName);
             if (matcher.matches()) {
+                for (BiFunction<StoredUrl, Matcher, ResolvedArtifact> resolver : resolvers) {
+                    ResolvedArtifact result = resolver.apply(url, matcher);
+                    if (result != null) {
+                        return result;
+                    }
+                }
+            }
+
+        }
+        throw new RuntimeException("Could not resolve artifact " + groupId + ":" + artifactId + ":" + classifier
+                + ". Please make sure it is present and contains a META-INF/MANIFEST.MF file. Note that artifacts that are part of the same project may not always be resolvable, in this case you should generate a META-INF/jandex.idx file instead using the Jandex Maven plugin.");
+    }
+
+    private List<BiFunction<StoredUrl, Matcher, ResolvedArtifact>> createResolvers(String groupId, String artifactId,
+            String classifier) {
+        return Arrays.asList(createMavenResolver(groupId, artifactId, classifier),
+                createGradleResolver(groupId, artifactId, classifier));
+    }
+
+    private BiFunction<StoredUrl, Matcher, ResolvedArtifact> createGradleResolver(String groupId, String artifactId,
+            String classifier) {
+        return new BiFunction<StoredUrl, Matcher, ResolvedArtifact>() {
+            @Override
+            public ResolvedArtifact apply(StoredUrl url, Matcher matcher) {
+                //gradle name format in reverse order is:
+                //filename
+                //hash
+                //version
+                //artifact-id
+                //group-id
+
+                if (url.path.getNameCount() < 5) {
+                    return null;
+                }
+                String fileArtifact = url.path.getName(url.path.getNameCount() - 4).toString();
+                String fileGroup = url.path.getName(url.path.getNameCount() - 5).toString();
+                if (fileGroup.equals(groupId) && fileArtifact.equals(artifactId)) {
+                    try {
+                        return new ResolvedArtifact(groupId, artifactId, matcher.group(1), classifier, url.path);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                return null;
+            }
+        };
+
+    }
+
+    public BiFunction<StoredUrl, Matcher, ResolvedArtifact> createMavenResolver(String groupId, String artifactId,
+            String classifier) {
+        return new BiFunction<StoredUrl, Matcher, ResolvedArtifact>() {
+            @Override
+            public ResolvedArtifact apply(StoredUrl url, Matcher matcher) {
                 String[] groupParts = groupId.split("\\.");
                 if (url.path.getNameCount() < groupParts.length + 2) {
-                    continue;
+                    return null;
                 }
 
                 boolean matches = true;
@@ -88,10 +147,10 @@ public class ClassPathArtifactResolver implements ArtifactResolver {
                     }
 
                 }
+                return null;
             }
-        }
-        throw new RuntimeException("Could not resolve artifact " + groupId + ":" + artifactId + ":" + classifier
-                + ". Please make sure it is present and contains a META-INF/MANIFEST.MF file. Note that artifacts that are part of the same project may not always be resolvable, in this case you should generate a META-INF/jandex.idx file instead using the Jandex Maven plugin.");
+        };
+
     }
 
     static class StoredUrl {

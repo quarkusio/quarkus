@@ -33,6 +33,5 @@ public class JWTAuthMethodExtension implements ServletExtension {
     @Override
     public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
         deploymentInfo.addAuthenticationMechanism(authMechanism, new JWTAuthMechanismFactory(info));
-        deploymentInfo.addInnerHandlerChainWrapper(MpJwtPrincipalHandler::new);
     }
 }

@@ -1,21 +1,32 @@
 package io.quarkus.runtime;
 
 public enum LaunchMode {
+
     /**
      * A normal production build. At the moment this can be both native image or
      * JVM mode, but eventually these will likely be split
      */
-    NORMAL,
+    NORMAL("prod"),
     /**
      * quarkus:dev or an IDE launch (when we support IDE launch)
      */
-    DEVELOPMENT,
+    DEVELOPMENT("dev"),
     /**
      * a test run
      */
-    TEST;
+    TEST("test");
 
     public boolean isDevOrTest() {
         return this != NORMAL;
+    }
+
+    private final String defaultProfile;
+
+    LaunchMode(String defaultProfile) {
+        this.defaultProfile = defaultProfile;
+    }
+
+    public String getDefaultProfile() {
+        return defaultProfile;
     }
 }

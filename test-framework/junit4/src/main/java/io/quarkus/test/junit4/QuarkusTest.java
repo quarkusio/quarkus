@@ -33,6 +33,9 @@ import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.runner.RuntimeRunner;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PropertyTestUtil;
+import io.quarkus.test.common.TestInjectionManager;
+import io.quarkus.test.common.TestInstantiator;
+import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 public class QuarkusTest extends AbstractQuarkusTestRunner {
 
@@ -76,5 +79,13 @@ public class QuarkusTest extends AbstractQuarkusTestRunner {
         protected void stopQuarkus() throws IOException {
             runtimeRunner.close();
         }
+    }
+
+    @Override
+    protected Object createTest() throws Exception {
+        Object instance = TestInstantiator.instantiateTest(getTestClass().getJavaClass());
+        TestHTTPResourceManager.inject(instance);
+        TestInjectionManager.inject(instance);
+        return instance;
     }
 }

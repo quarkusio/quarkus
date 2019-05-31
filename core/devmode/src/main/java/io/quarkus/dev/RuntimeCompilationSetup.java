@@ -32,7 +32,10 @@ public class RuntimeCompilationSetup {
         if (!context.getModules().isEmpty()) {
             ServiceLoader<CompilationProvider> serviceLoader = ServiceLoader.load(CompilationProvider.class);
             List<CompilationProvider> compilationProviders = new ArrayList<>();
-            serviceLoader.iterator().forEachRemaining(compilationProviders::add);
+            for (CompilationProvider provider : serviceLoader) {
+                compilationProviders.add(provider);
+                context.getModules().forEach(moduleInfo -> moduleInfo.addSourcePaths(provider.handledSourcePaths()));
+            }
             ClassLoaderCompiler compiler;
             try {
                 compiler = new ClassLoaderCompiler(Thread.currentThread().getContextClassLoader(),
@@ -45,6 +48,7 @@ public class RuntimeCompilationSetup {
 
             for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class)) {
                 service.setupHotDeployment(processor);
+                processor.addHotReplacementSetup(service);
             }
             return processor;
         }

@@ -20,23 +20,25 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
+import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
@@ -47,11 +49,14 @@ import org.xnio.XnioWorker;
 
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.ExecutorTemplate;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.runtime.Timing;
 import io.quarkus.runtime.annotations.Template;
+import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.undertow.Undertow;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
@@ -61,7 +66,6 @@ import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.CachingResourceManager;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
-import io.undertow.server.handlers.resource.Resource;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.server.session.SessionIdGenerator;
 import io.undertow.servlet.ServletExtension;
@@ -74,12 +78,16 @@ import io.undertow.servlet.api.InstanceFactory;
 import io.undertow.servlet.api.InstanceHandle;
 import io.undertow.servlet.api.ListenerInfo;
 import io.undertow.servlet.api.ServletContainer;
+import io.undertow.servlet.api.ServletContainerInitializerInfo;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
 import io.undertow.servlet.api.ServletStackTraces;
 import io.undertow.servlet.api.ThreadSetupHandler;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.servlet.handlers.ServletPathMatches;
+import io.undertow.servlet.handlers.ServletRequestContext;
+import io.undertow.servlet.spec.HttpServletRequestImpl;
+import io.undertow.util.AttachmentKey;
 
 /**
  * Provides the runtime methods to bootstrap Undertow. This class is present in the final uber-jar,
@@ -102,8 +110,27 @@ public class UndertowDeploymentTemplate {
     private static volatile List<Path> hotDeploymentResourcePaths;
     private static volatile HttpHandler currentRoot = ResponseCodeHandler.HANDLE_404;
 
+    private static final AttachmentKey<Collection<io.quarkus.arc.ContextInstanceHandle<?>>> REQUEST_CONTEXT = AttachmentKey
+            .create(Collection.class);
+
     public static void setHotDeploymentResources(List<Path> resources) {
         hotDeploymentResourcePaths = resources;
+    }
+
+    public static void startServerAfterFailedStart() {
+        try {
+            HttpConfig config = new HttpConfig();
+            ConfigInstantiator.handleObject(config);
+
+            ThreadPoolConfig threadPoolConfig = new ThreadPoolConfig();
+            ConfigInstantiator.handleObject(threadPoolConfig);
+
+            ExecutorService service = ExecutorTemplate.createDevModeExecutorForFailedStart(threadPoolConfig);
+            //we can't really do
+            doServerStart(config, LaunchMode.DEVELOPMENT, config.ssl.toSSLContext(), service);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
@@ -428,15 +455,54 @@ public class UndertowDeploymentTemplate {
                         return new Action<T, C>() {
                             @Override
                             public T call(HttpServerExchange exchange, C context) throws Exception {
+                                // Not sure what to do here
+                                if (exchange == null)
+                                    return action.call(exchange, context);
                                 ManagedContext requestContext = beanContainer.requestContext();
                                 if (requestContext.isActive()) {
                                     return action.call(exchange, context);
                                 } else {
+                                    Collection<io.quarkus.arc.ContextInstanceHandle<?>> existingRequestContext = exchange
+                                            .getAttachment(REQUEST_CONTEXT);
                                     try {
-                                        requestContext.activate();
+                                        requestContext.activate(existingRequestContext);
                                         return action.call(exchange, context);
                                     } finally {
-                                        requestContext.terminate();
+                                        ServletRequestContext src = exchange
+                                                .getAttachment(ServletRequestContext.ATTACHMENT_KEY);
+                                        HttpServletRequestImpl req = src.getOriginalRequest();
+                                        if (req.isAsyncStarted()) {
+                                            exchange.putAttachment(REQUEST_CONTEXT, requestContext.getAll());
+                                            requestContext.deactivate();
+                                            if (existingRequestContext == null) {
+                                                src.getServletRequest().getAsyncContext().addListener(new AsyncListener() {
+                                                    @Override
+                                                    public void onComplete(AsyncEvent event) throws IOException {
+                                                        for (io.quarkus.arc.InstanceHandle<?> i : exchange
+                                                                .getAttachment(REQUEST_CONTEXT)) {
+                                                            i.destroy();
+                                                        }
+                                                    }
+
+                                                    @Override
+                                                    public void onTimeout(AsyncEvent event) throws IOException {
+                                                        onComplete(event);
+                                                    }
+
+                                                    @Override
+                                                    public void onError(AsyncEvent event) throws IOException {
+                                                        onComplete(event);
+                                                    }
+
+                                                    @Override
+                                                    public void onStartAsync(AsyncEvent event) throws IOException {
+
+                                                    }
+                                                });
+                                            }
+                                        } else {
+                                            requestContext.terminate();
+                                        }
                                     }
                                 }
                             }
@@ -445,6 +511,11 @@ public class UndertowDeploymentTemplate {
                 });
             }
         };
+    }
+
+    public void addServletContainerInitializer(RuntimeValue<DeploymentInfo> deployment,
+            Class<? extends ServletContainerInitializer> sciClass, Set<Class<?>> handlesTypes) {
+        deployment.getValue().addServletContainerInitializer(new ServletContainerInitializerInfo(sciClass, handlesTypes));
     }
 
     /**

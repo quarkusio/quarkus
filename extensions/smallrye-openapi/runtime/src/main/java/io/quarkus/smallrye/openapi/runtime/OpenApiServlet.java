@@ -17,17 +17,13 @@
 package io.quarkus.smallrye.openapi.runtime;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
-import javax.inject.Inject;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import io.smallrye.openapi.api.OpenApiDocument;
 import io.smallrye.openapi.runtime.io.OpenApiSerializer;
 
 /**
@@ -40,7 +36,7 @@ public class OpenApiServlet extends HttpServlet {
 
     private static final String QUERY_PARAM_FORMAT = "format";
 
-    protected static final String GENERATED_DOC_BASE = "quarkus-generated-openapi-doc.";
+    public static final String GENERATED_DOC_BASE = "quarkus-generated-openapi-doc.";
     public static final String BASE_NAME = "META-INF/resources/" + GENERATED_DOC_BASE;
 
     @Override

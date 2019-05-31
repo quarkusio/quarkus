@@ -1,13 +1,13 @@
 package io.quarkus.arc.deployment;
 
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 
 public class HotDeploymentConfigBuildStep {
 
     @BuildStep
-    HotDeploymentConfigFileBuildItem configFile() {
-        return new HotDeploymentConfigFileBuildItem("META-INF/beans.xml");
+    HotDeploymentWatchedFileBuildItem configFile() {
+        return new HotDeploymentWatchedFileBuildItem("META-INF/beans.xml");
     }
 
 }

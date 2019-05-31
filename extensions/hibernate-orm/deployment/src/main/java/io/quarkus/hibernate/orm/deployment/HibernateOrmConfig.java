@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -221,10 +222,10 @@ public class HibernateOrmConfig {
     @ConfigGroup
     public static class HibernateOrmConfigCacheExpiration {
         /**
-         * The maximum time in seconds before an object is considered expired.
+         * The maximum time before an object is considered expired.
          */
         @ConfigItem
-        public OptionalLong maxIdle;
+        public Optional<Duration> maxIdle;
     }
 
     @ConfigGroup

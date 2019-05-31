@@ -272,7 +272,7 @@ ContextRegistrarBuildItem customContext() {
 == Removing Unused Beans
 
 The container attempts to remove all unused beans during build by default.
-This optimization can be disabled: `quarkus.arc.remove-unused-beans=false`.
+This optimization can be disabled by setting `quarkus.arc.remove-unused-beans` to `none` or `false`.
 
 An unused bean:
 
@@ -283,5 +283,10 @@ An unused bean:
 * does not declare an observer,
 * does not declare any producer which is eligible for injection to any injection point,
 * is not directly eligible for injection into any `javax.enterprise.inject.Instance` or `javax.inject.Provider` injection point
+
+Users can instruct the container to not remove any of their specific beans (even if they satisfy all the rules specified above) by annotating them with `io.quarkus.arc.Unremovable`.
  
-The extensions can eliminate possible false positives by producing `UnremovableBeanBuildItem`.
+Furthermore, extensions can eliminate possible false positives by producing `UnremovableBeanBuildItem`.
+
+Finally, Quarkus provides a middle ground for the bean removal optimization where application beans are never removed whether or not they are unused,
+while the optimization proceeds normally for non application classes. To use this mode, set `quarkus.arc.remove-unused-beans` to `fwk` or `framework`.

@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
@@ -58,7 +59,6 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
@@ -151,6 +151,13 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${preventnoverify}")
     private boolean preventnoverify = false;
 
+    /**
+     * Whether changes in the projects that appear to be dependencies of the project containing the application to be launched
+     * should trigger hot-reload. By default they do.
+     */
+    @Parameter(defaultValue = "${noDeps}")
+    private boolean noDeps = false;
+
     @Component
     private ToolchainManager toolchainManager;
 
@@ -175,11 +182,12 @@ public class DevMojo extends AbstractMojo {
         }
 
         if (!sourceDir.isDirectory()) {
-            getLog().warn("The `src/main/java` directory does not exist");
+            getLog().warn("The project's sources directory does not exist " + sourceDir);
         }
 
         if (!buildDir.isDirectory() || !new File(buildDir, "classes").isDirectory()) {
-            throw new MojoFailureException("The project has no output yet, run `mvn compile quarkus:dev`.");
+            throw new MojoFailureException("The project " + project.getName()
+                    + " has no output yet. Make sure it contains at least one source or resource file and then run `mvn compile quarkus:dev`.");
         }
 
         try {
@@ -235,48 +243,16 @@ public class DevMojo extends AbstractMojo {
             }
 
             final AppModel appModel;
-            Map<String, MavenProject> projectMap = session.getProjectMap();
             try {
-                final LocalProject localProject = LocalProject.loadWorkspace(outputDirectory.toPath());
-                for (LocalProject project : localProject.getSelfWithLocalDeps()) {
-                    AppArtifact appArtifact = project.getAppArtifact();
-                    MavenProject mavenProject = projectMap.get(String.format("%s:%s:%s",
-                            appArtifact.getGroupId(), appArtifact.getArtifactId(), appArtifact.getVersion()));
-                    // no information about this project from Maven. Skip.
-
-                    String projectDirectory = null;
-                    List<String> sourcePaths = null;
-                    String classesPath = null;
-                    String resourcePath = null;
-
-                    if (mavenProject == null) {
-                        projectDirectory = localProject.getDir().toAbsolutePath().toString();
-                        sourcePaths = Collections.singletonList(
-                                localProject.getSourcesSourcesDir().toAbsolutePath().toString());
-                    } else {
-                        projectDirectory = mavenProject.getBasedir().getPath();
-                        sourcePaths = mavenProject.getCompileSourceRoots().stream()
-                                .map(Paths::get)
-                                .filter(Files::isDirectory)
-                                .map(src -> src.toAbsolutePath().toString())
-                                .collect(Collectors.toList());
+                final LocalProject localProject;
+                if (noDeps) {
+                    localProject = LocalProject.load(outputDirectory.toPath());
+                    addProject(devModeContext, localProject);
+                } else {
+                    localProject = LocalProject.loadWorkspace(outputDirectory.toPath());
+                    for (LocalProject project : localProject.getSelfWithLocalDeps()) {
+                        addProject(devModeContext, project);
                     }
-
-                    Path classesDir = project.getClassesDir();
-                    if (Files.isDirectory(classesDir)) {
-                        classesPath = classesDir.toAbsolutePath().toString();
-                    }
-                    Path resourcesSourcesDir = project.getResourcesSourcesDir();
-                    if (Files.isDirectory(resourcesSourcesDir)) {
-                        resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
-                    }
-                    DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(
-                            project.getArtifactId(),
-                            projectDirectory,
-                            sourcePaths,
-                            classesPath,
-                            resourcePath);
-                    devModeContext.getModules().add(moduleInfo);
                 }
 
                 /*
@@ -393,6 +369,51 @@ public class DevMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }
+    }
+
+    private void addProject(DevModeContext devModeContext, LocalProject localProject) {
+
+        String projectDirectory = null;
+        Set<String> sourcePaths = null;
+        String classesPath = null;
+        String resourcePath = null;
+
+        final MavenProject mavenProject = session.getProjectMap().get(
+                String.format("%s:%s:%s", localProject.getGroupId(), localProject.getArtifactId(), localProject.getVersion()));
+
+        if (mavenProject == null) {
+            projectDirectory = localProject.getDir().toAbsolutePath().toString();
+            Path sourcePath = localProject.getSourcesSourcesDir().toAbsolutePath();
+            if (Files.isDirectory(sourcePath)) {
+                sourcePaths = Collections.singleton(
+                        sourcePath.toString());
+            } else {
+                sourcePaths = Collections.emptySet();
+            }
+        } else {
+            projectDirectory = mavenProject.getBasedir().getPath();
+            sourcePaths = mavenProject.getCompileSourceRoots().stream()
+                    .map(Paths::get)
+                    .filter(Files::isDirectory)
+                    .map(src -> src.toAbsolutePath().toString())
+                    .collect(Collectors.toSet());
+        }
+
+        Path classesDir = localProject.getClassesDir();
+        if (Files.isDirectory(classesDir)) {
+            classesPath = classesDir.toAbsolutePath().toString();
+        }
+        Path resourcesSourcesDir = localProject.getResourcesSourcesDir();
+        if (Files.isDirectory(resourcesSourcesDir)) {
+            resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
+        }
+        DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(
+                localProject.getArtifactId(),
+                projectDirectory,
+                sourcePaths,
+                classesPath,
+                resourcePath);
+        devModeContext.getModules().add(moduleInfo);
     }
 
     private void addToClassPaths(StringBuilder classPathManifest, DevModeContext classPath, File file) {

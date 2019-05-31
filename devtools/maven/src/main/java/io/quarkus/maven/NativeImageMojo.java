@@ -18,7 +18,10 @@ package io.quarkus.maven;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -150,6 +153,11 @@ public class NativeImageMojo extends AbstractMojo {
                     "Please ensure that the 'build' goal has been properly configured for the project - since it is a prerequisite of the 'native-image' goal");
         }
 
+        if (project.getPackaging().equals("pom")) {
+            getLog().info("Type of the artifact is POM, skipping native-image goal");
+            return;
+        }
+
         try (AppCreator appCreator = AppCreator.builder()
                 // configure the build phase we want the app to go through
                 .addPhase(new NativeImagePhase()
@@ -209,6 +217,11 @@ public class NativeImageMojo extends AbstractMojo {
                         @Override
                         public Path getConfigDir() {
                             return classesDir;
+                        }
+
+                        @Override
+                        public Map<Path, Set<String>> getTransformedClassesByJar() {
+                            return Collections.emptyMap();
                         }
                     })
                     .pushOutcome(RunnerJarOutcome.class, new RunnerJarOutcome() {

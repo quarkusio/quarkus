@@ -32,7 +32,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 
 /**
  * Build step that handles web.xml and web-fragment.xml parsing
@@ -43,9 +43,9 @@ public class WebXmlParsingBuildStep {
     private static final String WEB_FRAGMENT_XML = "META-INF/web-fragment.xml";
 
     @BuildStep
-    List<HotDeploymentConfigFileBuildItem> configFile() {
-        return Arrays.asList(new HotDeploymentConfigFileBuildItem(WEB_XML),
-                new HotDeploymentConfigFileBuildItem(WEB_FRAGMENT_XML));
+    List<HotDeploymentWatchedFileBuildItem> configFile() {
+        return Arrays.asList(new HotDeploymentWatchedFileBuildItem(WEB_XML),
+                new HotDeploymentWatchedFileBuildItem(WEB_FRAGMENT_XML));
     }
 
     @BuildStep(applicationArchiveMarkers = WEB_FRAGMENT_XML)

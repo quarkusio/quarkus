@@ -67,7 +67,9 @@
         <module>reactive-streams-operators</module>
         <module>smallrye-reactive-messaging</module>
         <module>smallrye-reactive-messaging-kafka</module>
+        <module>smallrye-context-propagation</module>
         <module>reactive-pg-client</module>
+        <module>mailer</module>
 
         <!-- Data access and validation -->
         <module>narayana-jta</module>

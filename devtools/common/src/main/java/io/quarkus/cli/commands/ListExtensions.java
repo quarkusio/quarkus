@@ -23,8 +23,8 @@ import io.quarkus.dependencies.Extension;
 import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 
 public class ListExtensions {
-    private static final String FULL_FORMAT = "%-8s %-50s %-50s %-25s\n%s";
-    private static final String SIMPLE_FORMAT = "%-50s %-50s\n%s";
+    private static final String FULL_FORMAT = "%-8s %-50s %-50s %-25s%n%s";
+    private static final String SIMPLE_FORMAT = "%-50s %-50s";
     private Model model;
 
     public ListExtensions(final Model model) {
@@ -53,6 +53,11 @@ public class ListExtensions {
             }
 
             loadedExtensions.forEach(extension -> display(extension, installed, all, currentFormatter));
+
+            if ("simple".equalsIgnoreCase(format)) {
+                System.out.println("\nTo get more information, append -Dquarkus.extension.format=full to your command line.");
+            }
+
             System.out.println("\nAdd an extension to your project by adding the dependency to your " +
                     "project or use `mvn quarkus:add-extension -Dextensions=\"artifactId\"`");
         }

@@ -41,7 +41,6 @@ import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
 import org.keycloak.util.JsonSerialization;
 
-import io.quarkus.it.keycloak.TestConfigResolver;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 

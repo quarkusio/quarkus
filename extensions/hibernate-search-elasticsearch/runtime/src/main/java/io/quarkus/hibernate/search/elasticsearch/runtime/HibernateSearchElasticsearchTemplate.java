@@ -33,6 +33,7 @@ import org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchIndexSettings
 import org.hibernate.search.engine.cfg.BackendSettings;
 import org.hibernate.search.engine.cfg.EngineSettings;
 import org.hibernate.search.mapper.orm.bootstrap.spi.HibernateOrmIntegrationBooter;
+import org.hibernate.search.mapper.orm.cfg.HibernateOrmMapperSettings;
 import org.hibernate.search.mapper.orm.cfg.spi.HibernateOrmMapperSpiSettings;
 import org.hibernate.search.mapper.orm.cfg.spi.HibernateOrmPropertyHandleFactoryName;
 
@@ -99,6 +100,13 @@ public class HibernateSearchElasticsearchTemplate {
 
         @Override
         public void contributeRuntimeProperties(BiConsumer<String, Object> propertyCollector) {
+            addConfig(propertyCollector,
+                    HibernateOrmMapperSettings.Radicals.AUTOMATIC_INDEXING_SYNCHRONIZATION_STRATEGY,
+                    runtimeConfig.elasticsearch.automaticIndexing.synchronizationStrategy);
+            addConfig(propertyCollector,
+                    HibernateOrmMapperSettings.Radicals.AUTOMATIC_INDEXING_ENABLE_DIRTY_CHECK,
+                    runtimeConfig.elasticsearch.automaticIndexing.enableDirtyCheck);
+
             contributeBackendRuntimeProperties(propertyCollector, DEFAULT_BACKEND, runtimeConfig.elasticsearch);
 
             for (Entry<String, ElasticsearchBackendRuntimeConfig> backendEntry : runtimeConfig.additionalBackends.entrySet()) {
@@ -152,8 +160,6 @@ public class HibernateSearchElasticsearchTemplate {
                     ElasticsearchIndexSettings.LIFECYCLE_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
                     elasticsearchBackendConfig.indexDefaults.lifecycle.requiredStatusWaitTimeout, Optional::isPresent,
                     d -> d.get().toMillis());
-            addBackendDefaultIndexConfig(propertyCollector, backendName, ElasticsearchIndexSettings.REFRESH_AFTER_WRITE,
-                    runtimeConfig.elasticsearch.indexDefaults.refreshAfterWrite);
 
             for (Entry<String, ElasticsearchIndexConfig> indexConfigEntry : runtimeConfig.elasticsearch.indexes.entrySet()) {
                 String indexName = indexConfigEntry.getKey();
@@ -168,8 +174,6 @@ public class HibernateSearchElasticsearchTemplate {
                         ElasticsearchIndexSettings.LIFECYCLE_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
                         indexConfig.lifecycle.requiredStatusWaitTimeout, Optional::isPresent,
                         d -> d.get().toMillis());
-                addBackendIndexConfig(propertyCollector, backendName, indexName, ElasticsearchIndexSettings.REFRESH_AFTER_WRITE,
-                        indexConfig.refreshAfterWrite);
             }
         }
     }

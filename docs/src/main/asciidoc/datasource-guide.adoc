@@ -100,7 +100,11 @@ A viable configuration file would be:
 
 [source,properties]
 --
-include::../../../../extensions/agroal/deployment/src/test/resources/application-default-datasource.properties[tag=basic]
+quarkus.datasource.url=jdbc:h2:tcp://localhost/mem:default
+quarkus.datasource.driver=org.h2.Driver
+quarkus.datasource.username=username-default
+quarkus.datasource.min-size=3
+quarkus.datasource.max-size=13
 --
 
 There are other configuration options, detailed below.
@@ -164,7 +168,8 @@ Because {project-name} uses CDI, injecting a datasource is very simple:
 
 [source,java,indent=0]
 --
-include::../../../../extensions/agroal/deployment/src/test/java/io/quarkus/agroal/test/DefaultDataSourceConfigTest.java[tag=injection]
+@Inject
+AgroalDataSource defaultDataSource;
 --
 
 In the above example, the type is `AgroalDataSource` which is a subtype of `javax.sql.DataSource`.
@@ -177,7 +182,23 @@ It works exactly the same way as a single datasource, with one important change:
 
 [source,properties]
 --
-include::../../../../extensions/agroal/deployment/src/test/resources/application-multiple-datasources.properties[]
+quarkus.datasource.driver=org.h2.Driver
+quarkus.datasource.url=jdbc:h2:tcp://localhost/mem:default
+quarkus.datasource.username=username-default
+quarkus.datasource.min-size=3
+quarkus.datasource.max-size=13
+
+quarkus.datasource.users.driver=org.h2.Driver
+quarkus.datasource.users.url=jdbc:h2:tcp://localhost/mem:users
+quarkus.datasource.users.username=username1
+quarkus.datasource.users.min-size=1
+quarkus.datasource.users.max-size=11
+
+quarkus.datasource.inventory.driver=org.h2.Driver
+quarkus.datasource.inventory.url=jdbc:h2:tcp://localhost/mem:inventory
+quarkus.datasource.inventory.username=username2
+quarkus.datasource.inventory.min-size=2
+quarkus.datasource.inventory.max-size=12
 --
 
 Notice there's an extra bit in the key.
@@ -190,7 +211,16 @@ Using the above properties to configure three different datasources, you can als
 
 [source,java,indent=0]
 --
-include::../../../../extensions/agroal/deployment/src/test/java/io/quarkus/agroal/test/MultipleDataSourcesConfigTest.java[tag=injection]
+@Inject
+AgroalDataSource defaultDataSource;
+
+@Inject
+@DataSource("users")
+AgroalDataSource dataSource1;
+
+@Inject
+@DataSource("inventory")
+AgroalDataSource dataSource2;
 --
 
 == Agroal Configuration Reference
@@ -254,9 +284,11 @@ include::../../../../extensions/agroal/deployment/src/test/java/io/quarkus/agroa
 
 [NOTE]
 ====
-The format for durations uses the standard `java.time` format.
+The format for durations uses the standard `java.time.Duration` format.
 You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
 
-You can also provide duration values starting with a number. In this case, if the value consists only of a `number`, the converter treats the value as seconds. Otherwise, `PT` is implicit appended to the value to obtain a standard `java.time` format.
+You can also provide duration values starting with a number.
+In this case, if the value consists only of a number, the converter treats the value as seconds.
+Otherwise, `PT` is implicitly appended to the value to obtain a standard `java.time.Duration` format.
 ====
 

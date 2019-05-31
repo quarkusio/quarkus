@@ -45,29 +45,43 @@ public class ExecutorTemplate {
      * In dev mode for now we need the executor to last for the life of the app, as it is used by Undertow. This will likely
      * change
      */
-    static ExecutorService devModeExecutor;
+    static CleanableExecutor devModeExecutor;
 
     public ExecutorService setupRunTime(ShutdownContext shutdownContext, ThreadPoolConfig threadPoolConfig,
             LaunchMode launchMode) {
         if (devModeExecutor != null) {
             return devModeExecutor;
         }
-        final JBossThreadFactory threadFactory = new JBossThreadFactory(new ThreadGroup("executor"), Boolean.TRUE, null,
-                "executor-thread-%t", JBossExecutors.loggingExceptionHandler("org.jboss.executor.uncaught"), null);
-        final EnhancedQueueExecutor.Builder builder = new EnhancedQueueExecutor.Builder()
-                .setRegisterMBean(false)
-                .setHandoffExecutor(JBossExecutors.rejectingExecutor())
-                .setThreadFactory(JBossExecutors.resettingThreadFactory(threadFactory));
-        final int cpus = ProcessorInfo.availableProcessors();
-        // run time config variables
-        builder.setCorePoolSize(threadPoolConfig.coreThreads);
-        builder.setMaximumPoolSize(threadPoolConfig.maxThreads.orElse(8 * cpus));
-        builder.setMaximumQueueSize(threadPoolConfig.queueSize);
-        builder.setGrowthResistance(threadPoolConfig.growthResistance);
-        builder.setKeepAliveTime(threadPoolConfig.keepAliveTime);
-        final EnhancedQueueExecutor executor = builder.build();
+        final EnhancedQueueExecutor underlying = createExecutor(threadPoolConfig);
+        ExecutorService executor;
+        Runnable shutdownTask = createShutdownTask(threadPoolConfig, underlying);
+        if (launchMode == LaunchMode.DEVELOPMENT) {
+            devModeExecutor = new CleanableExecutor(underlying);
+            shutdownContext.addShutdownTask(new Runnable() {
+                @Override
+                public void run() {
+                    devModeExecutor.clean();
+                }
+            });
+            executor = devModeExecutor;
+            Runtime.getRuntime().addShutdownHook(new Thread(shutdownTask, "Executor shutdown thread"));
+        } else {
+            shutdownContext.addShutdownTask(shutdownTask);
+            executor = underlying;
+        }
+        return executor;
+    }
 
-        Runnable shutdownTask = new Runnable() {
+    public static ExecutorService createDevModeExecutorForFailedStart(ThreadPoolConfig config) {
+        EnhancedQueueExecutor underlying = createExecutor(config);
+        Runnable task = createShutdownTask(config, underlying);
+        devModeExecutor = new CleanableExecutor(underlying);
+        Runtime.getRuntime().addShutdownHook(new Thread(task, "Executor shutdown thread"));
+        return devModeExecutor;
+    }
+
+    private static Runnable createShutdownTask(ThreadPoolConfig threadPoolConfig, EnhancedQueueExecutor executor) {
+        return new Runnable() {
             @Override
             public void run() {
                 executor.shutdown();
@@ -139,12 +153,23 @@ public class ExecutorTemplate {
                     }
             }
         };
-        if (launchMode == LaunchMode.DEVELOPMENT) {
-            devModeExecutor = executor;
-            Runtime.getRuntime().addShutdownHook(new Thread(shutdownTask, "Executor shutdown thread"));
-        } else {
-            shutdownContext.addShutdownTask(shutdownTask);
-        }
-        return executor;
     }
+
+    private static EnhancedQueueExecutor createExecutor(ThreadPoolConfig threadPoolConfig) {
+        final JBossThreadFactory threadFactory = new JBossThreadFactory(new ThreadGroup("executor"), Boolean.TRUE, null,
+                "executor-thread-%t", JBossExecutors.loggingExceptionHandler("org.jboss.executor.uncaught"), null);
+        final EnhancedQueueExecutor.Builder builder = new EnhancedQueueExecutor.Builder()
+                .setRegisterMBean(false)
+                .setHandoffExecutor(JBossExecutors.rejectingExecutor())
+                .setThreadFactory(JBossExecutors.resettingThreadFactory(threadFactory));
+        final int cpus = ProcessorInfo.availableProcessors();
+        // run time config variables
+        builder.setCorePoolSize(threadPoolConfig.coreThreads);
+        builder.setMaximumPoolSize(threadPoolConfig.maxThreads.orElse(8 * cpus));
+        builder.setMaximumQueueSize(threadPoolConfig.queueSize);
+        builder.setGrowthResistance(threadPoolConfig.growthResistance);
+        builder.setKeepAliveTime(threadPoolConfig.keepAliveTime);
+        return builder.build();
+    }
+
 }

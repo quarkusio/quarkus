@@ -22,7 +22,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 
 import org.junit.Assert;
@@ -80,6 +83,50 @@ public class BytecodeRecorderTestCase {
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.map(new HashMap<>(Collections.singletonMap("a", "b")));
         }, Collections.singletonMap("a", "b"));
+    }
+
+    @Test
+    public void testEmptyCollections() throws Exception {
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.object(Collections.emptyList());
+        }, new ArrayList<>());
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.object(Collections.emptyMap());
+        }, new HashMap<>());
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.object(Collections.emptySet());
+        }, new HashSet<>());
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.object(Collections.emptyNavigableMap());
+        }, new LinkedHashMap<>());
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.object(Collections.emptySortedMap());
+        }, new TreeMap<>());
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.object(Collections.emptySortedSet());
+        }, new TreeSet<>());
+    }
+
+    @Test
+    public void testSingletonCollections() throws Exception {
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.object(Collections.singletonList(1));
+        }, new ArrayList<>(Arrays.asList(1)));
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.object(Collections.singletonMap(1, 2));
+        }, new HashMap<>(Collections.singletonMap(1, 2)));
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.object(Collections.singleton(1));
+        }, new HashSet<>(Collections.singleton(1)));
     }
 
     @Test
@@ -152,6 +199,15 @@ public class BytecodeRecorderTestCase {
             template.add(instance);
             template.result(instance);
         }, new TestJavaBean(null, 2));
+    }
+
+    @Test
+    public void testRecordingProxyToStringNotNull() {
+        TestClassLoader tcl = new TestClassLoader(getClass().getClassLoader());
+        BytecodeRecorderImpl recorder = new BytecodeRecorderImpl(tcl, false, TEST_CLASS);
+        TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+        Assert.assertNotNull(template.toString());
+        Assert.assertTrue(template.toString().contains("$$RecordingProxyProxy"));
     }
 
     void runTest(Consumer<BytecodeRecorderImpl> generator, Object... expected) throws Exception {

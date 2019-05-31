@@ -114,6 +114,14 @@ public class BasicAuthTestCase {
                 .body(equalTo("scott"));
     }
 
+    @Test
+    public void testJaxrsInjectedPrincipalSuccess() {
+        RestAssured.given().auth().preemptive().basic("scott", "jb0ss")
+                .when().get("/jaxrs-secured/subject/principalSecured").then()
+                .statusCode(200)
+                .body(equalTo("scott"));
+    }
+
     /**
      * Test access a @PermitAll secured jaxrs resource without any authentication. should see a 200 success code.
      */

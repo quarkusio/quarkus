@@ -18,6 +18,8 @@
 package io.quarkus.creator.phase.augment;
 
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents an outcome of {@link AugmentPhase}
@@ -54,4 +56,16 @@ public interface AugmentOutcome {
      * @return directory containing config files
      */
     Path getConfigDir();
+
+    /**
+     * This returns a map of jar files to classes from that jar that have been transformed. These classes should
+     * not be copied into the final output, as they are present in the transformed classes set, so will need to
+     * be removed from the jar file.
+     *
+     * Note that the classes are in file name format (i.e. with / instead of . and with the .class suffix)
+     *
+     * @return the transformed class files
+     */
+    Map<Path, Set<String>> getTransformedClassesByJar();
+
 }

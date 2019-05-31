@@ -91,6 +91,19 @@
     "guide": "https://quarkus.io/guides/hibernate-orm-panache-guide"
   },
   {
+    "name": "Hibernate Search + Elasticsearch",
+    "labels": [
+      "hibernate-search-elasticsearch",
+      "search",
+      "full-text",
+      "hibernate",
+      "elasticsearch"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-hibernate-search-elasticsearch",
+    "guide": "https://quarkus.io/guides/hibernate-search-guide"
+  },
+  {
     "name": "Hibernate Validator",
     "labels": [
       "hibernate-validator",
@@ -262,6 +275,18 @@
     "groupId": "io.quarkus",
     "artifactId": "quarkus-elytron-security",
     "guide": "https://quarkus.io/guides/security-guide"
+  },
+  {
+    "name": "SmallRye Context Propagation",
+    "labels": [
+      "smallrye-context-propagation",
+      "microprofile-context-propagation",
+      "context-propagation",
+      "context",
+      "reactive"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-context-propagation"
   },
   {
     "name": "SmallRye Fault Tolerance",
@@ -448,6 +473,16 @@
     "groupId": "io.quarkus",
     "artifactId": "quarkus-vertx",
     "guide": "https://quarkus.io/guides/using-vertx"
+  },
+  {
+    "name": "Mailer",
+    "labels": [
+      "mail",
+      "mailer"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-mailer",
+    "guide": "https://quarkus.io/guides/sending-emails"
   },
   {
     "name": "Reactive Postgres Client",

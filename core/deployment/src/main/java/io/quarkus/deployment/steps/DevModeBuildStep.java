@@ -20,13 +20,13 @@ import java.util.Arrays;
 import java.util.List;
 
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 
 class DevModeBuildStep {
 
     @BuildStep
-    List<HotDeploymentConfigFileBuildItem> config() {
-        return Arrays.asList(new HotDeploymentConfigFileBuildItem("META-INF/microprofile-config.properties"),
-                new HotDeploymentConfigFileBuildItem("application.properties"));
+    List<HotDeploymentWatchedFileBuildItem> config() {
+        return Arrays.asList(new HotDeploymentWatchedFileBuildItem("META-INF/microprofile-config.properties"),
+                new HotDeploymentWatchedFileBuildItem("application.properties"));
     }
 }

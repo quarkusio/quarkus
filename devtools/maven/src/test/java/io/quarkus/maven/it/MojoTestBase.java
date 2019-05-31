@@ -187,6 +187,29 @@ public class MojoTestBase {
         return resp.get();
     }
 
+    String getHttpErrorResponse() {
+        AtomicReference<String> resp = new AtomicReference<>();
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                //Allow for a long maximum time as the first hit to a build might require to download dependencies from Maven repositories;
+                //some, such as org.jetbrains.kotlin:kotlin-compiler, are huge and will take more than a minute.
+                .atMost(20, TimeUnit.MINUTES).until(() -> {
+                    try {
+                        String broken = getBrokenReason();
+                        if (broken != null) {
+                            //try and avoid waiting 20m
+                            resp.set("BROKEN: " + broken);
+                            return true;
+                        }
+                        boolean content = getHttpResponse("/", 500);
+                        return content;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                });
+        return resp.get();
+    }
+
     protected String getBrokenReason() {
         return null;
     }

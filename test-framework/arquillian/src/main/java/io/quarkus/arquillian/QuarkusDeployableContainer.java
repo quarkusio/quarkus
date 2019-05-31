@@ -43,7 +43,7 @@ import io.quarkus.builder.item.BuildItem;
 import io.quarkus.runner.RuntimeRunner;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;
-import io.quarkus.test.common.TestInjectionManager;
+import io.quarkus.test.common.TestInstantiator;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 public class QuarkusDeployableContainer implements DeployableContainer<QuarkusConfiguration> {
@@ -189,12 +189,8 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
             runtimeRunner.set(runner);
 
             // Instantiate the real test instance
-            Object actualTestInstance = Class
-                    .forName(testJavaClass.getName(), true, Thread.currentThread().getContextClassLoader()).newInstance();
-            if (actualTestInstance != null) {
-                TestInjectionManager.inject(actualTestInstance);
-            }
-            testInstance = actualTestInstance;
+            testInstance = TestInstantiator.instantiateTest(Class
+                    .forName(testJavaClass.getName(), true, Thread.currentThread().getContextClassLoader()));
 
         } catch (Exception e) {
             throw new DeploymentException("Unable to start the runtime runner", e);

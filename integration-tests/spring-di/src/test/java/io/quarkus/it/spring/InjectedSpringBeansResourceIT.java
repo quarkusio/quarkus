@@ -16,8 +16,8 @@
 
 package io.quarkus.it.spring;
 
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.SubstrateTest;
 
-@QuarkusTest
+@SubstrateTest
 public class InjectedSpringBeansResourceIT extends InjectedSpringBeansResourceTest {
 }

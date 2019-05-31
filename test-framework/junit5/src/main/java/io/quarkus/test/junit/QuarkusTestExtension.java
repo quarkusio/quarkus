@@ -23,8 +23,6 @@ import java.io.Closeable;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -69,6 +67,7 @@ import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestInjectionManager;
+import io.quarkus.test.common.TestInstantiator;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
@@ -316,16 +315,10 @@ public class QuarkusTestExtension
             }
         }
 
-        try {
-            Constructor<?> ctor = factoryContext.getTestClass().getDeclaredConstructor();
-            ctor.setAccessible(true);
-            Object instance = ctor.newInstance();
-            TestHTTPResourceManager.inject(instance);
-            TestInjectionManager.inject(instance);
-            return instance;
-        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-            throw new TestInstantiationException("Failed to create test instance", e);
-        }
+        Object instance = TestInstantiator.instantiateTest(factoryContext.getTestClass());
+        TestHTTPResourceManager.inject(instance);
+        TestInjectionManager.inject(instance);
+        return instance;
     }
 
     private static ClassLoader setCCL(ClassLoader cl) {

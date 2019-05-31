@@ -162,7 +162,7 @@ so no additional configuration should be required.
 It is also possible to directly inject the URL into the test which can make is easy to use a different client. This is
 done via the `@TestHTTPResource` annotation.
 
-Lets write a simple test that shows this off to load some static resources. First create a simple HTML file in
+Let's write a simple test that shows this off to load some static resources. First create a simple HTML file in
 `src/main/resources/META-INF/resources/index.html` :
 
 
@@ -232,8 +232,9 @@ For now `@TestHTTPResource` allows you to inject `URI`, `URL` and `String` repre
 So far we have only covered integration style tests that test the app via HTTP endpoints, but what if we want to do unit
 testing and test our beans directly?
 
-Quarkus supports this by allowing you to inject CDI beans into your tests via the `@Inject` annotation. Lets create a
-simple test that tests the greeting service directly without using HTTP:
+Quarkus supports this by allowing you to inject CDI beans into your tests via the `@Inject` annotation (in fact, tests in
+Quarkus are full CDI beans, so you can use all CDI functionality). Let's create a simple test that tests the greeting
+service directly without using HTTP:
 
 
 [source,java]
@@ -260,6 +261,47 @@ public class GreetingServiceTest {
 }
 ----
 <1> The `GreetingService` bean will be injected into the test
+
+== Applying Interceptors to Tests
+
+As mentioned above Quarkus tests are actually full CDI beans, and as such you can apply CDI interceptors as you would
+normally. As an example, if you want a test method to run within the context of a transaction you can simply apply the
+`@Transactional` annotation to the method and the transaction interceptor will handle it.
+
+In addition to this you can also create your own test stereotypes. For example we could create a `@TransactionalQuarkusTest`
+as follows:
+
+[source,java]
+----
+@QuarkusTest
+@Stereotype
+@Transactional
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface TransactionalQuarkusTest {
+}
+----
+
+If we then apply this annotation to a test class it will act as if we had applied both the `@QuarkusTest` and
+`@Transactional` annotations, e.g.:
+
+
+[source,java]
+----
+@TransactionalQuarkusTest
+public class TestStereotypeTestCase {
+
+    @Inject
+    UserTransaction userTransaction;
+
+    @Test
+    public void testUserTransaction() throws Exception {
+        Assertions.assertEquals(Status.STATUS_ACTIVE, userTransaction.getStatus());
+    }
+
+}
+----
+
 
 == Mock Support
 

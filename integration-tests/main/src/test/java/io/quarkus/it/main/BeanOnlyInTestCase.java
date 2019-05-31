@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
 
+import javax.enterprise.inject.Default;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Inject;
 
@@ -26,7 +27,8 @@ class BeanOnlyInTestCase {
         InjectionPoint injectionPoint = unusedBean.getInjectionPoint();
         assertNotNull(injectionPoint);
         assertEquals(UnusedBean.class, injectionPoint.getType());
-        assertTrue(injectionPoint.getQualifiers().isEmpty());
+        assertEquals(1, injectionPoint.getQualifiers().size());
+        assertEquals(Default.class, injectionPoint.getQualifiers().iterator().next().annotationType());
         assertTrue(injectionPoint.getMember() instanceof Field);
         assertTrue(injectionPoint.getAnnotated().isAnnotationPresent(Inject.class));
     }

@@ -16,46 +16,28 @@
 
 package io.quarkus.runtime.logging;
 
-import java.util.logging.Level;
+import org.jboss.logmanager.handlers.AsyncHandler.OverflowAction;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class ConsoleConfig {
+public class AsyncConfig {
 
     /**
-     * If console logging should be enabled
+     * Indicates whether to log asynchronously
      */
-    @ConfigItem(defaultValue = "true")
+    @ConfigItem(name = ConfigItem.PARENT)
     boolean enable;
+    /**
+     * The queue length to use before flushing writing
+     */
+    @ConfigItem(defaultValue = "512")
+    int queueLength;
 
     /**
-     * The log format
+     * Determine whether to block the publisher (rather than drop the message) when the queue is full
      */
-    @ConfigItem(defaultValue = "%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n")
-    String format;
-
-    /**
-     * The console log level
-     */
-    @ConfigItem(defaultValue = "ALL")
-    Level level;
-
-    /**
-     * If the console logging should be in color
-     */
-    @ConfigItem(defaultValue = "true")
-    boolean color;
-
-    /**
-     * Specify how much the colors should be darkened
-     */
-    @ConfigItem(defaultValue = "0")
-    int darken;
-
-    /**
-     * Console async logging config
-     */
-    AsyncConfig async;
+    @ConfigItem(defaultValue = "BLOCK")
+    OverflowAction overflow;
 }

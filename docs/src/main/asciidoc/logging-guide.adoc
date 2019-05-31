@@ -24,6 +24,9 @@ Console logging is enabled by default.  To configure or disable it, the followin
 |quarkus.log.console.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n|The format pattern to use for logging to the console; see <<format_string>>.
 |quarkus.log.console.level|ALL|The minimum log level to display to the console.
 |quarkus.log.console.color|true|Allow color rendering to be used on the console, if it is supported by the terminal.
+|quarkus.log.console.async|false|Indicates whether to log asynchronously.
+|quarkus.log.console.async.queue-length|512|The queue length to use before flushing writing.
+|quarkus.log.console.async.overflow|BLOCK|Determine whether to block the publisher (rather than drop the message) when the queue is full.
 |===
 
 === File configuration
@@ -41,6 +44,9 @@ Logging to a file is also supported but not enabled by default.  To configure or
 |quarkus.log.file.rotation.max-backup-index|1| The maximum number of backups to keep.
 |quarkus.log.file.rotation.file-suffix|| Rotating log file suffix. The format of suffix value has to be understood by `java.text.SimpleDateFormat`.
 |quarkus.log.file.rotation.rotate-on-boot|true| Indicates whether to rotate log files on server initialization.
+|quarkus.log.file.async|false|Indicates whether to log asynchronously.
+|quarkus.log.file.async.queue-length|512|The queue length to use before flushing writing.
+|quarkus.log.file.async.overflow|BLOCK|Determine whether to block the publisher (rather than drop the message) when the queue is full.
 |===
 
 === Logging categories

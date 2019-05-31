@@ -30,7 +30,7 @@ public class FileConfig {
     /**
      * If file logging should be enabled
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     boolean enable;
 
     /**
@@ -50,6 +50,11 @@ public class FileConfig {
      */
     @ConfigItem(defaultValue = "quarkus.log")
     File path;
+
+    /**
+     * File async logging config
+     */
+    AsyncConfig async;
 
     /**
      * File rotation config

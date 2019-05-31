@@ -16,6 +16,7 @@ import org.jboss.logmanager.Logger;
 import org.jboss.logmanager.errormanager.OnlyOnceErrorManager;
 import org.jboss.logmanager.formatters.ColorPatternFormatter;
 import org.jboss.logmanager.formatters.PatternFormatter;
+import org.jboss.logmanager.handlers.AsyncHandler;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
 import org.jboss.logmanager.handlers.PeriodicRotatingFileHandler;
@@ -63,7 +64,15 @@ public class LoggingSetupTemplate {
             handler.setLevel(config.console.level);
             handler.setErrorManager(errorManager);
             handler.setFilter(new LogCleanupFilter(filterElements));
-            handlers.add(handler);
+            if (config.console.async.enable) {
+                final AsyncHandler asyncHandler = new AsyncHandler(config.console.async.queueLength);
+                asyncHandler.setOverflowAction(config.console.async.overflow);
+                asyncHandler.addHandler(handler);
+                asyncHandler.setLevel(config.console.level);
+                handlers.add(asyncHandler);
+            } else {
+                handlers.add(handler);
+            }
             errorManager = handler.getLocalErrorManager();
         }
 
@@ -99,7 +108,15 @@ public class LoggingSetupTemplate {
             handler.setErrorManager(errorManager);
             handler.setLevel(config.file.level);
             handler.setFilter(new LogCleanupFilter(filterElements));
-            handlers.add(handler);
+            if (config.file.async.enable) {
+                final AsyncHandler asyncHandler = new AsyncHandler(config.file.async.queueLength);
+                asyncHandler.setOverflowAction(config.file.async.overflow);
+                asyncHandler.addHandler(handler);
+                asyncHandler.setLevel(config.file.level);
+                handlers.add(asyncHandler);
+            } else {
+                handlers.add(handler);
+            }
         }
 
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));

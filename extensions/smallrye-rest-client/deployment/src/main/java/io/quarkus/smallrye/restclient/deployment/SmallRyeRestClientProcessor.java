@@ -235,7 +235,7 @@ class SmallRyeRestClientProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             SmallRyeRestClientTemplate smallRyeRestClientTemplate) {
         smallRyeRestClientTemplate.initializeResteasyProviderFactory(jaxrsProvidersToRegisterBuildItem.useBuiltIn(),
-                jaxrsProvidersToRegisterBuildItem.getProviders());
+                jaxrsProvidersToRegisterBuildItem.getProviders(), jaxrsProvidersToRegisterBuildItem.getContributedProviders());
 
         // register the providers for reflection
         for (String providerToRegister : jaxrsProvidersToRegisterBuildItem.getProviders()) {

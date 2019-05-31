@@ -121,15 +121,16 @@ public class SwaggerUiProcessor {
                 while (entries.hasMoreElements()) {
                     JarEntry entry = entries.nextElement();
                     if (entry.getName().startsWith(versionedSwaggerUiWebjarPrefix) && !entry.isDirectory()) {
-                        InputStream inputStream = jarFile.getInputStream(entry);
-                        String filename = entry.getName().replace(versionedSwaggerUiWebjarPrefix, "");
-                        byte[] content = FileUtil.readFileContents(inputStream);
-                        if (entry.getName().endsWith("index.html")) {
-                            content = updateApiUrl(new String(content, StandardCharsets.UTF_8))
-                                    .getBytes(StandardCharsets.UTF_8);
+                        try (InputStream inputStream = jarFile.getInputStream(entry)) {
+                            String filename = entry.getName().replace(versionedSwaggerUiWebjarPrefix, "");
+                            byte[] content = FileUtil.readFileContents(inputStream);
+                            if (entry.getName().endsWith("index.html")) {
+                                content = updateApiUrl(new String(content, StandardCharsets.UTF_8))
+                                        .getBytes(StandardCharsets.UTF_8);
+                            }
+                            generatedResources
+                                    .produce(new GeneratedWebResourceBuildItem(swaggerUiConfig.path + "/" + filename, content));
                         }
-                        generatedResources
-                                .produce(new GeneratedWebResourceBuildItem(swaggerUiConfig.path + "/" + filename, content));
                     }
                 }
             }

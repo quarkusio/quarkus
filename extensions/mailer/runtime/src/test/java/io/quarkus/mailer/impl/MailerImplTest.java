@@ -165,7 +165,8 @@ class MailerImplTest {
     void testInlineAttachment() throws MessagingException, IOException {
         String cid = UUID.randomUUID().toString() + "@acme";
         mailer.send(Mail.withHtml(TO, "Test", "testInlineAttachment")
-                .addInlineAttachment("inline.txt", "my inlined text".getBytes(), TEXT_CONTENT_TYPE, cid)).toCompletableFuture()
+                .addInlineAttachment("inline.txt", "my inlined text".getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE, cid))
+                .toCompletableFuture()
                 .join();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
@@ -181,8 +182,9 @@ class MailerImplTest {
     @Test
     void testAttachments() throws MessagingException, IOException {
         mailer.send(Mail.withText(TO, "Test", "Simple Test")
-                .addAttachment("some-data.txt", "Hello".getBytes(), TEXT_CONTENT_TYPE)
-                .addAttachment("some-data-2.txt", "Hello 2".getBytes(), TEXT_CONTENT_TYPE)).toCompletableFuture().join();
+                .addAttachment("some-data.txt", "Hello".getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE)
+                .addAttachment("some-data-2.txt", "Hello 2".getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE))
+                .toCompletableFuture().join();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains("Simple Test");

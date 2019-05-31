@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import javax.enterprise.event.Reception;
 import javax.enterprise.inject.spi.EventContext;
 import javax.enterprise.inject.spi.ObserverMethod;
 import org.jboss.jandex.AnnotationInstance;
@@ -193,6 +194,19 @@ public class ObserverGenerator extends AbstractGenerator {
             ReflectionRegistration reflectionRegistration, boolean isApplicationClass) {
         MethodCreator notify = observerCreator.getMethodCreator("notify", void.class, EventContext.class)
                 .setModifiers(ACC_PUBLIC);
+
+        // If Reception.IF_EXISTS is used we must check the context of the declaring bean first
+        if (Reception.IF_EXISTS == observer.getReception()) {
+            BeanInfo declaringBean = observer.getDeclaringBean();
+            if (declaringBean != null && !BuiltinScope.DEPENDENT.is(declaringBean.getScope())) {
+                ResultHandle container = notify.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
+                ResultHandle scope = notify.loadClass(declaringBean.getScope().getDotName().toString());
+                ResultHandle context = notify.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
+                        container,
+                        scope);
+                notify.ifNull(context).trueBranch().returnValue(null);
+            }
+        }
 
         ResultHandle declaringProviderHandle = notify
                 .readInstanceField(

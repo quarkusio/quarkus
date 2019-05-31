@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
@@ -101,7 +102,7 @@ class MailTest {
         assertThat(mail1.getAttachments().get(0).getFile()).isFile();
         assertThat(mail1.getAttachments().get(0).getDisposition()).isEqualTo(Attachment.DISPOSITION_ATTACHMENT);
 
-        Mail mail2 = new Mail().addAttachment("some-name-2", BEGINNING.getBytes(), TEXT_PLAIN);
+        Mail mail2 = new Mail().addAttachment("some-name-2", BEGINNING.getBytes(StandardCharsets.UTF_8), TEXT_PLAIN);
         assertThat(mail2.getAttachments()).hasSize(1);
         assertThat(mail2.getAttachments().get(0).getName()).isEqualTo("some-name-2");
         assertThat(mail2.getAttachments().get(0).getContentType()).isEqualTo(TEXT_PLAIN);
@@ -126,7 +127,7 @@ class MailTest {
         assertThat(mail4.getAttachments().get(0).getDescription()).isEqualTo(DESCRIPTION);
         assertThat(mail4.getAttachments().get(0).getDisposition()).isEqualTo(Attachment.DISPOSITION_ATTACHMENT);
 
-        Mail mail5 = new Mail().addAttachment("some-name-5", BEGINNING.getBytes(), TEXT_PLAIN,
+        Mail mail5 = new Mail().addAttachment("some-name-5", BEGINNING.getBytes(StandardCharsets.UTF_8), TEXT_PLAIN,
                 DESCRIPTION, Attachment.DISPOSITION_ATTACHMENT);
         assertThat(mail5.getAttachments()).hasSize(1);
         assertThat(mail5.getAttachments().get(0).getName()).isEqualTo("some-name-5");
@@ -146,7 +147,7 @@ class MailTest {
         assertThat(mail1.getAttachments().get(0).getDisposition()).isEqualTo(Attachment.DISPOSITION_INLINE);
         assertThat(mail1.getAttachments().get(0).getContentId()).isEqualTo("<cid-1>");
 
-        Mail mail2 = new Mail().addInlineAttachment("name-2", BEGINNING.getBytes(), TEXT_PLAIN, "cid-2");
+        Mail mail2 = new Mail().addInlineAttachment("name-2", BEGINNING.getBytes(StandardCharsets.UTF_8), TEXT_PLAIN, "cid-2");
         assertThat(mail2.getAttachments()).hasSize(1);
         assertThat(mail2.getAttachments().get(0).getName()).isEqualTo("name-2");
         assertThat(mail2.getAttachments().get(0).getContentType()).isEqualTo(TEXT_PLAIN);

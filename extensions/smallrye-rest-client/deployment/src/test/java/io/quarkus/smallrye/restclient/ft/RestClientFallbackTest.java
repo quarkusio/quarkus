@@ -48,7 +48,7 @@ public class RestClientFallbackTest {
     }
 
     @Path("/test")
-    public class TestEndpoint {
+    public static class TestEndpoint {
 
         @GET
         String get() {

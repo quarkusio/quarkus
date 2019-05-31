@@ -70,6 +70,7 @@ import io.quarkus.runtime.configuration.BuildTimeConfigFactory;
 import io.quarkus.runtime.configuration.ConverterFactory;
 import io.quarkus.runtime.configuration.ConverterSupport;
 import io.quarkus.runtime.configuration.DefaultConfigSource;
+import io.quarkus.runtime.configuration.DeploymentProfileConfigSource;
 import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.SimpleConfigurationProviderResolver;
@@ -142,6 +143,10 @@ public class ConfigurationSetup {
     private static final MethodDescriptor ECS_WRAPPER = MethodDescriptor.ofMethod(ExpandingConfigSource.class, "wrapper",
             UnaryOperator.class, ExpandingConfigSource.Cache.class);
 
+    private static final MethodDescriptor PROFILE_WRAPPER = MethodDescriptor.ofMethod(DeploymentProfileConfigSource.class,
+            "wrapper",
+            UnaryOperator.class);
+
     private static final MethodDescriptor RTD_CTOR = MethodDescriptor.ofConstructor(RUN_TIME_DEFAULTS);
     private static final MethodDescriptor RTD_GET_VALUE = MethodDescriptor.ofMethod(RUN_TIME_DEFAULTS, "getValue", String.class,
             NameIterator.class);
@@ -212,6 +217,7 @@ public class ConfigurationSetup {
         // expand properties
         final ExpandingConfigSource.Cache cache = new ExpandingConfigSource.Cache();
         builder.withWrapper(ExpandingConfigSource.wrapper(cache));
+        builder.withWrapper(DeploymentProfileConfigSource.wrapper());
         builder.addDefaultSources();
         final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
         final DefaultValuesConfigurationSource defaultSource = new DefaultValuesConfigurationSource(
@@ -495,7 +501,11 @@ public class ConfigurationSetup {
 
                 // property expansion
                 final ResultHandle cache = carc.newInstance(ECS_CACHE_CONSTRUCT);
-                final ResultHandle wrapper = carc.invokeStaticMethod(ECS_WRAPPER, cache);
+                ResultHandle wrapper = carc.invokeStaticMethod(ECS_WRAPPER, cache);
+                carc.invokeVirtualMethod(SRCB_WITH_WRAPPER, builder, wrapper);
+
+                //profiles
+                wrapper = carc.invokeStaticMethod(PROFILE_WRAPPER);
                 carc.invokeVirtualMethod(SRCB_WITH_WRAPPER, builder, wrapper);
 
                 // write out loader for converter types

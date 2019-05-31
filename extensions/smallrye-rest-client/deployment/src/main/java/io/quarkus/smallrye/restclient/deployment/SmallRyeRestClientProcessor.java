@@ -70,6 +70,7 @@ import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
+import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
 import io.quarkus.smallrye.restclient.runtime.IncomingHeadersProvider;
 import io.quarkus.smallrye.restclient.runtime.RestClientBase;
 import io.quarkus.smallrye.restclient.runtime.SmallRyeRestClientTemplate;
@@ -194,7 +195,9 @@ class SmallRyeRestClientProcessor {
 
         // Register Interface return types for reflection
         for (Type returnType : returnTypes) {
-            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(returnType));
+            if (isReflectionDeclarationRequiredFor(returnType)) {
+                reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(returnType));
+            }
         }
 
         beanRegistrars.produce(new BeanRegistrarBuildItem(new BeanRegistrar() {
@@ -258,5 +261,23 @@ class SmallRyeRestClientProcessor {
     private boolean isRestClientInterface(IndexView index, ClassInfo classInfo) {
         return Modifier.isInterface(classInfo.flags())
                 && index.getAllKnownImplementors(classInfo.name()).isEmpty();
+    }
+
+    private static boolean isReflectionDeclarationRequiredFor(Type type) {
+        DotName className = getClassName(type);
+
+        return className != null && !ResteasyDotNames.TYPES_IGNORED_FOR_REFLECTION.contains(className);
+    }
+
+    private static DotName getClassName(Type type) {
+        switch (type.kind()) {
+            case CLASS:
+            case PARAMETERIZED_TYPE:
+                return type.name();
+            case ARRAY:
+                return getClassName(type.asArrayType().component());
+            default:
+                return null;
+        }
     }
 }

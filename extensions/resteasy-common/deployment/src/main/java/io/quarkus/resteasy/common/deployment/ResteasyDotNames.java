@@ -1,5 +1,9 @@
 package io.quarkus.resteasy.common.deployment;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Path;
@@ -38,5 +42,25 @@ public final class ResteasyDotNames {
             .createSimple(org.jboss.resteasy.annotations.jaxrs.HeaderParam.class.getName());
     public static final DotName RESTEASY_MATRIX_PARAM = DotName
             .createSimple(org.jboss.resteasy.annotations.jaxrs.MatrixParam.class.getName());
+
+    // Types ignored for reflection used by the RESTEasy and SmallRye REST client extensions.
+    public static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(
+            // javax.json
+            DotName.createSimple("javax.json.JsonObject"),
+            DotName.createSimple("javax.json.JsonArray"),
+
+            // JAX-RS
+            DotName.createSimple("javax.ws.rs.core.Response"),
+            DotName.createSimple("javax.ws.rs.container.AsyncResponse"),
+
+            // RESTEasy
+            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartInput"),
+            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput"),
+            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartOutput"),
+            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataOutput"),
+
+            // Vert-x
+            DotName.createSimple("io.vertx.core.json.JsonArray"),
+            DotName.createSimple("io.vertx.core.json.JsonObject")));
 
 }

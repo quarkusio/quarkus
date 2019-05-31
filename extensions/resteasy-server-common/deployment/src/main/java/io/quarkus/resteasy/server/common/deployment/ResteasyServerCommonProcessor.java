@@ -19,7 +19,6 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,9 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.core.Response;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -93,25 +89,6 @@ public class ResteasyServerCommonProcessor {
     private static final String JAX_RS_APPLICATION_PARAMETER_NAME = "javax.ws.rs.Application";
 
     private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
-
-    private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(
-            // javax.json
-            DotName.createSimple("javax.json.JsonObject"),
-            DotName.createSimple("javax.json.JsonArray"),
-
-            // JAX-RS
-            DotName.createSimple(Response.class.getName()),
-            DotName.createSimple(AsyncResponse.class.getName()),
-
-            // RESTEasy
-            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartInput"),
-            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput"),
-            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartOutput"),
-            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataOutput"),
-
-            // Vert-x
-            DotName.createSimple("io.vertx.core.json.JsonArray"),
-            DotName.createSimple("io.vertx.core.json.JsonObject")));
 
     private static final DotName[] METHOD_ANNOTATIONS = {
             ResteasyDotNames.GET,
@@ -561,7 +538,7 @@ public class ResteasyServerCommonProcessor {
     private static boolean isReflectionDeclarationRequiredFor(Type type) {
         DotName className = getClassName(type);
 
-        return className != null && !TYPES_IGNORED_FOR_REFLECTION.contains(className);
+        return className != null && !ResteasyDotNames.TYPES_IGNORED_FOR_REFLECTION.contains(className);
     }
 
     private static DotName getClassName(Type type) {

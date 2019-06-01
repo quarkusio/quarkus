@@ -1,5 +1,6 @@
 package io.quarkus.it.kafka;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
 
@@ -28,7 +29,6 @@ public class KafkaConsumerManager {
         return consumer;
     }
 
-    private int count;
     private Consumer<Integer, String> consumer;
 
     @PostConstruct
@@ -37,7 +37,7 @@ public class KafkaConsumerManager {
     }
 
     public String receive() {
-        return consumer.poll(10000).iterator().next().value();
+        return consumer.poll(Duration.ofMillis(10000)).iterator().next().value();
     }
 
 }

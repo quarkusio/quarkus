@@ -1,5 +1,6 @@
 package io.quarkus.it.main;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
 
@@ -34,7 +35,7 @@ public class KafkaProducerTest {
     public void test() throws Exception {
         KafkaConsumer<Integer, String> consumer = createConsumer();
         RestAssured.with().body("hello").post("/kafka");
-        ConsumerRecord<Integer, String> records = consumer.poll(10000).iterator().next();
+        ConsumerRecord<Integer, String> records = consumer.poll(Duration.ofMillis(10000)).iterator().next();
         Assertions.assertEquals(records.key(), (Integer) 0);
         Assertions.assertEquals(records.value(), "hello");
     }

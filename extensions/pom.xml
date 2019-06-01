@@ -81,6 +81,7 @@
         <module>hibernate-search-elasticsearch</module>
         <module>elasticsearch-rest-client</module>
         <module>kafka-client</module>
+        <module>kafka-streams</module>
 
         <!-- Spring -->
         <module>spring-di</module>

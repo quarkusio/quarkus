@@ -35,9 +35,11 @@ import org.apache.commons.logging.impl.LogFactoryImpl;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProviders;
 import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -79,6 +81,7 @@ import io.smallrye.restclient.RestClientProxy;
 class SmallRyeRestClientProcessor {
 
     private static final DotName REST_CLIENT = DotName.createSimple(RestClient.class.getName());
+    private static final DotName REGISTER_REST_CLIENT = DotName.createSimple(RegisterRestClient.class.getName());
 
     private static final DotName PATH = DotName.createSimple(Path.class.getName());
 
@@ -209,10 +212,12 @@ class SmallRyeRestClientProcessor {
                     configurator.scope(BuiltinScope.SINGLETON.getInfo());
                     configurator.addQualifier(REST_CLIENT);
                     configurator.creator(m -> {
-                        // return new RestClientBase(proxyType).create();
+                        // return new RestClientBase(proxyType, baseUri).create();
                         ResultHandle interfaceHandle = m.loadClass(entry.getKey().toString());
+                        ResultHandle baseUriHandle = m.load(getBaseUri(entry.getValue()));
                         ResultHandle baseHandle = m.newInstance(
-                                MethodDescriptor.ofConstructor(RestClientBase.class, Class.class), interfaceHandle);
+                                MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class),
+                                interfaceHandle, baseUriHandle);
                         ResultHandle ret = m.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
                         m.returnValue(ret);
@@ -226,6 +231,20 @@ class SmallRyeRestClientProcessor {
         extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.SMALLRYE_REST_CLIENT));
 
         smallRyeRestClientTemplate.setSslEnabled(sslNativeConfig.isEnabled());
+    }
+
+    private String getBaseUri(ClassInfo classInfo) {
+        AnnotationInstance instance = classInfo.classAnnotation(REGISTER_REST_CLIENT);
+        if (instance == null) {
+            return "";
+        }
+
+        AnnotationValue value = instance.value("baseUri");
+        if (value == null) {
+            return "";
+        }
+
+        return value.asString();
     }
 
     @BuildStep

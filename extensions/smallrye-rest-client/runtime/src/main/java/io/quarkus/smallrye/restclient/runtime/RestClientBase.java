@@ -28,11 +28,13 @@ public class RestClientBase {
     public static final String REST_URL_FORMAT = "%s/mp-rest/url";
 
     private final Class<?> proxyType;
+    private final String baseUriFromAnnotation;
 
     private final Config config;
 
-    public RestClientBase(Class<?> proxyType) {
+    public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation) {
         this.proxyType = proxyType;
+        this.baseUriFromAnnotation = baseUriFromAnnotation;
         this.config = ConfigProvider.getConfig();
     }
 
@@ -53,7 +55,10 @@ public class RestClientBase {
     }
 
     private String getBaseUrl() {
-        String property = String.format(REST_URL_FORMAT, proxyType.getName());
-        return config.getValue(property, String.class);
+        if ((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty()) {
+            String property = String.format(REST_URL_FORMAT, proxyType.getName());
+            return config.getValue(property, String.class);
+        }
+        return baseUriFromAnnotation;
     }
 }

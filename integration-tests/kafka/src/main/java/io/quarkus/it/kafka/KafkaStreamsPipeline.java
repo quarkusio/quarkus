@@ -12,8 +12,13 @@ import javax.enterprise.event.Observes;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -23,10 +28,17 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.streams.errors.InvalidStateStoreException;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Joined;
+import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.state.KeyValueBytesStoreSupplier;
+import org.apache.kafka.streams.state.QueryableStoreTypes;
+import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
+import org.apache.kafka.streams.state.Stores;
 
 import io.quarkus.runtime.StartupEvent;
 
@@ -51,10 +63,10 @@ public class KafkaStreamsPipeline {
         JsonObjectSerde jsonNodeSerde = new JsonObjectSerde();
         KTable<Integer, JsonObject> categories = builder.table(
                 "streams-test-categories",
-                Consumed.with(Serdes.Integer(), jsonNodeSerde)
-        );
+                Consumed.with(Serdes.Integer(), jsonNodeSerde));
 
-        builder.stream("streams-test-customers", Consumed.with(Serdes.Integer(), jsonNodeSerde))
+        KStream<Integer, JsonObject> customers = builder
+                .stream("streams-test-customers", Consumed.with(Serdes.Integer(), jsonNodeSerde))
                 .selectKey((k, v) -> v.getJsonNumber("category").intValue())
                 .join(
                         categories,
@@ -64,9 +76,13 @@ public class KafkaStreamsPipeline {
                             target.add("category", v2);
                             return target.build();
                         },
-                        Joined.with(Serdes.Integer(), jsonNodeSerde, null)
-                 )
-                .selectKey((k, v) -> v.getJsonNumber("id").intValue())
+                        Joined.with(Serdes.Integer(), jsonNodeSerde, null));
+
+        KeyValueBytesStoreSupplier storeSupplier = Stores.inMemoryKeyValueStore("countstore");
+        customers.groupByKey()
+                .count(Materialized.<Integer, Long> as(storeSupplier));
+
+        customers.selectKey((k, v) -> v.getJsonNumber("id").intValue())
                 .to("streams-test-customers-processed", Produced.with(Serdes.Integer(), jsonNodeSerde));
 
         streams = new KafkaStreams(builder.build(), props);
@@ -78,10 +94,28 @@ public class KafkaStreamsPipeline {
         });
     }
 
+    private ReadOnlyKeyValueStore<Integer, Long> getCountstore() {
+        while (true) {
+            try {
+                return streams.store("countstore", QueryableStoreTypes.keyValueStore());
+            } catch (InvalidStateStoreException e) {
+                // ignore, store not ready yet
+            }
+        }
+    }
+
     @POST
     @Path("/stop")
     public void stop() {
         streams.close();
+    }
+
+    @GET
+    @Path("/category/{id}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Long getCategory(@PathParam("id") int id) {
+        return getCountstore().get(id);
     }
 
     private void waitForTopicsToBeCreated(String bootstrapServers) {

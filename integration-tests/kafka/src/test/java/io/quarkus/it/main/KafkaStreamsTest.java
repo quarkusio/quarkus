@@ -19,7 +19,6 @@ import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -55,31 +54,12 @@ public class KafkaStreamsTest {
         return consumer;
     }
 
-    @AfterEach
-    public void stopKafkaStreams() {
-        // explicitly stopping the pipeline *before* the broker is shut down, as it
-        // otherwise will time out
-        RestAssured.post("/kafkastreams/stop");
-    }
-
     @Test
     public void testKafkaStreams() throws Exception {
-        Producer<Integer, String> producer = createProducer();
-
-        producer.send(new ProducerRecord<>("streams-test-categories", 1,
-                "{ \"name\" : \"B2B\", \"value\" : \"business-to-business\" }"));
-        producer.send(new ProducerRecord<>("streams-test-categories", 2,
-                "{ \"name\" : \"B2C\", \"value\" : \"business-to-customer\" }"));
-
-        producer.send(
-                new ProducerRecord<>("streams-test-customers", 101, "{ \"id\" : 101, \"name\" : \"Bob\", \"category\" : 1 }"));
-        producer.send(new ProducerRecord<>("streams-test-customers", 102,
-                "{ \"id\" : 102, \"name\" : \"Becky\", \"category\" : 2 }"));
-        producer.send(new ProducerRecord<>("streams-test-customers", 103,
-                "{ \"id\" : 103, \"name\" : \"Bruce\", \"category\" : 1 }"));
+        produceCustomers();
 
         Consumer<Integer, String> consumer = createConsumer();
-        List<ConsumerRecord<Integer, String>> records = poll(consumer, 3);
+        List<ConsumerRecord<Integer, String>> records = poll(consumer, 4);
 
         ConsumerRecord<Integer, String> record = records.get(0);
         Assertions.assertEquals(101, record.key());
@@ -98,6 +78,59 @@ public class KafkaStreamsTest {
         Assertions.assertEquals(
                 "{\"id\":103,\"name\":\"Bruce\",\"category\":{\"name\":\"B2B\",\"value\":\"business-to-business\"}}",
                 record.value());
+
+        record = records.get(3);
+        Assertions.assertEquals(104, record.key());
+        Assertions.assertEquals(
+                "{\"id\":104,\"name\":\"Bert\",\"category\":{\"name\":\"B2B\",\"value\":\"business-to-business\"}}",
+                record.value());
+
+        assertCategoryCount(1, 3);
+        assertCategoryCount(2, 1);
+
+        // explicitly stopping the pipeline *before* the broker is shut down, as it
+        // otherwise will time out
+        RestAssured.post("/kafkastreams/stop");
+    }
+
+    private void produceCustomers() {
+        Producer<Integer, String> producer = createProducer();
+
+        producer.send(new ProducerRecord<>("streams-test-categories", 1,
+                "{ \"name\" : \"B2B\", \"value\" : \"business-to-business\" }"));
+        producer.send(new ProducerRecord<>("streams-test-categories", 2,
+                "{ \"name\" : \"B2C\", \"value\" : \"business-to-customer\" }"));
+
+        producer.send(
+                new ProducerRecord<>("streams-test-customers", 101, "{ \"id\" : 101, \"name\" : \"Bob\", \"category\" : 1 }"));
+        producer.send(new ProducerRecord<>("streams-test-customers", 102,
+                "{ \"id\" : 102, \"name\" : \"Becky\", \"category\" : 2 }"));
+        producer.send(new ProducerRecord<>("streams-test-customers", 103,
+                "{ \"id\" : 103, \"name\" : \"Bruce\", \"category\" : 1 }"));
+        producer.send(new ProducerRecord<>("streams-test-customers", 104,
+                "{ \"id\" : 104, \"name\" : \"Bert\", \"category\" : 1 }"));
+    }
+
+    private void assertCategoryCount(int categoryId, int expectedCount) throws Exception {
+        int i = 0;
+        Integer actual = null;
+
+        // retrying for some time as the aggregation might not have finished yet
+        while (i < 50 && !Integer.valueOf(expectedCount).equals(actual)) {
+            actual = getCategoryCount(categoryId);
+            Thread.sleep(100);
+        }
+
+        Assertions.assertEquals(expectedCount, actual);
+    }
+
+    private Integer getCategoryCount(int categoryId) {
+        String result = RestAssured.when().get("/kafkastreams/category/" + categoryId).asString();
+        if (result != null && !result.trim().isEmpty()) {
+            return Integer.valueOf(result);
+        }
+
+        return null;
     }
 
     private List<ConsumerRecord<Integer, String>> poll(Consumer<Integer, String> consumer, int expectedRecordCount) {
@@ -111,5 +144,4 @@ public class KafkaStreamsTest {
 
         return result;
     }
-
 }

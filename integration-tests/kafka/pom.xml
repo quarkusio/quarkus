@@ -49,11 +49,19 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jsonb</artifactId>
+        </dependency>
 
         <!-- Kafka -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kafka-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kafka-streams</artifactId>
         </dependency>
 
         <!-- test dependencies -->
@@ -140,6 +148,7 @@
                                 <configuration>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
+                                    <enableJni>true</enableJni>
                                     <!-- Requires Quarkus Graal fork to work, will fail otherwise
                                       <enableRetainedHeapReporting>true</enableRetainedHeapReporting>
                                       <enableCodeSizeReporting>true</enableCodeSizeReporting>

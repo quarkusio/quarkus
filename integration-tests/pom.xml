@@ -42,6 +42,7 @@
         <module>common-jpa-entities</module>
         <module>infinispan-client</module>
         <module>main</module>
+        <module>kafka</module>
         <module>jpa</module>
         <module>jpa-postgresql</module>
         <module>jpa-mariadb</module>

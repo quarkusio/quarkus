@@ -349,7 +349,7 @@ public class DevMojo extends AbstractMojo {
             pb.directory(outputDirectory);
             Process p = pb.start();
 
-            //https://github.com/jbossas/quarkus/issues/232
+            //https://github.com/quarkusio/quarkus/issues/232
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
                 public void run() {

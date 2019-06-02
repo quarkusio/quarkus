@@ -254,7 +254,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
     }
 
     /**
-     * Reproducer for https://github.com/jbossas/quarkus/issues/671
+     * Reproducer for https://github.com/quarkusio/quarkus/issues/671
      */
     @Test
     public void testThatDefaultPackageAreReplaced() throws Exception {
@@ -271,7 +271,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
     }
 
     /**
-     * Reproducer for https://github.com/jbossas/quarkus/issues/673
+     * Reproducer for https://github.com/quarkusio/quarkus/issues/673
      */
     @Test
     public void testThatGenerationFailedWhenTheUserPassGAVonExistingPom() throws Exception {

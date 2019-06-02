@@ -55,10 +55,10 @@ public class ConfiguredBeanTest {
 
     /**
      * Validate that the TestBuildAndRunTimeConfig is the same as seen at build time
-     * Currently disabled due to https://github.com/jbossas/quarkus/issues/962
+     * Currently disabled due to https://github.com/quarkusio/quarkus/issues/962
      */
     @Test
-    @Disabled("https://github.com/jbossas/quarkus/issues/962")
+    @Disabled("https://github.com/quarkusio/quarkus/issues/962")
     public void validateBuildTimeConfig() {
         TestBuildAndRunTimeConfig buildTimeConfig = configuredBean.getBuildTimeConfig();
         Assertions.assertEquals("StringBasedValue", buildTimeConfig.btSBV.getValue(),

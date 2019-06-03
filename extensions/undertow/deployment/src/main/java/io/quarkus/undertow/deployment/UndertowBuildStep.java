@@ -461,7 +461,8 @@ public class UndertowBuildStep {
                     (Class<? extends ServletContainerInitializer>) context.classProxy(sci.sciClass), handlesTypes);
         }
 
-        return new ServletDeploymentManagerBuildItem(template.bootServletContainer(deployment, bc.getValue()));
+        return new ServletDeploymentManagerBuildItem(
+                template.bootServletContainer(deployment, bc.getValue(), launchMode.getLaunchMode()));
 
     }
 

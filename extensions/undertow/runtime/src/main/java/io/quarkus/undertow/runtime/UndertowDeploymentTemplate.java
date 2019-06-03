@@ -73,6 +73,7 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.ClassIntrospecter;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
+import io.undertow.servlet.api.ErrorPage;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.InstanceFactory;
 import io.undertow.servlet.api.InstanceHandle;
@@ -81,13 +82,13 @@ import io.undertow.servlet.api.ServletContainer;
 import io.undertow.servlet.api.ServletContainerInitializerInfo;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
-import io.undertow.servlet.api.ServletStackTraces;
 import io.undertow.servlet.api.ThreadSetupHandler;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.servlet.handlers.ServletPathMatches;
 import io.undertow.servlet.handlers.ServletRequestContext;
 import io.undertow.servlet.spec.HttpServletRequestImpl;
 import io.undertow.util.AttachmentKey;
+import io.undertow.util.StatusCodes;
 
 /**
  * Provides the runtime methods to bootstrap Undertow. This class is present in the final uber-jar,
@@ -167,11 +168,6 @@ public class UndertowDeploymentTemplate {
         }
         d.setResourceManager(resourceManager);
 
-        if (launchMode == LaunchMode.DEVELOPMENT || launchMode == LaunchMode.TEST) {
-            d.setServletStackTraces(ServletStackTraces.LOCAL_ONLY);
-        } else {
-            d.setServletStackTraces(ServletStackTraces.NONE);
-        }
         d.addWelcomePages("index.html", "index.htm");
 
         d.addServlet(new ServletInfo(ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class).setAsyncSupported(true));
@@ -398,7 +394,27 @@ public class UndertowDeploymentTemplate {
         }
     }
 
-    public DeploymentManager bootServletContainer(RuntimeValue<DeploymentInfo> info, BeanContainer beanContainer) {
+    public DeploymentManager bootServletContainer(RuntimeValue<DeploymentInfo> info, BeanContainer beanContainer,
+            LaunchMode launchMode) {
+        if (info.getValue().getExceptionHandler() == null) {
+            //if a 500 error page has not been mapped we change the default to our more modern one, with a UID in the
+            //log. If this is not production we also include the stack trace
+            boolean alreadyMapped = false;
+            for (ErrorPage i : info.getValue().getErrorPages()) {
+                if (i.getErrorCode() != null && i.getErrorCode() == StatusCodes.INTERNAL_SERVER_ERROR) {
+                    alreadyMapped = true;
+                    break;
+                }
+            }
+            if (!alreadyMapped || launchMode.isDevOrTest()) {
+                info.getValue().setExceptionHandler(new QuarkusExceptionHandler());
+                info.getValue().addErrorPage(new ErrorPage("/@QuarkusError", StatusCodes.INTERNAL_SERVER_ERROR));
+                info.getValue().addServlet(new ServletInfo("@QuarkusError", QuarkusErrorServlet.class)
+                        .addMapping("/@QuarkusError").setAsyncSupported(true)
+                        .addInitParam(QuarkusErrorServlet.SHOW_STACK, Boolean.toString(launchMode.isDevOrTest())));
+            }
+        }
+
         try {
             ClassIntrospecter defaultVal = info.getValue().getClassIntrospecter();
             info.getValue().setClassIntrospecter(new ClassIntrospecter() {

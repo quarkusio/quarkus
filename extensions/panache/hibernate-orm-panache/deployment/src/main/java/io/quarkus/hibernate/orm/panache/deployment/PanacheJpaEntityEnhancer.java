@@ -79,8 +79,10 @@ public class PanacheJpaEntityEnhancer implements BiFunction<String, ClassVisitor
         @Override
         public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
             FieldVisitor superVisitor = super.visitField(access, name, descriptor, signature, value);
-            if (fields == null || !fields.containsKey(name))
+            EntityField ef = fields.get(name);
+            if (fields == null || ef == null)
                 return superVisitor;
+            ef.signature = signature;
             // if we have a mapped field, let's add some annotations
             return new FieldVisitor(Opcodes.ASM6, superVisitor) {
                 private Set<String> descriptors = new HashSet<>();
@@ -340,7 +342,7 @@ public class PanacheJpaEntityEnhancer implements BiFunction<String, ClassVisitor
                 String getterDescriptor = "()" + field.descriptor;
                 if (!methods.contains(getterName + "/" + getterDescriptor)) {
                     MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
-                            getterName, getterDescriptor, null, null);
+                            getterName, getterDescriptor, field.signature == null ? null : "()" + field.signature, null);
                     mv.visitCode();
                     mv.visitIntInsn(Opcodes.ALOAD, 0);
                     // Due to https://github.com/quarkusio/quarkus/issues/1376 we generate Hibernate read/write calls
@@ -385,7 +387,7 @@ public class PanacheJpaEntityEnhancer implements BiFunction<String, ClassVisitor
                 String setterDescriptor = "(" + field.descriptor + ")V";
                 if (!methods.contains(setterName + "/" + setterDescriptor)) {
                     MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
-                            setterName, setterDescriptor, null, null);
+                            setterName, setterDescriptor, field.signature == null ? null : "(" + field.signature + ")V", null);
                     mv.visitCode();
                     mv.visitIntInsn(Opcodes.ALOAD, 0);
                     int loadCode;

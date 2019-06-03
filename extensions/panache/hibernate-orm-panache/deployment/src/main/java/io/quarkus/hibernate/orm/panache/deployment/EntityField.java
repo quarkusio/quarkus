@@ -4,6 +4,7 @@ public class EntityField {
 
     final String name;
     final String descriptor;
+    String signature;
 
     public EntityField(String name, String descriptor) {
         this.name = name;

@@ -19,16 +19,6 @@
     <name>Quarkus - SmallRye Context Propagation - Deployment</name>
 
     <dependencies>
-        <!-- Quarkus BOM -->
-
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bom</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>import</scope>
-        </dependency>
-
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>

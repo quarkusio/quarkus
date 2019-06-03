@@ -151,6 +151,7 @@ public class SmallRyeFaultToleranceProcessor {
     public void logCleanup(BuildProducer<LogCleanupFilterBuildItem> logCleanupFilter) {
         logCleanupFilter.produce(new LogCleanupFilterBuildItem("io.smallrye.faulttolerance.HystrixInitializer",
                 "### Init Hystrix ###",
+                "### Reset Hystrix ###",
                 // no need to log the strategy if it is the default
                 "Hystrix concurrency strategy used: DefaultHystrixConcurrencyStrategy"));
         logCleanupFilter.produce(new LogCleanupFilterBuildItem("io.smallrye.faulttolerance.DefaultHystrixConcurrencyStrategy",
@@ -159,6 +160,8 @@ public class SmallRyeFaultToleranceProcessor {
         logCleanupFilter.produce(new LogCleanupFilterBuildItem("com.netflix.config.sources.URLConfigurationSource",
                 "No URLs will be polled as dynamic configuration sources.",
                 "To enable URLs as dynamic configuration sources"));
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem("com.netflix.config.DynamicPropertyFactory",
+                "DynamicPropertyFactory is initialized with configuration sources"));
     }
 
     @Record(ExecutionTime.STATIC_INIT)

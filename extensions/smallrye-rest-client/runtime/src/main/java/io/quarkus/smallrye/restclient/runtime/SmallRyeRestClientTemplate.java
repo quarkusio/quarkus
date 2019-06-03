@@ -39,7 +39,8 @@ public class SmallRyeRestClientTemplate {
         RestClientBuilderImpl.SSL_ENABLED = sslEnabled;
     }
 
-    public void initializeResteasyProviderFactory(boolean useBuiltIn, Set<String> providersToRegister) {
+    public void initializeResteasyProviderFactory(boolean useBuiltIn, Set<String> providersToRegister,
+            Set<String> contributedProviders) {
         ResteasyProviderFactory clientProviderFactory = new ResteasyProviderFactoryImpl(null, true) {
             @Override
             public RuntimeType getRuntimeType() {
@@ -55,8 +56,15 @@ public class SmallRyeRestClientTemplate {
 
         if (useBuiltIn) {
             RegisterBuiltin.register(clientProviderFactory);
+            registerProviders(clientProviderFactory, contributedProviders);
+        } else {
+            registerProviders(clientProviderFactory, providersToRegister);
         }
 
+        RestClientBuilderImpl.PROVIDER_FACTORY = clientProviderFactory;
+    }
+
+    private static void registerProviders(ResteasyProviderFactory clientProviderFactory, Set<String> providersToRegister) {
         for (String providerToRegister : providersToRegister) {
             try {
                 clientProviderFactory
@@ -65,7 +73,5 @@ public class SmallRyeRestClientTemplate {
                 throw new RuntimeException("Unable to find class for provider " + providerToRegister, e);
             }
         }
-
-        RestClientBuilderImpl.PROVIDER_FACTORY = clientProviderFactory;
     }
 }

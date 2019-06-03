@@ -25,7 +25,7 @@ public class ArcContextProvider implements ThreadContextProvider {
     @Override
     public ThreadContextSnapshot currentContext(Map<String, String> map) {
         ArcContainer arc = Arc.container();
-        if (!arc.isRunning()) {
+        if (arc == null || !arc.isRunning()) {
             //return null as per docs to state that propagation of this context is not supported
             return null;
         }
@@ -38,10 +38,15 @@ public class ArcContextProvider implements ThreadContextProvider {
         // capture all instances
         Collection<ContextInstanceHandle<?>> instancesToPropagate = arc.requestContext().getAll();
         return () -> {
+            // can be called later on, we should retrieve the container again
+            ArcContainer arcContainer = Arc.container();
+            if (arcContainer == null || !arcContainer.isRunning()) {
+                throw new IllegalStateException("Arc context propagation was attempted but the container is not running.");
+            }
             ThreadContextController controller;
-            ManagedContext requestContext = arc.requestContext();
+            ManagedContext requestContext = arcContainer.requestContext();
             // this is executed on another thread, context can but doesn't need to be active here
-            if (isContextActiveOnThisThread(arc)) {
+            if (isContextActiveOnThisThread(arcContainer)) {
                 // context active, store current state, feed it new one and restore state afterwards
                 Collection<ContextInstanceHandle<?>> instancesToRestore = requestContext.getAll();
                 requestContext.deactivate();
@@ -66,7 +71,7 @@ public class ArcContextProvider implements ThreadContextProvider {
     public ThreadContextSnapshot clearedContext(Map<String, String> map) {
         // note that by cleared we mean that we still activate context if need be, just leave the contents blank
         ArcContainer arc = Arc.container();
-        if (!arc.isRunning()) {
+        if (arc == null || !arc.isRunning()) {
             //return null as per docs to state that propagation of this context is not supported
             return null;
         }
@@ -77,10 +82,15 @@ public class ArcContextProvider implements ThreadContextProvider {
         }
 
         return () -> {
+            // can be called later on, we should retrieve the container again
+            ArcContainer arcContainer = Arc.container();
+            if (arcContainer == null || !arcContainer.isRunning()) {
+                throw new IllegalStateException("Arc context propagation was attempted but the container is not running.");
+            }
             ThreadContextController controller;
-            ManagedContext requestContext = arc.requestContext();
+            ManagedContext requestContext = arcContainer.requestContext();
             // this is executed on another thread, context can but doesn't need to be active here
-            if (isContextActiveOnThisThread(arc)) {
+            if (isContextActiveOnThisThread(arcContainer)) {
                 // context active, store current state, start blank context anew and restore state afterwards
                 Collection<ContextInstanceHandle<?>> instancesToRestore = requestContext.getAll();
                 requestContext.deactivate();

@@ -17,6 +17,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -57,6 +58,13 @@ public class ConfigDefinition extends CompoundConfigType {
     private static final Logger log = Logger.getLogger("io.quarkus.config");
 
     public static final String NO_CONTAINING_NAME = "<<ignored>>";
+
+    private static final String QUARKUS_NAMESPACE = "quarkus";
+
+    // for now just list the values manually
+    private static final List<String> FALSE_POSITIVE_QUARKUS_CONFIG_MISSES = Arrays
+            .asList(QUARKUS_NAMESPACE + ".live-reload.password", QUARKUS_NAMESPACE + ".live-reload.url",
+                    QUARKUS_NAMESPACE + ".debug.generated-classes-dir", QUARKUS_NAMESPACE + ".debug.reflection");
 
     private final TreeMap<String, Object> rootObjectsByContainingName = new TreeMap<>();
     private final HashMap<Class<?>, Object> rootObjectsByClass = new HashMap<>();
@@ -361,7 +369,7 @@ public class ConfigDefinition extends CompoundConfigType {
         outer: for (String propertyName : config.getPropertyNames()) {
             final NameIterator name = new NameIterator(propertyName);
             if (name.hasNext()) {
-                if (name.nextSegmentEquals("quarkus")) {
+                if (name.nextSegmentEquals(QUARKUS_NAMESPACE)) {
                     name.next();
                     for (ConfigDefinition definition : definitions) {
                         final LeafConfigType leafType = definition.leafPatterns.match(name);
@@ -370,6 +378,11 @@ public class ConfigDefinition extends CompoundConfigType {
                             leafType.acceptConfigurationValue(name, cache, config);
                             final String nameString = name.toString();
                             definition.loadedProperties.put(nameString, config.getValue(nameString, String.class));
+                            continue outer;
+                        }
+                    }
+                    for (String entry : FALSE_POSITIVE_QUARKUS_CONFIG_MISSES) {
+                        if (propertyName.equals(entry)) {
                             continue outer;
                         }
                     }

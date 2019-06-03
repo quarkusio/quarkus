@@ -17,6 +17,7 @@ import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
 import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
 import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
 
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -78,6 +79,7 @@ public class ResteasyCommonProcessor {
     @BuildStep
     JaxrsProvidersToRegisterBuildItem setupProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             CombinedIndexBuildItem indexBuildItem,
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             List<ResteasyJaxrsProviderBuildItem> contributedProviderBuildItems) throws Exception {
 
         Set<String> contributedProviders = new HashSet<>();
@@ -105,10 +107,11 @@ public class ResteasyCommonProcessor {
         Set<String> providersToRegister = new HashSet<>(otherProviders);
 
         IndexView index = indexBuildItem.getIndex();
+        IndexView beansIndex = beanArchiveIndexBuildItem.getIndex();
 
         // find the providers declared in our services
         boolean useBuiltinProviders = collectDeclaredProviders(providersToRegister, categorizedReaders, categorizedWriters,
-                categorizedContextResolvers, index);
+                categorizedContextResolvers, index, beansIndex);
 
         if (useBuiltinProviders) {
             providersToRegister = new HashSet<>(contributedProviders);
@@ -175,27 +178,29 @@ public class ResteasyCommonProcessor {
 
     private static boolean collectDeclaredProviders(Set<String> providersToRegister,
             MediaTypeMap<String> categorizedReaders, MediaTypeMap<String> categorizedWriters,
-            MediaTypeMap<String> categorizedContextResolvers, IndexView index) {
-        for (ProviderDiscoverer providerDiscoverer : PROVIDER_DISCOVERERS) {
-            Collection<AnnotationInstance> getMethods = index.getAnnotations(providerDiscoverer.getMethodAnnotation());
-            for (AnnotationInstance getMethod : getMethods) {
-                MethodInfo methodTarget = getMethod.target().asMethod();
-                if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedReaders,
-                        methodTarget, ResteasyDotNames.CONSUMES, providerDiscoverer.noConsumesDefaultsToAll())) {
-                    return true;
-                }
-                if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedWriters,
-                        methodTarget, ResteasyDotNames.PRODUCES, providerDiscoverer.noProducesDefaultsToAll())) {
-                    return true;
-                }
-                if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister,
-                        categorizedContextResolvers, methodTarget, ResteasyDotNames.PRODUCES,
-                        providerDiscoverer.noProducesDefaultsToAll())) {
-                    return true;
+            MediaTypeMap<String> categorizedContextResolvers, IndexView... indexes) {
+
+        for (IndexView index : indexes) {
+            for (ProviderDiscoverer providerDiscoverer : PROVIDER_DISCOVERERS) {
+                Collection<AnnotationInstance> getMethods = index.getAnnotations(providerDiscoverer.getMethodAnnotation());
+                for (AnnotationInstance getMethod : getMethods) {
+                    MethodInfo methodTarget = getMethod.target().asMethod();
+                    if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedReaders,
+                            methodTarget, ResteasyDotNames.CONSUMES, providerDiscoverer.noConsumesDefaultsToAll())) {
+                        return true;
+                    }
+                    if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedWriters,
+                            methodTarget, ResteasyDotNames.PRODUCES, providerDiscoverer.noProducesDefaultsToAll())) {
+                        return true;
+                    }
+                    if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister,
+                            categorizedContextResolvers, methodTarget, ResteasyDotNames.PRODUCES,
+                            providerDiscoverer.noProducesDefaultsToAll())) {
+                        return true;
+                    }
                 }
             }
         }
-
         return false;
     }
 

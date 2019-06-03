@@ -28,6 +28,9 @@ import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
+import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldCreator;
@@ -195,6 +198,17 @@ public class ObserverGenerator extends AbstractGenerator {
         MethodCreator notify = observerCreator.getMethodCreator("notify", void.class, EventContext.class)
                 .setModifiers(ACC_PUBLIC);
 
+        AssignableResultHandle declaringProviderInstanceHandle = notify.createVariable(Object.class);
+        AssignableResultHandle ctxHandle = notify.createVariable(CreationalContextImpl.class);
+        ResultHandle declaringProviderHandle = notify
+                .readInstanceField(
+                        FieldDescriptor.of(observerCreator.getClassName(), "declaringProvider",
+                                InjectableBean.class.getName()),
+                        notify.getThis());
+        // It is safe to skip CreationalContext.release() for normal scoped declaring provider and no injection points
+        boolean skipRelease = observer.getDeclaringBean().getScope().isNormal()
+                && observer.getInjection().injectionPoints.isEmpty();
+
         // If Reception.IF_EXISTS is used we must check the context of the declaring bean first
         if (Reception.IF_EXISTS == observer.getReception()) {
             BeanInfo declaringBean = observer.getDeclaringBean();
@@ -205,28 +219,27 @@ public class ObserverGenerator extends AbstractGenerator {
                         container,
                         scope);
                 notify.ifNull(context).trueBranch().returnValue(null);
+                notify.assign(declaringProviderInstanceHandle,
+                        notify.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET_IF_PRESENT, context,
+                                declaringProviderHandle));
+                BranchResult doesNotExist = notify.ifNull(declaringProviderInstanceHandle);
+                doesNotExist.trueBranch().returnValue(null);
+                BytecodeCreator isNotPresent = doesNotExist.falseBranch();
+                isNotPresent.assign(ctxHandle, skipRelease ? isNotPresent.loadNull()
+                        : isNotPresent.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class)));
             }
-        }
-
-        ResultHandle declaringProviderHandle = notify
-                .readInstanceField(
-                        FieldDescriptor.of(observerCreator.getClassName(), "declaringProvider", InjectableBean.class.getName()),
-                        notify.getThis());
-
-        // It is safe to skip CreationalContext.release() for normal scoped declaring provider and no injection points
-        boolean skipRelease = observer.getDeclaringBean().getScope().isNormal()
-                && observer.getInjection().injectionPoints.isEmpty();
-        ResultHandle ctxHandle = skipRelease ? notify.loadNull()
-                : notify.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class));
-        ResultHandle declaringProviderInstanceHandle = notify.invokeInterfaceMethod(
-                MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
-                ctxHandle);
-
-        if (observer.getDeclaringBean().getScope().isNormal()) {
-            // We need to unwrap the client proxy
-            declaringProviderInstanceHandle = notify.invokeInterfaceMethod(
-                    MethodDescriptors.CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE,
-                    declaringProviderInstanceHandle);
+        } else {
+            notify.assign(ctxHandle, skipRelease ? notify.loadNull()
+                    : notify.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class)));
+            notify.assign(declaringProviderInstanceHandle, notify.invokeInterfaceMethod(
+                    MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
+                    ctxHandle));
+            if (observer.getDeclaringBean().getScope().isNormal()) {
+                // We need to unwrap the client proxy
+                notify.assign(declaringProviderInstanceHandle, notify.invokeInterfaceMethod(
+                        MethodDescriptors.CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE,
+                        declaringProviderInstanceHandle));
+            }
         }
 
         ResultHandle[] referenceHandles = new ResultHandle[observer.getObserverMethod().parameters().size()];

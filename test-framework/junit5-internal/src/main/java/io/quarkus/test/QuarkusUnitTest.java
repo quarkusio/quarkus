@@ -33,6 +33,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
@@ -165,8 +166,10 @@ public class QuarkusUnitTest
                     if (!exportDir.isDirectory()) {
                         throw new IllegalStateException("Export path is not a directory: " + exportPath);
                     }
-                    Files.walk(exportDir.toPath()).sorted(Comparator.reverseOrder()).map(Path::toFile)
-                            .forEach(File::delete);
+                    try (Stream<Path> stream = Files.walk(exportDir.toPath())) {
+                        stream.sorted(Comparator.reverseOrder()).map(Path::toFile)
+                                .forEach(File::delete);
+                    }
                 } else if (!exportDir.mkdirs()) {
                     throw new IllegalStateException("Export path could not be created: " + exportPath);
                 }

@@ -1,11 +1,16 @@
 package io.quarkus.it.kafka;
 
+import static org.awaitility.Awaitility.await;
+
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
@@ -41,10 +46,12 @@ import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.apache.kafka.streams.state.Stores;
 
 import io.quarkus.runtime.StartupEvent;
-
 @ApplicationScoped
 @Path("/kafkastreams")
 public class KafkaStreamsPipeline {
+
+    private static final String CATEGORIES_TOPIC_NAME = "streams-test-categories";
+    private static final String CUSTOMERS_TOPIC_NAME = "streams-test-customers";
 
     private KafkaStreams streams;
 
@@ -62,11 +69,11 @@ public class KafkaStreamsPipeline {
 
         JsonObjectSerde jsonNodeSerde = new JsonObjectSerde();
         KTable<Integer, JsonObject> categories = builder.table(
-                "streams-test-categories",
+                CATEGORIES_TOPIC_NAME,
                 Consumed.with(Serdes.Integer(), jsonNodeSerde));
 
         KStream<Integer, JsonObject> customers = builder
-                .stream("streams-test-customers", Consumed.with(Serdes.Integer(), jsonNodeSerde))
+                .stream(CUSTOMERS_TOPIC_NAME, Consumed.with(Serdes.Integer(), jsonNodeSerde))
                 .selectKey((k, v) -> v.getJsonNumber("category").intValue())
                 .join(
                         categories,
@@ -123,24 +130,20 @@ public class KafkaStreamsPipeline {
         config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
 
         try (AdminClient adminClient = AdminClient.create(config)) {
-            AtomicBoolean topicsCreated = new AtomicBoolean(false);
-
-            while (topicsCreated.get() == false) {
-                ListTopicsResult topics = adminClient.listTopics();
-                topics.names().whenComplete((t, e) -> {
-                    if (e != null) {
-                        throw new RuntimeException(e);
-                    } else if (t.contains("streams-test-categories") && t.contains("streams-test-customers")) {
-                        topicsCreated.set(true);
-                    }
-                });
-
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+            await().until(topicsCreated(adminClient, CATEGORIES_TOPIC_NAME, CUSTOMERS_TOPIC_NAME));
         }
     }
+
+    private Callable<Boolean> topicsCreated(AdminClient adminClient, String... expectedTopics) {
+        return new Callable<Boolean>() {
+
+            @Override
+            public Boolean call() throws Exception {
+                ListTopicsResult topics = adminClient.listTopics();
+                Set<String> topicNames = topics.names().get(10, TimeUnit.SECONDS);
+
+                return topicNames.containsAll(Arrays.asList(expectedTopics));
+            }
+        };
+  }
 }

@@ -1,10 +1,15 @@
 package io.quarkus.it.main;
 
+import java.io.StringReader;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -63,27 +68,35 @@ public class KafkaStreamsTest {
 
         ConsumerRecord<Integer, String> record = records.get(0);
         Assertions.assertEquals(101, record.key());
-        Assertions.assertEquals(
-                "{\"id\":101,\"name\":\"Bob\",\"category\":{\"name\":\"B2B\",\"value\":\"business-to-business\"}}",
-                record.value());
+        JsonObject customer = parse(record.value());
+        Assertions.assertEquals(101, customer.getInt("id"));
+        Assertions.assertEquals("Bob", customer.getString("name"));
+        Assertions.assertEquals("B2B", customer.getJsonObject("category").getString("name"));
+        Assertions.assertEquals("business-to-business", customer.getJsonObject("category").getString("value"));
 
         record = records.get(1);
         Assertions.assertEquals(102, record.key());
-        Assertions.assertEquals(
-                "{\"id\":102,\"name\":\"Becky\",\"category\":{\"name\":\"B2C\",\"value\":\"business-to-customer\"}}",
-                record.value());
+        customer = parse(record.value());
+        Assertions.assertEquals(102, customer.getInt("id"));
+        Assertions.assertEquals("Becky", customer.getString("name"));
+        Assertions.assertEquals("B2C", customer.getJsonObject("category").getString("name"));
+        Assertions.assertEquals("business-to-customer", customer.getJsonObject("category").getString("value"));
 
         record = records.get(2);
         Assertions.assertEquals(103, record.key());
-        Assertions.assertEquals(
-                "{\"id\":103,\"name\":\"Bruce\",\"category\":{\"name\":\"B2B\",\"value\":\"business-to-business\"}}",
-                record.value());
+        customer = parse(record.value());
+        Assertions.assertEquals(103, customer.getInt("id"));
+        Assertions.assertEquals("Bruce", customer.getString("name"));
+        Assertions.assertEquals("B2B", customer.getJsonObject("category").getString("name"));
+        Assertions.assertEquals("business-to-business", customer.getJsonObject("category").getString("value"));
 
         record = records.get(3);
         Assertions.assertEquals(104, record.key());
-        Assertions.assertEquals(
-                "{\"id\":104,\"name\":\"Bert\",\"category\":{\"name\":\"B2B\",\"value\":\"business-to-business\"}}",
-                record.value());
+        customer = parse(record.value());
+        Assertions.assertEquals(104, customer.getInt("id"));
+        Assertions.assertEquals("Bert", customer.getString("name"));
+        Assertions.assertEquals("B2B", customer.getJsonObject("category").getString("name"));
+        Assertions.assertEquals("business-to-business", customer.getJsonObject("category").getString("value"));
 
         assertCategoryCount(1, 3);
         assertCategoryCount(2, 1);
@@ -143,5 +156,11 @@ public class KafkaStreamsTest {
         }
 
         return result;
+    }
+
+    private JsonObject parse(String json) {
+        try(JsonReader reader = Json.createReader(new StringReader(json))) {
+            return reader.readObject();
+        }
     }
 }

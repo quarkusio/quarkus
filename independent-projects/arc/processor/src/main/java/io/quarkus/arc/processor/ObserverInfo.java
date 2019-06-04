@@ -21,10 +21,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
+import javax.enterprise.event.Reception;
 import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.ObserverMethod;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
@@ -97,6 +99,17 @@ public class ObserverInfo implements InjectionTargetInfo {
 
     public boolean isAsync() {
         return isAsync;
+    }
+
+    public Reception getReception() {
+        AnnotationInstance observesAnnotation = isAsync
+                ? declaringBean.getDeployment().getAnnotation(observerMethod, DotNames.OBSERVES_ASYNC)
+                : declaringBean.getDeployment().getAnnotation(observerMethod, DotNames.OBSERVES);
+        AnnotationValue receptionValue = observesAnnotation.value("notifyObserver");
+        if (receptionValue == null) {
+            return Reception.ALWAYS;
+        }
+        return Reception.valueOf(receptionValue.asEnum());
     }
 
     void init(List<Throwable> errors) {

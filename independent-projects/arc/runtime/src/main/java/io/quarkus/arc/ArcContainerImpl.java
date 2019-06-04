@@ -269,6 +269,8 @@ class ArcContainerImpl implements ArcContainer {
                 ArcCDI arcCdi = (ArcCDI) cdi;
                 arcCdi.destroy();
             }
+            // Terminate request context if for any reason is still active
+            requestContext.terminate();
             // Fire an event with qualifier @BeforeDestroyed(ApplicationScoped.class)
             Set<Annotation> beforeDestroyQualifiers = new HashSet<>(4);
             beforeDestroyQualifiers.add(BeforeDestroyed.Literal.APPLICATION);
@@ -282,7 +284,6 @@ class ArcContainerImpl implements ArcContainer {
             destroyQualifiers.add(Any.Literal.INSTANCE);
             EventImpl.createNotifier(Object.class, Object.class, destroyQualifiers, this).notify(toString());
             singletonContext.destroy();
-            requestContext.terminate();
             // Clear caches
             contexts.clear();
             beans.clear();

@@ -271,7 +271,7 @@ or jars, you should build those jars with the Jandex Maven plugin, so that your 
 <plugin>
     <groupId>org.jboss.jandex</groupId>
     <artifactId>jandex-maven-plugin</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.6</version>
     <executions>
         <execution>
             <id>make-index</id>
@@ -280,13 +280,6 @@ or jars, you should build those jars with the Jandex Maven plugin, so that your 
             </goals>
         </execution>
     </executions>
-    <dependencies>
-        <dependency>
-            <groupId>org.jboss</groupId>
-            <artifactId>jandex</artifactId>
-            <version>2.1.1.Final</version>
-        </dependency>
-    </dependencies>
 </plugin>
 --
 

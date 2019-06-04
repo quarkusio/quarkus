@@ -72,7 +72,7 @@ In this section, we are going to leverage the build mechanism of OpenShift. Run:
 ----
 # To build the image on OpenShift
 oc new-build --binary --name=quarkus-quickstart -l app=quarkus-quickstart
-oc patch bc/quarkus-quickstart -p '{"spec":{"strategy":{"dockerStrategy":{"dockerfilePath":"src/main/docker/Dockerfile.native"}}}}'
+oc patch bc/quarkus-quickstart -p "{\"spec\":{\"strategy\":{\"dockerStrategy\":{\"dockerfilePath\":\"src/main/docker/Dockerfile.native\"}}}}"
 oc start-build quarkus-quickstart --from-dir=. --follow
 
 # To instantiate the image

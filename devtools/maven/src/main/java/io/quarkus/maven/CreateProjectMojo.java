@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -141,6 +142,7 @@ public class CreateProjectMojo extends AbstractMojo {
 
         boolean success;
         try {
+            sanitizeExtensions();
             final SourceType sourceType = CreateProject.determineSourceType(extensions);
             sanitizeOptions(sourceType);
 
@@ -290,8 +292,10 @@ public class CreateProjectMojo extends AbstractMojo {
                 path = "/" + path;
             }
         }
+    }
 
-        extensions = extensions.stream().map(String::trim).collect(Collectors.toSet());
+    private void sanitizeExtensions() {
+        extensions = extensions.stream().filter(Objects::nonNull).map(String::trim).collect(Collectors.toSet());
     }
 
     private void printUserInstructions(File root) {

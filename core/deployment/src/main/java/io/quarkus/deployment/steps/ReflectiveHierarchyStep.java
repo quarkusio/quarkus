@@ -63,7 +63,7 @@ public class ReflectiveHierarchyStep {
         Set<DotName> processedReflectiveHierarchies = new HashSet<>();
         Set<DotName> unindexedClasses = new TreeSet<>();
         for (ReflectiveHierarchyBuildItem i : hierarchy) {
-            addReflectiveHierarchy(i.getType(), processedReflectiveHierarchies, unindexedClasses);
+            addReflectiveHierarchy(i, i.getType(), processedReflectiveHierarchies, unindexedClasses);
         }
 
         if (!unindexedClasses.isEmpty()) {
@@ -76,7 +76,8 @@ public class ReflectiveHierarchyStep {
         }
     }
 
-    private void addReflectiveHierarchy(Type type, Set<DotName> processedReflectiveHierarchies, Set<DotName> unindexedClasses) {
+    private void addReflectiveHierarchy(ReflectiveHierarchyBuildItem i, Type type, Set<DotName> processedReflectiveHierarchies,
+            Set<DotName> unindexedClasses) {
         if (type instanceof VoidType ||
                 type instanceof PrimitiveType ||
                 type instanceof UnresolvedTypeVariable) {
@@ -86,44 +87,45 @@ public class ReflectiveHierarchyStep {
                 return;
             }
 
-            addClassTypeHierarchy(type.name(), processedReflectiveHierarchies, unindexedClasses);
+            addClassTypeHierarchy(i, type.name(), processedReflectiveHierarchies, unindexedClasses);
 
             for (ClassInfo subclass : combinedIndexBuildItem.getIndex().getAllKnownSubclasses(type.name())) {
-                addClassTypeHierarchy(subclass.name(), processedReflectiveHierarchies, unindexedClasses);
+                addClassTypeHierarchy(i, subclass.name(), processedReflectiveHierarchies, unindexedClasses);
             }
             for (ClassInfo subclass : combinedIndexBuildItem.getIndex().getAllKnownImplementors(type.name())) {
-                addClassTypeHierarchy(subclass.name(), processedReflectiveHierarchies, unindexedClasses);
+                addClassTypeHierarchy(i, subclass.name(), processedReflectiveHierarchies, unindexedClasses);
             }
         } else if (type instanceof ArrayType) {
-            addReflectiveHierarchy(type.asArrayType().component(), processedReflectiveHierarchies, unindexedClasses);
+            addReflectiveHierarchy(i, type.asArrayType().component(), processedReflectiveHierarchies, unindexedClasses);
         } else if (type instanceof ParameterizedType) {
             ParameterizedType p = (ParameterizedType) type;
-            addReflectiveHierarchy(p.owner(), processedReflectiveHierarchies, unindexedClasses);
+            addReflectiveHierarchy(i, p.owner(), processedReflectiveHierarchies, unindexedClasses);
             for (Type arg : p.arguments()) {
-                addReflectiveHierarchy(arg, processedReflectiveHierarchies, unindexedClasses);
+                addReflectiveHierarchy(i, arg, processedReflectiveHierarchies, unindexedClasses);
             }
         }
     }
 
-    private void addClassTypeHierarchy(DotName name, Set<DotName> processedReflectiveHierarchies,
+    private void addClassTypeHierarchy(ReflectiveHierarchyBuildItem i, DotName name,
+            Set<DotName> processedReflectiveHierarchies,
             Set<DotName> unindexedClasses) {
         if (skipClass(name, processedReflectiveHierarchies)) {
             return;
         }
         processedReflectiveHierarchies.add(name);
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, name.toString()));
-        ClassInfo info = combinedIndexBuildItem.getIndex().getClassByName(name);
+        ClassInfo info = (i.getIndex() != null ? i.getIndex() : combinedIndexBuildItem.getIndex()).getClassByName(name);
         if (info == null) {
             unindexedClasses.add(name);
         } else {
-            addClassTypeHierarchy(info.superName(), processedReflectiveHierarchies, unindexedClasses);
+            addClassTypeHierarchy(i, info.superName(), processedReflectiveHierarchies, unindexedClasses);
             for (FieldInfo field : info.fields()) {
                 if (Modifier.isStatic(field.flags()) || field.name().startsWith("this$") || field.name().startsWith("val$")) {
                     // skip the static fields (especially loggers)
                     // also skip the outer class elements (unfortunately, we don't have a way to test for synthetic fields in Jandex)
                     continue;
                 }
-                addReflectiveHierarchy(field.type(), processedReflectiveHierarchies, unindexedClasses);
+                addReflectiveHierarchy(i, field.type(), processedReflectiveHierarchies, unindexedClasses);
             }
             for (MethodInfo method : info.methods()) {
                 if (method.parameters().size() > 0 || Modifier.isStatic(method.flags())
@@ -131,7 +133,7 @@ public class ReflectiveHierarchyStep {
                     // we will only consider potential getters
                     continue;
                 }
-                addReflectiveHierarchy(method.returnType(), processedReflectiveHierarchies, unindexedClasses);
+                addReflectiveHierarchy(i, method.returnType(), processedReflectiveHierarchies, unindexedClasses);
             }
         }
     }

@@ -163,6 +163,13 @@
             <groupId>org.webjars</groupId>
             <artifactId>bootstrap</artifactId>
         </dependency>
+        <!-- Issue 2707: used to test if web-fragments.xml is being read properly -->
+        <dependency>
+            <groupId>org.ops4j.pax.web.samples.web-fragment</groupId>
+            <artifactId>fragment</artifactId>
+            <version>7.3.3</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

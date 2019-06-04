@@ -264,8 +264,7 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
 
 Hibernate ORM in Quarkus relies on compile-time bytecode enhancements to your entities. If you define your entities in the
 same project where you build your Quarkus application, everything will work fine. If the entities come from external projects
-or jars, you should build those jars with the Jandex Maven plugin, so that your entities will be indexed and found by Quarkus
-and enhanced:
+or jars, you should build those jars with the Jandex Maven plugin, so that your entities will be indexed and enhanced by Quarkus:
 
 [source,xml]
 --

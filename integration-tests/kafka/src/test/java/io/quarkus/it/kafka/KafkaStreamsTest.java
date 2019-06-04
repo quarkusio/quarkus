@@ -1,4 +1,4 @@
-package io.quarkus.it.main;
+package io.quarkus.it.kafka;
 
 import java.io.StringReader;
 import java.time.Duration;
@@ -159,7 +159,7 @@ public class KafkaStreamsTest {
     }
 
     private JsonObject parse(String json) {
-        try(JsonReader reader = Json.createReader(new StringReader(json))) {
+        try (JsonReader reader = Json.createReader(new StringReader(json))) {
             return reader.readObject();
         }
     }

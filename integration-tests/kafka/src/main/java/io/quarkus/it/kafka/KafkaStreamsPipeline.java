@@ -46,6 +46,7 @@ import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.apache.kafka.streams.state.Stores;
 
 import io.quarkus.runtime.StartupEvent;
+
 @ApplicationScoped
 @Path("/kafkastreams")
 public class KafkaStreamsPipeline {
@@ -145,5 +146,5 @@ public class KafkaStreamsPipeline {
                 return topicNames.containsAll(Arrays.asList(expectedTopics));
             }
         };
-  }
+    }
 }

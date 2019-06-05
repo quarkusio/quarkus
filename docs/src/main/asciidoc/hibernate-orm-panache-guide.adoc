@@ -285,8 +285,14 @@ If your query does not start with `from`, we support the following additional fo
 - `<singleColumnName>` (and single parameter) which will expand to `from EntityName where <singleColumnName> = ?`
 - `<query>` will expand to `from EntityName where <query>`
 
-NOTE: Naturally, you can also write your queries in plain 
-link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#hql[HQL].
+NOTE: You can also write your queries in plain 
+link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#hql[HQL]:
+
+[source,java]
+--
+Order.find("select distinct o from Order o left join fetch o.lineItems");
+--
+
 
 == Query parameters
 

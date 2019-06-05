@@ -1,14 +1,13 @@
 package io.quarkus.undertow.deployment;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -60,7 +59,7 @@ public class WebXmlParsingBuildStep {
             final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
             MetaDataElementParser.DTDInfo dtdInfo = new MetaDataElementParser.DTDInfo();
             inputFactory.setXMLResolver(dtdInfo);
-            try (FileInputStream in = new FileInputStream(webXml.toFile())) {
+            try (InputStream in = Files.newInputStream(webXml)) {
                 final XMLStreamReader xmlReader = inputFactory.createXMLStreamReader(in);
                 result = WebMetaDataParser.parse(xmlReader, dtdInfo,
                         PropertyReplacers.resolvingReplacer(new MPConfigPropertyResolver()));
@@ -85,14 +84,14 @@ public class WebXmlParsingBuildStep {
         } else {
             result = new WebMetaData();
         }
-        Map<String, WebFragmentMetaData> webFragments = parseWebFragments(applicationArchivesBuildItem);
-        for (Map.Entry<String, WebFragmentMetaData> e : webFragments.entrySet()) {
+        Set<WebFragmentMetaData> webFragments = parseWebFragments(applicationArchivesBuildItem);
+        for (WebFragmentMetaData webFragment : webFragments) {
             //merge in any web fragments
             //at the moment this is fairly simplistic, as it does not handle all the ordering and metadata complete bits
             //of the spec. I am not sure how important this is, and it is very complex and does not 100% map to the quarkus
             //deployment model. If there is demand for it we can look at adding it later
 
-            WebCommonMetaDataMerger.augment(result, e.getValue(), null, false);
+            WebCommonMetaDataMerger.augment(result, webFragment, null, false);
         }
 
         return new WebMetadataBuildItem(result);
@@ -101,19 +100,19 @@ public class WebXmlParsingBuildStep {
     /**
      * parse web-fragment.xml
      */
-    public Map<String, WebFragmentMetaData> parseWebFragments(ApplicationArchivesBuildItem applicationArchivesBuildItem) {
-        Map<String, WebFragmentMetaData> webFragments = new HashMap<>();
+    private Set<WebFragmentMetaData> parseWebFragments(ApplicationArchivesBuildItem applicationArchivesBuildItem) {
+        Set<WebFragmentMetaData> webFragments = new LinkedHashSet<>();
         for (ApplicationArchive archive : applicationArchivesBuildItem.getAllApplicationArchives()) {
             Path webFragment = archive.getChildPath(WEB_FRAGMENT_XML);
             if (webFragment != null && Files.isRegularFile(webFragment)) {
-                try (FileInputStream is = new FileInputStream(webFragment.toFile())) {
+                try (InputStream is = Files.newInputStream(webFragment)) {
                     final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
                     inputFactory.setXMLResolver(NoopXMLResolver.create());
                     XMLStreamReader xmlReader = inputFactory.createXMLStreamReader(is);
 
                     WebFragmentMetaData webFragmentMetaData = WebFragmentMetaDataParser.parse(xmlReader,
                             PropertyReplacers.resolvingReplacer(new MPConfigPropertyResolver()));
-                    webFragments.put(archive.getArchiveRoot().getFileName().toString(), webFragmentMetaData);
+                    webFragments.add(webFragmentMetaData);
 
                 } catch (XMLStreamException e) {
                     throw new RuntimeException("Failed to parse " + webFragment + " " + e.getLocation(), e);

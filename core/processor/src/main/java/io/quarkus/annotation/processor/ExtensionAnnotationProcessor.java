@@ -357,28 +357,29 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     }
 
     private void recordConfigJavadoc(TypeElement clazz) {
-        if (!generatedJavaDocs.add(clazz.getQualifiedName().toString()))
+        String className = clazz.getQualifiedName().toString();
+        if (!generatedJavaDocs.add(className))
             return;
         final Properties javadocProps = new Properties();
         for (Element e : clazz.getEnclosedElements()) {
             switch (e.getKind()) {
                 case FIELD: {
                     if (isAnnotationPresent(e, ANNOTATION_CONFIG_ITEM)) {
-                        processFieldConfigItem((VariableElement) e, javadocProps);
+                        processFieldConfigItem((VariableElement) e, javadocProps, className);
                     }
                     break;
                 }
                 case CONSTRUCTOR: {
                     final ExecutableElement ex = (ExecutableElement) e;
                     if (hasParameterAnnotated(ex, ANNOTATION_CONFIG_ITEM)) {
-                        processCtorConfigItem(ex, javadocProps);
+                        processCtorConfigItem(ex, javadocProps, className);
                     }
                     break;
                 }
                 case METHOD: {
                     final ExecutableElement ex = (ExecutableElement) e;
                     if (hasParameterAnnotated(ex, ANNOTATION_CONFIG_ITEM)) {
-                        processMethodConfigItem(ex, javadocProps);
+                        processMethodConfigItem(ex, javadocProps, className);
                     }
                     break;
                 }
@@ -403,23 +404,23 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         }
     }
 
-    private void processFieldConfigItem(VariableElement field, Properties javadocProps) {
-        javadocProps.put(field.getSimpleName().toString(), getRequiredJavadoc(field));
+    private void processFieldConfigItem(VariableElement field, Properties javadocProps, String className) {
+        javadocProps.put(className + "." + field.getSimpleName().toString(), getRequiredJavadoc(field));
     }
 
-    private void processCtorConfigItem(ExecutableElement ctor, Properties javadocProps) {
+    private void processCtorConfigItem(ExecutableElement ctor, Properties javadocProps, String className) {
         final String docComment = getRequiredJavadoc(ctor);
         final StringBuilder buf = new StringBuilder();
         appendParamTypes(ctor, buf);
-        javadocProps.put(buf.toString(), docComment);
+        javadocProps.put(className + "." + buf.toString(), docComment);
     }
 
-    private void processMethodConfigItem(ExecutableElement method, Properties javadocProps) {
+    private void processMethodConfigItem(ExecutableElement method, Properties javadocProps, String className) {
         final String docComment = getRequiredJavadoc(method);
         final StringBuilder buf = new StringBuilder();
         buf.append(method.getSimpleName().toString());
         appendParamTypes(method, buf);
-        javadocProps.put(buf.toString(), docComment);
+        javadocProps.put(className + "." + buf.toString(), docComment);
     }
 
     private void processConfigGroup(RoundEnvironment roundEnv, TypeElement annotation) {

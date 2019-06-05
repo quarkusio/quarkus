@@ -162,6 +162,7 @@
         <bootstrap.version>3.1.0</bootstrap.version>
         <keycloak.version>6.0.1</keycloak.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
+        <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
     </properties>
 
     <dependencyManagement>
@@ -1542,6 +1543,11 @@
                 <groupId>org.hibernate</groupId>
                 <artifactId>hibernate-core</artifactId>
                 <version>${hibernate-orm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>quarkus-local-cache</artifactId>
+                <version>${hibernate-quarkus-local-cache.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.search</groupId>

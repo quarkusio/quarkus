@@ -30,8 +30,8 @@ public class ObjectListConfigType extends ObjectConfigType {
             Collection.class, SmallRyeConfig.class, String.class, Class.class, IntFunction.class);
 
     public ObjectListConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment,
-            final String defaultValue, final Class<?> expectedType) {
-        super(containingName, container, consumeSegment, defaultValue, expectedType);
+            final String defaultValue, final Class<?> expectedType, String javadocKey, String configKey) {
+        super(containingName, container, consumeSegment, defaultValue, expectedType, javadocKey, configKey);
     }
 
     public void acceptConfigurationValue(final NameIterator name, final ExpandingConfigSource.Cache cache,

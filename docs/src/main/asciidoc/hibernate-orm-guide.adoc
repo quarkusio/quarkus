@@ -137,6 +137,15 @@ The storage engine to use when the dialect supports multiple storage engines.
 `quarkus.hibernate-orm.sql-load-script`::
 (defaults to `/import.sql`) Name of the file containing the SQL statements to execute when Hibernate ORM starts.
 By default, simply add `import.sql` in the root of your resources directory and it will be picked up without having to set this property.
+If you need different SQL statements between dev mode, test (`@QuarkusTest`) and in production, use Quarkus https://quarkus.io/guides/application-configuration-guide#configuration-profiles[configuration profiles facility].
+
+[source,property]
+.application.properties
+--
+%dev.quarkus.hibernate-orm.sql-load-script = import-dev.sql
+%test.quarkus.hibernate-orm.sql-load-script = import-test.sql
+%prod.quarkus.hibernate-orm.sql-load-script = import-prod.sql
+--
 
 `quarkus.hibernate-orm.batch-fetch-size`:: (defaults to `-1` i.e. batch fetching is disabled).
 The size of the batches used when loading entities and collections.

@@ -74,6 +74,8 @@ found in the `ide-config` directory. By default when you run `./mvnw install` th
 When submitting a pull request the CI build will fail if running the formatter results in any code changes, so it is
 recommended that you always run a full Maven build before submitting a pull request.
 
+If you want to run the formatting without doing a full build, you can run `./mvnw process-sources`.
+
 #### Eclipse Setup
 
 Open the *Preferences* window, and then navigate to _Java_ -> _Code Style_ -> _Formatter_. Click _Import_ and then

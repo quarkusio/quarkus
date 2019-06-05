@@ -133,8 +133,6 @@ class JaxbProcessor {
         addReflectiveClass(false, false, "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl");
         addReflectiveClass(true, false, "com.sun.xml.bind.v2.ContextFactory");
         addReflectiveClass(true, false, "com.sun.xml.internal.bind.v2.ContextFactory");
-        runtimeClasses
-                .produce(new RuntimeInitializedClassBuildItem("com.sun.xml.internal.bind.v2.runtime.reflect.opt.Injector"));
 
         addResourceBundle("javax.xml.bind.Messages");
         addResourceBundle("javax.xml.bind.helpers.Messages");

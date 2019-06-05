@@ -182,7 +182,6 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
                     .setTarget(appLocation)
                     .setFrameworkClassesPath(testClassesLocation)
                     .addChainCustomizers(customizers)
-                    .addAdditionalArchives(libraries)
                     .build();
 
             runner.run();

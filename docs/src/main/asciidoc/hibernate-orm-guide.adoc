@@ -113,6 +113,10 @@ To load some SQL statements when Hibernate ORM starts, add a `import.sql` in the
 It contains SQL DML statements (one by line).
 This is useful to have a data set ready for your tests or demos.
 
+WARNING: Make sure to wrap methods modifying your database (e.g. `entity.persist()`) within a transaction. Marking a 
+CDI bean method `@Transactional` will do that for you and make that method a transaction boundary. We recommend doing 
+so at your application entry point boundaries like your REST endpoint controllers.
+
 === Properties to refine your Hibernate ORM configuration
 
 There are optional properties useful to refine your `EntityManagerFactory` or guide guesses of {project-name}.
@@ -255,6 +259,13 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
     </persistence-unit>
 </persistence>
 --
+
+== Defining entities in external projects or jars
+
+Hibernate ORM in Quarkus relies on compile-time bytecode enhancements to your entities. If you define your entities in the
+same project where you build your Quarkus application, everything will work fine. If the entities come from external projects
+or jars, you can make sure that your jar is treated like a Quarkus application library by adding an empty `META-INF/beans.xml` file.
+This will allow Quarkus to index and enhance your entities as if they were inside the current project.
 
 == Caching
 

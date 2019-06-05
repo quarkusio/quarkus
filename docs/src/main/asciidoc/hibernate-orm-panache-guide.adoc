@@ -371,12 +371,9 @@ go back to specifying your ID and using getters and setters if that's your thing
 
 == Transactions
 
-In Quarkus, an active transaction is required for any database modification. If you try to modify the database 
-outside a transaction you will get an exception. It is not required for querying operations.
-
-You can annotate any method with `@Transactional` in order to get a transaction. We recommend doing so in your
-REST endpoints where you manipulate entities.
-
+Make sure to wrap methods modifying your database (e.g. `entity.persist()`) within a transaction. Marking a 
+CDI bean method `@Transactional` will do that for you and make that method a transaction boundary. We recommend doing 
+so at your application entry point boundaries like your REST endpoint controllers.
 
 == Custom IDs
 

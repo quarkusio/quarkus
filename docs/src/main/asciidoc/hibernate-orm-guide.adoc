@@ -267,6 +267,54 @@ same project where you build your Quarkus application, everything will work fine
 or jars, you can make sure that your jar is treated like a Quarkus application library by adding an empty `META-INF/beans.xml` file.
 This will allow Quarkus to index and enhance your entities as if they were inside the current project.
 
+== Hibernate ORM in development mode
+
+Quarkus development mode is really useful for applications that mix front end or services and database access.
+There are a few common approaches.
+
+The first choice is to use `quarkus.hibernate-orm.database.generation=drop-and-create` in conjunction with `import.sql`.
+That way for every change to your app and in particular to your entities, the database schema will be properly recreated
+and your data fixture (stored in `import.sql`) will be used to repopulate it from scratch.
+This is best to perfectly control your environment.
+
+The second approach is to use `quarkus.hibernate-orm.database.generation=update`.
+This approach is best when you do many entity changes but
+still need to work on a copy of the production data
+or if you want to reproduce a bug that is based on a specific database entries.
+`update` is a best effort from Hibernate ORM and will fail in specific situations
+including altering your database structure which could lead to data loss.
+For example if you change structures related to the foreign key, Hibernate ORM might have to bail out.
+
+The third approach is to use `quarkus.hibernate-orm.database.generation=none`.
+This approach is best when you are working on a copy of the production data but want to fully control the schema evolution.
+Or if you use a database schema migration tool like https://quarkus.io/guides/flyway-guide[Flyway].
+When you make a change to an entity, make sure to manually adapt the database schema accordingly.
+
+WARNING: Do not use `quarkus.hibernate-orm.database.generation` `drop-and-create` and `update` in your production environment.
+
+
+Don't forget that you can define different https://quarkus.io/guides/application-configuration-guide#configuration-profiles[configuration profiles]
+to select different behaviors depending on your environment.
+
+[source]
+.application.properties
+--
+%dev.quarkus.hibernate-orm.database.generation = drop-and-create
+%dev.quarkus.hibernate-orm.sql-load-script = import-dev.sql
+
+%dev-with-data.quarkus.hibernate-orm.database.generation = update
+%dev-with-data.quarkus.hibernate-orm.sql-load-script =
+
+%prod.quarkus.hibernate-orm.database.generation = none
+%prod.quarkus.hibernate-orm.sql-load-script =
+--
+
+[source,bash]
+
+--
+mvn compile quarkus:dev -Dquarkus-profile=dev-with-data
+--
+
 == Caching
 
 Applications that frequently read the same entities can see their performance improved when the Hibernate ORM second-level cache is enabled.

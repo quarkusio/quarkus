@@ -26,7 +26,7 @@ import sun.misc.Unsafe;
  *
  * This is only for development mode, it must not be used for production applications.
  *
- * TODO: should this just provide a facacde that simply starts a new thread pool instead?
+ * TODO: should this just provide a facade that simply starts a new thread pool instead?
  */
 public final class CleanableExecutor implements ExecutorService {
 
@@ -63,8 +63,10 @@ public final class CleanableExecutor implements ExecutorService {
         //threadlocal state. It does not really matter if this does not work, however if these threads are holding
         //state that is stopping things being GC'ed it can help with memory usage
         try {
-            for (int i = 0; i < executor.getMaximumPoolSize(); ++i) {
-                submit(empty);
+            if (!executor.isShutdown()) {
+                for (int i = 0; i < executor.getMaximumPoolSize(); ++i) {
+                    submit(empty);
+                }
             }
         } finally {
             latch.countDown();

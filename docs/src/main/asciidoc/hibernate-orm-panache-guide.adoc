@@ -455,24 +455,8 @@ That's all there is to it: with Panache, Hibernate ORM has never looked so trim 
 
 == Defining entities in external projects or jars
 
-Hibernate ORM with Panache in Quarkus relies on compile-time bytecode enhancements to your entities. If you define your entities in the
+Hibernate ORM in Quarkus relies on compile-time bytecode enhancements to your entities. If you define your entities in the
 same project where you build your Quarkus application, everything will work fine. If the entities come from external projects
-or jars, you should build those jars with the Jandex Maven plugin, so that your entities will be indexed and found by Quarkus
-and enhanced:
+or jars, you can make sure that your jar is treated like a Quarkus application library by adding an empty `META-INF/beans.xml` file.
+This will allow Quarkus to index and enhance your entities as if they were inside the current project.
 
-[source,xml]
---
-<plugin>
-    <groupId>org.jboss.jandex</groupId>
-    <artifactId>jandex-maven-plugin</artifactId>
-    <version>1.0.6</version>
-    <executions>
-        <execution>
-            <id>make-index</id>
-            <goals>
-                <goal>jandex</goal>
-            </goals>
-        </execution>
-    </executions>
-</plugin>
---

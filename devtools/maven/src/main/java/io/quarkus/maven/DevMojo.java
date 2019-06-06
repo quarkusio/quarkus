@@ -251,6 +251,15 @@ public class DevMojo extends AbstractMojo {
                 } else {
                     localProject = LocalProject.loadWorkspace(outputDirectory.toPath());
                     for (LocalProject project : localProject.getSelfWithLocalDeps()) {
+                        if (project.getClassesDir() != null) {
+                            //if this project also contains Quarkus extensions we do no want to include these in the discovery
+                            //a bit of an edge case, but if you try and include a sample project with your extension you will
+                            //run into problems without this
+                            if (Files.exists(project.getClassesDir().resolve("META-INF/quarkus-extension.properties")) ||
+                                    Files.exists(project.getClassesDir().resolve("META-INF/quarkus-build-steps.list"))) {
+                                continue;
+                            }
+                        }
                         addProject(devModeContext, project);
                     }
                 }

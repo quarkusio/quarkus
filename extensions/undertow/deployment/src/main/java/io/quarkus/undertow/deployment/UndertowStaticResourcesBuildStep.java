@@ -27,6 +27,15 @@ public class UndertowStaticResourcesBuildStep {
     protected static final String META_INF_RESOURCES = "META-INF/resources";
 
     @BuildStep
+    void handleGeneratedWebResources(BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            List<GeneratedWebResourceBuildItem> generatedWebResources) throws Exception {
+        for (GeneratedWebResourceBuildItem genResource : generatedWebResources) {
+            generatedResources.produce(new GeneratedResourceBuildItem(META_INF_RESOURCES_SLASH + genResource.getName(),
+                    genResource.getClassData()));
+        }
+    }
+
+    @BuildStep
     KnownPathsBuildItem scanStaticResources(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             List<GeneratedWebResourceBuildItem> generatedWebResources,
@@ -83,8 +92,6 @@ public class UndertowStaticResourcesBuildStep {
             }
         }
         for (GeneratedWebResourceBuildItem genResource : generatedWebResources) {
-            generatedResources.produce(new GeneratedResourceBuildItem(META_INF_RESOURCES_SLASH + genResource.getName(),
-                    genResource.getClassData()));
             String sub = genResource.getName();
             if (sub.startsWith("/")) {
                 sub = sub.substring(1);

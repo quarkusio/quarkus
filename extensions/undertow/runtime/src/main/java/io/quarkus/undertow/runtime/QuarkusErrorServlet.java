@@ -110,12 +110,16 @@ public class QuarkusErrorServlet extends HttpServlet {
         String stack = "";
         Object uuid = req.getAttribute(QuarkusExceptionHandler.ERROR_ID);
         Throwable exception = (Throwable) req.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-        if (Boolean.parseBoolean(getInitParameter(SHOW_STACK))) {
+        String errorMessage = (String) req.getAttribute(RequestDispatcher.ERROR_MESSAGE);
+        if (errorMessage != null) {
+            details = errorMessage;
+        }
+        if (Boolean.parseBoolean(getInitParameter(SHOW_STACK)) && exception != null) {
             details = generateHeaderMessage(exception, uuid == null ? null : uuid.toString());
             stack = generateStackTrace(exception);
 
         } else if (uuid != null) {
-            details = "Error id " + uuid;
+            details += "Error id " + uuid;
         }
 
         resp.setContentType("text/html");

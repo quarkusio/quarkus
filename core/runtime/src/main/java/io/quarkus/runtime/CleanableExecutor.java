@@ -11,6 +11,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -63,8 +64,14 @@ public final class CleanableExecutor implements ExecutorService {
         //threadlocal state. It does not really matter if this does not work, however if these threads are holding
         //state that is stopping things being GC'ed it can help with memory usage
         try {
-            for (int i = 0; i < executor.getMaximumPoolSize(); ++i) {
-                submit(empty);
+            if (!executor.isShutdown()) {
+                for (int i = 0; i < executor.getMaximumPoolSize(); ++i) {
+                    try {
+                        submit(empty);
+                    } catch (RejectedExecutionException e) {
+                        //ignore
+                    }
+                }
             }
         } finally {
             latch.countDown();

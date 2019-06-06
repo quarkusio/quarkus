@@ -23,7 +23,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-test-framework</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>0.16-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 

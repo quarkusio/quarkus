@@ -28,7 +28,7 @@
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-parent</artifactId>
     <name>Quarkus - Parent pom</name>
-    <version>999-SNAPSHOT</version>
+    <version>0.16-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <licenses>

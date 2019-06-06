@@ -180,13 +180,17 @@ public class ApplicationArchiveBuildStep {
         return ret;
     }
 
-    private static Path urlToPath(URL url) {
+    // package protected for testing purpose
+    static Path urlToPath(URL url) {
         try {
             if (url.getProtocol().equals("jar")) {
                 String jarPath = url.getPath().substring(0, url.getPath().lastIndexOf('!'));
                 return Paths.get(new URI(jarPath));
             } else if (url.getProtocol().equals("file")) {
                 int index = url.getPath().lastIndexOf("/META-INF");
+                if (index == -1) {
+                    return Paths.get(url.getPath());
+                }
                 String pathString = url.getPath().substring(0, index);
                 Path path = Paths.get(new URI(url.getProtocol(), url.getHost(), pathString, null));
                 return path;

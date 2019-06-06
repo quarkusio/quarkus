@@ -26,7 +26,7 @@ First, we need a new project that contains the kubernetes extension. This can be
 
 [source, subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:${quarkus-version}:create \
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=test \
     -DclassName="org.acme.rest.GreetingResource" \

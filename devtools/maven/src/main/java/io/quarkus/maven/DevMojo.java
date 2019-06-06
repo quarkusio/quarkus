@@ -280,8 +280,12 @@ public class DevMojo extends AbstractMojo {
             }
 
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
+            //wiring devmode is used for CDI beans that are not part of the user application (i.e. beans in 3rd party jars)
+            //we need this because these beans cannot be loaded by the runtime class loader, they must be loaded by the platform
+            //class loader
             File wiringClassesDirectory = new File(buildDir, "wiring-devmode");
             wiringClassesDirectory.mkdirs();
+
             addToClassPaths(classPathManifest, devModeContext, wiringClassesDirectory);
 
             //we also want to add the maven plugin jar to the class path

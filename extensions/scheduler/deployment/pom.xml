@@ -5,7 +5,7 @@
   <parent>
     <artifactId>quarkus-scheduler-parent</artifactId>
     <groupId>io.quarkus</groupId>
-    <version>0.16-SNAPSHOT</version>
+    <version>0.16.1</version>
     <relativePath>../</relativePath>
   </parent>
 

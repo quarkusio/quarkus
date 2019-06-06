@@ -21,7 +21,7 @@
     <parent>
         <artifactId>quarkus-smallrye-reactive-streams-operators-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>0.16-SNAPSHOT</version>
+        <version>0.16.1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 

@@ -23,7 +23,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-mailer-parent</artifactId>
-        <version>0.16-SNAPSHOT</version>
+        <version>0.16.1</version>
         <relativePath>../</relativePath>
     </parent>
 

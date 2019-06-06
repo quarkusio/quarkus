@@ -28,7 +28,7 @@
     <artifactId>arc-parent</artifactId>
     <name>ArC - Parent pom</name>
     <packaging>pom</packaging>
-    <version>0.16-SNAPSHOT</version>
+    <version>0.16.1</version>
 
     <licenses>
         <license>

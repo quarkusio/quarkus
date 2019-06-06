@@ -28,9 +28,11 @@ import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpoint;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -124,8 +126,27 @@ public class UndertowWebsocketProcessor {
                 new ReflectiveClassBuildItem(true, false, annotated.toArray(new String[annotated.size()])));
         reflection.produce(new ReflectiveClassBuildItem(false, false, JsrWebSocketFilter.class.getName()));
 
+        final Collection<AnnotationInstance> serverEndpoints = index.getAnnotations(SERVER_ENDPOINT);
+        for (AnnotationInstance endpoint : serverEndpoints) {
+            if (endpoint.target() instanceof ClassInfo) {
+                ClassInfo clazz = (ClassInfo) endpoint.target();
+                if (!Modifier.isAbstract(clazz.flags())) {
+                    registerForReflection(reflection, endpoint.value("encoders"));
+                    registerForReflection(reflection, endpoint.value("decoders"));
+                }
+            }
+        }
+
         return new ServletContextAttributeBuildItem(WebSocketDeploymentInfo.ATTRIBUTE_NAME,
                 template.createDeploymentInfo(annotated, endpoints, config));
+    }
+
+    private void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflection, AnnotationValue types) {
+        if (types != null && types.asClassArray() != null) {
+            for (Type type : types.asClassArray()) {
+                reflection.produce(new ReflectiveClassBuildItem(false, false, type.name().toString()));
+            }
+        }
     }
 
     @BuildStep

@@ -194,7 +194,7 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-          
+
             <!-- JUnit 5 dependencies, imported as a BOM -->
             <dependency>
                 <groupId>org.junit</groupId>
@@ -280,6 +280,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-camel-salesforce</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-camel-servlet</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -630,6 +635,11 @@
                         <artifactId>saaj-impl</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-servlet</artifactId>
+                <version>${camel.version}</version>
             </dependency>
 
             <!-- ap4k -->

@@ -19,6 +19,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String CAMEL_JDBC = "camel-jdbc";
     public static final String CAMEL_NETTY4_HTTP = "camel-netty4-http";
     public static final String CAMEL_SALESFORCE = "camel-salesforce";
+    public static final String CAMEL_SERVLET = "camel-servlet";
     public static final String CDI = "cdi";
     public static final String ELASTICSEARCH_REST_CLIENT = "elasticsearch-rest-client";
     public static final String FLYWAY = "flyway";

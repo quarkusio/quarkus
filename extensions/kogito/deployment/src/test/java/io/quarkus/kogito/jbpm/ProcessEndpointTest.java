@@ -33,10 +33,6 @@ import io.restassured.http.ContentType;
 
 public class ProcessEndpointTest {
 
-    static {
-        System.setProperty("resteasy.use.builtin.providers", "true");
-    }
-
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)

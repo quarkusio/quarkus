@@ -3,8 +3,6 @@ package io.quarkus.camel.servlet.runtime;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.Servlet;
-
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;

@@ -27,6 +27,7 @@ import org.gradle.util.GradleVersion;
 import io.quarkus.gradle.tasks.QuarkusAddExtension;
 import io.quarkus.gradle.tasks.QuarkusBuild;
 import io.quarkus.gradle.tasks.QuarkusDev;
+import io.quarkus.gradle.tasks.QuarkusGenerateConfig;
 import io.quarkus.gradle.tasks.QuarkusListExtensions;
 import io.quarkus.gradle.tasks.QuarkusNative;
 
@@ -50,6 +51,7 @@ public class QuarkusPlugin implements Plugin<Project> {
         tasks.create("addExtension", QuarkusAddExtension.class);
 
         Task quarkusBuild = tasks.create("quarkusBuild", QuarkusBuild.class);
+        Task quarkusGenerateConfig = tasks.create("generateConfig", QuarkusGenerateConfig.class);
         Task quarkusDev = tasks.create("quarkusDev", QuarkusDev.class);
 
         project.getPlugins().withType(

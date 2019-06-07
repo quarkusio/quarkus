@@ -18,8 +18,26 @@ import io.smallrye.config.SmallRyeConfig;
  */
 public abstract class LeafConfigType extends ConfigType {
 
-    LeafConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment) {
+    private final String javadocKey;
+    private final String configKey;
+
+    LeafConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment,
+            String javadocKey, String configKey) {
         super(containingName, container, consumeSegment);
+        this.javadocKey = javadocKey;
+        this.configKey = configKey;
+    }
+
+    /**
+     *
+     * @return the key that the javadoc was saved under
+     */
+    public String getJavadocKey() {
+        return javadocKey;
+    }
+
+    public String getConfigKey() {
+        return configKey;
     }
 
     public void load() {

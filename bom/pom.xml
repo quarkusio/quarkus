@@ -162,6 +162,7 @@
         <bootstrap.version>3.1.0</bootstrap.version>
         <keycloak.version>6.0.1</keycloak.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
+        <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kogito.version>0.1.0</kogito.version>
     </properties>
 
@@ -195,7 +196,7 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-          
+
             <!-- JUnit 5 dependencies, imported as a BOM -->
             <dependency>
                 <groupId>org.junit</groupId>
@@ -265,6 +266,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-camel-aws-sns</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-camel-aws-sqs</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -276,6 +282,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-camel-salesforce</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-camel-servlet</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -560,6 +571,17 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.camel</groupId>
+                <artifactId>camel-aws-sns</artifactId>
+                <version>${camel.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.sun.xml.messaging.saaj</groupId>
+                        <artifactId>saaj-impl</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.camel</groupId>
                 <artifactId>camel-aws-sqs</artifactId>
                 <version>${camel.version}</version>
                 <exclusions>
@@ -621,6 +643,11 @@
                         <artifactId>saaj-impl</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-servlet</artifactId>
+                <version>${camel.version}</version>
             </dependency>
 
             <!-- ap4k -->
@@ -1559,6 +1586,11 @@
                 <groupId>org.hibernate</groupId>
                 <artifactId>hibernate-core</artifactId>
                 <version>${hibernate-orm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>quarkus-local-cache</artifactId>
+                <version>${hibernate-quarkus-local-cache.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.search</groupId>

@@ -26,8 +26,8 @@ public class DoubleConfigType extends LeafConfigType {
     final String defaultValue;
 
     public DoubleConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment,
-            final String defaultValue) {
-        super(containingName, container, consumeSegment);
+            final String defaultValue, String javadocKey, String configKey) {
+        super(containingName, container, consumeSegment, javadocKey, configKey);
         Assert.checkNotEmptyParam("defaultValue", defaultValue);
         this.defaultValue = defaultValue;
     }

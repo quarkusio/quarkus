@@ -3,7 +3,6 @@ plugins {
     id 'com.gradle.plugin-publish' version '0.10.1'
     id 'java-gradle-plugin'
 }
-
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
 if (JavaVersion.current().isJava9Compatible()) {

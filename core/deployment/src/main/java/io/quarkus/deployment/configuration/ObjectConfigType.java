@@ -19,8 +19,8 @@ public class ObjectConfigType extends LeafConfigType {
     final Class<?> expectedType;
 
     public ObjectConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment,
-            final String defaultValue, final Class<?> expectedType) {
-        super(containingName, container, consumeSegment);
+            final String defaultValue, final Class<?> expectedType, String javadocKey, String configKey) {
+        super(containingName, container, consumeSegment, javadocKey, configKey);
         this.defaultValue = defaultValue;
         this.expectedType = expectedType;
     }

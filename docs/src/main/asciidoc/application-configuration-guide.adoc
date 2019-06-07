@@ -159,6 +159,44 @@ You can add the `greeting.suffix`, remove the other properties, change the value
 As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
 You can also generate the native executable with `./mvnw clean package -Pnative`.
 
+== Configuring Quarkus
+
+Quarkus itself is configured via the same mechanism as your application. Quarkus reserves the `quarkus.` namespace
+for its own configuration. For example to configure the HTTP server port you can set `quarkus.http.port` in
+`application.properties`.
+
+It is also possible to generate an example `application.properties` with all known configuration properties, to make
+it easy to see what Quarkus configuration options are available. To do this run
+
+[source,shell]
+--
+./mvnw quarkus:generate-config
+--
+
+This will create a `src/main/resources/application.properties.example` file that contains all the config options
+exposed via the extensions you currently have installed. These options are commented out, and have their default value
+when applicable. For example this HTTP port config entry will appear as:
+
+
+[source]
+--
+#
+# The HTTP port
+#
+#quarkus.http.port=8080
+--
+
+Rather than generating an example config file you can also add these to you actual config file by setting the `-Dfile`
+parameter:
+
+[source]
+--
+./mvnw quarkus:generate-config -Dfile=application.properties
+--
+
+If a config option is already present (commented or uncommented) it will not be added, so it is safe to run this after
+adding an additional extension to see what additional options have been added.
+
 == Overriding properties at runtime
 
 {project-name} does much of its configuration and bootstrap at build time.

@@ -20,8 +20,9 @@ import io.smallrye.config.SmallRyeConfig;
 public class OptionalObjectConfigType extends ObjectConfigType {
 
     public OptionalObjectConfigType(final String containingName, final CompoundConfigType container,
-            final boolean consumeSegment, final String defaultValue, final Class<?> expectedType) {
-        super(containingName, container, consumeSegment, defaultValue, expectedType);
+            final boolean consumeSegment, final String defaultValue, final Class<?> expectedType, String javadocKey,
+            String configKey) {
+        super(containingName, container, consumeSegment, defaultValue, expectedType, javadocKey, configKey);
     }
 
     public void acceptConfigurationValue(final NameIterator name, final ExpandingConfigSource.Cache cache,

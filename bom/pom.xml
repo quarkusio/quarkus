@@ -264,6 +264,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-camel-aws-sns</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-camel-aws-sqs</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -543,6 +548,17 @@
             <dependency>
                 <groupId>org.apache.camel</groupId>
                 <artifactId>camel-aws-s3</artifactId>
+                <version>${camel.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.sun.xml.messaging.saaj</groupId>
+                        <artifactId>saaj-impl</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-aws-sns</artifactId>
                 <version>${camel.version}</version>
                 <exclusions>
                     <exclusion>

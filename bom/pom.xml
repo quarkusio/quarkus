@@ -269,6 +269,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-camel-jdbc</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-camel-salesforce</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -567,6 +572,11 @@
                         <artifactId>saaj-impl</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-jdbc</artifactId>
+                <version>${camel.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.camel</groupId>

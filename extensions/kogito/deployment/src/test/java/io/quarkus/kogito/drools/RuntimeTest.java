@@ -18,6 +18,8 @@ package io.quarkus.kogito.drools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.File;
+
 import javax.inject.Inject;
 
 import org.drools.modelcompiler.KieRuntimeBuilder;
@@ -36,8 +38,10 @@ public class RuntimeTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Person.class, Result.class)
-                    .addAsResource("META-INF/kmodule.xml", "src/main/resources/META-INF/kmodule.xml")
-                    .addAsResource("org/drools/simple/candrink/CanDrink.drl",
+                    .addAsResource("META-INF" + File.separator + "kmodule.xml", "src/main/resources/META-INF/kmodule.xml")
+                    .addAsResource(
+                            "org" + File.separator + "drools" + File.separator + "simple" + File.separator + "candrink"
+                                    + File.separator + "CanDrink.drl",
                             "src/main/resources/org/drools/simple/candrink/CanDrink.drl")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 

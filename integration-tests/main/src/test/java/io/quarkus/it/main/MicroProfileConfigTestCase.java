@@ -41,4 +41,11 @@ public class MicroProfileConfigTestCase {
                 .when().get("/microprofile-config/get-custom-value")
                 .then().body(is("456"));
     }
+
+    @Test
+    public void testEmptyStringValue() {
+        RestAssured
+                .when().get("/microprofile-config/empty")
+                .then().body(is(""));
+    }
 }

@@ -38,6 +38,9 @@ public class MicroProfileConfigResource {
     @Inject
     Config config;
 
+    @ConfigProperty(name = "greeting.empty")
+    String empty;
+
     @GET
     @Path("/get-property-names")
     public String getPropertyNames() throws Exception {
@@ -51,5 +54,11 @@ public class MicroProfileConfigResource {
     @Path("/get-custom-value")
     public String getCustomValue() {
         return Integer.toString(value.getNumber());
+    }
+
+    @GET
+    @Path("/empty")
+    public String empty() {
+        return empty;
     }
 }

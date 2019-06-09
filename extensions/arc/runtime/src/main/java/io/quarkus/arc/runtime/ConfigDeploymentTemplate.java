@@ -16,6 +16,7 @@
 
 package io.quarkus.arc.runtime;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -39,6 +40,7 @@ public class ConfigDeploymentTemplate {
         if (cl == null) {
             ConfigDeploymentTemplate.class.getClassLoader();
         }
+        Set<String> allPropertyNames = new HashSet<>();
         for (Entry<String, Set<String>> entry : properties.entrySet()) {
             Set<String> propertyTypes = entry.getValue();
             for (String propertyType : propertyTypes) {
@@ -49,8 +51,21 @@ public class ConfigDeploymentTemplate {
                 }
                 try {
                     if (!config.getOptionalValue(entry.getKey(), propertyClass).isPresent()) {
-                        throw new DeploymentException(
-                                "No config value of type " + entry.getValue() + " exists for: " + entry.getKey());
+
+                        if (allPropertyNames.isEmpty()) {
+                            final Iterable<String> propertyNamesIter = config.getPropertyNames();
+                            for (String propertyName : propertyNamesIter) {
+                                allPropertyNames.add(propertyName);
+                            }
+                        }
+
+                        // getOptionalValue returns an empty Optional when the string value is an empty string
+                        // this should not be considered an error
+                        if (!(String.class.equals(propertyClass) && allPropertyNames.contains(entry.getKey()))) {
+                            throw new DeploymentException(
+                                    "No config value of type " + entry.getValue() + " exists for: " + entry.getKey());
+                        }
+
                     }
                 } catch (IllegalArgumentException e) {
                     throw new DeploymentException(e);

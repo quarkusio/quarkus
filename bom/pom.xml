@@ -163,7 +163,7 @@
         <keycloak.version>6.0.1</keycloak.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kogito.version>0.1.0</kogito.version>
+        <kogito.version>0.1.1</kogito.version>
     </properties>
 
     <dependencyManagement>

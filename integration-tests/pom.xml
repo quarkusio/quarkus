@@ -52,6 +52,7 @@
         <module>elytron-resteasy</module>
         <module>elytron-undertow</module>
         <module>flyway</module>
+        <module>gradle</module>
         <module>oidc</module>
         <module>oidc-code-flow</module>
         <module>keycloak-authorization</module>

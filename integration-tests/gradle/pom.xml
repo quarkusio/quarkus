@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-build-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../../build-parent/pom.xml</relativePath>
+    </parent>
+
+    <artifactId>quarkus-integration-test-gradle-plugin</artifactId>
+    <packaging>pom</packaging>
+    <name>Quarkus - Integration Tests - Gradle Plugin</name>
+    <description>Module that contains Gradle plugin related tests</description>
+
+    <properties>
+        <gradle.executable>${project.build.directory}/gradlew</gradle.executable>
+        <skip.gradle.build>false</skip.gradle.build>
+    </properties>
+
+    <dependencies>
+        <!-- Ensures that the quarkus-gradle-plugin is built before this project-->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-gradle-plugin</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Ensures that the quarkus-resteasy is built before this project-->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Always clean target/ before building -->
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>clean-temp-project</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Create the gradle project -->
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-gradle-project</id>
+                        <goals>
+                            <goal>create</goal>
+                        </goals>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <projectGroupId>org.acme</projectGroupId>
+                            <projectArtifactId>foo</projectArtifactId>
+                            <className>org.acme.quickstart.GreetingResource</className>
+                            <path>/hello</path>
+                            <extensions>resteasy</extensions>
+                            <buildTool>gradle</buildTool>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-gradle-plugin</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>gradle-test</id>
+                        <phase>test</phase>
+                        <configuration>
+                            <executable>${gradle.executable}</executable>
+                            <basedir>${project.build.directory}</basedir>
+                            <arguments>
+                                <argument>test</argument>
+                                <argument>-S</argument>
+                                <argument>${env.MAVEN_OPTS}</argument>
+                            </arguments>
+                            <skip>${skip.gradle.build}</skip>
+                        </configuration>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <gradle.executable>${project.build.directory}\gradlew.bat</gradle.executable>
+            </properties>
+        </profile>
+        <profile>
+            <id>native-image</id>
+            <activation>
+                <property>
+                    <name>native</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>run-native-integration-test</id>
+                                <phase>integration-test</phase>
+                                <configuration>
+                                    <executable>${gradle.executable}</executable>
+                                    <basedir>${project.build.directory}</basedir>
+                                    <arguments>
+                                        <argument>buildNative</argument>
+                                        <argument>--docker-build=true</argument>
+                                        <argument>testNative</argument>
+                                        <argument>-S</argument>
+                                        <argument>${env.MAVEN_OPTS}</argument>
+                                    </arguments>
+                                    <skip>${skip.gradle.build}</skip>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

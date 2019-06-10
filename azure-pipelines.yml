@@ -298,6 +298,7 @@ stages:
             - tika
             - hibernate-validator
             - test-extension
+            - gradle
           name: misc_2
 
       - template: ci-templates/native-build-steps.yaml

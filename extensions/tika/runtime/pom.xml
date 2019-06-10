@@ -45,13 +45,6 @@
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-parsers</artifactId>
-            <exclusions>
-              <exclusion>
-                 <groupId>org.apache.cxf</groupId>
-                 <artifactId>cxf-rt-rs-client</artifactId> 
-              </exclusion>
-            </exclusions>
-            <version>1.21</version>
         </dependency>
     </dependencies>
 

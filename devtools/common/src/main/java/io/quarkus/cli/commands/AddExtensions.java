@@ -6,6 +6,7 @@ import static io.quarkus.maven.utilities.MojoUtils.readPom;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,9 +19,10 @@ import io.quarkus.dependencies.Extension;
 import io.quarkus.maven.utilities.MojoUtils;
 
 public class AddExtensions {
-    private static String OK = "\u2705";
-    private static String NOK = "\u274c";
-    private static String NOOP = "\uD83D\uDC4D";
+    private static final String OK = "\u2705";
+    private static final String NOK = "\u274c";
+    private static final String NOOP = "\uD83D\uDC4D";
+
     private Model model;
     private String pom;
     private ProjectWriter writer;
@@ -31,57 +33,96 @@ public class AddExtensions {
         this.pom = pom;
     }
 
-    public boolean addExtensions(final Set<String> extensions) throws IOException {
+    /**
+     * Selection algorithm.
+     *
+     * @param query the query
+     * @param extensions the extension list
+     * @return the list of matching candidates and whether or not a match has been found.
+     */
+    static SelectionResult select(String query, List<Extension> extensions) {
+        String q = query.trim().toLowerCase();
+
+        // Try exact matches
+        Set<Extension> matchesNameOrArtifactId = extensions.stream().filter(extension -> extension.getName().equalsIgnoreCase(q)
+                || matchesArtifactId(extension.getArtifactId(), q)).collect(Collectors.toSet());
+
+        if (matchesNameOrArtifactId.size() == 1) {
+            return new SelectionResult(matchesNameOrArtifactId, true);
+        }
+
+        // Try short names
+        Set<Extension> matchesShortName = extensions.stream().filter(extension -> matchesShortName(extension, q))
+                .collect(Collectors.toSet());
+
+        if (matchesShortName.size() == 1) {
+            return new SelectionResult(matchesShortName, true);
+        }
+
+        // find by labels
+        List<Extension> matchesLabels = extensions.stream()
+                .filter(extension -> extension.labels().contains(q)).collect(Collectors.toList());
+
+        Set<Extension> candidates = new LinkedHashSet<>();
+        candidates.addAll(matchesNameOrArtifactId);
+        candidates.addAll(matchesShortName);
+        candidates.addAll(matchesLabels);
+        return new SelectionResult(candidates, false);
+    }
+
+    private static boolean matchesShortName(Extension extension, String q) {
+        return q.equalsIgnoreCase(extension.getShortName());
+    }
+
+    private static boolean matchesArtifactId(String artifactId, String q) {
+        return (artifactId.equalsIgnoreCase(q) ||
+                artifactId.equalsIgnoreCase("quarkus-" + q) ||
+                artifactId.equalsIgnoreCase("quarkus-smallrye-" + q));
+    }
+
+    public AddExtensionResult addExtensions(final Set<String> extensions) throws IOException {
         if (extensions == null || extensions.isEmpty()) {
-            return false;
+            return new AddExtensionResult(false, true);
         }
 
         boolean updated = false;
+        boolean success = true;
         List<Dependency> dependenciesFromBom = getDependenciesFromBom();
 
-        for (String dependency : extensions) {
-            List<Extension> matches = MojoUtils.loadExtensions().stream()
-                    .filter(d -> {
-                        boolean hasTag = d.labels().contains(dependency.trim().toLowerCase());
-                        boolean machName = d.getName()
-                                .toLowerCase()
-                                .contains(dependency.trim().toLowerCase());
-                        boolean matchArtifactId = d.getArtifactId()
-                                .toLowerCase()
-                                .contains(dependency.trim().toLowerCase());
-                        return hasTag || machName || matchArtifactId;
-                    })
-                    .collect(Collectors.toList());
+        for (String query : extensions) {
+            List<Extension> registry = MojoUtils.loadExtensions();
 
-            if (matches.size() > 1) {
+            SelectionResult result = select(query, registry);
+
+            if (!result.matches()) {
                 StringBuilder sb = new StringBuilder();
-                sb.append(NOK)
-                        .append(" Multiple extensions matching '" + dependency + "'");
-
-                matches.stream()
-                        .forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
-                                .append(extension.managementKey()));
-                sb.append(System.lineSeparator()).append("     Be more specific e.g using the exact name or the full gav.");
-                System.out.println(sb);
-            } else if (matches.size() == 1) {
-                final Extension extension = matches.get(0);
-
-                if (!MojoUtils.hasDependency(model, extension.getGroupId(), extension.getArtifactId())) {
-                    System.out.println(OK + " Adding extension " + extension.managementKey());
-                    model.addDependency(extension
-                            .toDependency(containsBOM(model) &&
-                                    isDefinedInBom(dependenciesFromBom, extension)));
-                    updated = true;
+                // We have 3 cases, we can still have a single candidate, but the match is on label
+                // or we have several candidates, or none
+                Set<Extension> candidates = result.getExtensions();
+                if (candidates.isEmpty() && query.contains(":")) {
+                    updated = addExtensionAsGAV(query) || updated;
+                } else if (candidates.isEmpty()) {
+                    // No matches at all.
+                    print(NOK + " Cannot find a dependency matching '" + query + "', maybe a typo?");
+                    success = false;
+                } else if (candidates.size() == 1) {
+                    sb.append(NOK).append(" One extension matching '").append(query).append("'");
+                    sb.append(System.lineSeparator()).append("     * ").append(candidates.iterator().next().managementKey());
+                    sb.append(System.lineSeparator()).append("     Use the exact name or the full GAV to add the extension");
+                    print(sb.toString());
+                    success = false;
                 } else {
-                    System.out.println(NOOP + " Skipping extension " + extension.managementKey() + ": already present");
+                    sb.append(NOK).append(" Multiple extensions matching '").append(query).append("'");
+                    result.getExtensions()
+                            .forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
+                                    .append(extension.managementKey()));
+                    sb.append(System.lineSeparator()).append("     Be more specific e.g using the exact name or the full GAV.");
+                    print(sb.toString());
+                    success = false;
                 }
-            } else if (dependency.contains(":")) {
-                Dependency parsed = MojoUtils.parse(dependency);
-                System.out.println(OK + " Adding dependency " + parsed.getManagementKey());
-                model.addDependency(parsed);
-                updated = true;
-            } else {
-                System.out.println(NOK + " Cannot find a dependency matching '" + dependency + "', maybe a typo?");
+            } else { // Matches.
+                final Extension extension = result.getMatch();
+                updated = addDependency(dependenciesFromBom, extension) || updated;
             }
         }
 
@@ -91,7 +132,32 @@ public class AddExtensions {
             writer.write(pom, pomOutputStream.toString("UTF-8"));
         }
 
-        return updated;
+        return new AddExtensionResult(updated, success);
+    }
+
+    private boolean addDependency(List<Dependency> dependenciesFromBom, Extension extension) {
+        if (!MojoUtils.hasDependency(model, extension.getGroupId(), extension.getArtifactId())) {
+            print(OK + " Adding extension " + extension.managementKey());
+            model.addDependency(extension
+                    .toDependency(containsBOM(model) &&
+                            isDefinedInBom(dependenciesFromBom, extension)));
+            return true;
+        } else {
+            // Don't set success to false as it's should be idempotent.
+            print(NOOP + " Skipping extension " + extension.managementKey() + ": already present");
+            return false;
+        }
+    }
+
+    private boolean addExtensionAsGAV(String query) {
+        Dependency parsed = MojoUtils.parse(query.trim().toLowerCase());
+        print(OK + " Adding dependency " + parsed.getManagementKey());
+        model.addDependency(parsed);
+        return true;
+    }
+
+    private void print(String message) {
+        System.out.println(message);
     }
 
     private List<Dependency> getDependenciesFromBom() {
@@ -100,7 +166,7 @@ public class AddExtensions {
                     .getDependencyManagement()
                     .getDependencies();
         } catch (IOException e) {
-            throw new RuntimeException(e.getMessage(), e);
+            throw new IllegalStateException("Unable to read the BOM file: " + e.getMessage(), e);
         }
     }
 

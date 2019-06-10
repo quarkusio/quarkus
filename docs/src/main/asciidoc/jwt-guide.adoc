@@ -57,7 +57,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=using-jwt-rbac \
     -DclassName="org.acme.jwt.TokenSecuredResource" \
     -Dpath="/secured" \
-    -Dextensions="resteasy-jsonb, smallrye-jwt"
+    -Dextensions="resteasy-jsonb, jwt"
 ----
 
 This command generates the Maven project with a REST endpoint and imports the `smallrye-jwt` extension, which includes the {mp-jwt} support.

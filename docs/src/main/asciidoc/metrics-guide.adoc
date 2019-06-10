@@ -49,11 +49,10 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=microprofile-metrics \
-    -Dextensions="smallrye-metrics, resteasy"
+    -Dextensions="metrics"
 ----
 
-This command generates a Maven project, importing the `smallrye-metrics` extension
-which is an implementation of the MicroProfile Metrics specification used in {project-name}.
+This command generates a Maven project, importing the `smallrye-metrics` extension which is an implementation of the MicroProfile Metrics specification used in {project-name}.
 
 == Writing the application
 

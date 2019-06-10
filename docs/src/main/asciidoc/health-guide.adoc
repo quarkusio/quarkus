@@ -48,7 +48,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=microprofile-health \
-    -Dextensions="smallrye-health"
+    -Dextensions="health"
 ----
 
 This command generates a Maven project, importing the `smallrye-health` extension 
@@ -222,7 +222,7 @@ All that is needed to enable the MicroProfile Health features in {project-name} 
 
 * adding the `smallrye-health` {project-name} extension to your project using the `quarkus-maven-plugin`:
 
-  mvn quarkus:add-extension -Dextensions="smallrye-health"
+  mvn quarkus:add-extension -Dextensions="health"
 
 * or simply adding the following Maven dependency:
 

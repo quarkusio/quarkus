@@ -10,6 +10,7 @@
   },
   {
     "name": "Arc",
+    "shortName": "CDI",
     "labels": [
       "arc",
       "cdi",
@@ -69,6 +70,7 @@
   },
   {
     "name": "Hibernate ORM",
+    "shortName": "JPA",
     "labels": [
       "hibernate-orm",
       "jpa",
@@ -105,6 +107,7 @@
   },
   {
     "name": "Hibernate Validator",
+    "shortName": "bean validation",
     "labels": [
       "hibernate-validator",
       "bean-validation",
@@ -242,6 +245,7 @@
   },
   {
     "name": "RESTEasy",
+    "shortName": "jax-rs",
     "labels": [
       "resteasy",
       "jaxrs",
@@ -412,6 +416,7 @@
   },
   {
     "name": "SmallRye Reactive Messaging - Kafka Connector",
+    "shortName": "kafka",
     "labels": [
       "kafka",
       "reactive-kafka"
@@ -462,6 +467,7 @@
   },
   {
     "name": "Undertow",
+    "shortName": "servlet",
     "labels": [
       "undertow",
       "servlet"
@@ -471,6 +477,7 @@
   },
   {
     "name": "Undertow WebSockets",
+    "shortName": "websockets",
     "labels": [
       "undertow-websockets",
       "undertow-websocket",
@@ -485,6 +492,7 @@
   },
   {
     "name": "Eclipse Vert.x",
+    "shortName": "vert.x",
     "labels": [
       "eclipse-vert.x",
       "vertx",

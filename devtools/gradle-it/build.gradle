@@ -1,0 +1,23 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+}
+
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+
+test {
+    useJUnitPlatform()
+}
+
+repositories {
+    maven { url 'target/dependencies/' }
+    mavenCentral()
+}
+
+dependencies {
+    implementation group: 'io.quarkus', name: 'quarkus-resteasy', version: version
+
+    testCompile group: 'io.quarkus', name: 'quarkus-junit5', version: version
+    testCompile group: 'io.rest-assured', name: 'rest-assured', version: '3.3.0'
+}

@@ -1,0 +1,14 @@
+pluginManagement {
+    repositories {
+        maven { url "../gradle/target/quarkus-gradle-plugin-${version}/quarkus-gradle-plugin-${version}/" }
+        maven { url '../gradle/target/dependencies/' }
+        mavenCentral()
+    }
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == 'io.quarkus') {
+                useModule("io.quarkus:quarkus-gradle-plugin:${version}")
+            }
+        }
+    }
+}

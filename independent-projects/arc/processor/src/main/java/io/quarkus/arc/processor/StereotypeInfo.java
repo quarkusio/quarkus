@@ -23,20 +23,19 @@ import org.jboss.jandex.ClassInfo;
 public class StereotypeInfo {
 
     private final ScopeInfo defaultScope;
-
     private final List<AnnotationInstance> interceptorBindings;
-
-    private final boolean isAlternative;
-
+    private final boolean alternative;
+    private final Integer alternativePriority;
     private final boolean isNamed;
-
     private final ClassInfo target;
 
-    public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean isAlternative,
+    public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
+            Integer alternativePriority,
             boolean isNamed, ClassInfo target) {
         this.defaultScope = defaultScope;
         this.interceptorBindings = interceptorBindings;
-        this.isAlternative = isAlternative;
+        this.alternative = alternative;
+        this.alternativePriority = alternativePriority;
         this.isNamed = isNamed;
         this.target = target;
     }
@@ -50,7 +49,11 @@ public class StereotypeInfo {
     }
 
     public boolean isAlternative() {
-        return isAlternative;
+        return alternative;
+    }
+
+    public Integer getAlternativePriority() {
+        return alternativePriority;
     }
 
     public boolean isNamed() {

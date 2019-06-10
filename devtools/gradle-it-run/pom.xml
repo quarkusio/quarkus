@@ -19,7 +19,24 @@
     </properties>
 
     <dependencies>
-     <dependency>
+        <dependency>
+            <!-- This dependency is here only so that this /gradle-it-run/ gets built after ../gradle-it/
+                 because we depend on that implicitly by a relative file path in the test code of this artifact. -->
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-gradle-plugin-integration-test</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <!-- There is no Maven Scope to express "build before but don't put as dependency :( -->
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <!-- Required to avoid breaking logging of exec in test -->
+                    <groupId>org.jboss.slf4j</groupId>
+                    <artifactId>slf4j-jboss-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>

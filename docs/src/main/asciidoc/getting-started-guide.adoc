@@ -263,7 +263,7 @@ Refreshing the browser triggers a scan of the workspace, and if any changes are 
 and the application is redeployed; your request is then serviced by the redeployed application. If there are any issues
 with compilation or deployment an error page will let you know.
 
-This will also listen for a debugger on port `5005`. If your want to wait for the debugger to attach before running you
+This will also listen for a debugger on port `5005`. If you want to wait for the debugger to attach before running you
 can pass `-Ddebug` on the command line. If you don't want the debugger at all you can use `-Ddebug=false`.
 
 == Testing

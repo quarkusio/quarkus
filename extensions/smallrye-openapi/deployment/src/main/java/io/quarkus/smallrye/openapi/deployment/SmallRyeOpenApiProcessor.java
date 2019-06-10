@@ -102,8 +102,7 @@ public class SmallRyeOpenApiProcessor {
 
     @BuildStep
     ServletBuildItem servlet() {
-        return ServletBuildItem.builder("openapi", OpenApiServlet.class.getName())
-                .addMapping(openapi.path).build();
+        return ServletBuildItem.builder("openapi", OpenApiServlet.class.getName()).addMapping(openapi.path).build();
     }
 
     @BuildStep

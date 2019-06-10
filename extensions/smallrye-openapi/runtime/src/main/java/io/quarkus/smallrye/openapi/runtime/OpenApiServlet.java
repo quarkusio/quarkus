@@ -62,7 +62,7 @@ public class OpenApiServlet extends HttpServlet {
         addCorsResponseHeaders(resp);
         resp.setHeader("Content-Type", format.getMimeType());
         resp.setCharacterEncoding("UTF-8");
-        req.getRequestDispatcher(GENERATED_DOC_BASE + format).include(req, resp);
+        req.getRequestDispatcher("/" + GENERATED_DOC_BASE + format).include(req, resp);
     }
 
     private static void addCorsResponseHeaders(HttpServletResponse response) {

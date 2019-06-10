@@ -11,7 +11,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 
 import io.quarkus.tika.Content;
-import io.quarkus.tika.Parser;
+import io.quarkus.tika.TikaParser;
 
 @Provider
 public class TikaContentReader extends AbstractTikaReader<Content> {
@@ -24,6 +24,6 @@ public class TikaContentReader extends AbstractTikaReader<Content> {
     public Content readFrom(Class<Content> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        return new Parser().getContent(entityStream, mediaType.toString());
+        return new TikaParser().getContent(entityStream, mediaType.toString());
     }
 }

@@ -503,7 +503,8 @@
     "labels": [
       "apache",
       "tika",
-      "data"
+      "data",
+      "parser"
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-tika"

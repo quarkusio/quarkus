@@ -11,7 +11,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 
 import io.quarkus.tika.Metadata;
-import io.quarkus.tika.Parser;
+import io.quarkus.tika.TikaParser;
 
 @Provider
 public class TikaMetadataReader extends AbstractTikaReader<Metadata> {
@@ -24,6 +24,6 @@ public class TikaMetadataReader extends AbstractTikaReader<Metadata> {
     public Metadata readFrom(Class<Metadata> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        return new Parser().getMetadata(entityStream, mediaType.toString());
+        return new TikaParser().getMetadata(entityStream, mediaType.toString());
     }
 }

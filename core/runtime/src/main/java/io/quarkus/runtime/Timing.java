@@ -17,6 +17,7 @@
 package io.quarkus.runtime;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import org.jboss.logging.Logger;
 
@@ -66,12 +67,13 @@ public class Timing {
         bootStartTime = System.nanoTime();
     }
 
-    public static void printStartupTime(String version, String features) {
+    public static void printStartupTime(String version, String features, String artifactId, String appVersion) {
         final long bootTimeNanoSeconds = System.nanoTime() - bootStartTime;
         final Logger logger = Logger.getLogger("io.quarkus");
         //Use a BigDecimal so we can render in seconds with 3 digits precision, as requested:
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(bootTimeNanoSeconds);
-        logger.infof("Quarkus %s started in %ss. %s", version, secondsRepresentation, httpServerInfo);
+        logger.infof("%s %s (Running on Quarkus %s) started in %ss. %s", artifactId, appVersion, version,
+                secondsRepresentation, httpServerInfo);
         logger.infof("Installed features: [%s]", features);
         bootStartTime = -1;
     }
@@ -85,10 +87,9 @@ public class Timing {
     }
 
     public static BigDecimal convertToBigDecimalSeconds(final long timeNanoSeconds) {
-        final BigDecimal secondsRepresentation = BigDecimal.valueOf(timeNanoSeconds) // As nanoseconds
-                .divide(BigDecimal.valueOf(1_000_000), BigDecimal.ROUND_HALF_UP) // Convert to milliseconds, discard remaining digits while rounding
-                .divide(BigDecimal.valueOf(1_000), 3, BigDecimal.ROUND_HALF_UP); // Convert to seconds, while preserving 3 digits
-        return secondsRepresentation;
+        return BigDecimal.valueOf(timeNanoSeconds) // As nanoseconds
+                .divide(BigDecimal.valueOf(1_000_000), RoundingMode.HALF_UP) // Convert to milliseconds, discard remaining digits while rounding
+                .divide(BigDecimal.valueOf(1_000), 3, RoundingMode.HALF_UP); // Convert to seconds, while preserving 3 digits
     }
 
 }

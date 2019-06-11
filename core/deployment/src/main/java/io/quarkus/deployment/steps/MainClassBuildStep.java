@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import org.graalvm.nativeimage.ImageInfo;
 
 import io.quarkus.builder.Version;
+import io.quarkus.deployment.ApplicationInfoUtil;
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -63,6 +64,8 @@ class MainClassBuildStep {
     private static final String STARTUP_CONTEXT = "STARTUP_CONTEXT";
     private static final String JAVA_LIBRARY_PATH = "java.library.path";
     private static final String JAVAX_NET_SSL_TRUST_STORE = "javax.net.ssl.trustStore";
+    private static final String SET_PROPERTY = "setProperty";
+    private static final String CLOSE = "close";
 
     private static final AtomicInteger COUNT = new AtomicInteger();
 
@@ -95,10 +98,9 @@ class MainClassBuildStep {
 
         //very first thing is to set system props (for build time)
         for (SystemPropertyBuildItem i : properties) {
-            mv.invokeStaticMethod(ofMethod(System.class, "setProperty", String.class, String.class, String.class),
+            mv.invokeStaticMethod(ofMethod(System.class, SET_PROPERTY, String.class, String.class, String.class),
                     mv.load(i.getKey()), mv.load(i.getValue()));
         }
-
         mv.invokeStaticMethod(MethodDescriptor.ofMethod(Timing.class, "staticInitStarted", void.class));
         ResultHandle startupContext = mv.newInstance(ofConstructor(StartupContext.class));
         mv.writeStaticField(scField.getFieldDescriptor(), startupContext);
@@ -124,7 +126,7 @@ class MainClassBuildStep {
         tryBlock.returnValue(null);
 
         CatchBlockCreator cb = tryBlock.addCatch(Throwable.class);
-        cb.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
+        cb.invokeVirtualMethod(ofMethod(StartupContext.class, CLOSE, void.class), startupContext);
         cb.throwException(RuntimeException.class, "Failed to start quarkus", cb.getCaughtException());
 
         // Application class: start method
@@ -135,7 +137,7 @@ class MainClassBuildStep {
         // very first thing is to set system props (for run time, which use substitutions for a different
         // storage from build-time)
         for (SystemPropertyBuildItem i : properties) {
-            mv.invokeStaticMethod(ofMethod(System.class, "setProperty", String.class, String.class, String.class),
+            mv.invokeStaticMethod(ofMethod(System.class, SET_PROPERTY, String.class, String.class, String.class),
                     mv.load(i.getKey()), mv.load(i.getValue()));
         }
 
@@ -164,7 +166,7 @@ class MainClassBuildStep {
                     .trueBranch();
 
             inGraalVMCode.ifNonZero(isJavaLibraryPathEmpty).trueBranch().invokeStaticMethod(
-                    ofMethod(System.class, "setProperty", String.class, String.class, String.class),
+                    ofMethod(System.class, SET_PROPERTY, String.class, String.class, String.class),
                     inGraalVMCode.load(JAVA_LIBRARY_PATH),
                     inGraalVMCode.load(javaLibraryPathAdditionalPaths.iterator().next().getPath()));
         }
@@ -179,7 +181,7 @@ class MainClassBuildStep {
                     .trueBranch();
 
             inGraalVMCode.ifNull(alreadySetTrustStore).trueBranch().invokeStaticMethod(
-                    ofMethod(System.class, "setProperty", String.class, String.class, String.class),
+                    ofMethod(System.class, SET_PROPERTY, String.class, String.class, String.class),
                     inGraalVMCode.load(JAVAX_NET_SSL_TRUST_STORE),
                     inGraalVMCode.load(sslTrustStoreSystemProperty.get().getPath()));
         }
@@ -212,16 +214,20 @@ class MainClassBuildStep {
 
         // Startup log messages
         ResultHandle featuresHandle = tryBlock.load(features.stream()
-                .map(f -> f.getInfo())
+                .map(FeatureBuildItem::getInfo)
                 .sorted()
                 .collect(Collectors.joining(", ")));
         tryBlock.invokeStaticMethod(
-                ofMethod(Timing.class, "printStartupTime", void.class, String.class, String.class),
-                tryBlock.load(Version.getVersion()), featuresHandle);
+                ofMethod(Timing.class, "printStartupTime", void.class, String.class, String.class, String.class,
+                        String.class),
+                tryBlock.load(Version.getVersion()),
+                featuresHandle,
+                tryBlock.load(ApplicationInfoUtil.getArtifactId()),
+                tryBlock.load(ApplicationInfoUtil.getVersion()));
 
         cb = tryBlock.addCatch(Throwable.class);
         cb.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cb.getCaughtException());
-        cb.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
+        cb.invokeVirtualMethod(ofMethod(StartupContext.class, CLOSE, void.class), startupContext);
         cb.throwException(RuntimeException.class, "Failed to start quarkus", cb.getCaughtException());
         mv.returnValue(null);
 
@@ -230,7 +236,7 @@ class MainClassBuildStep {
         mv = file.getMethodCreator("doStop", void.class);
         mv.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
         startupContext = mv.readStaticField(scField.getFieldDescriptor());
-        mv.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
+        mv.invokeVirtualMethod(ofMethod(StartupContext.class, CLOSE, void.class), startupContext);
         mv.returnValue(null);
 
         // Finish application class

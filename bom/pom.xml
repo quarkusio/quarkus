@@ -178,15 +178,6 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- RESTEasy dependencies, imported as a BOM -->
-            <dependency>
-                <groupId>org.jboss.resteasy</groupId>
-                <artifactId>resteasy-bom</artifactId>
-                <version>${resteasy.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
             <!-- Jackson dependencies, imported as a BOM -->
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
@@ -194,6 +185,24 @@
                 <version>${jackson.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
+            </dependency>
+            <!-- The Jackson BOM imports version 2.9.0 and we want all the versions to be in sync. 
+                Especially, 2.9.1 adds an automatic module name. -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+
+
+            <!-- RESTEasy dependencies, imported as a BOM -->
+            <!-- As RESTEasy also imports Jackson, we need to import its BOM after the Jackson BOM -->
+            <dependency>
+                <groupId>org.jboss.resteasy</groupId>
+                <artifactId>resteasy-bom</artifactId>
+                <version>${resteasy.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <!-- JUnit 5 dependencies, imported as a BOM -->

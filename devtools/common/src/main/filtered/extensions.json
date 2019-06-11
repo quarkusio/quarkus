@@ -497,7 +497,7 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-reactive-pg-client"
-  },  
+  },
   {
     "name": "Apache Kafka Client",
     "labels": [

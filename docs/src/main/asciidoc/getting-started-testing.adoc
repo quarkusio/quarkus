@@ -305,9 +305,11 @@ public class TestStereotypeTestCase {
 
 == Mock Support
 
-Quarkus supports the use of mock objects using the CDI `@Alternative` mechanism. To use this simply override the bean
-you wish to mock with a class in the `src/test/java` directory, and put the `@Alternative` and `@Priority(1)` annotations
-on the bean. For example if I have the following service:
+Quarkus supports the use of mock objects using the CDI `@Alternative` mechanism.
+To use this simply override the bean you wish to mock with a class in the `src/test/java` directory, and put the `@Alternative` and `@Priority(1)` annotations on the bean. 
+Alternatively, a convenient `io.quarkus.test.Mock` stereotype annotation could be used.
+This built-in stereotype declares `@Alternative`, `@Priority(1)` and `@Dependent`. 
+For example if I have the following service:
 
 [source,java]
 ----
@@ -323,12 +325,10 @@ public class ExternalService {
 
 I could mock it with the following class in `src/test/java`:
 
-
 [source,java]
 ----
-@Alternative()
-@Priority(1)
-@ApplicationScoped
+@Mock
+@ApplicationScoped <1>
 public class MockExternalService extends ExternalService {
 
     @Override
@@ -337,6 +337,7 @@ public class MockExternalService extends ExternalService {
     }
 }
 ----
+<1> Overrides the `@Dependent` scope declared on the `@Mock` stereotype.
 
 It is important that the alternative be present in the `src/test/java` directory rather than `src/main/java`, as otherwise
 it will take effect all the time, not just when testing.

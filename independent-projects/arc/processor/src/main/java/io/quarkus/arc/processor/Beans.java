@@ -112,6 +112,9 @@ final class Beans {
         if (name == null) {
             name = initStereotypeName(stereotypes, beanClass);
         }
+        if (isAlternative && alternativePriority == null) {
+            alternativePriority = initStereotypeAlternativePriority(stereotypes);
+        }
 
         BeanInfo bean = new BeanInfo(beanClass, beanDeployment, scope, types, qualifiers,
                 Injection.forBean(beanClass, null, beanDeployment, transformer), null, null,
@@ -194,6 +197,9 @@ final class Beans {
                         .filter(a -> a.name().equals(DotNames.PRIORITY)).findAny()
                         .map(a -> a.value().asInt()).orElse(null);
             }
+            if (alternativePriority == null) {
+                alternativePriority = initStereotypeAlternativePriority(stereotypes);
+            }
         }
 
         BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, types, qualifiers,
@@ -268,6 +274,9 @@ final class Beans {
                         .filter(a -> a.name().equals(DotNames.PRIORITY)).findAny()
                         .map(a -> a.value().asInt()).orElse(null);
             }
+            if (alternativePriority == null) {
+                alternativePriority = initStereotypeAlternativePriority(stereotypes);
+            }
         }
 
         BeanInfo bean = new BeanInfo(producerField, beanDeployment, scope, types, qualifiers, Collections.emptyList(),
@@ -302,6 +311,18 @@ final class Beans {
             }
         }
         return false;
+    }
+
+    private static Integer initStereotypeAlternativePriority(List<StereotypeInfo> stereotypes) {
+        if (stereotypes.isEmpty()) {
+            return null;
+        }
+        for (StereotypeInfo stereotype : stereotypes) {
+            if (stereotype.getAlternativePriority() != null) {
+                return stereotype.getAlternativePriority();
+            }
+        }
+        return null;
     }
 
     private static String initStereotypeName(List<StereotypeInfo> stereotypes, AnnotationTarget target) {

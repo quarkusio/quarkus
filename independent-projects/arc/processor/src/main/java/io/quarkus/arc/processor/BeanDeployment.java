@@ -424,6 +424,7 @@ public class BeanDeployment {
             if (stereotypeClass != null) {
 
                 boolean isAlternative = false;
+                Integer alternativePriority = null;
                 List<ScopeInfo> scopes = new ArrayList<>();
                 List<AnnotationInstance> bindings = new ArrayList<>();
                 boolean isNamed = false;
@@ -441,6 +442,8 @@ public class BeanDeployment {
                                     "Stereotype must not declare @Named with a non-empty value: " + stereotypeClass);
                         }
                         isNamed = true;
+                    } else if (DotNames.PRIORITY.equals(annotation.name())) {
+                        alternativePriority = annotation.value().asInt();
                     } else {
                         final ScopeInfo scope = getScope(annotation.name(), customContexts);
                         if (scope != null) {
@@ -449,7 +452,8 @@ public class BeanDeployment {
                     }
                 }
                 final ScopeInfo scope = getValidScope(scopes, stereotypeClass);
-                stereotypes.put(stereotypeName, new StereotypeInfo(scope, bindings, isAlternative, isNamed, stereotypeClass));
+                stereotypes.put(stereotypeName, new StereotypeInfo(scope, bindings, isAlternative, alternativePriority,
+                        isNamed, stereotypeClass));
             }
         }
         //if an additional bean defining annotation has a default scope we register it as a stereotype
@@ -457,7 +461,7 @@ public class BeanDeployment {
             for (BeanDefiningAnnotation i : additionalBeanDefiningAnnotations) {
                 if (i.getDefaultScope() != null) {
                     ScopeInfo scope = getScope(i.getDefaultScope(), customContexts);
-                    stereotypes.put(i.getAnnotation(), new StereotypeInfo(scope, Collections.emptyList(), false, false,
+                    stereotypes.put(i.getAnnotation(), new StereotypeInfo(scope, Collections.emptyList(), false, null, false,
                             index.getClassByName(i.getAnnotation())));
                 }
             }

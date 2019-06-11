@@ -20,13 +20,11 @@ import static org.junit.Assert.assertEquals;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
-import java.lang.annotation.Documented;
+import io.quarkus.test.Mock;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.UUID;
-import javax.annotation.PostConstruct;
 import javax.annotation.Priority;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Alternative;
@@ -37,46 +35,101 @@ import org.junit.Test;
 public class StereotypeAlternativeTest {
 
     @Rule
-    public ArcTestContainer container = new ArcTestContainer(BeAlternative.class, NonAternative.class, IamAlternative.class);
+    public ArcTestContainer container = new ArcTestContainer(BeAlternative.class, BeAlternativeWithPriority.class,
+            NonAlternative.class, IamAlternative.class, NotAtAllAlternative.class, IamAlternativeWithPriority.class,
+            ToBeOverridenFoo.class, MockedFoo.class, MockedFooWithExplicitPriority.class, Mock.class);
 
     @Test
     public void testStereotype() {
-        assertEquals("OK", Arc.container().instance(NonAternative.class).get().getId());
+        assertEquals("OK", Arc.container().instance(NonAlternative.class).get().getId());
+        assertEquals("OK", Arc.container().instance(NotAtAllAlternative.class).get().getId());
+
+        assertEquals(MockedFooWithExplicitPriority.class.getSimpleName(),
+                Arc.container().instance(ToBeOverridenFoo.class).get().ping());
+        assertEquals(MockedFoo.class.getSimpleName(), Arc.container().instance(MockedFoo.class).get().ping());
     }
 
     @Alternative
-    @Documented
     @Stereotype
     @Target({ ElementType.TYPE, ElementType.METHOD, ElementType.FIELD })
     @Retention(RetentionPolicy.RUNTIME)
     public @interface BeAlternative {
     }
 
+    @Priority(1)
+    @Alternative
+    @Stereotype
+    @Target({ ElementType.TYPE, ElementType.METHOD, ElementType.FIELD })
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface BeAlternativeWithPriority {
+    }
+
     @Dependent
-    static class NonAternative {
-
-        private String id;
-
-        @PostConstruct
-        void init() {
-            id = UUID.randomUUID().toString();
-        }
+    static class NonAlternative {
 
         public String getId() {
-            return id;
+            return "NOK";
         }
 
     }
 
     @Priority(1)
     @BeAlternative
-    static class IamAlternative extends NonAternative {
+    static class IamAlternative extends NonAlternative {
 
         @Override
         public String getId() {
             return "OK";
         }
 
+    }
+
+    @Dependent
+    static class NotAtAllAlternative {
+
+        public String getId() {
+            return "NOK";
+        }
+
+    }
+
+    @BeAlternativeWithPriority
+    static class IamAlternativeWithPriority extends NotAtAllAlternative {
+
+        @Override
+        public String getId() {
+            return "OK";
+        }
+
+    }
+
+    @Dependent
+    static class ToBeOverridenFoo {
+
+        public String ping() {
+            return ToBeOverridenFoo.class.getSimpleName();
+        }
+    }
+
+    @Mock
+    // should not be selected because of lower priority (has 1)
+    static class MockedFoo extends ToBeOverridenFoo {
+
+        @Override
+        public String ping() {
+            return MockedFoo.class.getSimpleName();
+        }
+
+    }
+
+    @Mock
+    @Priority(2)
+    static class MockedFooWithExplicitPriority extends ToBeOverridenFoo {
+
+        @Override
+        public String ping() {
+            return MockedFooWithExplicitPriority.class.getSimpleName();
+        }
     }
 
 }

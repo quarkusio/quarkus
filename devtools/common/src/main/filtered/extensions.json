@@ -508,5 +508,17 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-tika"
+  },
+  {
+    "name": "Apache Tika RestEasy",
+    "labels": [
+      "apache",
+      "tika",
+      "data",
+      "parser",
+      "resteasy" 
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-tika-resteasy"
   }
 ]

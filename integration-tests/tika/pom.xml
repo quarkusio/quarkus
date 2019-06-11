@@ -37,7 +37,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-tika</artifactId>
+            <artifactId>quarkus-tika-resteasy</artifactId>
         </dependency>
 
         <!-- JAX-RS -->

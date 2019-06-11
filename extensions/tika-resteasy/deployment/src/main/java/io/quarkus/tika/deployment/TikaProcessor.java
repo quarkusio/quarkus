@@ -15,6 +15,9 @@ import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildIte
 import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.tika.runtime.jaxrs.TikaContentReader;
+import io.quarkus.tika.runtime.jaxrs.TikaMetadataReader;
 
 public class TikaProcessor {
     private static final Set<String> NOT_NATIVE_READY_PARSERS = Arrays.stream(new String[] {
@@ -31,6 +34,12 @@ public class TikaProcessor {
     public void produceRuntimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> resource) {
         //org.apache.tika.parser.pdf.PDFParser (https://issues.apache.org/jira/browse/PDFBOX-4548)
         resource.produce(new RuntimeInitializedClassBuildItem("org.apache.pdfbox.pdmodel.font.PDType1Font"));
+    }
+
+    @BuildStep
+    void produceTikaJaxrsProvider(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
+        providers.produce(new ResteasyJaxrsProviderBuildItem(TikaContentReader.class.getName()));
+        providers.produce(new ResteasyJaxrsProviderBuildItem(TikaMetadataReader.class.getName()));
     }
 
     @BuildStep

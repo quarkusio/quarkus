@@ -162,7 +162,8 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public boolean isPassivatingScope(Class<? extends Annotation> annotationType) {
-        throw new UnsupportedOperationException();
+        // return false instead of a UnsupportedOperationException, so libs like DeltaSpike can handle it "nicer"
+        return false;
     }
 
     @Override

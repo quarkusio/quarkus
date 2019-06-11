@@ -497,6 +497,23 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-reactive-pg-client"
+  },  
+  {
+    "name": "Apache Kafka Client",
+    "labels": [
+      "kafka"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kafka-client"
+  },
+  {
+    "name": "Apache Kafka Streams",
+    "labels": [
+      "kafka",
+      "kafka-streams"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kafka-streams"
   },
   {
     "name": "Apache Tika",

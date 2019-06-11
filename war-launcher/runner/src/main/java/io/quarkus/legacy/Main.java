@@ -96,11 +96,9 @@ public class Main {
             }
 
             List<URL> urls = new ArrayList<>();
-            List<Path> paths = new ArrayList<>();
             urls.add(archive.toUri().toURL());
             for (Path l : libraries) {
                 urls.add(l.toUri().toURL());
-                paths.add(l);
             }
 
             URLClassLoader ucl = new URLClassLoader(urls.toArray(new URL[urls.size()]), Main.class.getClassLoader());
@@ -110,7 +108,6 @@ public class Main {
                     .setClassLoader(ucl).setTarget(archive)
                     .setFrameworkClassesPath(archive)
                     .setTransformerCache(null)
-                    .addAdditionalArchives(paths)
                     .build()) {
                 runner.run();
             } finally {

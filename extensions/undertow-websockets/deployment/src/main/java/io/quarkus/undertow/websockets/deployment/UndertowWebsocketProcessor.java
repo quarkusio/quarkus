@@ -23,14 +23,18 @@ import java.util.List;
 import java.util.Set;
 
 import javax.websocket.ClientEndpoint;
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.ContainerProvider;
 import javax.websocket.Endpoint;
 import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpoint;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -41,11 +45,13 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.undertow.deployment.ServletContextAttributeBuildItem;
 import io.quarkus.undertow.deployment.UndertowBuildItem;
 import io.quarkus.undertow.websockets.runtime.UndertowWebsocketTemplate;
 import io.undertow.websockets.jsr.JsrWebSocketFilter;
+import io.undertow.websockets.jsr.UndertowContainerProvider;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 
 public class UndertowWebsocketProcessor {
@@ -124,8 +130,35 @@ public class UndertowWebsocketProcessor {
                 new ReflectiveClassBuildItem(true, false, annotated.toArray(new String[annotated.size()])));
         reflection.produce(new ReflectiveClassBuildItem(false, false, JsrWebSocketFilter.class.getName()));
 
+        registerCodersForReflection(reflection, index.getAnnotations(SERVER_ENDPOINT));
+        registerCodersForReflection(reflection, index.getAnnotations(CLIENT_ENDPOINT));
+
+        reflection.produce(
+                new ReflectiveClassBuildItem(true, true, ClientEndpointConfig.Configurator.class.getName()));
+
         return new ServletContextAttributeBuildItem(WebSocketDeploymentInfo.ATTRIBUTE_NAME,
                 template.createDeploymentInfo(annotated, endpoints, config));
+    }
+
+    private void registerCodersForReflection(BuildProducer<ReflectiveClassBuildItem> reflection,
+            Collection<AnnotationInstance> endpoints) {
+        for (AnnotationInstance endpoint : endpoints) {
+            if (endpoint.target() instanceof ClassInfo) {
+                ClassInfo clazz = (ClassInfo) endpoint.target();
+                if (!Modifier.isAbstract(clazz.flags())) {
+                    registerForReflection(reflection, endpoint.value("encoders"));
+                    registerForReflection(reflection, endpoint.value("decoders"));
+                }
+            }
+        }
+    }
+
+    private void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflection, AnnotationValue types) {
+        if (types != null && types.asClassArray() != null) {
+            for (Type type : types.asClassArray()) {
+                reflection.produce(new ReflectiveClassBuildItem(true, false, type.name().toString()));
+            }
+        }
     }
 
     @BuildStep
@@ -133,6 +166,12 @@ public class UndertowWebsocketProcessor {
     ServiceStartBuildItem setupWorker(UndertowWebsocketTemplate template, UndertowBuildItem undertow) {
         template.setupWorker(undertow.getUndertow());
         return new ServiceStartBuildItem("Websockets");
+    }
+
+    @BuildStep
+    ServiceProviderBuildItem registerContainerProviderService() {
+        return new ServiceProviderBuildItem(ContainerProvider.class.getName(),
+                UndertowContainerProvider.class.getName());
     }
 
     @BuildStep

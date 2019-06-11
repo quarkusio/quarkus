@@ -23,7 +23,7 @@ public class ThreadPoolConfig {
 
     /**
      * The maximum number of threads. If this is not specified then
-     * it will be automatically sized to 4 * the number of available processors
+     * it will be automatically sized to 8 * the number of available processors
      */
     @ConfigItem
     public OptionalInt maxThreads;

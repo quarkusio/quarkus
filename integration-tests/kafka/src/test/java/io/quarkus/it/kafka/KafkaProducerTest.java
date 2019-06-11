@@ -1,4 +1,4 @@
-package io.quarkus.it.main;
+package io.quarkus.it.kafka;
 
 import java.time.Duration;
 import java.util.Collections;

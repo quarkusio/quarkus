@@ -40,7 +40,14 @@ class KafkaStreamsProcessor {
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, ByteArraySerde.class));
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, FailOnInvalidTimestamp.class));
 
-        nativeLibs.produce(new SubstrateResourceBuildItem(Environment.getJniLibraryFileName("rocksdb")));
+        // for RocksDB, either add linux64 native lib when targeting containers
+        if (isContainerBuild()) {
+            nativeLibs.produce(new SubstrateResourceBuildItem("librocksdbjni-linux64.so"));
+        }
+        // otherwise the native lib of the platform this build runs on
+        else {
+            nativeLibs.produce(new SubstrateResourceBuildItem(Environment.getJniLibraryFileName("rocksdb")));
+        }
 
         // re-initializing RocksDB to enable load of native libs
         reinitialized.produce(new RuntimeReinitializedClassBuildItem("org.rocksdb.RocksDB"));
@@ -52,5 +59,23 @@ class KafkaStreamsProcessor {
         // Explicitly loading RocksDB native libs, as that's normally done from within
         // static initializers which already ran during build
         template.loadRocksDb();
+    }
+
+    private boolean isContainerBuild() {
+        String containerRuntime = System.getProperty("native-image.container-runtime");
+
+        if (containerRuntime != null) {
+            containerRuntime = containerRuntime.trim().toLowerCase();
+            return containerRuntime.equals("docker") || containerRuntime.equals("podman");
+        }
+
+        String dockerBuild = System.getProperty("native-image.docker-build");
+
+        if (dockerBuild != null) {
+            dockerBuild = dockerBuild.trim().toLowerCase();
+            return !"false".equals(dockerBuild);
+        }
+
+        return false;
     }
 }

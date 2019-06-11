@@ -70,8 +70,6 @@ public final class ApplicationInfoUtil {
                     }
                 }
             }
-            String test = (String) properties.getProperty(VERSION_KEY, UNSET_VALUE);
-
             setVersion(properties.getProperty(VERSION_KEY, UNSET_VALUE));
             setArtifactId(properties.getProperty(ARTIFACT_ID_KEY, UNSET_VALUE));
         } catch (IOException e) {

@@ -29,6 +29,8 @@ import org.jboss.logging.Logger;
  */
 public class Timing {
 
+    public static final String UNSET_VALUE = "<<unset>>";
+
     private static volatile long bootStartTime = -1;
 
     private static volatile long bootStopTime = -1;
@@ -50,7 +52,7 @@ public class Timing {
     /**
      * An extension providing the HTTP server should set the current info (port, host, etc.) in a template method of a
      * RUNTIME_INIT build step. Note that it is not possible to inspect thee RUN_TIME config properties through MP Config.
-     * 
+     *
      * @param info
      */
     public static void setHttpServer(String info) {
@@ -72,8 +74,12 @@ public class Timing {
         final Logger logger = Logger.getLogger("io.quarkus");
         //Use a BigDecimal so we can render in seconds with 3 digits precision, as requested:
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(bootTimeNanoSeconds);
-        logger.infof("%s %s (Running on Quarkus %s) started in %ss. %s", artifactId, appVersion, version,
-                secondsRepresentation, httpServerInfo);
+        if (artifactId.equals(UNSET_VALUE) || appVersion.equals(UNSET_VALUE)) {
+            logger.infof("Quarkus %s started in %ss. %s", version, secondsRepresentation, httpServerInfo);
+        } else {
+            logger.infof("%s %s (Running on Quarkus %s) started in %ss. %s", artifactId, appVersion, version,
+                    secondsRepresentation, httpServerInfo);
+        }
         logger.infof("Installed features: [%s]", features);
         bootStartTime = -1;
     }

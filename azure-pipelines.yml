@@ -73,3 +73,25 @@ jobs:
       jdkVersionOption: '1.11'
       goals: 'install'
       options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
+
+- job: Run_TCKs
+  timeoutInMinutes: 45
+  pool:
+    vmImage: 'Ubuntu 16.04'
+
+  variables:
+    imageName: 'quarkus:$(build.buildId)'
+
+  steps:
+
+  - task: Maven@3
+    displayName: 'Maven Install'
+    inputs:
+      goals: 'install'
+      options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format -DskipTests -Dtcks'
+
+  - task: Maven@3
+    displayName: 'Maven Verify'
+    inputs:
+      goals: 'verify'
+      mavenPomFile: 'tcks/pom.xml'

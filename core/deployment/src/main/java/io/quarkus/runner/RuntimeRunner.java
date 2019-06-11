@@ -196,7 +196,7 @@ public class RuntimeRunner implements Runnable, Closeable {
             return this;
         }
 
-        public Builder addAdditionalArchives(Collection<Path> additionalArchive) {
+        public Builder addAdditionalArchives(Collection<Path> additionalArchives) {
             this.additionalArchives.addAll(additionalArchives);
             return this;
         }

@@ -17,6 +17,7 @@
 package io.quarkus.arc.processor;
 
 import java.lang.annotation.Annotation;
+import java.lang.annotation.Inherited;
 import java.util.Objects;
 import org.jboss.jandex.DotName;
 
@@ -26,9 +27,12 @@ public class ScopeInfo {
 
     private final boolean isNormal;
 
+    private boolean declaresInherited;
+
     ScopeInfo(Class<? extends Annotation> clazz, boolean isNormal) {
         this.dotName = DotName.createSimple(clazz.getName());
         this.isNormal = isNormal;
+        declaresInherited = clazz.getAnnotation(Inherited.class) == null ? false : true;
     }
 
     public DotName getDotName() {
@@ -37,6 +41,10 @@ public class ScopeInfo {
 
     public boolean isNormal() {
         return isNormal;
+    }
+
+    public boolean declaresInherited() {
+        return declaresInherited;
     }
 
     @Override

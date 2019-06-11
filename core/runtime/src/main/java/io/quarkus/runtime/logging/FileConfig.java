@@ -28,6 +28,11 @@ import io.quarkus.runtime.configuration.MemorySize;
 public class FileConfig {
 
     /**
+     * Default file name where logs should be stored.
+     */
+    public static final String DEFAULT_LOG_FILE_NAME = "quarkus.log";
+
+    /**
      * If file logging should be enabled
      */
     @ConfigItem
@@ -40,15 +45,15 @@ public class FileConfig {
     String format;
 
     /**
-     * The file log level
+     * The level of logs to be written into the file.
      */
     @ConfigItem(defaultValue = "ALL")
     Level level;
 
     /**
-     * The file logging log level
+     * The name of the file in which logs will be written.
      */
-    @ConfigItem(defaultValue = "quarkus.log")
+    @ConfigItem(defaultValue = DEFAULT_LOG_FILE_NAME)
     File path;
 
     /**

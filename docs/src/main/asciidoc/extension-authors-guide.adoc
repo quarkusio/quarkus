@@ -482,7 +482,7 @@ import java.util.logging.Level;
 public class FileConfig {
 
     /**
-     * Enable file logging.
+     * Enable logging to a file.
      */
     @ConfigItem(defaultValue = "true")
     boolean enable;
@@ -494,15 +494,15 @@ public class FileConfig {
     String format;
 
     /**
-     * The file log level.
+     * The level of logs to be written into the file.
      */
     @ConfigItem(defaultValue = "ALL")
     Level level;
 
     /**
-     * The file logging log level.
+     * The name of the file in which logs will be written.
      */
-    @ConfigItem(defaultValue = "quarkus.log")
+    @ConfigItem(defaultValue = "application.log")
     File path;
 
 }
@@ -531,19 +531,36 @@ public class LoggingProcessor {
     LogConfiguration config;
 }
 ----
+
+A configuration property name can be split into segments. For example, a property name like
+`quarkus.log.file.enable` can be split into the following segments:
+
+* `quarkus` - a namespace claimed by {project-name} which is a prefix for all `@ConfigRoot` classes,
+* `log` - a name segment which corresponds to the `LogConfiguration` class annotated with `@ConfigRoot`,
+* `file` - a name segment which corresponds to the `file` field in this class,
+* `enabled` - a name segment which corresponds to `enable` field in `FileConfig` class annotated with `@ConfigGroup`.
+
 <1> The `FileConfig` class is annotated with `@ConfigGroup` to indicate that this is an aggregate
 configuration object containing a collection of configurable properties, rather than being a simple configuration
 key type.
-<2> The `@ConfigRoot` annotation indicates that this object is a configuration root group, whose property names will have a parent only of `quarkus.`.  In this case the properties within the group will begin with `quarkus.log.*`.
-<3> Here the `LoggingProcessor` injects a `LogConfiguration` instance automatically by detecting the `@ConfigRoot` annotation.
+<2> The `@ConfigRoot` annotation indicates that this object is a configuration root group, in this case one which
+corresponds to a `log` segment. A class name is used to link configuration root group with the segment from a
+property name. The `Configuration` part is stripped off from a `LogConfiguration` class name and the remaining `Log`
+is lowercased to become a `log`. Since all `@ConfigRoot` annotated classes uses `quarkus` as a prefix, this finally
+becomes `quarkus.log` and represents the properties which names begin with `quarkus.log.*`.
+<3> Here the `LoggingProcessor` injects a `LogConfiguration` instance automatically by detecting the `@ConfigRoot`
+annotation.
 
-A corresponding `application.properties` file for the `File` values could be:
+A corresponding `application.properties` for the above example could be:
+
 [source%nowrap,properties]
 ----
 quarkus.log.file.enable=true
 quarkus.log.file.level=DEBUG
 quarkus.log.file.path=/tmp/debug.log
 ----
+
+Since `format` is not defined in these properties, the default value from `@ConfigItem` will be used instead.
 
 === Bytecode Recording
 

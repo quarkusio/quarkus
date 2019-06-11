@@ -19,6 +19,8 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import io.quarkus.runtime.logging.FileConfig;
+
 public class PropertyTestUtil {
 
     public static void setLogFileProperty() {
@@ -30,7 +32,7 @@ public class PropertyTestUtil {
     }
 
     public static String getLogFileLocation() {
-        return getLogFileLocation("quarkus.log");
+        return getLogFileLocation(FileConfig.DEFAULT_LOG_FILE_NAME);
     }
 
     private static String getLogFileLocation(String logFileName) {

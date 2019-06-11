@@ -1,19 +1,3 @@
-/*
- * Copyright 2018 Red Hat, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.quarkus.arc.processor;
 
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
@@ -39,8 +23,11 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
+import org.jboss.logging.Logger;
 
 final class Beans {
+
+    static final Logger LOGGER = Logger.getLogger(Beans.class);
 
     private Beans() {
     }
@@ -102,7 +89,12 @@ final class Beans {
         }
         ScopeInfo scope;
         if (scopes.isEmpty()) {
+            // try to search stereotypes for scope
             scope = initStereotypeScope(stereotypes, beanClass);
+            // if that fails, try inheriting them
+            if (scope == null) {
+                scope = inheritScope(beanClass, beanDeployment);
+            }
         } else {
             scope = scopes.get(0);
         }
@@ -120,6 +112,29 @@ final class Beans {
                 Injection.forBean(beanClass, null, beanDeployment, transformer), null, null,
                 isAlternative ? alternativePriority : null, stereotypes, name);
         return bean;
+    }
+
+    private static ScopeInfo inheritScope(ClassInfo beanClass, BeanDeployment beanDeployment) {
+        DotName superClassName = beanClass.superName();
+        while (!superClassName.equals(DotNames.OBJECT)) {
+            ClassInfo classFromIndex = beanDeployment.getIndex().getClassByName(superClassName);
+            if (classFromIndex == null) {
+                // class not in index
+                LOGGER.warnf("Unable to determine scope for bean %s using inheritance because its super class " +
+                        "%s is not part of Jandex index. Dependent scope will be used instead.", beanClass, superClassName);
+                return null;
+            }
+            for (AnnotationInstance annotation : beanDeployment.getAnnotationStore().getAnnotations(classFromIndex)) {
+                ScopeInfo scopeAnnotation = beanDeployment.getScope(annotation.name());
+                if (scopeAnnotation != null && scopeAnnotation.declaresInherited()) {
+                    // found some scope, return
+                    return scopeAnnotation;
+                }
+            }
+            superClassName = classFromIndex.superName();
+        }
+        // none found
+        return null;
     }
 
     /**

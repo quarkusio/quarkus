@@ -1,19 +1,3 @@
-/*
- * Copyright 2018 Red Hat, Inc. and/or its affiliates
- * and other contributors as indicated by the @author tags.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package io.quarkus.bootstrap.resolver.maven;
 
 import java.io.File;
@@ -49,13 +33,13 @@ import org.apache.maven.settings.building.SettingsBuildingResult;
 import org.apache.maven.settings.building.SettingsProblem;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.repository.ArtifactRepository;
 import org.eclipse.aether.repository.Authentication;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.Proxy;
-import org.eclipse.aether.repository.ProxySelector;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
@@ -69,7 +53,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.util.PropertyUtils;
 
-import static java.util.stream.Collectors.toList;
 
 /**
  * @author Alexey Loubyansky
@@ -144,7 +127,6 @@ public class MavenRepoInitializer {
         return null;
     }
 
-    private static List<RemoteRepository> remoteRepos;
     private static Settings settings;
 
     private static final Logger log = Logger.getLogger(MavenRepoInitializer.class);
@@ -168,7 +150,6 @@ public class MavenRepoInitializer {
                 log.error("Failed to initialize " + impl.getName() + " as a service implementing " + type.getName(), exception);
             }
         });
-
         return locator.getService(RepositorySystem.class);
     }
 
@@ -217,15 +198,17 @@ public class MavenRepoInitializer {
         return session;
     }
 
-    public static List<RemoteRepository> getRemoteRepos() throws AppModelResolverException {
-        if (remoteRepos != null) {
-            return remoteRepos;
-        }
-        return remoteRepos = Collections.unmodifiableList(getRemoteRepos(getSettings()));
+    public static List<RemoteRepository> getRemoteRepos(RepositorySystem repoSystem, RepositorySystemSession repoSession) throws AppModelResolverException {
+        return Collections.unmodifiableList(getRemoteRepos(getSettings(), repoSystem, repoSession));
     }
 
     public static List<RemoteRepository> getRemoteRepos(Settings settings) throws AppModelResolverException {
-        final List<RemoteRepository> remotes = new ArrayList<>();
+        final RepositorySystem system = getRepositorySystem();
+		return getRemoteRepos(settings, system, newSession(system, settings));
+    }
+
+    public static List<RemoteRepository> getRemoteRepos(Settings settings, RepositorySystem repoSystem, RepositorySystemSession repoSession) throws AppModelResolverException {
+        List<RemoteRepository> remotes = new ArrayList<>();
 
         final int profilesTotal = settings.getProfiles().size();
         if(profilesTotal > 0) {
@@ -297,34 +280,7 @@ public class MavenRepoInitializer {
                     .setSnapshotPolicy(new RepositoryPolicy(false, RepositoryPolicy.UPDATE_POLICY_DAILY, RepositoryPolicy.CHECKSUM_POLICY_WARN))
                     .build());
         }
-        final ProxyAwareMirrorSelector proxyAwareMirrorSelector = new ProxyAwareMirrorSelector(
-                settings.getMirrors(),
-                getProxySelector(settings)
-        );
-        return remotes.stream()
-                .map(proxyAwareMirrorSelector::getMirror)
-                // remove duplicates
-                .distinct()
-                .collect(toList());
-    }
-
-    private static ProxySelector getProxySelector(Settings settings) {
-        final org.apache.maven.settings.Proxy settingsProxy = settings.getActiveProxy();
-        if (settingsProxy == null) {
-            return null;
-        }
-        return new DefaultProxySelector().add(
-                new Proxy(
-                        settingsProxy.getProtocol(),
-                        settingsProxy.getHost(),
-                        settingsProxy.getPort(),
-                        settingsProxy.getUsername() == null ? null : new AuthenticationBuilder()
-                                .addUsername(settingsProxy.getUsername())
-                                .addPassword(settingsProxy.getPassword())
-                                .build()
-                ),
-                settingsProxy.getNonProxyHosts()
-        );
+        return repoSystem.newResolutionRepositories(repoSession, remotes);
     }
 
     /**

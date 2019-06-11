@@ -1,18 +1,3 @@
-/*
- * Copyright 2018 Red Hat, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package io.quarkus.resteasy.server.common.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
@@ -40,10 +25,12 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.api.validation.ResteasyConstraintViolation;
 import org.jboss.resteasy.api.validation.ViolationReport;
+import org.jboss.resteasy.core.ResteasyDeploymentImpl;
 import org.jboss.resteasy.microprofile.config.FilterConfigSource;
 import org.jboss.resteasy.microprofile.config.ServletConfigSource;
 import org.jboss.resteasy.microprofile.config.ServletContextConfigSource;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
+import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -160,6 +147,7 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ResteasyServerConfigBuildItem> resteasyServerConfig,
+            BuildProducer<ResteasyDeploymentBuildItem> resteasyDeployment,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
@@ -233,24 +221,30 @@ public class ResteasyServerCommonProcessor {
 
         registerContextProxyDefinitions(index, proxyDefinition);
 
-        registerReflectionForSerialization(reflectiveClass, reflectiveHierarchy, combinedIndexBuildItem);
+        registerReflectionForSerialization(reflectiveClass, reflectiveHierarchy, combinedIndexBuildItem,
+                beanArchiveIndexBuildItem);
 
         for (ClassInfo implementation : index.getAllKnownImplementors(ResteasyDotNames.DYNAMIC_FEATURE)) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, implementation.name().toString()));
         }
 
         Map<String, String> resteasyInitParameters = new HashMap<>();
+        ResteasyDeployment deployment = new ResteasyDeploymentImpl();
 
-        registerProviders(resteasyInitParameters, reflectiveClass, unremovableBeans, jaxrsProvidersToRegisterBuildItem);
+        registerProviders(deployment, resteasyInitParameters, reflectiveClass, unremovableBeans,
+                jaxrsProvidersToRegisterBuildItem);
 
         if (!resources.isEmpty()) {
+            deployment.getScannedResourceClasses().addAll(resources);
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES, String.join(",", resources));
         }
         resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_SERVLET_MAPPING_PREFIX, path);
         if (appClass != null) {
+            deployment.setApplicationClass(appClass);
             resteasyInitParameters.put(JAX_RS_APPLICATION_PARAMETER_NAME, appClass);
         }
         resteasyInitParameters.put("resteasy.injector.factory", QuarkusInjectorFactory.class.getName());
+        deployment.setInjectorFactoryClass(QuarkusInjectorFactory.class.getName());
 
         if (commonConfig.gzip.enabled && commonConfig.gzip.maxInput.isPresent()) {
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_GZIP_MAX_INPUT,
@@ -258,6 +252,7 @@ public class ResteasyServerCommonProcessor {
         }
 
         resteasyServerConfig.produce(new ResteasyServerConfigBuildItem(path, resteasyInitParameters));
+        resteasyDeployment.produce(new ResteasyDeploymentBuildItem(path, deployment));
     }
 
     @BuildStep
@@ -355,7 +350,7 @@ public class ResteasyServerCommonProcessor {
         return new JaxbEnabledBuildItem();
     }
 
-    private static void registerProviders(Map<String, String> resteasyInitParameters,
+    private static void registerProviders(ResteasyDeployment deployment, Map<String, String> resteasyInitParameters,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem) {
@@ -363,8 +358,10 @@ public class ResteasyServerCommonProcessor {
         if (jaxrsProvidersToRegisterBuildItem.useBuiltIn()) {
             // if we find a wildcard media type, we just use the built-in providers
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_USE_BUILTIN_PROVIDERS, "true");
+            deployment.setRegisterBuiltin(true);
 
             if (!jaxrsProvidersToRegisterBuildItem.getContributedProviders().isEmpty()) {
+                deployment.getProviderClasses().addAll(jaxrsProvidersToRegisterBuildItem.getContributedProviders());
                 resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_PROVIDERS,
                         String.join(",", jaxrsProvidersToRegisterBuildItem.getContributedProviders()));
             }
@@ -372,6 +369,8 @@ public class ResteasyServerCommonProcessor {
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_USE_BUILTIN_PROVIDERS, "false");
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_PROVIDERS,
                     String.join(",", jaxrsProvidersToRegisterBuildItem.getProviders()));
+            deployment.setRegisterBuiltin(false);
+            deployment.getProviderClasses().addAll(jaxrsProvidersToRegisterBuildItem.getProviders());
         }
 
         // register the providers for reflection
@@ -495,8 +494,10 @@ public class ResteasyServerCommonProcessor {
 
     private static void registerReflectionForSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
-            CombinedIndexBuildItem combinedIndexBuildItem) {
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
         IndexView index = combinedIndexBuildItem.getIndex();
+        IndexView beanArchiveIndex = beanArchiveIndexBuildItem.getIndex();
 
         // required by Jackson
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
@@ -514,25 +515,31 @@ public class ResteasyServerCommonProcessor {
         // Declare reflection for all the types implicated in the Rest end points (return types and parameters).
         // It might be needed for serialization.
         for (DotName annotationType : METHOD_ANNOTATIONS) {
-            Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
-            for (AnnotationInstance instance : instances) {
-                MethodInfo method = instance.target().asMethod();
-                if (isReflectionDeclarationRequiredFor(method.returnType())) {
-                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType()));
-                }
-                for (short i = 0; i < method.parameters().size(); i++) {
-                    Type parameterType = method.parameters().get(i);
-                    if (isReflectionDeclarationRequiredFor(parameterType)
-                            && !hasAnnotation(method, i, ResteasyDotNames.CONTEXT)) {
-                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(parameterType));
-                    }
-                }
-            }
+            scanMethodParameters(annotationType, reflectiveHierarchy, index);
+            scanMethodParameters(annotationType, reflectiveHierarchy, beanArchiveIndex);
         }
 
         // In the case of a constraint violation, these elements might be returned as entities and will be serialized
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ViolationReport.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ResteasyConstraintViolation.class.getName()));
+    }
+
+    private static void scanMethodParameters(DotName annotationType,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, IndexView index) {
+        Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
+        for (AnnotationInstance instance : instances) {
+            MethodInfo method = instance.target().asMethod();
+            if (isReflectionDeclarationRequiredFor(method.returnType())) {
+                reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType(), index));
+            }
+            for (short i = 0; i < method.parameters().size(); i++) {
+                Type parameterType = method.parameters().get(i);
+                if (isReflectionDeclarationRequiredFor(parameterType)
+                        && !hasAnnotation(method, i, ResteasyDotNames.CONTEXT)) {
+                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(parameterType, index));
+                }
+            }
+        }
     }
 
     private static boolean isReflectionDeclarationRequiredFor(Type type) {

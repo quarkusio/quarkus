@@ -21,10 +21,10 @@ public class MailConfig {
      * Enables the mock mode, not sending emails.
      * The content of the emails is printed on the console.
      * <p>
-     * Disabled by default.
+     * Disabled by default on PROD, enabled by default on DEV and TEST modes.
      */
     @ConfigItem
-    public boolean mock;
+    public Optional<Boolean> mock;
 
     /**
      * Configures the default bounce email address.

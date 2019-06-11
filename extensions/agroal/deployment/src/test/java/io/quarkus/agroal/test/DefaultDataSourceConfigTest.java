@@ -1,6 +1,7 @@
 package io.quarkus.agroal.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -55,6 +56,7 @@ public class DefaultDataSourceConfigTest {
         assertEquals(idleRemovalInterval, configuration.reapTimeout());
         assertEquals(AgroalConnectionFactoryConfiguration.TransactionIsolation.SERIALIZABLE,
                 agroalConnectionFactoryConfiguration.jdbcTransactionIsolation());
+        assertTrue(dataSource.getConfiguration().metricsEnabled());
 
         try (Connection connection = dataSource.getConnection()) {
         }

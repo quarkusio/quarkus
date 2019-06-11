@@ -59,14 +59,14 @@ You can use for example package-private modifiers:
 public class CounterBean {
 
     @Inject
-    CounterService counterService; // <1>
+    CounterService counterService; <1>
     
-    void onMessage(@Observes Event msg) { // <2>
+    void onMessage(@Observes Event msg) { <2>
     }
 }
 ----
-1. A package-private injection field
-2. A package-private observer method
+<1> A package-private injection field.
+<2> A package-private observer method.
 
 Or constructor injection:
 
@@ -75,19 +75,14 @@ Or constructor injection:
 @ApplicationScoped
 public class CounterBean {
 
-    private final CounterService service;
+    private CounterService service;
 
-    CounterBean() { // <1>
-    }
-
-    @Inject
-    CounterBean(CounterService service) { // <2>
+    CounterBean(CounterService service) { <1>
       this.service = service;
     }
 }
 ----
-1. Dummy constructor needed for CDI beans with a normal scope
-2. A package-private constructor injection
+<1> A package-private constructor injection.
 
 
 [[supported_features]]
@@ -120,7 +115,7 @@ public class CounterBean {
 * `@ConversationScoped` is not supported
 * Decorators are not supported
 * Portable Extensions are not supported
-* `BeanManager` - only the following methods are implemented: `getBeans()`, `createCreationalContext()`, `getReference()`, `resolve()`, `getContext()`, `getEvent()` and `createInstance()`
+* `BeanManager` - only the following methods are implemented: `getBeans()`, `createCreationalContext()`, `getReference()`, `getInjectableReference()` , `resolve()`, `getContext()`, `fireEvent()`, `getEvent()` and `createInstance()`
 * Specialization is not supported
 * `beans.xml` descriptor content is ignored
 * Passivation and passivating scopes are not supported
@@ -225,6 +220,34 @@ AnnotationsTransformerBuildItem transform() {
         public void transform(TransformationContext context) {
             if (contex.getTarget().asClass().name().toString().equals("com.foo.Bar")) {
                 context.transform().add(MyInterceptorBinding.class).done();
+            }
+        }
+    });
+}
+----
+
+=== Injection Point Transformation
+
+Every now and then it is handy to be able to change qualifiers of an injection point programmatically.
+You can do just that with `InjectionPointTransformerBuildItem`.
+The following sample shows how to apply transformation to injection points with type `Foo` that contain qualifier `MyQualifier`:
+
+[source,java]
+----
+@BuildStep
+InjectionPointTransformerBuildItem transform() {
+    return new InjectionPointTransformerBuildItem(new InjectionPointsTransformer() {
+
+        public boolean appliesTo(Type requiredType) {
+            return requiredType.equals(Type.create(DotName.createSimple(Foo.class.getName()), Type.Kind.CLASS));
+        }
+
+        public void transform(TransformationContext transformationContext) {
+            if (transformationContext.getQualifiers().stream()
+                    .anyMatch(a -> a.name().equals(DotName.createSimple(MyQualifier.class.getName())))) {
+                transformationContext.transform().removeAll()
+                        .add(DotName.createSimple(MyOtherQualifier.class.getName()))
+                        .done();
             }
         }
     });

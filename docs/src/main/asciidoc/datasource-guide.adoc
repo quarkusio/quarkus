@@ -259,7 +259,7 @@ AgroalDataSource dataSource2;
 
 |quarkus.datasource.background-validation-interval
 |java.time.Duration
-|PT3M, PT56S, 
+|PT3M, PT56S,
 
 |quarkus.datasource.acquisition-timeout
 |java.time.Duration
@@ -277,9 +277,13 @@ AgroalDataSource dataSource2;
 |io.quarkus.agroal.runtime.TransactionIsolationLevel (enum)
 |none, read-committed, read-uncommitted, repeatable-read, serializable
 
+|quarkus.datasource.enable-metrics
+|Boolean
+|true or false
+
 |quarkus.datasource.xa
 |Boolean
-|True or False
+|true or false
 |===
 
 [NOTE]

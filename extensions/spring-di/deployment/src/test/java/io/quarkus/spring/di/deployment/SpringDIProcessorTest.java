@@ -1,18 +1,3 @@
-/*
- * Copyright 2018 Red Hat, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package io.quarkus.spring.di.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -86,13 +71,13 @@ class SpringDIProcessorTest {
 
         Assertions.assertThrows(DefinitionException.class, () -> {
             final ClassInfo target = index.getClassByName(DotName.createSimple(ConflictBean.class.getName()));
-            processor.getAnnotationsToAdd(target, scopes);
+            processor.getAnnotationsToAdd(target, scopes, null);
         });
 
         Assertions.assertThrows(DefinitionException.class, () -> {
             final ClassInfo target = index
                     .getClassByName(DotName.createSimple(ConflictStereotypeBean.class.getName()));
-            processor.getAnnotationsToAdd(target, scopes);
+            processor.getAnnotationsToAdd(target, scopes, null);
         });
     }
 
@@ -102,7 +87,7 @@ class SpringDIProcessorTest {
         final ClassInfo target = index
                 .getClassByName(DotName.createSimple(OverrideConflictStereotypeBean.class.getName()));
 
-        final Set<AnnotationInstance> ret = processor.getAnnotationsToAdd(target, scopes);
+        final Set<AnnotationInstance> ret = processor.getAnnotationsToAdd(target, scopes, null);
 
         final Set<AnnotationInstance> expected = setOf(
                 AnnotationInstance.create(DotName.createSimple(ApplicationScoped.class.getName()), target,
@@ -115,7 +100,7 @@ class SpringDIProcessorTest {
         final Map<DotName, Set<DotName>> scopes = processor.getStereotypeScopes(index);
         final ClassInfo target = index.getClassByName(DotName.createSimple(RequestBean.class.getName()));
 
-        final Set<AnnotationInstance> ret = processor.getAnnotationsToAdd(target, scopes);
+        final Set<AnnotationInstance> ret = processor.getAnnotationsToAdd(target, scopes, null);
 
         final Set<AnnotationInstance> expected = setOf(
                 AnnotationInstance.create(DotName.createSimple(RequestScoped.class.getName()), target,
@@ -128,7 +113,7 @@ class SpringDIProcessorTest {
         final Map<DotName, Set<DotName>> scopes = processor.getStereotypeScopes(index);
         final ClassInfo target = index.getClassByName(DotName.createSimple(UndeclaredBean.class.getName()));
 
-        final Set<AnnotationInstance> ret = processor.getAnnotationsToAdd(target, scopes);
+        final Set<AnnotationInstance> ret = processor.getAnnotationsToAdd(target, scopes, null);
 
         final Set<AnnotationInstance> expected = setOf(
                 AnnotationInstance.create(DotName.createSimple(Singleton.class.getName()), target,
@@ -141,7 +126,7 @@ class SpringDIProcessorTest {
         final Map<DotName, Set<DotName>> scopes = processor.getStereotypeScopes(index);
         final ClassInfo target = index.getClassByName(DotName.createSimple(NamedBean.class.getName()));
 
-        final Set<AnnotationInstance> ret = processor.getAnnotationsToAdd(target, scopes);
+        final Set<AnnotationInstance> ret = processor.getAnnotationsToAdd(target, scopes, null);
 
         final Set<AnnotationInstance> expected = setOf(
                 AnnotationInstance.create(DotName.createSimple(Singleton.class.getName()), target,
@@ -157,7 +142,7 @@ class SpringDIProcessorTest {
         final ClassInfo target = index.getClassByName(DotName.createSimple(ConflictNamedBean.class.getName()));
 
         Assertions.assertThrows(DefinitionException.class, () -> {
-            processor.getAnnotationsToAdd(target, scopes);
+            processor.getAnnotationsToAdd(target, scopes, null);
         });
     }
 

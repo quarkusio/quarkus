@@ -1,19 +1,3 @@
-/*
- * Copyright 2018 Red Hat, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.quarkus.arc.processor;
 
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
@@ -53,6 +37,9 @@ import org.jboss.jandex.Type;
 public class ClientProxyGenerator extends AbstractGenerator {
 
     static final String CLIENT_PROXY_SUFFIX = "_ClientProxy";
+
+    static final String DELEGATE_METHOD_NAME = "arc$delegate";
+    static final String GET_CONTEXTUAL_INSTANCE_METHOD_NAME = "getContextualInstance";
 
     private final Predicate<DotName> applicationClassPredicate;
 
@@ -103,7 +90,6 @@ public class ClientProxyGenerator extends AbstractGenerator {
         for (MethodInfo method : getDelegatingMethods(bean)) {
 
             MethodDescriptor originalMethodDescriptor = MethodDescriptor.of(method);
-
             MethodCreator forward = clientProxy.getMethodCreator(originalMethodDescriptor);
 
             // Exceptions
@@ -116,9 +102,27 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 params[i] = forward.getMethodParam(i);
             }
 
+            if (!superClass.equals(Object.class.getName())) {
+                // Skip delegation if proxy is not constructed yet
+                // This check is unnecessary for producers that return an interface
+                // if(!this.bean == null) return super.foo()
+                BytecodeCreator notConstructed = forward
+                        .ifNull(forward.readInstanceField(beanField.getFieldDescriptor(), forward.getThis())).trueBranch();
+                if (Modifier.isAbstract(method.flags())) {
+                    notConstructed.throwException(IllegalStateException.class, "Cannot delegate to an abstract method");
+                } else {
+                    MethodDescriptor superDescriptor = MethodDescriptor.ofMethod(superClass, method.name(),
+                            method.returnType().name().toString(),
+                            method.parameters().stream().map(p -> p.name().toString()).toArray());
+                    notConstructed.returnValue(
+                            notConstructed.invokeSpecialMethod(superDescriptor, notConstructed.getThis(), params));
+                }
+            }
+
             ResultHandle delegate = forward
                     .invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(generatedName, "delegate", DescriptorUtils.typeToString(providerType)),
+                            MethodDescriptor.ofMethod(generatedName, DELEGATE_METHOD_NAME,
+                                    DescriptorUtils.typeToString(providerType)),
                             forward.getThis());
             ResultHandle ret;
 
@@ -170,7 +174,8 @@ public class ClientProxyGenerator extends AbstractGenerator {
     }
 
     void implementDelegate(ClassCreator clientProxy, String providerTypeName, FieldDescriptor beanField) {
-        MethodCreator creator = clientProxy.getMethodCreator("delegate", providerTypeName).setModifiers(Modifier.PRIVATE);
+        MethodCreator creator = clientProxy.getMethodCreator(DELEGATE_METHOD_NAME, providerTypeName)
+                .setModifiers(Modifier.PRIVATE);
         // Arc.container()
         ResultHandle container = creator.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
         // bean.getScope()
@@ -196,10 +201,11 @@ public class ClientProxyGenerator extends AbstractGenerator {
     }
 
     void implementGetContextualInstance(ClassCreator clientProxy, String providerTypeName) {
-        MethodCreator creator = clientProxy.getMethodCreator("getContextualInstance", Object.class)
+        MethodCreator creator = clientProxy.getMethodCreator(GET_CONTEXTUAL_INSTANCE_METHOD_NAME, Object.class)
                 .setModifiers(Modifier.PUBLIC);
         creator.returnValue(
-                creator.invokeVirtualMethod(MethodDescriptor.ofMethod(clientProxy.getClassName(), "delegate", providerTypeName),
+                creator.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(clientProxy.getClassName(), DELEGATE_METHOD_NAME, providerTypeName),
                         creator.getThis()));
     }
 

@@ -12,7 +12,7 @@ import org.eclipse.microprofile.rest.client.RestClientBuilder;
 public class TestResource implements RestService {
 
     @Inject
-    private Service service;
+    Service service;
 
     @Context
     private UriInfo uri;

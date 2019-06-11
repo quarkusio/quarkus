@@ -1,16 +1,13 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
-import static io.undertow.util.Headers.AUTHORIZATION;
-import static io.undertow.util.Headers.COOKIE;
 import static io.undertow.util.Headers.WWW_AUTHENTICATE;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
-
-import java.util.Locale;
 
 import javax.enterprise.inject.spi.CDI;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
+import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.undertow.UndertowLogger;
@@ -45,7 +42,7 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
      */
     @Override
     public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
-        String jwtToken = getJwtToken(exchange);
+        String jwtToken = new UndertowBearerTokenExtractor(authContextInfo, exchange).getBearerToken();
         if (jwtToken != null) {
             try {
                 JWTCredential credential = new JWTCredential(jwtToken, authContextInfo);
@@ -79,25 +76,6 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
         principalProducer.setJsonWebToken(jwtPrincipal);
     }
 
-    private String getJwtToken(HttpServerExchange exchange) {
-        String bearerToken = null;
-        if (AUTHORIZATION.toString().equals(authContextInfo.getTokenHeader())) {
-            String authScheme = exchange.getRequestHeaders().getFirst(authContextInfo.getTokenHeader());
-            if (authScheme != null && authScheme.toLowerCase(Locale.ENGLISH).startsWith("bearer ")) {
-                bearerToken = authScheme.substring(7);
-            }
-        } else if (COOKIE.toString().equals(authContextInfo.getTokenHeader())
-                && authContextInfo.getTokenCookie() != null) {
-            Cookie cookie = exchange.getRequestCookies().get(authContextInfo.getTokenCookie());
-            if (cookie != null) {
-                bearerToken = cookie.getValue();
-            }
-        } else {
-            bearerToken = exchange.getRequestHeaders().getFirst(authContextInfo.getTokenHeader());
-        }
-        return bearerToken;
-    }
-
     @Override
     public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
         exchange.getResponseHeaders().add(WWW_AUTHENTICATE, "Bearer {token}");
@@ -105,4 +83,23 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
         return new ChallengeResult(true, UNAUTHORIZED);
     }
 
+    private static class UndertowBearerTokenExtractor extends AbstractBearerTokenExtractor {
+        private HttpServerExchange httpExchange;
+
+        UndertowBearerTokenExtractor(JWTAuthContextInfo authContextInfo, HttpServerExchange exchange) {
+            super(authContextInfo);
+            this.httpExchange = exchange;
+        }
+
+        @Override
+        protected String getHeaderValue(String headerName) {
+            return httpExchange.getRequestHeaders().getFirst(headerName);
+        }
+
+        @Override
+        protected String getCookieValue(String cookieName) {
+            Cookie cookie = httpExchange.getRequestCookies().get(cookieName);
+            return cookie != null ? cookie.getValue() : null;
+        }
+    }
 }

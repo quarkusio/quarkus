@@ -1,19 +1,3 @@
-/*
- * Copyright 2018 Red Hat, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.quarkus.spring.di.deployment;
 
 import static org.jboss.jandex.AnnotationInstance.create;
@@ -44,6 +28,7 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.arc.deployment.AdditionalStereotypeBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Transformation;
@@ -123,7 +108,8 @@ public class SpringDIProcessor {
                 return;
             }
             final AnnotationTarget target = context.getTarget();
-            final Set<AnnotationInstance> annotationsToAdd = getAnnotationsToAdd(target, scopes);
+            final Set<AnnotationInstance> annotationsToAdd = getAnnotationsToAdd(target, scopes, context
+                    .get(BuildExtension.Key.SCOPES).stream().map(item -> item.getDotName()).collect(Collectors.toList()));
             if (!annotationsToAdd.isEmpty()) {
                 final Transformation transform = context.transform();
                 for (AnnotationInstance annotationInstance : annotationsToAdd) {
@@ -253,7 +239,10 @@ public class SpringDIProcessor {
      */
     Set<AnnotationInstance> getAnnotationsToAdd(
             final AnnotationTarget target,
-            final Map<DotName, Set<DotName>> stereotypeScopes) {
+            final Map<DotName, Set<DotName>> stereotypeScopes,
+            final List<DotName> allArcScopes) {
+        List<DotName> arcScopes = allArcScopes != null ? allArcScopes
+                : Arrays.stream(BuiltinScope.values()).map(i -> i.getName()).collect(Collectors.toList());
         final Set<DotName> stereotypes = stereotypeScopes.keySet();
 
         final Set<AnnotationInstance> annotationsToAdd = new HashSet<>();
@@ -268,7 +257,7 @@ public class SpringDIProcessor {
 
             for (AnnotationInstance instance : classInfo.classAnnotations()) {
                 // make sure that we don't mix and match Spring and CDI annotations since this can cause a lot of problems
-                if (BuiltinScope.from(instance.name()) != null) {
+                if (arcScopes.contains(instance.name())) {
                     return annotationsToAdd;
                 }
             }

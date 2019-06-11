@@ -1,19 +1,3 @@
-/*
- * Copyright 2018 Red Hat, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.quarkus.arc.processor;
 
 import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
@@ -26,6 +10,7 @@ import io.quarkus.gizmo.ResultHandle;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -129,6 +114,12 @@ public class BeanDeployment {
         customContexts = new HashMap<>();
         registerCustomContexts(contextRegistrars, beanDefiningAnnotations, buildContext);
 
+        if (buildContext != null) {
+            List<ScopeInfo> allScopes = Arrays.stream(BuiltinScope.values()).map(i -> i.getInfo()).collect(Collectors.toList());
+            allScopes.addAll(customContexts.keySet());
+            buildContext.putInternal(Key.SCOPES.asString(), Collections.unmodifiableList(allScopes));
+        }
+
         this.qualifiers = findQualifiers(index);
         this.interceptorBindings = findInterceptorBindings(index);
         this.transitiveInterceptorBindings = findTransitiveInterceptorBindigs(interceptorBindings.keySet(), index,
@@ -146,6 +137,9 @@ public class BeanDeployment {
             buildContext.putInternal(Key.INJECTION_POINTS.asString(), Collections.unmodifiableList(injectionPoints));
             buildContext.putInternal(Key.OBSERVERS.asString(), Collections.unmodifiableList(observers));
             buildContext.putInternal(Key.BEANS.asString(), Collections.unmodifiableList(beans));
+            buildContext.putInternal(Key.QUALIFIERS.asString(), Collections.unmodifiableMap(qualifiers));
+            buildContext.putInternal(Key.INTERCEPTOR_BINDINGS.asString(), Collections.unmodifiableMap(interceptorBindings));
+            buildContext.putInternal(Key.STEREOTYPES.asString(), Collections.unmodifiableMap(stereotypes));
         }
 
         registerSyntheticBeans(beanRegistrars, buildContext);

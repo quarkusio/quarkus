@@ -18,6 +18,7 @@ package io.quarkus.smallrye.restclient.runtime;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Optional;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -25,7 +26,9 @@ import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
 public class RestClientBase {
 
-    public static final String REST_URL_FORMAT = "%s/mp-rest/url";
+    private static final String MP_REST = "mp-rest";
+    public static final String REST_URL_FORMAT = "%s/" + MP_REST + "/url";
+    public static final String REST_URI_FORMAT = "%s/" + MP_REST + "/uri";
 
     private final Class<?> proxyType;
     private final String baseUriFromAnnotation;
@@ -55,10 +58,19 @@ public class RestClientBase {
     }
 
     private String getBaseUrl() {
-        if ((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty()) {
-            String property = String.format(REST_URL_FORMAT, proxyType.getName());
-            return config.getValue(property, String.class);
+        String propertyName = String.format(REST_URI_FORMAT, proxyType.getName());
+        Optional<String> propertyOptional = config.getOptionalValue(propertyName, String.class);
+        if (!propertyOptional.isPresent()) {
+            propertyName = String.format(REST_URL_FORMAT, proxyType.getName());
+            propertyOptional = config.getOptionalValue(propertyName, String.class);
         }
-        return baseUriFromAnnotation;
+        if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
+                && !propertyOptional.isPresent()) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Unable to determine the proper baseUrl/baseUri. Consider registering using @RegisterRestClient(baseUri=\"someuri\"), or by adding '%s' to your Quarkus configuration",
+                            propertyName));
+        }
+        return propertyOptional.orElse(baseUriFromAnnotation);
     }
 }

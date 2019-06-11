@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.test.Mock;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -35,12 +36,17 @@ public class StereotypeAlternativeTest {
 
     @Rule
     public ArcTestContainer container = new ArcTestContainer(BeAlternative.class, BeAlternativeWithPriority.class,
-            NonAlternative.class, IamAlternative.class, NotAtAllAlternative.class, IamAlternativeWithPriority.class);
+            NonAlternative.class, IamAlternative.class, NotAtAllAlternative.class, IamAlternativeWithPriority.class,
+            ToBeOverridenFoo.class, MockedFoo.class, MockedFooWithExplicitPriority.class, Mock.class);
 
     @Test
     public void testStereotype() {
         assertEquals("OK", Arc.container().instance(NonAlternative.class).get().getId());
         assertEquals("OK", Arc.container().instance(NotAtAllAlternative.class).get().getId());
+
+        assertEquals(MockedFooWithExplicitPriority.class.getSimpleName(),
+                Arc.container().instance(ToBeOverridenFoo.class).get().ping());
+        assertEquals(MockedFoo.class.getSimpleName(), Arc.container().instance(MockedFoo.class).get().ping());
     }
 
     @Alternative
@@ -95,6 +101,35 @@ public class StereotypeAlternativeTest {
             return "OK";
         }
 
+    }
+
+    @Dependent
+    static class ToBeOverridenFoo {
+
+        public String ping() {
+            return ToBeOverridenFoo.class.getSimpleName();
+        }
+    }
+
+    @Mock
+    // should not be selected because of lower priority (has 1)
+    static class MockedFoo extends ToBeOverridenFoo {
+
+        @Override
+        public String ping() {
+            return MockedFoo.class.getSimpleName();
+        }
+
+    }
+
+    @Mock
+    @Priority(2)
+    static class MockedFooWithExplicitPriority extends ToBeOverridenFoo {
+
+        @Override
+        public String ping() {
+            return MockedFooWithExplicitPriority.class.getSimpleName();
+        }
     }
 
 }

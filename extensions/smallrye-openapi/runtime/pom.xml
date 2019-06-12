@@ -35,10 +35,6 @@
       <artifactId>smallrye-open-api</artifactId>
       <exclusions>
         <exclusion>
-          <groupId>com.fasterxml.jackson.core</groupId>
-          <artifactId>jackson-core</artifactId>
-        </exclusion>
-        <exclusion>
           <groupId>commons-io</groupId>
           <artifactId>commons-io</artifactId>
         </exclusion>
@@ -59,10 +55,6 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-swagger-ui</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
     </dependency>
   </dependencies>
 

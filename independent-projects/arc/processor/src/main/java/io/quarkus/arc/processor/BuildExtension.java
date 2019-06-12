@@ -17,6 +17,9 @@
 package io.quarkus.arc.processor;
 
 import java.util.List;
+import java.util.Map;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 /**
@@ -68,6 +71,10 @@ public interface BuildExtension {
         static Key<List<BeanInfo>> BEANS = new SimpleKey<>(BUILT_IN_PREFIX + "beans");
         static Key<List<ObserverInfo>> OBSERVERS = new SimpleKey<>(BUILT_IN_PREFIX + "observers");
         static Key<AnnotationStore> ANNOTATION_STORE = new SimpleKey<>(BUILT_IN_PREFIX + "annotationStore");
+        static Key<List<ScopeInfo>> SCOPES = new SimpleKey<>(BUILT_IN_PREFIX + "scopes");
+        static Key<Map<DotName, ClassInfo>> QUALIFIERS = new SimpleKey<>(BUILT_IN_PREFIX + "qualifiers");
+        static Key<Map<DotName, ClassInfo>> INTERCEPTOR_BINDINGS = new SimpleKey<>(BUILT_IN_PREFIX + "interceptorBindings");
+        static Key<Map<DotName, ClassInfo>> STEREOTYPES = new SimpleKey<>(BUILT_IN_PREFIX + "stereotypes");
 
         String asString();
     }

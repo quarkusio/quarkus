@@ -69,7 +69,7 @@ The following table lists the properties that can be configured:
 | Property | Type | Comment | Default
 
 | from | String | the default _from_ address, without, all emails will need an explicit value |
-| mock | Boolean | if set to `true`, the emails are not sent, just printed on the console. | `false`
+| mock | Boolean | if set to `true`, the emails are not sent, but printed on the console and collected in a `MockMailbox` bean. | `false` in `PROD` mode, true in `DEV` and `TEST` modes
 | bounce-address | String | the default bounce address |
 | host | String | the SMTP server host name | _mandatory_
 | port | Integer | the SMTP server port | `25`
@@ -202,6 +202,50 @@ By spec, when you create the inline attachment, the content-id must be structure
 If you don't wrap your content-id between `<>`, it is automatically wrapped for you.
 When you want to reference your attachment, for instance in the `src` attribute, use `cid:id@domain` (without the `<` and `>`).
 
+== Testing email sending
+
+Because it is very inconvenient to send emails during development and testing, you can set the `quarkus.mailer.mock` boolean
+configuration to `true` to not actually send emails but print them on stdout and collect them in a `MockMailbox` bean instead.
+This is the default if you are running Quarkus in `DEV` or `TEST` mode.
+
+You can then write tests to verify that your emails were sent, for example, by a REST endpoint:
+
+[source, java]
+----
+class MailTest {
+
+    private static final String TO = "foo@quarkus.io";
+
+    @Inject
+    MockMailbox mailbox;
+
+    @BeforeEach
+    void init() {
+        mailbox.clear();
+    }
+
+    @Test
+    void testTextMail() throws MessagingException, IOException {
+        // call a REST endpoint that sends email
+        given()
+        .when()
+        .get("/send-email")
+        .then()
+           .statusCode(200)    
+           .body(is("OK"));
+        
+        // verify that it was sent
+        List<Mail> sent = mailbox.getMessagesSentTo(TO);
+        assertThat(sent).hasSize(1);
+        Mail actual = sent.get(0);
+        assertThat(actual.getText()).contains("Wake up!");
+        assertThat(actual.getSubject()).isEqualTo("Alarm!");
+
+        assertThat(mailbox.getTotalMessagesSent()).isEqualTo(6);
+    }
+}
+----
+
 == Using the underlying Vert.x Mail Client
 
 The Quarkus Mailer is implemented on top of the https://vertx.io/docs/vertx-mail-client/java/[Vert.x Mail Client], providing an asynchronous and non-blocking way to send emails.
@@ -222,7 +266,6 @@ Check the link:using-vertx.html[Using Vert.x guide] for further details about th
 
 The retrieved `MailClient` is configured using the configuration key presented above.
 You can also create your own instance, and pass your own configuration.
-
 
 == Conclusion
 

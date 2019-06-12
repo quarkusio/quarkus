@@ -25,7 +25,7 @@ public class MailerProcessor {
     @BuildStep
     AdditionalBeanBuildItem registerMailers() {
         return AdditionalBeanBuildItem.builder()
-                .addBeanClasses(ReactiveMailerImpl.class, BlockingMailerImpl.class)
+                .addBeanClasses(ReactiveMailerImpl.class, BlockingMailerImpl.class, MockMailboxImpl.class)
                 .build();
     }
 
@@ -53,7 +53,7 @@ public class MailerProcessor {
         RuntimeValue<MailClient> client = template.configureTheClient(vertx.getVertx(), beanContainer.getValue(), config,
                 launchMode.getLaunchMode(), shutdown);
 
-        template.configureTheMailer(beanContainer.getValue(), config);
+        template.configureTheMailer(beanContainer.getValue(), config, launchMode.getLaunchMode());
 
         return new MailerBuildItem(client);
     }

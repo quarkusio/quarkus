@@ -42,6 +42,9 @@ public class ReactiveMailerImpl implements ReactiveMailer {
     @Inject
     Vertx vertx;
 
+    @Inject
+    MockMailboxImpl mockMailbox;
+
     /**
      * Default from value.
      */
@@ -65,16 +68,16 @@ public class ReactiveMailerImpl implements ReactiveMailer {
 
         return allOf(
                 stream(mails)
-                        .map(mail -> toMailMessage(mail).thenCompose(this::send))
+                        .map(mail -> toMailMessage(mail).thenCompose(mailMessage -> send(mail, mailMessage)))
                         .collect(Collectors.toList()));
     }
 
-    private CompletionStage<Void> send(MailMessage message) {
+    private CompletionStage<Void> send(Mail mail, MailMessage message) {
         if (mock) {
-            LOGGER.info("Sending email {} from {} to {}, body is: \n{}",
+            LOGGER.info("Sending email {} from {} to {}, text body: \n{}\nhtml body: \n{}",
                     message.getSubject(), message.getFrom(), message.getTo(),
-                    message.getHtml() == null ? message.getText() : message.getHtml());
-            return CompletableFuture.completedFuture(null);
+                    message.getText(), message.getHtml());
+            return mockMailbox.send(mail);
         } else {
             return client.sendMail(message)
                     .thenAccept(x -> {

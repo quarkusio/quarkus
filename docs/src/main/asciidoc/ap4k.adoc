@@ -125,5 +125,3 @@ The full source of the `kubernetes.json` file looks something like this:
 An important thing to note about the `Deployment` is that is uses `yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT` as the Docker image of the `Pod`.
 
 Also the `Service` is configured to use container port `8080` (which is automatically picked up by the standard Quarkus configuration).
-
-An important thing to keep in mind is that so far, all {project-name} has done is generate the `Kubernetes` resources, it has not applied them. The next section will walk you through how this can be done.

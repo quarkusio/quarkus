@@ -18,14 +18,13 @@ include::./attributes.adoc[]
 
 This document explains various Undertow features that you can use in Quarkus.
 
-
-=== Serving Static Resources
+== Serving Static Resources
 
 To serve static resources you must place them in the `META-INF/resources` directory of your application. This is because
 Quarkus applications are jar files rather than war files, and this location is the standard location for resources in
 jar files as defined by the Servlet spec.
 
-=== undertow-handlers.conf
+== undertow-handlers.conf
 
 You can make use of the Undertow predicate language using an `undertow-handlers.conf` file. This file should be placed
 in the `META-INF` directory of your application jar. This file contains handlers defined using the

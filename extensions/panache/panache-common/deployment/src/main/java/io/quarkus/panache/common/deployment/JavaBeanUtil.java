@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.panache.deployment;
+package io.quarkus.panache.common.deployment;
 
 public class JavaBeanUtil {
 

@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.panache.deployment;
 
+import io.quarkus.panache.common.deployment.JavaBeanUtil;
+
 public class EntityField {
 
     final String name;

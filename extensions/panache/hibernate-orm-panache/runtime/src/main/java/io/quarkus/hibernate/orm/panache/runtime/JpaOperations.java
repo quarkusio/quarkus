@@ -60,6 +60,10 @@ public class JpaOperations {
         return getEntityManager().contains(entity);
     }
 
+    public static void flush() {
+        getEntityManager().flush();
+    }
+
     //
     // Private stuff
 

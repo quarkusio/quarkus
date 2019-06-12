@@ -40,6 +40,20 @@ public abstract class PanacheEntityBase {
     }
 
     /**
+     * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.
+     * Then flushes all pending changes to the database.
+     *
+     * @see #isPersistent()
+     * @see #persist(Iterable)
+     * @see #persist(Stream)
+     * @see #persist(Object, Object...)
+     */
+    public void persistAndFlush() {
+        JpaOperations.persist(this);
+        JpaOperations.flush();
+    }
+
+    /**
      * Delete this entity from the database, if it is already persisted.
      *
      * @see #isPersistent()
@@ -62,6 +76,13 @@ public abstract class PanacheEntityBase {
     @JsonbTransient
     public boolean isPersistent() {
         return JpaOperations.isPersistent(this);
+    }
+
+    /**
+     * Flushes all pending changes to the database.
+     */
+    public void flush() {
+        JpaOperations.flush();
     }
 
     // Queries

@@ -381,6 +381,25 @@ Make sure to wrap methods modifying your database (e.g. `entity.persist()`) with
 CDI bean method `@Transactional` will do that for you and make that method a transaction boundary. We recommend doing
 so at your application entry point boundaries like your REST endpoint controllers.
 
+Be aware that JPA may send the changes you did on your entities only at transaction boundary, this means that those changes (insert/update/delete queries) will be sent to the database after the execution of your method so you will not be able to catch any `PersistenceException` in your code if you need to (for example to send an event somewhere if you cannot commit to the database). Panache provides `flush()` and `persistAndFlush()` methods to force a flush on the underlying `EntityManager`. Calling one of these methods will send all pending changes (of all entities) to the database (but will not commit the transaction).
+
+Here is an example of the usage of the flush method to allow making a specific action in case of `PersistenceException`:
+[source,java]
+--
+@Transactional
+public void create(Parameter parameter){
+    try {
+        //Here I use the persistAndFlush() shorthand method on a Panache repository to persist to database then flush the changes.
+        return parameterRepository.persistAndFlush(parameter);
+    }
+    catch(PersistenceException pe){
+        LOG.error("Unable to create the parameter", pe);
+        //in case of error, I save it to disk
+        diskPersister.save(parameter);
+    }
+}
+--
+
 == Lock management
 
 Panache does not provide direct support for database locking, but you can do it by injecting the `EntityManager` (see first example below) in your entity (or `PanacheRepository`) and creating a specific method that will use the entity manager to lock the entity after retrieval. The entity manager can also be retrieved via `Panache.getEntityManager()` see second example below.

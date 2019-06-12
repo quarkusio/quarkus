@@ -272,9 +272,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
     private boolean isDependency(BeanInfo bean, Map<BeanInfo, List<BeanInfo>> beanToInjections) {
         for (Iterator<Entry<BeanInfo, List<BeanInfo>>> iterator = beanToInjections.entrySet().iterator(); iterator.hasNext();) {
             Entry<BeanInfo, List<BeanInfo>> entry = iterator.next();
-            if (entry.getKey().equals(bean)) {
-                continue;
-            } else if (entry.getValue().contains(bean)) {
+            if (entry.getValue().contains(bean)) {
                 return true;
             }
         }

@@ -492,7 +492,6 @@
   },
   {
     "name": "Eclipse Vert.x",
-    "shortName": "vert.x",
     "labels": [
       "eclipse-vert.x",
       "vertx",

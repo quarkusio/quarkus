@@ -219,7 +219,7 @@ First create a new project using:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=vertx-quickstart \
-    -Dextensions="vert.x"
+    -Dextensions="vertx"
 ----
 
 You can already start the application in _dev mode_ using `mvn compile quarkus:dev`.

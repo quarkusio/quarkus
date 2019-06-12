@@ -25,7 +25,7 @@ If you are creating a new project, set the `extensions` parameter are follows:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=vertx-quickstart \
-    -Dextensions="vert.x"
+    -Dextensions="vertx"
 ----
 
 If you have an already created project, the `vertx` extension can be added to an existing {project-name} project with
@@ -33,7 +33,7 @@ the `add-extension` command:
 
 [source,shell]
 ----
-mvn quarkus:add-extension -Dextensions="vert.x"
+mvn quarkus:add-extension -Dextensions="vertx"
 ----
 
 Otherwise, you can manually add this to the dependencies section of your `pom.xml` file:

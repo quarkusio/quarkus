@@ -233,6 +233,9 @@ public class Extension {
     }
 
     public String getShortName() {
+        if (shortName == null) {
+            return name;
+        }
         return shortName;
     }
 

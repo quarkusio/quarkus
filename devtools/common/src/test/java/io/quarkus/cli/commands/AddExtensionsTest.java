@@ -4,7 +4,10 @@ import static java.util.Arrays.asList;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 
 import org.apache.maven.model.Model;
 import org.junit.jupiter.api.Assertions;
@@ -37,7 +40,28 @@ class AddExtensionsTest {
         hasDependency(model, "quarkus-arc");
         hasDependency(model, "quarkus-hibernate-validator");
         hasDependency(model, "commons-io", "commons-io", "2.6");
-        doesNotHaveDependency(model, "quarkus-jdbc-postgresql");
+        hasDependency(model, "quarkus-jdbc-postgresql");
+    }
+
+    @Test
+    void testPartialMatches() throws IOException {
+        File pom = new File("target/extensions-test", "pom.xml");
+
+        CreateProjectTest.delete(pom.getParentFile());
+        new CreateProject(new FileProjectWriter(pom.getParentFile()))
+                .groupId("org.acme")
+                .artifactId("add-extension-test")
+                .version("0.0.1-SNAPSHOT")
+                .doCreateProject(new HashMap<>());
+
+        File pomFile = new File(pom.getAbsolutePath());
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+                .addExtensions(new HashSet<>(asList("orm-pana", "jdbc-postgre", "arc")));
+
+        Model model = MojoUtils.readPom(pom);
+        hasDependency(model, "quarkus-arc");
+        hasDependency(model, "quarkus-hibernate-orm-panache");
+        hasDependency(model, "quarkus-jdbc-postgresql");
     }
 
     @Test
@@ -53,7 +77,7 @@ class AddExtensionsTest {
 
         File pomFile = new File(pom.getAbsolutePath());
         AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
-                .addExtensions(new HashSet<>(asList("missing")));
+                .addExtensions(new HashSet<>(Collections.singletonList("missing")));
 
         Model model = MojoUtils.readPom(pom);
         doesNotHaveDependency(model, "quarkus-missing");
@@ -116,6 +140,39 @@ class AddExtensionsTest {
         Assertions.assertTrue(result2.succeeded());
     }
 
+    /**
+     * This test reproduce the issue we had using the first selection algorithm.
+     * The `arc` query was matching ArC but also hibernate-search-elasticsearch.
+     */
+    @Test
+    void testPartialMatchConflict() throws IOException {
+        final File pom = new File("target/extensions-test", "pom.xml");
+
+        CreateProjectTest.delete(pom.getParentFile());
+        new CreateProject(new FileProjectWriter(pom.getParentFile()))
+                .groupId("org.acme")
+                .artifactId("add-extension-test")
+                .version("0.0.1-SNAPSHOT")
+                .doCreateProject(new HashMap<>());
+
+        File pomFile = new File(pom.getAbsolutePath());
+        AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+                .addExtensions(new HashSet<>(Collections.singletonList("arc")));
+
+        Assertions.assertTrue(result.isUpdated());
+        Assertions.assertTrue(result.succeeded());
+        Model model = MojoUtils.readPom(pom);
+        hasDependency(model, "quarkus-arc");
+
+        result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+                .addExtensions(new HashSet<>(Collections.singletonList("elasticsearch")));
+
+        Assertions.assertTrue(result.isUpdated());
+        Assertions.assertTrue(result.succeeded());
+        model = MojoUtils.readPom(pom);
+        hasDependency(model, "quarkus-hibernate-search-elasticsearch");
+    }
+
     @Test
     void addExistingAndMissingExtensions() throws IOException {
         final File pom = new File("target/extensions-test", "pom.xml");
@@ -141,10 +198,10 @@ class AddExtensionsTest {
     @Test
     void testMultiMatchByLabels() {
         Extension e1 = new Extension("org.acme", "e1", "1.0")
-                .setName("some complex seo unaware name")
+                .setName("some extension 1")
                 .setLabels(new String[] { "foo", "bar" });
         Extension e2 = new Extension("org.acme", "e2", "1.0")
-                .setName("some foo bar")
+                .setName("some extension 2")
                 .setLabels(new String[] { "foo", "bar", "baz" });
         Extension e3 = new Extension("org.acme", "e3", "1.0")
                 .setName("unrelated")
@@ -276,6 +333,62 @@ class AddExtensionsTest {
         hasDependency(model, "quarkus-agroal");
         doesNotHaveDependency(model, "quarkus-jdbc-postgresql");
         doesNotHaveDependency(model, "quarkus-jdbc-h2");
+    }
+
+    @Test
+    void addDuplicatedExtensionUsingGAV() throws IOException {
+        final File pom = new File("target/extensions-test", "pom.xml");
+
+        CreateProjectTest.delete(pom.getParentFile());
+        new CreateProject(new FileProjectWriter(pom.getParentFile()))
+                .groupId("org.acme")
+                .artifactId("add-extension-test")
+                .version("0.0.1-SNAPSHOT")
+                .doCreateProject(new HashMap<>());
+
+        File pomFile = new File(pom.getAbsolutePath());
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+                .addExtensions(new HashSet<>(asList("org.acme:acme:1", "org.acme:acme:1")));
+
+        Model model = MojoUtils.readPom(pom);
+        hasDependency(model, "org.acme", "acme", "1");
+        Assertions.assertEquals(1,
+                model.getDependencies().stream().filter(d -> d.getArtifactId().equalsIgnoreCase("acme")).count());
+    }
+
+    @Test
+    void testVertxWithAndWithoutDot() throws IOException {
+        final File pom = new File("target/extensions-test", "pom.xml");
+
+        // Test with vertx
+        CreateProjectTest.delete(pom.getParentFile());
+        new CreateProject(new FileProjectWriter(pom.getParentFile()))
+                .groupId("org.acme")
+                .artifactId("add-extension-test")
+                .version("0.0.1-SNAPSHOT")
+                .doCreateProject(new HashMap<>());
+
+        File pomFile = new File(pom.getAbsolutePath());
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+                .addExtensions(new HashSet<>(Collections.singletonList("vertx")));
+
+        Model model = MojoUtils.readPom(pom);
+        hasDependency(model, "quarkus-vertx");
+
+        // Test with vert.x (the official writing)
+        CreateProjectTest.delete(pom.getParentFile());
+        new CreateProject(new FileProjectWriter(pom.getParentFile()))
+                .groupId("org.acme")
+                .artifactId("add-extension-test")
+                .version("0.0.1-SNAPSHOT")
+                .doCreateProject(new HashMap<>());
+
+        pomFile = new File(pom.getAbsolutePath());
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+                .addExtensions(new HashSet<>(Collections.singletonList("vert.x")));
+
+        model = MojoUtils.readPom(pom);
+        hasDependency(model, "quarkus-vertx");
     }
 
     private void hasDependency(final Model model, final String artifactId) {

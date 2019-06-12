@@ -44,9 +44,9 @@ public class AddExtensions {
         String q = query.trim().toLowerCase();
 
         // Try exact matches
-        Set<Extension> matchesNameOrArtifactId = extensions.stream().filter(extension -> extension.getName().equalsIgnoreCase(q)
-                || matchesArtifactId(extension.getArtifactId(), q)).collect(Collectors.toSet());
-
+        Set<Extension> matchesNameOrArtifactId = extensions.stream()
+                .filter(extension -> extension.getName().equalsIgnoreCase(q) || matchesArtifactId(extension.getArtifactId(), q))
+                .collect(Collectors.toSet());
         if (matchesNameOrArtifactId.size() == 1) {
             return new SelectionResult(matchesNameOrArtifactId, true);
         }
@@ -55,8 +55,18 @@ public class AddExtensions {
         Set<Extension> matchesShortName = extensions.stream().filter(extension -> matchesShortName(extension, q))
                 .collect(Collectors.toSet());
 
-        if (matchesShortName.size() == 1) {
+        if (matchesShortName.size() == 1 && matchesNameOrArtifactId.isEmpty()) {
             return new SelectionResult(matchesShortName, true);
+        }
+
+        // Partial matches on name, artifactId and short names
+        Set<Extension> partialMatches = extensions.stream().filter(extension -> extension.getName().toLowerCase().contains(q)
+                || extension.getArtifactId().toLowerCase().contains(q)
+                || extension.getShortName().toLowerCase().contains(q)).collect(Collectors.toSet());
+        // Even if we have a single partial match, if the name, artifactId and short names are ambiguous, so not
+        // consider it as a match.
+        if (partialMatches.size() == 1 && matchesNameOrArtifactId.isEmpty() && matchesShortName.isEmpty()) {
+            return new SelectionResult(partialMatches, true);
         }
 
         // find by labels
@@ -66,6 +76,7 @@ public class AddExtensions {
         Set<Extension> candidates = new LinkedHashSet<>();
         candidates.addAll(matchesNameOrArtifactId);
         candidates.addAll(matchesShortName);
+        candidates.addAll(partialMatches);
         candidates.addAll(matchesLabels);
         return new SelectionResult(candidates, false);
     }
@@ -89,40 +100,46 @@ public class AddExtensions {
         boolean success = true;
         List<Dependency> dependenciesFromBom = getDependenciesFromBom();
 
+        List<Extension> registry = MojoUtils.loadExtensions();
         for (String query : extensions) {
-            List<Extension> registry = MojoUtils.loadExtensions();
 
-            SelectionResult result = select(query, registry);
-
-            if (!result.matches()) {
-                StringBuilder sb = new StringBuilder();
-                // We have 3 cases, we can still have a single candidate, but the match is on label
-                // or we have several candidates, or none
-                Set<Extension> candidates = result.getExtensions();
-                if (candidates.isEmpty() && query.contains(":")) {
-                    updated = addExtensionAsGAV(query) || updated;
-                } else if (candidates.isEmpty()) {
-                    // No matches at all.
-                    print(NOK + " Cannot find a dependency matching '" + query + "', maybe a typo?");
-                    success = false;
-                } else if (candidates.size() == 1) {
-                    sb.append(NOK).append(" One extension matching '").append(query).append("'");
-                    sb.append(System.lineSeparator()).append("     * ").append(candidates.iterator().next().managementKey());
-                    sb.append(System.lineSeparator()).append("     Use the exact name or the full GAV to add the extension");
-                    print(sb.toString());
-                    success = false;
-                } else {
-                    sb.append(NOK).append(" Multiple extensions matching '").append(query).append("'");
-                    result.getExtensions()
-                            .forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
-                                    .append(extension.managementKey()));
-                    sb.append(System.lineSeparator()).append("     Be more specific e.g using the exact name or the full GAV.");
-                    print(sb.toString());
-                    success = false;
+            if (query.contains(":")) {
+                // GAV case.
+                updated = addExtensionAsGAV(query) || updated;
+            } else {
+                SelectionResult result = select(query, registry);
+                if (!result.matches()) {
+                    StringBuilder sb = new StringBuilder();
+                    // We have 3 cases, we can still have a single candidate, but the match is on label
+                    // or we have several candidates, or none
+                    Set<Extension> candidates = result.getExtensions();
+                    if (candidates.isEmpty()) {
+                        // No matches at all.
+                        print(NOK + " Cannot find a dependency matching '" + query + "', maybe a typo?");
+                        success = false;
+                    } else if (candidates.size() == 1) {
+                        sb.append(NOK).append(" One extension matching '").append(query).append("'");
+                        sb.append(System.lineSeparator()).append("     * ")
+                                .append(candidates.iterator().next().managementKey());
+                        sb.append(System.lineSeparator())
+                                .append("     Use the exact name or the full GAV to add the extension");
+                        print(sb.toString());
+                        success = false;
+                    } else {
+                        sb.append(NOK).append(" Multiple extensions matching '").append(query).append("'");
+                        result.getExtensions()
+                                .forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
+                                        .append(extension.managementKey()));
+                        sb.append(System.lineSeparator())
+                                .append("     Be more specific e.g using the exact name or the full GAV.");
+                        print(sb.toString());
+                        success = false;
+                    }
+                } else { // Matches.
+                    final Extension extension = result.getMatch();
+                    // Don't set success to false even if the dependency is not added; as it's should be idempotent.
+                    updated = addDependency(dependenciesFromBom, extension) || updated;
                 }
-            } else { // Matches.
-                final Extension extension = result.getMatch();
-                updated = addDependency(dependenciesFromBom, extension) || updated;
             }
         }
 
@@ -143,7 +160,6 @@ public class AddExtensions {
                             isDefinedInBom(dependenciesFromBom, extension)));
             return true;
         } else {
-            // Don't set success to false as it's should be idempotent.
             print(NOOP + " Skipping extension " + extension.managementKey() + ": already present");
             return false;
         }
@@ -151,9 +167,16 @@ public class AddExtensions {
 
     private boolean addExtensionAsGAV(String query) {
         Dependency parsed = MojoUtils.parse(query.trim().toLowerCase());
-        print(OK + " Adding dependency " + parsed.getManagementKey());
-        model.addDependency(parsed);
-        return true;
+        boolean alreadyThere = model.getDependencies().stream()
+                .anyMatch(d -> d.getManagementKey().equalsIgnoreCase(parsed.getManagementKey()));
+        if (!alreadyThere) {
+            print(OK + " Adding dependency " + parsed.getManagementKey());
+            model.addDependency(parsed);
+            return true;
+        } else {
+            print(NOOP + " Dependency " + parsed.getManagementKey() + " already in the pom.xml file - skipping");
+            return false;
+        }
     }
 
     private void print(String message) {

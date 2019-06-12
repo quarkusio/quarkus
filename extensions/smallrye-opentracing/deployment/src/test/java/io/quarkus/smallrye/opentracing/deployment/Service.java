@@ -17,7 +17,7 @@ import io.opentracing.Tracer;
 public class Service {
 
     @Inject
-    private Tracer tracer;
+    Tracer tracer;
 
     public void foo() {
     }

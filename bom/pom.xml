@@ -147,6 +147,7 @@
         <flyway.version>5.2.4</flyway.version>
         <yasson.version>1.0.4</yasson.version>
         <neo4j-java-driver.version>2.0.0-alpha03</neo4j-java-driver.version>
+        <mongo-client.version>3.10.2</mongo-client.version>
         <!-- Used for integration tests, to make sure webjars work-->
         <bootstrap.version>3.1.0</bootstrap.version>
         <keycloak.version>6.0.1</keycloak.version>
@@ -1254,6 +1255,13 @@
                 <artifactId>subethasmtp</artifactId>
                 <version>${subethasmtp.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongo-java-driver</artifactId>
+                <version>${mongo-client.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>net.minidev</groupId>
                 <artifactId>json-smart</artifactId>

@@ -65,20 +65,22 @@ public class TestResourceManager {
     }
 
     public void stop() {
-        for (Map.Entry<String, String> e : oldSystemProps.entrySet()) {
-            if (e.getValue() == null) {
-                System.clearProperty(e.getKey());
-            } else {
-                System.setProperty(e.getKey(), e.getValue());
-            }
+        if (oldSystemProps != null) {
+            for (Map.Entry<String, String> e : oldSystemProps.entrySet()) {
+                if (e.getValue() == null) {
+                    System.clearProperty(e.getKey());
+                } else {
+                    System.setProperty(e.getKey(), e.getValue());
+                }
 
+            }
         }
         oldSystemProps = null;
         for (QuarkusTestResourceLifecycleManager testResource : testResources) {
             try {
                 testResource.stop();
             } catch (Exception e) {
-                throw new RuntimeException("Unable to start Quarkus test resource " + testResource, e);
+                throw new RuntimeException("Unable to stop Quarkus test resource " + testResource, e);
             }
         }
     }

@@ -304,7 +304,11 @@ public class QuarkusTestExtension
                 store.put(ExtensionState.class.getName(), state);
 
             } catch (RuntimeException e) {
-                testResourceManager.stop();
+                try {
+                    testResourceManager.stop();
+                } catch (Exception ex) {
+                    e.addSuppressed(ex);
+                }
                 failedBoot = true;
                 throw e;
             }

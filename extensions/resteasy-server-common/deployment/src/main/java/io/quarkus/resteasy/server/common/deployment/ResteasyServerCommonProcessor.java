@@ -233,7 +233,8 @@ public class ResteasyServerCommonProcessor {
 
         registerContextProxyDefinitions(index, proxyDefinition);
 
-        registerReflectionForSerialization(reflectiveClass, reflectiveHierarchy, combinedIndexBuildItem);
+        registerReflectionForSerialization(reflectiveClass, reflectiveHierarchy, combinedIndexBuildItem,
+                beanArchiveIndexBuildItem);
 
         for (ClassInfo implementation : index.getAllKnownImplementors(ResteasyDotNames.DYNAMIC_FEATURE)) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, implementation.name().toString()));
@@ -495,8 +496,10 @@ public class ResteasyServerCommonProcessor {
 
     private static void registerReflectionForSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
-            CombinedIndexBuildItem combinedIndexBuildItem) {
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
         IndexView index = combinedIndexBuildItem.getIndex();
+        IndexView beanArchiveIndex = beanArchiveIndexBuildItem.getIndex();
 
         // required by Jackson
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
@@ -514,25 +517,31 @@ public class ResteasyServerCommonProcessor {
         // Declare reflection for all the types implicated in the Rest end points (return types and parameters).
         // It might be needed for serialization.
         for (DotName annotationType : METHOD_ANNOTATIONS) {
-            Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
-            for (AnnotationInstance instance : instances) {
-                MethodInfo method = instance.target().asMethod();
-                if (isReflectionDeclarationRequiredFor(method.returnType())) {
-                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType()));
-                }
-                for (short i = 0; i < method.parameters().size(); i++) {
-                    Type parameterType = method.parameters().get(i);
-                    if (isReflectionDeclarationRequiredFor(parameterType)
-                            && !hasAnnotation(method, i, ResteasyDotNames.CONTEXT)) {
-                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(parameterType));
-                    }
-                }
-            }
+            scanMethodParameters(annotationType, reflectiveHierarchy, index);
+            scanMethodParameters(annotationType, reflectiveHierarchy, beanArchiveIndex);
         }
 
         // In the case of a constraint violation, these elements might be returned as entities and will be serialized
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ViolationReport.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ResteasyConstraintViolation.class.getName()));
+    }
+
+    private static void scanMethodParameters(DotName annotationType,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, IndexView index) {
+        Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
+        for (AnnotationInstance instance : instances) {
+            MethodInfo method = instance.target().asMethod();
+            if (isReflectionDeclarationRequiredFor(method.returnType())) {
+                reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType(), index));
+            }
+            for (short i = 0; i < method.parameters().size(); i++) {
+                Type parameterType = method.parameters().get(i);
+                if (isReflectionDeclarationRequiredFor(parameterType)
+                        && !hasAnnotation(method, i, ResteasyDotNames.CONTEXT)) {
+                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(parameterType, index));
+                }
+            }
+        }
     }
 
     private static boolean isReflectionDeclarationRequiredFor(Type type) {

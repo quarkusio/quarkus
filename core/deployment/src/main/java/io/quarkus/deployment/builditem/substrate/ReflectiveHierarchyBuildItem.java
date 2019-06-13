@@ -16,6 +16,7 @@
 
 package io.quarkus.deployment.builditem.substrate;
 
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
 import io.quarkus.builder.item.MultiBuildItem;
@@ -40,12 +41,22 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
 
     private final Type type;
+    private IndexView index;
 
     public ReflectiveHierarchyBuildItem(Type type) {
         this.type = type;
     }
 
+    public ReflectiveHierarchyBuildItem(Type type, IndexView index) {
+        this.type = type;
+        this.index = index;
+    }
+
     public Type getType() {
         return type;
+    }
+
+    public IndexView getIndex() {
+        return index;
     }
 }

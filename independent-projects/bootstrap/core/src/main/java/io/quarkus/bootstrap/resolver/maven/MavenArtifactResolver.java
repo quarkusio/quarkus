@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
@@ -21,8 +22,10 @@ import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
+import org.eclipse.aether.internal.impl.DefaultRemoteRepositoryManager;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
@@ -102,10 +105,9 @@ public class MavenArtifactResolver {
     protected final RepositorySystemSession repoSession;
     protected final List<RemoteRepository> remoteRepos;
     protected final MavenLocalRepositoryManager localRepoManager;
+    protected final RemoteRepositoryManager remoteRepoManager;
 
     private MavenArtifactResolver(Builder builder) throws AppModelResolverException {
-
-
         this.repoSystem = builder.repoSystem == null ? MavenRepoInitializer.getRepositorySystem(
                 (builder.offline == null
                         ? (builder.repoSession == null ? MavenRepoInitializer.getSettings().isOffline()
@@ -136,7 +138,11 @@ public class MavenArtifactResolver {
         }
 
         this.repoSession = newSession;
-        this.remoteRepos = builder.remoteRepos == null ? MavenRepoInitializer.getRemoteRepos() : builder.remoteRepos;
+        this.remoteRepos = builder.remoteRepos == null ? MavenRepoInitializer.getRemoteRepos(this.repoSystem, this.repoSession) : builder.remoteRepos;
+
+        final DefaultRemoteRepositoryManager remoteRepoManager = new DefaultRemoteRepositoryManager();
+        remoteRepoManager.initService(MavenRepositorySystemUtils.newServiceLocator());
+        this.remoteRepoManager = remoteRepoManager;
     }
 
     public MavenLocalRepositoryManager getLocalRepositoryManager() {
@@ -183,7 +189,8 @@ public class MavenArtifactResolver {
         try {
             return repoSystem.readArtifactDescriptor(repoSession,
                     new ArtifactDescriptorRequest()
-                    .setArtifact(artifact));
+                    .setArtifact(artifact)
+                    .setRepositories(remoteRepos));
         } catch (ArtifactDescriptorException e) {
             throw new AppModelResolverException("Failed to read descriptor of " + artifact, e);
         }
@@ -242,6 +249,7 @@ public class MavenArtifactResolver {
                 deps.add(dep);
             }
         }
+        final List<RemoteRepository> requestRepos = remoteRepoManager.aggregateRepositories(repoSession, remoteRepos, descr.getRepositories(), true);
         try {
             return repoSystem.resolveDependencies(repoSession,
                     new DependencyRequest().setCollectRequest(
@@ -249,7 +257,7 @@ public class MavenArtifactResolver {
                             .setRootArtifact(artifact)
                             .setDependencies(deps)
                             .setManagedDependencies(descr.getManagedDependencies())
-                            .setRepositories(descr.getRepositories())));
+                            .setRepositories(requestRepos)));
         } catch (DependencyResolutionException e) {
             throw new AppModelResolverException("Failed to resolve dependencies for " + artifact, e);
         }

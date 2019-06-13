@@ -59,7 +59,7 @@ public class PanacheJpaEntityEnhancer implements BiFunction<String, ClassVisitor
 
     private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
     final Map<String, EntityModel> entities = new HashMap<>();
-    private ClassInfo panacheEntityBaseClassInfo;
+    private final ClassInfo panacheEntityBaseClassInfo;
 
     public PanacheJpaEntityEnhancer(IndexView index) {
         panacheEntityBaseClassInfo = index.getClassByName(PanacheResourceProcessor.DOTNAME_PANACHE_ENTITY_BASE);

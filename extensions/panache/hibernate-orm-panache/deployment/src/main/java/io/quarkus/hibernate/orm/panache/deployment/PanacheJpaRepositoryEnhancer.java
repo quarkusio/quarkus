@@ -28,7 +28,7 @@ public class PanacheJpaRepositoryEnhancer implements BiFunction<String, ClassVis
 
     public final static String PANACHE_REPOSITORY_NAME = PanacheRepository.class.getName();
     public final static String PANACHE_REPOSITORY_BINARY_NAME = PANACHE_REPOSITORY_NAME.replace('.', '/');
-    private ClassInfo panacheRepositoryBaseClassInfo;
+    private final ClassInfo panacheRepositoryBaseClassInfo;
 
     public PanacheJpaRepositoryEnhancer(IndexView index) {
         panacheRepositoryBaseClassInfo = index.getClassByName(PanacheResourceProcessor.DOTNAME_PANACHE_REPOSITORY_BASE);

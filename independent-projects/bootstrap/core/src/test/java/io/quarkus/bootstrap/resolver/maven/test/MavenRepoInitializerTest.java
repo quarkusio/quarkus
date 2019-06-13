@@ -2,11 +2,18 @@ package io.quarkus.bootstrap.resolver.maven.test;
 
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.MavenRepoInitializer;
-import org.apache.maven.settings.*;
+
+import org.apache.maven.settings.Mirror;
+import org.apache.maven.settings.Profile;
+import org.apache.maven.settings.Proxy;
+import org.apache.maven.settings.Repository;
+import org.apache.maven.settings.RepositoryPolicy;
+import org.apache.maven.settings.Settings;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.eclipse.aether.repository.RepositoryPolicy.CHECKSUM_POLICY_WARN;
@@ -124,7 +131,7 @@ public class MavenRepoInitializerTest {
         settings.addMirror(mirrorA);
 
         List<RemoteRepository> repos = MavenRepoInitializer.getRemoteRepos(settings);
-        assertEquals(4, repos.size());
+        assertEquals(2, repos.size());
 
         assertEquals("custom-repo", repos.get(0).getId());
         assertNotNull(repos.get(0).getProxy());
@@ -133,7 +140,10 @@ public class MavenRepoInitializerTest {
         final RemoteRepository centralRepo = repos.get(repos.size() - 1);
         assertEquals("Central repo must be substitute by mirror", "mirror-A", centralRepo.getId());
         assertNotNull(centralRepo.getProxy());
-        assertEquals(1, centralRepo.getMirroredRepositories().size());
-        assertEquals("central", centralRepo.getMirroredRepositories().get(0).getId());
+        assertEquals(3, centralRepo.getMirroredRepositories().size());
+        final List<String> mirrored = Arrays.asList("central", "jboss-public-repository", "spring-public-repository");
+        for (RemoteRepository repo : centralRepo.getMirroredRepositories()) {
+            assertTrue(mirrored.contains(repo.getId()));
+        }
     }
 }

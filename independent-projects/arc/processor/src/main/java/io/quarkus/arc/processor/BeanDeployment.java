@@ -26,6 +26,7 @@ import io.quarkus.gizmo.ResultHandle;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -129,6 +130,12 @@ public class BeanDeployment {
         customContexts = new HashMap<>();
         registerCustomContexts(contextRegistrars, beanDefiningAnnotations, buildContext);
 
+        if (buildContext != null) {
+            List<ScopeInfo> allScopes = Arrays.stream(BuiltinScope.values()).map(i -> i.getInfo()).collect(Collectors.toList());
+            allScopes.addAll(customContexts.keySet());
+            buildContext.putInternal(Key.SCOPES.asString(), Collections.unmodifiableList(allScopes));
+        }
+
         this.qualifiers = findQualifiers(index);
         this.interceptorBindings = findInterceptorBindings(index);
         this.transitiveInterceptorBindings = findTransitiveInterceptorBindigs(interceptorBindings.keySet(), index,
@@ -146,6 +153,9 @@ public class BeanDeployment {
             buildContext.putInternal(Key.INJECTION_POINTS.asString(), Collections.unmodifiableList(injectionPoints));
             buildContext.putInternal(Key.OBSERVERS.asString(), Collections.unmodifiableList(observers));
             buildContext.putInternal(Key.BEANS.asString(), Collections.unmodifiableList(beans));
+            buildContext.putInternal(Key.QUALIFIERS.asString(), Collections.unmodifiableMap(qualifiers));
+            buildContext.putInternal(Key.INTERCEPTOR_BINDINGS.asString(), Collections.unmodifiableMap(interceptorBindings));
+            buildContext.putInternal(Key.STEREOTYPES.asString(), Collections.unmodifiableMap(stereotypes));
         }
 
         registerSyntheticBeans(beanRegistrars, buildContext);

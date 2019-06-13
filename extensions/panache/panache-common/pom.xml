@@ -31,6 +31,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>runtime</module>
+        <module>deployment</module>
     </modules>
 
 

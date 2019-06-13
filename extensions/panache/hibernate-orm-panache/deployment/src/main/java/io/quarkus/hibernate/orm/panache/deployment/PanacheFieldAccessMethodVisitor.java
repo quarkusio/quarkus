@@ -5,6 +5,8 @@ import java.util.Map;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import io.quarkus.panache.common.deployment.JavaBeanUtil;
+
 class PanacheFieldAccessMethodVisitor extends MethodVisitor {
 
     private final String methodName;

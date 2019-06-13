@@ -231,6 +231,34 @@ AnnotationsTransformerBuildItem transform() {
 }
 ----
 
+=== Injection Point Transformation
+
+Every now and then it is handy to be able to change qualifiers of an injection point programmatically.
+You can do just that with `InjectionPointTransformerBuildItem`.
+The following sample shows how to apply transformation to injection points with type `Foo` that contain qualifier `MyQualifier`:
+
+[source,java]
+----
+@BuildStep
+InjectionPointTransformerBuildItem transform() {
+    return new InjectionPointTransformerBuildItem(new InjectionPointsTransformer() {
+
+        public boolean appliesTo(Type requiredType) {
+            return requiredType.equals(Type.create(DotName.createSimple(Foo.class.getName()), Type.Kind.CLASS));
+        }
+
+        public void transform(TransformationContext transformationContext) {
+            if (transformationContext.getQualifiers().stream()
+                    .anyMatch(a -> a.name().equals(DotName.createSimple(MyQualifier.class.getName())))) {
+                transformationContext.transform().removeAll()
+                        .add(DotName.createSimple(MyOtherQualifier.class.getName()))
+                        .done();
+            }
+        }
+    });
+}
+----
+
 === Bean Deployment Validation
 
 Once the bean deployment is ready an extension can perform additional validations and inspect the found beans, observers and injection points.

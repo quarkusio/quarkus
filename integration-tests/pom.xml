@@ -55,6 +55,7 @@
         <module>kubernetes-client</module>
         <module>tika</module>
         <module>neo4j</module>
+        <module>mongo-client</module>
     </modules>
 
     <build>

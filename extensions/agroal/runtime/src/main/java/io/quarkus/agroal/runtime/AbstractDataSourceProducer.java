@@ -123,6 +123,9 @@ public abstract class AbstractDataSourceProducer {
                 transactionSynchronizationRegistry);
         poolConfiguration.transactionIntegration(txIntegration);
 
+        // metrics
+        dataSourceConfiguration.metricsEnabled(dataSourceRuntimeConfig.enableMetrics);
+
         // Authentication
         if (dataSourceRuntimeConfig.username.isPresent()) {
             agroalConnectionFactoryConfigurationSupplier

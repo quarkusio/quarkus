@@ -1,6 +1,7 @@
 package io.quarkus.agroal.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
@@ -50,6 +51,7 @@ public class NamedDataSourceConfigTest {
         assertEquals(username, configuration.connectionFactoryConfiguration().principal().getName());
         assertEquals(minSize, configuration.minSize());
         assertEquals(maxSize, configuration.maxSize());
+        assertFalse(dataSource.getConfiguration().metricsEnabled()); // metrics not enabled by default
 
         try (Connection connection = dataSource.getConnection()) {
         }

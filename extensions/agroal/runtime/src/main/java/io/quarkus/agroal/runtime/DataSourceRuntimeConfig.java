@@ -91,4 +91,9 @@ public class DataSourceRuntimeConfig {
     @ConfigItem
     public Optional<TransactionIsolationLevel> transactionIsolationLevel;
 
+    /**
+     * Enable datasource metrics collection.
+     */
+    @ConfigItem
+    public boolean enableMetrics;
 }

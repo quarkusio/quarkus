@@ -19,7 +19,6 @@ package io.quarkus.arc.processor;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -80,14 +79,12 @@ final class Methods {
             for (Type interfaceType : classInfo.interfaceTypes()) {
                 ClassInfo interfaceClassInfo = index.getClassByName(interfaceType.name());
                 if (interfaceClassInfo != null) {
-                    Map<TypeVariable, Type> resolved = Collections.emptyMap();
                     addDelegatingMethods(index, interfaceClassInfo, methods);
                 }
             }
             if (classInfo.superClassType() != null) {
                 ClassInfo superClassInfo = index.getClassByName(classInfo.superName());
                 if (superClassInfo != null) {
-                    Map<TypeVariable, Type> resolved = Collections.emptyMap();
                     addDelegatingMethods(index, superClassInfo, methods);
                 }
             }

@@ -36,6 +36,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -262,13 +263,31 @@ public class SubclassGenerator extends AbstractGenerator {
             String providerTypeName, FieldDescriptor interceptorChainsField, FieldDescriptor methodsField,
             InterceptionInfo interceptedMethod) {
 
-        MethodCreator forwardMethod = subclass.getMethodCreator(MethodDescriptor.of(method));
+        MethodDescriptor originalMethodDescriptor = MethodDescriptor.of(method);
+        MethodCreator forwardMethod = subclass.getMethodCreator(originalMethodDescriptor);
 
         // Params
         // Object[] params = new Object[] {p1}
         ResultHandle paramsHandle = forwardMethod.newArray(Object.class, forwardMethod.load(method.parameters().size()));
         for (int i = 0; i < method.parameters().size(); i++) {
             forwardMethod.writeArrayValue(paramsHandle, i, forwardMethod.getMethodParam(i));
+        }
+
+        // if(!this.bean == null) return super.foo()
+        BytecodeCreator notConstructed = forwardMethod
+                .ifNull(forwardMethod.readInstanceField(methodsField, forwardMethod.getThis())).trueBranch();
+        ResultHandle[] params = new ResultHandle[method.parameters().size()];
+        for (int i = 0; i < method.parameters().size(); ++i) {
+            params[i] = notConstructed.getMethodParam(i);
+        }
+        if (Modifier.isAbstract(method.flags())) {
+            notConstructed.throwException(IllegalStateException.class, "Cannot delegate to an abstract method");
+        } else {
+            MethodDescriptor superDescriptor = MethodDescriptor.ofMethod(providerTypeName, method.name(),
+                    method.returnType().name().toString(),
+                    method.parameters().stream().map(p -> p.name().toString()).toArray());
+            notConstructed.returnValue(
+                    notConstructed.invokeSpecialMethod(superDescriptor, notConstructed.getThis(), params));
         }
 
         // Forwarding function

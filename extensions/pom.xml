@@ -66,6 +66,8 @@
         <module>elasticsearch-rest-client</module>
         <module>kafka-client</module>
         <module>kafka-streams</module>
+        <module>tika</module>
+        <module>tika-resteasy</module>
 
         <!-- Spring -->
         <module>spring-di</module>

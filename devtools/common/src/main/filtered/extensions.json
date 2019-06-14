@@ -514,5 +514,28 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-kafka-streams"
+  },
+  {
+    "name": "Apache Tika",
+    "labels": [
+      "apache",
+      "tika",
+      "data",
+      "parser"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-tika"
+  },
+  {
+    "name": "Apache Tika RestEasy",
+    "labels": [
+      "apache",
+      "tika",
+      "data",
+      "parser",
+      "resteasy" 
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-tika-resteasy"
   }
 ]

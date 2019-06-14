@@ -51,6 +51,7 @@
         <module>test-extension</module>
         <module>amazon-lambda</module>
         <module>kogito</module>
+        <module>azure-functions-resteasy</module>
     </modules>
 
     <build>

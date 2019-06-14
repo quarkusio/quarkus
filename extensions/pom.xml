@@ -55,6 +55,10 @@
         <module>reactive-pg-client</module>
         <module>mailer</module>
 
+        <!-- Composed -->
+        <module>azure-functions-resteasy</module>
+
+
         <!-- Data access and validation -->
         <module>narayana-jta</module>
         <module>agroal</module>

@@ -25,10 +25,12 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.api.validation.ResteasyConstraintViolation;
 import org.jboss.resteasy.api.validation.ViolationReport;
+import org.jboss.resteasy.core.ResteasyDeploymentImpl;
 import org.jboss.resteasy.microprofile.config.FilterConfigSource;
 import org.jboss.resteasy.microprofile.config.ServletConfigSource;
 import org.jboss.resteasy.microprofile.config.ServletContextConfigSource;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
+import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -145,6 +147,7 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ResteasyServerConfigBuildItem> resteasyServerConfig,
+            BuildProducer<ResteasyDeploymentBuildItem> resteasyDeployment,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
@@ -226,17 +229,22 @@ public class ResteasyServerCommonProcessor {
         }
 
         Map<String, String> resteasyInitParameters = new HashMap<>();
+        ResteasyDeployment deployment = new ResteasyDeploymentImpl();
 
-        registerProviders(resteasyInitParameters, reflectiveClass, unremovableBeans, jaxrsProvidersToRegisterBuildItem);
+        registerProviders(deployment, resteasyInitParameters, reflectiveClass, unremovableBeans,
+                jaxrsProvidersToRegisterBuildItem);
 
         if (!resources.isEmpty()) {
+            deployment.getScannedResourceClasses().addAll(resources);
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES, String.join(",", resources));
         }
         resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_SERVLET_MAPPING_PREFIX, path);
         if (appClass != null) {
+            deployment.setApplicationClass(appClass);
             resteasyInitParameters.put(JAX_RS_APPLICATION_PARAMETER_NAME, appClass);
         }
         resteasyInitParameters.put("resteasy.injector.factory", QuarkusInjectorFactory.class.getName());
+        deployment.setInjectorFactoryClass(QuarkusInjectorFactory.class.getName());
 
         if (commonConfig.gzip.enabled && commonConfig.gzip.maxInput.isPresent()) {
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_GZIP_MAX_INPUT,
@@ -244,6 +252,7 @@ public class ResteasyServerCommonProcessor {
         }
 
         resteasyServerConfig.produce(new ResteasyServerConfigBuildItem(path, resteasyInitParameters));
+        resteasyDeployment.produce(new ResteasyDeploymentBuildItem(path, deployment));
     }
 
     @BuildStep
@@ -341,7 +350,7 @@ public class ResteasyServerCommonProcessor {
         return new JaxbEnabledBuildItem();
     }
 
-    private static void registerProviders(Map<String, String> resteasyInitParameters,
+    private static void registerProviders(ResteasyDeployment deployment, Map<String, String> resteasyInitParameters,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem) {
@@ -349,8 +358,10 @@ public class ResteasyServerCommonProcessor {
         if (jaxrsProvidersToRegisterBuildItem.useBuiltIn()) {
             // if we find a wildcard media type, we just use the built-in providers
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_USE_BUILTIN_PROVIDERS, "true");
+            deployment.setRegisterBuiltin(true);
 
             if (!jaxrsProvidersToRegisterBuildItem.getContributedProviders().isEmpty()) {
+                deployment.getProviderClasses().addAll(jaxrsProvidersToRegisterBuildItem.getContributedProviders());
                 resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_PROVIDERS,
                         String.join(",", jaxrsProvidersToRegisterBuildItem.getContributedProviders()));
             }
@@ -358,6 +369,8 @@ public class ResteasyServerCommonProcessor {
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_USE_BUILTIN_PROVIDERS, "false");
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_PROVIDERS,
                     String.join(",", jaxrsProvidersToRegisterBuildItem.getProviders()));
+            deployment.setRegisterBuiltin(false);
+            deployment.getProviderClasses().addAll(jaxrsProvidersToRegisterBuildItem.getProviders());
         }
 
         // register the providers for reflection

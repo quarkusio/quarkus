@@ -1,0 +1,121 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+
+include::./attributes.adoc[]
+= {project-name} - Using Resteasy with Azure Functions (Serverless)
+
+Writing in Java standards rather than cloud provider specific frameworks like Azure Functions for Java keeps your REST
+microservices portable to other cloud providers and other environments.
+
+This guide demonstrates how you can deploy a {project-name} JAX-RS microservice as
+an Azure Function.  You can develop your REST endpoints using JAX-RS and Resteasy, but still
+be able to leverage the cheaper price points, scalability, and ease of deployment of Azure Functions.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* JDK 1.8 (Azure requires JDK 1.8)
+* Apache Maven 3.5.3+
+* A completed https://quarkus.io/getting-started[Getting Started Guide] for Quarkus.
+* https://azure.microsoft.com[An Azure Account].  Free accounts work.
+* https://docs.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI Installed]
+
+== Solution
+
+This guide requires that you have finished creating the JAX-RS application in the Getting Started Guide.
+You will create a simple maven project whose sole purpose is to deploy the existing Quarkus application
+you created within the Getting Started Guide.
+
+== Creating the Maven Deployment Project
+
+Create the azure maven project for your Quarkus application using our Maven Archetype.
+
+
+[source, subs=attributes+]
+----
+mvn archetype:generate \
+    -DarchetypeGroupId=io.quarkus \
+    -DarchetypeArtifactId=quarkus-azure-functions-resteasy-archetype \
+    -DarchetypeVersion={quarkus-version}
+----
+
+Running this command will run maven in interactive mode and it will ask you to fill in some build properties:
+
+* `groupId` - The maven groupId of this generated project.  Type in `org.acme`.
+* `artifactId` - The maven artifactId of this generated project. Type in `getting-started-azure`
+* `version` - Version of this generated project.
+* `package` - defaults to `groupId`
+* `appTargetArtifactId` - The artifact you want to deploy to Azure Functions.  For this example, use `getting-started`.
+* `appTargetGroupId` - The group id of the `appTargetArtifactId`.  It needs to match your target artifact.  For this example, it should be `org.acme`
+* `appTargetVersion` - The version of the `appTargetArtifactId`.  It needs to match your target artifact.
+* `azureFunction` - Name of your azure function. Can be anything you want.  Type in `getting-started`.
+* `azureFunctionAppName` - Application name of your azure function.  Must be unique subdomain name under `*.azurewebsites.net`. Otherwise deploying to Azure will fail.
+* `azureFunctionAppRegion` - Dependent on your azure region.  You can try `westus` if you don't know this value.
+* `azureFunctionResourceGroup` - Any value you want.
+
+The values above are defined as properties in the generated `pom.xml` file.
+
+== Login to Azure
+
+If you don't login to Azure you won't be able to deploy.
+
+[source, subs=attributes+]
+----
+az login
+----
+
+== Build and Deploy to Azure
+
+The `pom.xml` you generated in the previous step pulls in the `azure-functions-maven-plugin`.  Running maven install
+generates config files and a staging directory required by the `azure-functions-maven-plugin`.  Here's
+how to execute it.
+
+[source, subs=attributes+]
+----
+mvn clean install azure-functions:deploy
+----
+
+If you haven't already created your function up at azure, the will build an uber-jar, package it, create the function
+at Azure, and deploy it.
+
+If deployment is a success, the azure plugin will tell you the base URL to access your function.
+
+i.e.
+[source]
+----
+Successfully deployed the artifact to https://tutorials-resteasy-1.azurewebsites.net
+----
+
+The URL to access the service would be https://{azureFunctionAppName}.azurewebsites.net/api/hello
+
+== Azure Deployment Descriptors
+
+Templates for Azure Functions deployment descriptors (`host.json`, `function.json`) are within
+the `azure-config` directory.  Edit them as you need to.  Rerun the build when you are ready.
+
+*NOTE*: If you change the `function.json` `path` attribute or if you add a `routePrefix`,
+your jax-rs endpoints won't route correctly.  See <<config-azure-paths,Configuring Root Paths>> for more information.
+
+[config-azure-paths]
+== Configuring Root Paths
+
+The default route prefix for an Azure Function is `/api`.  Quarkus assumes the `/api` prefix.
+
+If your application defines a root path via
+`@ApplicationPath` or the property `quarkus.resteasy.path`, then it must include the Azure route prefix.
+
+i.e.
+
+[source]
+----
+@ApplicationPath("/api/myapp")
+----
+
+Furthermore, if you modify the `path` or add a `routePrefix` within the `azure-config/function.json`
+deployment descriptor your `@ApplicationPath` or `quarkus.resteasy.path` config must reflect this as well.  Otherwise requests
+will not route correctly.

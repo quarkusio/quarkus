@@ -3,7 +3,6 @@ package io.quarkus.mongo.deployment;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-import org.bson.codecs.Codec;
 import org.bson.codecs.configuration.CodecProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -33,16 +32,10 @@ public class MongoClientProcessor {
     }
 
     @BuildStep
-    CodecBuildItem collectionCodecs(CombinedIndexBuildItem indexBuildItem) {
-        System.out.println("Collecting codecs and codec providers");
+    CodecProviderBuildItem collectionCodecs(CombinedIndexBuildItem indexBuildItem) {
         Collection<ClassInfo> codecProviderClasses = indexBuildItem.getIndex()
                 .getAllKnownImplementors(DotName.createSimple(CodecProvider.class.getName()));
-        Collection<ClassInfo> codecClasses = indexBuildItem.getIndex()
-                .getAllKnownImplementors(DotName.createSimple(Codec.class.getName()));
-
-        System.out.println("Collected " + codecClasses + " and " + codecProviderClasses);
-        return new CodecBuildItem(
-                codecClasses.stream().map(ClassInfo::toString).collect(Collectors.toList()),
+        return new CodecProviderBuildItem(
                 codecProviderClasses.stream().map(ClassInfo::toString).collect(Collectors.toList()));
     }
 
@@ -50,12 +43,11 @@ public class MongoClientProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     MongoClientBuildItem build(BuildProducer<FeatureBuildItem> feature, MongoClientTemplate template,
             BeanContainerBuildItem beanContainer, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
-            MongoClientConfig config, CodecBuildItem codecs) {
+            MongoClientConfig config, CodecProviderBuildItem codecs) {
         feature.produce(new FeatureBuildItem("mongodb"));
 
         RuntimeValue<MongoClient> client = template.configureTheClient(config, beanContainer.getValue(),
                 launchMode.getLaunchMode(), shutdown,
-                codecs.getCodecsClassNames(),
                 codecs.getCodecProviderClassNames());
         return new MongoClientBuildItem(client);
     }

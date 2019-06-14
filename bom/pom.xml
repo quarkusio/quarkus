@@ -1261,6 +1261,11 @@
                 <artifactId>mongo-java-driver</artifactId>
                 <version>${mongo-client.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongodb-driver-async</artifactId>
+                <version>${mongo-client.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>net.minidev</groupId>

@@ -12,9 +12,13 @@ public class MongoClientProducer {
     private MongoClient client;
     private io.vertx.ext.mongo.MongoClient vertxMongoClient;
     private io.vertx.axle.ext.mongo.MongoClient axleMongoClient;
+    private com.mongodb.async.client.MongoClient asyncMongoClient;
 
-    void initialize(MongoClient client, io.vertx.ext.mongo.MongoClient vertxMongoClient) {
+    void initialize(MongoClient client,
+            com.mongodb.async.client.MongoClient asyncMongoClient,
+            io.vertx.ext.mongo.MongoClient vertxMongoClient) {
         this.client = client;
+        this.asyncMongoClient = asyncMongoClient;
         this.vertxMongoClient = vertxMongoClient;
         //        this.axleMongoClient = io.vertx.axle.ext.mongo.MongoClient.newInstance(this.vertxMongoClient);
     }
@@ -22,8 +26,13 @@ public class MongoClientProducer {
     @Singleton
     @Produces
     public MongoClient client() {
-        System.out.println("Returning the client " + client);
-        return client;
+        return this.client;
+    }
+
+    @Singleton
+    @Produces
+    public com.mongodb.async.client.MongoClient asyncClient() {
+        return this.asyncMongoClient;
     }
 
     // TODO Give access to the Bare Vert.x, Axle and RX Java 2 clients

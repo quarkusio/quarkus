@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Using SSL With Native Executables
 
 include::./attributes.adoc[]
-= Quarkus - Using SSL With Native Executables
 
 We are quickly moving to an SSL-everywhere world so being able to use SSL is crucial.
 

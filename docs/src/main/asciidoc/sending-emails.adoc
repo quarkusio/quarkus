@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Sending emails
 
 include::./attributes.adoc[]
-= {project-name} - Sending emails
 
 This guide demonstrates how your {project-name} application can send emails using an SMTP server.
 

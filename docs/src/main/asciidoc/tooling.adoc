@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Using our Tooling
 
 include::./attributes.adoc[]
-= {project-name} - Using our Tooling
 
 {project-name} comes with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application.
 In this guide, we will explore:

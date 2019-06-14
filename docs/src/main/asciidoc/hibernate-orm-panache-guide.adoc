@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Simplified Hibernate ORM with Panache
 
 include::./attributes.adoc[]
-= {project-name} - Simplified Hibernate ORM with Panache
 :config-file: application.properties
 
 Hibernate ORM is the de facto JPA implementation and offers you the full breadth of an Object Relational Mapper.

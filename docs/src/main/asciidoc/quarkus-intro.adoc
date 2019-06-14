@@ -1,6 +1,6 @@
-include::./attributes.adoc[]
-= What is {project-name}
+= What is Quarkus
 
+include::./attributes.adoc[]
 :toc: macro
 :toclevels: 4
 :doctype: book

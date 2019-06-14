@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Building Quarkus apps with Quarkus Command Line Interface (CLI)
 
 include::./attributes.adoc[]
-= Building {project-name} apps with {project-name} Command Line Interface (CLI)
 
 == Installing the CLI
 

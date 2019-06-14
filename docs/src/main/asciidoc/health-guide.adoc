@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - MicroProfile Health
 
 include::./attributes.adoc[]
-= {project-name} - MicroProfile Health
 
 This guide demonstrates how your {project-name} application can utilize the MicroProfile 
 Health specification through the SmallRye Health extension.

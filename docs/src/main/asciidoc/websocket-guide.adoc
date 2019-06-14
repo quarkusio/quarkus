@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Using WebSockets
 
 include::./attributes.adoc[]
-= {project-name} - Using WebSockets
 
 This guide explains how your Quarkus application can utilize web sockets to create interactive web applications.
 Because it's the _canonical_ web socket application, we are going to create a simple chat application.

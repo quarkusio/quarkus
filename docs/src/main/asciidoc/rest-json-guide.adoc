@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Writing JSON REST Services
 
 include::./attributes.adoc[]
-= Quarkus - Writing JSON REST Services
 
 JSON is now the _lingua franca_ between microservices.
 

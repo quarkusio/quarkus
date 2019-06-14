@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Using Hibernate ORM and JPA
 
 include::./attributes.adoc[]
-= {project-name} - Using Hibernate ORM and JPA
 :config-file: application.properties
 
 Hibernate ORM is the de facto JPA implementation and offers you the full breath of an Object Relational Mapper.

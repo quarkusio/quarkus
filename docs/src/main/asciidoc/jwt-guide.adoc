@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Using JWT RBAC
 
 include::./attributes.adoc[]
-= {project-name} - Using JWT RBAC
 :extension-name: Smallrye JWT
 :mp-jwt: MicroProfile JWT RBAC
 

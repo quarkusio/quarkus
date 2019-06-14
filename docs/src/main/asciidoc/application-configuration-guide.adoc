@@ -3,10 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Configuring Your Application
 
 include::./attributes.adoc[]
-
-= {project-name} - Configuring Your Application
 
 Hardcoded values in your code is a _no go_ (even if we all did it at some point ;-)).
 In this guide, we learn how to configure your application.

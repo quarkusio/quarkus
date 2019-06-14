@@ -1,5 +1,11 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Asynchronous messages between beans
+
 include::./attributes.adoc[]
-= {project-name} - Asynchronous messages between beans
 
 {project-name} allows different beans to interact using asynchronous messages, enforcing loose-coupling.
 The messages are sent to _virtual addresses_.

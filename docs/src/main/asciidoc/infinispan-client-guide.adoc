@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Infinispan Client
 
 include::./attributes.adoc[]
-= {project-name} - Infinispan Client
 
 Infinispan is an in memory data grid that allows running in a server outside of application processes. This extension
 provides functionality to allow the client that can connect to said server when running in {project-name}.

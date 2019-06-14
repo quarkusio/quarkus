@@ -3,10 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Generating Kubernetes resources
 
 include::./attributes.adoc[]
-
-= {project-name} - Generating Kubernetes resources
 
 This guide covers generating Kubernetes resources based on sane defaults and user supplied configuration.
 

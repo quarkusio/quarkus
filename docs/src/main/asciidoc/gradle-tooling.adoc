@@ -34,7 +34,7 @@ plugins {
 
 === Gradle configuration for a local SNAPSHOT version of Quarkus
 
-This paragraph is relevant for those who want to use a locally built version of Quarkus, instead of an official release. It appears the configuration described above will not work in this case due to an issue in Gradle. There is a workaround though that looks a bit more verbose but nevertheless works for both locally built and offically released versions.
+This paragraph is relevant for those who want to use a locally built version of Quarkus, instead of an official release. It appears the configuration described above will not work in this case due to an issue in Gradle. There is a workaround though that looks a bit more verbose but nevertheless works for both locally built and officially released versions.
 
 [source,groovy,subs=attributes+]
 ----
@@ -43,7 +43,7 @@ buildscript {
         mavenLocal()
     }
     dependencies {
-        classpath "io.quarkus:quarkus-gradle-plugin:${quarkus-version}"
+        classpath "io.quarkus:quarkus-gradle-plugin:999-SNAPSHOT"
     }
 }
 

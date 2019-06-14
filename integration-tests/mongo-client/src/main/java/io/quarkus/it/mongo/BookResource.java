@@ -26,47 +26,45 @@ public class BookResource {
     @Inject
     MongoClient client;
 
-    private MongoCollection<Document> collection;
+    private MongoCollection<Book> collection;
 
     @PostConstruct
     public void init() {
         MongoDatabase database = client.getDatabase("books");
-        collection = database.getCollection("my-collection");
+        collection = database.getCollection("my-collection", Book.class);
     }
 
     @GET
     public List<Book> getBooks() {
-        FindIterable<Document> iterable = collection.find();
+        FindIterable<Book> iterable = collection.find();
         List<Book> books = new ArrayList<>();
-        for (Document doc : iterable) {
-            String title = doc.getString("title");
-            String author = doc.getString("author");
-            books.add(new Book().setTitle(title).setAuthor(author));
+        for (Book doc : iterable) {
+            books.add(doc);
         }
         return books;
     }
 
     @POST
     public Response addBook(Book book) {
-        Document doc = new Document();
-        doc.put("author", book.getAuthor());
-        doc.put("title", book.getTitle());
-        doc.put("categories", book.getCategories());
-        Document details = new Document();
-        details.put("summary", book.getDetails().getSummary());
-        details.put("rating", book.getDetails().getRating());
-        doc.put("details", details);
-        collection.insertOne(doc);
+//        Document doc = new Document();
+//        doc.put("author", book.getAuthor());
+//        doc.put("title", book.getTitle());
+//        doc.put("categories", book.getCategories());
+//        Document details = new Document();
+//        details.put("summary", book.getDetails().getSummary());
+//        details.put("rating", book.getDetails().getRating());
+//        doc.put("details", details);
+        collection.insertOne(book);
         return Response.accepted().build();
     }
 
     @GET
     @Path("/{author}")
     public List<Book> getBooksByAuthor(@PathParam("author") String author) {
-        FindIterable<Document> iterable = collection.find(eq("author", author));
+        FindIterable<Book> iterable = collection.find(eq("author", author));
         List<Book> books = new ArrayList<>();
-        for (Document doc : iterable) {
-            String title = doc.getString("title");
+        for (Book doc : iterable) {
+            String title = doc.getTitle();
             books.add(new Book().setTitle(title).setAuthor(author));
         }
         return books;

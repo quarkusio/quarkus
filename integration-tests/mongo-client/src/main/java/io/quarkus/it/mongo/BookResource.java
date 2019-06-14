@@ -1,22 +1,19 @@
 package io.quarkus.it.mongo;
 
-import static com.mongodb.client.model.Filters.eq;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.bson.Document;
-
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
+import static com.mongodb.client.model.Filters.eq;
 
 @Path("/books")
 @Produces(MediaType.APPLICATION_JSON)
@@ -46,14 +43,6 @@ public class BookResource {
 
     @POST
     public Response addBook(Book book) {
-//        Document doc = new Document();
-//        doc.put("author", book.getAuthor());
-//        doc.put("title", book.getTitle());
-//        doc.put("categories", book.getCategories());
-//        Document details = new Document();
-//        details.put("summary", book.getDetails().getSummary());
-//        details.put("rating", book.getDetails().getRating());
-//        doc.put("details", details);
         collection.insertOne(book);
         return Response.accepted().build();
     }

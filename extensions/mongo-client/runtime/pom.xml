@@ -29,6 +29,11 @@
             <artifactId>mongo-java-driver</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-async</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-axle-mongo-client</artifactId>
             <version>${axle-client.version}</version>

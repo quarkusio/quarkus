@@ -7,9 +7,11 @@
         java.lang.NoClassDefFoundError: org/jboss/resteasy/specimpl/ResteasyUriBuilder
         These need to be disabled completely because simply ignoring all methods is not good enough
         as the exception occurs during @BeforeTest
+
+        There are also some tests that are inherently racey
     -->
     <listeners>
-        <listener class-name="io.quarkus.tck.restclient.SkipTestsThatThrowNoClassDefFound" />
+        <listener class-name="io.quarkus.tck.restclient.SkipProblematicTests" />
     </listeners>
 
     <test name="microprofile-rest-client 1.2 TCK">

@@ -3,6 +3,7 @@ package io.quarkus.it.mongo;
 import static io.restassured.RestAssured.get;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.json.bind.Jsonb;
@@ -28,7 +29,7 @@ class BookResourceTest {
     private static Jsonb jsonb;
 
     @BeforeAll
-    static void giveMeAMapper() {
+    public static void giveMeAMapper() {
         jsonb = JsonbBuilder.create();
         ObjectMapper mapper = new ObjectMapper() {
             @Override
@@ -45,23 +46,27 @@ class BookResourceTest {
     }
 
     @AfterAll
-    static void releaseMapper() throws Exception {
+    public static void releaseMapper() throws Exception {
         jsonb.close();
     }
 
     @BeforeAll
-    static void startup() {
+    public static void startup() {
         EmbeddedMongo.DB.port(28018).start();
     }
 
     @AfterAll
-    static void shutdown() {
+    public static void shutdown() {
         EmbeddedMongo.DB.stop();
     }
 
     @Test
-    void test() {
-        List<Book> list = get("/books").as(new TypeRef<List<Book>>() {
+    public void testBlockingClient() {
+        callTheEndpoint("/books");
+    }
+
+    private void callTheEndpoint(String endpoint) {
+        List<Book> list = get(endpoint).as(new TypeRef<List<Book>>() {
         });
         Assertions.assertEquals(0, list.size());
 
@@ -72,7 +77,7 @@ class BookResourceTest {
                 .given()
                 .header("Content-Type", "application/json")
                 .body(book1)
-                .post("/books")
+                .post(endpoint)
                 .andReturn();
         Assertions.assertEquals(202, response.statusCode());
 
@@ -83,33 +88,37 @@ class BookResourceTest {
                 .given()
                 .header("Content-Type", "application/json")
                 .body(book2)
-                .post("/books")
+                .post(endpoint)
                 .andReturn();
         Assertions.assertEquals(202, response.statusCode());
 
-        list = get("/books").as(new TypeRef<List<Book>>() {
+        list = get(endpoint).as(new TypeRef<List<Book>>() {
         });
         Assertions.assertEquals(2, list.size());
 
         Book book3 = new Book().setAuthor("Charles Baudelaire").setTitle("Les fleurs du mal")
-                .setCategories(Arrays.asList("poem"))
+                .setCategories(Collections.singletonList("poem"))
                 .setDetails(new BookDetail().setRating(2).setSummary("Les Fleurs du mal is a volume of poetry."));
         response = RestAssured
                 .given()
                 .header("Content-Type", "application/json")
                 .body(book3)
-                .post("/books")
+                .post(endpoint)
                 .andReturn();
         Assertions.assertEquals(202, response.statusCode());
 
-        list = get("/books").as(new TypeRef<List<Book>>() {
+        list = get(endpoint).as(new TypeRef<List<Book>>() {
         });
         Assertions.assertEquals(3, list.size());
 
-        list = get("/books/Victor Hugo").as(new TypeRef<List<Book>>() {
+        list = get(endpoint + "/Victor Hugo").as(new TypeRef<List<Book>>() {
         });
         Assertions.assertEquals(2, list.size());
+    }
 
+    @Test
+    public void testReactiveClients() {
+        callTheEndpoint("/reactive-books");
     }
 
 }

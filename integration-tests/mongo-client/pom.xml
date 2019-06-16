@@ -14,6 +14,10 @@
 
     <name>Quarkus - Integration Tests - Mongo Client</name>
 
+    <properties>
+        <embedded-mongodb.version>4.4.5</embedded-mongodb.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -26,8 +30,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mongo-client</artifactId>
-            <!-- TODO Export to BOM -->
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -43,15 +45,9 @@
         <dependency>
             <groupId>de.svenkubiak</groupId>
             <artifactId>embedded-mongodb</artifactId>
-            <version>4.4.5</version>
+            <version>${embedded-mongodb.version}</version>
             <scope>test</scope>
         </dependency>
-        <!--<dependency>-->
-            <!--<groupId>com.github.jnr</groupId>-->
-            <!--<artifactId>jnr-unixsocket</artifactId>-->
-            <!--<version>0.23</version>-->
-            <!--<optional>true</optional>-->
-        <!--</dependency>-->
     </dependencies>
 
     <build>

@@ -1,14 +1,15 @@
 package io.quarkus.it.mongo;
 
-import com.mongodb.MongoClient;
+import java.util.Collections;
+import java.util.UUID;
+
 import org.bson.*;
 import org.bson.codecs.Codec;
 import org.bson.codecs.CollectibleCodec;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.EncoderContext;
 
-import java.util.Collections;
-import java.util.UUID;
+import com.mongodb.MongoClient;
 
 public class BookCodec implements CollectibleCodec<Book> {
 

@@ -3,11 +3,13 @@ package io.quarkus.mongo.runtime;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 /**
  * Configures the write concern.
  */
+@ConfigGroup
 public class WriteConcernConfig {
 
     /**

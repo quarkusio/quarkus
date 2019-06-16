@@ -6,6 +6,7 @@ import static io.quarkus.maven.utilities.MojoUtils.readPom;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -38,9 +39,11 @@ public class AddExtensions {
      *
      * @param query the query
      * @param extensions the extension list
+     * @param labelLookup whether or not the query must be tested against the labels of the extensions. Should
+     *        be {@code false} by default.
      * @return the list of matching candidates and whether or not a match has been found.
      */
-    static SelectionResult select(String query, List<Extension> extensions) {
+    static SelectionResult select(String query, List<Extension> extensions, boolean labelLookup) {
         String q = query.trim().toLowerCase();
 
         // Try exact matches
@@ -70,8 +73,13 @@ public class AddExtensions {
         }
 
         // find by labels
-        List<Extension> matchesLabels = extensions.stream()
-                .filter(extension -> extension.labels().contains(q)).collect(Collectors.toList());
+        List<Extension> matchesLabels;
+        if (labelLookup) {
+            matchesLabels = extensions.stream()
+                    .filter(extension -> extension.labels().contains(q)).collect(Collectors.toList());
+        } else {
+            matchesLabels = new ArrayList<>();
+        }
 
         Set<Extension> candidates = new LinkedHashSet<>();
         candidates.addAll(matchesNameOrArtifactId);
@@ -86,9 +94,8 @@ public class AddExtensions {
     }
 
     private static boolean matchesArtifactId(String artifactId, String q) {
-        return (artifactId.equalsIgnoreCase(q) ||
-                artifactId.equalsIgnoreCase("quarkus-" + q) ||
-                artifactId.equalsIgnoreCase("quarkus-smallrye-" + q));
+        return artifactId.equalsIgnoreCase(q) ||
+                artifactId.equalsIgnoreCase("quarkus-" + q);
     }
 
     public AddExtensionResult addExtensions(final Set<String> extensions) throws IOException {
@@ -107,7 +114,7 @@ public class AddExtensions {
                 // GAV case.
                 updated = addExtensionAsGAV(query) || updated;
             } else {
-                SelectionResult result = select(query, registry);
+                SelectionResult result = select(query, registry, false);
                 if (!result.matches()) {
                     StringBuilder sb = new StringBuilder();
                     // We have 3 cases, we can still have a single candidate, but the match is on label
@@ -116,14 +123,6 @@ public class AddExtensions {
                     if (candidates.isEmpty()) {
                         // No matches at all.
                         print(NOK + " Cannot find a dependency matching '" + query + "', maybe a typo?");
-                        success = false;
-                    } else if (candidates.size() == 1) {
-                        sb.append(NOK).append(" One extension matching '").append(query).append("'");
-                        sb.append(System.lineSeparator()).append("     * ")
-                                .append(candidates.iterator().next().managementKey());
-                        sb.append(System.lineSeparator())
-                                .append("     Use the exact name or the full GAV to add the extension");
-                        print(sb.toString());
                         success = false;
                     } else {
                         sb.append(NOK).append(" Multiple extensions matching '").append(query).append("'");

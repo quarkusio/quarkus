@@ -293,6 +293,7 @@
   },
   {
     "name": "SmallRye Context Propagation",
+    "shortName": "context propagation",
     "labels": [
       "smallrye-context-propagation",
       "microprofile-context-propagation",
@@ -317,6 +318,7 @@
   },
   {
     "name": "SmallRye Health",
+    "shortName": "health",
     "labels": [
       "smallrye-health",
       "health-check",
@@ -342,6 +344,7 @@
   },
   {
     "name": "SmallRye Metrics",
+    "shortName": "metrics",
     "labels": [
       "smallrye-metrics",
       "metrics",
@@ -379,6 +382,7 @@
   },
   {
     "name": "SmallRye Reactive Streams Operators",
+    "shortName": "reactive streams",
     "labels": [
       "smallrye-reactive-streams-operators",
       "smallrye-reactive-streams",

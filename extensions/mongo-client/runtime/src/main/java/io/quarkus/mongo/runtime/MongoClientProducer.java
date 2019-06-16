@@ -1,26 +1,24 @@
 package io.quarkus.mongo.runtime;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.BeforeDestroyed;
+import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
 import com.mongodb.client.MongoClient;
 
+import io.quarkus.mongo.ReactiveMongoClient;
+
 @ApplicationScoped
 public class MongoClientProducer {
 
     private MongoClient client;
-    private io.vertx.ext.mongo.MongoClient vertxMongoClient;
-    private io.vertx.axle.ext.mongo.MongoClient axleMongoClient;
-    private com.mongodb.async.client.MongoClient asyncMongoClient;
+    private ReactiveMongoClient reactiveMongoClient;
 
-    void initialize(MongoClient client,
-            com.mongodb.async.client.MongoClient asyncMongoClient,
-            io.vertx.ext.mongo.MongoClient vertxMongoClient) {
-        this.client = client;
-        this.asyncMongoClient = asyncMongoClient;
-        this.vertxMongoClient = vertxMongoClient;
-        //        this.axleMongoClient = io.vertx.axle.ext.mongo.MongoClient.newInstance(this.vertxMongoClient);
+    public void onStop(@Observes @BeforeDestroyed(ApplicationScoped.class) Object event) {
+        this.client.close();
+        this.reactiveMongoClient.close();
     }
 
     @Singleton
@@ -31,14 +29,12 @@ public class MongoClientProducer {
 
     @Singleton
     @Produces
-    public com.mongodb.async.client.MongoClient asyncClient() {
-        return this.asyncMongoClient;
+    public ReactiveMongoClient axle() {
+        return this.reactiveMongoClient;
     }
 
-    // TODO Give access to the Bare Vert.x, Axle and RX Java 2 clients
-
-    // TODO Configuration for the main client and Vert.x client
-
-    // TODO How do we deal with the amount of JSON Object used in the Vert.x one.
-
+    public void initialize(MongoClient client, ReactiveMongoClient reactiveMongoClient) {
+        this.client = client;
+        this.reactiveMongoClient = reactiveMongoClient;
+    }
 }

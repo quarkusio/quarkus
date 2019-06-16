@@ -1,5 +1,6 @@
 package io.quarkus.mongo.runtime;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -35,7 +36,7 @@ public class MongoClientConfig {
      * pairs are separated by "&amp;".
      * <p>
      * An alternative format, using the {@code mongodb+srv} protocol, is:
-     * 
+     *
      * <pre>
      *  mongodb+srv://[username:password@]host[/[database][?options]]
      * </pre>
@@ -59,7 +60,14 @@ public class MongoClientConfig {
      * </ul>
      */
     @ConfigItem
-    public String connectionString;
+    public Optional<String> connectionString;
+
+    /**
+     * Configures the Mongo server addressed (one if single mode).
+     * The addressed are passed as {@code host:port}.
+     */
+    @ConfigItem
+    public List<String> hosts;
 
     /**
      * Configures the application name.
@@ -72,6 +80,12 @@ public class MongoClientConfig {
      */
     @ConfigItem
     public OptionalInt maxPoolSize;
+
+    /**
+     * Configures the minumum number of connections in the connection pool.
+     */
+    @ConfigItem
+    public OptionalInt minPoolSize;
 
     /**
      * Maximum idle time of a pooled connection. A connection that exceeds this limit will be closed.
@@ -92,6 +106,20 @@ public class MongoClientConfig {
      */
     @ConfigItem
     public OptionalInt waitQueueTimeout;
+
+    /**
+     * Configures the time period between runs of the maintenance job. Default is 0.
+     * Time given in {@code ms}.
+     */
+    @ConfigItem
+    public OptionalInt maintenanceFrequency;
+
+    /**
+     * Configures period of time to wait before running the first maintenance job on the connection pool.
+     * Time given in {@code ms}.
+     */
+    @ConfigItem
+    public OptionalInt maintenanceInitialDelay;
 
     /**
      * This multiplier, multiplied with the {@code maxPoolSize} setting, gives the maximum number of
@@ -158,8 +186,7 @@ public class MongoClientConfig {
     /**
      * Configures the write concern.
      */
-    @ConfigItem
-    public Optional<WriteConcernConfig> writeConcern;
+    public WriteConcernConfig writeConcern;
 
     /**
      * Configures the read preferences.
@@ -171,8 +198,7 @@ public class MongoClientConfig {
     /**
      * Configures the credentials and the authentication mechanism.
      */
-    @ConfigItem
-    public Optional<CredentialConfig> credentials;
+    public CredentialConfig credentials;
 
     /**
      * Configures the maximum number of concurrent operations allowed to wait for a server to become available.
@@ -180,4 +206,5 @@ public class MongoClientConfig {
      */
     @ConfigItem
     public OptionalInt maxWaitQueueSize;
+
 }

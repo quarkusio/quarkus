@@ -148,8 +148,10 @@ class SmallRyeJwtProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void configureIdentityManager(SmallRyeJwtTemplate template, SecurityDomainBuildItem securityDomain,
             BuildProducer<IdentityManagerBuildItem> identityManagerProducer) {
-        IdentityManager identityManager = template.createIdentityManager(securityDomain.getSecurityDomain());
-        identityManagerProducer.produce(new IdentityManagerBuildItem(identityManager));
+        if (config.enabled) {
+            IdentityManager identityManager = template.createIdentityManager(securityDomain.getSecurityDomain());
+            identityManagerProducer.produce(new IdentityManagerBuildItem(identityManager));
+        }
     }
 
     /**

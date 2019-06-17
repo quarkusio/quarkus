@@ -16,7 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.runtime.Application;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Template;
@@ -76,10 +75,7 @@ public class AmazonLambdaTemplate {
                             postResponse(AmazonLambdaApi.invocationResponse(requestId), response, mapper);
                         } catch (Exception e) {
                             log.error("Error running lambda", e);
-                            Application app = Application.currentApplication();
-                            if (app != null) {
-                                app.stop();
-                            }
+                            Execution.requestExit(0);
                             return;
                         } finally {
                             requestConnection.getInputStream().close();
@@ -96,10 +92,7 @@ public class AmazonLambdaTemplate {
                         log.error("Failed to report init error", ex);
                     } finally {
                         //our main loop is done, time to shutdown
-                        Application app = Application.currentApplication();
-                        if (app != null) {
-                            app.stop();
-                        }
+                        Execution.requestExit(0);
                     }
                 }
             }

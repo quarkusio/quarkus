@@ -23,6 +23,10 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-narayana-jta</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.oracle.substratevm</groupId>
             <artifactId>svm</artifactId>
         </dependency>

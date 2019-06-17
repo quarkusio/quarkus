@@ -7,6 +7,8 @@ package io.quarkus.arc;
  */
 public interface ClientProxy {
 
-    Object getContextualInstance();
+    Object arc_contextualInstance();
+
+    InjectableBean<?> arc_bean();
 
 }

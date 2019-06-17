@@ -54,7 +54,9 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.BuildTimeConfigurationBuildItem;
@@ -725,6 +727,23 @@ public final class ExtensionLoader {
             if (methodConsumingConfigPhases.contains(ConfigPhase.BUILD_TIME)) {
                 methodStepConfig = methodStepConfig
                         .andThen(bsb -> bsb.consumes(BuildTimeConfigurationBuildItem.class));
+            }
+
+            final Consume[] consumes = method.getAnnotationsByType(Consume.class);
+            if (consumes.length > 0) {
+                stepConfig = stepConfig.andThen(bsb -> {
+                    for (Consume consume : consumes) {
+                        bsb.afterProduce(consume.value());
+                    }
+                });
+            }
+            final Produce[] produces = method.getAnnotationsByType(Produce.class);
+            if (produces.length > 0) {
+                stepConfig = stepConfig.andThen(bsb -> {
+                    for (Produce produce : produces) {
+                        bsb.beforeConsume(produce.value());
+                    }
+                });
             }
 
             final Consumer<BuildStepBuilder> finalStepConfig = stepConfig.andThen(methodStepConfig)

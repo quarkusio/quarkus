@@ -19,7 +19,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
-import io.quarkus.kubernetes.spi.KubernetesHealthPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -121,8 +120,7 @@ class SmallRyeHealthProcessor {
     }
 
     @BuildStep
-    public void kubernetes(BuildProducer<KubernetesHealthPathBuildItem> healthPathItemProducer,
-            BuildProducer<KubernetesHealthLivenessPathBuildItem> livenessPathItemProducer,
+    public void kubernetes(BuildProducer<KubernetesHealthLivenessPathBuildItem> livenessPathItemProducer,
             BuildProducer<KubernetesHealthReadinessPathBuildItem> readinessPathItemProducer) {
         livenessPathItemProducer
                 .produce(new KubernetesHealthLivenessPathBuildItem(health.rootPath + health.livenessPath));

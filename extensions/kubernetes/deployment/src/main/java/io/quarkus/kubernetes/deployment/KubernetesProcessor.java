@@ -26,7 +26,6 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
-import io.quarkus.kubernetes.spi.KubernetesHealthPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 
@@ -42,7 +41,6 @@ class KubernetesProcessor {
     public void build(ApplicationInfoBuildItem applicationInfo,
             KubernetesConfig kubernetesConfig,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
-            Optional<KubernetesHealthPathBuildItem> kubernetesHealthPathBuildItem,
             Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
             Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem)
             throws UnsupportedEncodingException {

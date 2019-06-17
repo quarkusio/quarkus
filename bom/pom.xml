@@ -23,7 +23,7 @@
         <opentracing-concurrent.version>0.2.0</opentracing-concurrent.version>
         <jaeger.version>0.34.0</jaeger.version>
         <undertow.version>2.0.21.Final</undertow.version>
-        <xnio.version>3.7.1.Final</xnio.version>
+        <xnio.version>3.7.2.Final</xnio.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <microprofile-config-api.version>1.3</microprofile-config-api.version>
         <microprofile-opentracing-api.version>1.3.1</microprofile-opentracing-api.version>
@@ -34,7 +34,7 @@
         <smallrye-metrics.version>1.1.3</smallrye-metrics.version>
         <smallrye-open-api.version>1.1.3</smallrye-open-api.version>
         <smallrye-opentracing.version>1.3.0</smallrye-opentracing.version>
-        <smallrye-fault-tolerance.version>2.0.4</smallrye-fault-tolerance.version>
+        <smallrye-fault-tolerance.version>2.0.5</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>1.0.0</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.0.7</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.6</smallrye-reactive-streams-operators.version>
@@ -85,7 +85,7 @@
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
         <javax.persistence-api.version>2.2</javax.persistence-api.version>
         <elasticsearch-rest-client.version>7.0.1</elasticsearch-rest-client.version>
-        <rxjava1.version>1.3.4</rxjava1.version>
+        <rxjava1.version>1.3.8</rxjava1.version>
         <rxjava.version>2.2.9</rxjava.version>
         <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
         <jboss-logging-annotations.version>2.1.0.Final</jboss-logging-annotations.version>
@@ -99,7 +99,7 @@
         <jboss-modules.version>1.8.7.Final</jboss-modules.version>
         <jboss-threads.version>3.0.0.Beta4</jboss-threads.version>
         <vertx.version>3.7.1</vertx.version>
-        <httpclient.version>4.5.7</httpclient.version>
+        <httpclient.version>4.5.9</httpclient.version>
         <httpcore.version>4.4.11</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>
         <quartz.version>2.3.1</quartz.version>
@@ -118,7 +118,7 @@
         <caffeine.version>2.6.2</caffeine.version>
         <netty.version>4.1.34.Final</netty.version>
         <reactive-streams.version>1.0.2</reactive-streams.version>
-        <test-containers.version>1.11.2</test-containers.version>
+        <test-containers.version>1.11.3</test-containers.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
         <axle-client.version>0.0.7</axle-client.version>
         <reactive-pg-client.version>0.11.4</reactive-pg-client.version>
@@ -132,7 +132,7 @@
         <aws-lambda-serverless-java-container.version>1.3.1</aws-lambda-serverless-java-container.version>
         <kotlin.version>1.3.31</kotlin.version>
         <camel.version>3.0.0-M2</camel.version>
-        <ap4k.version>0.4.0</ap4k.version>
+        <ap4k.version>0.4.1</ap4k.version>
         <javax.xml.soap-api.version>1.4.0</javax.xml.soap-api.version>
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
         <jline.version>2.14.6</jline.version>
@@ -140,7 +140,7 @@
         <awaitility.version>3.1.6</awaitility.version>
         <jprocesses.version>1.6.5</jprocesses.version>
         <jboss-logmanager.version>1.0.3</jboss-logmanager.version>
-        <jetty.version>9.4.18.v20190429</jetty.version>
+        <jetty.version>9.4.19.v20190610</jetty.version>
         <flyway.version>5.2.4</flyway.version>
         <yasson.version>1.0.4</yasson.version>
         <!-- Used for integration tests, to make sure webjars work-->

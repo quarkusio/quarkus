@@ -1,5 +1,6 @@
+= Quarkus - Frequently Asked Questions
+
 include::./attributes.adoc[]
-= {project-name} - Frequently Asked Questions
 
 :toc: macro
 :toclevels: 4

@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Validation with Hibernate Validator
 
 include::./attributes.adoc[]
-= {project-name} - Validation with Hibernate Validator
 
 This guide covers how to use Hibernate Validator/Bean Validation for:
 

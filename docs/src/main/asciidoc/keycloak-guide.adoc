@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Using Keycloak to Protect JAX-RS Applications
 
 include::./attributes.adoc[]
-= {project-name} - Using Keycloak to Protect JAX-RS Applications
 
 This guide demonstrates how your {project-name} application can use Keycloak to protect your JAX-RS applications using bearer token
 authorization, where these tokens are issued by a Keycloak Server.

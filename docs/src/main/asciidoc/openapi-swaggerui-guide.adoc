@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Using OpenAPI and Swagger UI
 
 include::./attributes.adoc[]
-= {project-name} - Using OpenAPI and Swagger UI
 
 This guide explains how your Quarkus application can expose its API description through an OpenAPI specification and
 how you can test it via a user-friendly UI named Swagger UI.

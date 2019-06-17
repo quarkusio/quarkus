@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Datasources
 
 include::./attributes.adoc[]
-= {project-name} - Datasources
 
 Many projects that use data require connections to a database.
 The main way of obtaining connections to a database is to use a datasource.

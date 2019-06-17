@@ -1,5 +1,11 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Reactive Postgres Client
+
 include::./attributes.adoc[]
-= {project-name} - Reactive Postgres Client
 :config-file: application.properties
 
 The Reactive Postgres Client is a client for Postgres with a straightforward API focusing on scalability and low-overhead.

@@ -1,5 +1,11 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Using Eclipse Vert.x
+
 include::./attributes.adoc[]
-= {project-name} - Using Eclipse Vert.x
 
 Eclipse https://vertx.io[Vert.x] is a toolkit for building reactive applications.
 It is designed to be lightweight and embeddable.

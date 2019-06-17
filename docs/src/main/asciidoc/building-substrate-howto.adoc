@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Building a Custom SubstrateVM
 
 include::./attributes.adoc[]
-= {project-name} - Building a Custom SubstrateVM
 
 == Prerequisites
 

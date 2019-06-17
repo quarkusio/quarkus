@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Testing Your Application
 
 include::./attributes.adoc[]
-= {project-name} - Testing Your Application
 
 :toc: macro
 :toclevels: 4

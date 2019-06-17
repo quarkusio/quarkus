@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Quarkus - Application Initialization and Termination
 
 include::./attributes.adoc[]
-= {project-name} - Application Initialization and Termination
 
 You often need to execute custom actions when the application starts and clean up everything when the application stops.
 This guide explains how to:

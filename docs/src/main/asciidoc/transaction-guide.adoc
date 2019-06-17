@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
+= Using Transactions in Quarkus
 
 include::./attributes.adoc[]
-= Using Transactions in Quarkus
 
 Quarkus comes with a Transaction Manager and uses it to coordinate and expose transactions to your applications.
 Each extension dealing with persistence will integrate with it for you.

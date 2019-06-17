@@ -25,11 +25,15 @@ public class AddMissingNoargsConstructorTest {
     @Inject
     MyBean bean;
 
+    @Inject
+    MyOtherBean myOtherBean;
+
     @Test
-    public void testConstructorWasAdded() {
+    public void testConstructorWasAddedToEachBean() {
         assertNotNull(bean.getBeanManager());
         assertEquals("ok", bean.getFoo());
         assertEquals(true, bean.isVal());
+        assertEquals(true, myOtherBean.isVal());
     }
 
     @ApplicationScoped
@@ -70,6 +74,20 @@ public class AddMissingNoargsConstructorTest {
 
         BeanManager beanManager;
 
+    }
+
+    @ApplicationScoped
+    static class MyOtherBean {
+
+        final boolean val;
+
+        MyOtherBean(BeanManager beanManager) {
+            this.val = true;
+        }
+
+        boolean isVal() {
+            return val;
+        }
     }
 
 }

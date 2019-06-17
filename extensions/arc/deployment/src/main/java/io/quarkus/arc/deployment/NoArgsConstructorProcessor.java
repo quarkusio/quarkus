@@ -20,6 +20,7 @@ import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionTargetInfo;
 import io.quarkus.arc.processor.InjectionTargetInfo.TargetKind;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -70,7 +71,7 @@ public class NoArgsConstructorProcessor {
         Set<DotName> transformedClasses = new HashSet<>();
         for (ClassInfo targetClass : targetClasses) {
             String superClassName;
-            if (targetClass.superName() == null) {
+            if (DotNames.OBJECT.equals(targetClass.superName())) {
                 // Bean class extends java.lang.Object
                 superClassName = "java/lang/Object";
             } else {

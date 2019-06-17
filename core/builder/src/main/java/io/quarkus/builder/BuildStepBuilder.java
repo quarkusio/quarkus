@@ -9,6 +9,7 @@ import org.wildfly.common.Assert;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.NamedBuildItem;
 import io.quarkus.builder.item.SymbolicBuildItem;
+import io.quarkus.builder.item.VirtualBuildItem;
 
 /**
  * A builder for build step instances within a chain. A build step can consume and produce items. It may also register
@@ -146,6 +147,9 @@ public final class BuildStepBuilder {
         if (NamedBuildItem.class.isAssignableFrom(type)) {
             throw new IllegalArgumentException("Cannot produce a named build item without a name");
         }
+        if (VirtualBuildItem.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Cannot produce a virtual build item");
+        }
         addProduces(new ItemId(type, null), Constraint.REAL, ProduceFlags.NONE);
         return this;
     }
@@ -165,6 +169,9 @@ public final class BuildStepBuilder {
         if (NamedBuildItem.class.isAssignableFrom(type)) {
             throw new IllegalArgumentException("Cannot produce a named build item without a name");
         }
+        if (VirtualBuildItem.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Cannot produce a virtual build item");
+        }
         addProduces(new ItemId(type, null), Constraint.REAL, ProduceFlags.of(flag));
         return this;
     }
@@ -183,6 +190,9 @@ public final class BuildStepBuilder {
         Assert.checkNotNullParam("flag", flags);
         if (NamedBuildItem.class.isAssignableFrom(type)) {
             throw new IllegalArgumentException("Cannot produce a named build item without a name");
+        }
+        if (VirtualBuildItem.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Cannot produce a virtual build item");
         }
         addProduces(new ItemId(type, null), Constraint.REAL, flags);
         return this;
@@ -260,6 +270,9 @@ public final class BuildStepBuilder {
         if (NamedBuildItem.class.isAssignableFrom(type)) {
             throw new IllegalArgumentException("Cannot consume a named build item without a name");
         }
+        if (VirtualBuildItem.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Cannot consume a virtual build item");
+        }
         addConsumes(new ItemId(type, null), Constraint.REAL, ConsumeFlags.NONE);
         return this;
     }
@@ -291,6 +304,9 @@ public final class BuildStepBuilder {
         Assert.checkNotNullParam("type", type);
         if (NamedBuildItem.class.isAssignableFrom(type)) {
             throw new IllegalArgumentException("Cannot consume a named build item without a name");
+        }
+        if (VirtualBuildItem.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Cannot consume a virtual build item");
         }
         addConsumes(new ItemId(type, null), Constraint.REAL, flags);
         return this;

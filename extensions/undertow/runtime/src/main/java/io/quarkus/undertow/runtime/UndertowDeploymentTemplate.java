@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
@@ -94,6 +95,7 @@ public class UndertowDeploymentTemplate {
     private static final List<HandlerWrapper> hotDeploymentWrappers = new CopyOnWriteArrayList<>();
     private static volatile List<Path> hotDeploymentResourcePaths;
     private static volatile HttpHandler currentRoot = ResponseCodeHandler.HANDLE_404;
+    private static volatile ServletContext servletContext;
 
     private static final AttachmentKey<Collection<io.quarkus.arc.ContextInstanceHandle<?>>> REQUEST_CONTEXT = AttachmentKey
             .create(Collection.class);
@@ -378,8 +380,12 @@ public class UndertowDeploymentTemplate {
         }
     }
 
+    public Supplier<ServletContext> servletContextSupplier() {
+        return new ServletContextSupplier();
+    }
+
     public DeploymentManager bootServletContainer(RuntimeValue<DeploymentInfo> info, BeanContainer beanContainer,
-            LaunchMode launchMode) {
+            LaunchMode launchMode, ShutdownContext shutdownContext) {
         if (info.getValue().getExceptionHandler() == null) {
             //if a 500 error page has not been mapped we change the default to our more modern one, with a UID in the
             //log. If this is not production we also include the stack trace
@@ -431,6 +437,13 @@ public class UndertowDeploymentTemplate {
             DeploymentManager manager = servletContainer.addDeployment(info.getValue());
             manager.deploy();
             manager.start();
+            servletContext = manager.getDeployment().getServletContext();
+            shutdownContext.addShutdownTask(new Runnable() {
+                @Override
+                public void run() {
+                    servletContext = null;
+                }
+            });
             return manager;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -598,6 +611,14 @@ public class UndertowDeploymentTemplate {
                 out[index] = alphabet[val & 0x3F];
             }
             return out;
+        }
+    }
+
+    public static class ServletContextSupplier implements Supplier<ServletContext> {
+
+        @Override
+        public ServletContext get() {
+            return servletContext;
         }
     }
 }

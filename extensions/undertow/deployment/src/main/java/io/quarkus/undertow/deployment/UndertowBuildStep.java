@@ -7,7 +7,6 @@ import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.PERMIT;
 import static javax.servlet.DispatcherType.REQUEST;
 
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,13 +17,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.annotation.security.DeclareRoles;
 import javax.annotation.security.RunAs;
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.SessionScoped;
 import javax.inject.Inject;
 import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContext;
 import javax.servlet.annotation.HandlesTypes;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.ServletSecurity;
@@ -74,6 +76,7 @@ import org.jboss.metadata.web.spec.WebMetaData;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrarBuildItem;
+import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
 import io.quarkus.arc.processor.ContextRegistrar;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -446,8 +449,17 @@ public class UndertowBuildStep {
         }
 
         return new ServletDeploymentManagerBuildItem(
-                template.bootServletContainer(deployment, bc.getValue(), launchMode.getLaunchMode()));
+                template.bootServletContainer(deployment, bc.getValue(), launchMode.getLaunchMode(), shutdownContext));
 
+    }
+
+    @BuildStep
+    @Record(STATIC_INIT)
+    RuntimeBeanBuildItem servletContextBean(
+            UndertowDeploymentTemplate template) {
+        return RuntimeBeanBuildItem.builder(ServletContext.class).setScope(ApplicationScoped.class)
+                .setSupplier((Supplier) template.servletContextSupplier())
+                .build();
     }
 
     /**

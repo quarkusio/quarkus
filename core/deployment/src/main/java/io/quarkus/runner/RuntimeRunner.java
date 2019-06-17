@@ -18,7 +18,6 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.QuarkusAugmentor;
-import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.ExecutionChainBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
@@ -96,7 +95,6 @@ public class RuntimeRunner implements Runnable, Closeable {
                 builder.addBuildChainCustomizer(i);
             }
             builder.addFinal(BytecodeTransformerBuildItem.class)
-                    .addFinal(ApplicationClassNameBuildItem.class)
                     .addFinal(ExecutionChainBuildItem.class);
 
             BuildResult result = builder.build().run();

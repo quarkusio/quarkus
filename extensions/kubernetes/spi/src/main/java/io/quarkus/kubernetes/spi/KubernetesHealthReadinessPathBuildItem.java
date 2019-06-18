@@ -2,11 +2,11 @@ package io.quarkus.kubernetes.spi;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
-public final class KubernetesHealthPathBuildItem extends SimpleBuildItem {
+public final class KubernetesHealthReadinessPathBuildItem extends SimpleBuildItem {
 
     private final String path;
 
-    public KubernetesHealthPathBuildItem(String path) {
+    public KubernetesHealthReadinessPathBuildItem(String path) {
         this.path = path;
     }
 

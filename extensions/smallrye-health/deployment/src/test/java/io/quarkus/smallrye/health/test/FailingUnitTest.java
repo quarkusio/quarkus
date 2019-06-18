@@ -5,10 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.health.Health;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -28,11 +28,13 @@ public class FailingUnitTest {
                     .addClasses(FailingHealthCheck.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
     @Inject
-    @Health
+    @Any
     Instance<HealthCheck> checks;
 
     @Test
     public void testHealthServlet() {
+        RestAssured.when().get("/health/live").then().statusCode(503);
+        RestAssured.when().get("/health/ready").then().statusCode(503);
         RestAssured.when().get("/health").then().statusCode(503);
     }
 

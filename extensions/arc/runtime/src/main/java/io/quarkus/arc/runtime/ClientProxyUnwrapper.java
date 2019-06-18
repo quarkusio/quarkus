@@ -8,7 +8,7 @@ public class ClientProxyUnwrapper implements Function<Object, Object> {
     @Override
     public Object apply(Object o) {
         if (o instanceof ClientProxy) {
-            return ((ClientProxy) o).getContextualInstance();
+            return ((ClientProxy) o).arc_contextualInstance();
         }
         return o;
     }

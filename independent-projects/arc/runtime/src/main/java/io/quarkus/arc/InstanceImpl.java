@@ -9,7 +9,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
+import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
@@ -114,11 +116,18 @@ class InstanceImpl<T> implements Instance<T> {
 
     @Override
     public void destroy(T instance) {
+        Objects.requireNonNull(instance);
         if (instance instanceof ClientProxy) {
-            throw new UnsupportedOperationException();
+            ClientProxy proxy = (ClientProxy) instance;
+            InjectableContext context = Arc.container().getActiveContext(proxy.arc_bean().getScope());
+            if (context == null) {
+                throw new ContextNotActiveException("No active context found for: " + proxy.arc_bean().getScope());
+            }
+            context.destroy(proxy.arc_bean());
+        } else {
+            // Try to destroy a dependent instance
+            creationalContext.destroyDependentInstance(instance);
         }
-        // Try to destroy a dependent instance
-        creationalContext.destroyDependentInstance(instance);
     }
 
     void destroy() {

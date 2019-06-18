@@ -3,11 +3,10 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-
+= Quarkus - Using AMQP with Reactive Messaging
 include::./attributes.adoc[]
-= {project-name} - Using AMQP with Reactive Messaging
 
-This guide demonstrates how your {project-name} application can utilize MicroProfile Reactive Messaging to interact AMQP.
+This guide demonstrates how your Quarkus application can utilize MicroProfile Reactive Messaging to interact with AMQP.
 
 == Prerequisites
 
@@ -26,7 +25,7 @@ In this guide, we are going to generate (random) prices in one component.
 These prices are written in an AMQP queue (`prices`).
 A second component reads from the `prices` queue and apply some magic conversion to the price.
 The result is sent to an in-memory stream consumed by a JAX-RS resource.
-The data is sent to a browser using server-sent event.
+The data is sent to a browser using server-sent events.
 
 image::amqp-guide-architecture.png[alt=Architecture]
 
@@ -98,7 +97,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * A bean producing random prices every 5 seconds.
- * The prices are written to a AMQP queue (prices). The AMQP configuration is specified in the
+ * The prices are written to an AMQP queue (prices). The AMQP configuration is specified in the
  * application configuration.
  */
 @ApplicationScoped
@@ -117,13 +116,13 @@ public class PriceGenerator {
 <1> Instruct Reactive Messaging to dispatch the items from returned stream to `generated-price`.
 <2> The method returns a RX Java 2 _stream_ (`Flowable`) emitting a random _price_ every 5 seconds.
 
-The method returns a _Reactive Streams_. The generated items are sent to the stream named `generated-price`.
-This stream is mapped to a AMQP queue using the `application.properties` file that we will create soon.
+The method returns a _Reactive Stream_. The generated items are sent to the stream named `generated-price`.
+This stream is mapped to an AMQP queue using the `application.properties` file that we will create soon.
 
 == The price converter
 
 The price converter reads the prices from AMQP, and transforms them.
-Creates the `src/main/java/org/acme/quarkus/sample/PriceConverter.java` file with the following content:
+Create the `src/main/java/org/acme/quarkus/sample/PriceConverter.java` file with the following content:
 
 [source, java]
 ----
@@ -180,7 +179,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 /**
- * A simple resource retrieving the "in-memory" "my-data-stream" and sending the items to a server sent event.
+ * A simple resource retrieving the "in-memory" "my-data-stream" and sending the items as server-sent events.
  */
 @Path("/prices")
 public class PriceResource {
@@ -209,7 +208,7 @@ public class PriceResource {
 
 == Configuring the AMQP connector
 
-We need to configure AMQP connector. This is done in the `application.properties` file.
+We need to configure the AMQP connector. This is done in the `application.properties` file.
 The keys are structured as follows:
 
 `mp.messaging.[outgoing|incoming].{channel-name}.property=value`
@@ -224,7 +223,7 @@ The `channel-name` segment must match the value set in the `@Incoming` and `@Out
 amqp-username=quarkus
 amqp-password=quarkus
 
-# Configure the AMQP connector to write to the `prices`  address
+# Configure the AMQP connector to write to the `prices` address
 mp.messaging.outgoing.generated-price.connector=smallrye-amqp
 mp.messaging.outgoing.generated-price.address=prices
 mp.messaging.outgoing.generated-price.durable=true
@@ -234,7 +233,7 @@ mp.messaging.incoming.prices.connector=smallrye-amqp
 mp.messaging.incoming.prices.durable=true
 ----
 
-More details about this configuration is available on the https://smallrye.io/smallrye-reactive-messaging/#_interacting_using_amqp[SmallRye Reactive Messaging AMQP connector] documentation.
+More details about this configuration is available in the https://smallrye.io/smallrye-reactive-messaging/#_interacting_using_amqp[SmallRye Reactive Messaging AMQP connector] documentation.
 
 NOTE: What about `my-data-stream`? This is an in-memory stream, not connected to a message broker.
 
@@ -280,7 +279,7 @@ Nothing spectacular here. On each received price, it updates the page.
 
 == Get it running
 
-If you followed the instructions, you should have AMQP broker running.
+If you followed the instructions, you should have the AMQP broker running.
 Then, you just need to run the application using:
 
 [source, shell]

@@ -26,7 +26,7 @@ In this guide, we are going to generate (random) prices in one component.
 These prices are written in a Kafka topic (`prices`).
 A second component reads from the `prices` Kafka topic and apply some magic conversion to the price.
 The result is sent to an in-memory stream consumed by a JAX-RS resource.
-The data is sent to a browser using server-sent event.
+The data is sent to a browser using server-sent events.
 
 image::kafka-guide-architecture.png[alt=Architecture]
 
@@ -48,7 +48,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kafka-quickstart \
-    -Dextensions="reactive-kafka"
+    -Dextensions="kafka"
 ----
 
 This command generates a Maven project, importing the Reactive Messaging and Kafka connector extensions.
@@ -131,13 +131,13 @@ public class PriceGenerator {
 <1> Instruct Reactive Messaging to dispatch the items from returned stream to `generated-price`.
 <2> The method returns a RX Java 2 _stream_ (`Flowable`) emitting a random _price_ every 5 seconds.
 
-The method returns a _Reactive Streams_. The generated items are sent to the stream named `generated-price`.
+The method returns a _Reactive Stream_. The generated items are sent to the stream named `generated-price`.
 This stream is mapped to Kafka using the `application.properties` file that we will create soon.
 
 == The price converter
 
 The price converter reads the prices from Kafka, and transforms them.
-Creates the `src/main/java/org/acme/quarkus/sample/PriceConverter.java` file with the following content:
+Create the `src/main/java/org/acme/quarkus/sample/PriceConverter.java` file with the following content:
 
 [source, java]
 ----
@@ -193,7 +193,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 /**
- * A simple resource retrieving the in-memory "my-data-stream" and sending the items to a server sent event.
+ * A simple resource retrieving the in-memory "my-data-stream" and sending the items as server-sent events.
  */
 @Path("/prices")
 public class PriceResource {
@@ -221,7 +221,7 @@ public class PriceResource {
 
 == Configuring the Kafka connector
 
-We need to configure Kafka connector. This is done in the `application.properties` file.
+We need to configure the Kafka connector. This is done in the `application.properties` file.
 The keys are structured as follows:
 
 `mp.messaging.[outgoing|incoming].{channel-name}.property=value`

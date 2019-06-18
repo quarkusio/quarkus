@@ -233,7 +233,6 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     protected void handleExceptionNoThrow(InvocationContext ic, Throwable e, Transaction tx)
             throws IllegalStateException, SystemException {
-        e.printStackTrace();
 
         Transactional transactional = getTransactional(ic);
 

@@ -37,9 +37,9 @@
         <smallrye-fault-tolerance.version>2.0.4</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>1.0.0</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.0.7</smallrye-context-propagation.version>
-        <smallrye-reactive-streams-operators.version>1.0.4</smallrye-reactive-streams-operators.version>
+        <smallrye-reactive-streams-operators.version>1.0.6</smallrye-reactive-streams-operators.version>
         <smallrye-converter-api.version>1.0.4</smallrye-converter-api.version>
-        <smallrye-reactive-messaging.version>0.0.9</smallrye-reactive-messaging.version>
+        <smallrye-reactive-messaging.version>0.0.10</smallrye-reactive-messaging.version>
         <smallrye-rest-client.version>1.2.2</smallrye-rest-client.version>
         <swagger-ui.version>3.20.9</swagger-ui.version>
         <javax.activation.version>1.1.1</javax.activation.version>
@@ -1752,12 +1752,12 @@
 
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-reactive-messaging-provider</artifactId>
+                <artifactId>smallrye-reactive-messaging-provider-1.0</artifactId>
                 <version>${smallrye-reactive-messaging.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-reactive-messaging-kafka</artifactId>
+                <artifactId>smallrye-reactive-messaging-kafka-1.0</artifactId>
                 <version>${smallrye-reactive-messaging.version}</version>
                 <exclusions>
                     <exclusion>

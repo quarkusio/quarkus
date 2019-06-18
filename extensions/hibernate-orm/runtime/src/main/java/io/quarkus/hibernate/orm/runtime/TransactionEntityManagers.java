@@ -1,8 +1,9 @@
 package io.quarkus.hibernate.orm.runtime;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
@@ -11,13 +12,14 @@ import javax.transaction.TransactionSynchronizationRegistry;
 
 import io.quarkus.hibernate.orm.runtime.entitymanager.TransactionScopedEntityManager;
 
+@ApplicationScoped
 public class TransactionEntityManagers {
 
     @Inject
-    TransactionSynchronizationRegistry tsr;
+    TransactionSynchronizationRegistry transactionSynchronizationRegistry;
 
     @Inject
-    TransactionManager tm;
+    TransactionManager transactionManager;
 
     @Inject
     JPAConfig jpaConfig;
@@ -25,16 +27,20 @@ public class TransactionEntityManagers {
     @Inject
     Instance<RequestScopedEntityManagerHolder> requestScopedEntityManagers;
 
-    private final Map<String, TransactionScopedEntityManager> managers;
+    private final ConcurrentMap<String, TransactionScopedEntityManager> managers;
 
     public TransactionEntityManagers() {
-        this.managers = new HashMap<>();
+        this.managers = new ConcurrentHashMap<>();
     }
 
     public EntityManager getEntityManager(String unitName) {
-        return managers.computeIfAbsent(unitName,
-                un -> new TransactionScopedEntityManager(tm, tsr, jpaConfig.getEntityManagerFactory(un), unitName,
-                        requestScopedEntityManagers));
+        TransactionScopedEntityManager entityManager = managers.get(unitName);
+        if (entityManager != null) {
+            return entityManager;
+        }
+        return managers.computeIfAbsent(unitName, (un) -> new TransactionScopedEntityManager(
+                transactionManager, transactionSynchronizationRegistry, jpaConfig.getEntityManagerFactory(un), un,
+                requestScopedEntityManagers));
     }
 
 }

@@ -25,6 +25,8 @@ To complete this guide, you need:
 Using the community edition is enough.
 Version {graalvm-version} is required.
 * The `GRAALVM_HOME` environment variable configured appropriately
+* The `native-image` tool must be installed; this can be done by running `gu install native-image` from your GraalVM
+directory
 * Apache Maven 3.5.3+
 * A working C developer environment (see the note below for details)
 * A running Docker
@@ -47,6 +49,13 @@ What does having a working C developer environment mean?
 
  * On Linux, you will need GCC, the glibc and zlib headers (on common distributions: `sudo dnf install gcc glibc-devel zlib-devel` or `sudo apt-get install build-essential libz-dev`).
  * On macOS, execute `xcode-select --install`.
+====
+
+[NOTE]
+====
+Some previous releases of GraalVM included the `native-image` tool by default.  This is no longer the
+case; it now has to be installed as a second step after GraalVM itself is installed.  Use `gu install native-image`
+to do so.
 ====
 
 == Solution

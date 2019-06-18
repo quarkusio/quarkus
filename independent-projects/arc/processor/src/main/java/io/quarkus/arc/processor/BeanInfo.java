@@ -212,7 +212,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
     public boolean hasDefaultQualifiers() {
         return qualifiers.size() == 2 && qualifiers.contains(BuiltinQualifier.DEFAULT.getInstance())
-                && qualifiers.contains(BuiltinQualifier.DEFAULT.getInstance());
+                && qualifiers.contains(BuiltinQualifier.ANY.getInstance());
     }
 
     List<Injection> getInjections() {

@@ -30,8 +30,8 @@
            what we work with by self downloading it: -->
         <graal-sdk.version-for-documentation>1.0.0-rc16</graal-sdk.version-for-documentation>
         <rest-assured.version>3.3.0</rest-assured.version>
-        <axle-client.version>0.0.4</axle-client.version>
-        <vertx.version>3.7.0</vertx.version>
+        <axle-client.version>0.0.7</axle-client.version>
+        <vertx.version>3.7.1</vertx.version>
 
         <!-- Enable APT by default for Eclipse -->
         <m2e.apt.activation>jdt_apt</m2e.apt.activation>
@@ -619,6 +619,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

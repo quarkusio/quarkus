@@ -3,11 +3,10 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Using Apache Kafka with Reactive Messaging
-
+= Quarkus - Using AMQP with Reactive Messaging
 include::./attributes.adoc[]
 
-This guide demonstrates how your {project-name} application can utilize MicroProfile Reactive Messaging to interact with Apache Kafka.
+This guide demonstrates how your Quarkus application can utilize MicroProfile Reactive Messaging to interact with AMQP.
 
 == Prerequisites
 
@@ -17,18 +16,18 @@ To complete this guide, you need:
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
-* A running Kafka cluster, or Docker Compose to start a development cluster
+* A running AMQP 1.0 broker, or Docker Compose to start a development cluster
 * GraalVM installed if you want to run in native mode.
 
 == Architecture
 
 In this guide, we are going to generate (random) prices in one component.
-These prices are written in a Kafka topic (`prices`).
-A second component reads from the `prices` Kafka topic and apply some magic conversion to the price.
+These prices are written in an AMQP queue (`prices`).
+A second component reads from the `prices` queue and apply some magic conversion to the price.
 The result is sent to an in-memory stream consumed by a JAX-RS resource.
 The data is sent to a browser using server-sent events.
 
-image::kafka-guide-architecture.png[alt=Architecture]
+image::amqp-guide-architecture.png[alt=Architecture]
 
 == Solution
 
@@ -37,7 +36,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `kafka-quickstart` {quickstarts-tree-url}/kafka-quickstart[directory].
+The solution is located in the `amqp-quickstart` {quickstarts-tree-url}/amqp-quickstart[directory].
 
 == Creating the Maven Project
 
@@ -47,49 +46,34 @@ First, we need a new project. Create a new project with the following command:
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=kafka-quickstart \
-    -Dextensions="kafka"
+    -DprojectArtifactId=amqp-quickstart \
+    -Dextensions="amqp"
 ----
 
-This command generates a Maven project, importing the Reactive Messaging and Kafka connector extensions.
+This command generates a Maven project, importing the Reactive Messaging and AMQP connector extensions.
 
-== Starting Kafka
+== Starting an AMQP broker
 
-Then, we need a Kafka cluster.
-You can follow the instructions from the https://kafka.apache.org/quickstart[Apache Kafka web site] or create a `docker-compose.yaml` file with the following content:
+Then, we need an AMQP broker.
+You can follow the instructions from the https://activemq.apache.org/components/artemis/[Apache Artemis web site] or create a `docker-compose.yaml` file with the following content:
 
 [source, yaml]
 ----
+# A docker compose file to start an Artemis AMQP broker
+# more details on https://github.com/vromero/activemq-artemis-docker.
 version: '2'
 
 services:
 
-  zookeeper:
-    image: strimzi/kafka:0.11.3-kafka-2.1.0
-    command: [
-      "sh", "-c",
-      "bin/zookeeper-server-start.sh config/zookeeper.properties"
-    ]
+  artemis:
+    image: vromero/activemq-artemis:2.8.0-alpine
     ports:
-      - "2181:2181"
+      - "8161:8161"
+      - "61616:61616"
+      - "5672:5672"
     environment:
-      LOG_DIR: /tmp/logs
-
-  kafka:
-    image: strimzi/kafka:0.11.3-kafka-2.1.0
-    command: [
-      "sh", "-c",
-      "bin/kafka-server-start.sh config/server.properties --override listeners=$${KAFKA_LISTENERS} --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT}"
-    ]
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-    environment:
-      LOG_DIR: "/tmp/logs"
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      ARTEMIS_USERNAME: quarkus
+      ARTEMIS_PASSWORD: quarkus
 ----
 
 Once created, run `docker-compose up`.
@@ -113,7 +97,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * A bean producing random prices every 5 seconds.
- * The prices are written to a Kafka topic (prices). The Kafka configuration is specified in the application configuration.
+ * The prices are written to an AMQP queue (prices). The AMQP configuration is specified in the
+ * application configuration.
  */
 @ApplicationScoped
 public class PriceGenerator {
@@ -132,11 +117,11 @@ public class PriceGenerator {
 <2> The method returns a RX Java 2 _stream_ (`Flowable`) emitting a random _price_ every 5 seconds.
 
 The method returns a _Reactive Stream_. The generated items are sent to the stream named `generated-price`.
-This stream is mapped to Kafka using the `application.properties` file that we will create soon.
+This stream is mapped to an AMQP queue using the `application.properties` file that we will create soon.
 
 == The price converter
 
-The price converter reads the prices from Kafka, and transforms them.
+The price converter reads the prices from AMQP, and transforms them.
 Create the `src/main/java/org/acme/quarkus/sample/PriceConverter.java` file with the following content:
 
 [source, java]
@@ -150,7 +135,7 @@ import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import javax.enterprise.context.ApplicationScoped;
 
 /**
- * A bean consuming data from the "prices" Kafka topic and applying some conversion.
+ * A bean consuming data from the "prices" AMQP queue and applying some conversion.
  * The result is pushed to the "my-data-stream" stream which is an in-memory stream.
  */
 @ApplicationScoped
@@ -158,20 +143,21 @@ public class PriceConverter {
 
     private static final double CONVERSION_RATE = 0.88;
 
-    @Incoming("prices")                                 // <1>
-    @Outgoing("my-data-stream")                         // <2>
-    @Broadcast                                          // <3>
+    @Incoming("prices")                                  // <1>
+    @Outgoing("my-data-stream")                          // <2>
+    @Broadcast                                           // <3>
     public double process(int priceInUsd) {
         return priceInUsd * CONVERSION_RATE;
     }
 
 }
+
 ----
-<1> Indicates that the method consumes the items from the `prices` topic
-<2> Indicates that the objects returned by the method are sent to the `my-data-stream` stream
+<1> Indicates that the method consumes the items from the `prices` channel
+<2> Indicates that the objects returned by the method are sent to the `my-data-stream` channel
 <3> Indicates that the item are dispatched to all _subscribers_
 
-The `process` method is called for every Kafka _record_ from the `prices` topic (configured in the application configuration).
+The `process` method is called for every AMQP messages from the `prices` queue (configured in the application configuration).
 Every result is sent to the `my-data-stream` in-memory stream.
 
 == The price resource
@@ -193,13 +179,13 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 /**
- * A simple resource retrieving the in-memory "my-data-stream" and sending the items as server-sent events.
+ * A simple resource retrieving the "in-memory" "my-data-stream" and sending the items as server-sent events.
  */
 @Path("/prices")
 public class PriceResource {
 
     @Inject
-    @Stream("my-data-stream") Publisher<Double> prices; // <1>
+    @Stream("my-data-stream") Publisher<Double> prices;         // <1>
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -207,10 +193,11 @@ public class PriceResource {
         return "hello";
     }
 
+
     @GET
     @Path("/stream")
-    @Produces(MediaType.SERVER_SENT_EVENTS)             // <2>
-    public Publisher<Double> stream() {                 // <3>
+    @Produces(MediaType.SERVER_SENT_EVENTS)                     // <2>
+    public Publisher<Double> stream() {                         // <3>
         return prices;
     }
 }
@@ -219,9 +206,9 @@ public class PriceResource {
 <2> Indicates that the content is sent using `Server Sent Events`
 <3> Returns the stream (_Reactive Stream_)
 
-== Configuring the Kafka connector
+== Configuring the AMQP connector
 
-We need to configure the Kafka connector. This is done in the `application.properties` file.
+We need to configure the AMQP connector. This is done in the `application.properties` file.
 The keys are structured as follows:
 
 `mp.messaging.[outgoing|incoming].{channel-name}.property=value`
@@ -232,17 +219,21 @@ The `channel-name` segment must match the value set in the `@Incoming` and `@Out
 
 [source]
 ----
-# Configure the Kafka sink (we write to it)
-mp.messaging.outgoing.generated-price.connector=smallrye-kafka
-mp.messaging.outgoing.generated-price.topic=prices
-mp.messaging.outgoing.generated-price.value.serializer=org.apache.kafka.common.serialization.IntegerSerializer
+# Configures the AMQP broker credentials.
+amqp-username=quarkus
+amqp-password=quarkus
 
-# Configure the Kafka source (we read from it)
-mp.messaging.incoming.prices.connector=smallrye-kafka
-mp.messaging.incoming.prices.value.deserializer=org.apache.kafka.common.serialization.IntegerDeserializer
+# Configure the AMQP connector to write to the `prices` address
+mp.messaging.outgoing.generated-price.connector=smallrye-amqp
+mp.messaging.outgoing.generated-price.address=prices
+mp.messaging.outgoing.generated-price.durable=true
+
+# Configure the AMQP connector to read from the `prices` queue
+mp.messaging.incoming.prices.connector=smallrye-amqp
+mp.messaging.incoming.prices.durable=true
 ----
 
-More details about this configuration is available on the https://kafka.apache.org/documentation/#producerconfigs[Producer configuration] and https://kafka.apache.org/documentation/#consumerconfigs[Consumer configuration] section from the Kafka documentation.
+More details about this configuration is available in the https://smallrye.io/smallrye-reactive-messaging/#_interacting_using_amqp[SmallRye Reactive Messaging AMQP connector] documentation.
 
 NOTE: What about `my-data-stream`? This is an in-memory stream, not connected to a message broker.
 
@@ -288,7 +279,7 @@ Nothing spectacular here. On each received price, it updates the page.
 
 == Get it running
 
-If you followed the instructions, you should have Kafka running.
+If you followed the instructions, you should have the AMQP broker running.
 Then, you just need to run the application using:
 
 [source, shell]
@@ -298,7 +289,7 @@ mvn compile quarkus:dev
 
 Open `http://localhost:8080/prices.html` in your browser.
 
-NOTE: If you started the Kafka broker with docker compose, stop it using `CTRL+C` followed by `docker-compose down`.
+NOTE: If you started the AMQP broker with docker compose, stop it using `CTRL+C` followed by `docker-compose down`.
 
 == Running Native
 
@@ -311,7 +302,10 @@ mvn package -Pnative
 
 == Going further
 
-This guide has shown how you can interact with Kafka using Quarkus.
+This guide has shown how you can interact with AMQP using Quarkus.
 It utilizes MicroProfile Reactive Messaging to build data streaming applications.
+
+If you did the Kafka quickstart, you have realized that it's the same code.
+The only difference is the connector configuration.
 
 If you want to go further check the documentation of https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging], the implementation used in Quarkus.

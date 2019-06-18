@@ -421,6 +421,16 @@
     "guide": "https://quarkus.io/guides/kafka-guide"
   },
   {
+    "name": "SmallRye Reactive Messaging - AMQP Connector",
+    "labels": [
+      "amqp",
+      "reactive-amqp"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-reactive-messaging-amqp",
+    "guide": "https://quarkus.io/guides/amqp-guide"
+  },
+  {
     "name": "SmallRye REST Client",
     "labels": [
       "smallrye-rest-client",

@@ -48,10 +48,10 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kafka-quickstart \
-    -Dextensions="reactive-kafka,vert.x"
+    -Dextensions="reactive-kafka"
 ----
 
-This command generates a Maven project, importing the Reactive Messaging and Kafka connector extensions. Eclipse Vert.x is also required as the Kafka connector relies on Vert.x.
+This command generates a Maven project, importing the Reactive Messaging and Kafka connector extensions.
 
 == Starting Kafka
 
@@ -224,29 +224,22 @@ public class PriceResource {
 We need to configure Kafka connector. This is done in the `application.properties` file.
 The keys are structured as follows:
 
-`smallrye.messaging.[sink|source].{stream-name}.property=value`
+`mp.messaging.[outgoing|incoming].{channel-name}.property=value`
 
-The `stream-name` segment must match the value set in the `@Incoming` and `@Outgoing` annotation:
+The `channel-name` segment must match the value set in the `@Incoming` and `@Outgoing` annotation:
 * `generated-price` -> sink in which we write the prices
 * `prices` -> source in which we read the prices
 
 [source]
 ----
 # Configure the Kafka sink (we write to it)
-smallrye.messaging.sink.generated-price.type=io.smallrye.reactive.messaging.kafka.Kafka
-smallrye.messaging.sink.generated-price.topic=prices
-smallrye.messaging.sink.generated-price.bootstrap.servers=localhost:9092
-smallrye.messaging.sink.generated-price.key.serializer=org.apache.kafka.common.serialization.StringSerializer
-smallrye.messaging.sink.generated-price.value.serializer=org.apache.kafka.common.serialization.IntegerSerializer
-smallrye.messaging.sink.generated-price.acks=1
+mp.messaging.outgoing.generated-price.connector=smallrye-kafka
+mp.messaging.outgoing.generated-price.topic=prices
+mp.messaging.outgoing.generated-price.value.serializer=org.apache.kafka.common.serialization.IntegerSerializer
 
 # Configure the Kafka source (we read from it)
-smallrye.messaging.source.prices.type=io.smallrye.reactive.messaging.kafka.Kafka
-smallrye.messaging.source.prices.topic=prices
-smallrye.messaging.source.prices.bootstrap.servers=localhost:9092
-smallrye.messaging.source.prices.key.deserializer=org.apache.kafka.common.serialization.StringDeserializer
-smallrye.messaging.source.prices.value.deserializer=org.apache.kafka.common.serialization.IntegerDeserializer
-smallrye.messaging.source.prices.group.id=my-group-id
+mp.messaging.incoming.prices.connector=smallrye-kafka
+mp.messaging.incoming.prices.value.deserializer=org.apache.kafka.common.serialization.IntegerDeserializer
 ----
 
 More details about this configuration is available on the https://kafka.apache.org/documentation/#producerconfigs[Producer configuration] and https://kafka.apache.org/documentation/#consumerconfigs[Consumer configuration] section from the Kafka documentation.

@@ -162,18 +162,24 @@ public class SpringDIProcessor {
     }
 
     /**
-     * Translate spring built in scope identifiers to CDI scopes.
+     * Translate spring built-in scope identifiers to CDI scopes.
      *
-     * @param clazz The class declaring the @Scope
+     * @param target The annotated element declaring the @Scope
      * @return A CDI built in (or session) scope that mostly matches
      *         the spring one. Websocket scope is currently mapped to @Dependant
      *         and spring custom scopes are not currently handled.
      */
-    private DotName getScope(final ClassInfo clazz) {
-        if (!clazz.annotations().containsKey(SPRING_SCOPE_ANNOTATION)) {
-            return null;
+    private DotName getScope(final AnnotationTarget target) {
+        AnnotationValue value = null;
+        if (target.kind() == AnnotationTarget.Kind.CLASS) {
+            if (target.asClass().classAnnotation(SPRING_SCOPE_ANNOTATION) != null) {
+                value = target.asClass().classAnnotation(SPRING_SCOPE_ANNOTATION).value();
+            }
+        } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
+            if (target.asMethod().hasAnnotation(SPRING_SCOPE_ANNOTATION)) {
+                value = target.asMethod().annotation(SPRING_SCOPE_ANNOTATION).value();
+            }
         }
-        final AnnotationValue value = clazz.classAnnotation(SPRING_SCOPE_ANNOTATION).value();
         if (value != null) {
             switch (value.asString()) {
                 case "singleton":
@@ -372,10 +378,17 @@ public class SpringDIProcessor {
                         CDI_PRODUCES_ANNOTATION,
                         target,
                         Collections.emptyList()));
-                annotationsToAdd.add(create(
-                        CDI_DEPENDENT_ANNOTATION,
-                        target,
-                        Collections.emptyList()));
+                DotName declaredScope = getScope(methodInfo);
+                // Non-spring specific annotations are processed by Arc
+                if (declaredScope == null && !methodInfo.hasAnnotation(CDI_SINGLETON_ANNOTATION)) {
+                    declaredScope = CDI_SINGLETON_ANNOTATION; // implicit default scope in spring
+                }
+                if (declaredScope != null) {
+                    annotationsToAdd.add(create(
+                            declaredScope,
+                            target,
+                            Collections.emptyList()));
+                }
 
                 //check if the spring annotation defines a name for the bean
                 final AnnotationValue beanNameAnnotationValue = methodInfo.annotation(BEAN_ANNOTATION).value("name");

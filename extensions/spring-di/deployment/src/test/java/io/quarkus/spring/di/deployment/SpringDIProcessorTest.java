@@ -27,13 +27,17 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
+import org.jboss.jandex.MethodInfo;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import io.quarkus.arc.processor.BeanArchives;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.util.IoUtil;
 
 /**
@@ -42,9 +46,10 @@ import io.quarkus.deployment.util.IoUtil;
 class SpringDIProcessorTest {
 
     final SpringDIProcessor processor = new SpringDIProcessor();
-    final IndexView index = getIndex(PrototypeService.class, RequestService.class,
-            UndeclaredService.class, ConflictService.class, ConflictBean.class, RequestBean.class, UndeclaredBean.class,
-            ConflictStereotypeBean.class, NamedBean.class, OverrideConflictStereotypeBean.class, ConflictNamedBean.class);
+    final IndexView index = getIndex(PrototypeService.class, RequestService.class, UndeclaredService.class,
+            ConflictService.class, ConflictBean.class, RequestBean.class, UndeclaredBean.class,
+            ConflictStereotypeBean.class, NamedBean.class, OverrideConflictStereotypeBean.class,
+            ConflictNamedBean.class);
 
     @Test
     public void springStereotypeScopes() {
@@ -58,10 +63,9 @@ class SpringDIProcessorTest {
                 Collections.singleton(DotName.createSimple(Dependent.class.getName())));
         expected.put(DotName.createSimple(RequestService.class.getName()),
                 Collections.singleton(DotName.createSimple(RequestScoped.class.getName())));
-        expected.put(DotName.createSimple(UndeclaredService.class.getName()),
-                Collections.emptySet());
-        expected.put(DotName.createSimple(ConflictService.class.getName()),
-                setOf(DotName.createSimple(Dependent.class.getName()), DotName.createSimple(RequestScoped.class.getName())));
+        expected.put(DotName.createSimple(UndeclaredService.class.getName()), Collections.emptySet());
+        expected.put(DotName.createSimple(ConflictService.class.getName()), setOf(
+                DotName.createSimple(Dependent.class.getName()), DotName.createSimple(RequestScoped.class.getName())));
         assertEquals(expected, scopes);
     }
 
@@ -146,6 +150,53 @@ class SpringDIProcessorTest {
         });
     }
 
+    @Test
+    public void getAnnotationsToAddBeanMethodDefaultsToSingleton() {
+        final Map<DotName, Set<DotName>> scopes = processor.getStereotypeScopes(index);
+        final MethodInfo target = index.getClassByName(DotName.createSimple(BeanConfig.class.getName()))
+                .method("singletonBean");
+
+        final Set<AnnotationInstance> ret = processor.getAnnotationsToAdd(target, scopes, null);
+
+        final Set<AnnotationInstance> expected = setOf(
+                AnnotationInstance.create(DotName.createSimple(Singleton.class.getName()), target,
+                        Collections.emptyList()),
+                AnnotationInstance.create(DotNames.PRODUCES, target, Collections.emptyList()));
+        assertEquals(expected, ret);
+    }
+
+    /**
+     * Do not add javax.inject.Singleton, as it is not spring-specific and Arc processor already handles it.
+     * Otherwise it would cause "declares multiple scope type annotations" error.
+     */
+    @Test
+    public void getAnnotationsToAddBeanMethodExplicitSingleton() {
+        final Map<DotName, Set<DotName>> scopes = processor.getStereotypeScopes(index);
+        final MethodInfo target = index.getClassByName(DotName.createSimple(BeanConfig.class.getName()))
+                .method("explicitSingletonBean");
+
+        final Set<AnnotationInstance> ret = processor.getAnnotationsToAdd(target, scopes, null);
+
+        final Set<AnnotationInstance> expected = setOf(
+                AnnotationInstance.create(DotNames.PRODUCES, target, Collections.emptyList()));
+        assertEquals(expected, ret);
+    }
+
+    @Test
+    public void getAnnotationsToAddBeanMethodWithScope() {
+        final Map<DotName, Set<DotName>> scopes = processor.getStereotypeScopes(index);
+        final MethodInfo target = index.getClassByName(DotName.createSimple(BeanConfig.class.getName()))
+                .method("requestBean");
+
+        final Set<AnnotationInstance> ret = processor.getAnnotationsToAdd(target, scopes, null);
+
+        final Set<AnnotationInstance> expected = setOf(
+                AnnotationInstance.create(DotName.createSimple(RequestScoped.class.getName()), target,
+                        Collections.emptyList()),
+                AnnotationInstance.create(DotNames.PRODUCES, target, Collections.emptyList()));
+        assertEquals(expected, ret);
+    }
+
     private IndexView getIndex(final Class<?>... classes) {
         final Indexer indexer = new Indexer();
         for (final Class<?> clazz : classes) {
@@ -222,5 +273,26 @@ class SpringDIProcessorTest {
     @ConflictService
     @Scope("application")
     public class OverrideConflictStereotypeBean {
+    }
+
+    @Configuration
+    public class BeanConfig {
+
+        @Bean
+        public UndeclaredBean singletonBean() {
+            return new UndeclaredBean();
+        }
+
+        @Bean
+        @Scope(value = "request")
+        public UndeclaredBean requestBean() {
+            return new UndeclaredBean();
+        }
+
+        @Bean
+        @Singleton
+        public UndeclaredBean explicitSingletonBean() {
+            return new UndeclaredBean();
+        }
     }
 }

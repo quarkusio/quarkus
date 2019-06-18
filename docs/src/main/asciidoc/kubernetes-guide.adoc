@@ -37,7 +37,7 @@ The solution is located in the `getting-started` directory.
 
 == Deploying the application in Kubernetes
 
-First, you need to _push_ the Docker image (created in the previous guide) to the image registry of your Kubernetes cluster.
+First, you need to _push_ the Docker image (created in the link:building-native-image-guide.html[previous] guide) to the image registry of your Kubernetes cluster.
 Depending on your cluster, there are several ways.
 For `minikube`, execute:
 

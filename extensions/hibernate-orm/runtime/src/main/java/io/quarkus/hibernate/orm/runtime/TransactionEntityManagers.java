@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.runtime;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
@@ -11,6 +12,7 @@ import javax.transaction.TransactionSynchronizationRegistry;
 
 import io.quarkus.hibernate.orm.runtime.entitymanager.TransactionScopedEntityManager;
 
+@ApplicationScoped
 public class TransactionEntityManagers {
 
     @Inject

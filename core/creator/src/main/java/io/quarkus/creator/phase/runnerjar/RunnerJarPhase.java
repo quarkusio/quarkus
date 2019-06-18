@@ -259,6 +259,12 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         for (AppDependency appDep : appDeps) {
             final AppArtifact depArtifact = appDep.getArtifact();
             final Path resolvedDep = depResolver.resolve(depArtifact);
+
+            // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
+            if (!resolvedDep.getFileName().toString().endsWith(".jar")) {
+                continue;
+            }
+
             Set<String> transformedFromThisArchive = transformedClasses.get(resolvedDep);
             if (uberJar) {
                 try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep)) {

@@ -8,6 +8,7 @@ import static org.junit.Assert.fail;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -57,7 +58,9 @@ public abstract class RunnerJarOutcomeTestBase extends CreatorOutcomeTestBase {
             // assert the Class-Path contains all the entries in the lib dir
             final String cp = mainAttrs.getValue("Class-Path");
             assertNotNull(cp);
-            String[] cpEntries = cp.trim().split("\\s+");
+            String[] cpEntries = Arrays.stream(cp.trim().split("\\s+"))
+                    .filter(s -> !s.trim().isEmpty())
+                    .toArray(String[]::new);
             assertEquals(actualLib.size(), cpEntries.length);
             for (String entry : cpEntries) {
                 assertTrue(entry.startsWith(LIB_PREFIX));

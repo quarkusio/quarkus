@@ -119,7 +119,7 @@ public class CounterBean {
 * Specialization is not supported
 * `beans.xml` descriptor content is ignored
 * Passivation and passivating scopes are not supported
-* Transitive interceptor bindings and interceptor methods on superclasses are not implemented yet
+* Interceptor methods on superclasses are not implemented yet
 
 == Build Time Extension Points
 
@@ -290,6 +290,46 @@ ContextRegistrarBuildItem customContext() {
     });
 }
 ----
+
+[[build_metadata]]
+=== Available Build Time Metadata
+
+Any of the above extensions that operates with `BuildExtension.BuildContext` can leverage certain build time metadata that are generated during build.
+The built-in keys located in `io.quarkus.arc.processor.BuildExtension.Key` are:
+
+* `ANNOTATION_STORE`
+** Contains an `AnnotationStore` that keeps information about all `AnnotationTarget` annotations after application of annotation transformers
+* `INJECTION_POINTS`
+** `List<InjectionPointInfo>` containing all injection points
+* `BEANS`
+** `List<BeanInfo>` containing all beans
+* `OBSERVERS`
+** `List<ObserverInfo>` containing all observers
+* `SCOPES`
+** `List<ScopeInfo>` containing all scopes, including custom ones
+* `QUALIFIERS`
+** `Map<DotName, ClassInfo>` containing all qualifiers
+* `INTERCEPTOR_BINDINGS`
+** `Map<DotName, ClassInfo>` containing all interceptor bindings
+* `STEREOTYPES`
+** `Map<DotName, ClassInfo>` containing all stereotypes
+
+To get hold of these, simply query the extension context object for given key.
+Note that these metadata are made available as build proceeds which means that extensions can only leverage metadata that were build before they are invoked.
+If your extension attempts to retrieve metadata that wasn't yet produced, `null` will be returned.
+Here is a summary of which extensions can access which metadata:
+
+* `AnnotationsTransformer`
+** Shouldn't rely on any metadata as this is one of the first CDI extensions invoked
+* `ContextRegistrar`
+** Has access to `ANNOTATION_STORE`
+* `InjectionPointsTransformer`
+** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`
+* `BeanRegistrar`
+** Has access to all build metadata
+* `BeanDeploymentValidator`
+** Has access to all build metadata
+
 
 [[remove_unused_beans]]
 == Removing Unused Beans

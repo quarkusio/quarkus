@@ -129,6 +129,11 @@ public class BeanDeployment {
         this.injectionPoints = new ArrayList<>();
         this.interceptors = findInterceptors(injectionPoints);
         this.beanResolver = new BeanResolver(this);
+        if (buildContext != null) {
+            buildContext.putInternal(Key.QUALIFIERS.asString(), Collections.unmodifiableMap(qualifiers));
+            buildContext.putInternal(Key.INTERCEPTOR_BINDINGS.asString(), Collections.unmodifiableMap(interceptorBindings));
+            buildContext.putInternal(Key.STEREOTYPES.asString(), Collections.unmodifiableMap(stereotypes));
+        }
         List<ObserverInfo> observers = new ArrayList<>();
         this.beans = findBeans(initBeanDefiningAnnotations(beanDefiningAnnotations, stereotypes.keySet()), observers,
                 injectionPoints);
@@ -137,9 +142,6 @@ public class BeanDeployment {
             buildContext.putInternal(Key.INJECTION_POINTS.asString(), Collections.unmodifiableList(injectionPoints));
             buildContext.putInternal(Key.OBSERVERS.asString(), Collections.unmodifiableList(observers));
             buildContext.putInternal(Key.BEANS.asString(), Collections.unmodifiableList(beans));
-            buildContext.putInternal(Key.QUALIFIERS.asString(), Collections.unmodifiableMap(qualifiers));
-            buildContext.putInternal(Key.INTERCEPTOR_BINDINGS.asString(), Collections.unmodifiableMap(interceptorBindings));
-            buildContext.putInternal(Key.STEREOTYPES.asString(), Collections.unmodifiableMap(stereotypes));
         }
 
         registerSyntheticBeans(beanRegistrars, buildContext);

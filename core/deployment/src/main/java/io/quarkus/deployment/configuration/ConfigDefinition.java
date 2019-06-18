@@ -161,11 +161,20 @@ public class ConfigDefinition extends CompoundConfigType {
     public void registerConfigRoot(Class<?> configRoot) {
         final AccessorFinder accessorFinder = new AccessorFinder();
         final ConfigRoot configRootAnnotation = configRoot.getAnnotation(ConfigRoot.class);
+        final ConfigPhase configPhase = configRootAnnotation.phase();
         if (configRoot.isAnnotationPresent(ConfigGroup.class)) {
             throw reportError(configRoot, "Roots cannot have a @ConfigGroup annotation");
         }
-        final String containingName = join(
-                withoutSuffix(lowerCaseFirst(camelHumpsIterator(configRoot.getSimpleName())), "Config", "Configuration"));
+        final String containingName;
+        if (configPhase == ConfigPhase.RUN_TIME) {
+            containingName = join(
+                    withoutSuffix(lowerCaseFirst(camelHumpsIterator(configRoot.getSimpleName())), "Config", "Configuration",
+                            "RunTimeConfig", "RunTimeConfiguration"));
+        } else {
+            containingName = join(
+                    withoutSuffix(lowerCaseFirst(camelHumpsIterator(configRoot.getSimpleName())), "Config", "Configuration",
+                            "BuildTimeConfig", "BuildTimeConfiguration"));
+        }
         final String name = configRootAnnotation.name();
         final String rootName;
         if (name.equals(ConfigItem.PARENT)) {
@@ -178,7 +187,6 @@ public class ConfigDefinition extends CompoundConfigType {
         } else {
             rootName = name;
         }
-        final ConfigPhase configPhase = configRootAnnotation.phase();
         if (rootTypesByContainingName.containsKey(containingName))
             throw reportError(configRoot, "Duplicate configuration root name \"" + containingName + "\"");
         final GroupConfigType configGroup = processConfigGroup(containingName, this, true, rootName, configRoot,

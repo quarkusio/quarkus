@@ -30,6 +30,7 @@ public class Extension {
 
     private String simplifiedArtifactId;
     private static final Pattern QUARKUS_PREFIX = Pattern.compile("^quarkus-");
+    private String shortName;
 
     public Extension() {
         // Use by mapper.
@@ -229,5 +230,17 @@ public class Extension {
 
     public String getGuide() {
         return guide;
+    }
+
+    public String getShortName() {
+        if (shortName == null) {
+            return name;
+        }
+        return shortName;
+    }
+
+    public Extension setShortName(String shortName) {
+        this.shortName = shortName;
+        return this;
     }
 }

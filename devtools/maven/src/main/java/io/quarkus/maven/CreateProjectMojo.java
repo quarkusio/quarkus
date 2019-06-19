@@ -35,6 +35,7 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuilder;
 import org.fusesource.jansi.Ansi;
 
+import io.quarkus.cli.commands.AddExtensionResult;
 import io.quarkus.cli.commands.AddExtensions;
 import io.quarkus.cli.commands.CreateProject;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
@@ -143,8 +144,11 @@ public class CreateProjectMojo extends AbstractMojo {
             File createdPomFile = new File(projectRoot, "pom.xml");
             if (success) {
                 File pomFile = new File(createdPomFile.getAbsolutePath());
-                new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+                AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
                         .addExtensions(extensions);
+                if (!result.succeeded()) {
+                    success = false;
+                }
             }
 
             createMavenWrapper(createdPomFile);
@@ -153,6 +157,8 @@ public class CreateProjectMojo extends AbstractMojo {
         }
         if (success) {
             printUserInstructions(projectRoot);
+        } else {
+            throw new MojoExecutionException("the project was created but it was unable to add the extensions");
         }
     }
 

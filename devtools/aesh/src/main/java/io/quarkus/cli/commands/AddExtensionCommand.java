@@ -46,7 +46,10 @@ public class AddExtensionCommand implements Command<CommandInvocation> {
                     File pomFile = new File(pom.getAbsolutePath());
                     AddExtensions project = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()),
                             pomFile.getName());
-                    project.addExtensions(Collections.singleton(extension));
+                    AddExtensionResult result = project.addExtensions(Collections.singleton(extension));
+                    if (!result.succeeded()) {
+                        throw new CommandException("Unable to add an extension matching " + extension);
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

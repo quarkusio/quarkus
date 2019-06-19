@@ -15,6 +15,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
+import io.quarkus.cli.commands.AddExtensionResult;
 import io.quarkus.cli.commands.AddExtensions;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 
@@ -64,8 +65,11 @@ public class AddExtensionMojo extends AbstractMojo {
         try {
             Model model = project.getOriginalModel().clone();
             File pomFile = new File(model.getPomFile().getAbsolutePath());
-            new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+            AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
                     .addExtensions(ext.stream().map(String::trim).collect(Collectors.toSet()));
+            if (!result.succeeded()) {
+                throw new MojoExecutionException("Unable to add extensions");
+            }
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to update the pom.xml file", e);
         }

@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.server.common.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_TIME;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -100,7 +101,7 @@ public class ResteasyServerCommonProcessor {
     ResteasyConfig resteasyConfig;
     ResteasyCommonConfig commonConfig;
 
-    @ConfigRoot
+    @ConfigRoot(phase = BUILD_TIME)
     static final class ResteasyConfig {
         /**
          * If this is true then JAX-RS will use only a single instance of a resource

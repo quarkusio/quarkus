@@ -554,5 +554,14 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-kafka-streams"
+  },
+  {
+    "name": "Apache Tika",
+    "labels": [
+      "tika",
+      "parser"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-tika"
   }
 ]

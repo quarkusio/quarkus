@@ -1,4 +1,4 @@
-package io.quarkus.it.kafka;
+package io.quarkus.it.kafka.streams;
 
 import static org.awaitility.Awaitility.await;
 
@@ -14,9 +14,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -45,6 +42,7 @@ import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.apache.kafka.streams.state.Stores;
 
+import io.quarkus.kafka.client.serialization.JsonbSerde;
 import io.quarkus.runtime.StartupEvent;
 
 @ApplicationScoped
@@ -68,30 +66,30 @@ public class KafkaStreamsPipeline {
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         StreamsBuilder builder = new StreamsBuilder();
 
-        JsonObjectSerde jsonNodeSerde = new JsonObjectSerde();
-        KTable<Integer, JsonObject> categories = builder.table(
-                CATEGORIES_TOPIC_NAME,
-                Consumed.with(Serdes.Integer(), jsonNodeSerde));
+        JsonbSerde<Category> categorySerde = new JsonbSerde<>(Category.class);
+        JsonbSerde<Customer> customerSerde = new JsonbSerde<>(Customer.class);
+        JsonbSerde<EnrichedCustomer> enrichedCustomerSerde = new JsonbSerde<>(EnrichedCustomer.class);
 
-        KStream<Integer, JsonObject> customers = builder
-                .stream(CUSTOMERS_TOPIC_NAME, Consumed.with(Serdes.Integer(), jsonNodeSerde))
-                .selectKey((k, v) -> v.getJsonNumber("category").intValue())
+        KTable<Integer, Category> categories = builder.table(
+                CATEGORIES_TOPIC_NAME,
+                Consumed.with(Serdes.Integer(), categorySerde));
+
+        KStream<Integer, EnrichedCustomer> customers = builder
+                .stream(CUSTOMERS_TOPIC_NAME, Consumed.with(Serdes.Integer(), customerSerde))
+                .selectKey((id, customer) -> customer.category)
                 .join(
                         categories,
-                        (v1, v2) -> {
-                            JsonObjectBuilder target = Json.createObjectBuilder();
-                            v1.forEach(target::add);
-                            target.add("category", v2);
-                            return target.build();
+                        (customer, category) -> {
+                            return new EnrichedCustomer(customer.id, customer.name, category);
                         },
-                        Joined.with(Serdes.Integer(), jsonNodeSerde, null));
+                        Joined.with(Serdes.Integer(), customerSerde, categorySerde));
 
         KeyValueBytesStoreSupplier storeSupplier = Stores.inMemoryKeyValueStore("countstore");
         customers.groupByKey()
                 .count(Materialized.<Integer, Long> as(storeSupplier));
 
-        customers.selectKey((k, v) -> v.getJsonNumber("id").intValue())
-                .to("streams-test-customers-processed", Produced.with(Serdes.Integer(), jsonNodeSerde));
+        customers.selectKey((categoryId, customer) -> customer.id)
+                .to("streams-test-customers-processed", Produced.with(Serdes.Integer(), enrichedCustomerSerde));
 
         streams = new KafkaStreams(builder.build(), props);
 

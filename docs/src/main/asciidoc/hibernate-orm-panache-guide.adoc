@@ -399,7 +399,7 @@ public class Person extends PanacheEntity {
     @Inject
     EntityManager entityManager;
     
-    public static Person findByIfForUpdate(Long id){
+    public static Person findByIdForUpdate(Long id){
       Person person = findById(id);
       //lock with the PESSIMISTIC_WRITE mode type : this will generate a SELECT ... FOR UPDATE query
       entityManager.lock(person, LockModeType.PESSIMISTIC_WRITE);

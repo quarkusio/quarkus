@@ -193,6 +193,7 @@ public abstract class Application {
 
             final ShutdownHookThread shutdownHookThread = new ShutdownHookThread(Thread.currentThread());
             Runtime.getRuntime().addShutdownHook(shutdownHookThread);
+            parseArgs(args);
             start(args);
             try {
                 while (!shutdownRequested) {
@@ -204,6 +205,15 @@ public abstract class Application {
             }
         } finally {
             exit();
+        }
+    }
+
+    private void parseArgs(String[] args) {
+        for (String arg : args) {
+            if (arg.startsWith("-D") && arg.contains("=")) {
+                String[] property = arg.substring(2).split("=");
+                System.setProperty(property[0], property[1]);
+            }
         }
     }
 

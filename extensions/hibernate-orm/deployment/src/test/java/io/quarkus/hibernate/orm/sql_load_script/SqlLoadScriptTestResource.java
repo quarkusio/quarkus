@@ -5,6 +5,8 @@ import javax.persistence.EntityManager;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 
+import io.quarkus.hibernate.orm.MyEntity;
+
 @Path("/orm-sql-load-script")
 public class SqlLoadScriptTestResource {
 

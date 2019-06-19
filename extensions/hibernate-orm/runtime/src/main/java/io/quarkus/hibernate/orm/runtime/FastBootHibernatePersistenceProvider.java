@@ -146,14 +146,8 @@ final class FastBootHibernatePersistenceProvider implements PersistenceProvider 
             RecordedState recordedState = PersistenceUnitsHolder.getRecordedState(persistenceUnitName);
 
             final MetadataImplementor metadata = recordedState.getMetadata();
-
             final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();
             final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
-            // TODO:
-            final Object validatorFactory = null;
-            // TODO:
-            final Object cdiBeanManager = null;
-
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
                     integrationSettings);
 
@@ -166,6 +160,9 @@ final class FastBootHibernatePersistenceProvider implements PersistenceProvider 
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(
                     runtimeSettings, recordedState);
+
+            final Object cdiBeanManager = Arc.container().beanManager();
+            final Object validatorFactory = Arc.container().instance("quarkus-hibernate-validator-factory").get();
 
             return new FastBootEntityManagerFactoryBuilder(
                     metadata /* Uses the StandardServiceRegistry references by this! */,

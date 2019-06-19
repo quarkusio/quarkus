@@ -1,6 +1,7 @@
 package io.quarkus.undertow.runtime.graal;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collections;
@@ -73,7 +74,7 @@ final class URLResourceSubstitution {
             URLClassLoader ucl = (URLClassLoader) cl;
             for (URL res : ucl.getURLs()) {
                 if (res.getProtocol().equals("file") && res.getPath().endsWith(".jar")) {
-                    try (JarFile file = new JarFile(res.getPath())) {
+                    try (JarFile file = new JarFile(res.toURI().getPath())) {
                         Enumeration<JarEntry> e = file.entries();
                         while (e.hasMoreElements()) {
                             JarEntry entry = e.nextElement();
@@ -83,7 +84,7 @@ final class URLResourceSubstitution {
                             }
                         }
 
-                    } catch (IOException e) {
+                    } catch (IOException | URISyntaxException e) {
                         throw new RuntimeException(e);
                     }
                 }

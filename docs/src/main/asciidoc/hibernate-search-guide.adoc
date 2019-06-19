@@ -633,3 +633,28 @@ If you are interested into learning more about Hibernate Search 6, the Hibernate
 
 It is still very much a work in progress but it can guide you in your exploration.
 
+== FAQ
+
+=== Why Hibernate Search 6 (and not a fully supported version)?
+
+To optimize the Hibernate Search bootstrap for Quarkus, the Hibernate team had to reorganize things a bit (collect the metadata offline, start the Elasticsearch client later...).
+
+This couldn't be done in the 5.x code base so we decided to go with the in progress Hibernate Search 6.
+
+=== Can I really use it?
+
+While Hibernate Search 6 is still at Alpha stage, the code is of production quality and can be relied on.
+
+What we don't guarantee is that there might be API changes along the way to the final release of Hibernate Search 6 and you might have to adapt your code.
+
+If it is not a major issue for you, then sure you can use it.
+
+=== Why Elasticsearch only?
+
+Hibernate Search supports both a Lucene backend and an Elasticsearch backend.
+
+In the context of Quarkus and to build microservices, we thought the latter would make more sense.
+Thus we focused our efforts on it.
+
+We don't have plans to support the Lucene backend in Quarkus for now.
+

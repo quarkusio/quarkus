@@ -15,7 +15,8 @@
 
     <packaging>pom</packaging>
     <properties>
-        <version.asciidoctor>1.5.7.1</version.asciidoctor>
+        <asciidoctorj.version>2.0.0</asciidoctorj.version>
+        <asciidoctor-maven-plugin.version>2.0.0-RC.1</asciidoctor-maven-plugin.version>
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
         <quarkus-base-url>https://github.com/quarkusio/quarkus</quarkus-base-url>
         <quickstarts-base-url>https://github.com/quarkusio/quarkus-quickstarts</quickstarts-base-url>
@@ -32,8 +33,14 @@
             <plugin>
                 <groupId>org.asciidoctor</groupId>
                 <artifactId>asciidoctor-maven-plugin</artifactId>
-                <version>${version.asciidoctor}</version>
+                <version>${asciidoctor-maven-plugin.version}</version>
                 <configuration>
+                    <enableVerbose>true</enableVerbose>  
+                    <logHandler>
+                        <failIf>
+                          <severity>INFO</severity>
+                        </failIf>
+                    </logHandler>
                     <attributes>
                         <quarkus-version>${project.version}</quarkus-version>
                         <surefire-version>${version.surefire.plugin}</surefire-version>
@@ -95,9 +102,10 @@
                         </goals>
                         <configuration>
                             <backend>html5</backend>
-                            <sourceHighlighter>coderay</sourceHighlighter>
+                            <sourceDirectory>src/main/asciidoc</sourceDirectory>
                             <preserveDirectories>true</preserveDirectories>
                             <attributes>
+                                <source-highlighter>coderay</source-highlighter>
                                 <imagesdir>./images</imagesdir>
                                 <icons>font</icons>
                                 <sectanchors>true</sectanchors>
@@ -112,6 +120,13 @@
                         </configuration>
                     </execution>
                 </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.asciidoctor</groupId>
+                        <artifactId>asciidoctorj</artifactId>
+                        <version>${asciidoctorj.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

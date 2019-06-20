@@ -94,6 +94,7 @@
 
         <!-- Kubernetes -->
         <module>kubernetes</module>
+        <module>kubernetes-client</module>
 
         <!-- Database migrations -->
         <module>flyway</module>

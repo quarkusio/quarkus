@@ -67,12 +67,17 @@ public final class ServiceUtil {
         return set;
     }
 
+    /**
+     * - Lines starting by a # (or white spaces and a #) are ignored. - For
+     * lines containing data before a comment (#) are parsed and only the value
+     * before the comment is used.
+     */
     private static void readStream(final Set<String> classNames, final BufferedReader br) throws IOException {
         String line;
         while ((line = br.readLine()) != null) {
             int commentMarkerIndex = line.indexOf('#');
-            if (commentMarkerIndex > 0) {
-                line = line.substring(commentMarkerIndex);
+            if (commentMarkerIndex >= 0) {
+                line = line.substring(0, commentMarkerIndex);
             }
             line = line.trim();
 

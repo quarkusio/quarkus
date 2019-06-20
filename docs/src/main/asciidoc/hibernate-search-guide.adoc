@@ -515,20 +515,20 @@ Edit `src/main/resources/application.properties` and inject the following config
 
 [source,properties]
 ----
-quarkus.ssl.native=false # <1>
+quarkus.ssl.native=false <1>
 
-quarkus.datasource.url=jdbc:postgresql:quarkus_test # <2>
+quarkus.datasource.url=jdbc:postgresql:quarkus_test <2>
 quarkus.datasource.driver=org.postgresql.Driver
 quarkus.datasource.username=quarkus_test
 quarkus.datasource.password=quarkus_test
 
-quarkus.hibernate-orm.database.generation=drop-and-create # <3>
+quarkus.hibernate-orm.database.generation=drop-and-create <3>
 
-quarkus.hibernate-search.elasticsearch.version=7 # <4>
-quarkus.hibernate-search.elasticsearch.analysis-configurer=org.acme.hibernate.search.elasticsearch.config.AnalysisConfigurer # <5>
-quarkus.hibernate-search.elasticsearch.automatic-indexing.synchronization-strategy=searchable # <6>
-quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.strategy=drop-and-create # <7>
-quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.required-status=yellow # <8>
+quarkus.hibernate-search.elasticsearch.version=7 <4>
+quarkus.hibernate-search.elasticsearch.analysis-configurer=org.acme.hibernate.search.elasticsearch.config.AnalysisConfigurer <5>
+quarkus.hibernate-search.elasticsearch.automatic-indexing.synchronization-strategy=searchable <6>
+quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.strategy=drop-and-create <7>
+quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.required-status=yellow <8>
 ----
 <1> We won't use SSL so we disable it to have a more compact native executable.
 <2> Let's create a PostgreSQL datasource.

@@ -152,6 +152,7 @@ public class SubstrateAutoFeatureStep {
         final Map<String, ReflectionInfo> reflectiveClasses = new LinkedHashMap<>();
         for (ReflectiveClassBuildItem i : reflectiveClassBuildItems) {
             addReflectiveClass(reflectiveClasses, i.isConstructors(), i.isMethods(), i.isFields(), i.areFinalFieldsWritable(),
+                    i.isWeak(),
                     i.getClassNames().toArray(new String[0]));
         }
         for (ReflectiveFieldBuildItem i : reflectiveFields) {
@@ -162,7 +163,7 @@ public class SubstrateAutoFeatureStep {
         }
 
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
-            addReflectiveClass(reflectiveClasses, true, false, false, false,
+            addReflectiveClass(reflectiveClasses, true, false, false, false, false,
                     i.providers().toArray(new String[] {}));
         }
 
@@ -182,10 +183,13 @@ public class SubstrateAutoFeatureStep {
             ResultHandle methods = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethods", Method[].class), clazz);
             ResultHandle fields = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredFields", Field[].class), clazz);
 
-            ResultHandle carray = tc.newArray(Class.class, tc.load(1));
-            tc.writeArrayValue(carray, 0, clazz);
-            tc.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Class[].class),
-                    carray);
+            if (!entry.getValue().weak) {
+                ResultHandle carray = tc.newArray(Class.class, tc.load(1));
+                tc.writeArrayValue(carray, 0, clazz);
+                tc.invokeStaticMethod(
+                        ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Class[].class),
+                        carray);
+            }
 
             if (entry.getValue().constructors) {
                 tc.invokeStaticMethod(
@@ -263,7 +267,7 @@ public class SubstrateAutoFeatureStep {
         String cl = methodInfo.getDeclaringClass();
         ReflectionInfo existing = reflectiveClasses.get(cl);
         if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false));
+            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false));
         }
         if (methodInfo.getName().equals("<init>")) {
             existing.ctorSet.add(methodInfo);
@@ -273,12 +277,12 @@ public class SubstrateAutoFeatureStep {
     }
 
     public void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses, boolean constructors, boolean method,
-            boolean fields, boolean finalFieldsWritable,
+            boolean fields, boolean finalFieldsWritable, boolean weak,
             String... className) {
         for (String cl : className) {
             ReflectionInfo existing = reflectiveClasses.get(cl);
             if (existing == null) {
-                reflectiveClasses.put(cl, new ReflectionInfo(constructors, method, fields, finalFieldsWritable));
+                reflectiveClasses.put(cl, new ReflectionInfo(constructors, method, fields, finalFieldsWritable, weak));
             } else {
                 if (constructors) {
                     existing.constructors = true;
@@ -297,7 +301,7 @@ public class SubstrateAutoFeatureStep {
         String cl = fieldInfo.getDeclaringClass();
         ReflectionInfo existing = reflectiveClasses.get(cl);
         if (existing == null) {
-            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false));
+            reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false, false, false));
         }
         existing.fieldSet.add(fieldInfo.getName());
     }
@@ -307,15 +311,18 @@ public class SubstrateAutoFeatureStep {
         boolean methods;
         boolean fields;
         boolean finalFieldsWritable;
+        boolean weak;
         Set<String> fieldSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> methodSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> ctorSet = new HashSet<>();
 
-        private ReflectionInfo(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable) {
+        private ReflectionInfo(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
+                boolean weak) {
             this.methods = methods;
             this.fields = fields;
             this.constructors = constructors;
             this.finalFieldsWritable = finalFieldsWritable;
+            this.weak = weak;
         }
     }
 }

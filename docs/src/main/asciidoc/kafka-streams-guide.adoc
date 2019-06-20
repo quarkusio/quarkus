@@ -49,7 +49,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `kafka-quickstart` {quickstarts-tree-url}/kafka-streams-quickstart[directory].
+The solution is located in the `kafka-streams-quickstart` {quickstarts-tree-url}/kafka-streams-quickstart[directory].
 
 == Creating the Producer Maven Project
 
@@ -165,11 +165,11 @@ public class ValuesGenerator {
 <2> The method returns a RX Java 2 _stream_ (`Flowable`) emitting a random temperature value every 0.5 seconds.
 <3> Instruct Reactive Messaging to dispatch the items from the returned `Flowable` (static list of weather stations) to `weather-stations`.
 
-The two method each return a _reactive stream_ whose items are sent to the streams named `temperature-values` and `weather-stations`, respectively.
+The two methods each return a _reactive stream_ whose items are sent to the streams named `temperature-values` and `weather-stations`, respectively.
 
 === Topic Configuration
 
-The two streams are mapped to Kafka Apache topics using the Quarkus configuration file `application.properties`.
+The two channels are mapped to Kafka topics using the Quarkus configuration file `application.properties`.
 For that, add the following to the file `producer/src/main/resources/application.properties`:
 
 [source]

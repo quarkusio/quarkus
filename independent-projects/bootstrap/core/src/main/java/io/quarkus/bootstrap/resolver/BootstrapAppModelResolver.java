@@ -89,6 +89,26 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     }
 
     @Override
+    public List<AppDependency> readManagedDependencies(AppArtifact artifact) throws AppModelResolverException {
+        final List<Dependency> aetherDeps = mvn.resolveDescriptor(toAetherArtifact(artifact)).getManagedDependencies();
+        if(aetherDeps.isEmpty()) {
+            return Collections.emptyList();
+        }
+        final List<AppDependency> result = new ArrayList<>(aetherDeps.size());
+        for(Dependency aetherDep : aetherDeps) {
+            result.add(new AppDependency(new AppArtifact(
+                    aetherDep.getArtifact().getGroupId(),
+                    aetherDep.getArtifact().getArtifactId(),
+                    aetherDep.getArtifact().getClassifier(),
+                    aetherDep.getArtifact().getExtension(),
+                    aetherDep.getArtifact().getVersion()
+                    ),
+                    aetherDep.getScope(), aetherDep.isOptional()));
+        }
+        return result;
+    }
+
+    @Override
     public List<AppDependency> resolveUserDependencies(AppArtifact appArtifact, List<AppDependency> deps) throws AppModelResolverException {
         final List<Dependency> mvnDeps;
         if(deps.isEmpty()) {
@@ -120,27 +140,21 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     @Override
     public AppModel resolveModel(AppArtifact appArtifact) throws AppModelResolverException {
-        return devmode ? injectDeploymentDependencies(appArtifact,
-                mvn.resolveDependencies(toAetherArtifact(appArtifact), "test").getRoot())
-                : doResolveModel(appArtifact, Collections.emptyList());
+        return resolveManagedModel(appArtifact, Collections.emptyList(), readManagedDependencies(appArtifact));
     }
 
     @Override
     public AppModel resolveModel(AppArtifact appArtifact, List<AppDependency> directDeps) throws AppModelResolverException {
-        final List<Dependency> mvnDeps;
-        if(directDeps.isEmpty()) {
-            mvnDeps = Collections.emptyList();
-        } else {
-            mvnDeps = new ArrayList<>(directDeps.size());
-            for (AppDependency dep : directDeps) {
-                mvnDeps.add(new Dependency(toAetherArtifact(dep.getArtifact()), dep.getScope()));
-            }
-        }
-        return doResolveModel(appArtifact, mvnDeps);
+        return resolveManagedModel(appArtifact, directDeps, readManagedDependencies(appArtifact));
     }
 
-    private AppModel doResolveModel(AppArtifact appArtifact, final List<Dependency> directMvnDeps) throws AppModelResolverException {
-        return injectDeploymentDependencies(appArtifact, mvn.resolveDependencies(toAetherArtifact(appArtifact), directMvnDeps).getRoot());
+    public AppModel resolveManagedModel(AppArtifact appArtifact, List<AppDependency> directDeps, List<AppDependency> managedDeps) throws AppModelResolverException {
+        return doResolveModel(appArtifact, toAetherDeps(directDeps), toAetherDeps(managedDeps));
+    }
+
+    private AppModel doResolveModel(AppArtifact appArtifact, List<Dependency> directMvnDeps, List<Dependency> managedMvnDeps) throws AppModelResolverException {
+        return injectDeploymentDependencies(appArtifact, mvn.resolveManagedDependencies(toAetherArtifact(appArtifact),
+                directMvnDeps, managedMvnDeps, devmode ? new String[] { "test" } : new String[0]).getRoot(), managedMvnDeps);
     }
 
     @Override
@@ -189,7 +203,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     }
 
     public List<RemoteRepository> resolveArtifactRepos(AppArtifact appArtifact) throws AppModelResolverException {
-        return mvn.resolveDescriptor(new DefaultArtifact(appArtifact.getGroupId(), appArtifact.getArtifactId(), appArtifact.getClassifier(), appArtifact.getType(), appArtifact.getVersion())).getRepositories();
+        return mvn.resolveDescriptor(toAetherArtifact(appArtifact)).getRepositories();
     }
 
     public void install(AppArtifact appArtifact, Path localPath) throws AppModelResolverException {
@@ -197,7 +211,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                 appArtifact.getType(), appArtifact.getVersion(), Collections.emptyMap(), localPath.toFile()));
     }
 
-    private AppModel injectDeploymentDependencies(AppArtifact appArtifact, DependencyNode root) throws AppModelResolverException {
+    private AppModel injectDeploymentDependencies(AppArtifact appArtifact, DependencyNode root, List<Dependency> managedDeps) throws AppModelResolverException {
 
         final Set<AppArtifactKey> appDeps = new HashSet<>();
         final List<AppDependency> userDeps = new ArrayList<>();
@@ -221,7 +235,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             child.accept(visitor);
         }
 
-        final DeploymentInjectingDependencyVisitor deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn);
+        final DeploymentInjectingDependencyVisitor deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn, managedDeps);
         try {
             root.accept(new TreeDependencyVisitor(deploymentInjector));
         } catch (DeploymentInjectionException e) {
@@ -302,5 +316,16 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             appArtifact.setPath(file.toPath());
         }
         return appArtifact;
+    }
+
+    private static List<Dependency> toAetherDeps(List<AppDependency> directDeps) {
+        if(directDeps.isEmpty()) {
+            return Collections.emptyList();
+        }
+        final List<Dependency> directMvnDeps = new ArrayList<>(directDeps.size());
+        for (AppDependency dep : directDeps) {
+            directMvnDeps.add(new Dependency(toAetherArtifact(dep.getArtifact()), dep.getScope()));
+        }
+        return directMvnDeps;
     }
 }

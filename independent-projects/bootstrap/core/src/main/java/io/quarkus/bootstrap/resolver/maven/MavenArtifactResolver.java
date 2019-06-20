@@ -7,9 +7,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
@@ -41,6 +44,8 @@ import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
+
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 
@@ -263,6 +268,71 @@ public class MavenArtifactResolver {
         }
     }
 
+    public DependencyResult resolveManagedDependencies(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps, String... excludedScopes) throws AppModelResolverException {
+        try {
+            return repoSystem.resolveDependencies(repoSession,
+                    new DependencyRequest().setCollectRequest(
+                            newCollectManagedRequest(artifact, deps, managedDeps, excludedScopes)));
+        } catch (DependencyResolutionException e) {
+            throw new AppModelResolverException("Failed to resolve dependencies for " + artifact, e);
+        }
+    }
+
+    public CollectResult collectManagedDependencies(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps, String... excludedScopes) throws AppModelResolverException {
+        try {
+            return repoSystem.collectDependencies(repoSession, newCollectManagedRequest(artifact, deps, managedDeps, excludedScopes));
+        } catch (DependencyCollectionException e) {
+            throw new AppModelResolverException("Failed to collect dependencies for " + artifact, e);
+        }
+    }
+
+    private CollectRequest newCollectManagedRequest(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps, String... excludedScopes) throws AppModelResolverException {
+        final ArtifactDescriptorResult descr = resolveDescriptor(artifact);
+        Collection<String> excluded;
+        if(excludedScopes.length == 0) {
+            excluded = Arrays.asList(new String[] {"test", "provided"});
+        } else if (excludedScopes.length == 1) {
+            excluded = Collections.singleton(excludedScopes[0]);
+        } else {
+            excluded = Arrays.asList(excludedScopes);
+            if (excludedScopes.length > 3) {
+                excluded = new HashSet<>(Arrays.asList(excludedScopes));
+            }
+        }
+        final List<Dependency> originalDeps = new ArrayList<>(descr.getDependencies().size());
+        for(Dependency dep : descr.getDependencies()) {
+            if(excluded.contains(dep.getScope())) {
+                continue;
+            }
+            originalDeps.add(dep);
+        }
+
+        final int initialCapacity = managedDeps.size() + originalDeps.size();
+        final List<Dependency> mergedManagedDeps = new ArrayList<Dependency>(initialCapacity);
+        Map<AppArtifactKey, String> managedVersions = new HashMap<>(initialCapacity);
+        if(managedDeps != null && !managedDeps.isEmpty()) {
+            for (Dependency dep : managedDeps) {
+                managedVersions.put(getId(dep.getArtifact()), dep.getArtifact().getVersion());
+                mergedManagedDeps.add(dep);
+            }
+        }
+        if(!descr.getManagedDependencies().isEmpty()) {
+            for (Dependency dep : descr.getManagedDependencies()) {
+                final AppArtifactKey key = getId(dep.getArtifact());
+                if(!managedVersions.containsKey(key)) {
+                    managedVersions.put(key, dep.getArtifact().getVersion());
+                    mergedManagedDeps.add(dep);
+                }
+            }
+        }
+
+        return new CollectRequest()
+                .setRootArtifact(artifact)
+                .setDependencies(mergeDeps(deps, originalDeps, managedVersions))
+                .setManagedDependencies(mergedManagedDeps)
+                .setRepositories(remoteRepoManager.aggregateRepositories(repoSession, remoteRepos, descr.getRepositories(), true));
+    }
+
     public void install(Artifact artifact) throws AppModelResolverException {
         try {
             repoSystem.install(repoSession, new InstallRequest().addArtifact(artifact));
@@ -275,5 +345,38 @@ public class MavenArtifactResolver {
         return new CollectRequest()
                 .setRoot(new Dependency(artifact, JavaScopes.RUNTIME))
                 .setRepositories(remoteRepos);
+    }
+
+    private List<Dependency> mergeDeps(List<Dependency> dominant, List<Dependency> recessive, Map<AppArtifactKey, String> managedVersions) {
+        final int initialCapacity = dominant.size() + recessive.size();
+        if(initialCapacity == 0) {
+            return Collections.emptyList();
+        }
+        final List<Dependency> result = new ArrayList<Dependency>(initialCapacity);
+        final Set<AppArtifactKey> ids = new HashSet<AppArtifactKey>(initialCapacity, 1.0f);
+        for (Dependency dependency : dominant) {
+            final AppArtifactKey id = getId(dependency.getArtifact());
+            ids.add(id);
+            final String managedVersion = managedVersions.get(id);
+            if(managedVersion != null) {
+                dependency = dependency.setArtifact(dependency.getArtifact().setVersion(managedVersion));
+            }
+            result.add(dependency);
+        }
+        for (Dependency dependency : recessive) {
+            final AppArtifactKey id = getId(dependency.getArtifact());
+            if (!ids.contains(id)) {
+                final String managedVersion = managedVersions.get(id);
+                if(managedVersion != null) {
+                    dependency = dependency.setArtifact(dependency.getArtifact().setVersion(managedVersion));
+                }
+                result.add(dependency);
+            }
+        }
+        return result;
+    }
+
+    private static AppArtifactKey getId(Artifact a) {
+        return new AppArtifactKey(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getExtension());
     }
 }

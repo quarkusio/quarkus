@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.maven.artifact.DefaultArtifact;
+import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.model.Model;
 import org.apache.maven.project.MavenProject;
 import org.junit.After;
@@ -81,6 +83,7 @@ public abstract class TreeMojoTestBase {
 
         final AbstractTreeMojo mojo = newTreeMojo();
         mojo.project = new MavenProject();
+        mojo.project.setArtifact(new DefaultArtifact(app.getGroupId(), app.getArtifactId(), app.getVersion(), "compile", app.getType(), app.getClassifier(), new DefaultArtifactHandler("jar")));
         mojo.project.setModel(appModel);
         mojo.project.setOriginalModel(appModel);
 

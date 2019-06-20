@@ -8,17 +8,21 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 
 /**
  *
@@ -164,13 +168,26 @@ public class BootstrapClassLoaderFactory {
                 mvnBuilder.setOffline(offline);
             }
             final LocalProject localProject;
-            if (localProjectsDiscovery) {
-                localProject = LocalProject.loadWorkspace(appClasses);
-                mvnBuilder.setWorkspace(localProject.getWorkspace());
+            final AppArtifact appArtifact;
+            if (Files.isDirectory(appClasses)) {
+                if (localProjectsDiscovery) {
+                    localProject = LocalProject.loadWorkspace(appClasses);
+                    mvnBuilder.setWorkspace(localProject.getWorkspace());
+                } else {
+                    localProject = LocalProject.load(appClasses);
+                }
+                appArtifact = localProject.getAppArtifact();
             } else {
-                localProject = LocalProject.load(appClasses);
+                localProject = localProjectsDiscovery ? LocalProject.loadWorkspace(Paths.get("").normalize().toAbsolutePath(), false) : null;
+                if(localProject != null) {
+                    mvnBuilder.setWorkspace(localProject.getWorkspace());
+                }
+                appArtifact = ModelUtils.resolveAppArtifact(appClasses);
             }
-            final AppModel appModel = new BootstrapAppModelResolver(mvnBuilder.build()).resolveModel(localProject.getAppArtifact());
+            final BootstrapAppModelResolver appModelResolver = new BootstrapAppModelResolver(mvnBuilder.build());
+            final AppModel appModel = appModelResolver.resolveManagedModel(appArtifact, Collections.emptyList(),
+                    appModelResolver
+                            .readManagedDependencies(localProject == null ? appArtifact : localProject.getAppArtifact()));
             if (hierarchical) {
                 final URLClassLoader cl = initAppCp(appModel.getUserDependencies());
                 try {
@@ -185,7 +202,7 @@ public class BootstrapClassLoaderFactory {
                 }
             }
             return initAppCp(appModel.getAllDependencies());
-        } catch (AppModelResolverException e) {
+        } catch (AppModelResolverException | IOException e) {
             throw new BootstrapException("Failed to init application classloader", e);
         }
     }
@@ -204,6 +221,47 @@ public class BootstrapClassLoaderFactory {
         if (appClasses == null) {
             throw new IllegalArgumentException("Application classes path has not been set");
         }
+
+        if(!Files.isDirectory(appClasses)) {
+            final MavenArtifactResolver.Builder mvnBuilder = MavenArtifactResolver.builder();
+            if (offline != null) {
+                mvnBuilder.setOffline(offline);
+            }
+            final LocalProject localProject = localProjectsDiscovery ? LocalProject.loadWorkspace(Paths.get("").normalize().toAbsolutePath(), false) : null;
+            if(localProject != null) {
+                mvnBuilder.setWorkspace(localProject.getWorkspace());
+            }
+            final MavenArtifactResolver mvn;
+            try {
+                mvn = mvnBuilder.build();
+            } catch (AppModelResolverException e) {
+                throw new BootstrapException("Failed to initialize bootstrap Maven artifact resolver", e);
+            }
+
+            final List<AppDependency> deploymentDeps;
+            try {
+                final BootstrapAppModelResolver appModelResolver = new BootstrapAppModelResolver(mvn);
+                final AppArtifact appArtifact = ModelUtils.resolveAppArtifact(appClasses);
+                deploymentDeps = appModelResolver.resolveManagedModel(appArtifact, Collections.emptyList(),
+                        appModelResolver
+                                .readManagedDependencies(localProject == null ? appArtifact : localProject.getAppArtifact()))
+                        .getDeploymentDependencies();
+            } catch (Exception e) {
+                throw new BootstrapException("Failed to resolve deployment dependencies for " + appClasses, e);
+            }
+
+            final URL[] urls;
+            if(appCp.isEmpty()) {
+                urls = toURLs(deploymentDeps);
+            } else {
+                urls = new URL[deploymentDeps.size() + appCp.size()];
+                addDeps(urls,
+                        addPaths(urls, 0, appCp),
+                        deploymentDeps);
+            }
+            return new URLClassLoader(urls, parent);
+        }
+
         final URLClassLoader ucl;
         Path cachedCpPath = null;
         final LocalProject localProject = localProjectsDiscovery || enableClasspathCache

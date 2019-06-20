@@ -34,6 +34,16 @@ public interface AppModelResolver {
     Path resolve(AppArtifact artifact) throws AppModelResolverException;
 
     /**
+     * Returns dependency versions that are forced by the artifact
+     * on its dependencies.
+     *
+     * @param artifact  target artifact
+     * @return  list of dependency versions forced by the artifact on its dependencies
+     * @throws AppModelResolverException
+     */
+    List<AppDependency> readManagedDependencies(AppArtifact artifact) throws AppModelResolverException;
+
+    /**
      * Resolve application direct and transitive dependencies configured by the user.
      *
      * Note that deployment dependencies are not included in the result.

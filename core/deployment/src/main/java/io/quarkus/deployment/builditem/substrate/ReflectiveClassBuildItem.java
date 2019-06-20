@@ -18,17 +18,18 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     private final boolean fields;
     private final boolean constructors;
     private final boolean finalFieldsWritable;
+    private final boolean weak;
 
     public ReflectiveClassBuildItem(boolean methods, boolean fields, Class<?>... className) {
         this(true, methods, fields, className);
     }
 
     public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, Class<?>... className) {
-        this(constructors, methods, fields, false, className);
+        this(constructors, methods, fields, false, false, className);
     }
 
     private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
-            Class<?>... className) {
+            boolean weak, Class<?>... className) {
         List<String> names = new ArrayList<>();
         for (Class<?> i : className) {
             if (i == null) {
@@ -41,6 +42,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.fields = fields;
         this.constructors = constructors;
         this.finalFieldsWritable = finalFieldsWritable;
+        this.weak = weak;
     }
 
     public ReflectiveClassBuildItem(boolean methods, boolean fields, String... className) {
@@ -48,11 +50,15 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     }
 
     public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, String... className) {
-        this(constructors, methods, fields, false, className);
+        this(constructors, methods, fields, false, false, className);
+    }
+
+    public static ReflectiveClassBuildItem weakClass(String... className) {
+        return new ReflectiveClassBuildItem(true, true, true, false, true, className);
     }
 
     private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
-            String... className) {
+            boolean weak, String... className) {
         for (String i : className) {
             if (i == null) {
                 throw new NullPointerException();
@@ -63,6 +69,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.fields = fields;
         this.constructors = constructors;
         this.finalFieldsWritable = finalFieldsWritable;
+        this.weak = weak;
     }
 
     public List<String> getClassNames() {
@@ -83,6 +90,10 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
     public boolean areFinalFieldsWritable() {
         return finalFieldsWritable;
+    }
+
+    public boolean isWeak() {
+        return weak;
     }
 
     public static Builder builder(Class<?>... className) {
@@ -140,7 +151,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         }
 
         public ReflectiveClassBuildItem build() {
-            return new ReflectiveClassBuildItem(constructors, methods, fields, finalFieldsWritable, className);
+            return new ReflectiveClassBuildItem(constructors, methods, fields, finalFieldsWritable, false, className);
         }
     }
 }

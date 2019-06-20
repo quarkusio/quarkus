@@ -88,13 +88,15 @@ public class AppModelGradleResolver implements AppModelResolver {
         final List<AppDependency> userDeps = new ArrayList<>();
         Map<ModuleIdentifier, ModuleVersionIdentifier> userModules = new HashMap<>();
         for (ResolvedArtifact a : compileCp.getResolvedConfiguration().getResolvedArtifacts()) {
-            if (!"jar".equals(a.getExtension())) {
+            final File f = a.getFile();
+
+            if (!"jar".equals(a.getExtension()) && !f.isDirectory()) {
                 continue;
             }
+
             userModules.put(getModuleId(a), a.getModuleVersion().getId());
             userDeps.add(toAppDependency(a));
 
-            final File f = a.getFile();
             final Dependency dep;
             if (f.isDirectory()) {
                 dep = processQuarkusDir(a, f.toPath().resolve(BootstrapConstants.META_INF));

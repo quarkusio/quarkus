@@ -419,6 +419,11 @@ A configuration root's name can be given with the `name` property, or it can be 
 then the configuration key will be the class name, minus any `Config` or `Configuration` suffix, broken up by camel-case,
 lowercased, and re-joined using hyphens (`-`).
 
+A configuration root's class name can contain an extra suffix segment for the case where there are configuration
+roots for multiple <<Configuration Root Phases>>.  Classes which correspond to the `BUILD_TIME` and `BUILD_AND_RUN_TIME_FIXED`
+may end with `BuildTimeConfig` or `BuildTimeConfiguration`, and classes which correspond to the `RUN_TIME` phase
+may end with `RunTimeConfig` or `RunTimeConfiguration`.
+
 Note: The current implementation is still using injection site to determine the root set, so to avoid migration problems, it
 is recommended that the injection site (field or parameter) have the same name as the configuration root class until
 this change is complete.
@@ -449,13 +454,6 @@ A configuration root dictates when its contained keys are read from configuratio
 | ✗
 | ✗
 | Appropriate for things which affect build and must be visible for run time code.  Not read from config at run time.
-
-| RUN_TIME_STATIC
-| ✗
-| ✓
-| ✓
-| ✗
-| Not available at build, read on start in JVM mode, fixed in native executable mode.
 
 | RUN_TIME
 | ✗

@@ -241,11 +241,6 @@ EXPOSE 8080
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 ----
 
-[NOTE]
-====
-If your application requires libcrypt.so.2 you may consider `registry.fedoraproject.org/fedora-minimal:30` (or later) as a base image.
-====
-
 Then, if you didn't delete the generated native executable, you can build the docker image with:
 
 [source,shell]

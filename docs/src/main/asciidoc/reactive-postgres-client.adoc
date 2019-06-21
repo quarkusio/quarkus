@@ -12,7 +12,7 @@ The Reactive Postgres Client is a client for Postgres with a straightforward API
 
 In this guide, you will learn how to implement a simple CRUD application exposing a RESTful API.
 
-IMPORTANT: If you are not familiar with the {project-name} Vert.x extension, consider reading the link:using-vertx.html[Using Eclipse Vert.x] guide first.
+IMPORTANT: If you are not familiar with the Quarkus Vert.x extension, consider reading the link:using-vertx.html[Using Eclipse Vert.x] guide first.
 
 The application shall manage fruit entities:
 
@@ -63,7 +63,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dextensions="reactive-pg-client"
 ----
 
-If you have an already created project, the `reactive-pg-client` extension can be added to an existing {project-name} project with the `add-extension` command:
+If you have an already created project, the `reactive-pg-client` extension can be added to an existing Quarkus project with the `add-extension` command:
 
 [source,shell]
 ----
@@ -181,7 +181,7 @@ It returns a `CompletionStage` and thus can be composed to execute queries seque
 ----
 
 NOTE: Wondering why we need to convert the result to `CompletableFuture` and block until the latest query is completed?
-This code is part of a `@PostConstruct` method and {project-name} invokes it synchronously.
+This code is part of a `@PostConstruct` method and Quarkus invokes it synchronously.
 As a consequence, returning prematurely could lead to serving requests while the database is not ready yet.
 
 That's it!
@@ -256,7 +256,7 @@ public CompletionStage<Response> get() {
 }
 ----
 
-Now start {project-name} in `dev` mode with:
+Now start Quarkus in `dev` mode with:
 
 [source, shell]
 ----

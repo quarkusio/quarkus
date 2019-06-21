@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your {project-name} application can use Kogito to add business automation
+This guide demonstrates how your Quarkus application can use Kogito to add business automation
 to power it up with business processes and rules.
 
 Kogito is a next generation business automation toolkit that originates from well known Open Source projects

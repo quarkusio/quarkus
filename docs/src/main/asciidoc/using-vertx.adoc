@@ -11,8 +11,8 @@ Eclipse https://vertx.io[Vert.x] is a toolkit for building reactive applications
 It is designed to be lightweight and embeddable.
 Vert.x defines a reactive execution model and provides a large ecosystem.
 Quarkus integrates Vert.x to implement different reactive features, such as asynchronous message passing, and non-blocking HTTP client.
-Basically, {project-name} uses Vert.x as its reactive engine.
-While lots of reactive features from {project-name} don't _show_ Vert.x, it's used underneath.
+Basically, Quarkus uses Vert.x as its reactive engine.
+While lots of reactive features from Quarkus don't _show_ Vert.x, it's used underneath.
 But you can also access the managed Vert.x instance and benefit from the Vert.x ecosystem.
 
 == Installing
@@ -28,7 +28,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dextensions="vertx"
 ----
 
-If you have an already created project, the `vertx` extension can be added to an existing {project-name} project with
+If you have an already created project, the `vertx` extension can be added to an existing Quarkus project with
 the `add-extension` command:
 
 [source,shell]
@@ -58,7 +58,7 @@ Once the extension has been added, you can access the _managed_ Vert.x instance 
 If you are familiar with Vert.x, you know that Vert.x provides different API models.
 For instance _bare_ Vert.x uses callbacks, the RX Java 2 version uses `Single`, `Maybe`, `Completable`, `Observable` and `Flowable`.
 
-{project-name} provides 3 Vert.x APIs:
+Quarkus provides 3 Vert.x APIs:
 
 [options="header"]
 |===
@@ -73,13 +73,13 @@ For instance _bare_ Vert.x uses callbacks, the RX Java 2 version uses `Single`, 
 
 |===
 
-TIP: You may inject any of the 3 flavors of `Vertx` as well as the `EventBus` in your {project-name} application beans: `bare`, `Axle`, `RxJava2`.
+TIP: You may inject any of the 3 flavors of `Vertx` as well as the `EventBus` in your Quarkus application beans: `bare`, `Axle`, `RxJava2`.
 They are just shims and rely on a single _managed_ Vert.x instance.
 
 You will pick one or the other depending on your use cases.
 
-- `bare`: for advanced usage or if you have existing Vert.x code you want to reuse in your {project-name} application
-- `Axle`: works well with {project-name} and MicroProfile APIs (`CompletionStage` for single results and `Publisher` for streams)
+- `bare`: for advanced usage or if you have existing Vert.x code you want to reuse in your Quarkus application
+- `Axle`: works well with Quarkus and MicroProfile APIs (`CompletionStage` for single results and `Publisher` for streams)
 - `Rx Java 2`: when you need support for a wide range of data transformation operators on your streams
 
 The following snippets illustrate the difference between these 3 APIs:
@@ -117,7 +117,7 @@ vertx.fileSystem().readFile("lorem-ipsum.txt")
 
 == Using Vert.x in Reactive JAX-RS resources
 
-{project-name} web resources support asynchronous processing and streaming results over https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events[server-sent events].
+Quarkus web resources support asynchronous processing and streaming results over https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events[server-sent events].
 
 === Asynchronous processing
 
@@ -168,7 +168,7 @@ vertx.setTimer(10, l -> {
 ----
 
 That's it.
-Now start {project-name} in `dev` mode with:
+Now start Quarkus in `dev` mode with:
 
 [source, shell]
 ----
@@ -184,7 +184,7 @@ Hello Quarkus! (10 ms)
 
 === Streaming using Server-Sent Events
 
-{project-name} web resources that need to send content as https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events[server-sent events] must have a method:
+Quarkus web resources that need to send content as https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events[server-sent events] must have a method:
 
 * declaring the `text/event-stream` response content type
 * returning a https://www.reactive-streams.org/[Reactive Streams] `Publisher` or an RX Java 2 `Observable` or `Flowable`
@@ -299,7 +299,7 @@ Hello Quarkus! (Thu Mar 21 17:26:16 CET 2019)
 === Using Vert.x JSON
 
 Vert.x API heavily relies on JSON, namely the `io.vertx.core.json.JsonObject` and `io.vertx.core.json.JsonArray` types.
-They are both supported as {project-name} web resource request and response bodies.
+They are both supported as Quarkus web resource request and response bodies.
 
 Consider these endpoints:
 
@@ -341,7 +341,7 @@ Needless to say, this works equally well when the JSON content is a request body
 
 == Using Vert.x Clients
 
-As you can inject a Vert.x instance, you can use Vert.x clients in a {project-name} application.
+As you can inject a Vert.x instance, you can use Vert.x clients in a Quarkus application.
 This section gives an example with the `WebClient`.
 
 === Picking the right dependency
@@ -473,14 +473,14 @@ mvn package -Pnative
 
 == Going further
 
-There are many other facets of {project-name} using Vert.x underneath:
+There are many other facets of Quarkus using Vert.x underneath:
 
 * The event bus is the connecting tissue of Vert.x applications.
-{project-name} integrates it so different beans can interact with asynchronous messages.
+Quarkus integrates it so different beans can interact with asynchronous messages.
 This part is covered in the link:async-message-passing.html[Async Message Passing documentation].
 
 * Data streaming and Apache Kafka are a important parts of modern systems.
-{project-name} integrates data streaming using Reactive Messaging.
+Quarkus integrates data streaming using Reactive Messaging.
 More details on link:kafka-guide.html[Interacting with Kafka].
 
-* Learn how to implement highly performant, low-overhead database applications on {project-name} with the link:reactive-postgres-client.html[Reactive Postgres Client].
+* Learn how to implement highly performant, low-overhead database applications on Quarkus with the link:reactive-postgres-client.html[Reactive Postgres Client].

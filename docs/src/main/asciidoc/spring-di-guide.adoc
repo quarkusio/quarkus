@@ -7,9 +7,9 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-While you are encouraged to use CDI annotations for injection, {project-name} provides a compatibility layer for Spring dependency injection in the form of the `spring-di` extension.
+While you are encouraged to use CDI annotations for injection, Quarkus provides a compatibility layer for Spring dependency injection in the form of the `spring-di` extension.
 
-This guide explains how your {project-name} application can leverage the well known Dependency Injection annotations included in the Spring Framework.
+This guide explains how your Quarkus application can leverage the well known Dependency Injection annotations included in the Spring Framework.
 
 == Prerequisites
 
@@ -125,7 +125,7 @@ public class NoOpSingleStringFunction implements StringFunction {
 }
 ----
 
-{project-name} also provides support for injecting configuration values using Spring's `@Value` annotation.
+Quarkus also provides support for injecting configuration values using Spring's `@Value` annotation.
 To see that in action, first edit the `src/main/resources/application.properties` with the following content:
 
 [source,java]

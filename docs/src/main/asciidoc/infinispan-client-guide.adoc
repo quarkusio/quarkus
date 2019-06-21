@@ -8,14 +8,14 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 Infinispan is an in memory data grid that allows running in a server outside of application processes. This extension
-provides functionality to allow the client that can connect to said server when running in {project-name}.
+provides functionality to allow the client that can connect to said server when running in Quarkus.
 
 More information can be found about Infinispan at https://infinispan.org and the client/server at
 https://infinispan.org/docs/dev/user_guide/user_guide.html#client_server
 
 == Configuration
 
-Once you have your {project-name} project configured you can add the `infinispan-client` extension
+Once you have your Quarkus project configured you can add the `infinispan-client` extension
 to your project by running the following from the command line in your project base directory.
 
 [source]
@@ -103,7 +103,7 @@ The default serialization is done using a library based on protobuf. We need to 
 buf schema and a marshaller for each user type(s).
 
 NOTE: Annotation based proto stream marshalling is not yet supported in
-the {project-name} Infinispan client. This will be added soon, allowing you to only annotate your classes,
+the Quarkus Infinispan client. This will be added soon, allowing you to only annotate your classes,
 skipping the following steps.
 
 NOTE: This version has an issue currently requiring the Query DSL module as a dependency when running in
@@ -246,7 +246,7 @@ And you pass the marshaller by defining the following:
 ----
 
 NOTE: Annotation based proto stream marshalling is not yet supported in
-the {project-name} infinispan client.
+the Quarkus Infinispan client.
 
 === Providing your own Marshaller
 
@@ -270,7 +270,7 @@ Note that the Marshaller implementation must have a no arg constructor or static
 == Dependency Injection
 
 As you saw above we support the user injecting Marshaller configuration. You can do the inverse with
-the infinispan client extension providing injection for `RemoteCacheManager` and `RemoteCache` objects.
+the Infinispan client extension providing injection for `RemoteCacheManager` and `RemoteCache` objects.
 There is one global `RemoteCacheManager` that takes all of the configuration
 parameters setup in the above sections.
 
@@ -319,15 +319,15 @@ You can do this by adding the following dependency to your project.
 With this added you can use Infinispan querying just as you would normally, nothing special required.
 You can read more about this at https://infinispan.org/docs/dev/user_guide/user_guide.html#query_dsl.
 
-You can use either the Query DSL or the Ickle Query language with the {project-name} infinispan client
+You can use either the Query DSL or the Ickle Query language with the Quarkus Infinispan client
 extension.
 
 == Counters
 
-Infinispan also has a notion of counters and the {project-name} infinispan client supports them out of
+Infinispan also has a notion of counters and the Quarkus Infinispan client supports them out of
 the box.
 
-The {project-name} infinispan client extension allows for Dependency Injection
+The Quarkus Infinispan client extension allows for Dependency Injection
 of the `CounterManager` directly. All you need to do is annotate your field, constructor or method
 and you get it with no fuss. You can then use counters as you would normally.
 
@@ -352,7 +352,7 @@ The first step is to configure the `hotrod-client.properties` file to point to y
 and/or keystore. This is further detailed at
 https://infinispan.org/docs/dev/user_guide/user_guide.html#hr_encryption.
 
-The reason that {project-name} is different is that SubstrateVM does not come with security
+The reason that Quarkus is different is that SubstrateVM does not come with security
 services enabled. This is mentioned at
 https://github.com/oracle/graal/blob/master/substratevm/JCA-SECURITY-SERVICES.md. To
 do this you will need to set the `<enableAllSecurityServices>true</enableAllSecurityServices>` value
@@ -391,7 +391,7 @@ for encryption to work properly.
 == Authentication
 
 This chart illustrates what mechanisms have been verified to be working properly with
-the {project-name} Infinispan Client extension.
+the Quarkus Infinispan Client extension.
 
 .Mechanisms
 |===
@@ -425,5 +425,5 @@ However you need to configure these through the `hotrod-client.properties` file 
 == Additional Features
 
 The Infinispan Client has additional features that were not mentioned here. This means this
-feature was not tested in a {project-name} environment and they may or may not work. Please let us
+feature was not tested in a Quarkus environment and they may or may not work. Please let us
 know if you need these added!

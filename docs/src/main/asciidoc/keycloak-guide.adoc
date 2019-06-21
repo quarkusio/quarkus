@@ -7,15 +7,15 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your {project-name} application can use Keycloak to protect your JAX-RS applications using bearer token
+This guide demonstrates how your Quarkus application can use Keycloak to protect your JAX-RS applications using bearer token
 authorization, where these tokens are issued by a Keycloak Server.
 
 Bearer Token Authorization is the process of authorizing HTTP requests based on the existence and validity of a bearer token representing a subject and his access context, where the token provides valuable information to determine the subject of the call as well whether or not a HTTP resource can be accessed.
 
 Keycloak is a OAuth 2.0 compliant Authorization Server, capable of issuing access tokens so that you can use them to access protected resources. We are not going
-to enter into the details on what OAuth 2.0 is and how it works but give you a guideline on how to use OAuth 2.0 in your JAX-RS applications using the {project-name} Keycloak Extension.
+to enter into the details on what OAuth 2.0 is and how it works but give you a guideline on how to use OAuth 2.0 in your JAX-RS applications using the Quarkus Keycloak Extension.
 
-If you are already familiar with Keycloak, you'll notice that the extension is basically another adapter implementation but specific for {project-name} applications. Otherwise, you can find more information in https://keycloak.org/[Keycloak documentation].
+If you are already familiar with Keycloak, you'll notice that the extension is basically another adapter implementation but specific for Quarkus applications. Otherwise, you can find more information in https://keycloak.org/[Keycloak documentation].
 
 == Prerequisites
 
@@ -68,7 +68,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 ----
 
 This command generates a Maven project, importing the `keycloak` extension
-which is an implementation of a Keycloak Adapter for {project-name} applications and provides all the necessary capabilities to integrate with a Keycloak Server and perform bearer token authorization.
+which is an implementation of a Keycloak Adapter for Quarkus applications and provides all the necessary capabilities to integrate with a Keycloak Server and perform bearer token authorization.
 
 == Writing the application
 

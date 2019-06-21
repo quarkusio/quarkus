@@ -11,7 +11,7 @@ include::./attributes.adoc[]
 
 https://flywaydb.org/[Flyway] is a popular database migration tool that is commonly used in JVM environments.
 
-{project-name} provides first class support for using Flyway as will be explained in this guide.
+Quarkus provides first class support for using Flyway as will be explained in this guide.
 
 == Setting up support for Flyway
 
@@ -43,7 +43,7 @@ In your `pom.xml`, add the following dependencies:
 </dependencies>
 --
 
-Flyway support relies on the {project-name} default datasource config, you must add the default datasource properties
+Flyway support relies on the Quarkus default datasource config, you must add the default datasource properties
 to the `{config-file}` file in order to allow Flyway to manage the schema.
 Also, you can customize the Flyway behaviour by using the following properties:
 
@@ -126,7 +126,7 @@ INSERT INTO quarkus(id, name)
 VALUES (1, 'QUARKED');
 --
 
-Now you can start your application and {project-name} will run the Flyway's migrate method according to your config:
+Now you can start your application and Quarkus will run the Flyway's migrate method according to your config:
 
 [source,java]
 --
@@ -150,7 +150,7 @@ public class MigrationService {
 In case you are interested in using the `Flyway` object directly, you can inject it as follows:
 
 NOTE: If you enabled the `quarkus.flyway.migrate-at-start` property, by the time you use the Flyway instance,
-{project-name} will already have run the migrate operation
+Quarkus will already have run the migrate operation
 
 [source,java]
 --

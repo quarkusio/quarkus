@@ -69,7 +69,7 @@ Instructions to build the image and run the container are written in those Docke
 
 == Dealing with extensions
 
-From inside a {project-name} project, you can obtain a list of the available extensions with:
+From inside a Quarkus project, you can obtain a list of the available extensions with:
 
 [source,shell]
 ----
@@ -106,7 +106,7 @@ $ mvn quarkus:add-extensions -Dextensions=jdbc,agroal,non-exist-ent
 
 == Development mode
 
-{project-name} comes with a built-in development mode.
+Quarkus comes with a built-in development mode.
 Run your application with:
 
 [source,shell]
@@ -164,7 +164,7 @@ app.
 
 == Debugging
 
-You can run a {project-name} application in debug mode using:
+You can run a Quarkus application in debug mode using:
 
 [source,shell]
 ----
@@ -247,7 +247,7 @@ Now you should be able to execute `mvn quarkus-bootstrap:build-tree` on your pro
 
 == Building a native executable
 
-Native executables make {project-name} applications ideal for containers and serverless workloads.
+Native executables make Quarkus applications ideal for containers and serverless workloads.
 
 Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
 Verify that your `pom.xml` has the proper `native` profile (see <<build-tool-maven>>).
@@ -384,8 +384,8 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 </profiles>
 ----
 
-<1> Optionally use a BOM file to omit the version of the different {project-name} dependencies.
-<2> Use the {project-name} Maven plugin that will hook into the build process
+<1> Optionally use a BOM file to omit the version of the different Quarkus dependencies.
+<2> Use the Quarkus Maven plugin that will hook into the build process
 <3> Use a native profile and plugin to activate GraalVM compilation
 <4> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@SubstrateTest` will be run against the native executable. See the link:building-native-image-guide.html[Native executable guide] for more info.
 

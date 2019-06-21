@@ -15,40 +15,40 @@ include::./attributes.adoc[]
 :sectnums:
 :sectnumlevels: 4
 
-{project-name} DI solution is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
+Quarkus DI solution is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
 However, it is not a full CDI implementation verified by the TCK.
 Only a subset of the CDI features is implemented - see also <<supported_features,the list of supported features>> and <<limitations,the list of limitations>>.
 
-NOTE: Most of the existing CDI code should work just fine but there are some small differences which follow from the {project-name} architecture and goals.
+NOTE: Most of the existing CDI code should work just fine but there are some small differences which follow from the Quarkus architecture and goals.
 
 [[bean_discovery]]
 == Bean Discovery
 
 Bean discovery in CDI is a complex process which involves legacy deployment structures and accessibility requirements of the underlying module architecture.
-{project-name} is using a simplified bean discovery.
+Quarkus is using a simplified bean discovery.
 There is only one bean archive with `annotated` bean discovery mode and no visibility boundaries.
 
 The bean archive is synthesized from:
 
 * the application,
 * application dependencies that contain a `beans.xml` descriptor or a generated Jandex index (`META-INF/jandex.idx`),
-* and {project-name} integration code.
+* and Quarkus integration code.
 
 Bean classes that don't have a http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations[bean defining annotation, window="_blank"] are not discovered.
 This behavior is defined by CDI.
 But producer methods and fields and observer methods are discovered even if the declaring class is not annotated with a bean defining annotation (this behavior is different to what is defined in CDI).
 In fact, the declaring bean classes are considered annotated with `@Dependent`. 
 
-NOTE: {project-name} extension may declare additional discovery rules. For example `@Scheduled` business methods are registered even if the declaring class is not annotated with a bean defining annotation.
+NOTE: Quarkus extension may declare additional discovery rules. For example `@Scheduled` business methods are registered even if the declaring class is not annotated with a bean defining annotation.
 
 
 == Private Members
 
-{project-name} is designed with Substrate VM in mind.
+Quarkus is designed with Substrate VM in mind.
 One of the limitations is the usage of https://github.com/oracle/graal/blob/master/substratevm/LIMITATIONS.md#user-content-reflection[Reflection, window="_blank"].
 Substrate VM does support reflective calls but for a price of a bigger native executable.
-{project-name} must use reflection fallback to access private members.
-That's why {project-name} users are encouraged __not to use private members__ in their beans.
+Quarkus must use reflection fallback to access private members.
+That's why Quarkus users are encouraged __not to use private members__ in their beans.
 This involves injection fields, constructors and initializers, observer methods, producer methods and fields, disposers and interceptor methods.
 
 You can use for example package-private modifiers:
@@ -126,9 +126,9 @@ public class CounterBean {
 [[portable_extensions]]
 === Portable Extensions
 
-{project-name} incorporates build-time optimizations in order to provide instant startup and low memory footprint.
+Quarkus incorporates build-time optimizations in order to provide instant startup and low memory footprint.
 The downside of this approach is that CDI Portable Extensions cannot be supported.
-Nevertheless, most of the functionality can be achieved using {project-name} link:extension-authors-guide.html[extensions].
+Nevertheless, most of the functionality can be achieved using Quarkus link:extension-authors-guide.html[extensions].
 
 === Additional Bean Defining Annotations
 
@@ -182,7 +182,7 @@ NOTE: A bean registration that is a result of an `AdditionalBeanBuildItem` is re
 
 Sometimes it is very useful to register a synthetic bean, i.e. a bean that doesn't need to have a corresponding java class.
 In CDI this could be achieved using `AfterBeanDiscovery.addBean()` methods.
-In {project-name} we produce a `BeanRegistrarBuildItem` and leverage the `io.quarkus.arc.processor.BeanConfigurator` API to build a synthetic bean definition.
+In Quarkus we produce a `BeanRegistrarBuildItem` and leverage the `io.quarkus.arc.processor.BeanConfigurator` API to build a synthetic bean definition.
 
 [source,java]
 ----

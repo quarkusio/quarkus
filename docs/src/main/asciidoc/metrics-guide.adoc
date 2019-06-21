@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your {project-name} application can utilize the MicroProfile
+This guide demonstrates how your Quarkus application can utilize the MicroProfile
 Metrics specification through the SmallRye Metrics extension.
 
 MicroProfile Metrics allows applications to gather various metrics and statistics that provide
@@ -52,7 +52,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dextensions="metrics"
 ----
 
-This command generates a Maven project, importing the `smallrye-metrics` extension which is an implementation of the MicroProfile Metrics specification used in {project-name}.
+This command generates a Maven project, importing the `smallrye-metrics` extension which is an implementation of the MicroProfile Metrics specification used in Quarkus.
 
 == Writing the application
 

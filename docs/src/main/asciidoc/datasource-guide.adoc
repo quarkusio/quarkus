@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 Many projects that use data require connections to a database.
 The main way of obtaining connections to a database is to use a datasource.
 
-In {project-name}, the out of the box datasource and connection pooling implementation is https://agroal.github.io/[Agroal].
+In Quarkus, the out of the box datasource and connection pooling implementation is https://agroal.github.io/[Agroal].
 
 This guide will explain how to:
 
@@ -164,7 +164,7 @@ More details can be found in the https://docs.microsoft.com/en-us/sql/connect/jd
 
 == Injecting a Datasource
 
-Because {project-name} uses CDI, injecting a datasource is very simple:
+Because Quarkus uses CDI, injecting a datasource is very simple:
 
 [source,java,indent=0]
 --

@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-{project-name} comes with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application.
+Quarkus comes with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application.
 In this guide, we will explore:
 
 * how to use link:maven-tooling.html[Maven] as a build tool
@@ -22,7 +22,7 @@ In this guide, we will explore:
 [[build-tool]]
 == Choosing your build tool
 
-{project-name} comes with a toolchain to help you at all development stages.
+Quarkus comes with a toolchain to help you at all development stages.
 You can use Maven or Gradle as build tool.
 And we offer a native CLI that is convenient to use (coming soon).
 

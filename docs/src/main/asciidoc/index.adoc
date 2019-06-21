@@ -1,4 +1,4 @@
-= {project-name}
+= Quarkus
 
 include::./attributes.adoc[]
 

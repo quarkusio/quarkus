@@ -1,4 +1,4 @@
-= How to Create {project-name} Documentation
+= How to Create Quarkus Documentation
 include::./attributes.adoc[]
 
 This guide describes the asciidoc format and conventions that the {project-name} has

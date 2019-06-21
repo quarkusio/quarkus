@@ -48,6 +48,40 @@ class NettyProcessor {
             //ignore
             log.debug("Not registering Netty HTTP classes as they were not found");
         }
+
+        try {
+            Class.forName("io.netty.channel.unix.UnixChannel");
+            builder.addRuntimeInitializedClass("io.netty.channel.unix.Errors")
+                    .addRuntimeInitializedClass("io.netty.channel.unix.FileDescriptor")
+                    .addRuntimeInitializedClass("io.netty.channel.unix.IovArray")
+                    .addRuntimeInitializedClass("io.netty.channel.unix.Limits");
+        } catch (ClassNotFoundException e) {
+            //ignore
+            log.debug("Not registering Netty native unix classes as they were not found");
+        }
+
+        try {
+            Class.forName("io.netty.channel.epoll.EpollMode");
+            builder.addRuntimeInitializedClass("io.netty.channel.epoll.Epoll")
+                    .addRuntimeInitializedClass("io.netty.channel.epoll.EpollEventArray")
+                    .addRuntimeInitializedClass("io.netty.channel.epoll.EpollEventLoop")
+                    .addRuntimeInitializedClass("io.netty.channel.epoll.Native");
+        } catch (ClassNotFoundException e) {
+            //ignore
+            log.debug("Not registering Netty native epoll classes as they were not found");
+        }
+
+        try {
+            Class.forName("io.netty.channel.kqueue.AcceptFilter");
+            builder.addRuntimeInitializedClass("io.netty.channel.kqueue.KQueue")
+                    .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueEventArray")
+                    .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueEventLoop")
+                    .addRuntimeInitializedClass("io.netty.channel.kqueue.Native");
+        } catch (ClassNotFoundException e) {
+            //ignore
+            log.debug("Not registering Netty native kqueue classes as they were not found");
+        }
+
         return builder //TODO: make configurable
                 .build();
     }

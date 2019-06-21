@@ -81,7 +81,7 @@ public class PanacheJpaEntityEnhancer implements BiFunction<String, ClassVisitor
 
         public ModelEnhancingClassVisitor(String className, ClassVisitor outputClassVisitor,
                 Map<String, EntityModel> entities, ClassInfo panacheEntityBaseClassInfo) {
-            super(Opcodes.ASM6, outputClassVisitor);
+            super(Opcodes.ASM7, outputClassVisitor);
             thisClass = Type.getType("L" + className.replace('.', '/') + ";");
             this.entities = entities;
             EntityModel entityModel = entities.get(className);
@@ -97,7 +97,7 @@ public class PanacheJpaEntityEnhancer implements BiFunction<String, ClassVisitor
                 return superVisitor;
             ef.signature = signature;
             // if we have a mapped field, let's add some annotations
-            return new FieldVisitor(Opcodes.ASM6, superVisitor) {
+            return new FieldVisitor(Opcodes.ASM7, superVisitor) {
                 private Set<String> descriptors = new HashSet<>();
 
                 @Override

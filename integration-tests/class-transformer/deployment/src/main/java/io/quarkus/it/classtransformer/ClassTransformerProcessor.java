@@ -52,7 +52,7 @@ public class ClassTransformerProcessor {
                 transformers.produce(new BytecodeTransformerBuildItem(i, new BiFunction<String, ClassVisitor, ClassVisitor>() {
                     @Override
                     public ClassVisitor apply(String className, ClassVisitor classVisitor) {
-                        ClassVisitor cv = new ClassVisitor(Opcodes.ASM6, classVisitor) {
+                        ClassVisitor cv = new ClassVisitor(Opcodes.ASM7, classVisitor) {
 
                             @Override
                             public void visit(int version, int access, String name, String signature, String superName,

@@ -26,7 +26,7 @@ public class PanacheFieldAccessEnhancer implements BiFunction<String, ClassVisit
         private String classBinaryName;
 
         public FieldAccessClassVisitor(String className, ClassVisitor outputClassVisitor, Map<String, EntityModel> entities) {
-            super(Opcodes.ASM6, outputClassVisitor);
+            super(Opcodes.ASM7, outputClassVisitor);
             this.entities = entities;
             this.classBinaryName = className.replace('.', '/');
         }

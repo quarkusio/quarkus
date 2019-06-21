@@ -38,7 +38,7 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
         private final Enhancer enhancer;
 
         public HibernateEnhancingClassVisitor(String className, ClassVisitor outputClassVisitor) {
-            super(Opcodes.ASM6, new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS));
+            super(Opcodes.ASM7, new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS));
             this.className = className;
             this.outputClassVisitor = outputClassVisitor;
             //note that as getLoadingClassLoader is resolved immediately this can't be created until transform time

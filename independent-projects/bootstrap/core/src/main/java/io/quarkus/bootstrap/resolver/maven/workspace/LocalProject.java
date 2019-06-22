@@ -67,7 +67,7 @@ public class LocalProject {
         Model model = readModel(pomXml);
         Parent parent = model.getParent();
         while(parent != null) {
-            if(parent.getRelativePath() != null) {
+            if(parent.getRelativePath() != null && !parent.getRelativePath().isEmpty()) {
                 pomXml = pomXml.getParent().resolve(parent.getRelativePath()).normalize();
                 if(!Files.exists(pomXml)) {
                     return model;

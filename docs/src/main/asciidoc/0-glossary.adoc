@@ -1,5 +1,6 @@
-include::./attributes.adoc[]
 = Glossary
+
+include::./attributes.adoc[]
 
 This is a collection of preferred term in the documentation and website.
 Please stay within these terms for consistency.

@@ -1,5 +1,6 @@
+= Quarkus
+
 include::./attributes.adoc[]
-= {project-name}
 
 include::quarkus-intro.adoc[tag=intro]
 

@@ -533,7 +533,7 @@ public class LoggingProcessor {
 A configuration property name can be split into segments. For example, a property name like
 `quarkus.log.file.enable` can be split into the following segments:
 
-* `quarkus` - a namespace claimed by {project-name} which is a prefix for all `@ConfigRoot` classes,
+* `quarkus` - a namespace claimed by Quarkus which is a prefix for all `@ConfigRoot` classes,
 * `log` - a name segment which corresponds to the `LogConfiguration` class annotated with `@ConfigRoot`,
 * `file` - a name segment which corresponds to the `file` field in this class,
 * `enabled` - a name segment which corresponds to `enable` field in `FileConfig` class annotated with `@ConfigGroup`.
@@ -608,9 +608,9 @@ TODO: config integration
 
 ==== Extension Points
 
-As a CDI based runtime, {project-name} extensions often make CDI beans available as part of the extension behavior.
-However, {project-name} DI solution does not support CDI Portable Extensions.
-Instead, {project-name} extensions can make use of various link:cdi-reference.html[Build Time Extension Points].
+As a CDI based runtime, Quarkus extensions often make CDI beans available as part of the extension behavior.
+However, Quarkus DI solution does not support CDI Portable Extensions.
+Instead, Quarkus extensions can make use of various link:cdi-reference.html[Build Time Extension Points].
 
 === Testing Extensions
 
@@ -724,7 +724,7 @@ public class PersistenceAndQuarkusConfigTest {
 }
 ----
 
-<1> This tells JUnit that the {project-name} deployment should fail with a specific exception
+<1> This tells JUnit that the Quarkus deployment should fail with a specific exception
 
 
 === Native Executable Support
@@ -756,20 +756,20 @@ A convenience feature that allows you to control most of the above features from
 
 === IDE support tips
 
-==== Writing {project-name} extensions in Eclipse
+==== Writing Quarkus extensions in Eclipse
 
-The only particular aspect of writing {project-name} extensions in Eclipse is that APT (Annotation Processing Tool) is required as part of extension builds, which means you need to:
+The only particular aspect of writing Quarkus extensions in Eclipse is that APT (Annotation Processing Tool) is required as part of extension builds, which means you need to:
 
 - Install `m2e-apt` from https://marketplace.eclipse.org/content/m2e-apt
 - Define this property in your `pom.xml`: `<m2e.apt.activation>jdt_apt</m2e.apt.activation>`, although if you rely on `io.quarkus:quarkus-build-parent` you will get it for free.
-- If you have the `io.quarkus:quarkus-extension-processor` project open at the same time in your IDE (for example, if you have the {project-name} sources checked out and open in your IDE) you will need to close that project. Otherwise, Eclipse will not invoke the APT plugin that it contains.
+- If you have the `io.quarkus:quarkus-extension-processor` project open at the same time in your IDE (for example, if you have the Quarkus sources checked out and open in your IDE) you will need to close that project. Otherwise, Eclipse will not invoke the APT plugin that it contains.
 - If you just closed the extension processor project, be sure to do `Maven > Update Project` on the other projects in order for Eclipse to pick up the extension processor from the Maven repository.
 
 === Troubleshooting / Debugging Tips
 
 ==== Saving Application Generated Classes to Disk
 
-The class augmentation step of {project-name} generates classes for various purposes. Sometimes you need to view these
+The class augmentation step of Quarkus generates classes for various purposes. Sometimes you need to view these
 classes/bytecode to debug or understand an issue. Classes that are related to application augmentation are currently held in
 memory in a runtime class loader. To have these classes written out to disk for inspection, specify the
 `quarkus.debug.generated-classes-dir` system property, for example:
@@ -785,7 +785,7 @@ We have an extension that is used to test for regressions in the extension proce
 author will typically need to perform using the test-extension code to illustrate how the task could be done.
 
 ==== Features and Capabilities
-When you start a {project-name} instance, you will see a line like the one highlighted in this example:
+When you start a Quarkus instance, you will see a line like the one highlighted in this example:
 
 .Example Startup Lines
 [source, bash]
@@ -815,7 +815,7 @@ The features listed reflect the types of extensions that are installed. An exten
 
 The feature name should map to a label in the extension's devtools/common/src/main/filtered/extensions.json entry so that
 the feature name displayed by the startup line matches a label that one can used to select the extension when creating a project
-using the {project-name} maven plugin as shown in this example taken from the Writing JSON REST Services guide where the "resteasy-jsonb" feature is referenced:
+using the Quarkus maven plugin as shown in this example taken from the Writing JSON REST Services guide where the "resteasy-jsonb" feature is referenced:
 
 [source,shell,subs=attributes+]
 ----
@@ -986,7 +986,7 @@ You can use the `io.quarkus.arc.runtime.BeanContainer` interface to interact wit
 <5> Runtime template invokes the `IConfigConsumer#loadConfig(...)` method passing in the configuration objects with runtime information.
 
 ==== Manage Non-CDI Service
-A common purpose for an extension is to integrate a non-CDI aware service into the CDI based {project-name} runtime. Step 1 of this task is to load any configuration needed in a STATIC_INIT build step as we did in <<Parsing Config to Objects>>. Now we need to create an instance of the service using the configuration. Let's return to the `TestProcessor#parseServiceXmlConfig` method to see how this can be done.
+A common purpose for an extension is to integrate a non-CDI aware service into the CDI based Quarkus runtime. Step 1 of this task is to load any configuration needed in a STATIC_INIT build step as we did in <<Parsing Config to Objects>>. Now we need to create an instance of the service using the configuration. Let's return to the `TestProcessor#parseServiceXmlConfig` method to see how this can be done.
 
 .Creating a Non-CDI Service
 [source,java]
@@ -1065,7 +1065,7 @@ Now that you have recorded the creation of a service during the build phase, you
 <3> Call the runtime template to record the service start invocation.
 <4> Produce a `ServiceStartBuildItem` to indicate the startup of a service. See <<Startup and Shutdown Events>> for details.
 <5> Runtime template retrieves the service instance reference and calls its `startService` method.
-<6> Runtime template registers an invocation of the service instance `stopService` method with the {project-name} `ShutdownContext`.
+<6> Runtime template registers an invocation of the service instance `stopService` method with the Quarkus `ShutdownContext`.
 
 The code for the `RuntimeXmlConfigService` can be viewed here:
 {quarkus-blob-url}/core/test-extension/runtime/src/main/java/io/quarkus/extest/runtime/RuntimeXmlConfigService.java[RuntimeXmlConfigService.java]
@@ -1073,7 +1073,7 @@ The code for the `RuntimeXmlConfigService` can be viewed here:
 The testcase for validating that the `RuntimeXmlConfigService` has started can be found in the `testRuntimeXmlConfigService` test of `ConfiguredBeanTest` and `NativeImageIT`.
 
 ==== Startup and Shutdown Events
-The {project-name} container supports startup and shutdown lifecycle events to notify components of the container startup
+The Quarkus container supports startup and shutdown lifecycle events to notify components of the container startup
 and shutdown. There are CDI events fired that components can observe are illustrated in this example:
 
 .Observing Container Startup
@@ -1168,7 +1168,7 @@ Objects created during the build phase that are passed into the runtime need to 
 	... 36 more
 ----
 
-There is a `io.quarkus.runtime.ObjectSubstitution` interface that can be implemented to tell {project-name} how to handle such classes. An example implementation for the `DSAPublicKey` is shown here:
+There is a `io.quarkus.runtime.ObjectSubstitution` interface that can be implemented to tell Quarkus how to handle such classes. An example implementation for the `DSAPublicKey` is shown here:
 
 .DSAPublicKeyObjectSubstitution Example
 [source,bash]

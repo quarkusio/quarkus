@@ -163,7 +163,7 @@ The `getByName` method gives our code the ability to query a country by name fro
 
 The purpose of the annotations in the code above is the following:
 
-* `@RegisterRestClient` allows {project-name} to know that this interface is meant to be available for
+* `@RegisterRestClient` allows Quarkus to know that this interface is meant to be available for
 CDI injection as a REST Client
 * `@Path`, `@GET` and `@PathParam` are the standard JAX-RS annotations used to define how to access the service
 * `@Produces` defines the expected content-type

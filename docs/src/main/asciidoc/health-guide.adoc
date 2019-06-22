@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your {project-name} application can utilize the MicroProfile 
+This guide demonstrates how your Quarkus application can utilize the MicroProfile 
 Health specification through the SmallRye Health extension.
 
 MicroProfile Health allows applications to provide information about their state 
@@ -28,7 +28,7 @@ To complete this guide, you need:
 
 In this guide, we build a simple REST application that exposes MicroProfile Health functionalities at 
 the `/health` endpoint according to the specification. It will also provide several other REST
-endpoints to allow us to dynamically change the healthness of our {project-name} application.
+endpoints to allow us to dynamically change the healthness of our Quarkus application.
 
 == Solution
 
@@ -52,14 +52,14 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 ----
 
 This command generates a Maven project, importing the `smallrye-health` extension 
-which is an implementation of the MicroProfile Health specification used in {project-name}.
+which is an implementation of the MicroProfile Health specification used in Quarkus.
 
 == Running the health check
 
 Importing the `smallrye-health` extension directly exposes a single REST endpoint at 
 the `/health` endpoint that can be used to run the health check procedures:
 
-* start your {project-name} application with `mvn compile quarkus:dev`
+* start your Quarkus application with `mvn compile quarkus:dev`
 * access the `http://localhost:8080/health` endpoint using your browser or 
 `curl http://localhost:8080/health`
 
@@ -104,11 +104,11 @@ interface which are defined as CDI beans with the `@Health` qualifier. `HealthCh
 a functional interface whose single method `call` returns a `HealthCheckResponse` object 
 which can be easily constructed by the fluent builder API shown in the example.
 
-As we have started our {project-name} application in dev mode simply repeat the request 
+As we have started our Quarkus application in dev mode simply repeat the request 
 to `http://localhost:8080/health` by refreshing your browser window or by using `curl http://localhost:8080/health`. 
 The new health check procedure is now present in the `checks` array.
 
-Congratulations! You've created your first {project-name} health check procedure. Let's 
+Congratulations! You've created your first Quarkus health check procedure. Let's 
 continue by exploring what else can be done with the MicroProfile Health specification.
 
 == Adding user specific data to the health check response
@@ -209,7 +209,7 @@ see in the `checks` array the newly added `Database connection health check` whi
 down and the error message explaining why it failed.
 
 As we shouldn't leave this application with a health check in DOWN state and because we 
-are running {project-name} dev mode you can add `database.up=true` in 
+are running Quarkus dev mode you can add `database.up=true` in 
 `src/main/resources/application.properties` and rerun the health check again -- 
 it should be up again.
 
@@ -218,9 +218,9 @@ it should be up again.
 MicroProfile Health provides a way for your application to distribute information 
 about its healthness state to state whether or not it is able to function properly.
 
-All that is needed to enable the MicroProfile Health features in {project-name} is:
+All that is needed to enable the MicroProfile Health features in Quarkus is:
 
-* adding the `smallrye-health` {project-name} extension to your project using the `quarkus-maven-plugin`:
+* adding the `smallrye-health` Quarkus extension to your project using the `quarkus-maven-plugin`:
 
   mvn quarkus:add-extension -Dextensions="health"
 

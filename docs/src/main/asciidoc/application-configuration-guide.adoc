@@ -198,7 +198,7 @@ adding an additional extension to see what additional options have been added.
 
 == Overriding properties at runtime
 
-{project-name} does much of its configuration and bootstrap at build time.
+Quarkus does much of its configuration and bootstrap at build time.
 Most properties will then be read and set during the build time step.
 To change them, make sure to repackage your application.
 
@@ -338,7 +338,7 @@ change converters precedence and make your custom converter of higher priority t
 on the list.
 
 By default, if no `@Priority` can be found on a converter, it's registered with a priority of 100
-and all {project-name} core converters are registered with a priority of 200, so depending on which
+and all Quarkus core converters are registered with a priority of 200, so depending on which
 converter you would like to replace, you need to set a higher value.
 
 To demonstrate the idea let us implement a custom converter which will take precedence over 
@@ -377,7 +377,7 @@ NOTE: This new converter also needs to be listed in a service file, i.e. `META-I
 
 == More info on how to configure
 
-{project-name} relies on Eclipse MicroProfile and inherit its features.
+Quarkus relies on Eclipse MicroProfile and inherit its features.
 
 There are converters that convert your property file content from `String` to typed Java types. See the list link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/converters.asciidoc[in the specification].
 

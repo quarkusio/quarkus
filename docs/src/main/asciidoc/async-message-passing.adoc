@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-{project-name} allows different beans to interact using asynchronous messages, enforcing loose-coupling.
+Quarkus allows different beans to interact using asynchronous messages, enforcing loose-coupling.
 The messages are sent to _virtual addresses_.
 It offers 3 types of delivery mechanism:
 
@@ -33,7 +33,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dextensions="vertx"
 ----
 
-If you have an already created project, the `vertx` extension can be added to an existing {project-name} project with
+If you have an already created project, the `vertx` extension can be added to an existing Quarkus project with
 the `add-extension` command:
 
 [source]

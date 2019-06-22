@@ -48,7 +48,6 @@
                         <axle-version>${axle-client.version}</axle-version>
                         <vertx-version>${vertx.version}</vertx-version>
                         <restassured-version>${rest-assured.version}</restassured-version>
-                        <project-name>Quarkus</project-name>
                         <!-- Project website home page -->
                         <quarkus-home-url>${quarkus-home-url}</quarkus-home-url>
                         <!-- Root URL of the GitHub organization -->

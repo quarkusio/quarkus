@@ -1,5 +1,4 @@
 = Read me
-:project-name: Quarkus
 :config-file: microprofile-config.properties
 :toc:
 

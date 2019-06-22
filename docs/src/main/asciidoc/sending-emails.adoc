@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your {project-name} application can send emails using an SMTP server.
+This guide demonstrates how your Quarkus application can send emails using an SMTP server.
 
 == Prerequisites
 
@@ -22,7 +22,7 @@ To complete this guide, you need:
 
 == Architecture
 
-In this guide, we are going to see how you can send emails from a {project-name} application.
+In this guide, we are going to see how you can send emails from a Quarkus application.
 It covers simple emails, attachments, inlined attachments, the reactive and imperative APIs...
 
 == Creating the Maven Project
@@ -46,7 +46,7 @@ mvn quarkus:add-extensions -Dextensions="mailer"
 
 == Configuring the mailer
 
-The {project-name} mailer is using SMTP. In the `src/main/resources/application.properties` file, you need to configure the host, port, username, password as well as the other configuration aspect.
+The Quarkus mailer is using SMTP. In the `src/main/resources/application.properties` file, you need to configure the host, port, username, password as well as the other configuration aspect.
 Note that the password can also be configured using system properties and environment variables.
 
 Here is an example using _sendgrid_:

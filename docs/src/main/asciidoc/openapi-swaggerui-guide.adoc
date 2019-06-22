@@ -273,6 +273,15 @@ components:
           type: string
 ----
 
+[NOTE]
+====
+If you do not like the default endpoint location `/openapi`, you can change it with following configuration in your `application.properties`:
+[source, properties]
+----
+quarkus.smallrye-openapi.path=/swagger
+----
+====
+
 Hit `CTRL+C` to stop the application.
 
 == Use Swagger UI for development

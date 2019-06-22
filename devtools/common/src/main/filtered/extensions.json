@@ -22,6 +22,15 @@
     "guide": "https://quarkus.io/guides/cdi-reference"
   },
   {
+    "name": "AWS Lambda",
+    "labels": [
+      "lambda",
+      "aws"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-amazon-lambda"
+  },
+  {
     "name": "Camel Core",
     "labels": [
       "camel-core",
@@ -220,13 +229,12 @@
     "guide": "https://quarkus.io/guides/kubernetes-guide"
   },
   {
-    "name": "AWS Lambda",
+    "name": "Kubernetes Client",
     "labels": [
-      "lambda",
-      "aws"
+      "kubernetes-client"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-amazon-lambda"
+    "artifactId": "quarkus-kubernetes-client"
   },
   {
     "name": "Narayana JTA - Transaction manager",

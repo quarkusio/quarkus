@@ -24,7 +24,7 @@ pr:
 
 jobs:
 - job: Build_Native_Linux
-  timeoutInMinutes: 150
+  timeoutInMinutes: 180
   pool:
     vmImage: 'Ubuntu 16.04'
 

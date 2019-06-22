@@ -51,6 +51,7 @@
         <module>test-extension</module>
         <module>amazon-lambda</module>
         <module>kogito</module>
+        <module>kubernetes-client</module>
     </modules>
 
     <build>

@@ -44,7 +44,7 @@ public class DevModeMain {
 
     private static volatile ClassLoader currentAppClassLoader;
     private static volatile URLClassLoader runtimeCl;
-    private static File classesRoot;
+    private static List<File> classesRoots;
     private static File wiringDir;
     private static File cacheDir;
     private static DevModeContext context;
@@ -70,8 +70,14 @@ public class DevModeMain {
                 System.setProperty(i.getKey(), i.getValue());
             }
         }
-        //the path that contains the compiled classes
-        classesRoot = new File(args[0]);
+
+        // we can potentially have multiple roots separated by commas
+        final String[] classesRootsParts = args[0].split(",");
+        classesRoots = new ArrayList<>(classesRootsParts.length);
+        for (String classesRootsPart : classesRootsParts) {
+            classesRoots.add(new File(classesRootsPart));
+        }
+
         wiringDir = new File(args[1]);
         cacheDir = new File(args[2]);
 
@@ -115,7 +121,11 @@ public class DevModeMain {
 
     private static synchronized void doStart(boolean liveReload, Set<String> changedResources) {
         try {
-            runtimeCl = new URLClassLoader(new URL[] { classesRoot.toURL() }, ClassLoader.getSystemClassLoader());
+            final URL[] urls = new URL[classesRoots.size()];
+            for (int i = 0; i < classesRoots.size(); i++) {
+                urls[i] = classesRoots.get(i).toURL();
+            }
+            runtimeCl = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
             currentAppClassLoader = runtimeCl;
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             //we can potentially throw away this class loader, and reload the app
@@ -125,7 +135,8 @@ public class DevModeMain {
                         .setLaunchMode(LaunchMode.DEVELOPMENT)
                         .setLiveReloadState(new LiveReloadBuildItem(liveReload, changedResources, liveReloadContext))
                         .setClassLoader(runtimeCl)
-                        .setTarget(classesRoot.toPath())
+                        // just use the first item in classesRoot which is where the actual class files are written
+                        .setTarget(classesRoots.get(0).toPath())
                         .setFrameworkClassesPath(wiringDir.toPath())
                         .setTransformerCache(cacheDir.toPath());
 

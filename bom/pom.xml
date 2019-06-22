@@ -320,7 +320,7 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>${project.groupId}</groupId>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-search-elasticsearch</artifactId>
                 <version>${project.version}</version>
             </dependency>

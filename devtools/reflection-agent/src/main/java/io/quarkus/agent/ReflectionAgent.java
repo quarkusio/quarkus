@@ -42,13 +42,13 @@ public class ReflectionAgent {
                 try {
                     AtomicBoolean modified = new AtomicBoolean(false);
                     ClassReader reader = new ClassReader(className);
-                    ClassWriter writer = new ClassWriter(reader, Opcodes.ASM6);
-                    reader.accept(new ClassVisitor(Opcodes.ASM6, writer) {
+                    ClassWriter writer = new ClassWriter(reader, Opcodes.ASM7);
+                    reader.accept(new ClassVisitor(Opcodes.ASM7, writer) {
                         @Override
                         public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
                                 String[] exceptions) {
                             MethodVisitor existing = super.visitMethod(access, name, descriptor, signature, exceptions);
-                            return new MethodVisitor(Opcodes.ASM6, existing) {
+                            return new MethodVisitor(Opcodes.ASM7, existing) {
                                 @Override
                                 public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
                                         boolean isInterface) {

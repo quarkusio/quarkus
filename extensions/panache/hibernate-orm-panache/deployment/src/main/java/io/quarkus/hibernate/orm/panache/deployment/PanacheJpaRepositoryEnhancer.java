@@ -49,7 +49,7 @@ public class PanacheJpaRepositoryEnhancer implements BiFunction<String, ClassVis
 
         public DaoEnhancingClassVisitor(String className, ClassVisitor outputClassVisitor,
                 ClassInfo panacheRepositoryBaseClassInfo) {
-            super(Opcodes.ASM6, outputClassVisitor);
+            super(Opcodes.ASM7, outputClassVisitor);
             daoBinaryName = className.replace('.', '/');
             this.panacheRepositoryBaseClassInfo = panacheRepositoryBaseClassInfo;
         }

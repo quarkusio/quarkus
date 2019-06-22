@@ -9,13 +9,13 @@ class DaoTypeFetcher extends SignatureVisitor {
     private String daoBinaryName;
 
     public DaoTypeFetcher(String daoBinaryName) {
-        super(Opcodes.ASM6);
+        super(Opcodes.ASM7);
         this.daoBinaryName = daoBinaryName;
     }
 
     @Override
     public SignatureVisitor visitInterface() {
-        return new SignatureVisitor(Opcodes.ASM6) {
+        return new SignatureVisitor(Opcodes.ASM7) {
             private boolean recordNextType;
 
             @Override

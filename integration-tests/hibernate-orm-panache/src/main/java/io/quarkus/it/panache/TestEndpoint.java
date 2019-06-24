@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.persistence.NoResultException;
 import javax.persistence.NonUniqueResultException;
+import javax.persistence.PersistenceException;
 import javax.transaction.Transactional;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -176,6 +177,21 @@ public class TestEndpoint {
         Assertions.assertNotNull(Person.findAll().firstResult());
 
         Assertions.assertEquals(7, Person.deleteAll());
+
+        // persistAndFlush
+        Person person1 = new Person();
+        person1.name = "testFLush1";
+        person1.uniqueName = "unique";
+        person1.persist();
+        Person person2 = new Person();
+        person2.name = "testFLush2";
+        person2.uniqueName = "unique";
+        try {
+            person2.persistAndFlush();
+            Assertions.fail();
+        } catch (PersistenceException pe) {
+            //this is expected
+        }
 
         return "OK";
     }
@@ -432,6 +448,21 @@ public class TestEndpoint {
         Assertions.assertNotNull(personDao.findAll().firstResult());
 
         Assertions.assertEquals(7, personDao.deleteAll());
+
+        //flush
+        Person person1 = new Person();
+        person1.name = "testFlush1";
+        person1.uniqueName = "unique";
+        personDao.persist(person1);
+        Person person2 = new Person();
+        person2.name = "testFlush2";
+        person2.uniqueName = "unique";
+        try {
+            personDao.persistAndFlush(person2);
+            Assertions.fail();
+        } catch (PersistenceException pe) {
+            //this is expected
+        }
 
         return "OK";
     }

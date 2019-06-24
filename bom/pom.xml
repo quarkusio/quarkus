@@ -67,7 +67,7 @@
         <!-- What we actually depend on for the annotations, as latest Graal
            is not available in Maven fast enough: -->
         <graal-sdk.version>1.0.0-rc16</graal-sdk.version>
-        <gizmo.version>1.0.0.Alpha4</gizmo.version>
+        <gizmo.version>1.0.0.Alpha5</gizmo.version>
         <jackson.version>2.9.9</jackson.version>
         <commons-beanutils.version>1.9.3</commons-beanutils.version>
         <commons-logging.version>1.2</commons-logging.version>

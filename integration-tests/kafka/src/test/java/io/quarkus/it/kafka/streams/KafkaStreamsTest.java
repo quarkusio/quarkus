@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+import javax.inject.Inject;
+
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -17,6 +19,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
+import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -30,6 +33,9 @@ import io.restassured.RestAssured;
 @QuarkusTestResource(KafkaTestResource.class)
 @QuarkusTest
 public class KafkaStreamsTest {
+
+    @Inject
+    public Config config;
 
     private static Producer<Integer, Customer> createProducer() {
         Properties props = new Properties();
@@ -104,6 +110,7 @@ public class KafkaStreamsTest {
         Assertions.assertEquals("B2B", customer.category.name);
         Assertions.assertEquals("business-to-business", customer.category.value);
 
+        // test interactive query (getting latest result from state store)
         assertCategoryCount(1, 3);
         assertCategoryCount(2, 1);
 

@@ -1,6 +1,7 @@
 package io.quarkus.kafka.streams.deployment;
 
 import java.io.IOException;
+import java.util.Properties;
 
 import org.apache.kafka.common.serialization.Serdes.ByteArraySerde;
 import org.apache.kafka.streams.errors.DefaultProductionExceptionHandler;
@@ -8,8 +9,12 @@ import org.apache.kafka.streams.errors.LogAndFailExceptionHandler;
 import org.apache.kafka.streams.processor.DefaultPartitionGrouper;
 import org.apache.kafka.streams.processor.FailOnInvalidTimestamp;
 import org.apache.kafka.streams.processor.internals.StreamsPartitionAssignor;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.rocksdb.util.Environment;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -20,8 +25,12 @@ import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildI
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
+import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
+import io.quarkus.kafka.streams.runtime.KafkaStreamsTopologyManager;
 
 class KafkaStreamsProcessor {
+
+    private static final String STREAMS_OPTION_PREFIX = "kafka-streams.";
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
@@ -54,11 +63,34 @@ class KafkaStreamsProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    BeanContainerListenerBuildItem processBuildTimeConfig(KafkaStreamsRecorder recorder) {
+        Config config = ConfigProvider.getConfig();
+
+        Properties properties = new Properties();
+        for (String property : config.getPropertyNames()) {
+            if (property.startsWith(STREAMS_OPTION_PREFIX)) {
+                properties.setProperty(property.substring(STREAMS_OPTION_PREFIX.length()),
+                        config.getValue(property, String.class));
+            }
+        }
+
+        return new BeanContainerListenerBuildItem(recorder.configure(properties));
+    }
+
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void build(KafkaStreamsRecorder recorder) {
+    void configureAndLoadRocksDb(KafkaStreamsRecorder recorder, KafkaStreamsRuntimeConfig runtimeConfig) {
         // Explicitly loading RocksDB native libs, as that's normally done from within
         // static initializers which already ran during build
         recorder.loadRocksDb();
+
+        recorder.configureRuntimeProperties(runtimeConfig);
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem registerBean() {
+        return AdditionalBeanBuildItem.unremovableOf(KafkaStreamsTopologyManager.class);
     }
 
     private boolean isContainerBuild() {

@@ -518,10 +518,10 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
         final String vmName = System.getProperty("java.vm.name");
         log.info("Running Quarkus native-image plugin on " + vmName);
         final List<String> obsoleteGraalVmVersions = Arrays.asList("-rc9", "-rc10", "-rc11", "-rc12", "-rc13", "-rc14",
-                "-rc15");
+                "-rc15", "-rc16", "19.0.0");
         final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(vmName::contains);
         if (vmVersionIsObsolete) {
-            log.error("Out of date RC build of GraalVM detected! Please upgrade to GraalVM RC16");
+            log.error("Out of date RC build of GraalVM detected! Please upgrade to GraalVM 19.0.2");
             return true;
         }
         return false;

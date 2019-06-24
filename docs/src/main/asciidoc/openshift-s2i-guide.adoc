@@ -37,7 +37,7 @@ We are going to create an OpenShift `build` executing it:
 [source,shell, subs="attributes"]
 ----
 # To build the image on OpenShift
-oc new-app quay.io/quarkus/centos-quarkus-native-s2i~{quickstarts-clone-url} --context-dir=getting-started --name=quarkus-quickstart-native
+oc new-app quay.io/quarkus/ubi-quarkus-native-s2i:{graalvm-version}~{quickstarts-clone-url} --context-dir=getting-started --name=quarkus-quickstart-native
 oc logs -f bc/quarkus-quickstart-native
 
 # To create the route
@@ -111,7 +111,7 @@ The end result is an image that is less than 40 MB in size (compressed) and does
 The minimal build is depending on the S2I build since it is using the output (native runnable application) from the S2I build. However, you do not need to create an application with `oc new-app`. Instead you could use `oc new-build` like this:
 [source, shell, subs="attributes"]
 ----
-oc new-build quay.io/quarkus/centos-quarkus-native-s2i~{quickstarts-clone-url} \
+oc new-build quay.io/quarkus/ubi-quarkus-native-s2i:{graalvm-version}~{quickstarts-clone-url} \
     --context-dir=getting-started --name=quarkus-quickstart-native
 ----
 ====

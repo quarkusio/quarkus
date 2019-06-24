@@ -47,7 +47,7 @@ public class TimingTest {
 
         Assert.assertTrue(capturedLog.contains("Quarkus %s started in %ss. %s"));
         Assert.assertTrue(capturedLog.contains("<param>0.16</param>"));
-        Assert.assertTrue(!capturedLog.contains("<param><<unset>></param>"));
+        Assert.assertFalse(capturedLog.contains("<param><<unset>></param>"));
         Assert.assertTrue(capturedLog.contains("<param>cdi</param>"));
 
     }

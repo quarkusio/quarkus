@@ -201,7 +201,7 @@ CompletionStage<PgRowSet> rowSet = client.query("SELECT id, name FROM fruits ORD
 ----
 
 When the operation completes, we will get a `PgRowSet` that has all the rows buffered in memory.
-As an `Iterator<Row>`, it can be traversed with a _for-each_ loop:
+As an `java.lang.Iterable<Row>`, it can be traversed with a _for-each_ loop:
 
 [source,java]
 ----

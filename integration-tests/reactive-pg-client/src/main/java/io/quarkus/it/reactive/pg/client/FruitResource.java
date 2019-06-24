@@ -9,7 +9,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import io.reactiverse.axle.pgclient.PgIterator;
 import io.reactiverse.axle.pgclient.PgPool;
 import io.reactiverse.axle.pgclient.Row;
 import io.vertx.core.json.JsonArray;
@@ -35,16 +34,13 @@ public class FruitResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<JsonArray> listFruits() {
-        return client.query("SELECT * FROM fruits")
-                .thenApply(pgRowSet -> {
-                    JsonArray jsonArray = new JsonArray();
-                    PgIterator iterator = pgRowSet.iterator();
-                    while (iterator.hasNext()) {
-                        Row row = iterator.next();
-                        jsonArray.add(toJson(row));
-                    }
-                    return jsonArray;
-                });
+        return client.query("SELECT * FROM fruits").thenApply(pgRowSet -> {
+            JsonArray jsonArray = new JsonArray();
+            for (Row row : pgRowSet) {
+                jsonArray.add(toJson(row));
+            }
+            return jsonArray;
+        });
     }
 
     private JsonObject toJson(Row row) {

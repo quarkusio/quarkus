@@ -85,7 +85,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private String nativeImageXmx;
 
-    private String builderImage = "quay.io/quarkus/centos-quarkus-native-image:graalvm-1.0.0-rc16";
+    private String builderImage = "quay.io/quarkus/ubi-quarkus-native-image:19.0.2";
 
     private String containerRuntime = "";
 
@@ -390,6 +390,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             if (additionalBuildArgs != null) {
                 command.addAll(additionalBuildArgs);
             }
+            command.add("--initialize-at-build-time=");
             command.add("-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
             command.add("-jar");
             command.add(runnerJarName);
@@ -517,10 +518,10 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
         final String vmName = System.getProperty("java.vm.name");
         log.info("Running Quarkus native-image plugin on " + vmName);
         final List<String> obsoleteGraalVmVersions = Arrays.asList("-rc9", "-rc10", "-rc11", "-rc12", "-rc13", "-rc14",
-                "-rc15");
+                "-rc15", "-rc16", "19.0.0");
         final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(vmName::contains);
         if (vmVersionIsObsolete) {
-            log.error("Out of date RC build of GraalVM detected! Please upgrade to GraalVM RC16");
+            log.error("Out of date RC build of GraalVM detected! Please upgrade to GraalVM 19.0.2");
             return true;
         }
         return false;

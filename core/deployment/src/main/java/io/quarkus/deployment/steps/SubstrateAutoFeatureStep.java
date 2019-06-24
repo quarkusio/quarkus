@@ -15,6 +15,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.graalvm.nativeimage.ImageSingletons;
+import org.graalvm.nativeimage.hosted.Feature;
+import org.graalvm.nativeimage.hosted.RuntimeReflection;
+import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
+
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ClassOutputBuildItem;
@@ -29,7 +34,17 @@ import io.quarkus.runtime.ResourceHelper;
 
 public class SubstrateAutoFeatureStep {
 
-    private static final String GRAAL_AUTOFEATURE = "io.quarkus/runner/AutoFeature";
+    private static final String GRAAL_AUTOFEATURE = "io/quarkus/runner/AutoFeature";
+    private static final MethodDescriptor IMAGE_SINGLETONS_LOOKUP = ofMethod(ImageSingletons.class, "lookup", Object.class,
+            Class.class);
+    private static final MethodDescriptor INITIALIZE_AT_RUN_TIME = ofMethod(RuntimeClassInitializationSupport.class,
+            "initializeAtRunTime", void.class, Class.class, String.class);
+    private static final MethodDescriptor RERUN_INITIALIZATION = ofMethod(RuntimeClassInitializationSupport.class,
+            "rerunInitialization", void.class, Class.class, String.class);
+    static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
+    static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
+    static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
+    static final String LOCALIZATION_SUPPORT = "com.oracle.svm.core.jdk.LocalizationSupport";
 
     @BuildStep
     SubstrateOutputBuildItem generateFeature(ClassOutputBuildItem output,
@@ -43,17 +58,19 @@ public class SubstrateAutoFeatureStep {
             List<ReflectiveClassBuildItem> reflectiveClassBuildItems,
             List<ServiceProviderBuildItem> serviceProviderBuildItems) {
         ClassCreator file = new ClassCreator(ClassOutput.gizmoAdaptor(output.getClassOutput(), true), GRAAL_AUTOFEATURE, null,
-                Object.class.getName(), "org/graalvm/nativeimage/Feature");
-        file.addAnnotation("com/oracle/svm/core/annotate/AutomaticFeature");
+                Object.class.getName(), Feature.class.getName());
+        file.addAnnotation("com.oracle.svm.core.annotate.AutomaticFeature");
 
         //MethodCreator afterReg = file.getMethodCreator("afterRegistration", void.class, "org.graalvm.nativeimage.Feature$AfterRegistrationAccess");
-        MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V",
-                "org/graalvm/nativeimage/Feature$BeforeAnalysisAccess");
+        MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V", BEFORE_ANALYSIS_ACCESS);
         TryBlock overallCatch = beforeAn.tryBlock();
         //TODO: at some point we are going to need to break this up, as if it get too big it will hit the method size limit
 
+        ResultHandle initSingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
+                overallCatch.loadClass(RuntimeClassInitializationSupport.class));
+        ResultHandle quarkus = overallCatch.load("Quarkus");
+
         if (!runtimeInitializedClassBuildItems.isEmpty()) {
-            ResultHandle array = overallCatch.newArray(Class.class, overallCatch.load(1));
             ResultHandle thisClass = overallCatch.loadClass(GRAAL_AUTOFEATURE);
             ResultHandle cl = overallCatch.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class),
                     thisClass);
@@ -63,9 +80,7 @@ public class SubstrateAutoFeatureStep {
                 ResultHandle clazz = tc.invokeStaticMethod(
                         ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
                         tc.load(i), tc.load(false), cl);
-                tc.writeArrayValue(array, 0, clazz);
-                tc.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization",
-                        "delayClassInitialization", void.class, Class[].class), array);
+                tc.invokeInterfaceMethod(INITIALIZE_AT_RUN_TIME, initSingleton, clazz, quarkus);
 
                 CatchBlockCreator cc = tc.addCatch(Throwable.class);
                 cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
@@ -75,7 +90,6 @@ public class SubstrateAutoFeatureStep {
 
         // hack in reinitialization of process info classes
         {
-            ResultHandle array = overallCatch.newArray(Class.class, overallCatch.load(1));
             ResultHandle thisClass = overallCatch.loadClass(GRAAL_AUTOFEATURE);
             ResultHandle cl = overallCatch.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class),
                     thisClass);
@@ -85,9 +99,7 @@ public class SubstrateAutoFeatureStep {
                 ResultHandle clazz = tc.invokeStaticMethod(
                         ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
                         tc.load(i), tc.load(false), cl);
-                tc.writeArrayValue(array, 0, clazz);
-                tc.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization",
-                        "rerunClassInitialization", void.class, Class[].class), array);
+                tc.invokeInterfaceMethod(RERUN_INITIALIZATION, initSingleton, clazz, quarkus);
 
                 CatchBlockCreator cc = tc.addCatch(Throwable.class);
                 cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
@@ -95,9 +107,9 @@ public class SubstrateAutoFeatureStep {
         }
 
         if (!proxies.isEmpty()) {
-            ResultHandle proxySupportClass = overallCatch.loadClass("com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry");
+            ResultHandle proxySupportClass = overallCatch.loadClass(DYNAMIC_PROXY_REGISTRY);
             ResultHandle proxySupport = overallCatch.invokeStaticMethod(
-                    ofMethod("org.graalvm.nativeimage.ImageSingletons", "lookup", Object.class, Class.class),
+                    IMAGE_SINGLETONS_LOOKUP,
                     proxySupportClass);
             for (SubstrateProxyDefinitionBuildItem proxy : proxies) {
                 ResultHandle array = overallCatch.newArray(Class.class, overallCatch.load(proxy.getClasses().size()));
@@ -108,7 +120,7 @@ public class SubstrateAutoFeatureStep {
                     overallCatch.writeArrayValue(array, i++, clazz);
 
                 }
-                overallCatch.invokeInterfaceMethod(ofMethod("com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry",
+                overallCatch.invokeInterfaceMethod(ofMethod(DYNAMIC_PROXY_REGISTRY,
                         "addProxyClass", void.class, Class[].class), proxySupport, array);
             }
         }
@@ -126,7 +138,7 @@ public class SubstrateAutoFeatureStep {
         }
 
         if (!resourceBundles.isEmpty()) {
-            ResultHandle locClass = overallCatch.loadClass("com.oracle.svm.core.jdk.LocalizationSupport");
+            ResultHandle locClass = overallCatch.loadClass(LOCALIZATION_SUPPORT);
 
             ResultHandle params = overallCatch.marshalAsArray(Class.class, overallCatch.loadClass(String.class));
             ResultHandle registerMethod = overallCatch.invokeVirtualMethod(
@@ -136,7 +148,7 @@ public class SubstrateAutoFeatureStep {
                     registerMethod, overallCatch.load(true));
 
             ResultHandle locSupport = overallCatch.invokeStaticMethod(
-                    MethodDescriptor.ofMethod("org.graalvm.nativeimage.ImageSingletons", "lookup", Object.class, Class.class),
+                    IMAGE_SINGLETONS_LOOKUP,
                     locClass);
             for (SubstrateResourceBundleBuildItem i : resourceBundles) {
                 TryBlock et = overallCatch.tryBlock();
@@ -186,14 +198,13 @@ public class SubstrateAutoFeatureStep {
             if (!entry.getValue().weak) {
                 ResultHandle carray = tc.newArray(Class.class, tc.load(1));
                 tc.writeArrayValue(carray, 0, clazz);
-                tc.invokeStaticMethod(
-                        ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Class[].class),
+                tc.invokeStaticMethod(ofMethod(RUNTIME_REFLECTION, "register", void.class, Class[].class),
                         carray);
             }
 
             if (entry.getValue().constructors) {
                 tc.invokeStaticMethod(
-                        ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class),
+                        ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
                         constructors);
             } else if (!entry.getValue().ctorSet.isEmpty()) {
                 ResultHandle farray = tc.newArray(Constructor.class, tc.load(1));
@@ -208,13 +219,13 @@ public class SubstrateAutoFeatureStep {
                             paramArray);
                     tc.writeArrayValue(farray, 0, fhandle);
                     tc.invokeStaticMethod(
-                            ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class),
+                            ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
                             farray);
                 }
             }
             if (entry.getValue().methods) {
                 tc.invokeStaticMethod(
-                        ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class),
+                        ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
                         methods);
             } else if (!entry.getValue().methodSet.isEmpty()) {
                 ResultHandle farray = tc.newArray(Method.class, tc.load(1));
@@ -229,13 +240,13 @@ public class SubstrateAutoFeatureStep {
                             tc.load(method.getName()), paramArray);
                     tc.writeArrayValue(farray, 0, fhandle);
                     tc.invokeStaticMethod(
-                            ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class),
+                            ofMethod(RUNTIME_REFLECTION, "register", void.class, Executable[].class),
                             farray);
                 }
             }
             if (entry.getValue().fields) {
                 tc.invokeStaticMethod(
-                        ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class,
+                        ofMethod(RUNTIME_REFLECTION, "register", void.class,
                                 boolean.class, Field[].class),
                         tc.load(entry.getValue().finalFieldsWritable), fields);
             } else if (!entry.getValue().fieldSet.isEmpty()) {
@@ -245,12 +256,12 @@ public class SubstrateAutoFeatureStep {
                             ofMethod(Class.class, "getDeclaredField", Field.class, String.class), clazz, tc.load(field));
                     tc.writeArrayValue(farray, 0, fhandle);
                     tc.invokeStaticMethod(
-                            ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Field[].class),
+                            ofMethod(RUNTIME_REFLECTION, "register", void.class, Field[].class),
                             farray);
                 }
             }
             CatchBlockCreator cc = tc.addCatch(Throwable.class);
-            //cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+            cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
             mv.returnValue(null);
         }
         CatchBlockCreator print = overallCatch.addCatch(Throwable.class);

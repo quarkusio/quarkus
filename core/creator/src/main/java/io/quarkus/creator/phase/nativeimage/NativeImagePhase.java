@@ -85,7 +85,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private String nativeImageXmx;
 
-    private String builderImage = "quay.io/quarkus/centos-quarkus-native-image:graalvm-1.0.0-rc16";
+    private String builderImage = "quay.io/quarkus/ubi-quarkus-native-image:19.0.2";
 
     private String containerRuntime = "";
 

@@ -11,6 +11,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import org.opentest4j.TestAbortedException;
 
 import io.quarkus.bootstrap.BootstrapClassLoaderFactory;
 import io.quarkus.bootstrap.BootstrapException;
+import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
@@ -70,8 +72,6 @@ public class QuarkusTestExtension
         final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
 
         Path appClassLocation = getAppClassLocation(context.getRequiredTestClass());
-        Path testClassLocation = getTestClassesLocation(context.getRequiredTestClass());
-        ClassLoader testClassLoader = context.getRequiredTestClass().getClassLoader();
 
         try {
             appCl = BootstrapClassLoaderFactory.newInstance()
@@ -87,15 +87,36 @@ public class QuarkusTestExtension
         }
         originalCl = setCCL(appCl);
 
-        RuntimeRunner runtimeRunner = RuntimeRunner.builder()
+        final Path testClassLocation = getTestClassesLocation(context.getRequiredTestClass());
+        final ClassLoader testClassLoader = context.getRequiredTestClass().getClassLoader();
+        final Path testWiringClassesDir;
+        final RuntimeRunner.Builder runnerBuilder = RuntimeRunner.builder();
+
+        if (Files.isDirectory(testClassLocation)) {
+            testWiringClassesDir = testClassLocation;
+        } else {
+            runnerBuilder.addAdditionalArchive(testClassLocation);
+            testWiringClassesDir = Paths.get("").normalize().toAbsolutePath().resolve("target").resolve("test-classes");
+            if (Files.exists(testWiringClassesDir)) {
+                IoUtils.recursiveDelete(testWiringClassesDir);
+            }
+            try {
+                Files.createDirectories(testWiringClassesDir);
+            } catch (IOException e) {
+                throw new IllegalStateException(
+                        "Failed to create a directory for wiring test classes at " + testWiringClassesDir, e);
+            }
+        }
+
+        RuntimeRunner runtimeRunner = runnerBuilder
                 .setLaunchMode(LaunchMode.TEST)
                 .setClassLoader(appCl)
                 .setTarget(appClassLocation)
-                .addAdditionalArchive(testClassLocation)
+                .addAdditionalArchive(testWiringClassesDir)
                 .setClassOutput(new ClassOutput() {
                     @Override
                     public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {
-                        Path location = testClassLocation.resolve(className.replace('.', '/') + ".class");
+                        Path location = testWiringClassesDir.resolve(className.replace('.', '/') + ".class");
                         Files.createDirectories(location.getParent());
                         try (FileOutputStream out = new FileOutputStream(location.toFile())) {
                             out.write(data);
@@ -105,7 +126,7 @@ public class QuarkusTestExtension
 
                     @Override
                     public void writeResource(String name, byte[] data) throws IOException {
-                        Path location = testClassLocation.resolve(name);
+                        Path location = testWiringClassesDir.resolve(name);
                         Files.createDirectories(location.getParent());
                         try (FileOutputStream out = new FileOutputStream(location.toFile())) {
                             out.write(data);
@@ -175,7 +196,7 @@ public class QuarkusTestExtension
                                     Thread.currentThread().setContextClassLoader(old);
                                 }
 
-                                Path location = testClassLocation.resolve(resourceName);
+                                Path location = testWiringClassesDir.resolve(resourceName);
                                 Files.createDirectories(location.getParent());
                                 try (FileOutputStream out = new FileOutputStream(location.toFile())) {
                                     out.write(cw.toByteArray());
@@ -279,6 +300,10 @@ public class QuarkusTestExtension
                     try {
                         launcher.start();
                     } catch (IOException e) {
+                        try {
+                            launcher.close();
+                        } catch (Throwable t) {
+                        }
                         throw new JUnitException("Quarkus native image start failed, original cause: " + e);
                     }
                     state = new ExtensionState(testResourceManager, launcher, true);

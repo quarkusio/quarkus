@@ -2,7 +2,9 @@ package io.quarkus.runner;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -51,7 +53,7 @@ public class RuntimeRunner implements Runnable, Closeable {
             allPaths.add(target);
             allPaths.addAll(builder.additionalHotDeploymentPaths);
             RuntimeClassLoader runtimeClassLoader = new RuntimeClassLoader(builder.classLoader, allPaths,
-                    builder.frameworkClassesPath, builder.transformerCache);
+                    builder.getWiringClassesDir(), builder.transformerCache);
             this.loader = runtimeClassLoader;
             this.classOutput = runtimeClassLoader;
             this.transformerTarget = runtimeClassLoader;
@@ -138,6 +140,7 @@ public class RuntimeRunner implements Runnable, Closeable {
         private ClassLoader classLoader;
         private Path target;
         private Path frameworkClassesPath;
+        private Path wiringClassesDir;
         private Path transformerCache;
         private LaunchMode launchMode = LaunchMode.NORMAL;
         private final List<Path> additionalArchives = new ArrayList<>();
@@ -162,6 +165,11 @@ public class RuntimeRunner implements Runnable, Closeable {
 
         public Builder setFrameworkClassesPath(Path frameworkClassesPath) {
             this.frameworkClassesPath = frameworkClassesPath;
+            return this;
+        }
+
+        public Builder setWiringClassesDir(Path wiringClassesDir) {
+            this.wiringClassesDir = wiringClassesDir;
             return this;
         }
 
@@ -213,6 +221,16 @@ public class RuntimeRunner implements Runnable, Closeable {
         public Builder setLiveReloadState(LiveReloadBuildItem liveReloadState) {
             this.liveReloadState = liveReloadState;
             return this;
+        }
+
+        Path getWiringClassesDir() {
+            if (wiringClassesDir != null) {
+                return wiringClassesDir;
+            }
+            if (frameworkClassesPath != null && Files.isDirectory(frameworkClassesPath)) {
+                return frameworkClassesPath;
+            }
+            return Paths.get("").normalize().resolve("target").resolve("test-classes");
         }
 
         public RuntimeRunner build() {

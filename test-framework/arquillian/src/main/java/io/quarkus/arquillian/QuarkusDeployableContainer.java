@@ -1,6 +1,5 @@
 package io.quarkus.arquillian;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -149,14 +148,6 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
                 throw new IllegalStateException(e);
             }
 
-            Path testClassesLocation;
-            try {
-                testClassesLocation = PathTestHelper.getTestClassesLocation(testJavaClass);
-            } catch (Exception e) {
-                // TCK tests are usually located in a dependency jar
-                testClassesLocation = new File("target/test-classes").toPath();
-            }
-
             URLClassLoader appCl;
             try {
                 BootstrapClassLoaderFactory clFactory = BootstrapClassLoaderFactory.newInstance()
@@ -180,7 +171,7 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
                     .setLaunchMode(LaunchMode.TEST)
                     .setClassLoader(appCl)
                     .setTarget(appLocation)
-                    .setFrameworkClassesPath(testClassesLocation)
+                    .setFrameworkClassesPath(PathTestHelper.getTestClassesLocation(testJavaClass))
                     .addChainCustomizers(customizers)
                     .build();
 

@@ -9,7 +9,7 @@ include::./attributes.adoc[]
 :extension-name: Smallrye JWT
 :mp-jwt: MicroProfile JWT RBAC
 
-This guide explains how your {project-name} application can utilize {mp-jwt} to provide
+This guide explains how your Quarkus application can utilize {mp-jwt} to provide
 secured access to the JAX-RS endpoints.
 
 == Configuration
@@ -134,7 +134,7 @@ public class TokenSecuredResource {
     }
 }
 ----
-<1> Add a `RequestScoped` as {project-name} uses a default scoping of `ApplicationScoped` and this
+<1> Add a `RequestScoped` as Quarkus uses a default scoping of `ApplicationScoped` and this
 will produce undesirable behavior since JWT claims are naturally request scoped.
 <2> Here we inject the JsonWebToken interface, and extension of the java.security.Principal interface that provides access to the claims associated with the current authenticated token.
 <3> @PermitAll is a JSR 250 common security annotation that indicates that the given endpoint is accessible by any caller, authenticated or not.
@@ -187,7 +187,7 @@ the response is consistent with that:
 * authScheme is null
 * hasJWT is false
 
-Use Ctrl-C to stop the {project-name} server.
+Use Ctrl-C to stop the Quarkus server.
 
 So now let's actually secure something. Take a look at the new endpoint method `helloRolesAllowed` in the following:
 
@@ -766,7 +766,7 @@ eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiO
 
 
 == Finally, Secured Access to /secured/roles-allowed
-Now let's use this to make a secured request to the /secured/roles-allowed endpoint. Make sure you have the {project-name} server running using the `./mvnw compile quarkus:dev` command, and then run the following command, making sure to use your version of the generated JWT from the previous step:
+Now let's use this to make a secured request to the /secured/roles-allowed endpoint. Make sure you have the Quarkus server running using the `./mvnw compile quarkus:dev` command, and then run the following command, making sure to use your version of the generated JWT from the previous step:
 
 [source,shell]
 ----

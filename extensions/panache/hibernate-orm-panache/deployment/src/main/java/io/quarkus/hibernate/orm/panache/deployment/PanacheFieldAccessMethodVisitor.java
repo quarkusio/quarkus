@@ -17,7 +17,7 @@ class PanacheFieldAccessMethodVisitor extends MethodVisitor {
     PanacheFieldAccessMethodVisitor(MethodVisitor methodVisitor, String owner,
             String methodName, String methodDescriptor,
             Map<String, EntityModel> entities) {
-        super(Opcodes.ASM6, methodVisitor);
+        super(Opcodes.ASM7, methodVisitor);
         this.owner = owner;
         this.methodName = methodName;
         this.methodDescriptor = methodDescriptor;

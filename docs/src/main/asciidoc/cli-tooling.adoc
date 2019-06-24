@@ -9,7 +9,7 @@ include::./attributes.adoc[]
 
 == Installing the CLI
 
-The {project-name} CLI is provided as a native binary for Linux and macOS or as a jar-file for
+The Quarkus CLI is provided as a native binary for Linux and macOS or as a jar-file for
 all operating systems.
 
 === Native CLI
@@ -19,7 +19,7 @@ Download the binaries here:
 * https://coming-soon[Linux Binary] (coming soon)
 * https://coming-soon[macOS Binary] (coming soon)
 
-We recommend that you create a specific {project-name} folder, eg '~/quarkus' and move the 
+We recommend that you create a specific Quarkus folder, eg '~/quarkus' and move the 
 binary there. 
 Then in your shell profile (for Bash shell edit '~/.bash_profile'), export the 'QUARKUS_HOME' 
 folder and add that to your 'PATH':
@@ -33,7 +33,7 @@ Reload your terminal or do:
 [source,shell]
 source ~/.bash_profile
 
-Now you can run the {project-name} CLI:
+Now you can run the Quarkus CLI:
 
 [source,shell]
 $ quarkus --help
@@ -43,7 +43,7 @@ This will display the help information with all the available commands.
 [source,shell]
 $ quarkus -i
 
-This will start the {project-name} CLI in interactive mode.
+This will start the Quarkus CLI in interactive mode.
 
 === Jar CLI
 
@@ -87,7 +87,7 @@ $ quarkus create-project --help
 
 == Dealing with extensions
 
-The {project-name} CLI can obtain a list of the available extensions with:
+The Quarkus CLI can obtain a list of the available extensions with:
 
 [source,shell]
 $ quarkus list-extensions
@@ -100,7 +100,7 @@ $ quarkus list-extensions -n
 
 == Adding extension(s)
 
-The {project-name} CLI can add {project-name} extensions to your project with the 'add-extension'
+The Quarkus CLI can add Quarkus extensions to your project with the 'add-extension'
 command:
 
 [source,shell]
@@ -111,7 +111,7 @@ build file.
 
 == Development mode
 
-To start dev mode from the {project-name} CLI do:
+To start dev mode from the Quarkus CLI do:
 
 [source,shell]
 $ quarkus dev /path/to/my/project

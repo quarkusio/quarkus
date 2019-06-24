@@ -15,7 +15,7 @@ include::./attributes.adoc[]
 
 [quote]
 --
-{project-name} is a Cloud Native, Container First framework for writing Java applications.
+Quarkus is a Cloud Native, Container First framework for writing Java applications.
 --
 
 Container First::
@@ -40,7 +40,7 @@ All under one framework.
 == Scratch pad
 
 
-{project-name} believes in developer Joy.
+Quarkus believes in developer Joy.
 
 
 It unifies imperative and reactive.

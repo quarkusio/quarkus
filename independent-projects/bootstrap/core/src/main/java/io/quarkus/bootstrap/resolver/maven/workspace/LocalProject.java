@@ -32,11 +32,15 @@ public class LocalProject {
     private static final String POM_XML = "pom.xml";
 
     public static LocalProject load(Path path) throws BootstrapException {
-        return new LocalProject(readModel(locateCurrentProjectDir(path).resolve(POM_XML)), null);
+        return new LocalProject(readModel(locateCurrentProjectDir(path, true).resolve(POM_XML)), null);
     }
 
     public static LocalProject loadWorkspace(Path path) throws BootstrapException {
-        final Path currentProjectDir = locateCurrentProjectDir(path);
+        return loadWorkspace(path, true);
+    }
+
+    public static LocalProject loadWorkspace(Path path, boolean required) throws BootstrapException {
+        final Path currentProjectDir = locateCurrentProjectDir(path, required);
         final LocalWorkspace ws = new LocalWorkspace();
         final LocalProject project = load(ws, null, loadRootModel(currentProjectDir), currentProjectDir);
         return project == null ? load(ws, null, readModel(currentProjectDir.resolve(POM_XML)), currentProjectDir) : project;
@@ -67,7 +71,7 @@ public class LocalProject {
         Model model = readModel(pomXml);
         Parent parent = model.getParent();
         while(parent != null) {
-            if(parent.getRelativePath() != null) {
+            if(parent.getRelativePath() != null && !parent.getRelativePath().isEmpty()) {
                 pomXml = pomXml.getParent().resolve(parent.getRelativePath()).normalize();
                 if(!Files.exists(pomXml)) {
                     return model;
@@ -97,7 +101,7 @@ public class LocalProject {
         }
     }
 
-    private static Path locateCurrentProjectDir(Path path) throws BootstrapException {
+    private static Path locateCurrentProjectDir(Path path, boolean required) throws BootstrapException {
         Path p = path;
         while(p != null) {
             if(Files.exists(p.resolve(POM_XML))) {
@@ -105,7 +109,10 @@ public class LocalProject {
             }
             p = p.getParent();
         }
-        throw new BootstrapException("Failed to locate project pom.xml for " + path);
+        if(required) {
+            throw new BootstrapException("Failed to locate project pom.xml for " + path);
+        }
+        return null;
     }
 
     private final Model rawModel;

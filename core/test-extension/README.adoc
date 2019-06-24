@@ -1,4 +1,4 @@
-= {project-name} - Test Extension
+= Quarkus - Test Extension
 
 This is a non-released test extension that is used to validate the extension
 configuration and SPIs. As the extension SPI is expanded, this test

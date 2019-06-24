@@ -1,8 +1,7 @@
+= How to Create Quarkus Documentation
 include::./attributes.adoc[]
-= How to Create {project-name} Documentation
 
-This guide describes the asciidoc format and conventions that the {project-name} has
-adopted.
+This guide describes the asciidoc format and conventions that Quarkus has adopted.
 
 == References
 
@@ -22,7 +21,6 @@ complete list of externalized variables for use is given in the following table:
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Value|Description
-|\{project-name}|{project-name}|The official name of the project.
 |\{quarkus-version}|{quarkus-version}|The current version of the project.
 |\{quarkus-home-url}|{quarkus-home-url}| The location of the project home page.
 |\{quarkus-site-getting-started}|{quarkus-site-getting-started}| The location of the getting started page.
@@ -30,13 +28,13 @@ complete list of externalized variables for use is given in the following table:
 |\{quarkus-site-extension-authors-guide}|{quarkus-site-extension-authors-guide}| The location of the extension authors guide page.
 
 |\{quarkus-org-url}|{quarkus-org-url}| The location of the project github organization.
-|\{quarkus-base-url}|{quarkus-base-url}| {project-name} GitHub URL common base prefix.
-|\{quarkus-clone-url}|{quarkus-clone-url}| {project-name} URL for git clone referenced by the documentation.
-|\{quarkus-archive-url}|{quarkus-archive-url}| {project-name} URL to master source archive.
-|\{quarkus-blob-url}|{quarkus-blob-url}| {project-name} URL to master blob source tree; used for referencing source files.
-|\{quarkus-tree-url}|{quarkus-tree-url}| {project-name} URL to master source tree root; used for referencing directories.
-|\{quarkus-issues-url}|{quarkus-issues-url}| {project-name} URL to the issues page.
-|\{quarkus-images-url}|{quarkus-images-url}| {project-name} URL to set of container images delivered for Quarkus.
+|\{quarkus-base-url}|{quarkus-base-url}| Quarkus GitHub URL common base prefix.
+|\{quarkus-clone-url}|{quarkus-clone-url}| Quarkus URL for git clone referenced by the documentation.
+|\{quarkus-archive-url}|{quarkus-archive-url}| Quarkus URL to master source archive.
+|\{quarkus-blob-url}|{quarkus-blob-url}| Quarkus URL to master blob source tree; used for referencing source files.
+|\{quarkus-tree-url}|{quarkus-tree-url}| Quarkus URL to master source tree root; used for referencing directories.
+|\{quarkus-issues-url}|{quarkus-issues-url}| Quarkus URL to the issues page.
+|\{quarkus-images-url}|{quarkus-images-url}| Quarkus URL to set of container images delivered for Quarkus.
 
 |\{quarkus-chat-url}|{quarkus-chat-url} | URL of our chat.
 |\{quarkus-mailing-list-subscription-email}|{quarkus-mailing-list-subscription-email} | Email used to subscribe to our mailing list.

@@ -9,7 +9,7 @@ include::./attributes.adoc[]
 
 https://kotlinlang.org/[Kotlin] is a very popular programming language that targets the JVM (amongst other environments). Kotlin has experienced a surge in popularity the last few years making it the most popular JVM language, except for Java of course.
 
-{project-name} provides first class support for using Kotlin as will be explained in this guide.
+Quarkus provides first class support for using Kotlin as will be explained in this guide.
 
 == Prerequisites
 
@@ -171,11 +171,11 @@ we have specified that classes annotated with `javax.ws.rs.Path` should not be `
 If your application contains classes annotated with `javax.enterprise.context.ApplicationScoped`
 for example, then `<option>all-open:annotation=javax.enterprise.context.ApplicationScoped</option>` needs to be added as well. Same goes for any class that needs to have a dynamic proxy created at runtime.
 
-Future versions of {project-name} will configure the Kotlin compiler plugin in a way that will make it unnecessary to alter this configuration.
+Future versions of Quarkus will configure the Kotlin compiler plugin in a way that will make it unnecessary to alter this configuration.
 
 == Live reload
 
-{project-name} provides support for live reloading changes made to source code. This support is also available to Kotlin, meaning that developers can update their Kotlin source
+Quarkus provides support for live reloading changes made to source code. This support is also available to Kotlin, meaning that developers can update their Kotlin source
 code and immediately see their changes reflected.
 
 To see this feature in action, first execute: `./mvnw compile quarkus:dev`

@@ -10,7 +10,6 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class FeatureBuildItem extends MultiBuildItem {
 
     public static final String AGROAL = "agroal";
-    public static final String KUBERNETES = "kubernetes";
     public static final String CAMEL_CORE = "camel-core";
     public static final String CAMEL_INFINISPAN = "camel-infinispan";
     public static final String CAMEL_AWS_S3 = "camel-aws-s3";
@@ -36,6 +35,8 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String KEYCLOAK = "keycloak";
     public static final String KOGITO = "kogito";
     public static final String KOTLIN = "kotlin";
+    public static final String KUBERNETES = "kubernetes";
+    public static final String KUBERNETES_CLIENT = "kubernetes-client";
     public static final String MAILER = "mailer";
     public static final String NARAYANA_JTA = "narayana-jta";
     public static final String REACTIVE_PG_CLIENT = "reactive-pg-client";

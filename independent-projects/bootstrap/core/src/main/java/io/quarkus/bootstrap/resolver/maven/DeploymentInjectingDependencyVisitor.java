@@ -6,11 +6,13 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
 import org.jboss.logging.Logger;
@@ -34,12 +36,14 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
     }
 
     private final MavenArtifactResolver resolver;
+    private final List<Dependency> managedDeps;
     private DependencyNode node;
 
     boolean injectedDeps;
 
-    public DeploymentInjectingDependencyVisitor(MavenArtifactResolver resolver) {
+    public DeploymentInjectingDependencyVisitor(MavenArtifactResolver resolver, List<Dependency> managedDeps) {
         this.resolver = resolver;
+        this.managedDeps = managedDeps;
     }
 
     public boolean isInjectedDeps() {
@@ -120,7 +124,7 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
             artifact = artifact.setVersion(node.getArtifact().getVersion());
         }
         try {
-            return resolver.collectDependencies(artifact).getRoot();
+            return managedDeps.isEmpty() ? resolver.collectDependencies(artifact).getRoot() : resolver.collectManagedDependencies(artifact, Collections.emptyList(), managedDeps).getRoot();
         } catch (AppModelResolverException e) {
             throw new DeploymentInjectionException(e);
         }

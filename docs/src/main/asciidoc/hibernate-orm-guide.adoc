@@ -9,12 +9,12 @@ include::./attributes.adoc[]
 :config-file: application.properties
 
 Hibernate ORM is the de facto JPA implementation and offers you the full breath of an Object Relational Mapper.
-It works beautifully in {project-name}.
+It works beautifully in Quarkus.
 
 == Setting up and configuring Hibernate ORM without `persistence.xml` (recommended)
 
 More often than not, you need one _persistence unit_ with few configuration options.
-In {project-name}, you just need to:
+In Quarkus, you just need to:
 
 * add your settings in `{config-file}`
 * annotate your entities with `@Entity` and friends
@@ -61,7 +61,7 @@ quarkus.hibernate-orm.database.generation=drop-and-create
 Note that these configuration properties are not the same ones as in your typical Hibernate ORM configuration file: they might differ in names, casing and don't necessarily map 1:1 to each other.
 Please see below for the list of properties you can define.
 
-An `EntityManagerFactory` will be created based on {project-name} `datasource` configuration as long as the Hibernate ORM extension is declared in your `pom.xml`.
+An `EntityManagerFactory` will be created based on Quarkus `datasource` configuration as long as the Hibernate ORM extension is declared in your `pom.xml`.
 The dialect will be selected based on the JDBC driver.
 
 You can then happily inject your `EntityManager`:
@@ -119,7 +119,7 @@ so at your application entry point boundaries like your REST endpoint controller
 
 === Properties to refine your Hibernate ORM configuration
 
-There are optional properties useful to refine your `EntityManagerFactory` or guide guesses of {project-name}.
+There are optional properties useful to refine your `EntityManagerFactory` or guide guesses of Quarkus.
 
 ==== Dialect
 
@@ -195,7 +195,7 @@ Whether statistics collection is enabled.
 [NOTE]
 --
 Do not mix `persistence.xml` and `quarkus.hibernate-orm.*` properties in `{config-file}`.
-{project-name} will raise an exception.
+Quarkus will raise an exception.
 Make up your mind on which approach you want to use.
 --
 
@@ -336,7 +336,7 @@ public class Fruit {
    ...
 --
 
-That's all! Caching technology is already integrated and enabled by default in {project-name}, so it's enough to set which ones are safe to be cached.
+That's all! Caching technology is already integrated and enabled by default in Quarkus, so it's enough to set which ones are safe to be cached.
 
 === Tuning of Cache Regions
 
@@ -368,7 +368,7 @@ You can also provide duration values starting with a number. In this case, if th
 
 === Limitations of Caching
 
-The caching technology provided within {project-name} is currently quite rudimentary and limited.
+The caching technology provided within Quarkus is currently quite rudimentary and limited.
 
 The team thought it was better to have _some_ caching capability to start with, than having nothing; you can expect better caching solution to be integrated in future releases, and any help and feedback in this area is very welcome.
 
@@ -387,7 +387,7 @@ On top of immutable data, in certain contexts it might be acceptable to enable c
  This is however not recommended and should be done with extreme care, as it might
  produce unexpected and unforeseen effects on the data.
 
-Rather than enabling caching on mutable data, ideally a better solution would be to use a clustered cache; however at this time {project-name} doesn't provide any such implementation: feel free to get in touch and let this need known so that the team can take this into account.
+Rather than enabling caching on mutable data, ideally a better solution would be to use a clustered cache; however at this time Quarkus doesn't provide any such implementation: feel free to get in touch and let this need known so that the team can take this into account.
 --
 
 Finally, the second-level cache can be disabled globally by setting `hibernate.cache.use_second_level_cache` to `false`; this is a setting that needs to be specified in the `persistence.xml` configuration file.

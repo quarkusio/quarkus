@@ -11,8 +11,8 @@ include::./attributes.adoc[]
 
 Configure your project as indicated in the link:gradle-config.html[Gradle configuration page].
 
-At the moment there is no way of automatically generating a new project using the {project-name} Gradle plugin,
-luckily setting up a {project-name} project with Gradle is very simple. You only need to add the {project-name} Gradle plugin like this:
+At the moment there is no way of automatically generating a new project using the Quarkus Gradle plugin,
+luckily setting up a Quarkus project with Gradle is very simple. You only need to add the Quarkus Gradle plugin like this:
 
 [source,groovy,subs=attributes+]
 ----
@@ -57,7 +57,7 @@ apply plugin: 'io.quarkus'
 [[project-creation]]
 == Creating a new project
 
-For now we have to manually create a Gradle project file for {project-name}.
+For now we have to manually create a Gradle project file for Quarkus.
 Here is a complete sample file for a simple REST project:
 
 [source,groovy,subs=attributes+]
@@ -77,9 +77,9 @@ dependencies { // <2>
 }
 ----
 
-<1> The {project-name} plugin needs to be applied.
-<2> We include the {project-name} BOM using Gradle's link:https://docs.gradle.org/5.4.1/userguide/managing_transitive_dependencies.html#sec:bom_import[relevant syntax] and add RESTEasy dependency since we are developing a REST application similar to the getting started example.
-{project-name} also need this dependency for running tests, to provide this we use the `implementation` configuration.
+<1> The Quarkus plugin needs to be applied.
+<2> We include the Quarkus BOM using Gradle's link:https://docs.gradle.org/5.4.1/userguide/managing_transitive_dependencies.html#sec:bom_import[relevant syntax] and add RESTEasy dependency since we are developing a REST application similar to the getting started example.
+Quarkus also need this dependency for running tests, to provide this we use the `implementation` configuration.
 
 Here's the same build script, using the Gradle Kotlin DSL:
 
@@ -102,7 +102,7 @@ dependencies {
 
 == Enable Tests
 
-{project-name} uses Junit5 and to enable it in Gradle we need to add a section to our build file:
+Quarkus uses Junit5 and to enable it in Gradle we need to add a section to our build file:
 
 [source,groovy,subs=attributes+]
 ----
@@ -119,15 +119,15 @@ testCompile group: 'io.quarkus', name: 'quarkus-junit5', version: '{quarkus-vers
 testCompile group: 'io.rest-assured', name: 'rest-assured', version: '{restassured-version}'
 ----
 
-Note: {project-name} do not allow both link:getting-started-testing.html[QuarkusTests] and link:getting-started-testing.html#native-executable-testing[SubstrateTests] to run in the same test run.
+Note: Quarkus do not allow both link:getting-started-testing.html[QuarkusTests] and link:getting-started-testing.html#native-executable-testing[SubstrateTests] to run in the same test run.
 SubstrateTests should be seen as integration tests and moved to a different folder
 as recommended here:
 https://docs.gradle.org/current/userguide/java_testing.html#sec:configuring_java_integration_tests[Configuring integration tests].
-{project-name} supports running Substrate tests with Gradle, but the `buildNative` task is required to be completed first.
+Quarkus supports running Substrate tests with Gradle, but the `buildNative` task is required to be completed first.
 
 == Dealing with extensions
 
-From inside a {project-name} project, you can obtain a list of the available extensions with:
+From inside a Quarkus project, you can obtain a list of the available extensions with:
 
 [source,shell]
 ----
@@ -138,7 +138,7 @@ Functionality to automatically add extensions to your Gradle project is not impl
 
 == Development mode
 
-{project-name} comes with a built-in development mode.
+Quarkus comes with a built-in development mode.
 Run your application with:
 
 [source,shell]
@@ -161,7 +161,7 @@ Hit `CTRL+C` to stop the application.
 
 == Debugging
 
-You can run a {project-name} application in debug mode using:
+You can run a Quarkus application in debug mode using:
 
 [source,shell]
 ----
@@ -212,7 +212,7 @@ Open the project directory in VS Code. If you have installed the Java Extension 
 
 == Building a native executable
 
-Native executables make {project-name} applications ideal for containers and serverless workloads.
+Native executables make Quarkus applications ideal for containers and serverless workloads.
 
 Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
 

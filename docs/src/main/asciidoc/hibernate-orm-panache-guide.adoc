@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 
 Hibernate ORM is the de facto JPA implementation and offers you the full breadth of an Object Relational Mapper.
 It makes complex mappings possible, but it does not make simple and common mappings trivial.
-Hibernate ORM with Panache focuses on making your entities trivial and fun to write in {project-name}.
+Hibernate ORM with Panache focuses on making your entities trivial and fun to write in Quarkus.
 
 == First: an example
 

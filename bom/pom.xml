@@ -67,7 +67,7 @@
         <!-- What we actually depend on for the annotations, as latest Graal
            is not available in Maven fast enough: -->
         <graal-sdk.version>19.0.2</graal-sdk.version>
-        <gizmo.version>1.0.0.Alpha4</gizmo.version>
+        <gizmo.version>1.0.0.Alpha5</gizmo.version>
         <jackson.version>2.9.9</jackson.version>
         <commons-beanutils.version>1.9.3</commons-beanutils.version>
         <commons-logging.version>1.2</commons-logging.version>
@@ -150,6 +150,7 @@
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kogito.version>0.1.2</kogito.version>
         <swagger.version>1.5.21</swagger.version>
+        <kubernetes-client.version>4.3.0</kubernetes-client.version>
     </properties>
 
     <dependencyManagement>
@@ -320,7 +321,7 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>${project.groupId}</groupId>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-search-elasticsearch</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -517,6 +518,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kubernetes</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-kubernetes-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2061,6 +2067,16 @@
                 <groupId>io.swagger</groupId>
                 <artifactId>swagger-annotations</artifactId>
                 <version>${swagger.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-client</artifactId>
+                <version>${kubernetes-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-server-mock</artifactId>
+                <version>${kubernetes-client.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

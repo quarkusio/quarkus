@@ -83,9 +83,9 @@ public class ApplicationArchiveBuildStep {
         }
 
         List<ApplicationArchive> applicationArchives = scanForOtherIndexes(Thread.currentThread().getContextClassLoader(),
-                markerFiles, root.getPath(), additionalApplicationArchiveBuildItem, indexCache);
+                markerFiles, root.getArchiveLocation(), additionalApplicationArchiveBuildItem, indexCache);
         return new ApplicationArchivesBuildItem(
-                new ApplicationArchiveImpl(appindex.getIndex(), root.getPath(), null, false, root.getPath()),
+                new ApplicationArchiveImpl(appindex.getIndex(), root.getArchiveRoot(), null, false, root.getArchiveLocation()),
                 applicationArchives);
     }
 

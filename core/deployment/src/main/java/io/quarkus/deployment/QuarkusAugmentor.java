@@ -1,5 +1,8 @@
 package io.quarkus.deployment;
 
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -53,6 +56,7 @@ public class QuarkusAugmentor {
         long time = System.currentTimeMillis();
         log.info("Beginning quarkus augmentation");
         ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
+        FileSystem rootFs = null;
         try {
             Thread.currentThread().setContextClassLoader(classLoader);
 
@@ -82,10 +86,13 @@ public class QuarkusAugmentor {
 
             BuildChain chain = chainBuilder
                     .build();
+            if (!Files.isDirectory(root)) {
+                rootFs = FileSystems.newFileSystem(root, null);
+            }
             BuildExecutionBuilder execBuilder = chain.createExecutionBuilder("main")
                     .produce(QuarkusConfig.INSTANCE)
                     .produce(liveReloadBuildItem)
-                    .produce(new ArchiveRootBuildItem(root))
+                    .produce(new ArchiveRootBuildItem(root, rootFs == null ? root : rootFs.getPath("/")))
                     .produce(new ClassOutputBuildItem(output))
                     .produce(new ShutdownContextBuildItem())
                     .produce(new LaunchModeBuildItem(launchMode))
@@ -106,6 +113,12 @@ public class QuarkusAugmentor {
             log.info("Quarkus augmentation completed in " + (System.currentTimeMillis() - time) + "ms");
             return buildResult;
         } finally {
+            if (rootFs != null) {
+                try {
+                    rootFs.close();
+                } catch (Exception e) {
+                }
+            }
             Thread.currentThread().setContextClassLoader(originalClassLoader);
         }
     }

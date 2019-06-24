@@ -201,15 +201,14 @@ CompletionStage<PgRowSet> rowSet = client.query("SELECT id, name FROM fruits ORD
 ----
 
 When the operation completes, we will get a `PgRowSet` that has all the rows buffered in memory.
-It can be traversed with an `Iterator`:
+As an `Iterator<Row>`, it can be traversed with a _for-each_ loop:
 
 [source,java]
 ----
 CompletionStage<List<Fruit>> fruits = rowSet.thenApply(pgRowSet -> {
     List<Fruit> list = new ArrayList<>(pgRowSet.size());
-    PgIterator pgIterator = pgRowSet.iterator();
-    while (pgIterator.hasNext()) {
-        list.add(from(pgIterator.next()));
+    for (Row row : pgRowSet) {
+        list.add(from(row));
     }
     return list;
 });
@@ -234,9 +233,8 @@ Putting it all together, the `Fruit.findAll` method looks like:
     public static CompletionStage<List<Fruit>> findAll(PgPool client) {
         return client.query("SELECT id, name FROM fruits ORDER BY name ASC").thenApply(pgRowSet -> {
             List<Fruit> list = new ArrayList<>(pgRowSet.size());
-            PgIterator pgIterator = pgRowSet.iterator();
-            while (pgIterator.hasNext()) {
-                list.add(from(pgIterator.next()));
+            for (Row row : pgRowSet) {
+                list.add(from(row));
             }
             return list;
         });

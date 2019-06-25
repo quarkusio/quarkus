@@ -381,7 +381,11 @@ Make sure to wrap methods modifying your database (e.g. `entity.persist()`) with
 CDI bean method `@Transactional` will do that for you and make that method a transaction boundary. We recommend doing
 so at your application entry point boundaries like your REST endpoint controllers.
 
-Be aware that JPA may send the changes you did on your entities only at transaction boundary, this means that those changes (insert/update/delete queries) will be sent to the database after the execution of your method so you will not be able to catch any `PersistenceException` in your code if you need to (for example to send an event somewhere if you cannot commit to the database). Panache provides `flush()` and `persistAndFlush()` methods to force a flush on the underlying `EntityManager`. Calling one of these methods will send all pending changes (of all entities) to the database (but will not commit the transaction).
+JPA batches changes you make to your entities and sends changes (it's called flush) at the end of the transaction or before a query.
+This is usually a good thing as it's more efficient.
+But if you want to check optimistic locking failures, do object validation right away or generally want to get immediate feedback, you can force the flush operation by calling `entity.flush()` or even use `entity.persistAndFlush()` to make it a single method call. This will allow you to catch any `PersistenceException` that could occur when JPA send those changes to the database.
+Remember, this is less efficient so don't abuse it.
+And your transaction still has to be committed.
 
 Here is an example of the usage of the flush method to allow making a specific action in case of `PersistenceException`:
 [source,java]

@@ -472,7 +472,7 @@ final class Beans {
                     iterator.remove();
                 }
             }
-            if (resolved.size() == 1) {
+            if (resolvedAmbiguity.size() == 1) {
                 selected = resolvedAmbiguity.get(0);
             }
         }

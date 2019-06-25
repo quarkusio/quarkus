@@ -338,7 +338,10 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             }
             String imageName = IS_WINDOWS ? "native-image.cmd" : "native-image";
             nativeImage = Collections.singletonList(graalvmHome + File.separator + "bin" + File.separator + imageName);
-
+            if (Files.notExists(Paths.get(nativeImage.get(0)))) {
+                throw new AppCreatorException("The `native-image` tool (" + nativeImage.get(0)
+                        + ") is not installed, this can be done by running `gu install native-image`");
+            }
         }
 
         try {

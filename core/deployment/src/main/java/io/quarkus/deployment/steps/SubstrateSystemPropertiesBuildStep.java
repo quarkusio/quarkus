@@ -26,7 +26,7 @@ public class SubstrateSystemPropertiesBuildStep {
             }
             properties.put(i.getKey(), i.getValue());
         }
-        try (FileOutputStream os = new FileOutputStream(new File(root.getPath().toFile(), "native-image.properties"))) {
+        try (FileOutputStream os = new FileOutputStream(new File(root.getArchiveRoot().toFile(), "native-image.properties"))) {
             try (OutputStreamWriter osw = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
                 properties.store(osw, "Generated properties (do not edit)");
             }

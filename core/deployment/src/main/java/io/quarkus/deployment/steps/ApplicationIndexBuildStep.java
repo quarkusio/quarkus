@@ -21,7 +21,7 @@ public class ApplicationIndexBuildStep {
     ApplicationIndexBuildItem build(ArchiveRootBuildItem root) throws IOException {
 
         Indexer indexer = new Indexer();
-        Files.walkFileTree(root.getPath(), new FileVisitor<Path>() {
+        Files.walkFileTree(root.getArchiveRoot(), new FileVisitor<Path>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                 return FileVisitResult.CONTINUE;

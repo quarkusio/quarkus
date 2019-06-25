@@ -431,7 +431,7 @@ public final class HibernateOrmProcessor {
                 loadScriptPath
                         .filter(path -> !Files.isDirectory(path))
                         .ifPresent(path -> {
-                            String resourceAsString = root.getPath().relativize(loadScriptPath.get()).toString();
+                            String resourceAsString = root.getArchiveRoot().relativize(loadScriptPath.get()).toString();
                             resourceProducer.produce(new SubstrateResourceBuildItem(resourceAsString));
                             desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, importFile);
                         });

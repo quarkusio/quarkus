@@ -4,17 +4,16 @@ import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.Session;
-
-import org.apache.activemq.artemis.jms.client.ActiveMQJMSConnectionFactory;
 
 @ApplicationScoped
 public class ArtemisConsumerManager {
 
     @Inject
-    ActiveMQJMSConnectionFactory connectionFactory;
+    ConnectionFactory connectionFactory;
 
     private Connection connection;
 

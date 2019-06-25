@@ -5,6 +5,8 @@ import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -103,44 +105,54 @@ public class TestResourceManager {
     }
 
     private IndexView indexTestClasses(Class<?> testClass) {
-        Indexer indexer = new Indexer();
-
+        final Indexer indexer = new Indexer();
+        final Path testClassesLocation = getTestClassesLocation(testClass);
         try {
-            Files.walkFileTree(getTestClassesLocation(testClass), new FileVisitor<Path>() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                        throws IOException {
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    if (!file.toString().endsWith(".class")) {
-                        return FileVisitResult.CONTINUE;
+            if (Files.isDirectory(testClassesLocation)) {
+                indexTestClassesDir(indexer, testClassesLocation);
+            } else {
+                try (FileSystem jarFs = FileSystems.newFileSystem(testClassesLocation, null)) {
+                    for (Path p : jarFs.getRootDirectories()) {
+                        indexTestClassesDir(indexer, p);
                     }
-                    try (InputStream inputStream = Files.newInputStream(file, StandardOpenOption.READ)) {
-                        indexer.index(inputStream);
-                    } catch (Exception e) {
-                        // ignore
-                    }
-                    return FileVisitResult.CONTINUE;
                 }
-
-                @Override
-                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                    return FileVisitResult.CONTINUE;
-                }
-            });
+            }
         } catch (IOException e) {
             throw new RuntimeException("Unable to index the test-classes/ directory.", e);
         }
-
         return indexer.complete();
     }
 
+    private void indexTestClassesDir(Indexer indexer, final Path testClassesLocation) throws IOException {
+        Files.walkFileTree(testClassesLocation, new FileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                    throws IOException {
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (!file.toString().endsWith(".class")) {
+                    return FileVisitResult.CONTINUE;
+                }
+                try (InputStream inputStream = Files.newInputStream(file, StandardOpenOption.READ)) {
+                    indexer.index(inputStream);
+                } catch (Exception e) {
+                    // ignore
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
 }

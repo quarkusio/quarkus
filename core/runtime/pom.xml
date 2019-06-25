@@ -117,6 +117,34 @@
                             </annotationProcessorPaths>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>compile-stubs</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <compileSourceRoots>${project.basedir}/src/main/stubs</compileSourceRoots>
+                            <outputDirectory>${project.build.directory}/stub-classes</outputDirectory>
+                            <additionalClasspathElements>
+                                <additionalClasspathElement>${project.build.outputDirectory}</additionalClasspathElement>
+                            </additionalClasspathElements>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>compile-quarkus</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <compileSourceRoots>${project.basedir}/src/main/quarkus</compileSourceRoots>
+                            <additionalClasspathElements>
+                                <additionalClasspathElement>${project.build.outputDirectory}</additionalClasspathElement>
+                                <additionalClasspathElement>${project.build.directory}/stub-classes</additionalClasspathElement>
+                            </additionalClasspathElements>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>

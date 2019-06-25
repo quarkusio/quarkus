@@ -3,29 +3,39 @@ package io.quarkus.deployment.builditem;
 import org.wildfly.common.Assert;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.runtime.execution.ExecutionHandler;
+import io.quarkus.gizmo.MethodDescriptor;
 
 /**
  * A build item for execution handlers.
  */
 public final class ExecutionHandlerBuildItem extends MultiBuildItem {
-    private final ExecutionHandler handler;
+    private final MethodDescriptor methodDescriptor;
 
     /**
      * Construct a new instance.
      *
-     * @param handler the handler (must not be {@code null})
+     * @param methodDescriptor the method descriptor to use to construct the handler (must not be {@code null})
      */
-    public ExecutionHandlerBuildItem(final ExecutionHandler handler) {
-        this.handler = Assert.checkNotNullParam("handler", handler);
+    public ExecutionHandlerBuildItem(final MethodDescriptor methodDescriptor) {
+        Assert.checkNotNullParam("methodDescriptor", methodDescriptor);
+        this.methodDescriptor = methodDescriptor;
     }
 
     /**
-     * Get the execution handler.
+     * Construct a new instance. The handler will be instantiated by its no-arg constructor.
      *
-     * @return the execution handler (not {@code null})
+     * @param handlerClassName the handler class name (must not be {@code null})
      */
-    public ExecutionHandler getHandler() {
-        return handler;
+    public ExecutionHandlerBuildItem(final String handlerClassName) {
+        this(MethodDescriptor.ofConstructor(handlerClassName));
+    }
+
+    /**
+     * Get the factory method descriptor for this handler.
+     *
+     * @return the method descriptor
+     */
+    public MethodDescriptor getMethodDescriptor() {
+        return methodDescriptor;
     }
 }

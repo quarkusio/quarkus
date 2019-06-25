@@ -19,8 +19,8 @@ import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.deployment.builditem.ExecutionChainBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.builditem.QuarkusApplicationBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.execution.AsynchronousExitException;
@@ -95,7 +95,7 @@ public class RuntimeRunner implements Runnable, Closeable {
                 builder.addBuildChainCustomizer(i);
             }
             builder.addFinal(BytecodeTransformerBuildItem.class)
-                    .addFinal(ExecutionChainBuildItem.class);
+                    .addFinal(QuarkusApplicationBuildItem.class);
 
             BuildResult result = builder.build().run();
             List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems = result
@@ -111,11 +111,12 @@ public class RuntimeRunner implements Runnable, Closeable {
 
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             final ExecutionContext ctxt;
+            final ExecutionChain chain;
             try {
                 Thread.currentThread().setContextClassLoader(loader);
-                ExecutionChain chain = result.consume(ExecutionChainBuildItem.class).getChain();
-                ctxt = (ExecutionContext) Class.forName("io.quarkus.runtime.generated.Init", true, loader)
-                        .getDeclaredMethod("getInitialContext").invoke(null);
+                final Class<?> initClass = Class.forName("io.quarkus.runtime.generated.Init", true, loader);
+                chain = (ExecutionChain) initClass.getDeclaredMethod("getInitialChain").invoke(null);
+                ctxt = (ExecutionContext) initClass.getDeclaredMethod("getInitialContext").invoke(null);
                 try {
                     chain.startAsynchronously(ctxt);
                 } catch (Throwable t) {

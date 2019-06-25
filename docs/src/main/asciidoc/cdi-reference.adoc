@@ -353,3 +353,55 @@ Furthermore, extensions can eliminate possible false positives by producing `Unr
 
 Finally, Quarkus provides a middle ground for the bean removal optimization where application beans are never removed whether or not they are unused,
 while the optimization proceeds normally for non application classes. To use this mode, set `quarkus.arc.remove-unused-beans` to `fwk` or `framework`.
+
+[[default_beans]]
+== Default Beans
+
+Quarkus adds a capability that CDI currently does not support which is to conditionally declare a bean from a producer method if no such bean has been declared in the typical ways Quarkus supports.
+This is done using the `@io.quarkus.arc.DefaultBean` annotation and is best explained with an example.
+
+Say there is a Quarkus extension that among other things declares a few CDI beans like the following code does:
+
+[source,java]
+----
+@Dependent
+public class TracerConfiguration {
+
+    @Produces
+    public Tracer tracer(Reporter reporter, Configuration configuration) {
+        return new Tracer(reporter, configuration);
+    }
+
+    @Produces
+    @DefaultBean
+    public Configuration configuration() {
+        // create a Configuration
+    }
+
+    @Produces
+    @DefaultBean
+    public Reporter reporter(){
+        // create a Reporter
+    }
+}
+----
+
+The idea is that the extension auto-configures things for user, eliminating a lot of boilerplate - we can just `@Inject` a `Tracer` wherever it is needed.
+Now imagine that in our application we would like to utilize the configured `Tracer`, but we need to customize it a little, for example by providing a custom `Reporter`.
+The only thing that would be needed in our application would be something like the following:
+
+
+[source,java]
+----
+@Dependent
+public class CustomTracerConfiguration {
+
+    @Produces
+    public Reporter reporter(){
+        // create a custom Reporter
+    }
+}
+----
+
+`@DefaultBean` allows extensions (or any other code for that matter) to provide defaults while backing off if beans of that type are supplied in any
+way Quarkus supports.

@@ -397,8 +397,20 @@ class ArcContainerImpl implements ArcContainer {
         } else if (matching.size() == 1) {
             return Collections.singleton(matching.get(0));
         }
+
         // Try to resolve the ambiguity
         List<InjectableBean<?>> resolved = new ArrayList<>(matching);
+
+        for (Iterator<InjectableBean<?>> iterator = resolved.iterator(); iterator.hasNext();) {
+            InjectableBean<?> beanInfo = iterator.next();
+            if (beanInfo.isDefaultBean()) {
+                iterator.remove();
+            }
+        }
+        if (resolved.size() == 1) {
+            return Collections.singleton(resolved.get(0));
+        }
+
         for (Iterator<InjectableBean<?>> iterator = resolved.iterator(); iterator.hasNext();) {
             InjectableBean<?> bean = iterator.next();
             if (bean.getAlternativePriority() == null

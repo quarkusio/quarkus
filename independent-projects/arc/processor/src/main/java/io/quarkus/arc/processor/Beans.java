@@ -110,7 +110,7 @@ final class Beans {
 
         BeanInfo bean = new BeanInfo(beanClass, beanDeployment, scope, types, qualifiers,
                 Injection.forBean(beanClass, null, beanDeployment, transformer), null, null,
-                isAlternative ? alternativePriority : null, stereotypes, name);
+                isAlternative ? alternativePriority : null, stereotypes, name, false);
         return bean;
     }
 
@@ -152,6 +152,7 @@ final class Beans {
         Set<Type> types = Types.getProducerMethodTypeClosure(producerMethod, beanDeployment);
         Integer alternativePriority = null;
         boolean isAlternative = false;
+        boolean isDefaultBean = false;
         List<StereotypeInfo> stereotypes = new ArrayList<>();
         String name = null;
 
@@ -175,6 +176,10 @@ final class Beans {
             }
             if (DotNames.ALTERNATIVE.equals(annotation.name())) {
                 isAlternative = true;
+                continue;
+            }
+            if (DotNames.DEFAULT_BEAN.equals(annotation.name())) {
+                isDefaultBean = true;
                 continue;
             }
             ScopeInfo scopeAnnotation = beanDeployment.getScope(annotation.name());
@@ -219,7 +224,7 @@ final class Beans {
 
         BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, types, qualifiers,
                 Injection.forBean(producerMethod, declaringBean, beanDeployment, transformer), declaringBean,
-                disposer, alternativePriority, stereotypes, name);
+                disposer, alternativePriority, stereotypes, name, isDefaultBean);
         return bean;
     }
 
@@ -296,7 +301,7 @@ final class Beans {
 
         BeanInfo bean = new BeanInfo(producerField, beanDeployment, scope, types, qualifiers, Collections.emptyList(),
                 declaringBean, disposer,
-                alternativePriority, stereotypes, name);
+                alternativePriority, stereotypes, name, false);
         return bean;
     }
 
@@ -437,8 +442,18 @@ final class Beans {
     }
 
     static BeanInfo resolveAmbiguity(List<BeanInfo> resolved) {
-        BeanInfo selected = null;
         List<BeanInfo> resolvedAmbiguity = new ArrayList<>(resolved);
+        for (Iterator<BeanInfo> iterator = resolvedAmbiguity.iterator(); iterator.hasNext();) {
+            BeanInfo beanInfo = iterator.next();
+            if (beanInfo.isDefaultBean()) {
+                iterator.remove();
+            }
+        }
+        if (resolvedAmbiguity.size() == 1) {
+            return resolvedAmbiguity.get(0);
+        }
+
+        BeanInfo selected = null;
         for (Iterator<BeanInfo> iterator = resolvedAmbiguity.iterator(); iterator.hasNext();) {
             BeanInfo beanInfo = iterator.next();
             if (!beanInfo.isAlternative() && (beanInfo.getDeclaringBean() == null || !beanInfo.getDeclaringBean()

@@ -84,9 +84,55 @@ Since CDI is the central programming model when it comes to component compositio
 For example, Hibernate ORM exposes `EntityManagerFactory` and `EntityManager` beans, the connection pool exposes `DataSource` beans etc.
 An extension must generate these bean definitions at build time.
 
-==== How to Override a Bean Defined by a Library/Quarkus Extension
+A very useful pattern of creating such beans but also giving application code the ability to easily override some of the beans with custom implementations, is to use
+the `@DefaultBean` that Quarkus provides. This is best explained with an example.
 
-The recommended approach is to mark your bean as a CDI `@Alternative` that is enabled using the `@Priority` annotation. 
+==== Example CDI configuration using @DefaultBean
+
+Let us assume that the Quarkus extension needs to provide a `Tracer` bean which application code is meant to inject into its own beans.
+
+[source%nowrap,java]
+----
+@Dependent
+public class TracerConfiguration {
+
+    @Produces
+    public Tracer tracer(Reporter reporter, Configuration configuration) {
+        return new Tracer(reporter, configuration);
+    }
+
+    @Produces
+    @DefaultBean
+    public Configuration configuration() {
+        // create a Configuration
+    }
+
+    @Produces
+    @DefaultBean
+    public Reporter reporter(){
+        // create a Reporter
+    }
+}
+----
+
+If for example application code wants to use `Tracer`, but also needs to use a custom `Reporter` bean, such a requirement could easily be done using something like:
+
+
+[source%nowrap,java]
+----
+@Dependent
+public class CustomTracerConfiguration {
+
+    @Produces
+    public Reporter reporter(){
+        // create a custom Reporter
+    }
+}
+----
+
+==== How to Override a Bean Defined by a Library/Quarkus Extension that doesn't use @DefaultBean
+
+Although `@DefaultBean` is the recommended approach, it is also possible for application code to override beans provided by an extension by marking beans as a CDI `@Alternative` and including `@Priority` annotation.
 Let's show a simple example. 
 Suppose we work on an imaginary "quarkus-parser" extension and we have a default bean implementation:
 

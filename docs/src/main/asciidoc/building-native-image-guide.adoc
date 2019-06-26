@@ -208,7 +208,7 @@ When running tests this way, the only things that actually run natively are you 
 you can only test via HTTP calls. Your test code does not actually run natively, so if you are testing code
 that does not call your HTTP endpoints, it's probably not a good idea to run them as part of native tests.
 
-If you share your test class between JVM and native execusions like we advise above, you can mark certain tests
+If you share your test class between JVM and native executions like we advise above, you can mark certain tests
 with the `@DisabledOnSubstrate` annotation in order to only run them on the JVM.
 
 == Creating a container

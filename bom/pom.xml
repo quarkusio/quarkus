@@ -148,8 +148,7 @@
         <keycloak.version>6.0.1</keycloak.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kogito.version>0.1.2</kogito.version>
-        <swagger.version>1.5.21</swagger.version>
+        <kogito.version>0.1.3</kogito.version>
         <kubernetes-client.version>4.3.0</kubernetes-client.version>
     </properties>
 
@@ -2066,12 +2065,6 @@
                 <groupId>org.kie.kogito</groupId>
                 <artifactId>jbpm-bpmn2</artifactId>
                 <version>${kogito.version}</version>
-            </dependency>
-            <!-- swagger annotations used by kogito -->
-            <dependency>
-                <groupId>io.swagger</groupId>
-                <artifactId>swagger-annotations</artifactId>
-                <version>${swagger.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.fabric8</groupId>

@@ -57,7 +57,7 @@ public class DevModeMain {
     static final Map<Class<?>, Object> liveReloadContext = new ConcurrentHashMap<>();
 
     public static void main(String... args) throws Exception {
-        Timing.staticInitStarted();
+        Timing.markStart();
 
         try (InputStream devModeCp = DevModeMain.class.getClassLoader().getResourceAsStream(DEV_MODE_CONTEXT)) {
             context = (DevModeContext) new ObjectInputStream(new DataInputStream(devModeCp)).readObject();

@@ -14,10 +14,9 @@ import io.quarkus.runtime.generated.Init;
 public class Quarkus {
 
     static {
-        Timing.staticInitStarted();
+        Timing.markStaticInitStart();
         INITIAL_CONTEXT = Init.getInitialContext();
         STARTUP_CHAIN = Init.getInitialChain();
-        Timing.staticInitStopped();
     }
 
     private static final ExecutionContext INITIAL_CONTEXT;

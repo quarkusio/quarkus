@@ -96,18 +96,20 @@ public final class ExecutionChain implements ExecutionHandler, Serializable {
                 } catch (Throwable t) {
                     Execution.thrown = t;
                     Execution.lastStop();
+                    Timing.printStopTime();
                     return;
                 }
                 Execution.lastStop();
+                Timing.printStopTime();
             }
         };
         Execution.firstStart(true);
-        Timing.mainStarted();
         Thread thread = new Thread(task, "Quarkus Thread");
         try {
             thread.start();
         } catch (Throwable t) {
             Execution.lastStop();
+            Timing.printStopTime();
             throw t;
         }
         Execution.awaitServerUp();
@@ -130,7 +132,6 @@ public final class ExecutionChain implements ExecutionHandler, Serializable {
             safeFlush(System.err);
             System.exit(Execution.EXIT_EXCEPTION);
         }
-        Timing.mainStarted();
         final int res;
         try {
             res = run(initialContext);
@@ -155,7 +156,7 @@ public final class ExecutionChain implements ExecutionHandler, Serializable {
         }
         safeFlush(System.out);
         safeFlush(System.err);
-        Execution.lastStop();
+        Timing.printStopTime();
         System.exit(res);
         throw Assert.unreachableCode();
     }

@@ -6,28 +6,28 @@ import org.jboss.logging.Logger;
 
 /**
  * Class that is responsible for printing out timing results.
- * <p>
- * It is modified on substrate by {@link io.quarkus.runtime.graal.TimingReplacement}, in that mainStarted it rewritten to
- * actually update the start time.
  */
 public class Timing {
 
-    private static volatile long bootStartTime = -1;
+    private static volatile long bootStartTime;
 
-    private static volatile long bootStopTime = -1;
+    private static volatile long bootStopTime;
 
     private static volatile String httpServerInfo = "";
 
-    public static void staticInitStarted() {
-        if (bootStartTime < 0) {
-            bootStartTime = System.nanoTime();
-        }
+    /**
+     * Mark the point when the server has begun starting.
+     */
+    public static void markStart() {
+        marked = true;
+        bootStartTime = System.nanoTime();
     }
 
-    public static void staticInitStopped() {
-        if (bootStopTime < 0) {
-            bootStopTime = System.nanoTime();
-        }
+    /**
+     * Mark the point when the server has begun stopping.
+     */
+    public static void markStop() {
+        bootStopTime = System.nanoTime();
     }
 
     /**
@@ -40,10 +40,27 @@ public class Timing {
         httpServerInfo = info;
     }
 
+    private static volatile boolean marked;
+
     /**
-     * This method is replaced by substrate
+     * Mark the point when the server has begun the main method for the first time.
      */
-    public static void mainStarted() {
+    public static void markFirstStart() {
+        // For dev mode and unit tests, subsequent restarts will be recorded from the main method.
+        if (marked) {
+            marked = false;
+        } else {
+            markStart();
+        }
+    }
+
+    /**
+     * Mark the point when the server has begun the main method for the first time. Prevents the next
+     * main method start from recording a time.
+     */
+    public static void markStaticInitStart() {
+        marked = true;
+        markStart();
     }
 
     public static void restart() {
@@ -57,7 +74,6 @@ public class Timing {
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(bootTimeNanoSeconds);
         logger.infof("Quarkus %s started in %ss. %s", version, secondsRepresentation, httpServerInfo);
         logger.infof("Installed features: [%s]", features);
-        bootStartTime = -1;
     }
 
     public static void printStopTime() {
@@ -65,7 +81,6 @@ public class Timing {
         final Logger logger = Logger.getLogger("io.quarkus");
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(stopTimeNanoSeconds);
         logger.infof("Quarkus stopped in %ss", secondsRepresentation);
-        bootStopTime = -1;
     }
 
     public static BigDecimal convertToBigDecimalSeconds(final long timeNanoSeconds) {

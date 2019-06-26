@@ -7,6 +7,8 @@ import org.wildfly.common.Assert;
 import org.wildfly.common.lock.ExtendedLock;
 import org.wildfly.common.lock.Locks;
 
+import io.quarkus.runtime.Timing;
+
 /**
  *
  */
@@ -265,6 +267,8 @@ public final class Execution {
             int oldVal = state;
             int status = statusOf(oldVal);
             if (status == STATUS_ASYNC_EXIT || status == STATUS_DEAD) {
+                Timing.markFirstStart();
+                Timing.markStop();
                 throw asyncExitException();
             } else if (status != STATUS_IDLE) {
                 throw new IllegalStateException("A Quarkus instance is already running");
@@ -273,6 +277,7 @@ public final class Execution {
                 oldVal = withAsync(oldVal);
             }
             state = withStatus(oldVal, STATUS_START);
+            Timing.markFirstStart();
             return;
         } finally {
             lock.unlock();
@@ -296,10 +301,12 @@ public final class Execution {
             if (status == STATUS_START) {
                 return -1;
             } else if (status == STATUS_ASYNC_EXIT || status == STATUS_DEAD) {
+                Timing.markStop();
                 throw asyncExitException();
             } else if (status == STATUS_EXIT) {
                 // restart
                 state = withExitCode(withStatus(oldVal, STATUS_START), 0);
+                Timing.markStart();
                 termCond.signalAll();
                 return -1;
             } else if (status == STATUS_RUN || status == STATUS_EXIT_WAIT) {
@@ -339,10 +346,12 @@ public final class Execution {
             } else if (status == STATUS_ASYNC_EXIT) {
                 throw asyncExitException();
             } else if (status == STATUS_START || status == STATUS_START_EXIT) {
+                Timing.markStop();
                 upCond.signalAll();
                 state = withExitCode(withStatus(oldVal, STATUS_EXIT), exitCode);
                 return;
             } else if (status == STATUS_RUN) {
+                Timing.markStop();
                 state = withExitCode(withStatus(oldVal, STATUS_EXIT), exitCode);
                 return;
             } else if (status == STATUS_EXIT) {
@@ -385,10 +394,12 @@ public final class Execution {
                     throw asyncExitException(ex);
                 }
             } else if (status == STATUS_START || status == STATUS_START_EXIT) {
+                Timing.markStop();
                 state = withExitCode(withStatus(oldVal, STATUS_EXIT), EXIT_EXCEPTION);
                 upCond.signalAll();
                 return ex;
             } else if (status == STATUS_RUN) {
+                Timing.markStop();
                 state = withExitCode(withStatus(oldVal, STATUS_EXIT), EXIT_EXCEPTION);
                 return ex;
             } else if (status == STATUS_EXIT && exitCodeOf(oldVal) == EXIT_OK) {
@@ -444,15 +455,18 @@ public final class Execution {
                 upCond.signalAll();
             } else if (status == STATUS_START_EXIT) {
                 // we shut down before we started up
+                Timing.markStop();
                 state = withStatus(oldVal, STATUS_EXIT);
                 upCond.signalAll();
                 return exitCodeOf(oldVal);
             } else if (status == STATUS_EXIT) {
                 // we shut down before we started up
+                Timing.markStop();
                 upCond.signalAll();
                 return exitCodeOf(oldVal);
             } else if (status == STATUS_ASYNC_EXIT) {
                 // we shut down before we started up
+                Timing.markStop();
                 upCond.signalAll();
                 throw asyncExitException();
             } else {
@@ -465,8 +479,10 @@ public final class Execution {
                 oldVal = state;
                 status = statusOf(oldVal);
                 if (status == STATUS_ASYNC_EXIT) {
+                    Timing.markStop();
                     throw asyncExitException();
                 } else if (status == STATUS_EXIT) {
+                    Timing.markStop();
                     return exitCodeOf(oldVal);
                 } else if (status == STATUS_RUN || status == STATUS_START_WAIT) {
                     // spurious wakeup
@@ -488,9 +504,11 @@ public final class Execution {
             if (status == STATUS_ASYNC_EXIT) {
                 // already signalled; do nothing
             } else if (status == STATUS_START) {
+                Timing.markStop();
                 state = withStatus(0, status = STATUS_ASYNC_EXIT);
                 upCond.signalAll();
             } else if (status == STATUS_RUN) {
+                Timing.markStop();
                 state = withStatus(0, status = STATUS_ASYNC_EXIT);
                 stopCond.signalAll();
             } else if (status == STATUS_EXIT) {
@@ -530,9 +548,11 @@ public final class Execution {
             if (status == STATUS_ASYNC_EXIT) {
                 // already signalled; do nothing
             } else if (status == STATUS_START) {
+                Timing.markStop();
                 state = withStatus(0, STATUS_ASYNC_EXIT);
                 upCond.signalAll();
             } else if (status == STATUS_RUN) {
+                Timing.markStop();
                 state = withStatus(0, STATUS_ASYNC_EXIT);
                 stopCond.signalAll();
             } else if (status == STATUS_EXIT) {

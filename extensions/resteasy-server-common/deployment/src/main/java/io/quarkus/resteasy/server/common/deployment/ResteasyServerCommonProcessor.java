@@ -488,9 +488,9 @@ public class ResteasyServerCommonProcessor {
         IndexView beanArchiveIndex = beanArchiveIndexBuildItem.getIndex();
 
         // required by Jackson
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
-                "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
-                "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer"));
+        // we probably need proper extensions rather than doing that here
+        registerForReflectionIfPresent(reflectiveClass, "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector");
+        registerForReflectionIfPresent(reflectiveClass, "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer");
 
         // This is probably redundant with the automatic resolution we do just below but better be safe
         for (AnnotationInstance annotation : index.getAnnotations(JSONB_ANNOTATION)) {
@@ -573,5 +573,15 @@ public class ResteasyServerCommonProcessor {
         }
         return new RuntimeException("Multiple classes ( " + sb.toString()
                 + ") have been annotated with @ApplicationPath which is currently not supported");
+    }
+
+    private static void registerForReflectionIfPresent(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            String className) {
+        try {
+            Class.forName(className);
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, className));
+        } catch (Exception e) {
+            //ignore
+        }
     }
 }

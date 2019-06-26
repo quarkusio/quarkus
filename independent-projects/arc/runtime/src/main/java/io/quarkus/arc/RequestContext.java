@@ -16,6 +16,7 @@ import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
+import org.jboss.logging.Logger;
 
 /**
  * The built-in context for {@link RequestScoped}.
@@ -23,6 +24,8 @@ import javax.enterprise.inject.Any;
  * @author Martin Kouba
  */
 class RequestContext implements ManagedContext {
+
+    private static final Logger LOGGER = Logger.getLogger(RequestContext.class.getPackage().getName());
 
     // It's a normal scope so there may be no more than one mapped instance per contextual type per thread
     private final ThreadLocal<Map<Contextual<?>, ContextInstanceHandle<?>>> currentContext = new ThreadLocal<>();
@@ -99,7 +102,7 @@ class RequestContext implements ManagedContext {
     }
 
     private void fireIfNotEmpty(LazyValue<EventImpl.Notifier<Object>> value) {
-        EventImpl.Notifier notifier = value.get();
+        EventImpl.Notifier<Object> notifier = value.get();
         if (!notifier.isEmpty()) {
             notifier.notify(toString());
         }
@@ -132,7 +135,11 @@ class RequestContext implements ManagedContext {
         if (ctx != null) {
             synchronized (ctx) {
                 // Fire an event with qualifier @BeforeDestroyed(RequestScoped.class) if there are any observers for it
-                fireIfNotEmpty(beforeDestroyedNotifier);
+                try {
+                    fireIfNotEmpty(beforeDestroyedNotifier);
+                } catch (Exception e) {
+                    LOGGER.warn("An error occured during delivery of the @BeforeDestroyed(RequestScoped.class) event", e);
+                }
                 for (InstanceHandle<?> instance : ctx.values()) {
                     try {
                         instance.destroy();
@@ -141,7 +148,11 @@ class RequestContext implements ManagedContext {
                     }
                 }
                 // Fire an event with qualifier @Destroyed(RequestScoped.class) if there are any observers for it
-                fireIfNotEmpty(destroyedNotifier);
+                try {
+                    fireIfNotEmpty(destroyedNotifier);
+                } catch (Exception e) {
+                    LOGGER.warn("An error occured during delivery of the @Destroyed(RequestScoped.class) event", e);
+                }
                 ctx.clear();
             }
         }

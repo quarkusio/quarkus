@@ -5,6 +5,10 @@ package io.quarkus.builder;
 final class Messages {
     static final Messages msg = new Messages();
 
+    IllegalStateException buildStepNotRunning() {
+        return new IllegalStateException("The build step is not currently running");
+    }
+
     IllegalArgumentException undeclaredItem(ItemId itemId) {
         return new IllegalArgumentException("Undeclared build item " + itemId);
     }

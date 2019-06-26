@@ -64,7 +64,7 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
  * This phase consumes {@link io.quarkus.creator.phase.curate.CurateOutcome} and processes
- * user application and and its dependency classes for phases that generate a runnable application.
+ * user application and its dependency classes for phases that generate a runnable application.
  *
  * @author Alexey Loubyansky
  */

@@ -1,5 +1,10 @@
 package io.quarkus.bootstrap.resolver.maven.workspace;
 
+import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,39 +29,39 @@ import io.quarkus.bootstrap.model.AppArtifactKey;
  *
  * @author Alexey Loubyansky
  */
-public class LocalProject {
+public class LocalMavenProject implements LocalProject {
 
     public static final String PROJECT_GROUPID = "${project.groupId}";
 
     private static final String PROJECT_BASEDIR = "${project.basedir}";
     private static final String POM_XML = "pom.xml";
 
-    public static LocalProject load(Path path) throws BootstrapException {
-        return new LocalProject(readModel(locateCurrentProjectDir(path, true).resolve(POM_XML)), null);
+    public static LocalMavenProject load(Path path) throws BootstrapException {
+        return new LocalMavenProject(readModel(locateCurrentProjectDir(path, true).resolve(POM_XML)), null);
     }
 
-    public static LocalProject loadWorkspace(Path path) throws BootstrapException {
+    public static LocalMavenProject loadWorkspace(Path path) throws BootstrapException {
         return loadWorkspace(path, true);
     }
 
-    public static LocalProject loadWorkspace(Path path, boolean required) throws BootstrapException {
+    public static LocalMavenProject loadWorkspace(Path path, boolean required) throws BootstrapException {
         final Path currentProjectDir = locateCurrentProjectDir(path, required);
-        final LocalWorkspace ws = new LocalWorkspace();
-        final LocalProject project = load(ws, null, loadRootModel(currentProjectDir), currentProjectDir);
+        final LocalMavenWorkspace ws = new LocalMavenWorkspace();
+        final LocalMavenProject project = load(ws, null, loadRootModel(currentProjectDir), currentProjectDir);
         return project == null ? load(ws, null, readModel(currentProjectDir.resolve(POM_XML)), currentProjectDir) : project;
     }
 
-    private static LocalProject load(LocalWorkspace workspace, LocalProject parent, Model model, Path currentProjectDir) throws BootstrapException {
-        final LocalProject project = new LocalProject(model, workspace);
+    private static LocalMavenProject load(LocalMavenWorkspace workspace, LocalMavenProject parent, Model model, Path currentProjectDir) throws BootstrapException {
+        final LocalMavenProject project = new LocalMavenProject(model, workspace);
         if(parent != null) {
             parent.modules.add(project);
         }
-        LocalProject result = currentProjectDir == null || !currentProjectDir.equals(project.getDir()) ? null : project;
+        LocalMavenProject result = currentProjectDir == null || !currentProjectDir.equals(project.getDir()) ? null : project;
         final List<String> modules = project.getRawModel().getModules();
         if (!modules.isEmpty()) {
             Path dirArg = result == null ? currentProjectDir : null;
             for (String module : modules) {
-                final LocalProject loaded = load(workspace, project, readModel(project.getDir().resolve(module).resolve(POM_XML)), dirArg);
+                final LocalMavenProject loaded = load(workspace, project, readModel(project.getDir().resolve(module).resolve(POM_XML)), dirArg);
                 if(loaded != null && result == null) {
                     result = loaded;
                     dirArg = null;
@@ -120,10 +125,10 @@ public class LocalProject {
     private final String artifactId;
     private final String version;
     private final Path dir;
-    private final LocalWorkspace workspace;
-    private final List<LocalProject> modules = new ArrayList<>(0);
+    private final LocalMavenWorkspace workspace;
+    private final List<LocalMavenProject> modules = new ArrayList<>(0);
 
-    private LocalProject(Model rawModel, LocalWorkspace workspace) throws BootstrapException {
+    private LocalMavenProject(Model rawModel, LocalMavenWorkspace workspace) throws BootstrapException {
         this.rawModel = rawModel;
         this.dir = rawModel.getProjectDirectory().toPath();
         this.workspace = workspace;
@@ -199,7 +204,7 @@ public class LocalProject {
         return rawModel;
     }
 
-    public LocalWorkspace getWorkspace() {
+    public LocalMavenWorkspace getWorkspace() {
         return workspace;
     }
 
@@ -213,24 +218,25 @@ public class LocalProject {
         return appArtifact;
     }
 
-    public List<LocalProject> getSelfWithLocalDeps() {
+    public List<LocalMavenProject> getSelfWithLocalDeps() {
         if(workspace == null) {
             return Collections.singletonList(this);
         }
-        final List<LocalProject> ordered = new ArrayList<>();
+        final List<LocalMavenProject> ordered = new ArrayList<>();
         collectSelfWithLocalDeps(this, new HashSet<>(),  ordered);
         return ordered;
     }
 
-    private static void collectSelfWithLocalDeps(LocalProject project, Set<AppArtifactKey> addedDeps, List<LocalProject> ordered) {
+    private static void collectSelfWithLocalDeps(
+        LocalMavenProject project, Set<AppArtifactKey> addedDeps, List<LocalMavenProject> ordered) {
         if(!project.modules.isEmpty()) {
-            for(LocalProject module : project.modules) {
+            for(LocalMavenProject module : project.modules) {
                 collectSelfWithLocalDeps(module, addedDeps, ordered);
             }
         }
         for(Dependency dep : project.getRawModel().getDependencies()) {
             final AppArtifactKey depKey = project.getKey(dep);
-            final LocalProject localDep = project.workspace.getProject(depKey);
+            final LocalMavenProject localDep = project.workspace.getProject(depKey);
             if(localDep == null || addedDeps.contains(depKey)) {
                 continue;
             }
@@ -243,5 +249,20 @@ public class LocalProject {
 
     private AppArtifactKey getKey(Dependency dep) {
         return new AppArtifactKey(PROJECT_GROUPID.equals(dep.getGroupId()) ? getGroupId() : dep.getGroupId(), dep.getArtifactId());
+    }
+
+    @Override
+    public AppModelResolver createAppModelResolver() throws AppModelResolverException {
+        final MavenArtifactResolver.Builder mvn = MavenArtifactResolver.builder().setWorkspace(workspace);
+//        if (offline != null) {
+//            mvn.setOffline(offline);
+//        }
+
+        return new BootstrapAppModelResolver(mvn.build());
+    }
+
+    @Override
+    public void close() {
+
     }
 }

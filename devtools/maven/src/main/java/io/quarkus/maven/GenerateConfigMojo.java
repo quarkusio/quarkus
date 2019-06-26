@@ -1,5 +1,6 @@
 package io.quarkus.maven;
 
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalMavenProject;
 import java.io.File;
 import java.util.List;
 
@@ -22,7 +23,6 @@ import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
 import io.quarkus.creator.phase.curate.CurateOutcome;
@@ -111,7 +111,7 @@ public class GenerateConfigMojo extends AbstractMojo {
         final AppModel appModel;
         final BootstrapAppModelResolver modelResolver;
         try {
-            LocalProject localProject = LocalProject.load(project.getBasedir().toPath());
+            LocalMavenProject localProject = LocalMavenProject.load(project.getBasedir().toPath());
             modelResolver = new BootstrapAppModelResolver(
                     MavenArtifactResolver.builder()
                             .setRepositorySystem(repoSystem)

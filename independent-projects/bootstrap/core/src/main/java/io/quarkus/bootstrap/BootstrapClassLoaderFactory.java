@@ -21,7 +21,7 @@ import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalMavenProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 
 /**
@@ -85,11 +85,11 @@ public class BootstrapClassLoaderFactory {
         }
     }
 
-    private static Path resolveCachedCpPath(LocalProject project) {
+    private static Path resolveCachedCpPath(LocalMavenProject project) {
         return project.getOutputDir().resolve(QUARKUS).resolve(BOOTSTRAP).resolve(DEPLOYMENT_CP);
     }
 
-    private static void persistCp(LocalProject project, URL[] urls, int limit, Path p) {
+    private static void persistCp(LocalMavenProject project, URL[] urls, int limit, Path p) {
         try {
             Files.createDirectories(p.getParent());
             try (BufferedWriter writer = Files.newBufferedWriter(p)) {
@@ -133,7 +133,7 @@ public class BootstrapClassLoaderFactory {
         return this;
     }
 
-    public BootstrapClassLoaderFactory setLocalProjectsDiscovery(boolean localProjectsDiscovery) {
+    public BootstrapClassLoaderFactory setLocalMavenProjectsDiscovery(boolean localProjectsDiscovery) {
         this.localProjectsDiscovery = localProjectsDiscovery;
         return this;
     }
@@ -167,18 +167,18 @@ public class BootstrapClassLoaderFactory {
             if(offline != null) {
                 mvnBuilder.setOffline(offline);
             }
-            final LocalProject localProject;
+            final LocalMavenProject localProject;
             final AppArtifact appArtifact;
             if (Files.isDirectory(appClasses)) {
                 if (localProjectsDiscovery) {
-                    localProject = LocalProject.loadWorkspace(appClasses);
+                    localProject = LocalMavenProject.loadWorkspace(appClasses);
                     mvnBuilder.setWorkspace(localProject.getWorkspace());
                 } else {
-                    localProject = LocalProject.load(appClasses);
+                    localProject = LocalMavenProject.load(appClasses);
                 }
                 appArtifact = localProject.getAppArtifact();
             } else {
-                localProject = localProjectsDiscovery ? LocalProject.loadWorkspace(Paths.get("").normalize().toAbsolutePath(), false) : null;
+                localProject = localProjectsDiscovery ? LocalMavenProject.loadWorkspace(Paths.get("").normalize().toAbsolutePath(), false) : null;
                 if(localProject != null) {
                     mvnBuilder.setWorkspace(localProject.getWorkspace());
                 }
@@ -227,7 +227,7 @@ public class BootstrapClassLoaderFactory {
             if (offline != null) {
                 mvnBuilder.setOffline(offline);
             }
-            final LocalProject localProject = localProjectsDiscovery ? LocalProject.loadWorkspace(Paths.get("").normalize().toAbsolutePath(), false) : null;
+            final LocalMavenProject localProject = localProjectsDiscovery ? LocalMavenProject.loadWorkspace(Paths.get("").normalize().toAbsolutePath(), false) : null;
             if(localProject != null) {
                 mvnBuilder.setWorkspace(localProject.getWorkspace());
             }
@@ -264,9 +264,9 @@ public class BootstrapClassLoaderFactory {
 
         final URLClassLoader ucl;
         Path cachedCpPath = null;
-        final LocalProject localProject = localProjectsDiscovery || enableClasspathCache
-                ? LocalProject.loadWorkspace(appClasses)
-                : LocalProject.load(appClasses);
+        final LocalMavenProject localProject = localProjectsDiscovery || enableClasspathCache
+                ? LocalMavenProject.loadWorkspace(appClasses)
+                : LocalMavenProject.load(appClasses);
         try {
             if (enableClasspathCache) {
                 cachedCpPath = resolveCachedCpPath(localProject);

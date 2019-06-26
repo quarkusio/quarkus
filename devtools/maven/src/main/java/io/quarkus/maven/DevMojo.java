@@ -1,5 +1,6 @@
 package io.quarkus.maven;
 
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalMavenProject;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -47,7 +48,6 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.deployment.ApplicationInfoUtil;
 import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
@@ -228,13 +228,13 @@ public class DevMojo extends AbstractMojo {
 
             final AppModel appModel;
             try {
-                final LocalProject localProject;
+                final LocalMavenProject localProject;
                 if (noDeps) {
-                    localProject = LocalProject.load(outputDirectory.toPath());
+                    localProject = LocalMavenProject.load(outputDirectory.toPath());
                     addProject(devModeContext, localProject);
                 } else {
-                    localProject = LocalProject.loadWorkspace(outputDirectory.toPath());
-                    for (LocalProject project : localProject.getSelfWithLocalDeps()) {
+                    localProject = LocalMavenProject.loadWorkspace(outputDirectory.toPath());
+                    for (LocalMavenProject project : localProject.getSelfWithLocalDeps()) {
                         if (project.getClassesDir() != null) {
                             //if this project also contains Quarkus extensions we do no want to include these in the discovery
                             //a bit of an edge case, but if you try and include a sample project with your extension you will
@@ -368,7 +368,7 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
-    private void addProject(DevModeContext devModeContext, LocalProject localProject) {
+    private void addProject(DevModeContext devModeContext, LocalMavenProject localProject) {
 
         String projectDirectory = null;
         Set<String> sourcePaths = null;

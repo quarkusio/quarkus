@@ -20,9 +20,9 @@ import io.quarkus.bootstrap.model.AppArtifactKey;
  *
  * @author Alexey Loubyansky
  */
-public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
+public class LocalMavenWorkspace implements WorkspaceModelResolver, WorkspaceReader {
 
-    private final Map<AppArtifactKey, LocalProject> projects = new HashMap<>();
+    private final Map<AppArtifactKey, LocalMavenProject> projects = new HashMap<>();
 
     private final WorkspaceRepository wsRepo = new WorkspaceRepository();
     private AppArtifactKey lastFindVersionsKey;
@@ -30,7 +30,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
     private long lastModified;
     private int id = 1;
 
-    protected void addProject(LocalProject project, long lastModified) {
+    protected void addProject(LocalMavenProject project, long lastModified) {
         projects.put(project.getKey(), project);
         if(lastModified > this.lastModified) {
             this.lastModified = lastModified;
@@ -38,11 +38,11 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
         id = 31 * id + (int) (lastModified ^ (lastModified >>> 32));
     }
 
-    public LocalProject getProject(String groupId, String artifactId) {
+    public LocalMavenProject getProject(String groupId, String artifactId) {
         return getProject(new AppArtifactKey(groupId, artifactId));
     }
 
-    public LocalProject getProject(AppArtifactKey key) {
+    public LocalMavenProject getProject(AppArtifactKey key) {
         return projects.get(key);
     }
 
@@ -57,7 +57,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
     @Override
     public Model resolveRawModel(String groupId, String artifactId, String versionConstraint)
             throws UnresolvableModelException {
-        final LocalProject project = getProject(groupId, artifactId);
+        final LocalMavenProject project = getProject(groupId, artifactId);
         if(project == null || !project.getVersion().equals(versionConstraint)) {
             return null;
         }
@@ -70,7 +70,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
         return null;
     }
 
-    public Map<AppArtifactKey, LocalProject> getProjects() {
+    public Map<AppArtifactKey, LocalMavenProject> getProjects() {
         return projects;
     }
 
@@ -81,7 +81,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
 
     @Override
     public File findArtifact(Artifact artifact) {
-        final LocalProject lp = getProject(artifact.getGroupId(), artifact.getArtifactId());
+        final LocalMavenProject lp = getProject(artifact.getGroupId(), artifact.getArtifactId());
         if (lp == null || !lp.getVersion().equals(artifact.getVersion())) {
             return null;
         }
@@ -108,7 +108,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
             return lastFindVersions;
         }
         lastFindVersionsKey = new AppArtifactKey(artifact.getGroupId(), artifact.getArtifactId());
-        final LocalProject lp = getProject(lastFindVersionsKey);
+        final LocalMavenProject lp = getProject(lastFindVersionsKey);
         if (lp == null || !lp.getVersion().equals(artifact.getVersion())) {
             lastFindVersionsKey = null;
             return Collections.emptyList();

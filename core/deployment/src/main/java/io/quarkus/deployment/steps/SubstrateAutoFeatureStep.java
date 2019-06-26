@@ -261,7 +261,7 @@ public class SubstrateAutoFeatureStep {
                 }
             }
             CatchBlockCreator cc = tc.addCatch(Throwable.class);
-            cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+            //cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
             mv.returnValue(null);
         }
         CatchBlockCreator print = overallCatch.addCatch(Throwable.class);

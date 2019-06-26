@@ -259,14 +259,22 @@ class ArcContainerImpl implements ArcContainer {
             Set<Annotation> beforeDestroyQualifiers = new HashSet<>(4);
             beforeDestroyQualifiers.add(BeforeDestroyed.Literal.APPLICATION);
             beforeDestroyQualifiers.add(Any.Literal.INSTANCE);
-            EventImpl.createNotifier(Object.class, Object.class, beforeDestroyQualifiers, this).notify(toString());
+            try {
+                EventImpl.createNotifier(Object.class, Object.class, beforeDestroyQualifiers, this).notify(toString());
+            } catch (Exception e) {
+                LOGGER.warn("An error occured during delivery of the @BeforeDestroyed(ApplicationScoped.class) event", e);
+            }
             // Destroy contexts
             applicationContext.destroy();
             // Fire an event with qualifier @Destroyed(ApplicationScoped.class)
             Set<Annotation> destroyQualifiers = new HashSet<>(4);
             destroyQualifiers.add(Destroyed.Literal.APPLICATION);
             destroyQualifiers.add(Any.Literal.INSTANCE);
-            EventImpl.createNotifier(Object.class, Object.class, destroyQualifiers, this).notify(toString());
+            try {
+                EventImpl.createNotifier(Object.class, Object.class, destroyQualifiers, this).notify(toString());
+            } catch (Exception e) {
+                LOGGER.warn("An error occured during delivery of the @Destroyed(ApplicationScoped.class) event", e);
+            }
             singletonContext.destroy();
             // Clear caches
             contexts.clear();

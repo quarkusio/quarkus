@@ -39,7 +39,7 @@ public class OpenApiServlet extends HttpServlet {
 
         // Check Accept, then query parameter "format" for JSON; else use YAML.
         if ((accept != null && accept.contains(OpenApiSerializer.Format.JSON.getMimeType())) ||
-                (OpenApiSerializer.Format.JSON.getMimeType().equalsIgnoreCase(formatParam))) {
+                ("JSON".equalsIgnoreCase(formatParam))) {
             format = OpenApiSerializer.Format.JSON;
         }
 

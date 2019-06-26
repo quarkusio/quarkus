@@ -1,5 +1,7 @@
 package io.quarkus.gradle;
 
+import javax.inject.Inject;
+
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -7,8 +9,10 @@ import org.gradle.api.Task;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry;
 import org.gradle.util.GradleVersion;
 
+import io.quarkus.gradle.model.RemoteToolingModelBuilder;
 import io.quarkus.gradle.tasks.QuarkusAddExtension;
 import io.quarkus.gradle.tasks.QuarkusBuild;
 import io.quarkus.gradle.tasks.QuarkusDev;
@@ -21,6 +25,13 @@ import io.quarkus.gradle.tasks.QuarkusNative;
  */
 public class QuarkusPlugin implements Plugin<Project> {
 
+    private final ToolingModelBuilderRegistry registry;
+
+    @Inject
+    public QuarkusPlugin(ToolingModelBuilderRegistry registry) {
+        this.registry = registry;
+    }
+
     @Override
     public void apply(Project project) {
         verifyGradleVersion();
@@ -28,6 +39,7 @@ public class QuarkusPlugin implements Plugin<Project> {
         project.getExtensions().create("quarkus", QuarkusPluginExtension.class, project);
 
         registerTasks(project);
+        registry.register(new RemoteToolingModelBuilder());
     }
 
     private void registerTasks(Project project) {

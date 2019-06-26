@@ -30,11 +30,19 @@
         <maven-plugin-annotations.version>3.5.2</maven-plugin-annotations.version>
         <maven-resolver.version>1.1.1</maven-resolver.version>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+        <gradle-tooling-api.version>5.4.1</gradle-tooling-api.version>
     </properties>
     <modules>
         <module>core</module>
         <module>maven-plugin</module>
     </modules>
+    <repositories>
+        <repository>
+            <id>gradle-releases</id>
+            <name>Gradle Releases Repository</name>
+            <url>https://repo.gradle.org/gradle/libs-releases-local/</url>
+        </repository>
+    </repositories>
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -130,6 +138,11 @@
                 <artifactId>junit</artifactId>
                 <scope>test</scope>
                 <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.gradle</groupId>
+                <artifactId>gradle-tooling-api</artifactId>
+                <version>${gradle-tooling-api.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

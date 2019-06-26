@@ -23,11 +23,13 @@ import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -96,8 +98,9 @@ public class SmallRyeOpenApiProcessor {
 
     @BuildStep
     public void registerOpenApiSchemaClassesForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, CombinedIndexBuildItem combinedIndexBuildItem) {
-        IndexView index = combinedIndexBuildItem.getIndex();
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, CombinedIndexBuildItem combinedIndexBuildItem,
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
+        IndexView index = CompositeIndex.create(combinedIndexBuildItem.getIndex(), beanArchiveIndexBuildItem.getIndex());
 
         // Generate reflection declaration from MP OpenAPI Schema definition
         // They are needed for serialization.
@@ -180,12 +183,16 @@ public class SmallRyeOpenApiProcessor {
     public void build(ApplicationArchivesBuildItem archivesBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<FeatureBuildItem> feature,
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
-            BuildProducer<GeneratedWebResourceBuildItem> resourceBuildItemBuildProducer) throws Exception {
+            BuildProducer<GeneratedWebResourceBuildItem> resourceBuildItemBuildProducer,
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) throws Exception {
+
+        IndexView index = CompositeIndex.create(combinedIndexBuildItem.getIndex(), beanArchiveIndexBuildItem.getIndex());
+
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
         OpenAPI staticModel = generateStaticModel(archivesBuildItem);
         OpenAPI annotationModel;
         if (resteasyJaxrsConfig.isPresent()) {
-            annotationModel = generateAnnotationModel(combinedIndexBuildItem.getIndex(), resteasyJaxrsConfig.get());
+            annotationModel = generateAnnotationModel(index, resteasyJaxrsConfig.get());
         } else {
             annotationModel = null;
         }

@@ -39,10 +39,25 @@ public interface PanacheRepositoryBase<Entity, Id> {
     }
 
     /**
+     * Persist the given entity in the database, if not already persisted.
+     * Then flushes all pending changes to the database.
+     *
+     * @param entity the entity to persist.
+     * @see #isPersistent(Object)
+     * @see #persist(Iterable)
+     * @see #persist(Stream)
+     * @see #persist(Object, Object...)
+     */
+    public default void persistAndFlush(Entity entity) {
+        JpaOperations.persist(entity);
+        JpaOperations.flush();
+    }
+
+    /**
      * Delete the given entity from the database, if it is already persisted.
      * 
      * @param entity the entity to delete.
-     * @see #isPersistent()
+     * @see #isPersistent(Object)
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
      * @see #delete(String, Parameters)
@@ -57,11 +72,18 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * its persistent fields will be automatically committed to the database at transaction
      * commit time.
      * 
-     * @param the entity to check
+     * @param entity the entity to check
      * @return true if the entity is persistent in the database.
      */
     public default boolean isPersistent(Entity entity) {
         return JpaOperations.isPersistent(entity);
+    }
+
+    /**
+     * Flushes all pending changes to the database.
+     */
+    public default void flush() {
+        JpaOperations.flush();
     }
 
     // Queries
@@ -476,9 +498,8 @@ public interface PanacheRepositoryBase<Entity, Id> {
 
     /**
      * Find all entities of this type, in the given order.
-     * This method is a shortcut for <code>findAll(sort).stream()</code>.
+     * This method is a shortcut for <code>findAll().stream()</code>.
      * 
-     * @param sort the sort order to use
      * @return a {@link Stream} containing all results, without paging
      * @see #streamAll()
      * @see #findAll(Sort)
@@ -609,7 +630,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * Persist all given entities.
      * 
      * @param entities the entities to persist
-     * @see #persist()
+     * @see #persist(Object)
      * @see #persist(Stream)
      * @see #persist(Object,Object...)
      */
@@ -621,7 +642,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * Persist all given entities.
      * 
      * @param entities the entities to persist
-     * @see #persist()
+     * @see #persist(Object)
      * @see #persist(Iterable)
      * @see #persist(Object,Object...)
      */
@@ -633,7 +654,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * Persist all given entities.
      * 
      * @param entities the entities to persist
-     * @see #persist()
+     * @see #persist(Object)
      * @see #persist(Stream)
      * @see #persist(Iterable)
      */

@@ -111,12 +111,31 @@ test {
 }
 ----
 
+Using the Kotlin DSL, add:
+
+[source,kotlin,subs=attributes+]
+----
+tasks {
+    "test"(Test::class) {
+        useJUnitPlatform()
+    }
+}
+----
+
 To follow up our Rest example from above, we would also need to add two test dependencies:
 
 [source,groovy,subs=attributes+]
 ----
 testCompile group: 'io.quarkus', name: 'quarkus-junit5', version: '{quarkus-version}'
 testCompile group: 'io.rest-assured', name: 'rest-assured', version: '{restassured-version}'
+----
+
+For the Kotlin DSL:
+
+[source,kotlin,subs=attributes+]
+----
+testCompile("io.quarkus:quarkus-junit5:{quarkus-version}")
+testCompile("io.rest-assured:rest-assured:{restassured-version}")
 ----
 
 Note: Quarkus do not allow both link:getting-started-testing.html[QuarkusTests] and link:getting-started-testing.html#native-executable-testing[SubstrateTests] to run in the same test run.

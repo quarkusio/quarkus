@@ -19,7 +19,7 @@ public class NarayanaJtaTemplate {
 
     private static final Logger log = Logger.getLogger(NarayanaJtaTemplate.class);
 
-    public void setNodeName(final NarayanaJtaConfiguration transactions) {
+    public void setNodeName(final TransactionManagerConfiguration transactions) {
 
         try {
             arjPropertyManager.getCoreEnvironmentBean().setNodeIdentifier(transactions.nodeName);
@@ -42,6 +42,12 @@ public class NarayanaJtaTemplate {
         }
 
         defaultProperties = properties;
+    }
+
+    public void setDefaultTimeout(TransactionManagerConfiguration transactions) {
+        transactions.defaultTransactionTimeout.ifPresent(defaultTimeout -> {
+            TxControl.setDefaultTimeout((int) defaultTimeout.getSeconds());
+        });
     }
 
     public static Properties getDefaultProperties() {

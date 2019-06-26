@@ -63,6 +63,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final String name;
 
+    private final boolean isDefaultBean;
+
     // Gizmo consumers are only used by synthetic beans
 
     private final Consumer<MethodCreator> creatorConsumer;
@@ -75,10 +77,10 @@ public class BeanInfo implements InjectionTargetInfo {
             Set<AnnotationInstance> qualifiers,
             List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority,
             List<StereotypeInfo> stereotypes,
-            String name) {
+            String name, boolean isDefaultBean) {
         this(null, null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer,
                 alternativePriority,
-                stereotypes, name, null, null,
+                stereotypes, name, isDefaultBean, null, null,
                 Collections.emptyMap());
     }
 
@@ -87,7 +89,8 @@ public class BeanInfo implements InjectionTargetInfo {
             Set<AnnotationInstance> qualifiers,
             List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority,
             List<StereotypeInfo> stereotypes,
-            String name, Consumer<MethodCreator> creatorConsumer, Consumer<MethodCreator> destroyerConsumer,
+            String name, boolean isDefaultBean, Consumer<MethodCreator> creatorConsumer,
+            Consumer<MethodCreator> destroyerConsumer,
             Map<String, Object> params) {
         this.target = Optional.ofNullable(target);
         if (implClazz == null && target != null) {
@@ -117,6 +120,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this.alternativePriority = alternativePriority;
         this.stereotypes = stereotypes;
         this.name = name;
+        this.isDefaultBean = isDefaultBean;
         this.creatorConsumer = creatorConsumer;
         this.destroyerConsumer = destroyerConsumer;
         this.params = params;
@@ -308,6 +312,10 @@ public class BeanInfo implements InjectionTargetInfo {
 
     public String getName() {
         return name;
+    }
+
+    public boolean isDefaultBean() {
+        return isDefaultBean;
     }
 
     Consumer<MethodCreator> getCreatorConsumer() {
@@ -550,6 +558,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
         private String name;
 
+        private boolean isDefaultBean;
+
         private Consumer<MethodCreator> creatorConsumer;
 
         private Consumer<MethodCreator> destroyerConsumer;
@@ -626,6 +636,11 @@ public class BeanInfo implements InjectionTargetInfo {
             return this;
         }
 
+        Builder isDefaultBean(boolean isDefaultBean) {
+            this.isDefaultBean = isDefaultBean;
+            return this;
+        }
+
         Builder creator(Consumer<MethodCreator> creatorConsumer) {
             this.creatorConsumer = creatorConsumer;
             return this;
@@ -645,7 +660,7 @@ public class BeanInfo implements InjectionTargetInfo {
             return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
                     declaringBean,
                     disposer, alternativePriority,
-                    stereotypes, name, creatorConsumer, destroyerConsumer, params);
+                    stereotypes, name, isDefaultBean, creatorConsumer, destroyerConsumer, params);
         }
 
     }

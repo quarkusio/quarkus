@@ -379,6 +379,9 @@ public class BeanGenerator extends AbstractGenerator {
         }
         implementGetBeanClass(bean, beanCreator);
         implementGetName(bean, beanCreator);
+        if (bean.isDefaultBean()) {
+            implementIsDefaultBean(bean, beanCreator);
+        }
 
         beanCreator.close();
         return classOutput.getResources();
@@ -1404,6 +1407,13 @@ public class BeanGenerator extends AbstractGenerator {
         getAlternativePriority
                 .returnValue(getAlternativePriority.newInstance(MethodDescriptor.ofConstructor(Integer.class, int.class),
                         getAlternativePriority.load(bean.getAlternativePriority())));
+    }
+
+    protected void implementIsDefaultBean(BeanInfo bean, ClassCreator beanCreator) {
+        MethodCreator isDefaultBean = beanCreator.getMethodCreator("isDefaultBean", boolean.class)
+                .setModifiers(ACC_PUBLIC);
+        isDefaultBean
+                .returnValue(isDefaultBean.load(bean.isDefaultBean()));
     }
 
     protected void implementGetStereotypes(BeanInfo bean, ClassCreator beanCreator, FieldDescriptor stereotypesField) {

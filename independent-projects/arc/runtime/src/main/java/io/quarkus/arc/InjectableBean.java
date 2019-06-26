@@ -96,4 +96,11 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
         return null;
     }
 
+    /**
+     * @return whether or not the bean is a default bean
+     */
+    default boolean isDefaultBean() {
+        return false;
+    }
+
 }

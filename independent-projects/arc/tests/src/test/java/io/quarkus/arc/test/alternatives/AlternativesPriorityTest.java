@@ -9,6 +9,7 @@ import javax.annotation.Priority;
 import javax.enterprise.inject.Alternative;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.util.TypeLiteral;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.junit.Rule;
 import org.junit.Test;
@@ -16,13 +17,15 @@ import org.junit.Test;
 public class AlternativesPriorityTest {
 
     @Rule
-    public ArcTestContainer container = new ArcTestContainer(Alpha.class, Bravo.class, Charlie.class);
+    public ArcTestContainer container = new ArcTestContainer(Alpha.class, Bravo.class, Charlie.class, Consumer.class);
 
     @SuppressWarnings("serial")
     @Test
     public void testAlternativePriority() {
         assertEquals(Charlie.class.getName(), Arc.container().instance(new TypeLiteral<Supplier<String>>() {
         }).get().get());
+
+        assertEquals(Charlie.class.getName(), Arc.container().instance(Consumer.class).get().consume());
     }
 
     @Singleton
@@ -55,6 +58,16 @@ public class AlternativesPriorityTest {
         @Produces
         Supplier<String> supplier = () -> Charlie.class.getName();
 
+    }
+
+    @Singleton
+    static class Consumer {
+        @Inject
+        Supplier<String> supplier;
+
+        public String consume() {
+            return supplier.get();
+        }
     }
 
 }

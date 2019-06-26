@@ -29,6 +29,7 @@ public final class BuildContext {
     private final StepInfo stepInfo;
     private final Execution execution;
     private final AtomicInteger dependencies;
+    private volatile boolean running;
 
     BuildContext(final StepInfo stepInfo, final Execution execution) {
         this.stepInfo = stepInfo;
@@ -136,6 +137,9 @@ public final class BuildContext {
      */
     public <T extends SimpleBuildItem> T consume(Class<T> type) {
         Assert.checkNotNullParam("type", type);
+        if (!running) {
+            throw Messages.msg.buildStepNotRunning();
+        }
         final ItemId id = new ItemId(type, null);
         if (id.isMulti()) {
             throw Messages.msg.cannotMulti(id);
@@ -159,6 +163,9 @@ public final class BuildContext {
     public <N, T extends NamedBuildItem<N>> T consume(Class<T> type, N name) {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("name", name);
+        if (!running) {
+            throw Messages.msg.buildStepNotRunning();
+        }
         final ItemId id = new ItemId(type, name);
         if (id.isMulti()) {
             throw Messages.msg.cannotMulti(id);
@@ -181,6 +188,9 @@ public final class BuildContext {
      */
     public <T extends MultiBuildItem> List<T> consumeMulti(Class<T> type) {
         Assert.checkNotNullParam("type", type);
+        if (!running) {
+            throw Messages.msg.buildStepNotRunning();
+        }
         final ItemId id = new ItemId(type, null);
         if (!id.isMulti()) {
             // can happen if obj changes base class
@@ -206,6 +216,9 @@ public final class BuildContext {
     public <N, T extends NamedMultiBuildItem<N>> List<T> consumeMulti(Class<T> type, N name) {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("name", name);
+        if (!running) {
+            throw Messages.msg.buildStepNotRunning();
+        }
         final ItemId id = new ItemId(type, name);
         if (!id.isMulti()) {
             // can happen if obj changes base class
@@ -356,6 +369,9 @@ public final class BuildContext {
     // -- //
 
     private void doProduce(ItemId id, BuildItem value) {
+        if (!running) {
+            throw Messages.msg.buildStepNotRunning();
+        }
         if (!stepInfo.getProduces().contains(id)) {
             throw Messages.msg.undeclaredItem(id);
         }
@@ -394,6 +410,7 @@ public final class BuildContext {
         log.tracef("Starting step \"%s\"", buildStep);
         try {
             if (!execution.isErrorReported()) {
+                running = true;
                 try {
                     buildStep.execute(this);
                 } catch (Throwable t) {
@@ -403,6 +420,8 @@ public final class BuildContext {
                                 new Diagnostic(Diagnostic.Level.ERROR, t, null, "Build step %s threw an exception", buildStep));
                     }
                     execution.setErrorReported();
+                } finally {
+                    running = false;
                 }
             }
         } finally {

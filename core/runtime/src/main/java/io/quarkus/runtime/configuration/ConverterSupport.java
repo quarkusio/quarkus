@@ -24,7 +24,7 @@ public class ConverterSupport {
      * A list of {@link ConverterItem} which will be loaded in static initialization. This needs
      * to be static so we can load {@link Converter} implementations without producing reflective
      * class build items in the deployment time. The {@link ConverterItem} instances uses generic
-     * {@link Object} type to avoid typecast errors from complier.
+     * {@link Object} type to avoid typecast errors from compiler.
      */
     private static final List<ConverterItem<Object>> CONVERTERS = getConverters();
 
@@ -112,7 +112,7 @@ public class ConverterSupport {
             final Converter<T> converter = item.getConverter();
             final int priority = item.getPriority();
 
-            LOG.debugf("Pupulate SmallRye config builder with converter for %s of priority %s", type, priority);
+            LOG.debugf("Populate SmallRye config builder with converter for %s of priority %s", type, priority);
 
             builder.withConverter(type, priority, converter);
         };

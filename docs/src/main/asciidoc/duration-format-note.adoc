@@ -1,0 +1,9 @@
+[NOTE]
+====
+The format for durations uses the standard `java.time.Duration` format.
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+
+You can also provide duration values starting with a number.
+In this case, if the value consists only of a number, the converter treats the value as seconds.
+Otherwise, `PT` is implicitly appended to the value to obtain a standard `java.time.Duration` format.
+====

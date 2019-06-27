@@ -357,7 +357,7 @@ while the optimization proceeds normally for non application classes. To use thi
 [[default_beans]]
 == Default Beans
 
-Quarkus adds a capability that CDI currently does not support which is to conditionally declare a bean from a producer method if no such bean has been declared in the typical ways Quarkus supports.
+Quarkus adds a capability that CDI currently does not support which is to conditionally declare a bean if no such bean has been declared in the typical ways Quarkus supports.
 This is done using the `@io.quarkus.arc.DefaultBean` annotation and is best explained with an example.
 
 Say there is a Quarkus extension that among other things declares a few CDI beans like the following code does:

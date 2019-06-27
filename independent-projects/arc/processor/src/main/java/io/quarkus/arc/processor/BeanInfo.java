@@ -636,7 +636,7 @@ public class BeanInfo implements InjectionTargetInfo {
             return this;
         }
 
-        Builder isDefaultBean(boolean isDefaultBean) {
+        Builder defaultBean(boolean isDefaultBean) {
             this.isDefaultBean = isDefaultBean;
             return this;
         }

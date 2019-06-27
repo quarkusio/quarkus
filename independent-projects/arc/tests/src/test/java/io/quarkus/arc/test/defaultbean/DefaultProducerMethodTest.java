@@ -1,4 +1,4 @@
-package io.quarkus.arc.test.producer.defaultbean;
+package io.quarkus.arc.test.defaultbean;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -12,7 +12,7 @@ import javax.inject.Singleton;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class DefaultBeanTest {
+public class DefaultProducerMethodTest {
 
     @Rule
     public ArcTestContainer container = new ArcTestContainer(Producer1.class, Producer2.class, Producer3.class,

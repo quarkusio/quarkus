@@ -36,7 +36,7 @@ public class HibernateSearchTestResource {
     @Path("/search")
     @Produces(MediaType.TEXT_PLAIN)
     public String testSearch() {
-        SearchSession searchSession = Search.getSearchSession(entityManager);
+        SearchSession searchSession = Search.session(entityManager);
 
         List<Person> person = searchSession.search(Person.class)
                 .predicate(f -> f.match().onField("name").matching("john"))
@@ -62,9 +62,9 @@ public class HibernateSearchTestResource {
     @Path("/mass-indexer")
     @Produces(MediaType.TEXT_PLAIN)
     public String testMassIndexer() throws InterruptedException {
-        SearchSession searchSession = Search.getSearchSession(entityManager);
+        SearchSession searchSession = Search.session(entityManager);
 
-        searchSession.createIndexer().startAndWait();
+        searchSession.massIndexer().startAndWait();
 
         return "OK";
     }

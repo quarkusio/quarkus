@@ -7,6 +7,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -43,6 +44,8 @@ public class ContextEndpoint {
     ManagedExecutor all;
     @Inject
     ThreadContext allTc;
+    @Inject
+    HttpServletRequest servletRequest;
 
     @GET
     @Path("/resteasy")
@@ -50,6 +53,16 @@ public class ContextEndpoint {
         CompletableFuture<String> ret = all.completedFuture("OK");
         return ret.thenApplyAsync(text -> {
             uriInfo.getAbsolutePath();
+            return text;
+        });
+    }
+
+    @GET
+    @Path("/servlet")
+    public CompletionStage<String> servletTest(@Context UriInfo uriInfo) {
+        CompletableFuture<String> ret = all.completedFuture("OK");
+        return ret.thenApplyAsync(text -> {
+            servletRequest.getContentType();
             return text;
         });
     }

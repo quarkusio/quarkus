@@ -186,8 +186,7 @@ public class BootstrapClassLoaderFactory {
             }
             final BootstrapAppModelResolver appModelResolver = new BootstrapAppModelResolver(mvnBuilder.build());
             final AppModel appModel = appModelResolver.resolveManagedModel(appArtifact, Collections.emptyList(),
-                    appModelResolver
-                            .readManagedDependencies(localProject == null ? appArtifact : localProject.getAppArtifact()));
+                    localProject == null ? null : localProject.getAppArtifact());
             if (hierarchical) {
                 final URLClassLoader cl = initAppCp(appModel.getUserDependencies());
                 try {
@@ -242,9 +241,9 @@ public class BootstrapClassLoaderFactory {
             try {
                 final BootstrapAppModelResolver appModelResolver = new BootstrapAppModelResolver(mvn);
                 final AppArtifact appArtifact = ModelUtils.resolveAppArtifact(appClasses);
-                deploymentDeps = appModelResolver.resolveManagedModel(appArtifact, Collections.emptyList(),
-                        appModelResolver
-                                .readManagedDependencies(localProject == null ? appArtifact : localProject.getAppArtifact()))
+                deploymentDeps = appModelResolver
+                        .resolveManagedModel(appArtifact, Collections.emptyList(),
+                                localProject == null ? null : localProject.getAppArtifact())
                         .getDeploymentDependencies();
             } catch (Exception e) {
                 throw new BootstrapException("Failed to resolve deployment dependencies for " + appClasses, e);

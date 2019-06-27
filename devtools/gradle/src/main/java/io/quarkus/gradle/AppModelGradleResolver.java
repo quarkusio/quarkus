@@ -73,11 +73,6 @@ public class AppModelGradleResolver implements AppModelResolver {
     }
 
     @Override
-    public List<AppDependency> readManagedDependencies(AppArtifact artifact) throws AppModelResolverException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public List<AppDependency> resolveUserDependencies(AppArtifact appArtifact, List<AppDependency> directDeps)
             throws AppModelResolverException {
         return Collections.emptyList();

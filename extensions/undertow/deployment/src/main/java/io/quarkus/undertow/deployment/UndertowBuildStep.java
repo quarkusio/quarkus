@@ -223,11 +223,21 @@ public class UndertowBuildStep {
     public List<ServletContainerInitializerBuildItem> servletContainerInitializer(
             ApplicationArchivesBuildItem archives,
             CombinedIndexBuildItem combinedIndexBuildItem,
+            List<BlacklistedServletContainerInitializerBuildItem> blacklistedBuildItems,
             BuildProducer<AdditionalBeanBuildItem> beans) throws IOException {
+
+        Set<String> blacklistedClassNames = new HashSet<>();
+        for (BlacklistedServletContainerInitializerBuildItem bi : blacklistedBuildItems) {
+            blacklistedClassNames.add(bi.getSciClass());
+        }
         List<ServletContainerInitializerBuildItem> ret = new ArrayList<>();
         Set<String> initializers = ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
                 SERVLET_CONTAINER_INITIALIZER);
+
         for (String initializer : initializers) {
+            if (blacklistedClassNames.contains(initializer)) {
+                continue;
+            }
             beans.produce(AdditionalBeanBuildItem.unremovableOf(initializer));
             ClassInfo sci = combinedIndexBuildItem.getIndex().getClassByName(DotName.createSimple(initializer));
             if (sci != null) {

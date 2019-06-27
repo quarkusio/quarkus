@@ -545,7 +545,16 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-spring-di",
-    "guide": "https://quarkus.io/guides/spring-di-guide"
+    "guide": "https://quarkus.io/guides/spring-guide"
+  },
+  {
+    "name": "Spring Web compatibility layer",
+    "labels": [
+      "spring-web"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-spring-web",
+    "guide": "https://quarkus.io/guides/spring-guide"
   },
   {
     "name": "Swagger UI",

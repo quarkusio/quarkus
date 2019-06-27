@@ -61,13 +61,41 @@ public class OpenApiTestCase {
 
         // test RESTEasy extensions
 
+        JsonObject schemasObj = obj.getJsonObject("components").getJsonObject("schemas");
+        String testSchemaType = schemaType("200", "*/*", testObj.getJsonObject("get").getJsonObject("responses"), schemasObj);
+        String rxSchemaType = schemaType("200", "*/*", injectionObj.getJsonObject("get").getJsonObject("responses"),
+                schemasObj);
         // make sure String, CompletionStage<String> and Single<String> are detected the same
-        Assertions.assertEquals(testObj, injectionObj, "Normal and RX/Single have same schema");
+        Assertions.assertEquals(testSchemaType,
+                rxSchemaType,
+                "Normal and RX/Single have same schema");
         JsonObject csObj = paths.getJsonObject("/test/cs");
-        Assertions.assertEquals(testObj, csObj, "Normal and RX/CS have same schema");
+        Assertions.assertEquals(testSchemaType,
+                schemaType("200", "*/*", csObj.getJsonObject("get").getJsonObject("responses"), schemasObj),
+                "Normal and RX/CS have same schema");
 
         JsonObject paramsObj = paths.getJsonObject("/test/params/{path}");
         JsonObject params2Obj = paths.getJsonObject("/test/params2/{path}");
         Assertions.assertEquals(paramsObj, params2Obj, "Normal and RESTEasy annotations have same schema");
+    }
+
+    protected static String schemaType(String responseCode, String mediaType, JsonObject responses, JsonObject schemas) {
+        JsonObject responseContent = responses.getJsonObject(responseCode).getJsonObject("content");
+        if (responseContent == null) {
+            return null;
+        }
+        JsonObject schemaObj = responseContent.getJsonObject(mediaType)
+                .getJsonObject("schema");
+
+        if (schemaObj.containsKey("type")) {
+            return schemaObj.getString("type");
+        } else if (schemaObj.containsKey("$ref")) {
+            String schemaReference = schemaObj.getString("$ref");
+            String schemaRefType = schemaReference.substring(schemaReference.lastIndexOf("/") + 1);
+            return schemas.getJsonObject(schemaRefType).getString("type");
+        }
+
+        throw new IllegalArgumentException(
+                "Cannot retrieve schema type for response " + responseCode + " and media type " + mediaType);
     }
 }

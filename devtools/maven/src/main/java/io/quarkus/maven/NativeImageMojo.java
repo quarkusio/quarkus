@@ -1,7 +1,6 @@
 package io.quarkus.maven;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +27,6 @@ import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
 import io.quarkus.creator.phase.augment.AugmentOutcome;
@@ -162,7 +160,7 @@ public class NativeImageMojo extends AbstractMojo {
      * <p>
      * If the expression consists of only four parts, it is assumed to be groupId:artifactId:classifier:type.
      */
-    @Parameter(required = false)
+    @Parameter(required = false, property = "quarkus.appArtifact")
     private String appArtifact;
 
     @Component
@@ -193,7 +191,6 @@ public class NativeImageMojo extends AbstractMojo {
 
         if (!buildDir.isDirectory() || !new File(buildDir, "lib").isDirectory()) {
             // The runner JAR has not been built yet, so we are going to build it
-
             final AppArtifact appCoords;
             DefaultArtifact appMvnArtifact = null;
             if (appArtifact == null) {
@@ -268,19 +265,8 @@ public class NativeImageMojo extends AbstractMojo {
                 throw new MojoExecutionException("Failed to resolve application model dependencies for " + appCoords, e);
             }
 
-            final File appClasses = new File(outputDirectory, "app-classes");
-            if (!appClasses.exists()) {
-                appClasses.mkdirs();
-            }
-            try {
-                ZipUtils.unzip(appModel.getAppArtifact().getPath(), appClasses.toPath());
-            } catch (IOException e) {
-                throw new MojoExecutionException("Failed to unzip " + appModel.getAppArtifact().getPath(), e);
-            }
-
             creatorBuilder.addPhase(new AugmentPhase()
-                    .setAppClassesDir(appClasses.toPath())
-                    .setConfigDir(appClasses.toPath())
+                    .setAppClassesDir(new File(outputDirectory, "classes").toPath())
                     .setWiringClassesDir(wiringClassesDirectory.toPath()))
                     .addPhase(new RunnerJarPhase()
                             .setFinalName(finalName))

@@ -194,7 +194,9 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
 
         if (appClassesDir == null) {
             appClassesDir = outputDir.resolve("classes");
-            Path appJar = appState.getAppArtifact().getPath();
+        }
+        if (!Files.exists(appClassesDir)) {
+            final Path appJar = appState.getAppArtifact().getPath();
             try {
                 ZipUtils.unzip(appJar, appClassesDir);
             } catch (IOException e) {

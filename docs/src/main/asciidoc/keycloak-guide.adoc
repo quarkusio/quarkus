@@ -334,8 +334,51 @@ export access_token=$(\
 )
 ```
 
+== Multi-Tenant Deployments
+
+The Keycloak Quarkus Extension also supports multitenancy. This capability is specially useful if your service is serving different
+tenants each one referencing a specific Keycloak Realm and configuration.
+
+Multitenancy is all about dynamically choosing the proper configuration depending on the characteristics of incoming requests. This is accomplished
+by implementing the `KeycloakConfigResolver` interface as follows:
+
+[source,java]
+----
+package org.acme.keycloak;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import org.keycloak.adapters.KeycloakConfigResolver;
+import org.keycloak.adapters.KeycloakDeployment;
+import org.keycloak.adapters.spi.HttpFacade;
+
+@ApplicationScoped
+public class TenantConfigResolver implements KeycloakConfigResolver {
+    @Override
+    public KeycloakDeployment resolve(HttpFacade.Request facade) {
+        String tenant = facade.getHeader("tenant");
+
+        switch (tenant) {
+            case "tenant-1":
+                // create a deployment config for tenant-1
+            case "tenant-2":
+                // create a deployment config for tenant-1
+            case "tenant-3":
+                // create a deployment config for tenant-1
+        }
+
+        // if not resolved, returning null means using the default configuration from keycloak.json
+        return null;
+    }
+}
+----
+
+A `KeycloakConfigResolver` is responsible to produce a `KeycloakDeployment` defining the configuration that should be used to process
+incoming requests, so that you can dynamically change the realm or any other configuration on a per-request basis.
+
 == References
 
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://www.keycloak.org/docs/latest/securing_apps/index.html#_java_adapter_config[Keycloak Adapter Configuration(keycloak.json)]
 * https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_overview[Keycloak Policy Enforcer]
+* https://www.keycloak.org/docs/latest/securing_apps/index.html#_multi_tenancy

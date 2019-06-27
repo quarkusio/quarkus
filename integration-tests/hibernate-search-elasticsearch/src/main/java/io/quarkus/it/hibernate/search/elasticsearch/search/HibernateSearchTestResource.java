@@ -1,4 +1,4 @@
-package io.quarkus.test.hibernate.search.elasticsearch.search;
+package io.quarkus.it.hibernate.search.elasticsearch.search;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

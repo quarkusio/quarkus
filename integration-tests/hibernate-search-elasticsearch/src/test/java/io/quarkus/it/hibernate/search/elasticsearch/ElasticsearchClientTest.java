@@ -1,4 +1,4 @@
-package io.quarkus.test.hibernate.search.elasticsearch;
+package io.quarkus.it.hibernate.search.elasticsearch;
 
 import static org.hamcrest.Matchers.is;
 

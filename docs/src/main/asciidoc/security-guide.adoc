@@ -161,7 +161,7 @@ quarkus.security.embedded.roles.scott=Admin,admin,Tester,user
 quarkus.security.embedded.roles.stuart=admin,user
 quarkus.security.embedded.roles.jdoe=NoRolesUser
 quarkus.security.embedded.roles.noadmin=user
-quarkus.security.embedded.auth-mechanism=CUSTOM
+quarkus.security.embedded.auth-mechanism=BASIC
 ----
 
 #### Embedded Users

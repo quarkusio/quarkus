@@ -1,4 +1,4 @@
-package io.quarkus.test.hibernate.search.elasticsearch.search;
+package io.quarkus.it.hibernate.search.elasticsearch.search;
 
 import org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysisConfigurer;
 import org.hibernate.search.backend.elasticsearch.analysis.model.dsl.ElasticsearchAnalysisDefinitionContainerContext;

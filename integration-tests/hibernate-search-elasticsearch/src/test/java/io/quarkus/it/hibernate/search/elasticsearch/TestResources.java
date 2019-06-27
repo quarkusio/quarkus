@@ -1,4 +1,4 @@
-package io.quarkus.test.hibernate.search.elasticsearch;
+package io.quarkus.it.hibernate.search.elasticsearch;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;

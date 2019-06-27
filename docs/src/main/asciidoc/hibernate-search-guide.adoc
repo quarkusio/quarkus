@@ -465,8 +465,8 @@ In our existing `LibraryResource`, we just need to inject the following methods 
     void onStart(@Observes StartupEvent ev) throws InterruptedException { // <2>
         // only reindex if we imported some content
         if (Book.count() > 0) {
-            Search.getSearchSession(em)
-                    .createIndexer()
+            Search.session(em)
+                    .massIndexer()
                     .startAndWait();
         }
     }
@@ -475,7 +475,7 @@ In our existing `LibraryResource`, we just need to inject the following methods 
     @Path("author/search")
     @Transactional
     public List<Author> searchAuthors(@QueryParam("pattern") String pattern) { // <3>
-        return Search.getSearchSession(em) // <4>
+        return Search.session(em) // <4>
                 .search(Author.class) // <5>
                 .predicate(f ->
                     pattern == null || pattern.trim().isEmpty() ?

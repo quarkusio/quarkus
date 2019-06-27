@@ -19,7 +19,7 @@ import org.hibernate.search.engine.cfg.EngineSettings;
 import org.hibernate.search.mapper.orm.bootstrap.spi.HibernateOrmIntegrationBooter;
 import org.hibernate.search.mapper.orm.cfg.HibernateOrmMapperSettings;
 import org.hibernate.search.mapper.orm.cfg.spi.HibernateOrmMapperSpiSettings;
-import org.hibernate.search.mapper.orm.cfg.spi.HibernateOrmPropertyHandleFactoryName;
+import org.hibernate.search.mapper.orm.cfg.spi.HibernateOrmReflectionStrategyName;
 
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationListener;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
@@ -53,8 +53,8 @@ public class HibernateSearchElasticsearchTemplate {
 
         @Override
         public void contributeBootProperties(BiConsumer<String, Object> propertyCollector) {
-            addConfig(propertyCollector, HibernateOrmMapperSpiSettings.Radicals.PROPERTY_HANDLE_FACTORY,
-                    HibernateOrmPropertyHandleFactoryName.JAVA_LANG_REFLECT);
+            addConfig(propertyCollector, HibernateOrmMapperSpiSettings.Radicals.REFLECTION_STRATEGY,
+                    HibernateOrmReflectionStrategyName.JAVA_LANG_REFLECT);
 
             if (buildTimeConfig.defaultBackend.isPresent()) {
                 // we have a named default backend

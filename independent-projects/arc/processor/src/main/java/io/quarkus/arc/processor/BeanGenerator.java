@@ -216,6 +216,9 @@ public class BeanGenerator extends AbstractGenerator {
         }
         implementGetBeanClass(bean, beanCreator);
         implementGetName(bean, beanCreator);
+        if (bean.isDefaultBean()) {
+            implementIsDefaultBean(bean, beanCreator);
+        }
 
         beanCreator.close();
         return classOutput.getResources();
@@ -291,6 +294,9 @@ public class BeanGenerator extends AbstractGenerator {
         }
         implementGetBeanClass(bean, beanCreator);
         implementGetName(bean, beanCreator);
+        if (bean.isDefaultBean()) {
+            implementIsDefaultBean(bean, beanCreator);
+        }
 
         beanCreator.close();
         return classOutput.getResources();
@@ -455,6 +461,9 @@ public class BeanGenerator extends AbstractGenerator {
         }
         implementGetBeanClass(bean, beanCreator);
         implementGetName(bean, beanCreator);
+        if (bean.isDefaultBean()) {
+            implementIsDefaultBean(bean, beanCreator);
+        }
 
         beanCreator.close();
         return classOutput.getResources();

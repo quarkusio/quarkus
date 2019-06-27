@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * If a producer method is annotated with this, it means that the bean it produces will only be used
+ * If a bean is annotated with this annotation, it means that the bean will only be used
  * as a default bean if no other bean of this type is configured. If other another bean is configured
  * however, the default bean is not used.
  *
@@ -24,9 +24,9 @@ import java.lang.annotation.Target;
  * }
  * </pre>
  *
- * If this code is used MyBean is not defined anywhere else, then the result of create() is used in all injection points.
+ * If this code is used and MyBean is not defined anywhere else, then the result of create() is used in all injection points.
  *
- * If however there is another piece of configuration code that looks like:
+ * However, if there is another piece of configuration code that looks like:
  *
  * <pre>
  * &#64;Dependent
@@ -42,7 +42,7 @@ import java.lang.annotation.Target;
  * Then the result of override will be used as a MyBean in all injection points
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.METHOD })
+@Target({ ElementType.METHOD, ElementType.TYPE, ElementType.FIELD })
 public @interface DefaultBean {
 
 }

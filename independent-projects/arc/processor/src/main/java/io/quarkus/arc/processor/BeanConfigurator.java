@@ -54,6 +54,8 @@ public final class BeanConfigurator<T> {
 
     private final Map<String, Object> params;
 
+    private boolean isDefaultBean;
+
     /**
      *
      * @param implClassName
@@ -138,6 +140,11 @@ public final class BeanConfigurator<T> {
         return this;
     }
 
+    public BeanConfigurator<T> defaultBean() {
+        this.isDefaultBean = true;
+        return this;
+    }
+
     public BeanConfigurator<T> alternativePriority(int priority) {
         this.alternativePriority = priority;
         return this;
@@ -198,7 +205,7 @@ public final class BeanConfigurator<T> {
                 .beanDeployment(beanDeployment).scope(scope).types(types)
                 .qualifiers(qualifiers)
                 .alternativePriority(alternativePriority).name(name).creator(creatorConsumer).destroyer(destroyerConsumer)
-                .params(params).build());
+                .params(params).defaultBean(isDefaultBean).build());
     }
 
     @SuppressWarnings("unchecked")

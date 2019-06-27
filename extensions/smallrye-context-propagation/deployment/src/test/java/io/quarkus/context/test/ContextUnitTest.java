@@ -31,6 +31,12 @@ public class ContextUnitTest {
     }
 
     @Test()
+    public void testServletContextPropagation() {
+        RestAssured.when().get("/context/servlet").then()
+                .statusCode(Response.Status.OK.getStatusCode());
+    }
+
+    @Test()
     public void testThreadContextPropagation() {
         RestAssured.when().get("/context/thread-context").then()
                 .statusCode(Response.Status.OK.getStatusCode());

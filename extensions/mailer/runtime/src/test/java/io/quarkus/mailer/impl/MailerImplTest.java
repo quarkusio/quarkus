@@ -120,7 +120,7 @@ class MailerImplTest {
     void testAttachment() throws MessagingException, IOException {
         String payload = UUID.randomUUID().toString();
         mailer.send(Mail.withText(TO, "Test", "testAttachment")
-                .addAttachment("my-file.txt", payload.getBytes(), TEXT_CONTENT_TYPE)).toCompletableFuture().join();
+                .addAttachment("my-file.txt", payload.getBytes("UTF-8"), TEXT_CONTENT_TYPE)).toCompletableFuture().join();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains("testAttachment");
@@ -235,7 +235,7 @@ class MailerImplTest {
 
     private String read(BodyPart part) throws IOException, MessagingException {
         try (InputStream is = part.getInputStream()) {
-            Scanner s = new Scanner(is).useDelimiter("\\A");
+            Scanner s = new Scanner(is, "UTF-8").useDelimiter("\\A");
             return s.hasNext() ? s.next() : "";
         }
     }

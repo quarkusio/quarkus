@@ -54,7 +54,7 @@ class GenerateConfigIT extends MojoTestBase {
 
     private String loadFile(String file) throws IOException {
         try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(new FileInputStream(new File(testDir, "src/main/resources/" + file))))) {
+                new InputStreamReader(new FileInputStream(new File(testDir, "src/main/resources/" + file)), "UTF-8"))) {
             return reader.lines().collect(Collectors.joining("\n"));
         }
     }

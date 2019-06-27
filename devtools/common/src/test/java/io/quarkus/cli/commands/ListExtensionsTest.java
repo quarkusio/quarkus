@@ -124,7 +124,7 @@ public class ListExtensionsTest {
         boolean agroal = false;
         boolean resteasy = false;
         boolean hibernateValidator = false;
-        final String output = baos.toString();
+        final String output = baos.toString("UTF-8");
         boolean checkGuideInLineAfter = false;
         for (String line : output.split("\r?\n")) {
             if (line.contains(" Agroal ")) {
@@ -213,7 +213,7 @@ public class ListExtensionsTest {
         } finally {
             System.setOut(out);
         }
-        final String output = baos.toString();
+        final String output = baos.toString("UTF-8");
         int nbLine = 0;
         for (String line : output.split("\r?\n")) {
             ++nbLine;

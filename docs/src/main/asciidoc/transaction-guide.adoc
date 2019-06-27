@@ -166,6 +166,21 @@ public class SantaClausService {
 You cannot use `UserTransaction` in a method having a transaction started by a `@Transactional` call.
 ====
 
+== Configuring the transaction timeout
+You can configure the default transaction timeout, the timeout that applies to all transactions managed by the transaction manager, via the property `quarkus.transaction-manager.default-transaction-timeout`, specified as a duration.
+
+[NOTE]
+====
+The format for durations uses the standard `java.time.Duration` format.
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+
+You can also provide duration values starting with a number.
+In this case, if the value consists only of a number, the converter treats the value as seconds.
+Otherwise, `PT` is implicitly appended to the value to obtain a standard `java.time.Duration` format.
+====
+
+The default value is 60 seconds.
+
 == Why always having a transaction manager?
 
 Does it work everywhere I want to?::

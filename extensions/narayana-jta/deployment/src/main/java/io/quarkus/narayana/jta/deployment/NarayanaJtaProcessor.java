@@ -21,9 +21,9 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import io.quarkus.narayana.jta.runtime.NarayanaJtaConfiguration;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaProducers;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaTemplate;
+import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorMandatory;
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorNever;
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorNotSupported;
@@ -45,7 +45,7 @@ class NarayanaJtaProcessor {
     /**
      * The transactions configuration.
      */
-    NarayanaJtaConfiguration transactions;
+    TransactionManagerConfiguration transactions;
 
     @BuildStep(providesCapabilities = Capabilities.TRANSACTIONS)
     @Record(RUNTIME_INIT)
@@ -73,6 +73,6 @@ class NarayanaJtaProcessor {
         Properties defaultProperties = PropertiesFactory.getDefaultProperties();
         tt.setDefaultProperties(defaultProperties);
         tt.setNodeName(transactions);
-
+        tt.setDefaultTimeout(transactions);
     }
 }

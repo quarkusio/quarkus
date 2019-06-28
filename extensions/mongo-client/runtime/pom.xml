@@ -50,8 +50,6 @@
         <dependency>
             <groupId>de.flapdoodle.embed</groupId>
             <artifactId>de.flapdoodle.embed.mongo</artifactId>
-            <!-- TODO Export me to BOM -->
-            <version>2.2.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -11,8 +11,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(name = "mongodb", phase = ConfigPhase.RUN_TIME)
 public class MongoClientConfig {
 
-    // TODO Extend this.
-
     /**
      * Configures the connection string.
      * The format is:

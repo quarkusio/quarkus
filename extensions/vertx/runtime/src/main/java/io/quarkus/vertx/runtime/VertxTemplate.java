@@ -1,5 +1,8 @@
 package io.quarkus.vertx.runtime;
 
+import static io.vertx.core.file.impl.FileResolver.CACHE_DIR_BASE_PROP_NAME;
+
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,9 +79,7 @@ public class VertxTemplate {
             System.setProperty("vertx.disableDnsResolver", "true");
         }
 
-        System.setProperty("vertx.cacheDirBase", System.getProperty("java.io.tmpdir"));
-
-        if (options.isClustered()) {
+        if (options.getEventBusOptions().isClustered()) {
             AtomicReference<Throwable> failure = new AtomicReference<>();
             CountDownLatch latch = new CountDownLatch(1);
             Vertx.clusteredVertx(options, ar -> {
@@ -111,8 +112,12 @@ public class VertxTemplate {
         setEventBusOptions(conf, options);
         initializeClusterOptions(conf, options);
 
+        String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME,
+                System.getProperty("java.io.tmpdir", ".") + File.separator + "vertx-cache");
+
         options.setFileSystemOptions(new FileSystemOptions()
                 .setFileCachingEnabled(conf.caching)
+                .setFileCacheDir(fileCacheDir)
                 .setClassPathResolvingEnabled(conf.classpathResolving));
         options.setWorkerPoolSize(conf.workerPoolSize);
         options.setBlockedThreadCheckInterval(conf.warningExceptionTime.toMillis());

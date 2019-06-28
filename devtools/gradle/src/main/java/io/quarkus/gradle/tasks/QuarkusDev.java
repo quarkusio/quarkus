@@ -63,8 +63,6 @@ public class QuarkusDev extends QuarkusTask {
 
     private Set<File> filesIncludedInClasspath = new HashSet<>();
 
-    private String debug;
-
     private File buildDir;
 
     private String sourceDir;
@@ -75,23 +73,6 @@ public class QuarkusDev extends QuarkusTask {
 
     public QuarkusDev() {
         super("Development mode: enables hot deployment with background compilation");
-    }
-
-    @Optional
-    @Input
-    public String getDebug() {
-        return debug;
-    }
-
-    @Option(description = "If this server should be started in debug mode. " +
-            "The default is to start in debug mode without suspending and listen on port 5005." +
-            " It supports the following options:\n" +
-            " \"false\" - The JVM is not started in debug mode\n" +
-            " \"true\" - The JVM is started in debug mode and suspends until a debugger is attached to port 5005\n" +
-            " \"client\" - The JVM is started in client mode, and attempts to connect to localhost:5005\n" +
-            "\"{port}\" - The JVM is started in debug mode and suspends until a debugger is attached to {port}", option = "debug")
-    public void setDebug(String debug) {
-        this.debug = debug;
     }
 
     @InputDirectory
@@ -157,13 +138,14 @@ public class QuarkusDev extends QuarkusTask {
         if (!extension().outputDirectory().isDirectory()) {
             throw new GradleException("The project has no output yet, " +
                     "this should not happen as build should have been executed first. " +
-                    "Do the project have any source files?");
+                    "Does the project have any source files?");
         }
         DevModeContext context = new DevModeContext();
         try {
             List<String> args = new ArrayList<>();
             args.add(JavaBinFinder.findBin());
-            if (getDebug() == null) {
+            String debug = System.getProperty("debug");
+            if (debug == null) {
                 // debug mode not specified
                 // make sure 5005 is not used, we don't want to just fail if something else is using it
                 try (Socket socket = new Socket(InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 }), 5005)) {
@@ -172,15 +154,15 @@ public class QuarkusDev extends QuarkusTask {
                     args.add("-Xdebug");
                     args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=n");
                 }
-            } else if (getDebug().toLowerCase().equals("client")) {
+            } else if (debug.toLowerCase().equals("client")) {
                 args.add("-Xdebug");
                 args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=n");
-            } else if (getDebug().toLowerCase().equals("true")) {
+            } else if (debug.toLowerCase().equals("true") || debug.isEmpty()) {
                 args.add("-Xdebug");
                 args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=y,suspend=y");
-            } else if (!getDebug().toLowerCase().equals("false")) {
+            } else if (!debug.toLowerCase().equals("false")) {
                 try {
-                    int port = Integer.parseInt(getDebug());
+                    int port = Integer.parseInt(debug);
                     if (port <= 0) {
                         throw new GradleException("The specified debug port must be greater than 0");
                     }
@@ -188,7 +170,7 @@ public class QuarkusDev extends QuarkusTask {
                     args.add("-Xrunjdwp:transport=dt_socket,address=" + port + ",server=y,suspend=y");
                 } catch (NumberFormatException e) {
                     throw new GradleException(
-                            "Invalid value for debug parameter: " + getDebug() + " must be true|false|client|{port}");
+                            "Invalid value for debug parameter: " + debug + " must be true|false|client|{port}");
                 }
             }
             if (getJvmArgs() != null) {

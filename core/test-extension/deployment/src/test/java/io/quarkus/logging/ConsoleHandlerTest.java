@@ -1,4 +1,4 @@
-package logging;
+package io.quarkus.logging;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

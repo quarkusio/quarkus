@@ -2,6 +2,7 @@ package io.quarkus.deployment.configuration;
 
 import java.lang.reflect.Field;
 
+import org.eclipse.microprofile.config.spi.Converter;
 import org.wildfly.common.Assert;
 
 import io.quarkus.deployment.AccessorFinder;
@@ -11,6 +12,7 @@ import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
@@ -23,12 +25,14 @@ public class FloatConfigType extends LeafConfigType {
             float.class);
 
     final String defaultValue;
+    private final Class<? extends Converter<Float>> converterClass;
 
     public FloatConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment,
-            final String defaultValue, String javadocKey, String configKey) {
+            final String defaultValue, String javadocKey, String configKey, Class<? extends Converter<Float>> converterClass) {
         super(containingName, container, consumeSegment, javadocKey, configKey);
         Assert.checkNotEmptyParam("defaultValue", defaultValue);
         this.defaultValue = defaultValue;
+        this.converterClass = converterClass;
     }
 
     public void acceptConfigurationValue(final NameIterator name, final ExpandingConfigSource.Cache cache,
@@ -54,9 +58,8 @@ public class FloatConfigType extends LeafConfigType {
     public void acceptConfigurationValueIntoGroup(final Object enclosing, final Field field, final NameIterator name,
             final SmallRyeConfig config) {
         try {
-            final Float floatValue = config.getValue(name.toString(), Float.class);
-            final float f = floatValue != null ? floatValue.floatValue() : 0f;
-            field.setFloat(enclosing, f);
+            final Float value = ConfigUtils.getValue(config, name.toString(), Float.class, converterClass);
+            field.setFloat(enclosing, value != null ? value : 0f);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -64,16 +67,16 @@ public class FloatConfigType extends LeafConfigType {
 
     public void generateAcceptConfigurationValueIntoGroup(final BytecodeCreator body, final ResultHandle enclosing,
             final MethodDescriptor setter, final ResultHandle name, final ResultHandle config) {
-        // final Float floatValue = config.getValue(name.toString(), Float.class);
+        // final Float floatValue = ConfigUtils.getValue(config, name.toString(), Float.class, converterClass);
         // final float f = floatValue != null ? floatValue.floatValue() : 0f;
         final AssignableResultHandle result = body.createVariable(float.class);
-        final ResultHandle floatValue = body.checkCast(body.invokeVirtualMethod(
-                SRC_GET_VALUE,
+        final ResultHandle floatValue = body.checkCast(body.invokeStaticMethod(
+                CU_GET_VALUE,
                 config,
                 body.invokeVirtualMethod(
                         OBJ_TO_STRING_METHOD,
                         name),
-                body.loadClass(Float.class)), Float.class);
+                body.loadClass(Float.class), loadConverterClass(body)), Float.class);
         final BranchResult ifNull = body.ifNull(floatValue);
         final BytecodeCreator isNull = ifNull.trueBranch();
         isNull.assign(result, isNull.load(0f));
@@ -89,6 +92,7 @@ public class FloatConfigType extends LeafConfigType {
         return defaultValue;
     }
 
+    @Override
     public Class<?> getItemClass() {
         return float.class;
     }
@@ -96,8 +100,9 @@ public class FloatConfigType extends LeafConfigType {
     void getDefaultValueIntoEnclosingGroup(final Object enclosing, final ExpandingConfigSource.Cache cache,
             final SmallRyeConfig config, final Field field) {
         try {
-            field.setFloat(enclosing,
-                    config.convert(ExpandingConfigSource.expandValue(defaultValue, cache), Float.class).floatValue());
+            final Float value = ConfigUtils.convert(config, ExpandingConfigSource.expandValue(defaultValue, cache), Float.class,
+                    converterClass);
+            field.setFloat(enclosing, value != null ? value : 0f);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -115,14 +120,19 @@ public class FloatConfigType extends LeafConfigType {
     }
 
     private ResultHandle getConvertedDefault(final BytecodeCreator body, final ResultHandle cache, final ResultHandle config) {
-        return body.checkCast(body.invokeVirtualMethod(
-                SRC_CONVERT_METHOD,
+        return body.invokeStaticMethod(
+                CU_CONVERT,
                 config,
                 cache == null ? body.load(defaultValue)
                         : body.invokeStaticMethod(
                                 ConfigurationSetup.ECS_EXPAND_VALUE,
                                 body.load(defaultValue),
                                 cache),
-                body.loadClass(Float.class)), Float.class);
+                body.loadClass(Float.class), loadConverterClass(body));
+    }
+
+    @Override
+    public Class<? extends Converter<Float>> getConverterClass() {
+        return converterClass;
     }
 }

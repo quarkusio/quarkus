@@ -18,7 +18,7 @@ import io.smallrye.config.StringUtil;
  *
  */
 public final class ConfigUtils {
-    private static final Map<Class, Converter<?>> converters = new HashMap<>();
+    private static final Map<ConverterClassHolder, Converter<?>> EXPLICIT_RUNTIME_CONVERTERS_CACHE = new HashMap<>();
 
     private ConfigUtils() {
     }

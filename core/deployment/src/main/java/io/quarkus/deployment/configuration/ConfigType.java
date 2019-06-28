@@ -1,10 +1,8 @@
 package io.quarkus.deployment.configuration;
 
 import java.lang.reflect.Field;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.IntFunction;
 
 import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -18,26 +16,20 @@ import io.smallrye.config.SmallRyeConfig;
  */
 public abstract class ConfigType {
     static final MethodDescriptor NI_PREV_METHOD = MethodDescriptor.ofMethod(NameIterator.class, "previous", void.class);
+
     static final MethodDescriptor NI_NEXT_METHOD = MethodDescriptor.ofMethod(NameIterator.class, "next", void.class);
-    static final MethodDescriptor NI_HAS_NEXT_METHOD = MethodDescriptor.ofMethod(NameIterator.class, "hasNext", boolean.class);
+
     static final MethodDescriptor NI_GET_NEXT_SEGMENT = MethodDescriptor.ofMethod(NameIterator.class, "getNextSegment",
             String.class);
-
-    static final MethodDescriptor SRC_CONVERT_METHOD = MethodDescriptor.ofMethod(SmallRyeConfig.class, "convert", Object.class,
-            String.class, Class.class);
-    static final MethodDescriptor SRC_GET_OPT_METHOD = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getOptionalValue",
-            Optional.class, String.class, Class.class);
-    static final MethodDescriptor SRC_GET_VALUE = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getValue", Object.class,
-            String.class, Class.class);
-    static final MethodDescriptor SRC_GET_VALUES_METHOD = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getValues",
-            Collection.class, String.class, Class.class, IntFunction.class);
 
     static final MethodDescriptor OBJ_TO_STRING_METHOD = MethodDescriptor.ofMethod(Object.class, "toString", String.class);
 
     static final MethodDescriptor OPT_OR_ELSE_METHOD = MethodDescriptor.ofMethod(Optional.class, "orElse", Object.class,
             Object.class);
+
     static final MethodDescriptor OPT_OF_NULLABLE_METHOD = MethodDescriptor.ofMethod(Optional.class, "ofNullable",
             Optional.class, Object.class);
+
     static final MethodDescriptor OPT_EMPTY_METHOD = MethodDescriptor.ofMethod(Optional.class, "empty", Optional.class);
 
     static final MethodDescriptor MAP_PUT_METHOD = MethodDescriptor.ofMethod(Map.class, "put", Object.class, Object.class,

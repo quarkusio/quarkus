@@ -1,15 +1,18 @@
 package io.quarkus.deployment.configuration;
 
 import java.lang.reflect.Field;
-import java.util.OptionalLong;
 
+import org.eclipse.microprofile.config.spi.Converter;
 import org.wildfly.common.Assert;
 
 import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.deployment.steps.ConfigurationSetup;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
@@ -17,18 +20,17 @@ import io.smallrye.config.SmallRyeConfig;
 /**
  */
 public class LongConfigType extends LeafConfigType {
-
-    private static final MethodDescriptor OPTLONG_OR_ELSE_METHOD = MethodDescriptor.ofMethod(OptionalLong.class, "orElse",
-            long.class, long.class);
     private static final MethodDescriptor LONG_VALUE_METHOD = MethodDescriptor.ofMethod(Long.class, "longValue", long.class);
 
     final String defaultValue;
+    private final Class<? extends Converter<Long>> converterClass;
 
     public LongConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment,
-            final String defaultValue, String javadocKey, String configKey) {
+            final String defaultValue, String javadocKey, String configKey, Class<? extends Converter<Long>> converterClass) {
         super(containingName, container, consumeSegment, javadocKey, configKey);
         Assert.checkNotEmptyParam("defaultValue", defaultValue);
         this.defaultValue = defaultValue;
+        this.converterClass = converterClass;
     }
 
     public void acceptConfigurationValue(final NameIterator name, final ExpandingConfigSource.Cache cache,
@@ -54,7 +56,8 @@ public class LongConfigType extends LeafConfigType {
     public void acceptConfigurationValueIntoGroup(final Object enclosing, final Field field, final NameIterator name,
             final SmallRyeConfig config) {
         try {
-            field.setLong(enclosing, config.getValue(name.toString(), OptionalLong.class).orElse(0L));
+            Long value = ConfigUtils.getValue(config, name.toString(), Long.class, converterClass);
+            field.setLong(enclosing, value != null ? value : 0l);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -62,25 +65,32 @@ public class LongConfigType extends LeafConfigType {
 
     public void generateAcceptConfigurationValueIntoGroup(final BytecodeCreator body, final ResultHandle enclosing,
             final MethodDescriptor setter, final ResultHandle name, final ResultHandle config) {
-        // config.getValue(name.toString(), OptionalLong.class).orElse(0L)
-        final ResultHandle optionalValue = body.checkCast(body.invokeVirtualMethod(
-                SRC_GET_VALUE,
+        // final Long longValue = ConfigUtils.getValue(config, name.toString(), Long.class, converterClass);
+        // final long l = longValue != null ? longValue.longValue() : 0l;
+        final AssignableResultHandle result = body.createVariable(long.class);
+        final ResultHandle longValue = body.checkCast(body.invokeStaticMethod(
+                CU_GET_VALUE,
                 config,
                 body.invokeVirtualMethod(
                         OBJ_TO_STRING_METHOD,
                         name),
-                body.loadClass(OptionalLong.class)), OptionalLong.class);
-        final ResultHandle longValue = body.invokeVirtualMethod(
-                OPTLONG_OR_ELSE_METHOD,
-                optionalValue,
-                body.load(0L));
-        body.invokeStaticMethod(setter, enclosing, longValue);
+                body.loadClass(Long.class), loadConverterClass(body)), Long.class);
+        final BranchResult ifNull = body.ifNull(longValue);
+        final BytecodeCreator isNull = ifNull.trueBranch();
+        isNull.assign(result, isNull.load(0l));
+        final BytecodeCreator isNotNull = ifNull.falseBranch();
+        isNotNull.assign(result,
+                isNotNull.invokeVirtualMethod(
+                        LONG_VALUE_METHOD,
+                        longValue));
+        body.invokeStaticMethod(setter, enclosing, result);
     }
 
     public String getDefaultValueString() {
         return defaultValue;
     }
 
+    @Override
     public Class<?> getItemClass() {
         return long.class;
     }
@@ -88,8 +98,9 @@ public class LongConfigType extends LeafConfigType {
     void getDefaultValueIntoEnclosingGroup(final Object enclosing, final ExpandingConfigSource.Cache cache,
             final SmallRyeConfig config, final Field field) {
         try {
-            field.setLong(enclosing,
-                    config.convert(ExpandingConfigSource.expandValue(defaultValue, cache), Long.class).longValue());
+            Long value = ConfigUtils.convert(config, ExpandingConfigSource.expandValue(defaultValue, cache), Long.class,
+                    converterClass);
+            field.setLong(enclosing, value != null ? value : 0l);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -107,14 +118,19 @@ public class LongConfigType extends LeafConfigType {
     }
 
     private ResultHandle getConvertedDefault(final BytecodeCreator body, final ResultHandle cache, final ResultHandle config) {
-        return body.checkCast(body.invokeVirtualMethod(
-                SRC_CONVERT_METHOD,
+        return body.invokeStaticMethod(
+                CU_CONVERT,
                 config,
                 cache == null ? body.load(defaultValue)
                         : body.invokeStaticMethod(
                                 ConfigurationSetup.ECS_EXPAND_VALUE,
                                 body.load(defaultValue),
                                 cache),
-                body.loadClass(Long.class)), Long.class);
+                body.loadClass(Long.class), loadConverterClass(body));
+    }
+
+    @Override
+    public Class<? extends Converter<Long>> getConverterClass() {
+        return converterClass;
     }
 }

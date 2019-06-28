@@ -1,15 +1,18 @@
 package io.quarkus.deployment.configuration;
 
 import java.lang.reflect.Field;
-import java.util.OptionalDouble;
 
+import org.eclipse.microprofile.config.spi.Converter;
 import org.wildfly.common.Assert;
 
 import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.deployment.steps.ConfigurationSetup;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
@@ -17,19 +20,18 @@ import io.smallrye.config.SmallRyeConfig;
 /**
  */
 public class DoubleConfigType extends LeafConfigType {
-
-    private static final MethodDescriptor OPTDOUBLE_OR_ELSE_METHOD = MethodDescriptor.ofMethod(OptionalDouble.class, "orElse",
-            double.class, double.class);
     private static final MethodDescriptor DOUBLE_VALUE_METHOD = MethodDescriptor.ofMethod(Double.class, "doubleValue",
             double.class);
 
     final String defaultValue;
+    private final Class<? extends Converter<Double>> converterClass;
 
     public DoubleConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment,
-            final String defaultValue, String javadocKey, String configKey) {
+            final String defaultValue, String javadocKey, String configKey, Class<? extends Converter<Double>> converterClass) {
         super(containingName, container, consumeSegment, javadocKey, configKey);
         Assert.checkNotEmptyParam("defaultValue", defaultValue);
         this.defaultValue = defaultValue;
+        this.converterClass = converterClass;
     }
 
     public void acceptConfigurationValue(final NameIterator name, final ExpandingConfigSource.Cache cache,
@@ -55,7 +57,8 @@ public class DoubleConfigType extends LeafConfigType {
     public void acceptConfigurationValueIntoGroup(final Object enclosing, final Field field, final NameIterator name,
             final SmallRyeConfig config) {
         try {
-            field.setDouble(enclosing, config.getValue(name.toString(), OptionalDouble.class).orElse(0.0));
+            Double value = ConfigUtils.getValue(config, name.toString(), Double.class, converterClass);
+            field.setDouble(enclosing, value != null ? value : 0d);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -63,25 +66,32 @@ public class DoubleConfigType extends LeafConfigType {
 
     public void generateAcceptConfigurationValueIntoGroup(final BytecodeCreator body, final ResultHandle enclosing,
             final MethodDescriptor setter, final ResultHandle name, final ResultHandle config) {
-        // config.getValue(name.toString(), OptionalDouble.class).orElse(0.0)
-        final ResultHandle optionalValue = body.checkCast(body.invokeVirtualMethod(
-                SRC_GET_VALUE,
+        // final Double doubleValue = ConfigUtils.getValue(config, name.toString(), Double.class, converterClass);
+        // final double d = doubleValue != null ? doubleValue.doubleValue() : 0d;
+        final AssignableResultHandle result = body.createVariable(double.class);
+        final ResultHandle doubleValue = body.checkCast(body.invokeStaticMethod(
+                CU_GET_VALUE,
                 config,
                 body.invokeVirtualMethod(
                         OBJ_TO_STRING_METHOD,
                         name),
-                body.loadClass(OptionalDouble.class)), OptionalDouble.class);
-        final ResultHandle doubleValue = body.invokeVirtualMethod(
-                OPTDOUBLE_OR_ELSE_METHOD,
-                optionalValue,
-                body.load(0.0));
-        body.invokeStaticMethod(setter, enclosing, doubleValue);
+                body.loadClass(Double.class), loadConverterClass(body)), Double.class);
+        final BranchResult ifNull = body.ifNull(doubleValue);
+        final BytecodeCreator isNull = ifNull.trueBranch();
+        isNull.assign(result, isNull.load(0d));
+        final BytecodeCreator isNotNull = ifNull.falseBranch();
+        isNotNull.assign(result,
+                isNotNull.invokeVirtualMethod(
+                        DOUBLE_VALUE_METHOD,
+                        doubleValue));
+        body.invokeStaticMethod(setter, enclosing, result);
     }
 
     public String getDefaultValueString() {
         return defaultValue;
     }
 
+    @Override
     public Class<?> getItemClass() {
         return double.class;
     }
@@ -89,8 +99,9 @@ public class DoubleConfigType extends LeafConfigType {
     void getDefaultValueIntoEnclosingGroup(final Object enclosing, final ExpandingConfigSource.Cache cache,
             final SmallRyeConfig config, final Field field) {
         try {
-            field.setDouble(enclosing, config.convert(
-                    ExpandingConfigSource.expandValue(defaultValue, cache), Double.class).doubleValue());
+            Double value = ConfigUtils.convert(config,
+                    ExpandingConfigSource.expandValue(defaultValue, cache), Double.class, converterClass);
+            field.setDouble(enclosing, value != null ? value : 0d);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -108,14 +119,19 @@ public class DoubleConfigType extends LeafConfigType {
     }
 
     private ResultHandle getConvertedDefault(final BytecodeCreator body, final ResultHandle cache, final ResultHandle config) {
-        return body.checkCast(body.invokeVirtualMethod(
-                SRC_CONVERT_METHOD,
+        return body.invokeStaticMethod(
+                CU_CONVERT,
                 config,
                 cache == null ? body.load(defaultValue)
                         : body.invokeStaticMethod(
                                 ConfigurationSetup.ECS_EXPAND_VALUE,
                                 body.load(defaultValue),
                                 cache),
-                body.loadClass(Double.class)), Double.class);
+                body.loadClass(Double.class), loadConverterClass(body));
+    }
+
+    @Override
+    public Class<? extends Converter<Double>> getConverterClass() {
+        return converterClass;
     }
 }

@@ -1,13 +1,17 @@
 package io.quarkus.deployment.configuration;
 
+import static io.quarkus.deployment.steps.ConfigurationSetup.ECS_EXPAND_VALUE;
+
 import java.lang.reflect.Field;
 import java.util.Map;
 
+import org.eclipse.microprofile.config.spi.Converter;
+
 import io.quarkus.deployment.AccessorFinder;
-import io.quarkus.deployment.steps.ConfigurationSetup;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
@@ -17,14 +21,18 @@ import io.smallrye.config.SmallRyeConfig;
 public class ObjectConfigType extends LeafConfigType {
     final String defaultValue;
     final Class<?> expectedType;
+    Class<? extends Converter<?>> converterClass;
 
     public ObjectConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment,
-            final String defaultValue, final Class<?> expectedType, String javadocKey, String configKey) {
+            final String defaultValue, final Class<?> expectedType, String javadocKey, String configKey,
+            Class<? extends Converter<?>> converterClass) {
         super(containingName, container, consumeSegment, javadocKey, configKey);
         this.defaultValue = defaultValue;
         this.expectedType = expectedType;
+        this.converterClass = converterClass;
     }
 
+    @Override
     public Class<?> getItemClass() {
         return expectedType;
     }
@@ -32,7 +40,8 @@ public class ObjectConfigType extends LeafConfigType {
     void getDefaultValueIntoEnclosingGroup(final Object enclosing, final ExpandingConfigSource.Cache cache,
             final SmallRyeConfig config, final Field field) {
         try {
-            field.set(enclosing, config.convert(ExpandingConfigSource.expandValue(defaultValue, cache), expectedType));
+            String value = ExpandingConfigSource.expandValue(defaultValue, cache);
+            field.set(enclosing, ConfigUtils.convert(config, value, expectedType, (Class) converterClass));
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -40,25 +49,24 @@ public class ObjectConfigType extends LeafConfigType {
 
     void generateGetDefaultValueIntoEnclosingGroup(final BytecodeCreator body, final ResultHandle enclosing,
             final MethodDescriptor setter, final ResultHandle cache, final ResultHandle config) {
-        body.invokeStaticMethod(setter, enclosing,
-                body.invokeVirtualMethod(SRC_CONVERT_METHOD, config,
-                        cache == null ? body.load(defaultValue)
-                                : body.invokeStaticMethod(
-                                        ConfigurationSetup.ECS_EXPAND_VALUE,
-                                        body.load(defaultValue),
-                                        cache),
-                        body.loadClass(expectedType)));
+        ResultHandle resultHandle = getResultHandle(body, cache, config);
+        body.invokeStaticMethod(setter, enclosing, resultHandle);
     }
 
     public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder,
             final ResultHandle cache, final ResultHandle smallRyeConfig) {
-        return body.checkCast(body.invokeVirtualMethod(SRC_CONVERT_METHOD, smallRyeConfig,
-                cache == null ? body.load(defaultValue)
-                        : body.invokeStaticMethod(
-                                ConfigurationSetup.ECS_EXPAND_VALUE,
-                                body.load(defaultValue),
-                                cache),
-                body.loadClass(expectedType)), expectedType);
+        ResultHandle resultHandle = getResultHandle(body, cache, smallRyeConfig);
+        return body.checkCast(resultHandle, expectedType);
+    }
+
+    private ResultHandle getResultHandle(BytecodeCreator body, ResultHandle cache, ResultHandle smallRyeConfig) {
+        ResultHandle clazz = body.loadClass(expectedType);
+        ResultHandle cacheResultHandle = cache == null ? body.load(defaultValue)
+                : body.invokeStaticMethod(ECS_EXPAND_VALUE,
+                        body.load(defaultValue),
+                        cache);
+
+        return body.invokeStaticMethod(CU_CONVERT, smallRyeConfig, cacheResultHandle, clazz, loadConverterClass(body));
     }
 
     public void acceptConfigurationValue(final NameIterator name, final ExpandingConfigSource.Cache cache,
@@ -82,7 +90,9 @@ public class ObjectConfigType extends LeafConfigType {
     void acceptConfigurationValueIntoGroup(final Object enclosing, final Field field, final NameIterator name,
             final SmallRyeConfig config) {
         try {
-            field.set(enclosing, getValue(name, config, expectedType));
+            field.set(enclosing,
+                    ConfigUtils.getOptionalValue(config, name.toString(), expectedType, (Class) converterClass)
+                            .orElse(null));
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -95,7 +105,8 @@ public class ObjectConfigType extends LeafConfigType {
 
     void acceptConfigurationValueIntoMap(final Map<String, Object> enclosing, final NameIterator name,
             final SmallRyeConfig config) {
-        enclosing.put(name.getNextSegment(), getValue(name, config, expectedType));
+        enclosing.put(name.getNextSegment(),
+                ConfigUtils.getOptionalValue(config, name.toString(), expectedType, (Class) converterClass).orElse(null));
     }
 
     void generateAcceptConfigurationValueIntoMap(final BytecodeCreator body, final ResultHandle enclosing,
@@ -108,18 +119,19 @@ public class ObjectConfigType extends LeafConfigType {
         return defaultValue;
     }
 
-    private <T> T getValue(final NameIterator name, final SmallRyeConfig config, Class<T> expectedType) {
-        return config.getOptionalValue(name.toString(), expectedType).orElse(null);
-    }
-
     private ResultHandle generateGetValue(final BytecodeCreator body, final ResultHandle name, final ResultHandle config) {
-        final ResultHandle optionalValue = body.invokeVirtualMethod(
-                SRC_GET_OPT_METHOD,
+        final ResultHandle optionalValue = body.invokeStaticMethod(
+                CU_GET_OPT_VALUE,
                 config,
                 body.invokeVirtualMethod(
                         OBJ_TO_STRING_METHOD,
                         name),
-                body.loadClass(expectedType));
+                body.loadClass(expectedType), loadConverterClass(body));
         return body.invokeVirtualMethod(OPT_OR_ELSE_METHOD, optionalValue, body.loadNull());
+    }
+
+    @Override
+    public Class<? extends Converter<?>> getConverterClass() {
+        return converterClass;
     }
 }

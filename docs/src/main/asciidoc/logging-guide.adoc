@@ -26,7 +26,7 @@ Console logging is enabled by default.  To configure or disable it, the followin
 |quarkus.log.console.color|true|Allow color rendering to be used on the console, if it is supported by the terminal.
 |quarkus.log.console.async|false|Indicates whether to log asynchronously.
 |quarkus.log.console.async.queue-length|512|The queue length to use before flushing writing.
-|quarkus.log.console.async.overflow|BLOCK|Determine whether to block the publisher (rather than drop the message) when the queue is full.
+|quarkus.log.console.async.overflow|block|Determine whether to block the publisher (rather than drop the message) when the queue is full.
 |===
 
 === File configuration
@@ -46,7 +46,7 @@ Logging to a file is also supported but not enabled by default.  To configure or
 |quarkus.log.file.rotation.rotate-on-boot|true|Indicates whether to rotate log files on server initialization.
 |quarkus.log.file.async|false|Indicates whether to log asynchronously.
 |quarkus.log.file.async.queue-length|512|The queue length to use before flushing writing.
-|quarkus.log.file.async.overflow|BLOCK|Determine whether to block the publisher (rather than drop the message) when the queue is full.
+|quarkus.log.file.async.overflow|block|Determine whether to block the publisher (rather than drop the message) when the queue is full.
 |===
 
 === Syslog configuration
@@ -70,7 +70,7 @@ Logging to a syslog is also supported but not enabled by default.  To configure 
 |quarkus.log.syslog.block-on-reconnect|true|Determine whether to block when attempting to reconnect on TCP or SSL TCP protocols
 |quarkus.log.syslog.async|false|Indicates whether to log asynchronously.
 |quarkus.log.syslog.async.queue-length|512|The queue length to use before flushing writing.
-|quarkus.log.syslog.async.overflow|BLOCK|Determine whether to block the publisher (rather than drop the message) when the queue is full.
+|quarkus.log.syslog.async.overflow|block|Determine whether to block the publisher (rather than drop the message) when the queue is full.
 |===
 
 === Logging categories

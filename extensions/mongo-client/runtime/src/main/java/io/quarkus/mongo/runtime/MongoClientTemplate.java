@@ -2,10 +2,7 @@ package io.quarkus.mongo.runtime;
 
 import static com.mongodb.AuthenticationMechanism.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -82,8 +79,6 @@ public class MongoClientTemplate {
         }
         settings.codecRegistry(registry);
 
-        // TODO Redo read preferences
-
         config.applicationName.ifPresent(settings::applicationName);
 
         if (config.credentials != null) {
@@ -148,6 +143,10 @@ public class MongoClientTemplate {
             config.connectTimeout.ifPresent(i -> builder.connectTimeout(i, TimeUnit.MILLISECONDS));
         });
 
+        config.readPreference.ifPresent(pref -> {
+            settings.readPreference(ReadPreference.valueOf(pref));
+        });
+
         MongoClientSettings mongoConfiguration = settings.build();
         client = MongoClients.create(mongoConfiguration);
         reactiveMongoClient = new ReactiveMongoClientImpl(
@@ -185,13 +184,12 @@ public class MongoClientTemplate {
 
         char[] password = config.password.map(String::toCharArray).orElse(null);
         //admin is the default auth source in mongo and null is not allowed
-        //TODO we should add a 'database' props and default to this one if the authSource is not set,
-        // this is the standard Mongo behaviour. We can then default to admin ...
         String authSource = config.authSource.orElse("admin");
         // AuthMechanism
         AuthenticationMechanism mechanism = null;
-        if (config.authMechanism.isPresent()) {
-            mechanism = getAuthenticationMechanism(config.authMechanism.get());
+        Optional<String> maybeMechanism = config.authMechanism;
+        if (maybeMechanism.isPresent()) {
+            mechanism = getAuthenticationMechanism(maybeMechanism.get());
         }
 
         // Create the MongoCredential instance.

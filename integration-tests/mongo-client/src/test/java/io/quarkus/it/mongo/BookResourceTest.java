@@ -2,6 +2,7 @@ package io.quarkus.it.mongo;
 
 import static io.restassured.RestAssured.get;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -13,8 +14,16 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import de.svenkubiak.embeddedmongodb.EmbeddedMongo;
+import de.flapdoodle.embed.mongo.MongodExecutable;
+import de.flapdoodle.embed.mongo.MongodStarter;
+import de.flapdoodle.embed.mongo.config.IMongodConfig;
+import de.flapdoodle.embed.mongo.config.MongodConfigBuilder;
+import de.flapdoodle.embed.mongo.config.Net;
+import de.flapdoodle.embed.mongo.distribution.Version;
+import de.flapdoodle.embed.process.runtime.Network;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.mapper.ObjectMapper;
@@ -25,6 +34,9 @@ import io.restassured.response.Response;
 
 @QuarkusTest
 class BookResourceTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BookResourceTest.class);
+    private static MongodExecutable MONGO;
 
     private static Jsonb jsonb;
 
@@ -51,13 +63,23 @@ class BookResourceTest {
     }
 
     @BeforeAll
-    public static void startup() {
-        EmbeddedMongo.DB.port(28018).start();
+    public static void startMongoDatabase() throws IOException {
+        Version.Main version = Version.Main.V4_0;
+        int port = 27018;
+        LOGGER.info("Starting Mongo {} on port {}", version, port);
+        IMongodConfig config = new MongodConfigBuilder()
+                .version(version)
+                .net(new Net(port, Network.localhostIsIPv6()))
+                .build();
+        MONGO = MongodStarter.getDefaultInstance().prepare(config);
+        MONGO.start();
     }
 
     @AfterAll
-    public static void shutdown() {
-        EmbeddedMongo.DB.stop();
+    public static void stopMongoDatabase() {
+        if (MONGO != null) {
+            MONGO.stop();
+        }
     }
 
     @Test
@@ -79,6 +101,7 @@ class BookResourceTest {
                 .body(book1)
                 .post(endpoint)
                 .andReturn();
+        System.out.println("The response is: " + response.statusCode() + " " + response.asString());
         Assertions.assertEquals(202, response.statusCode());
 
         Book book2 = new Book().setAuthor("Victor Hugo").setTitle("Notre-Dame de Paris")

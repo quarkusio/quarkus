@@ -14,10 +14,6 @@
 
     <name>Quarkus - Integration Tests - Mongo Client</name>
 
-    <properties>
-        <embedded-mongodb.version>4.4.5</embedded-mongodb.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -43,9 +39,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>de.svenkubiak</groupId>
-            <artifactId>embedded-mongodb</artifactId>
-            <version>${embedded-mongodb.version}</version>
+            <groupId>de.flapdoodle.embed</groupId>
+            <artifactId>de.flapdoodle.embed.mongo</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

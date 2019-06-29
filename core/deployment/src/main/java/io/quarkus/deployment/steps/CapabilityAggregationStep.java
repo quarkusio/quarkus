@@ -17,10 +17,10 @@ public class CapabilityAggregationStep {
     BuildProducer<Capabilities> producer;
 
     @BuildStep
-    public void build(List<CapabilityBuildItem> capabilitites) throws Exception {
+    public void build(List<CapabilityBuildItem> capabilities) throws Exception {
         Set<String> present = new HashSet<>();
-        for (CapabilityBuildItem i : capabilitites) {
-            present.add(i.getName());
+        for (CapabilityBuildItem capability : capabilities) {
+            present.add(capability.getName());
         }
 
         producer.produce(new Capabilities(present));

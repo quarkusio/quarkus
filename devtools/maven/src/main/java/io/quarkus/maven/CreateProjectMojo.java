@@ -298,9 +298,6 @@ public class CreateProjectMojo extends AbstractMojo {
                 .a("mvn compile quarkus:dev")
                 .reset()
                 .toString());
-        getLog().info(
-                ansi().a("Your application will be accessible on ").bold().fg(Ansi.Color.CYAN).a("http://localhost:8080")
-                        .reset().toString());
         getLog().info("========================================================================================");
         getLog().info("");
     }

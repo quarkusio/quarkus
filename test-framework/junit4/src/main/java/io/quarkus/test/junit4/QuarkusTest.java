@@ -70,6 +70,7 @@ public class QuarkusTest extends AbstractQuarkusTestRunner {
         Object instance = TestInstantiator.instantiateTest(getTestClass().getJavaClass());
         TestHTTPResourceManager.inject(instance);
         TestInjectionManager.inject(instance);
+        quarkusRunListener.inject(instance);
         return instance;
     }
 }

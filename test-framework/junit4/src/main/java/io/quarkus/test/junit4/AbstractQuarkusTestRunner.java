@@ -12,7 +12,7 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
 abstract class AbstractQuarkusTestRunner extends BlockJUnit4ClassRunner {
 
     private static boolean first = true;
-    private static AbstractQuarkusRunListener quarkusRunListener;
+    protected static AbstractQuarkusRunListener quarkusRunListener;
 
     private final BiFunction<Class<?>, RunNotifier, AbstractQuarkusRunListener> quarkusRunListenerSupplier;
 

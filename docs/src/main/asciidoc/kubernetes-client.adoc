@@ -1,0 +1,79 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Kubernetes Client
+
+include::./attributes.adoc[]
+
+
+Quarkus includes the `kubernetes-client` extension which enables the use of the [Fabric8 Kubernetes Client](https://github.com/fabric8io/kubernetes-client)
+in native mode while also making it easier to work with.
+
+== Configuration
+
+Once you have your Quarkus project configured you can add the `kubernetes-client` extension
+to your project by running the following command in your project base directory.
+
+[source]
+mvn quarkus:add-extension -Dextensions="kubernetes-client"
+
+This will add the following to your pom.xml:
+
+[source,xml]
+----
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-kubernetes-client</artifactId>
+    </dependency>
+----
+
+== Testing
+
+To make testing against a mock Kubernetes API extremely simple, Quarkus provides the `KubernetesMockServerTestResource` which automatically launches
+a mock of the Kubernetes API server and sets the proper environment variables needed so that the Kubernetes Client configures itself to use said mock.
+Tests can inject the mock and set it up in any way necessary for the particular testing using the `@MockServer` annotation.
+
+Here is an example of such test:
+
+[source%nowrap,java]
+----
+@QuarkusTestResource(KubernetesMockServerTestResource.class)
+@QuarkusTest
+public class KubernetesClientTest {
+
+    @MockServer
+    private KubernetesMockServer mockServer;
+
+    @Test
+    public void before() {
+        final Pod pod1 = new PodBuilder().withNewMetadata().withName("pod1").withNamespace("test").and().build();
+        final Pod pod2 = new PodBuilder().withNewMetadata().withName("pod2").withNamespace("test").and().build();
+
+        mockServer.expect().get().withPath("/api/v1/namespaces/test/pods")
+                .andReturn(200,
+                        new PodListBuilder().withNewMetadata().withResourceVersion("1").endMetadata().withItems(pod1, pod2)
+                                .build())
+                .always();
+    }
+
+    @Test
+    public void testInteractionWithAPIServer() {
+        RestAssured.when().get("/pod/test").then()
+                .body("size()", is(2));
+    }
+
+}
+----
+
+Note that to take advantage of these features, the `quarkus-test-kubernetes-client` dependency needs to be added, for example like so:
+
+[source,xml]
+----
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-test-kubernetes-client</artifactId>
+        <scope>test</scope>
+    </dependency>
+----

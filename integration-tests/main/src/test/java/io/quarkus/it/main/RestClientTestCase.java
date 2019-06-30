@@ -45,6 +45,14 @@ public class RestClientTestCase {
     }
 
     @Test
+    void testMicroprofileAsyncRestClient() {
+        RestAssured.when().get("/client/async/cdi").then().body(is("TEST"));
+        JsonPath jsonPath = RestAssured.when().get("/client/async/cdi/jackson").thenReturn().jsonPath();
+        Assertions.assertEquals(jsonPath.getString("name"), "Stuart");
+        Assertions.assertEquals(jsonPath.getString("value"), "A Value");
+    }
+
+    @Test
     void testMicroprofileClientComplex() {
         JsonPath jsonPath = RestAssured.when().get("/client/manual/complex").thenReturn().jsonPath();
         List<Map<String, String>> components = jsonPath.getList("$");

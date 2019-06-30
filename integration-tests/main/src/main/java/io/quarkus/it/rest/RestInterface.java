@@ -2,6 +2,7 @@ package io.quarkus.it.rest;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -17,6 +18,14 @@ public interface RestInterface {
 
     @GET
     String get();
+
+    @GET
+    CompletionStage<String> asyncGet();
+
+    @GET
+    @Path("/jackson")
+    @Produces("application/json")
+    CompletionStage<TestResource.MyData> getDataAsync();
 
     @GET
     @Path("/complex")

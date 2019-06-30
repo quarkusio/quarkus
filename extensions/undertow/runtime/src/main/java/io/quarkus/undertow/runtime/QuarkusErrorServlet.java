@@ -18,7 +18,7 @@ public class QuarkusErrorServlet extends HttpServlet {
     public static final String SHOW_STACK = "show-stack";
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String details = "";
         String stack = "";
         Object uuid = req.getAttribute(QuarkusExceptionHandler.ERROR_ID);

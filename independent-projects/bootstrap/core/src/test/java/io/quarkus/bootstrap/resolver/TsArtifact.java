@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 
 import io.quarkus.bootstrap.model.AppArtifact;
@@ -55,6 +56,7 @@ public class TsArtifact {
 
     private List<TsDependency> deps = Collections.emptyList();
     private List<TsQuarkusExt> extDeps = Collections.emptyList();
+    private List<TsDependency> managedDeps = Collections.emptyList();
 
     protected ContentProvider content;
 
@@ -123,6 +125,14 @@ public class TsArtifact {
         return this;
     }
 
+    public TsArtifact addManagedDependency(TsDependency dep) {
+        if (managedDeps.isEmpty()) {
+            managedDeps = new ArrayList<>();
+        }
+        managedDeps.add(dep);
+        return this;
+    }
+
     public String getArtifactFileName() {
         if(artifactId == null) {
             throw new IllegalArgumentException("artifactId is missing");
@@ -158,6 +168,13 @@ public class TsArtifact {
         if(!deps.isEmpty()) {
             for (TsDependency dep : deps) {
                 model.addDependency(dep.toPomDependency());
+            }
+        }
+
+        if (!managedDeps.isEmpty()) {
+            model.setDependencyManagement(new DependencyManagement());
+            for (TsDependency dep : managedDeps) {
+                model.getDependencyManagement().addDependency(dep.toPomDependency());
             }
         }
 

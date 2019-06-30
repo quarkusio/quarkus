@@ -90,6 +90,10 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
         addCollectedDep(artifact, dep.scope == null ? "compile" : dep.scope, dep.optional);
     }
 
+    protected void addManagedDep(TsArtifact dep) {
+        root.addManagedDependency(new TsDependency(dep));
+    }
+
     protected void addCollectedDep(final TsArtifact artifact) {
         addCollectedDep(artifact, "compile", false);
     }

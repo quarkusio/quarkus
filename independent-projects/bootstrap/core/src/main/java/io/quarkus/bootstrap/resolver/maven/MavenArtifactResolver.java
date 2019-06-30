@@ -328,7 +328,7 @@ public class MavenArtifactResolver {
 
         return new CollectRequest()
                 .setRootArtifact(artifact)
-                .setDependencies(mergeDeps(deps, originalDeps, managedVersions))
+                .setDependencies(mergeDeps(deps, originalDeps))
                 .setManagedDependencies(mergedManagedDeps)
                 .setRepositories(remoteRepoManager.aggregateRepositories(repoSession, remoteRepos, descr.getRepositories(), true));
     }
@@ -347,7 +347,7 @@ public class MavenArtifactResolver {
                 .setRepositories(remoteRepos);
     }
 
-    private List<Dependency> mergeDeps(List<Dependency> dominant, List<Dependency> recessive, Map<AppArtifactKey, String> managedVersions) {
+    private List<Dependency> mergeDeps(List<Dependency> dominant, List<Dependency> recessive) {
         final int initialCapacity = dominant.size() + recessive.size();
         if(initialCapacity == 0) {
             return Collections.emptyList();
@@ -357,19 +357,11 @@ public class MavenArtifactResolver {
         for (Dependency dependency : dominant) {
             final AppArtifactKey id = getId(dependency.getArtifact());
             ids.add(id);
-            final String managedVersion = managedVersions.get(id);
-            if(managedVersion != null) {
-                dependency = dependency.setArtifact(dependency.getArtifact().setVersion(managedVersion));
-            }
             result.add(dependency);
         }
         for (Dependency dependency : recessive) {
             final AppArtifactKey id = getId(dependency.getArtifact());
             if (!ids.contains(id)) {
-                final String managedVersion = managedVersions.get(id);
-                if(managedVersion != null) {
-                    dependency = dependency.setArtifact(dependency.getArtifact().setVersion(managedVersion));
-                }
                 result.add(dependency);
             }
         }

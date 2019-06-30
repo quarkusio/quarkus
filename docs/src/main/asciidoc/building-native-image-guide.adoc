@@ -279,10 +279,10 @@ In cases where the GraalVM requirement cannot be met, you can use Docker to perf
 
 In this guide we will use the first stage to generate the native executable using Maven and the second stage to create our runtime image.
 
-[source,dockerfile]
+[source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/centos-quarkus-maven:graalvm-{graalvm-version} AS build
+FROM quay.io/quarkus/centos-quarkus-maven:{graalvm-version} AS build
 COPY src /usr/src/app/src
 COPY pom.xml /usr/src/app
 RUN mvn -f /usr/src/app/pom.xml -Pnative clean package

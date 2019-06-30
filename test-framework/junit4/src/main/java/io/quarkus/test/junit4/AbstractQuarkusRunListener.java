@@ -83,6 +83,10 @@ abstract class AbstractQuarkusRunListener extends RunListener {
         restAssuredURLManager.clearURL();
     }
 
+    public void inject(Object testInstance) {
+        testResourceManager.inject(testInstance);
+    }
+
     protected abstract void startQuarkus() throws Exception;
 
     protected abstract void stopQuarkus() throws Exception;

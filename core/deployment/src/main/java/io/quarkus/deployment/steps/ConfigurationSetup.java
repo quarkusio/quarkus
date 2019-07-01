@@ -20,7 +20,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
-import io.quarkus.deployment.builditem.BuildTimeConfigurationSourceBuildItem;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -38,6 +37,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.BuildTimeConfigurationBuildItem;
+import io.quarkus.deployment.builditem.BuildTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.BuildTimeConfigurationSourceBuildItem;
 import io.quarkus.deployment.builditem.BuildTimeRunTimeFixedConfigurationBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
@@ -75,6 +76,7 @@ import io.quarkus.runtime.configuration.DeploymentProfileConfigSource;
 import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.SimpleConfigurationProviderResolver;
+import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -163,6 +165,23 @@ public class ConfigurationSetup {
     }
 
     /**
+     * Calculate the build-time default values.
+     *
+     * @param defaultItems default values items
+     * @return the default values config source
+     */
+    @BuildStep
+    public BuildTimeConfigurationSourceBuildItem buildTimeDefaults(
+            List<BuildTimeConfigurationDefaultBuildItem> defaultItems) {
+        Map<String, String> map = new HashMap<>();
+        for (BuildTimeConfigurationDefaultBuildItem item : defaultItems) {
+            map.put(item.getKey(), item.getValue());
+        }
+        PropertiesConfigSource pcs = new PropertiesConfigSource(map, "Build time supplemental defaults", 0);
+        return new BuildTimeConfigurationSourceBuildItem(pcs);
+    }
+
+    /**
      * Run before anything that consumes configuration; sets up the main configuration definition instance.
      *
      * @param runTimeConfigConsumer the run time config consumer
@@ -186,6 +205,7 @@ public class ConfigurationSetup {
             Consumer<SubstrateResourceBuildItem> niResourceConsumer,
             Consumer<RunTimeConfigurationDefaultBuildItem> runTimeDefaultConsumer,
             List<BuildTimeConfigurationSourceBuildItem> configSourceItems,
+            List<BuildTimeConfigurationDefaultBuildItem> buildTimeDefaultItems,
             ExtensionClassLoaderBuildItem extensionClassLoaderBuildItem,
             ArchiveRootBuildItem archiveRootBuildItem) throws IOException, ClassNotFoundException {
 

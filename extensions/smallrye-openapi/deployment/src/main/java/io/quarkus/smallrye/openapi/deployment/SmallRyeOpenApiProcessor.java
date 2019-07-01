@@ -8,8 +8,11 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +29,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -38,6 +42,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.resteasy.deployment.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
@@ -222,10 +227,25 @@ public class SmallRyeOpenApiProcessor {
     }
 
     private OpenAPI generateAnnotationModel(IndexView indexView, ResteasyJaxrsConfigBuildItem jaxrsConfig) {
+        // build a composite index with additional JDK classes, because SmallRye-OpenAPI will check if some
+        // app types implement Map and Collection and will go through super classes until Object is reached,
+        // and yes, it even checks Object
+        // see https://github.com/quarkusio/quarkus/issues/2961
+        Indexer indexer = new Indexer();
+        Set<DotName> additionalIndex = new HashSet<>();
+        IndexingUtil.indexClass(Collection.class.getName(), indexer, indexView, additionalIndex,
+                SmallRyeOpenApiProcessor.class.getClassLoader());
+        IndexingUtil.indexClass(Map.class.getName(), indexer, indexView, additionalIndex,
+                SmallRyeOpenApiProcessor.class.getClassLoader());
+        IndexingUtil.indexClass(Object.class.getName(), indexer, indexView, additionalIndex,
+                SmallRyeOpenApiProcessor.class.getClassLoader());
+
+        CompositeIndex compositeIndex = CompositeIndex.create(indexView, indexer.complete());
+
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
-        return new OpenApiAnnotationScanner(openApiConfig, indexView,
-                Collections.singletonList(new RESTEasyExtension(jaxrsConfig, indexView))).scan();
+        return new OpenApiAnnotationScanner(openApiConfig, compositeIndex,
+                Collections.singletonList(new RESTEasyExtension(jaxrsConfig, compositeIndex))).scan();
     }
 
     private Result findStaticModel(ApplicationArchivesBuildItem archivesBuildItem) {

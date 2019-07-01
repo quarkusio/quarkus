@@ -53,7 +53,7 @@ public class IndexingUtil {
                 }
             }
         }
-        if (!beanInfo.superName().equals(OBJECT)) {
+        if (beanInfo.superName() != null && !beanInfo.superName().equals(OBJECT)) {
             indexClass(beanInfo.superName().toString(), indexer, quarkusIndex, additionalIndex, classLoader);
         }
     }

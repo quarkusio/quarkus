@@ -16,6 +16,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
+import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.SslTrustStoreSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -39,6 +40,7 @@ class SubstrateConfigBuildStep {
     void build(SslContextConfigurationRecorder sslContextConfigurationRecorder,
             List<SubstrateConfigBuildItem> substrateConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
+            List<JniBuildItem> jniBuildItems,
             List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
             BuildProducer<SubstrateProxyDefinitionBuildItem> proxy,
             BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle,
@@ -87,8 +89,7 @@ class SubstrateConfigBuildStep {
                 Path linuxPath = linuxLibDirectory.resolve(LIB_SUN_EC);
 
                 // We add . as it might be useful in a containerized world
-                // FIXME: it seems GraalVM does not support having multiple paths in java.library.path
-                //javaLibraryPathAdditionalPath.produce(new JavaLibraryPathAdditionalPathBuildItem("."));
+                javaLibraryPathAdditionalPath.produce(new JavaLibraryPathAdditionalPathBuildItem("."));
                 if (Files.exists(linuxPath)) {
                     // On Linux, the SunEC library is in jre/lib/amd64/
                     // This is useful for testing or if you have a similar environment in production
@@ -112,8 +113,19 @@ class SubstrateConfigBuildStep {
                 }
             }
         }
-
         nativeImage.produce(new SubstrateSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));
+
+        if (!jniBuildItems.isEmpty()) {
+            for (JniBuildItem jniBuildItem : jniBuildItems) {
+                if (jniBuildItem.getLibraryPaths() != null && !jniBuildItem.getLibraryPaths().isEmpty()) {
+                    for (String path : jniBuildItem.getLibraryPaths()) {
+                        javaLibraryPathAdditionalPath
+                                .produce(new JavaLibraryPathAdditionalPathBuildItem(path));
+                    }
+                }
+            }
+            nativeImage.produce(new SubstrateSystemPropertyBuildItem("quarkus.jni.enable", "true"));
+        }
     }
 
     private Boolean isSslNativeEnabled(SslNativeConfigBuildItem sslNativeConfig,

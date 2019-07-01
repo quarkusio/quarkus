@@ -450,3 +450,31 @@ When building an Uber-Jar you can specify entries that you want to exclude from 
 <1> The entries are relative to the root of the generated Uber-Jar. You can specify multiple entries by adding extra `<ignoredEntry>` elements.
 
 
+Uber-Jar's final name is configurable via a Maven's build settings `finalName` option or via a `finalName` configuration option as shown below.
+
+[source,xml,subs=attributes+]
+----
+<build>
+    <plugins>
+        <plugin>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-maven-plugin</artifactId>
+            <version>${quarkus.version}</version>
+            <configuration>
+                <uberJar>true</uberJar>
+                <finalName>uber-jar-name</finalName> <1>
+            </configuration>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>build</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+----
+
+<1> This configuration will output a file `uber-jar-name-runner.jar` inside the `target` directory. When `finalName` option is not set, project's build final name is used.
+

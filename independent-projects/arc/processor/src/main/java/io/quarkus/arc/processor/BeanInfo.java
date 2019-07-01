@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -467,6 +468,26 @@ public class BeanInfo implements InjectionTargetInfo {
         }
         builder.append("]");
         return builder.toString();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        BeanInfo other = (BeanInfo) obj;
+        return Objects.equals(identifier, other.identifier);
     }
 
     private Type initProviderType(AnnotationTarget target, ClassInfo implClazz) {

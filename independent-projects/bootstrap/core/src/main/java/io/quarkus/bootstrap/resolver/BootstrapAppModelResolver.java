@@ -129,16 +129,16 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     }
 
     public AppModel resolveManagedModel(AppArtifact appArtifact, List<AppDependency> directDeps, AppArtifact managingProject) throws AppModelResolverException {
+        return doResolveModel(appArtifact, toAetherDeps(directDeps), managingProject);
+    }
+
+    private AppModel doResolveModel(AppArtifact appArtifact, List<Dependency> directMvnDeps, AppArtifact managingProject) throws AppModelResolverException {
         List<Dependency> managedDeps = Collections.emptyList();
         if(managingProject != null) {
             managedDeps = mvn.resolveDescriptor(toAetherArtifact(managingProject)).getManagedDependencies();
         }
-        return doResolveModel(appArtifact, toAetherDeps(directDeps), managedDeps);
-    }
-
-    private AppModel doResolveModel(AppArtifact appArtifact, List<Dependency> directMvnDeps, List<Dependency> managedMvnDeps) throws AppModelResolverException {
         return injectDeploymentDependencies(appArtifact, mvn.resolveManagedDependencies(toAetherArtifact(appArtifact),
-                directMvnDeps, managedMvnDeps, devmode ? new String[] { "test" } : new String[0]).getRoot(), managedMvnDeps);
+                directMvnDeps, managedDeps, devmode ? new String[] { "test" } : new String[0]).getRoot(), managedDeps);
     }
 
     @Override

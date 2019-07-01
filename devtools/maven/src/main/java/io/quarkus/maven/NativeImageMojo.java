@@ -195,6 +195,7 @@ public class NativeImageMojo extends AbstractMojo {
         if (!buildDir.isDirectory() || !new File(buildDir, "lib").isDirectory()) {
             // The runner JAR has not been built yet, so we are going to build it
             final AppArtifact appCoords;
+            AppArtifact managingProject = null;
             DefaultArtifact appMvnArtifact = null;
             if (appArtifact == null) {
                 appMvnArtifact = new DefaultArtifact(project.getArtifact().getGroupId(),
@@ -251,6 +252,11 @@ public class NativeImageMojo extends AbstractMojo {
                     appCoords = new AppArtifact(groupId, artifactId, classifier, type, version);
                     appMvnArtifact = new DefaultArtifact(groupId, artifactId, classifier, type, version);
                 }
+                managingProject = new AppArtifact(project.getArtifact().getGroupId(),
+                        project.getArtifact().getArtifactId(),
+                        project.getArtifact().getClassifier(),
+                        project.getArtifact().getArtifactHandler().getExtension(),
+                        project.getArtifact().getVersion());
             }
 
             final AppModel appModel;
@@ -263,7 +269,7 @@ public class NativeImageMojo extends AbstractMojo {
                         .build();
                 appCoords.setPath(mvn.resolve(appMvnArtifact).getArtifact().getFile().toPath());
                 modelResolver = new BootstrapAppModelResolver(mvn);
-                appModel = modelResolver.resolveModel(appCoords);
+                appModel = modelResolver.resolveManagedModel(appCoords, Collections.emptyList(), managingProject);
             } catch (AppModelResolverException e) {
                 throw new MojoExecutionException("Failed to resolve application model dependencies for " + appCoords, e);
             }

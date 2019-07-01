@@ -100,4 +100,8 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
         }
         expectedResult.add(new AppDependency(artifact.toAppArtifact(), scope, optional));
     }
+
+    protected void addManagedDep(TsArtifact dep) {
+        root.addManagedDependency(new TsDependency(dep));
+    }
 }

@@ -111,7 +111,7 @@
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>3.3.0</rest-assured.version>
         <junit4.version>4.12</junit4.version>
-        <junit.jupiter.version>5.4.2</junit.jupiter.version>
+        <junit.jupiter.version>5.5.0</junit.jupiter.version>
         <assertj.version>3.12.2</assertj.version>
         <json-smart.version>2.3</json-smart.version>
         <infinispan.version>10.0.0.Beta3</infinispan.version>

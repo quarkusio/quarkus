@@ -377,14 +377,8 @@ final class Beans {
     }
 
     static boolean matches(BeanInfo bean, TypeAndQualifiers typeAndQualifiers) {
-        // Bean has all the required qualifiers
-        for (AnnotationInstance requiredQualifier : typeAndQualifiers.qualifiers) {
-            if (!hasQualifier(bean, requiredQualifier)) {
-                return false;
-            }
-        }
-        // Bean has a bean type that matches the required type
-        return matchesType(bean, typeAndQualifiers.type);
+        // Bean has all the required qualifiers and  a bean type that matches the required type
+        return hasQualifiers(bean, typeAndQualifiers.qualifiers) && matchesType(bean, typeAndQualifiers.type);
     }
 
     static boolean matchesType(BeanInfo bean, Type requiredType) {
@@ -502,6 +496,15 @@ final class Beans {
         Integer priority1 = bean1.getDeclaringBean() != null ? bean1.getDeclaringBean().getAlternativePriority()
                 : bean1.getAlternativePriority();
         return priority2.compareTo(priority1);
+    }
+
+    static boolean hasQualifiers(BeanInfo bean, Iterable<AnnotationInstance> required) {
+        for (AnnotationInstance requiredQualifier : required) {
+            if (!hasQualifier(bean, requiredQualifier)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     static boolean hasQualifier(BeanInfo bean, AnnotationInstance required) {

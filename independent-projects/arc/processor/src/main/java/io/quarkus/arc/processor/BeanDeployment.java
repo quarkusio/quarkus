@@ -296,34 +296,41 @@ public class BeanDeployment {
             List<BeanInfo> producers = beans.stream().filter(b -> b.isProducerMethod() || b.isProducerField())
                     .collect(Collectors.toList());
             List<InjectionPointInfo> instanceInjectionPoints = injectionPoints.stream()
-                    .filter(ip -> BuiltinBean.resolve(ip) == BuiltinBean.INSTANCE)
+                    .filter(BuiltinBean.INSTANCE::matches)
                     .collect(Collectors.toList());
-            for (BeanInfo bean : beans) {
+            Set<BeanInfo> injected = injectionPoints.stream().map(InjectionPointInfo::getResolvedBean)
+                    .collect(Collectors.toSet());
+            Set<BeanInfo> declaresProducer = producers.stream().map(BeanInfo::getDeclaringBean).collect(Collectors.toSet());
+            Set<BeanInfo> declaresObserver = observers.stream().map(ObserverInfo::getDeclaringBean).collect(Collectors.toSet());
+            test: for (BeanInfo bean : beans) {
                 // Named beans can be used in templates and expressions
                 if (bean.getName() != null) {
-                    continue;
+                    continue test;
                 }
                 // Custom exclusions
-                if (unusedExclusions.stream().anyMatch(e -> e.test(bean))) {
-                    continue;
+                for (Predicate<BeanInfo> exclusion : unusedExclusions) {
+                    if (exclusion.test(bean)) {
+                        continue test;
+                    }
                 }
                 // Is injected
-                if (injectionPoints.stream().anyMatch(ip -> bean.equals(ip.getResolvedBean()))) {
-                    continue;
+                if (injected.contains(bean)) {
+                    continue test;
                 }
                 // Declares an observer method
-                if (observers.stream().anyMatch((o) -> bean.equals(o.getDeclaringBean()))) {
-                    continue;
+                if (declaresObserver.contains(bean)) {
+                    continue test;
                 }
                 // Declares a producer - see also second pass
-                if (producers.stream().anyMatch(b -> bean.equals(b.getDeclaringBean()))) {
-                    continue;
+                if (declaresProducer.contains(bean)) {
+                    continue test;
                 }
                 // Instance<Foo>
-                if (instanceInjectionPoints.stream()
-                        .anyMatch(ip -> Beans.matchesType(bean, ip.getRequiredType().asParameterizedType().arguments().get(0))
-                                && ip.getRequiredQualifiers().stream().allMatch(q -> Beans.hasQualifier(bean, q)))) {
-                    continue;
+                for (InjectionPointInfo injectionPoint : instanceInjectionPoints) {
+                    if (Beans.hasQualifiers(bean, injectionPoint.getRequiredQualifiers()) && Beans.matchesType(bean,
+                            injectionPoint.getRequiredType().asParameterizedType().arguments().get(0))) {
+                        continue test;
+                    }
                 }
                 if (bean.isProducerField() || bean.isProducerMethod()) {
                     // This bean is very likely an unused producer
@@ -345,7 +352,9 @@ public class BeanDeployment {
             if (!removable.isEmpty()) {
                 beans.removeAll(removable);
                 removedBeans.addAll(removable);
-                removedBeans.forEach(b -> LOGGER.debugf("Removed unused %s", b));
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debugf(removedBeans.stream().map(b -> "Removed unused " + b).collect(Collectors.joining("\n")));
+                }
             }
             LOGGER.debugf("Removed %s unused beans in %s ms", removable.size(), System.currentTimeMillis() - removalStart);
         }

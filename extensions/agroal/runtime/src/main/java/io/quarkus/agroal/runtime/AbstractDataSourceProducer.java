@@ -141,6 +141,9 @@ public abstract class AbstractDataSourceProducer {
         if (dataSourceRuntimeConfig.leakDetectionInterval.isPresent()) {
             poolConfiguration.leakTimeout(dataSourceRuntimeConfig.leakDetectionInterval.get());
         }
+        if (dataSourceRuntimeConfig.maxLifetime.isPresent()) {
+            poolConfiguration.maxLifetime(dataSourceRuntimeConfig.maxLifetime.get());
+        }
 
         // SSL support: we should push the driver specific code to the driver extensions but it will have to do for now
         if (disableSslSupport) {

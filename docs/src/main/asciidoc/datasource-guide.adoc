@@ -273,6 +273,10 @@ AgroalDataSource dataSource2;
 |java.time.Duration
 |PT3M, PT56S - see note below
 
+|quarkus.datasource.max-lifetime
+|java.time.Duration
+|PT3M, PT56S - see note below
+
 |quarkus.datasource.transaction-isolation-level
 |io.quarkus.agroal.runtime.TransactionIsolationLevel (enum)
 |none, read-committed, read-uncommitted, repeatable-read, serializable

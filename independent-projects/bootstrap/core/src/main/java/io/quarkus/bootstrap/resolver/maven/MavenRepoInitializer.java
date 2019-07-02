@@ -1,9 +1,14 @@
 package io.quarkus.bootstrap.resolver.maven;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.StringTokenizer;
 
 import org.apache.commons.cli.CommandLine;
@@ -24,6 +29,7 @@ import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.apache.maven.settings.Mirror;
 import org.apache.maven.settings.Profile;
 import org.apache.maven.settings.Repository;
+import org.apache.maven.settings.Server;
 import org.apache.maven.settings.Settings;
 import org.apache.maven.settings.SettingsUtils;
 import org.apache.maven.settings.building.DefaultSettingsBuilderFactory;
@@ -31,6 +37,11 @@ import org.apache.maven.settings.building.DefaultSettingsBuildingRequest;
 import org.apache.maven.settings.building.SettingsBuildingException;
 import org.apache.maven.settings.building.SettingsBuildingResult;
 import org.apache.maven.settings.building.SettingsProblem;
+import org.apache.maven.settings.crypto.DefaultSettingsDecryptionRequest;
+import org.apache.maven.settings.crypto.SettingsDecryptionResult;
+import org.codehaus.plexus.configuration.xml.XmlPlexusConfiguration;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.eclipse.aether.ConfigurationProperties;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -47,6 +58,7 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
+import org.eclipse.aether.util.repository.DefaultAuthenticationSelector;
 import org.eclipse.aether.util.repository.DefaultMirrorSelector;
 import org.eclipse.aether.util.repository.DefaultProxySelector;
 import org.jboss.logging.Logger;
@@ -160,12 +172,6 @@ public class MavenRepoInitializer {
     public static DefaultRepositorySystemSession newSession(RepositorySystem system, Settings settings) {
         final DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
 
-        final org.apache.maven.settings.Proxy proxy = settings.getActiveProxy();
-        if (proxy != null) {
-            session.setProxySelector(new DefaultProxySelector()
-                    .add(toAetherProxy(proxy), proxy.getNonProxyHosts()));
-        }
-
         final List<Mirror> mirrors = settings.getMirrors();
         if(mirrors != null && !mirrors.isEmpty()) {
             final DefaultMirrorSelector ms = new DefaultMirrorSelector();
@@ -194,6 +200,52 @@ public class MavenRepoInitializer {
                 session.setChecksumPolicy(RepositoryPolicy.CHECKSUM_POLICY_WARN);
             }
         }
+
+        final DefaultSettingsDecryptionRequest decrypt = new DefaultSettingsDecryptionRequest();
+        decrypt.setProxies(settings.getProxies());
+        decrypt.setServers(settings.getServers());
+        final SettingsDecryptionResult decrypted = new SettingsDecrypterImpl().decrypt(decrypt);
+        if(decrypted.getProblems().isEmpty()) {
+            for(SettingsProblem p : decrypted.getProblems()) {
+                log.warn("Problem decrypting maven settings: " + p);
+            }
+        }
+
+        final DefaultProxySelector proxySelector = new DefaultProxySelector();
+        for (org.apache.maven.settings.Proxy p : decrypted.getProxies()) {
+            proxySelector.add(toAetherProxy(p), p.getNonProxyHosts());
+        }
+        session.setProxySelector(proxySelector);
+
+        final Map<Object, Object> configProps = new LinkedHashMap<>();
+        configProps.put( ConfigurationProperties.USER_AGENT, getUserAgent() );
+        configProps.put( ConfigurationProperties.INTERACTIVE, settings.isInteractiveMode() );
+        configProps.putAll( System.getProperties() );
+
+        final DefaultAuthenticationSelector authSelector = new DefaultAuthenticationSelector();
+        for (Server server : decrypted.getServers()) {
+            AuthenticationBuilder authBuilder = new AuthenticationBuilder();
+            authBuilder.addUsername(server.getUsername()).addPassword(server.getPassword());
+            authBuilder.addPrivateKey(server.getPrivateKey(), server.getPassphrase());
+            authSelector.add(server.getId(), authBuilder.build());
+
+            if (server.getConfiguration() != null) {
+                Xpp3Dom dom = (Xpp3Dom) server.getConfiguration();
+                for (int i = dom.getChildCount() - 1; i >= 0; i--) {
+                    Xpp3Dom child = dom.getChild(i);
+                    if ("wagonProvider".equals(child.getName())) {
+                        dom.removeChild(i);
+                    }
+                }
+                XmlPlexusConfiguration config = new XmlPlexusConfiguration(dom);
+                configProps.put("aether.connector.wagon.config." + server.getId(), config);
+            }
+            configProps.put("aether.connector.perms.fileMode." + server.getId(), server.getFilePermissions());
+            configProps.put("aether.connector.perms.dirMode." + server.getId(), server.getDirectoryPermissions());
+        }
+        session.setAuthenticationSelector(authSelector);
+
+        session.setConfigProperties(configProps);
 
         return session;
     }
@@ -416,5 +468,23 @@ public class MavenRepoInitializer {
 
     private static boolean isEmpty(String str) {
         return str == null || str.isEmpty();
+    }
+
+    private static String getUserAgent() {
+        return "Apache-Maven/" + getMavenVersion() + " (Java " + PropertyUtils.getProperty("java.version") + "; "
+                + PropertyUtils.getProperty("os.name") + " " + PropertyUtils.getProperty("os.version") + ")";
+    }
+
+    private static String getMavenVersion() {
+        final Properties props = new Properties();
+        try (InputStream is = MavenRepoInitializer.class.getResourceAsStream(
+                "/META-INF/maven/org.apache.maven/maven-core/pom.properties")) {
+            if (is != null) {
+                props.load(is);
+            }
+        } catch (IOException e) {
+            log.debug("Failed to read Maven version", e);
+        }
+        return props.getProperty("version", "unknown-version");
     }
 }

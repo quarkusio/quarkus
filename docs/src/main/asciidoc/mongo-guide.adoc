@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-
-include::./attributes.adoc[]
 = Quarkus - Using the MongoDB Client
+include::./attributes.adoc[]
 
 MongoDB is a well known NoSQL Database that is widely used.
 
@@ -49,20 +48,12 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=mongo-client \
     -DclassName="org.acme.rest.json.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy-jsonb,mongo-client"
+    -Dextensions="resteasy-jsonb,mongodb-client"
 ----
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS, JSON-B and Mongo Client extensions.
+This command generates a Maven structure importing the RESTEasy/JAX-RS, JSON-B and MongoDB Client extensions.
+After this, the quarkus-mongodb-client extension has been added to your `pom.xml`.
 
-After this, the quarkus-mongo-client extension has been added to your `pom.xml`.
-You can also add it manually if you don't want to use the maven quarkus plugin to create your project :
-[source,xml]
-----
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-mongo-client</artifactId>
-    </dependency>
-----
 
 == Creating your first JSON REST service
 
@@ -125,7 +116,7 @@ public class Fruit {
 
 Nothing fancy. One important thing to note is that having a default constructor is required by the JSON serialization layer.
 
-Now create a `org.acme.rest.json.FruitService` that will be the business layer of our application and store/load the fruits from the mongo database.
+Now create a `org.acme.rest.json.FruitService` that will be the business layer of our application and store/load the fruits from the mongoDB database.
 
 [source,java]
 ----
@@ -201,22 +192,22 @@ public class FruitResource {
 }
 ----
 
-The implementation is pretty straightforward and you just need to define your endpoints using the JAX-RS annotations and use the FruitService to list/add new fruits.
+The implementation is pretty straightforward and you just need to define your endpoints using the JAX-RS annotations and use the `FruitService` to list/add new fruits.
 
 == Configuring the mongo database
-The main property to configure is the URL to access to MongoDB, almost all Mongo configuration can be put on the connection URI so we advise you to do so, you can find more information on the Mongo documentation site : https://docs.mongodb.com/manual/reference/connection-string/
+The main property to configure is the URL to access to MongoDB, almost all configuration can be included in the connection URI so we advise you to do so, you can find more information in the MongoDB documentation: https://docs.mongodb.com/manual/reference/connection-string/
 
 A sample configuration should look like this:
 [source,properties]
 ----
-# configure mongo client for a replica set of two nodes
+# configure the mongoDB client for a replica set of two nodes
 quarkus.mongodb.connectionString = mongodb://mongo1:27017,mongo2:27017
 ----
 
 If you need more configuration properties, there is a full list at the end of this guide.
 
 == Running a Mongo Database
-As by default, `MongoClient` is configure to access a local Mongo database on port 27017 (the default Mongo port), if you have a local running database on this port, there is nothing more to do before being able to test it!
+As by default, `MongoClient` is configure to access a local Mongo database on port 27017 (the default MongoDB port), if you have a local running database on this port, there is nothing more to do before being able to test it!
 
 If you want to use Docker to run a Mongo database, you can use the following command to launch one:
 [source,shell]
@@ -236,9 +227,10 @@ You can now interact with your REST service:
  * open a browser to `http://localhost:8080/fruits.html`
  * add new fruits to the list via the form
 
-== Reactive Mongo Client
-A reactive Mongo Client is included in Quarkus.
-Using it is as easy as using the classic Mongo Client. You can rewrite the previous example to use it like the following.
+== Reactive MongoDB Client
+A reactive MongoDB Client is included in Quarkus.
+Using it is as easy as using the classic MongoDB Client.
+You can rewrite the previous example to use it like the following.
 
 [source,java]
 ----
@@ -314,16 +306,13 @@ public class ReactiveFruitResource {
 }
 ----
 
-== Simplifying Mongo Client usage
-One of the drawback of using directly the Mongo Client, is that you need to manually transform your objects to/from a Mongo `Document`.
-To facilitate this there is two ways.
+== Simplifying MongoDB Client usage using BSON codec
 
-=== Using a Bson Codec
-By using a Bson `Codec`, the Mongo Client will take care of the transformation of your domain object to/from a Mongo `Document` automatically.
+By using a Bson `Codec`, the MongoDB Client will take care of the transformation of your domain object to/from a MongoDB `Document` automatically.
 
-First you need to create a Bson `Codec` that will tells Bson how to transform your entity to/from a Mongo `Document`.
-Here we use a `CollectibleCodec` as our object is retrievable from the database (it has a Mongo identifier), if not we would have used a `Codec` instead.
-More information on the codec documentation : https://mongodb.github.io/mongo-java-driver/3.10/bson/codecs.
+First you need to create a Bson `Codec` that will tell Bson how to transform your entity to/from a MongoDB `Document`.
+Here we use a `CollectibleCodec` as our object is retrievable from the database (it has a MongoDB identifier), if not we would have used a `Codec` instead.
+More information in the codec documentation: https://mongodb.github.io/mongo-java-driver/3.10/bson/codecs.
 
 [source,java]
 ----
@@ -393,7 +382,7 @@ public class FruitCodec implements CollectibleCodec<Fruit> {
 ----
 
 
-Then you need to create a `CodecProvider` to linked this `Codec` to the `Fruit` class.
+Then you need to create a `CodecProvider` to link this `Codec` to the `Fruit` class.
 
 [source,java]
 ----
@@ -467,7 +456,7 @@ public class CodecFruitService {
 
 == Building a native executable
 
-You can use the Mongo client in a native executable.
+You can use the MongoDB client in a native executable.
 
 If you want to use SSL/TLS encryption, you need to add these properties in your `application.properties`:
 ----
@@ -488,14 +477,14 @@ Currently, Quarkus doesn't support the `mongodb+srv` protocol in native mode.
 
 == Conclusion
 
-Accessing a Mongo database from a Mongo Client is easy with Quarkus as it provides configuration and native support for it.
+Accessing a Mongo database from a MongoDB Client is easy with Quarkus as it provides configuration and native support for it.
 
 == Connection properties
 `quarkus.mongodb.connection-string`:: (e.g. `mongodb://mongo1:27017,mongo2:27017`)
 MongoDB connection string, this is a URI where a lot of options can be passed : https://docs.mongodb.com/manual/reference/connection-string/
 
 `quarkus.mongodb.hosts`::
-Coma separated lits of hosts.
+Comma separated list of hosts.
 
 `quarkus.mongodb.application-name`::
 Application name.
@@ -504,31 +493,31 @@ Application name.
 Maximum number of connections in the connection pool.
 
 `quarkus.mongodb.min-pool-size`::
-Minumum number of connections in the connection pool.
+Minimum number of connections in the connection pool.
 
 `quarkus.mongodb.max-connection-idle-time`::
-Maximum idle time in milliseconds of a pooled connection. A connection that exceeds this limit will be closed.
+Maximum idle time of a pooled connection. A connection that exceeds this limit will be closed.
 
 `quarkus.mongodb.max-connection-life-time`::
-Maximum life time in milliseconds of a pooled connection. A connection that exceeds this limit will be closed.
+Maximum life time of a pooled connection. A connection that exceeds this limit will be closed.
 
 `quarkus.mongodb.wait-queue-timeout`::
-The maximum wait time in milliseconds that a thread may wait for a connection to become available.
+The maximum wait time that a thread may wait for a connection to become available.
 
 `quarkus.mongodb.maintenance-frequency`::
-Configures the time period in milliseconds between runs of the maintenance job. Default is 0.
+Configures the time period between runs of the maintenance job. Default is 0.
 
 `quarkus.mongodb.maintenance-initial-delay`::
-Configures period of time in milliseconds to wait before running the first maintenance job on the connection pool.
+Configures period of time to wait before running the first maintenance job on the connection pool.
 
 `quarkus.mongodb.wait-queue-multiple`::
 This multiplier, multiplied with the `maxPoolSi` setting, gives the maximum number of threads that may be waiting for a connection to become available from the pool. All further threads will get an exception right away.
 
 `quarkus.mongodb.connect-timeout`::
-How long in milliseconds a connection can take to be opened before timing out.
+How long a connection can take to be opened before timing out.
 
 `quarkus.mongodb.socket-timeout`::
-How long in milliseconds a send or receive on a socket can take before timing out.
+How long a send or receive on a socket can take before timing out.
 
 `quarkus.mongodb.tls-insecure`::
 If connecting with TLS, this option enables insecure TLS connections. Default to false.
@@ -540,13 +529,13 @@ Whether to connect using TLS. Default to false.
 Implies that the hosts given are a seed list, and the driver will attempt to find all members of the set.
 
 `quarkus.mongodb.server-selection-timeout`::
-How long in milliseconds the driver will wait for server selection to succeed before throwing an exception.
+How long the driver will wait for server selection to succeed before throwing an exception.
 
 `quarkus.mongodb.local-threshold`::
-When choosing among multiple MongoDB servers to send a request, the driver will only send that request to a server whose ping time in milliseconds is less than or equal to the server with the fastest ping time plus the local threshold.
+When choosing among multiple MongoDB servers to send a request, the driver will only send that request to a server whose ping time is less than or equal to the server with the fastest ping time plus the local threshold.
 
 `quarkus.mongodb.heartbeat-frequency`::
-The frequency in milliseconds that the driver will attempt to determine the current state of each server in the cluster.
+The frequency that the driver will attempt to determine the current state of each server in the cluster.
 
 `quarkus.mongodb.read-preference`::
 Configures the read preferences. Supported values are: `primary|primaryPreferred|secondary|secondaryPreferred|nearest`
@@ -573,7 +562,7 @@ The value is typically a number, but can also be the `majority` string.
 If set to `true`, the driver will retry supported write operations if they fail due to a network error. The default is `false`.
 
 `quarkus.mongodb.write-concern.w-timeout`::
-When set, the driver adds `wtimeout : ms`  to all write commands. It requires `safe` to be `true`. Time given in ms.
+When set, the driver adds `wtimeout : ms`  to all write commands. It requires `safe` to be `true`.
 
 === Credentials
 `quarkus.mongodb.credentials.username`::

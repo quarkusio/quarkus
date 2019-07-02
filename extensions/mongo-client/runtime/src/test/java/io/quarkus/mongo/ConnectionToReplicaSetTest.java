@@ -12,7 +12,6 @@ import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import com.mongodb.client.model.Collation;
 import com.mongodb.client.model.changestream.FullDocument;
 import com.mongodb.reactivestreams.client.MongoClients;
 
@@ -56,7 +55,7 @@ class ConnectionToReplicaSetTest extends MongoWithReplicasTestBase {
         client.watch(new ChangeStreamOptions().fullDocument(FullDocument.DEFAULT))
                 .onError(failures::add).ignore().run();
         client.watch((ChangeStreamOptions) null).onError(failures::add).ignore().run();
-        client.watch(Document.class, new ChangeStreamOptions().collation(Collation.builder().locale("simple").build()))
+        client.watch(Document.class)
                 .onError(failures::add).ignore().run();
 
         ReactiveStreams.fromPublisher(client.watchAsPublisher()).onError(failures::add).ignore().run();

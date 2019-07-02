@@ -177,7 +177,7 @@ exposed via the extensions you currently have installed. These options are comme
 when applicable. For example this HTTP port config entry will appear as:
 
 
-[source]
+[source,properties]
 --
 #
 # The HTTP port
@@ -188,7 +188,7 @@ when applicable. For example this HTTP port config entry will appear as:
 Rather than generating an example config file you can also add these to you actual config file by setting the `-Dfile`
 parameter:
 
-[source]
+[source,shell]
 --
 ./mvnw quarkus:generate-config -Dfile=application.properties
 --
@@ -229,6 +229,7 @@ select between then via a profile name.
 
 The syntax for this is `%{profile}.config.key=value`. For example if I have the following:
 
+[source,properties]
 ----
 quarkus.http.port=9090
 %dev.quarkus.http.port=8181
@@ -248,6 +249,7 @@ define the names of these profiles anywhere, all that is necessary is to create 
 name, and then set the current profile to that name. For example if I want a 'staging' profile with a different HTTP port
 I can add the following to `application.properties`:
 
+[source,properties]
 ----
 quarkus.http.port=9090
 %staging.quarkus.http.port=9999
@@ -312,7 +314,7 @@ public class MicroProfileCustomValueConverter implements Converter<MicroProfileC
 Then you need to include fully qualified class name of converter in a service file `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
 If you have more converters simply add their class names in this file as well. Single fully qualified class name per line, for example:
 
-[source,shell]
+[source]
 ----
 org.acme.config.MicroProfileCustomValueConverter
 org.acme.config.SomeOtherConverter

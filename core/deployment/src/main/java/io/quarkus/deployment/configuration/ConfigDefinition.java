@@ -73,11 +73,17 @@ public class ConfigDefinition extends CompoundConfigType {
     private final TreeMap<String, RootInfo> rootTypesByContainingName = new TreeMap<>();
     private final FieldDescriptor rootField;
     private final TreeMap<String, String> loadedProperties = new TreeMap<>();
+    private final boolean deferResolution;
 
-    public ConfigDefinition(final FieldDescriptor rootField) {
+    public ConfigDefinition(final FieldDescriptor rootField, final boolean deferResolution) {
         super(null, null, false);
+        this.deferResolution = deferResolution;
         Assert.checkNotNullParam("rootField", rootField);
         this.rootField = rootField;
+    }
+
+    public ConfigDefinition(final FieldDescriptor rootField) {
+        this(rootField, false);
     }
 
     void acceptConfigurationValueIntoLeaf(final LeafConfigType leafType, final NameIterator name,
@@ -388,7 +394,16 @@ public class ConfigDefinition extends CompoundConfigType {
                             name.goToEnd();
                             leafType.acceptConfigurationValue(name, cache, config);
                             final String nameString = name.toString();
-                            definition.loadedProperties.put(nameString, config.getValue(nameString, String.class));
+                            if (definition.deferResolution) {
+                                boolean old = ExpandingConfigSource.setExpanding(false);
+                                try {
+                                    definition.loadedProperties.put(nameString, config.getValue(nameString, String.class));
+                                } finally {
+                                    ExpandingConfigSource.setExpanding(old);
+                                }
+                            } else {
+                                definition.loadedProperties.put(nameString, config.getValue(nameString, String.class));
+                            }
                             continue outer;
                         }
                     }

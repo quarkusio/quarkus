@@ -261,7 +261,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
 
     @Test
     void testAggregate() {
-        final int numDocs = 200;
+        final int numDocs = 100;
 
         final String collection = randomCollection();
         List<Document> pipeline = new ArrayList<>();
@@ -287,7 +287,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
                 .join()
                 .map(doc -> doc.getInteger("foo_starting_with_bar1"));
 
-        assertThat(optional).contains(111);
+        assertThat(optional).contains(11);
     }
 
 }

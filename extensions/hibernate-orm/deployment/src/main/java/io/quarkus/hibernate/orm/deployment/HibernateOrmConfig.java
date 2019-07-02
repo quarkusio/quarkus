@@ -207,10 +207,17 @@ public class HibernateOrmConfig {
         @ConfigItem
         public Optional<String> charset;
 
+        /**
+         * Whether Hibernate should quote all identifiers.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean globallyQuotedIdentifiers;
+
         public boolean isAnyPropertySet() {
             return !"none".equals(generation) || defaultCatalog.isPresent() || defaultSchema.isPresent()
                     || generationHaltOnError
-                    || charset.isPresent();
+                    || charset.isPresent()
+                    || globallyQuotedIdentifiers;
         }
     }
 

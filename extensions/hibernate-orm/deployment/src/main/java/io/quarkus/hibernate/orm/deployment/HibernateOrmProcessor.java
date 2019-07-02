@@ -429,6 +429,10 @@ public final class HibernateOrmProcessor {
                 hibernateConfig.database.defaultSchema.ifPresent(
                         schema -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_SCHEMA, schema));
 
+                if (hibernateConfig.database.globallyQuotedIdentifiers) {
+                    desc.getProperties().setProperty(AvailableSettings.GLOBALLY_QUOTED_IDENTIFIERS, "true");
+                }
+
                 // Query
                 if (hibernateConfig.batchFetchSize > 0) {
                     desc.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE,

@@ -31,21 +31,23 @@ public class DatabaseListTest extends MongoTestBase {
 
     @Test
     void list() {
-        assertThat(client.listDatabaseNames().toList().run().toCompletableFuture().join()).hasSize(3);
+        assertThat(client.listDatabaseNames().toList().run().toCompletableFuture().join().size()).isBetween(2, 3);
         assertThat(ReactiveStreams.fromPublisher(client.listDatabaseNamesAsPublisher())
-                .toList().run().toCompletableFuture().join()).hasSize(3);
-        assertThat(client.listDatabases().toList().run().toCompletableFuture().join()).hasSize(3);
-        assertThat(client.listDatabases(Document.class).toList().run().toCompletableFuture().join()).hasSize(3);
+                .toList().run().toCompletableFuture().join().size()).isBetween(2, 3);
+        assertThat(client.listDatabases().toList().run().toCompletableFuture().join().size()).isBetween(2, 3);
+        assertThat(client.listDatabases(Document.class).toList().run().toCompletableFuture().join().size())
+                .isBetween(2, 3);
         assertThat(client.listDatabases(Document.class, new DatabaseListOptions().maxTime(1, TimeUnit.SECONDS))
-                .toList().run().toCompletableFuture().join()).hasSize(3);
+                .toList().run().toCompletableFuture().join().size()).isBetween(2, 3);
         assertThat(client.listDatabases(Document.class, null)
-                .toList().run().toCompletableFuture().join()).hasSize(3);
+                .toList().run().toCompletableFuture().join().size()).isBetween(2, 3);
         assertThat(client.listDatabases(new DatabaseListOptions().nameOnly(true)).toList().run()
-                .toCompletableFuture().join()).hasSize(3);
-        assertThat(client.listDatabases((DatabaseListOptions) null).toList().run().toCompletableFuture().join()).hasSize(3);
+                .toCompletableFuture().join().size()).isBetween(2, 3);
+        assertThat(client.listDatabases((DatabaseListOptions) null).toList().run().toCompletableFuture().join().size())
+                .isBetween(2, 3);
         assertThat(ReactiveStreams.fromPublisher(client.listDatabasesAsPublisher()).toList().run()
-                .toCompletableFuture().join()).hasSize(3);
+                .toCompletableFuture().join().size()).isBetween(2, 3);
         assertThat(ReactiveStreams.fromPublisher(client.listDatabasesAsPublisher(Document.class)).toList().run()
-                .toCompletableFuture().join()).hasSize(3);
+                .toCompletableFuture().join().size()).isBetween(2, 3);
     }
 }

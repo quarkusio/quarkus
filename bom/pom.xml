@@ -493,7 +493,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-mongo-client</artifactId>
+                <artifactId>quarkus-mongodb-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

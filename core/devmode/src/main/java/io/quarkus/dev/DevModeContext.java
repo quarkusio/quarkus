@@ -21,6 +21,7 @@ public class DevModeContext implements Serializable {
     private final List<URL> classPath = new ArrayList<>();
     private final List<ModuleInfo> modules = new ArrayList<>();
     private final Map<String, String> systemProperties = new HashMap<>();
+    private final Map<String, String> buildSystemProperties = new HashMap<>();
 
     public List<URL> getClassPath() {
         return classPath;
@@ -32,6 +33,10 @@ public class DevModeContext implements Serializable {
 
     public Map<String, String> getSystemProperties() {
         return systemProperties;
+    }
+
+    public Map<String, String> getBuildSystemProperties() {
+        return buildSystemProperties;
     }
 
     public static class ModuleInfo implements Serializable {

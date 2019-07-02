@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.logging.Handler;
@@ -43,6 +44,7 @@ public class RuntimeRunner implements Runnable, Closeable {
     private final List<Consumer<BuildChainBuilder>> chainCustomizers;
     private final LaunchMode launchMode;
     private final LiveReloadBuildItem liveReloadState;
+    private final Properties buildSystemProperties;
 
     public RuntimeRunner(Builder builder) {
         this.target = builder.target;
@@ -64,6 +66,7 @@ public class RuntimeRunner implements Runnable, Closeable {
             this.transformerTarget = builder.transformerTarget;
             this.loader = builder.classLoader;
         }
+        this.buildSystemProperties = builder.buildSystemProperties;
     }
 
     @Override
@@ -158,6 +161,7 @@ public class RuntimeRunner implements Runnable, Closeable {
         private ClassOutput classOutput;
         private TransformerTarget transformerTarget;
         private LiveReloadBuildItem liveReloadState;
+        private Properties buildSystemProperties;
 
         public Builder setClassLoader(ClassLoader classLoader) {
             this.classLoader = classLoader;
@@ -226,6 +230,11 @@ public class RuntimeRunner implements Runnable, Closeable {
 
         public Builder setLiveReloadState(LiveReloadBuildItem liveReloadState) {
             this.liveReloadState = liveReloadState;
+            return this;
+        }
+
+        public Builder setBuildSystemProperties(final Properties buildSystemProperties) {
+            this.buildSystemProperties = buildSystemProperties;
             return this;
         }
 

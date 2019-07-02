@@ -303,7 +303,7 @@ public class Country {
     // ...
 
     @OneToMany
-    @Cache(CacheConcurrencyStrategy.READ_ONLY)
+    @Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
     List<City> cities;
 
     // ...

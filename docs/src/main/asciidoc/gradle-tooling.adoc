@@ -180,14 +180,28 @@ Hit `CTRL+C` to stop the application.
 
 == Debugging
 
-You can run a Quarkus application in debug mode using:
+By default, Quarkus starts in debug mode, listening to port `5005` without suspending the JVM.
+
+This behavior can be changed by giving the `debug` system property one of the following values:
+
+* `false` - the JVM will start with debug mode disabled
+* `true` - the JVM will start in debug mode and be suspended until a debugger is attached to port `5005`
+* `client` - the JVM will start in client mode and attempt to connect to `localhost:5005`
+* `{port}` - the JVM will start in debug mode and be suspended until a debugger is attached to `{port}`
+
+So, you can run a Quarkus application in debug mode listening to port `5006` instead of the default port `5005` using:
 
 [source,shell]
 ----
-./gradlew quarkusDev --debug=true
+./gradlew quarkusDev -Ddebug=5006
 ----
 
-Then, attach your debugger to `localhost:5005`.
+Then, attach your debugger to `localhost:5006`.
+
+[TIP]
+====
+You can also run `./gradlew quarkusDev -Ddebug` which is a shorthand for `./gradlew quarkusDev -Ddebug=true`.
+====
 
 == Import in your IDE
 

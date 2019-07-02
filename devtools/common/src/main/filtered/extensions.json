@@ -348,6 +348,15 @@
     "guide": "https://quarkus.io/guides/security-guide"
   },
   {
+    "name": "Security OAuth2",
+    "labels": [
+      "security",
+      "oauth2"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-elytron-security-oauth2"
+  },
+  {
     "name": "SmallRye Context Propagation",
     "shortName": "context propagation",
     "labels": [

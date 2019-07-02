@@ -77,6 +77,7 @@
 
         <!-- Security -->
         <module>elytron-security</module>
+        <module>elytron-security-oauth2</module>
         <module>smallrye-jwt</module>
         <module>keycloak</module>
 

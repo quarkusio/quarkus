@@ -88,7 +88,6 @@ public class WebsocketTestCase {
     @Test
     public void websocketClientEncodingAndDecodingTest() {
         String echoUriWsUri = echoUri.toString().replaceFirst("http", "ws");
-        System.out.println("echo uri: " + echoUriWsUri); // mstod remove
         RestAssured
                 .given()
                 .queryParam("echoServerUri", echoUriWsUri)

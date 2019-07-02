@@ -261,7 +261,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
 
     @Test
     void testAggregate() {
-        final int numDocs = 1000;
+        final int numDocs = 200;
 
         final String collection = randomCollection();
         List<Document> pipeline = new ArrayList<>();

@@ -53,16 +53,17 @@ class ConnectionToReplicaSetTest extends MongoWithReplicasTestBase {
         client.watch(Collections.emptyList(), Document.class, null).onError(failures::add).ignore().run();
         client.watch(Collections.emptyList(), Document.class,
                 new ChangeStreamOptions().maxAwaitTime(1, TimeUnit.SECONDS)).onError(failures::add).ignore().run();
-        client.watch(new ChangeStreamOptions().fullDocument(FullDocument.UPDATE_LOOKUP))
+        client.watch(new ChangeStreamOptions().fullDocument(FullDocument.DEFAULT))
                 .onError(failures::add).ignore().run();
         client.watch((ChangeStreamOptions) null).onError(failures::add).ignore().run();
-        client.watch(Document.class, new ChangeStreamOptions().collation(Collation.builder().backwards(true).build()))
+        client.watch(Document.class, new ChangeStreamOptions().collation(Collation.builder().locale("simple").build()))
                 .onError(failures::add).ignore().run();
 
         ReactiveStreams.fromPublisher(client.watchAsPublisher()).onError(failures::add).ignore().run();
         ReactiveStreams.fromPublisher(client.watchAsPublisher(Document.class)).onError(failures::add).ignore().run();
         ReactiveStreams.fromPublisher(client.watchAsPublisher(Collections.emptyList())).onError(failures::add).ignore().run();
 
+        System.out.println("Failures are: " + failures);
         assertThat(failures).isEmpty();
     }
 

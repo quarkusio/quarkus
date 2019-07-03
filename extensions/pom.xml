@@ -69,6 +69,7 @@
         <module>kafka-client</module>
         <module>kafka-streams</module>
         <module>tika</module>
+        <module>neo4j</module>
 
         <!-- Spring -->
         <module>spring-di</module>

@@ -144,6 +144,7 @@
         <jetty.version>9.4.19.v20190610</jetty.version>
         <flyway.version>5.2.4</flyway.version>
         <yasson.version>1.0.4</yasson.version>
+        <neo4j-java-driver.version>2.0.0-alpha03</neo4j-java-driver.version>
         <!-- Used for integration tests, to make sure webjars work-->
         <bootstrap.version>3.1.0</bootstrap.version>
         <keycloak.version>6.0.1</keycloak.version>
@@ -174,7 +175,7 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-            <!-- The Jackson BOM imports version 2.9.0 and we want all the versions to be in sync. 
+            <!-- The Jackson BOM imports version 2.9.0 and we want all the versions to be in sync.
                 Especially, 2.9.1 adds an automatic module name. -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -543,6 +544,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-tika</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-neo4j</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -1681,6 +1687,11 @@
                 <version>${elasticsearch-rest-client.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.neo4j.driver</groupId>
+                <artifactId>neo4j-java-driver</artifactId>
+                <version>${neo4j-java-driver.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.vertx</groupId>
                 <artifactId>vertx-core</artifactId>
                 <version>${vertx.version}</version>
@@ -2050,7 +2061,7 @@
                 <artifactId>bootstrap</artifactId>
                 <version>${bootstrap.version}</version>
             </dependency>
-            
+
             <!-- Kogito -->
             <dependency>
                 <groupId>org.kie.kogito</groupId>

@@ -53,6 +53,7 @@
         <module>kogito</module>
         <module>kubernetes-client</module>
         <module>tika</module>
+        <module>neo4j</module>
     </modules>
 
     <build>

@@ -70,6 +70,12 @@ public class DataSourceRuntimeConfig {
     public Optional<Duration> idleRemovalInterval;
 
     /**
+     * The max lifetime of a connection.
+     */
+    @ConfigItem
+    public Optional<Duration> maxLifetime;
+
+    /**
      * The transaction isolation level.
      */
     @ConfigItem

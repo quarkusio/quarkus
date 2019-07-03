@@ -35,12 +35,12 @@ public class DefaultDataSourceConfigTest {
     @Test
     public void testDefaultDataSourceInjection() throws SQLException {
         testDataSource(defaultDataSource, "username-default", 3, 13, 7, Duration.ofSeconds(53), Duration.ofSeconds(54),
-                Duration.ofSeconds(55), Duration.ofSeconds(56));
+                Duration.ofSeconds(55), Duration.ofSeconds(56), Duration.ofSeconds(57));
     }
 
     private static void testDataSource(AgroalDataSource dataSource, String username, int minSize, int maxSize,
             int initialSize, Duration backgroundValidationInterval, Duration acquisitionTimeout, Duration leakDetectionInterval,
-            Duration idleRemovalInterval) throws SQLException {
+            Duration idleRemovalInterval, Duration maxLifetime) throws SQLException {
         AgroalConnectionPoolConfiguration configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         AgroalConnectionFactoryConfiguration agroalConnectionFactoryConfiguration = configuration
                 .connectionFactoryConfiguration();
@@ -54,6 +54,7 @@ public class DefaultDataSourceConfigTest {
         assertEquals(acquisitionTimeout, configuration.acquisitionTimeout());
         assertEquals(leakDetectionInterval, configuration.leakTimeout());
         assertEquals(idleRemovalInterval, configuration.reapTimeout());
+        assertEquals(maxLifetime, configuration.maxLifetime());
         assertEquals(AgroalConnectionFactoryConfiguration.TransactionIsolation.SERIALIZABLE,
                 agroalConnectionFactoryConfiguration.jdbcTransactionIsolation());
         assertTrue(dataSource.getConfiguration().metricsEnabled());

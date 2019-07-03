@@ -10,7 +10,6 @@ import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.InvocationContextImpl;
 import io.quarkus.arc.InvocationContextImpl.InterceptorInvocation;
-import io.quarkus.arc.LazyValue;
 import io.quarkus.arc.Reflections;
 import io.quarkus.gizmo.MethodDescriptor;
 import java.lang.reflect.Constructor;
@@ -150,8 +149,6 @@ final class MethodDescriptors {
 
     static final MethodDescriptor CONTEXT_GET_IF_PRESENT = MethodDescriptor.ofMethod(Context.class, "get", Object.class,
             Contextual.class);
-
-    static final MethodDescriptor LAZY_VALUE_GET = MethodDescriptor.ofMethod(LazyValue.class, "get", Object.class);
 
     private MethodDescriptors() {
     }

@@ -94,7 +94,7 @@ public class InterceptorGenerator extends BeanGenerator {
         implementCreate(classOutput, interceptorCreator, interceptor, providerTypeName, baseName, injectionPointToProviderField,
                 interceptorToProviderField,
                 reflectionRegistration, targetPackage, isApplicationClass);
-        implementGet(interceptor, interceptorCreator, providerTypeName);
+        implementGet(interceptor, interceptorCreator, providerTypeName, baseName);
         implementGetTypes(interceptorCreator, beanTypes.getFieldDescriptor());
         implementGetBeanClass(interceptor, interceptorCreator);
         // Interceptors are always @Dependent and have always default qualifiers

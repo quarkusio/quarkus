@@ -20,6 +20,8 @@ import org.jboss.resteasy.api.validation.ViolationReport;
 
 @Provider
 public class ResteasyViolationExceptionMapper implements ExceptionMapper<ValidationException> {
+
+    @Override
     public Response toResponse(ValidationException exception) {
         if (exception instanceof ConstraintDefinitionException) {
             return buildResponse(unwrapException(exception), MediaType.TEXT_PLAIN, Status.INTERNAL_SERVER_ERROR);

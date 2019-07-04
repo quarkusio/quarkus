@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.ws.rs.Path;
@@ -16,6 +17,8 @@ import javax.ws.rs.ext.Providers;
 
 import org.apache.commons.logging.impl.Jdk14Logger;
 import org.apache.commons.logging.impl.LogFactoryImpl;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProviders;
 import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
@@ -29,6 +32,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ProxyBuilderImpl;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ResteasyClientProxy;
@@ -40,6 +44,7 @@ import io.quarkus.arc.deployment.BeanRegistrarBuildItem;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -64,6 +69,7 @@ import io.smallrye.restclient.DefaultResponseExceptionMapper;
 import io.smallrye.restclient.RestClientProxy;
 
 class SmallRyeRestClientProcessor {
+    private static final Logger log = Logger.getLogger(SmallRyeRestClientProcessor.class);
 
     private static final DotName REST_CLIENT = DotName.createSimple(RestClient.class.getName());
     private static final DotName REGISTER_REST_CLIENT = DotName.createSimple(RegisterRestClient.class.getName());
@@ -191,16 +197,20 @@ class SmallRyeRestClientProcessor {
 
             @Override
             public void register(RegistrationContext registrationContext) {
+                final Config config = ConfigProvider.getConfig();
+
                 for (Map.Entry<DotName, ClassInfo> entry : interfaces.entrySet()) {
-                    BeanConfigurator<Object> configurator = registrationContext.configure(entry.getKey());
+
+                    DotName restClientName = entry.getKey();
+                    BeanConfigurator<Object> configurator = registrationContext.configure(restClientName);
                     // The spec is not clear whether we should add superinterfaces too - let's keep aligned with SmallRye for now
-                    configurator.addType(entry.getKey());
-                    // We use @Singleton here as we do not need another proxy
-                    configurator.scope(BuiltinScope.SINGLETON.getInfo());
+                    configurator.addType(restClientName);
                     configurator.addQualifier(REST_CLIENT);
+                    final ScopeInfo scope = computeDefaultScope(config, entry);
+                    configurator.scope(scope);
                     configurator.creator(m -> {
                         // return new RestClientBase(proxyType, baseUri).create();
-                        ResultHandle interfaceHandle = m.loadClass(entry.getKey().toString());
+                        ResultHandle interfaceHandle = m.loadClass(restClientName.toString());
                         ResultHandle baseUriHandle = m.load(getBaseUri(entry.getValue()));
                         ResultHandle baseHandle = m.newInstance(
                                 MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class),
@@ -218,6 +228,37 @@ class SmallRyeRestClientProcessor {
         extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.SMALLRYE_REST_CLIENT));
 
         smallRyeRestClientTemplate.setSslEnabled(sslNativeConfig.isEnabled());
+    }
+
+    private ScopeInfo computeDefaultScope(Config config, Map.Entry<DotName, ClassInfo> entry) {
+        DotName restClientName = entry.getKey();
+        // Initialize a default @Dependent scope as per the spec
+        ScopeInfo scopeInfo = BuiltinScope.DEPENDENT.getInfo();
+        final String REST_SCOPE_FORMAT = "%s/" + RestClientBase.MP_REST + "/scope";
+        final Optional<String> scopeConfig = config
+                .getOptionalValue(String.format(REST_SCOPE_FORMAT, restClientName.toString()), String.class);
+        if (scopeConfig.isPresent()) {
+            final DotName scope = DotName.createSimple(scopeConfig.get());
+            final BuiltinScope builtinScope = BuiltinScope.from(scope);
+            if (builtinScope != null) { // override default @Dependent scope with user defined one.
+                scopeInfo = builtinScope.getInfo();
+            } else {
+                log.warn(String.format(
+                        "Unsupported default scope %s provided for rest client %s. Defaulting to @Dependent.",
+                        scope, restClientName));
+            }
+        } else {
+            final Set<DotName> annotations = entry.getValue().annotations().keySet();
+            for (final DotName annotationName : annotations) {
+                final BuiltinScope builtinScope = BuiltinScope.from(annotationName);
+                if (builtinScope != null) {
+                    scopeInfo = builtinScope.getInfo();
+                    break;
+                }
+            }
+        }
+
+        return scopeInfo;
     }
 
     private String getBaseUri(ClassInfo classInfo) {

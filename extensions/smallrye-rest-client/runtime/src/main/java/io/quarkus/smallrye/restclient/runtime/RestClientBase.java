@@ -10,7 +10,7 @@ import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
 public class RestClientBase {
 
-    private static final String MP_REST = "mp-rest";
+    public static final String MP_REST = "mp-rest";
     public static final String REST_URL_FORMAT = "%s/" + MP_REST + "/url";
     public static final String REST_URI_FORMAT = "%s/" + MP_REST + "/uri";
 

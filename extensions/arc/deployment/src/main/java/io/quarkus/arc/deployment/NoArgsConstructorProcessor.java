@@ -141,7 +141,8 @@ public class NoArgsConstructorProcessor {
     private void collectTargetClasses(Set<ClassInfo> targetClasses, DotName normalScope) {
         for (AnnotationInstance annotationInstance : beanArchiveIndex.getIndex()
                 .getAnnotations(normalScope)) {
-            if (annotationInstance.target().kind() == Kind.CLASS) {
+            if (annotationInstance.target().kind() == Kind.CLASS
+                    && !Modifier.isInterface(annotationInstance.target().asClass().flags())) {
                 targetClasses.add(annotationInstance.target().asClass());
             }
         }

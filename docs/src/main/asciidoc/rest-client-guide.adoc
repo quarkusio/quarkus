@@ -184,14 +184,16 @@ The name of the property needs to follow a certain convention which is best disp
 [source,shell]
 ----
 # Your configuration properties
-org.acme.restclient.CountriesService/mp-rest/url=https://restcountries.eu/rest
+org.acme.restclient.CountriesService/mp-rest/url=https://restcountries.eu/rest # // <1>
+org.acme.restclient.CountriesService/mp-rest/scope=java.inject.Singleton # // <2>
 ----
 
-Having this configuration means that all requests performed using `org.acme.restclient.CountriesService` will use `https://restcountries.eu/rest` as the base URL.
+<1> Having this configuration means that all requests performed using `org.acme.restclient.CountriesService` will use `https://restcountries.eu/rest` as the base URL.
+Using the configuration above, calling the `getByName` method of `CountriesService` with a value of `France` would result in an HTTP GET request being made to `https://restcountries.eu/rest/v2/name/France`.
+<2> Having this configuration means that the default scope of `org.acme.restclient.CountriesService` will be `@Singleton`. Supported scope values are `@Singleton`, `@Dependent`, `@ApplicationScoped` and `@RequestScoped`. The default scope is `@Dependent`.
+The default scope can also be defined on the interface.
 
 Note that `org.acme.restclient.CountriesService` _must_ match the fully qualified name of the `CountriesService` interface we created in the previous section.
-
-Using the configuration above, calling the `getByName` method of `CountriesService` with a value of `France` would result in an HTTP GET request being made to `https://restcountries.eu/rest/v2/name/France`.
 
 == Update the JAX-RS resource
 

@@ -40,16 +40,16 @@ class GenerateConfigIT extends MojoTestBase {
         String file = loadFile("test.properties");
         Assert.assertTrue(file.contains("#quarkus.log.file.enable"));
         Assert.assertTrue(file.contains("If file logging should be enabled"));
-        Assert.assertTrue(file.contains("#quarkus.thread-pool.queue-size=0"));
-        Assert.assertTrue(file.contains("The queue size. For most applications this should be unbounded"));
+        Assert.assertTrue(file.contains("#quarkus.thread-pool.growth-resistance=0"));
+        Assert.assertTrue(file.contains("The executor growth resistance"));
 
         generateConfig("application.properties");
         //the existing file should not add properties that already exist
         file = loadFile("application.properties");
         Assert.assertTrue(file.contains("quarkus.log.file.enable=false"));
         Assert.assertFalse(file.contains("If file logging should be enabled"));
-        Assert.assertTrue(file.contains("#quarkus.thread-pool.queue-size=0"));
-        Assert.assertTrue(file.contains("The queue size. For most applications this should be unbounded"));
+        Assert.assertTrue(file.contains("#quarkus.thread-pool.growth-resistance=0"));
+        Assert.assertTrue(file.contains("The executor growth resistance"));
     }
 
     private String loadFile(String file) throws IOException {

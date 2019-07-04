@@ -1,8 +1,6 @@
 package io.quarkus.it.rest;
 
-import java.util.List;
-import java.util.Map;
-
+import javax.enterprise.context.Dependent;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -10,21 +8,19 @@ import javax.ws.rs.Produces;
 import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
+/**
+ * Used to test default @{@link Dependent} scope defined on interface
+ */
 @RegisterRestClient
 @Path("/test")
 @RegisterClientHeaders
-public interface RestInterface {
+public interface RestClientInterface {
 
     @GET
     String get();
 
     @GET
-    @Path("/complex")
+    @Path("/jackson")
     @Produces("application/json")
-    List<ComponentType> complex();
-
-    @GET
-    @Path("/headers")
-    @Produces("application/json")
-    Map<String, String> getAllHeaders();
+    TestResource.MyData getData();
 }

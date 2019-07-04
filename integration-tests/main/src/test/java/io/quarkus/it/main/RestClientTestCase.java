@@ -82,6 +82,22 @@ public class RestClientTestCase {
                 .body(HEADER_NAME, equalTo(headerValue));
     }
 
+    @Test
+    void testMicroprofileRestClientDefaultScope() {
+        String responseWithSingletonScope = RestAssured
+                .given()
+                .when().get("/client/cdi/mp-rest-default-scope")
+                .getBody().print();
+
+        String responseWithDefaultScope = RestAssured
+                .given()
+                .when().get("/client/cdi/default-scope-on-interface")
+                .getBody().print();
+
+        Assertions.assertEquals("javax.inject.Singleton", responseWithSingletonScope);
+        Assertions.assertEquals("javax.enterprise.context.Dependent", responseWithDefaultScope);
+    }
+
     /**
      * Disabled by default as it establishes external connections.
      * <p>

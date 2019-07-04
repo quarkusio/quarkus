@@ -12,12 +12,18 @@ import javax.ws.rs.Produces;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
+import io.quarkus.arc.Arc;
+
 @Path("/client")
 public class ClientResource {
 
     @Inject
     @RestClient
     RestInterface restInterface;
+
+    @Inject
+    @RestClient
+    RestClientInterface restClientInterface;
 
     @GET
     @Path("/manual")
@@ -49,7 +55,7 @@ public class ClientResource {
     @Path("cdi/jackson")
     @Produces("application/json")
     public TestResource.MyData getDataCdi() {
-        return restInterface.getData();
+        return restClientInterface.getData();
     }
 
     @GET
@@ -87,4 +93,17 @@ public class ClientResource {
         return restInterface.getAllHeaders();
     }
 
+    @GET
+    @Path("/cdi/mp-rest-default-scope")
+    @Produces("text/plain")
+    public String getDefaultScope() {
+        return Arc.container().instance(RestInterface.class, RestClient.LITERAL).getBean().getScope().getName();
+    }
+
+    @GET
+    @Path("/cdi/default-scope-on-interface")
+    @Produces("text/plain")
+    public String getDefaultInterfaceScope() {
+        return Arc.container().instance(RestClientInterface.class, RestClient.LITERAL).getBean().getScope().getName();
+    }
 }

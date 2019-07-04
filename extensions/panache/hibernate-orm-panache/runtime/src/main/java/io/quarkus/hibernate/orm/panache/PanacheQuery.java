@@ -33,7 +33,7 @@ public interface PanacheQuery<Entity> {
      * @see #page(int, int)
      * @see #page()
      */
-    public <T extends Entity> PanacheQuery<T> page(Page page);
+    <T extends Entity> PanacheQuery<T> page(Page page);
 
     /**
      * Sets the current page.
@@ -44,7 +44,7 @@ public interface PanacheQuery<Entity> {
      * @see #page(Page)
      * @see #page()
      */
-    public <T extends Entity> PanacheQuery<T> page(int pageIndex, int pageSize);
+    <T extends Entity> PanacheQuery<T> page(int pageIndex, int pageSize);
 
     /**
      * Sets the current page to the next page
@@ -52,7 +52,7 @@ public interface PanacheQuery<Entity> {
      * @return this query, modified
      * @see #previousPage()
      */
-    public <T extends Entity> PanacheQuery<T> nextPage();
+    <T extends Entity> PanacheQuery<T> nextPage();
 
     /**
      * Sets the current page to the previous page (or the first page if there is no previous page)
@@ -60,7 +60,7 @@ public interface PanacheQuery<Entity> {
      * @return this query, modified
      * @see #nextPage()
      */
-    public <T extends Entity> PanacheQuery<T> previousPage();
+    <T extends Entity> PanacheQuery<T> previousPage();
 
     /**
      * Sets the current page to the first page
@@ -68,7 +68,7 @@ public interface PanacheQuery<Entity> {
      * @return this query, modified
      * @see #lastPage()
      */
-    public <T extends Entity> PanacheQuery<T> firstPage();
+    <T extends Entity> PanacheQuery<T> firstPage();
 
     /**
      * Sets the current page to the last page. This will cause reading of the entity count.
@@ -77,7 +77,7 @@ public interface PanacheQuery<Entity> {
      * @see #firstPage()
      * @see #count()
      */
-    public <T extends Entity> PanacheQuery<T> lastPage();
+    <T extends Entity> PanacheQuery<T> lastPage();
 
     /**
      * Returns true if there is another page to read after the current one.
@@ -87,7 +87,7 @@ public interface PanacheQuery<Entity> {
      * @see #hasPreviousPage()
      * @see #count()
      */
-    public boolean hasNextPage();
+    boolean hasNextPage();
 
     /**
      * Returns true if there is a page to read before the current one.
@@ -95,7 +95,7 @@ public interface PanacheQuery<Entity> {
      * @return true if there is a previous page to read
      * @see #hasNextPage()
      */
-    public boolean hasPreviousPage();
+    boolean hasPreviousPage();
 
     /**
      * Returns the total number of pages to be read using the current page size.
@@ -103,7 +103,7 @@ public interface PanacheQuery<Entity> {
      * 
      * @return the total number of pages to be read using the current page size.
      */
-    public int pageCount();
+    int pageCount();
 
     /**
      * Returns the current page.
@@ -112,7 +112,7 @@ public interface PanacheQuery<Entity> {
      * @see #page(Page)
      * @see #page(int,int)
      */
-    public Page page();
+    Page page();
 
     // Results
 
@@ -123,7 +123,7 @@ public interface PanacheQuery<Entity> {
      * 
      * @return the total number of entities this query operates on, cached.
      */
-    public long count();
+    long count();
 
     /**
      * Returns the current page of results as a {@link List}.
@@ -133,7 +133,7 @@ public interface PanacheQuery<Entity> {
      * @see #page(Page)
      * @see #page()
      */
-    public <T extends Entity> List<T> list();
+    <T extends Entity> List<T> list();
 
     /**
      * Returns the current page of results as a {@link Stream}.
@@ -143,7 +143,7 @@ public interface PanacheQuery<Entity> {
      * @see #page(Page)
      * @see #page()
      */
-    public <T extends Entity> Stream<T> stream();
+    <T extends Entity> Stream<T> stream();
 
     /**
      * Returns the first result of the current page index. This ignores the current page size to fetch
@@ -152,7 +152,7 @@ public interface PanacheQuery<Entity> {
      * @return the first result of the current page index, or null if there are no results.
      * @see #singleResult()
      */
-    public <T extends Entity> T firstResult();
+    <T extends Entity> T firstResult();
 
     /**
      * Executes this query for the current page and return a single result.
@@ -162,5 +162,5 @@ public interface PanacheQuery<Entity> {
      * @throws NonUniqueResultException if there are more than one result
      * @see #firstResult()
      */
-    public <T extends Entity> T singleResult();
+    <T extends Entity> T singleResult();
 }

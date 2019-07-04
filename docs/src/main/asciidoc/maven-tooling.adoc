@@ -164,14 +164,21 @@ app.
 
 == Debugging
 
-You can run a Quarkus application in debug mode using:
+In development mode, Quarkus starts by default with debug mode enabled, listening to port `5005` without suspending the JVM.
 
-[source,shell]
-----
-./mvnw compile quarkus:dev -Ddebug=true
-----
+This behavior can be changed by giving the `debug` system property one of the following values:
+
+* `false` - the JVM will start with debug mode disabled
+* `true` - the JVM will start in debug mode and be suspended until a debugger is attached to port `5005`
+* `client` - the JVM will start in client mode and attempt to connect to `localhost:5005`
+* `{port}` - the JVM will start in debug mode and be suspended until a debugger is attached to `{port}`
+
+[TIP]
+====
+You can also run a Quarkus application in debug mode with a suspended JVM using `./mvnw compile quarkus:dev -Ddebug` which is a shorthand for `./mvnw compile quarkus:dev -Ddebug=true`.
 
 Then, attach your debugger to `localhost:5005`.
+====
 
 == Import in your IDE
 

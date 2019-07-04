@@ -12,6 +12,7 @@ import javax.validation.ParameterNameProvider;
 import javax.validation.TraversableResolver;
 import javax.validation.Validation;
 import javax.validation.ValidatorFactory;
+import javax.validation.valueextraction.ValueExtractor;
 
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
@@ -82,6 +83,12 @@ public class HibernateValidatorRecorder {
                 InstanceHandle<ClockProvider> configuredClockProvider = Arc.container().instance(ClockProvider.class);
                 if (configuredClockProvider.isAvailable()) {
                     configuration.clockProvider(configuredClockProvider.get());
+                }
+
+                // Automatically add all the values extractors declared as beans
+                for (ValueExtractor<?> valueExtractor : Arc.container().beanManager().createInstance()
+                        .select(ValueExtractor.class)) {
+                    configuration.addValueExtractor(valueExtractor);
                 }
 
                 ValidatorFactory validatorFactory = configuration.buildValidatorFactory();

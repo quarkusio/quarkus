@@ -223,11 +223,14 @@ public class QuarkusUnitTest
                 //ignore
             }
 
+            final Path testLocation = PathTestHelper.getTestClassesLocation(testClass);
+
             runtimeRunner = RuntimeRunner.builder()
                     .setLaunchMode(LaunchMode.TEST)
                     .setClassLoader(testClass.getClassLoader())
                     .setTarget(deploymentDir)
-                    .setFrameworkClassesPath(PathTestHelper.getTestClassesLocation(testClass))
+                    .excludeFromIndexing(testLocation)
+                    .setFrameworkClassesPath(testLocation)
                     .addChainCustomizers(customiers)
                     .build();
 

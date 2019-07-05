@@ -40,7 +40,7 @@ public class MongoClientProcessor {
     CodecProviderBuildItem collectCodecProviders(CombinedIndexBuildItem indexBuildItem) {
         Collection<ClassInfo> codecProviderClasses = indexBuildItem.getIndex()
                 .getAllKnownImplementors(DotName.createSimple(CodecProvider.class.getName()));
-        List<String> names = codecProviderClasses.stream().map(ClassInfo::toString).collect(Collectors.toList());
+        List<String> names = codecProviderClasses.stream().map(ci -> ci.name().toString()).collect(Collectors.toList());
         return new CodecProviderBuildItem(names);
     }
 

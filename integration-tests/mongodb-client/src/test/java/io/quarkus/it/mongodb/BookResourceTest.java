@@ -101,7 +101,6 @@ class BookResourceTest {
                 .body(book1)
                 .post(endpoint)
                 .andReturn();
-        System.out.println("The response is: " + response.statusCode() + " " + response.asString());
         Assertions.assertEquals(202, response.statusCode());
 
         Book book2 = new Book().setAuthor("Victor Hugo").setTitle("Notre-Dame de Paris")

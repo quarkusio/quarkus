@@ -21,7 +21,6 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.mongodb.ReactiveMongoClient;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
@@ -54,15 +53,14 @@ public class MongoClientProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     MongoClientBuildItem build(BuildProducer<FeatureBuildItem> feature, MongoClientTemplate template,
-            BeanContainerBuildItem beanContainer, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
+            BeanContainerBuildItem beanContainer, LaunchModeBuildItem launchMode,
+            ShutdownContextBuildItem shutdown,
             MongoClientConfig config, CodecProviderBuildItem codecs,
-            SslNativeConfigBuildItem sslNativeConfig, BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
+            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.MONGODB_CLIENT));
 
-        if (!sslNativeConfig.isExplicitlyDisabled()) {
-            sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.MONGODB_CLIENT));
-        }
+        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.MONGODB_CLIENT));
 
         RuntimeValue<MongoClient> client = template.configureTheClient(config, beanContainer.getValue(),
                 launchMode.getLaunchMode(), shutdown,

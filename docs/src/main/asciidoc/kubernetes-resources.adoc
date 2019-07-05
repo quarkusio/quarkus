@@ -36,7 +36,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 == Enable Kubernetes support
 
 Quarkus offers the ability to automatically generate Kubernetes resources based on sane defaults and user supplied configuration. The implementation that takes care
-of generating the actual Kubernetes resources is provided by https://github.com/ap4k/ap4k/[ap4k].
+of generating the actual Kubernetes resources is provided by https://github.com/dekorateio/dekorate/[dekorate].
 
 When we added the `kubernetes` extension to the command line invocation above, the following dependency was added to the `pom.xml`
 

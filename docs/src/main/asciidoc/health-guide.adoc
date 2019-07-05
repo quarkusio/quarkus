@@ -65,10 +65,10 @@ the `/health` endpoint that can be used to run the health check procedures:
 
 The health REST enpoint returns a simple JSON object with two fields:
 
-* `outcome` -- the overall result of all the health check procedures
+* `status` -- the overall result of all the health check procedures
 * `checks` -- an array of individual checks
 
-The general `outcome` of the health check is computed as a logical AND of all the declared 
+The general `status` of the health check is computed as a logical AND of all the declared
 health check procedures. The `checks` array is empty as we have not specified any health 
 check procedure yet so let's define some.
 
@@ -204,7 +204,7 @@ public class DatabaseConnectionHealthCheck implements HealthCheck {
 }
 ----
 
-If you now rerun the health check the overall `outcome` should be DOWN and you should 
+If you now rerun the health check the overall `status` should be DOWN and you should
 see in the `checks` array the newly added `Database connection health check` which is 
 down and the error message explaining why it failed.
 

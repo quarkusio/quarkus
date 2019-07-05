@@ -2,6 +2,7 @@ package io.quarkus.test.h2;
 
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.h2.tools.Server;
@@ -22,7 +23,18 @@ public class H2DatabaseTestResource implements QuarkusTestResourceLifecycleManag
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return Collections.emptyMap();
+        return defaultH2Configuration();
+    }
+
+    private Map<String, String> defaultH2Configuration() {
+        final Map<String, String> configuration = new HashMap<>();
+
+        configuration.put("quarkus.datasource.url", "jdbc:h2:tcp://localhost/mem:test_quarkus;DB_CLOSE_DELAY=-1");
+        configuration.put("quarkus.datasource.driver", "org.h2.Driver");
+        configuration.put("quarkus.datasource.username", "sa");
+        configuration.put("quarkus.datasource.password", "sa");
+
+        return configuration;
     }
 
     @Override

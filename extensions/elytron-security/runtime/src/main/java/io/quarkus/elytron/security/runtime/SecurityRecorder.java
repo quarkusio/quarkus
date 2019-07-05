@@ -5,11 +5,8 @@ import java.security.Permission;
 import java.security.Provider;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Supplier;
 
 import javax.servlet.ServletContext;
@@ -23,11 +20,9 @@ import org.wildfly.security.auth.server.NameRewriter;
 import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.auth.server.SecurityRealm;
 import org.wildfly.security.authz.Attributes;
-import org.wildfly.security.authz.AuthorizationIdentity;
 import org.wildfly.security.authz.MapAttributes;
 import org.wildfly.security.authz.PermissionMappable;
 import org.wildfly.security.authz.PermissionMapper;
-import org.wildfly.security.authz.RoleDecoder;
 import org.wildfly.security.authz.Roles;
 import org.wildfly.security.credential.Credential;
 import org.wildfly.security.credential.PasswordCredential;
@@ -165,34 +160,19 @@ public class SecurityRecorder {
      *
      * @param realmName - the default realm name
      * @param realm - the default SecurityRealm
+     * @param roleDecoder - the default role decoder
      * @return a runtime value for the SecurityDomain.Builder
      * @throws Exception on any error
      */
-    public RuntimeValue<SecurityDomain.Builder> configureDomainBuilder(String realmName, RuntimeValue<SecurityRealm> realm)
+    public RuntimeValue<SecurityDomain.Builder> configureDomainBuilder(String realmName, RuntimeValue<SecurityRealm> realm,
+            DefaultRoleDecoder roleDecoder)
             throws Exception {
         log.debugf("buildDomain, realm=%s", realm.getValue());
 
         SecurityDomain.Builder domain = SecurityDomain.builder()
                 .addRealm(realmName, realm.getValue())
                 // Obtain the account roles from the groups attribute
-                .setRoleDecoder(new RoleDecoder() {
-                    @Override
-                    public Roles decodeRoles(AuthorizationIdentity authorizationIdentity) {
-                        Attributes.Entry groups = authorizationIdentity.getAttributes().get("groups");
-                        Set<String> roles = new HashSet<>(groups);
-                        return new Roles() {
-                            @Override
-                            public boolean contains(String roleName) {
-                                return roles.contains(roleName);
-                            }
-
-                            @Override
-                            public Iterator<String> iterator() {
-                                return roles.iterator();
-                            }
-                        };
-                    }
-                })
+                .setRoleDecoder(roleDecoder)
                 .build()
                 .setDefaultRealmName(realmName)
                 .setPermissionMapper(new PermissionMapper() {
@@ -299,5 +279,9 @@ public class SecurityRecorder {
          * }
          * };
          */
+    }
+
+    public DefaultRoleDecoder createDefaultRoleDecoder(BeanContainer container) {
+        return container.instance(DefaultRoleDecoder.class);
     }
 }

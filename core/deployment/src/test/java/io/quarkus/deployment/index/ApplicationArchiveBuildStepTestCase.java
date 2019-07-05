@@ -13,8 +13,13 @@ public class ApplicationArchiveBuildStepTestCase {
     @Test
     public void testUrlToPath() throws MalformedURLException {
         assertEquals(Paths.get("/a/path"), urlToPath(new URL("jar:file:/a/path!/META-INF/services/my.Service")));
+        assertEquals(Paths.get("/a/path with whitespace"),
+                urlToPath(new URL("jar:file:/a/path%20with%20whitespace!/META-INF/services/my.Service")));
         assertEquals(Paths.get("/a/path"), urlToPath(new URL("file:/a/path/META-INF/services/my.Service")));
+        assertEquals(Paths.get("/a/path with whitespace"),
+                urlToPath(new URL("file:/a/path%20with%20whitespace/META-INF/services/my.Service")));
         assertEquals(Paths.get("/a/path"), urlToPath(new URL("file:/a/path")));
+        assertEquals(Paths.get("/a/path with whitespace"), urlToPath(new URL("file:/a/path%20with%20whitespace")));
     }
 
     @Test(expected = RuntimeException.class)

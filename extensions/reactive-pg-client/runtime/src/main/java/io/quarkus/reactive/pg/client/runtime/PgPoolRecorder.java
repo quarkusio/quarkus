@@ -1,7 +1,6 @@
 package io.quarkus.reactive.pg.client.runtime;
 
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -13,30 +12,21 @@ import io.vertx.core.Vertx;
 @Recorder
 public class PgPoolRecorder {
 
-    // Visible for testing
-    static volatile PgPool pgPool;
-
     public RuntimeValue<PgPool> configurePgPool(RuntimeValue<Vertx> vertx, BeanContainer container,
-            DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig, LaunchMode launchMode, ShutdownContext shutdown) {
+            DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig, ShutdownContext shutdown) {
 
-        initialize(vertx.getValue(), dataSourceConfig, pgPoolConfig);
+        PgPool pgPool = initialize(vertx.getValue(), dataSourceConfig, pgPoolConfig);
 
         PgPoolProducer producer = container.instance(PgPoolProducer.class);
         producer.initialize(pgPool);
 
-        if (!launchMode.isDevOrTest()) {
-            shutdown.addShutdownTask(this::destroy);
-        }
+        shutdown.addShutdownTask(pgPool::close);
         return new RuntimeValue<>(pgPool);
     }
 
-    // Visible for testing
-    void initialize(Vertx vertx, DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig) {
-        if (pgPool != null) {
-            return;
-        }
+    private PgPool initialize(Vertx vertx, DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig) {
         PgPoolOptions pgPoolOptions = toPgPoolOptions(dataSourceConfig, pgPoolConfig);
-        pgPool = PgClient.pool(vertx, pgPoolOptions);
+        return PgClient.pool(vertx, pgPoolOptions);
     }
 
     private PgPoolOptions toPgPoolOptions(DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig) {
@@ -63,12 +53,5 @@ public class PgPoolRecorder {
         }
 
         return pgPoolOptions;
-    }
-
-    // Visible for testing
-    void destroy() {
-        if (pgPool != null) {
-            pgPool.close();
-        }
     }
 }

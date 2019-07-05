@@ -9,7 +9,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.reactive.pg.client.runtime.DataSourceConfig;
 import io.quarkus.reactive.pg.client.runtime.PgPoolConfig;
@@ -31,13 +30,13 @@ class ReactivePgClientProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     PgPoolBuildItem build(BuildProducer<FeatureBuildItem> feature, PgPoolRecorder recorder, VertxBuildItem vertx,
-            BeanContainerBuildItem beanContainer, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
+            BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown,
             DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.REACTIVE_PG_CLIENT));
 
         RuntimeValue<PgPool> pgPool = recorder.configurePgPool(vertx.getVertx(), beanContainer.getValue(), dataSourceConfig,
-                pgPoolConfig, launchMode.getLaunchMode(), shutdown);
+                pgPoolConfig, shutdown);
 
         return new PgPoolBuildItem(pgPool);
     }

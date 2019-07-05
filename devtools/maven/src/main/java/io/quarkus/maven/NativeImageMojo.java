@@ -46,6 +46,9 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     protected MavenProject project;
 
+    @Parameter(defaultValue = "${java.home}", required = true, readonly = true)
+    public File javaHome;
+
     @Parameter(defaultValue = "${project.build.directory}")
     private File buildDir;
 
@@ -355,6 +358,7 @@ public class NativeImageMojo extends AbstractMojo {
                 .setEnableVMInspection(enableVMInspection)
                 .setFullStackTraces(fullStackTraces)
                 .setGraalvmHome(graalvmHome)
+                .setJavaHome(javaHome)
                 .setNativeImageXmx(nativeImageXmx)
                 .setReportErrorsAtRuntime(reportErrorsAtRuntime)
                 .setReportExceptionStackTraces(reportExceptionStackTraces));

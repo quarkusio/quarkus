@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
@@ -44,10 +45,25 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private static final String GRAALVM_HOME = "GRAALVM_HOME";
 
+    /**
+     * Name of the <em>system</em> property to retrieve JAVA_HOME
+     */
+    private static final String JAVA_HOME_SYS = "java.home";
+
+    /**
+     * Name of the <em>environment</em> variable to retrieve JAVA_HOME
+     */
+    private static final String JAVA_HOME_ENV = "JAVA_HOME";
+
     private static final String QUARKUS_PREFIX = "quarkus.";
 
     private static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("linux");
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
+
+    /**
+     * The name of the environment variable containing the system path.
+     */
+    private static final String PATH = "PATH";
 
     private Path outputDir;
 
@@ -74,6 +90,8 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
     private boolean enableFallbackImages;
 
     private String graalvmHome;
+
+    private File javaHome;
 
     private boolean enableServer;
 
@@ -170,6 +188,11 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     public NativeImagePhase setGraalvmHome(String graalvmHome) {
         this.graalvmHome = graalvmHome;
+        return this;
+    }
+
+    public NativeImagePhase setJavaHome(File javaHome) {
+        this.javaHome = javaHome;
         return this;
     }
 
@@ -327,21 +350,27 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                 noPIE = detectNoPIE();
             }
 
-            String graalvmHome = this.graalvmHome;
-            if (graalvmHome != null) {
-                env.put(GRAALVM_HOME, graalvmHome);
+            String graal = this.graalvmHome;
+            File java = this.javaHome;
+            if (graal != null) {
+                env.put(GRAALVM_HOME, graal);
             } else {
-                graalvmHome = env.get(GRAALVM_HOME);
-                if (graalvmHome == null) {
-                    throw new AppCreatorException("GRAALVM_HOME was not set");
+                graal = env.get(GRAALVM_HOME);
+            }
+            if (java == null) {
+                // try system property first - it will be the JAVA_HOME used by the current JVM
+                String home = System.getProperty(JAVA_HOME_SYS);
+                if (home == null) {
+                    // No luck, somewhat a odd JVM not enforcing this property
+                    // try with the JAVA_HOME environment variable
+                    home = env.get(JAVA_HOME_ENV);
+                }
+
+                if (home != null) {
+                    java = new File(home);
                 }
             }
-            String imageName = IS_WINDOWS ? "native-image.cmd" : "native-image";
-            nativeImage = Collections.singletonList(graalvmHome + File.separator + "bin" + File.separator + imageName);
-            if (Files.notExists(Paths.get(nativeImage.get(0)))) {
-                throw new AppCreatorException("The `native-image` tool (" + nativeImage.get(0)
-                        + ") is not installed, this can be done by running `gu install native-image`");
-            }
+            nativeImage = Collections.singletonList(getNativeImageExecutable(graal, java, env).getAbsolutePath());
         }
 
         try {
@@ -528,6 +557,43 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             return true;
         }
         return false;
+    }
+
+    private static File getNativeImageExecutable(String graalVmHome, File javaHome, Map<String, String> env)
+            throws AppCreatorException {
+        String imageName = IS_WINDOWS ? "native-image.cmd" : "native-image";
+        if (graalVmHome != null) {
+            File file = Paths.get(graalVmHome, "bin", imageName).toFile();
+            if (file.exists()) {
+                return file;
+            }
+        }
+
+        if (javaHome != null) {
+            File file = new File(javaHome, "bin/" + imageName);
+            if (file.exists()) {
+                return file;
+            }
+        }
+
+        // System path
+        String systemPath = env.get(PATH);
+        if (systemPath != null) {
+            String[] pathDirs = systemPath.split(File.pathSeparator);
+            for (String pathDir : pathDirs) {
+                File dir = new File(pathDir);
+                if (dir.isDirectory()) {
+                    File file = new File(dir, imageName);
+                    if (file.exists()) {
+                        return file;
+                    }
+                }
+            }
+        }
+
+        throw new AppCreatorException("Cannot find the `" + imageName + "` in the GRAALVM_HOME, JAVA_HOME and System " +
+                "PATH. Install it using `gu install native-image`");
+
     }
 
     private static String getLinuxID(String option) {

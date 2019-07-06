@@ -18,7 +18,7 @@
             <artifactId>quarkus-kubernetes-spi</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.ap4k</groupId>
+            <groupId>io.dekorate</groupId>
             <artifactId>kubernetes-annotations</artifactId>
             <classifier>noapt</classifier>
             <exclusions>

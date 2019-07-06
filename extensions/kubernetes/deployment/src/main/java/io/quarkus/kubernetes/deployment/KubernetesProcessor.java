@@ -14,12 +14,12 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
-import io.ap4k.Session;
-import io.ap4k.SessionWriter;
-import io.ap4k.kubernetes.annotation.KubernetesApplication;
-import io.ap4k.kubernetes.generator.DefaultKubernetesApplicationGenerator;
-import io.ap4k.processor.SimpleFileWriter;
-import io.ap4k.project.Project;
+import io.dekorate.Session;
+import io.dekorate.SessionWriter;
+import io.dekorate.kubernetes.annotation.KubernetesApplication;
+import io.dekorate.kubernetes.generator.DefaultKubernetesApplicationGenerator;
+import io.dekorate.processor.SimpleFileWriter;
+import io.dekorate.project.Project;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
@@ -49,7 +49,7 @@ class KubernetesProcessor {
             return;
         }
 
-        // The resources that ap4k's execution will result in, will later-on be written
+        // The resources that dekorate's execution will result in, will later-on be written
         // by quarkus in the 'wiring-classes' directory
         // The location is needed in order to properly support s2i build triggering
 

@@ -132,7 +132,7 @@
         <aws-lambda-serverless-java-container.version>1.3.1</aws-lambda-serverless-java-container.version>
         <kotlin.version>1.3.31</kotlin.version>
         <camel.version>3.0.0-M2</camel.version>
-        <ap4k.version>0.4.1</ap4k.version>
+        <dekorate.version>0.6.1</dekorate.version>
         <javax.xml.soap-api.version>1.4.0</javax.xml.soap-api.version>
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
         <jline.version>2.14.6</jline.version>
@@ -670,11 +670,11 @@
                 <version>${camel.version}</version>
             </dependency>
 
-            <!-- ap4k -->
+            <!-- dekorate -->
             <dependency>
-                <groupId>io.ap4k</groupId>
+                <groupId>io.dekorate</groupId>
                 <artifactId>kubernetes-annotations</artifactId>
-                <version>${ap4k.version}</version>
+                <version>${dekorate.version}</version>
                 <classifier>noapt</classifier>
             </dependency>
 

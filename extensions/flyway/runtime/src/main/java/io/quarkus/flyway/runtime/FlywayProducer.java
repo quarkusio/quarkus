@@ -37,6 +37,11 @@ public class FlywayProducer {
         }
         flywayRuntimeConfig.sqlMigrationPrefix.ifPresent(configure::sqlMigrationPrefix);
         flywayRuntimeConfig.repeatableSqlMigrationPrefix.ifPresent(configure::repeatableSqlMigrationPrefix);
+
+        configure.baselineOnMigrate(flywayRuntimeConfig.baselineOnMigrate);
+        flywayRuntimeConfig.baselineVersion.ifPresent(configure::baselineVersion);
+        flywayRuntimeConfig.baselineDescription.ifPresent(configure::baselineDescription);
+
         return configure.load();
     }
 

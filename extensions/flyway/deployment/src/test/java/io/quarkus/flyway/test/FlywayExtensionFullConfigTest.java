@@ -34,6 +34,12 @@ public class FlywayExtensionFullConfigTest {
     String sqlMigrationPrefix;
     @ConfigProperty(name = "quarkus.flyway.repeatable-sql-migration-prefix")
     String repeatableSqlMigrationPrefix;
+    @ConfigProperty(name = "quarkus.flyway.baseline-on-migrate")
+    boolean baselineOnMigrate;
+    @ConfigProperty(name = "quarkus.flyway.baseline-version")
+    String baselineVersion;
+    @ConfigProperty(name = "quarkus.flyway.baseline-description")
+    String baselineDescription;
 
     // Quarkus built object
     @Inject
@@ -68,5 +74,9 @@ public class FlywayExtensionFullConfigTest {
         assertEquals(joinedSchemas, configuredNames);
 
         assertEquals(connectRetries, configuration.getConnectRetries());
+
+        assertEquals(baselineOnMigrate, configuration.isBaselineOnMigrate());
+        assertEquals(baselineVersion, configuration.getBaselineVersion().getVersion());
+        assertEquals(baselineDescription, configuration.getBaselineDescription());
     }
 }

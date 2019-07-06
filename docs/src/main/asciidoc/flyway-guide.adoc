@@ -90,6 +90,23 @@ Repeatable SQL migrations have the following file name structure: prefixSeparato
 defaults translates to R__My_description.sql +
 **default:** R
 
+`quarkus.flyway.baseline-on-migrate`::
+Whether to automatically call baseline when migrate is executed against a non-empty schema with no metadata table.
+This schema will then be baselined with the *baseline-version* before executing the migrations.
+Only migrations above *baseline-version* will then be applied.
+This is useful for initial Flyway production deployments on projects with an existing DB. +
++
+Be careful when enabling this as it removes the safety net that ensures Flyway does not
+migrate the wrong database in case of a configuration mistake! +
+**default:** false
+
+`quarkus.flyway.baseline-version`::
+The version to tag an existing schema with when executing baseline +
+**default:** 1
+
+`quarkus.flyway.baseline-description`::
+The description to tag an existing schema with when executing baseline +
+**default:** '<< Flyway Baseline >>'
 
 The following is an example for the `{config-file}` file:
 
@@ -105,12 +122,16 @@ quarkus.datasource.password: connor
 quarkus.flyway.migrate-at-start=true
 
 # Flyway optional config properties
+# quarkus.flyway.baseline-on-migrate=true
+# quarkus.flyway.baseline-version=1.0.0
+# quarkus.flyway.baseline-description=Initial version
 # quarkus.flyway.connect-retries=10
 # quarkus.flyway.schemas=TEST_SCHEMA
 # quarkus.flyway.table=flyway_quarkus_history
 # quarkus.flyway.locations=db/location1,db/location2
 # quarkus.flyway.sql-migration-prefix=X
 # quarkus.flyway.repeatable-sql-migration-prefix=K
+
 --
 
 Add a SQL migration to the default folder following the Flyway naming conventions: `{migrations-path}/V1.0.0__Quarkus.sql`

@@ -60,7 +60,7 @@ public class UndertowStaticResourcesBuildStep {
                             return;
                         }
                         Path rel = resource.relativize(path);
-                        if (Files.isDirectory(rel)) {
+                        if (Files.isDirectory(path)) {
                             knownDirectories.add(rel.toString());
                         } else {
                             knownFiles.add(rel.toString());

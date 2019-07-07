@@ -1,23 +1,29 @@
 package io.quarkus.arc.test.injection.constructornoinject;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
 import javax.enterprise.context.Dependent;
+import javax.enterprise.inject.spi.DefinitionException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class SingleNonNoArgConstructorInjectionTest {
+public class MultiInjectConstructorFailureTest {
 
     @Rule
-    public ArcTestContainer container = new ArcTestContainer(Head.class, CombineHarvester.class);
+    public ArcTestContainer container = ArcTestContainer.builder()
+            .beanClasses(CombineHarvester.class, Head.class)
+            .shouldFail()
+            .build();
 
     @Test
     public void testInjection() {
-        assertNotNull(Arc.container().instance(CombineHarvester.class).get().getHead());
+        Throwable error = container.getFailure();
+        assertNotNull(error);
+        assertTrue(error instanceof DefinitionException);
     }
 
     @Dependent
@@ -28,17 +34,16 @@ public class SingleNonNoArgConstructorInjectionTest {
     @Singleton
     static class CombineHarvester {
 
-        final Head head;
+        Head head;
 
         @Inject
-        Head head2;
-
-        public CombineHarvester(Head head) {
-            this.head = head;
+        public CombineHarvester() {
+            this.head = null;
         }
 
-        public Head getHead() {
-            return head;
+        @Inject
+        public CombineHarvester(Head head) {
+            this.head = head;
         }
 
     }

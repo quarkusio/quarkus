@@ -236,7 +236,7 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     Optional<Injection> getConstructorInjection() {
-        return injections.isEmpty() ? Optional.empty() : injections.stream().filter(i -> i.isConstructor()).findAny();
+        return injections.isEmpty() ? Optional.empty() : injections.stream().filter(Injection::isConstructor).findAny();
     }
 
     Map<MethodInfo, InterceptionInfo> getInterceptedMethods() {

@@ -26,18 +26,20 @@ To complete this guide, you need:
 
 == Architecture
 
-In this guide, we build a simple REST application that exposes MicroProfile Health functionalities at 
-the `/health` endpoint according to the specification. It will also provide several other REST
-endpoints to allow us to dynamically change the healthness of our Quarkus application.
+In this guide, we build a simple REST application that exposes MicroProfile Health 
+functionalities at the `/health/live` and `/health/ready` endpoints according to the 
+specification.
 
 == Solution
 
-We recommend that you follow the instructions in the next sections and create the application step by step.
-However, you can go right to the completed example.
+We recommend that you follow the instructions in the next sections and create the 
+application step by step. However, you can go right to the completed example.
 
-Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an 
+{quickstarts-archive-url}[archive].
 
-The solution is located in the `microprofile-health` {quickstarts-tree-url}/microprofile-health[directory].
+The solution is located in the `microprofile-health` 
+{quickstarts-tree-url}/microprofile-health[directory].
 
 == Creating the Maven Project
 
@@ -56,25 +58,30 @@ which is an implementation of the MicroProfile Health specification used in Quar
 
 == Running the health check
 
-Importing the `smallrye-health` extension directly exposes a single REST endpoint at 
-the `/health` endpoint that can be used to run the health check procedures:
+Importing the `smallrye-health` extension directly exposes three REST endpoints:
+
+- `/health/live` - The application is up and running.
+- `/health/ready` - The application is ready to serve requests.
+- `/health` - Accumulating all health check procedures in the application.
+ 
+To check that the `smallrye-health` extension is working as expected:
 
 * start your Quarkus application with `mvn compile quarkus:dev`
-* access the `http://localhost:8080/health` endpoint using your browser or 
-`curl http://localhost:8080/health`
+* access the `http://localhost:8080/health/live` endpoint using your browser or 
+`curl http://localhost:8080/health/live`
 
-The health REST enpoint returns a simple JSON object with two fields:
+All of the health REST endpoints return a simple JSON object with two fields:
 
 * `status` -- the overall result of all the health check procedures
 * `checks` -- an array of individual checks
 
-The general `status` of the health check is computed as a logical AND of all the declared
-health check procedures. The `checks` array is empty as we have not specified any health 
-check procedure yet so let's define some.
+The general `status` of the health check is computed as a logical AND of all the 
+declared health check procedures. The `checks` array is empty as we have not specified 
+any health check procedure yet so let's define some.
 
 == Creating your first health check
 
-In this section we create our first simple health check procedure.
+In this section, we create our first simple health check procedure.
 
 Create the `org.acme.health.SimpleHealthCheck` class:
 
@@ -82,16 +89,16 @@ Create the `org.acme.health.SimpleHealthCheck` class:
 ----
 package org.acme.health;
 
-import org.eclipse.microprofile.health.Health;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.eclipse.microprofile.health.Liveness;
 
 import javax.enterprise.context.ApplicationScoped;
 
-@Health
+@Liveness
 @ApplicationScoped
 public class SimpleHealthCheck implements HealthCheck {
-    
+
     @Override
     public HealthCheckResponse call() {
         return HealthCheckResponse.named("Simple health check").up().build();
@@ -99,39 +106,161 @@ public class SimpleHealthCheck implements HealthCheck {
 }
 ----
 
-As you can see health check procedures are defined as implementations of the `HealthCheck` 
-interface which are defined as CDI beans with the `@Health` qualifier. `HealthCheck` is 
-a functional interface whose single method `call` returns a `HealthCheckResponse` object 
-which can be easily constructed by the fluent builder API shown in the example.
+As you can see health check procedures are defined as implementations of the 
+`HealthCheck` interface which are defined as CDI beans with the one of the 
+following CDI qualifiers: 
+
+- `@Liveness` - the liveness check accessible at `/health/live`
+- `@Readiness` - the readiness check accessible at `/health/ready`
+
+`HealthCheck` is a functional interface whose single method `call` returns a 
+`HealthCheckResponse` object which can be easily constructed by the fluent builder 
+API shown in the example.
 
 As we have started our Quarkus application in dev mode simply repeat the request 
-to `http://localhost:8080/health` by refreshing your browser window or by using `curl http://localhost:8080/health`. 
-The new health check procedure is now present in the `checks` array.
+to `http://localhost:8080/health/live` by refreshing your browser window or by 
+using `curl http://localhost:8080/health/live`. Because we defined our health check 
+to be a liveness procedure (with `@Liveness` qualifier) the new health check procedure 
+is now present in the `checks` array.
 
 Congratulations! You've created your first Quarkus health check procedure. Let's 
 continue by exploring what else can be done with the MicroProfile Health specification.
 
-== Adding user specific data to the health check response
+== Adding a readiness health check procedure
 
-In previous section we saw how to create a simple health check with only the minimal 
-attributes, namely, the health check name and its state (UP or DOWN). However, the 
-MicroProfile specification also provides a way for the applications to supply 
-arbitrary data in the form of key value pairs sent to the consuming end. This can be done by using the 
-`withData(key, value)` method of the health check response builder API.
+In the previous section, we created a simple liveness health check procedure which states 
+whether our application is running or not. In this section, we will create a readiness 
+health check which will be able to state whether our application is able to process 
+requests.
 
-Let's create our second health check procedure `org.acme.health.DataHealthCheck`:
+We will create another health check procedure that simulates a connection to 
+an external service provider such as a database. For starters, we will always return 
+the response indicating the application is ready.
+
+Create `org.acme.health.DatabaseConnectionHealthCheck` class:
 
 [source,java]
 ----
 package org.acme.health;
 
-import org.eclipse.microprofile.health.Health;
+import org.eclipse.microprofile.health.HealthCheck;
+import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.eclipse.microprofile.health.Readiness;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@Readiness
+@ApplicationScoped
+public class DatabaseConnectionHealthCheck implements HealthCheck {
+
+    @Override
+    public HealthCheckResponse call() {
+        return HealthCheckResponse.named("Database connection health check").up().build();
+    }
+}
+
+----
+
+If you now rerun the health check at `http://localhost:8080/health/live` the `checks` 
+array will contain only the previously defined `SimpleHealthCheck` as it is the only 
+check defined with the `@Liveness` qualifier. However, if you access 
+`http://localhost:8080/health/ready` (in the browser or with 
+`curl http://localhost:8080/health/ready`) you will see only the 
+`Database connection health check` as it is the only health check defined with the 
+`@Readiness` qualifier as the readiness health check procedure.
+
+NOTE: If you access `http://localhost:8080/health` you will get back both checks.
+
+More information about which health check procedures should be used in which situation 
+is detailed in the MicroProfile Health specification. Generally, the liveness 
+procedures determine whether the application should be restarted while readiness 
+procedures determine whether it makes sense to contact the application with requests.
+
+== Negative health check procedures
+
+In this section, we extend our `Database connection health check` with the option of 
+stating that our application is not ready to process requests as the underlying 
+database connection cannot be established. For simplicity reasons, we only determine 
+whether the database is accessible or not by a configuration property.
+
+Update the `org.acme.health.DatabaseConnectionHealthCheck` class:
+
+[source,java]
+----
+package org.acme.health;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.health.HealthCheck;
+import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
+import org.eclipse.microprofile.health.Readiness;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@Readiness
+@ApplicationScoped
+public class DatabaseConnectionHealthCheck implements HealthCheck {
+
+    @ConfigProperty(name = "database.up", defaultValue = "false")
+    private boolean databaseUp;
+
+    @Override
+    public HealthCheckResponse call() {
+
+        HealthCheckResponseBuilder responseBuilder = HealthCheckResponse.named("Database connection health check");
+
+        try {
+            simulateDatabaseConnectionVerification();
+            responseBuilder.up();
+        } catch (IllegalStateException e) {
+            // cannot access the database
+            responseBuilder.down();
+        }
+
+        return responseBuilder.build();
+    }
+
+    private void simulateDatabaseConnectionVerification() {
+        if (!databaseUp) {
+            throw new IllegalStateException("Cannot contact database");
+        }
+    }
+}
+----
+
+If you now rerun the readiness health check (at `http://localhost:8080/health/ready`) 
+the overall `status` should be DOWN. You can also check the liveness check at 
+`http://localhost:8080/health/live` which will return the overall `status` UP because 
+it isn't influenced by the readiness checks.
+
+As we shouldn't leave this application with a readiness check in a DOWN state and 
+because we are running Quarkus in dev mode you can add `database.up=true` in 
+`src/main/resources/application.properties` and rerun the readiness health check again 
+-- it should be up again.
+
+
+== Adding user-specific data to the health check response
+
+In previous sections, we saw how to create simple health checks with only the minimal 
+attributes, namely, the health check name and its status (UP or DOWN). However, the 
+MicroProfile specification also provides a way for the applications to supply 
+arbitrary data in the form of key-value pairs sent to the consuming end. This can be 
+done by using the `withData(key, value)` method of the health check response 
+builder API.
+
+Let's create a new health check procedure `org.acme.health.DataHealthCheck`:
+
+[source,java]
+----
+package org.acme.health;
+
+import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 
 import javax.enterprise.context.ApplicationScoped;
 
-@Health
+@Liveness
 @ApplicationScoped
 public class DataHealthCheck implements HealthCheck {
 
@@ -146,81 +275,38 @@ public class DataHealthCheck implements HealthCheck {
 }
 ----
 
-If you rerun the health check procedure again by accessing the `/health` endpoint you can 
-see that the new health check `Health check with data` is present in the `checks` array. 
-This check contains a new attribute called `data` which is a JSON object consisting of 
-the properties we have defined in our health check procedure.
+If you rerun the liveness health check procedure by accessing the `/health/live` 
+endpoint you can see that the new health check `Health check with data` is present 
+in the `checks` array. This check contains a new attribute called `data` which is a 
+JSON object consisting of the properties we have defined in our health check procedure.
 
-== Negative health check procedure
+This functionality is specifically useful in failure scenarios where you can pass the 
+error along with the health check response.
 
-In this section we create another health check procedure which simulates a connection to 
-an external service provider such as a database. For simplicity reasons, we only determine 
-whether the database is accessible or not by a configuration property.
-
-Create `org.acme.health.DatabaseConnectionHealthCheck` class:
 
 [source,java]
 ----
-package org.acme.health;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.health.Health;
-import org.eclipse.microprofile.health.HealthCheck;
-import org.eclipse.microprofile.health.HealthCheckResponse;
-import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-
-@Health
-@ApplicationScoped
-public class DatabaseConnectionHealthCheck implements HealthCheck {
-    
-    @ConfigProperty(name = "database.up", defaultValue = "false")
-    private boolean databaseUp;
-    
-    @Override
-    public HealthCheckResponse call() {
-        
-        HealthCheckResponseBuilder responseBuilder = HealthCheckResponse.named("Database connection health check");
-
         try {
             simulateDatabaseConnectionVerification();
             responseBuilder.up();
         } catch (IllegalStateException e) {
             // cannot access the database
             responseBuilder.down()
-                    .withData("error", e.getMessage());
+                    .withData("error", e.getMessage()); // pass the exception message
         }
-
-        return responseBuilder.build();
-    }
-
-    private void simulateDatabaseConnectionVerification() {
-        if (!databaseUp) {
-            throw new IllegalStateException("Cannot contact database");
-        }
-    }
-}
 ----
-
-If you now rerun the health check the overall `status` should be DOWN and you should
-see in the `checks` array the newly added `Database connection health check` which is 
-down and the error message explaining why it failed.
-
-As we shouldn't leave this application with a health check in DOWN state and because we 
-are running Quarkus dev mode you can add `database.up=true` in 
-`src/main/resources/application.properties` and rerun the health check again -- 
-it should be up again.
 
 == Conclusion
 
 MicroProfile Health provides a way for your application to distribute information 
-about its healthness state to state whether or not it is able to function properly.
+about its healthiness state to state whether or not it is able to function properly. 
+Liveness checks are utilized to tell whether the application should be restarted and 
+readiness checks are used to tell whether the application is able to process requests. 
 
 All that is needed to enable the MicroProfile Health features in Quarkus is:
 
-* adding the `smallrye-health` Quarkus extension to your project using the `quarkus-maven-plugin`:
+* adding the `smallrye-health` Quarkus extension to your project using the 
+`quarkus-maven-plugin`:
 
   mvn quarkus:add-extension -Dextensions="health"
 

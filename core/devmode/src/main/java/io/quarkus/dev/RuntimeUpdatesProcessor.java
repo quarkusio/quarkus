@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,11 +35,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     private final ClassLoaderCompiler compiler;
     private volatile long lastChange = System.currentTimeMillis();
 
-    private volatile Set<String> watchedFilePaths = Collections.emptySet();
+    // file path -> isRestartNeeded
+    private volatile Map<String, Boolean> watchedFilePaths = Collections.emptyMap();
     private final Map<Path, Long> watchedFileTimestamps = new ConcurrentHashMap<>();
 
     private static final Logger log = Logger.getLogger(RuntimeUpdatesProcessor.class.getPackage().getName());
     private final List<Runnable> preScanSteps = new CopyOnWriteArrayList<>();
+    private final List<Consumer<Set<String>>> noRestartChangesConsumers = new CopyOnWriteArrayList<>();
     private final List<HotReplacementSetup> hotReplacementSetup = new ArrayList<>();
 
     public RuntimeUpdatesProcessor(DevModeContext context, ClassLoaderCompiler compiler) {
@@ -81,26 +84,40 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     @Override
     public boolean doScan(boolean userInitiated) throws IOException {
         final long startNanoseconds = System.nanoTime();
-        for (Runnable i : preScanSteps) {
+        for (Runnable step : preScanSteps) {
             try {
-                i.run();
+                step.run();
             } catch (Throwable t) {
                 log.error("Pre Scan step failed", t);
             }
         }
 
         boolean classChanged = checkForChangedClasses();
-        Set<String> configFileChanged = checkForFileChange();
+        Set<String> filesChanged = checkForFileChange();
 
         //if there is a deployment problem we always restart on scan
         //this is because we can't setup the config file watches
         //in an ideal world we would just check every resource file for changes, however as everything is already
         //all broken we just assume the reason that they have refreshed is because they have fixed something
         //trying to watch all resource files is complex and this is likely a good enough solution for what is already an edge case
-        if (classChanged || !configFileChanged.isEmpty() || (DevModeMain.deploymentProblem != null && userInitiated)) {
-            DevModeMain.restartApp(configFileChanged);
+        boolean restartNeeded = classChanged || (DevModeMain.deploymentProblem != null && userInitiated);
+        if (!restartNeeded && !filesChanged.isEmpty()) {
+            restartNeeded = filesChanged.stream().map(watchedFilePaths::get).anyMatch(Boolean.TRUE::equals);
+        }
+        if (restartNeeded) {
+            DevModeMain.restartApp(filesChanged);
             log.infof("Hot replace total time: %ss ", Timing.convertToBigDecimalSeconds(System.nanoTime() - startNanoseconds));
             return true;
+        } else if (!filesChanged.isEmpty()) {
+            for (Consumer<Set<String>> consumer : noRestartChangesConsumers) {
+                try {
+                    consumer.accept(filesChanged);
+                } catch (Throwable t) {
+                    log.error("Changed files consumer failed", t);
+                }
+            }
+            log.infof("Files changed but restart not needed - notified extensions in: %ss ",
+                    Timing.convertToBigDecimalSeconds(System.nanoTime() - startNanoseconds));
         }
         return false;
     }
@@ -108,6 +125,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     @Override
     public void addPreScanStep(Runnable runnable) {
         preScanSteps.add(runnable);
+    }
+
+    @Override
+    public void consumeNoRestartChanges(Consumer<Set<String>> consumer) {
+        noRestartChangesConsumers.add(consumer);
     }
 
     boolean checkForChangedClasses() throws IOException {
@@ -175,7 +197,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
             Path root = Paths.get(rootPath);
             Path classesDir = Paths.get(module.getClassesPath());
 
-            for (String path : watchedFilePaths) {
+            for (String path : watchedFilePaths.keySet()) {
                 Path file = root.resolve(path);
                 if (Files.exists(file)) {
                     try {
@@ -220,7 +242,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
         }
     }
 
-    public RuntimeUpdatesProcessor setWatchedFilePaths(Set<String> watchedFilePaths) {
+    public RuntimeUpdatesProcessor setWatchedFilePaths(Map<String, Boolean> watchedFilePaths) {
         this.watchedFilePaths = watchedFilePaths;
         watchedFileTimestamps.clear();
 
@@ -234,8 +256,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                 continue;
             }
             Path root = Paths.get(rootPath);
-            for (String i : watchedFilePaths) {
-                Path config = root.resolve(i);
+            for (String path : watchedFilePaths.keySet()) {
+                Path config = root.resolve(path);
                 if (Files.exists(config)) {
                     try {
                         watchedFileTimestamps.put(config, Files.getLastModifiedTime(config).toMillis());

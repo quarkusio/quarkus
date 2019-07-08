@@ -53,4 +53,19 @@ public final class FlywayRuntimeConfig {
      *
      */
     public boolean migrateAtStart = false;
+    /**
+     * Enable the creation of the history table if it does not exist already.
+     */
+    @ConfigItem
+    public boolean baselineOnMigrate = false;
+    /**
+     * The initial baseline version.
+     */
+    @ConfigItem
+    public Optional<String> baselineVersion;
+    /**
+     * The description to tag an existing schema with when executing baseline.
+     */
+    @ConfigItem
+    public Optional<String> baselineDescription;
 }

@@ -225,6 +225,7 @@ public class DevMojo extends AbstractMojo {
             for (Map.Entry<Object, Object> e : System.getProperties().entrySet()) {
                 devModeContext.getSystemProperties().put(e.getKey().toString(), (String) e.getValue());
             }
+            devModeContext.getBuildSystemProperties().putAll((Map) project.getProperties());
 
             final AppModel appModel;
             try {

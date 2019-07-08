@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.LockSupport;
@@ -160,6 +161,10 @@ public class DevModeMain {
                         }).produces(ApplicationClassPredicateBuildItem.class).build();
                     }
                 });
+
+                Properties buildSystemProperties = new Properties();
+                buildSystemProperties.putAll(context.getBuildSystemProperties());
+                builder.setBuildSystemProperties(buildSystemProperties);
 
                 RuntimeRunner runner = builder
                         .build();

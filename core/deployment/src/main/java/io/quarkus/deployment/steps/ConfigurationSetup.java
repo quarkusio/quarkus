@@ -37,6 +37,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.BuildTimeConfigurationBuildItem;
+import io.quarkus.deployment.builditem.BuildTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.BuildTimeConfigurationSourceBuildItem;
 import io.quarkus.deployment.builditem.BuildTimeRunTimeFixedConfigurationBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
@@ -74,6 +76,7 @@ import io.quarkus.runtime.configuration.DeploymentProfileConfigSource;
 import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.SimpleConfigurationProviderResolver;
+import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -162,6 +165,23 @@ public class ConfigurationSetup {
     }
 
     /**
+     * Calculate the build-time default values.
+     *
+     * @param defaultItems default values items
+     * @return the default values config source
+     */
+    @BuildStep
+    public BuildTimeConfigurationSourceBuildItem buildTimeDefaults(
+            List<BuildTimeConfigurationDefaultBuildItem> defaultItems) {
+        Map<String, String> map = new HashMap<>();
+        for (BuildTimeConfigurationDefaultBuildItem item : defaultItems) {
+            map.put(item.getKey(), item.getValue());
+        }
+        PropertiesConfigSource pcs = new PropertiesConfigSource(map, "Build time supplemental defaults", 0);
+        return new BuildTimeConfigurationSourceBuildItem(pcs);
+    }
+
+    /**
      * Run before anything that consumes configuration; sets up the main configuration definition instance.
      *
      * @param runTimeConfigConsumer the run time config consumer
@@ -170,6 +190,7 @@ public class ConfigurationSetup {
      * @param resourceConsumer
      * @param niResourceConsumer
      * @param runTimeDefaultConsumer
+     * @param configSourceItems the build-time config source build items
      * @param extensionClassLoaderBuildItem the extension class loader build item
      * @param archiveRootBuildItem the application archive root
      * @throws IOException
@@ -183,6 +204,8 @@ public class ConfigurationSetup {
             Consumer<GeneratedResourceBuildItem> resourceConsumer,
             Consumer<SubstrateResourceBuildItem> niResourceConsumer,
             Consumer<RunTimeConfigurationDefaultBuildItem> runTimeDefaultConsumer,
+            List<BuildTimeConfigurationSourceBuildItem> configSourceItems,
+            List<BuildTimeConfigurationDefaultBuildItem> buildTimeDefaultItems,
             ExtensionClassLoaderBuildItem extensionClassLoaderBuildItem,
             ArchiveRootBuildItem archiveRootBuildItem) throws IOException, ClassNotFoundException {
 
@@ -223,6 +246,13 @@ public class ConfigurationSetup {
         final DefaultValuesConfigurationSource defaultSource = new DefaultValuesConfigurationSource(
                 buildTimeConfig.getLeafPatterns());
         builder.withSources(inJar, defaultSource);
+        final int cnt = configSourceItems.size();
+        final ConfigSource[] configSources = new ConfigSource[cnt];
+        int i = 0;
+        for (BuildTimeConfigurationSourceBuildItem item : configSourceItems) {
+            configSources[i++] = item.getConfigSourceSupplier().get();
+        }
+        builder.withSources(configSources);
 
         // populate builder with all converters loaded from ServiceLoader 
         ConverterSupport.populateConverters(builder);

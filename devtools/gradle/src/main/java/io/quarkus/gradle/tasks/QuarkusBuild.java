@@ -3,6 +3,8 @@ package io.quarkus.gradle.tasks;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Input;
@@ -141,6 +143,9 @@ public class QuarkusBuild extends QuarkusTask {
         } catch (AppModelResolverException e) {
             throw new GradleException("Failed to resolve application model " + appArtifact + " dependencies", e);
         }
+        final Map<String, ?> properties = getProject().getProperties();
+        final Properties realProperties = new Properties();
+        realProperties.putAll(properties);
 
         try (AppCreator appCreator = AppCreator.builder()
                 // configure the build phases we want the app to go through
@@ -148,7 +153,8 @@ public class QuarkusBuild extends QuarkusTask {
                         .setAppClassesDir(extension().outputDirectory().toPath())
                         .setConfigDir(extension().outputConfigDirectory().toPath())
                         .setTransformedClassesDir(getTransformedClassesDirectory().toPath())
-                        .setWiringClassesDir(getWiringClassesDirectory().toPath()))
+                        .setWiringClassesDir(getWiringClassesDirectory().toPath())
+                        .setBuildSystemProperties(realProperties))
                 .addPhase(new RunnerJarPhase()
                         .setLibDir(getLibDir().toPath())
                         .setFinalName(extension().finalName())

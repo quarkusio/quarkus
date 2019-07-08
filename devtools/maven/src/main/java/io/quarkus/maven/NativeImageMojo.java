@@ -267,7 +267,8 @@ public class NativeImageMojo extends AbstractMojo {
 
             creatorBuilder.addPhase(new AugmentPhase()
                     .setAppClassesDir(new File(outputDirectory, "classes").toPath())
-                    .setWiringClassesDir(wiringClassesDirectory.toPath()))
+                    .setWiringClassesDir(wiringClassesDirectory.toPath())
+                    .setBuildSystemProperties(project.getProperties()))
                     .addPhase(new RunnerJarPhase()
                             .setFinalName(finalName))
                     .setWorkDir(buildDir.toPath());

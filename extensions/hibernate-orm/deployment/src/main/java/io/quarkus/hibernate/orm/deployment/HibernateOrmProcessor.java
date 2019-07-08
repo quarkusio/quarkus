@@ -71,7 +71,7 @@ import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationBu
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerFactoryProducer;
 import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerProducer;
-import io.quarkus.hibernate.orm.runtime.HibernateOrmTemplate;
+import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.JPAResourceReferenceProvider;
 import io.quarkus.hibernate.orm.runtime.RequestScopedEntityManagerHolder;
@@ -110,7 +110,7 @@ public final class HibernateOrmProcessor {
     @SuppressWarnings("unchecked")
     @BuildStep
     @Record(STATIC_INIT)
-    public void build(RecorderContext recorder, HibernateOrmTemplate template,
+    public void build(RecorderContext recorder, HibernateOrmRecorder template,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             List<NonJpaModelBuildItem> nonJpaModelBuildItems,
             CombinedIndexBuildItem index,
@@ -279,7 +279,7 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public void build(HibernateOrmTemplate template,
+    public void build(HibernateOrmRecorder template,
             Capabilities capabilities, BuildProducer<BeanContainerListenerBuildItem> buildProducer,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) throws Exception {
@@ -299,7 +299,7 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void startPersistenceUnits(HibernateOrmTemplate template, BeanContainerBuildItem beanContainer,
+    public void startPersistenceUnits(HibernateOrmRecorder template, BeanContainerBuildItem beanContainer,
             Optional<DataSourceInitializedBuildItem> dataSourceInitialized,
             JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels,
             List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationsRuntimeConfigured) throws Exception {

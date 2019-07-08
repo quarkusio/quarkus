@@ -44,7 +44,7 @@ public class MailerProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    MailerBuildItem build(BuildProducer<FeatureBuildItem> feature, MailConfigTemplate template, VertxBuildItem vertx,
+    MailerBuildItem build(BuildProducer<FeatureBuildItem> feature, MailConfigRecorder template, VertxBuildItem vertx,
             BeanContainerBuildItem beanContainer, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
             MailConfig config) {
 

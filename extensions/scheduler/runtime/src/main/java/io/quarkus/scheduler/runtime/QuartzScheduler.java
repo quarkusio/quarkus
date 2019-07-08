@@ -156,7 +156,7 @@ public class QuartzScheduler implements Scheduler {
                         String name = idx++ + "_" + entry.getKey();
                         JobBuilder jobBuilder = JobBuilder.newJob(InvokerJob.class)
                                 .withIdentity(name, Scheduler.class.getName())
-                                .usingJobData(SchedulerDeploymentTemplate.INVOKER_KEY, entry.getKey());
+                                .usingJobData(SchedulerDeploymentRecorder.INVOKER_KEY, entry.getKey());
                         ScheduleBuilder<?> scheduleBuilder;
 
                         String cron = scheduled.cron().trim();
@@ -245,7 +245,7 @@ public class QuartzScheduler implements Scheduler {
                     return previousFireTime != null ? previousFireTime.toInstant() : null;
                 }
             };
-            String invokerClass = context.getJobDetail().getJobDataMap().getString(SchedulerDeploymentTemplate.INVOKER_KEY);
+            String invokerClass = context.getJobDetail().getJobDataMap().getString(SchedulerDeploymentRecorder.INVOKER_KEY);
             invokers.computeIfAbsent(invokerClass, schedulerConfig::createInvoker).invoke(new ScheduledExecution() {
 
                 @Override

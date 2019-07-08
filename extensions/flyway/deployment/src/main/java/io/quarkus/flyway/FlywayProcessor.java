@@ -30,8 +30,8 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.flyway.runtime.FlywayBuildConfig;
 import io.quarkus.flyway.runtime.FlywayProducer;
+import io.quarkus.flyway.runtime.FlywayRecorder;
 import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
-import io.quarkus.flyway.runtime.FlywayTemplate;
 import io.quarkus.flyway.runtime.graal.QuarkusPathLocationScanner;
 
 class FlywayProcessor {
@@ -66,7 +66,7 @@ class FlywayProcessor {
             BuildProducer<SubstrateResourceBuildItem> resourceProducer,
             BuildProducer<BeanContainerListenerBuildItem> containerListenerProducer,
             BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
-            FlywayTemplate template,
+            FlywayRecorder template,
             DataSourceInitializedBuildItem dataSourceInitializedBuildItem) throws IOException, URISyntaxException {
 
         featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.FLYWAY));
@@ -89,7 +89,7 @@ class FlywayProcessor {
      */
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void configureRuntimeProperties(FlywayTemplate template,
+    void configureRuntimeProperties(FlywayRecorder template,
             FlywayRuntimeConfig flywayRuntimeConfig,
             BeanContainerBuildItem beanContainer,
             DataSourceInitializedBuildItem dataSourceInitializedBuildItem) {

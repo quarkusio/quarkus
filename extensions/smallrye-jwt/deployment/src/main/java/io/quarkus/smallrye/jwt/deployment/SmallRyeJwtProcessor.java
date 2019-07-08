@@ -24,7 +24,7 @@ import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.runtime.AuthConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.jwt.runtime.JWTAuthContextInfoGroup;
-import io.quarkus.smallrye.jwt.runtime.SmallRyeJwtTemplate;
+import io.quarkus.smallrye.jwt.runtime.SmallRyeJwtRecorder;
 import io.quarkus.smallrye.jwt.runtime.auth.ClaimAttributes;
 import io.quarkus.smallrye.jwt.runtime.auth.ElytronJwtCallerPrincipal;
 import io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMethodExtension;
@@ -110,7 +110,7 @@ class SmallRyeJwtProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    AuthConfigBuildItem configureFileRealmAuthConfig(SmallRyeJwtTemplate template,
+    AuthConfigBuildItem configureFileRealmAuthConfig(SmallRyeJwtRecorder template,
             BuildProducer<ObjectSubstitutionBuildItem> objectSubstitution,
             BuildProducer<SecurityRealmBuildItem> securityRealm,
             BeanContainerBuildItem container,
@@ -146,7 +146,7 @@ class SmallRyeJwtProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void configureIdentityManager(SmallRyeJwtTemplate template, SecurityDomainBuildItem securityDomain,
+    void configureIdentityManager(SmallRyeJwtRecorder template, SecurityDomainBuildItem securityDomain,
             BuildProducer<IdentityManagerBuildItem> identityManagerProducer) {
         if (config.enabled) {
             IdentityManager identityManager = template.createIdentityManager(securityDomain.getSecurityDomain());
@@ -163,7 +163,7 @@ class SmallRyeJwtProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    ServletExtensionBuildItem registerJwtAuthExtension(SmallRyeJwtTemplate template, BeanContainerBuildItem container) {
+    ServletExtensionBuildItem registerJwtAuthExtension(SmallRyeJwtRecorder template, BeanContainerBuildItem container) {
         log.debugf("registerJwtAuthExtension");
         ServletExtension authExt = template.createAuthExtension(config.authMechanism, container.getValue());
         ServletExtensionBuildItem sebi = new ServletExtensionBuildItem(authExt);

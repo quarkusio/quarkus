@@ -23,7 +23,7 @@ public class KeycloakAdapterProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    BeanContainerListenerBuildItem configureAdapter(KeycloakTemplate template, BuildProducer<AuthConfigBuildItem> authConfig,
+    BeanContainerListenerBuildItem configureAdapter(KeycloakRecorder template, BuildProducer<AuthConfigBuildItem> authConfig,
             BuildProducer<HotDeploymentWatchedFileBuildItem> resources,
             BuildProducer<ServletExtensionBuildItem> servletExtension) {
         // configure login info

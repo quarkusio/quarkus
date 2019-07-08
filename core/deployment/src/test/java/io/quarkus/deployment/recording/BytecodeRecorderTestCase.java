@@ -28,7 +28,7 @@ public class BytecodeRecorderTestCase {
     @Test
     public void testPrimitiveParams() throws Exception {
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.primitiveParams(true, (byte) 1, 'a', (short) 2, 3, 4, 5, 6);
         }, true, (byte) 1, 'a', (short) 2, 3, (long) 4, (float) 5, (double) 6);
     }
@@ -36,7 +36,7 @@ public class BytecodeRecorderTestCase {
     @Test
     public void testBoxedPrimitiveParams() throws Exception {
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.boxedPrimitiveParams(true, (byte) 1, 'a', (short) 2, 3, (long) 4, (float) 5, (double) 6);
         }, true, (byte) 1, 'a', (short) 2, 3, (long) 4, (float) 5, (double) 6);
     }
@@ -44,11 +44,11 @@ public class BytecodeRecorderTestCase {
     @Test
     public void testPrimitiveArrayTypes() throws Exception {
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.intArray(4, 5, 6);
         }, (Object) new int[] { 4, 5, 6 });
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.doubleArray(4, 5, 6);
         }, (Object) new double[] { 4, 5, 6 });
     }
@@ -56,15 +56,15 @@ public class BytecodeRecorderTestCase {
     @Test
     public void testCollections() throws Exception {
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.list(new ArrayList<>(Arrays.asList(4, 5, 6)));
         }, Arrays.asList(4, 5, 6));
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.set(new HashSet<>(Arrays.asList(4, 5, 6)));
         }, new HashSet<>(Arrays.asList(4, 5, 6)));
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.map(new HashMap<>(Collections.singletonMap("a", "b")));
         }, Collections.singletonMap("a", "b"));
     }
@@ -72,27 +72,27 @@ public class BytecodeRecorderTestCase {
     @Test
     public void testEmptyCollections() throws Exception {
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.object(Collections.emptyList());
         }, new ArrayList<>());
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.object(Collections.emptyMap());
         }, new HashMap<>());
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.object(Collections.emptySet());
         }, new HashSet<>());
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.object(Collections.emptyNavigableMap());
         }, new LinkedHashMap<>());
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.object(Collections.emptySortedMap());
         }, new TreeMap<>());
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.object(Collections.emptySortedSet());
         }, new TreeSet<>());
     }
@@ -100,15 +100,15 @@ public class BytecodeRecorderTestCase {
     @Test
     public void testSingletonCollections() throws Exception {
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.object(Collections.singletonList(1));
         }, new ArrayList<>(Arrays.asList(1)));
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.object(Collections.singletonMap(1, 2));
         }, new HashMap<>(Collections.singletonMap(1, 2)));
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.object(Collections.singleton(1));
         }, new HashSet<>(Collections.singleton(1)));
     }
@@ -116,7 +116,7 @@ public class BytecodeRecorderTestCase {
     @Test
     public void testJavaBean() throws Exception {
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.bean(new TestJavaBean("A string", 99));
         }, new TestJavaBean("A string", 99));
     }
@@ -130,7 +130,7 @@ public class BytecodeRecorderTestCase {
         }
 
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.list(beans);
         }, beans);
     }
@@ -144,7 +144,7 @@ public class BytecodeRecorderTestCase {
         }
 
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.array(beans.toArray());
         }, (Object) beans.toArray());
     }
@@ -157,7 +157,7 @@ public class BytecodeRecorderTestCase {
         }
 
         runTest(recorder -> {
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             for (TestJavaBean i : beans) {
                 template.bean(i);
             }
@@ -169,7 +169,7 @@ public class BytecodeRecorderTestCase {
         runTest(recorder -> {
             recorder.registerSubstitution(NonSerializable.class, NonSerializable.Serialized.class,
                     NonSerializable.Substitution.class);
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.bean(new NonSerializable("A string", 99));
         }, new NonSerializable("A string", 99));
     }
@@ -178,7 +178,7 @@ public class BytecodeRecorderTestCase {
     public void testNewInstance() throws Exception {
         runTest(recorder -> {
             RuntimeValue<TestJavaBean> instance = recorder.newInstance(TestJavaBean.class.getName());
-            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
             template.add(instance);
             template.add(instance);
             template.result(instance);
@@ -189,13 +189,13 @@ public class BytecodeRecorderTestCase {
     public void testRecordingProxyToStringNotNull() {
         TestClassLoader tcl = new TestClassLoader(getClass().getClassLoader());
         BytecodeRecorderImpl recorder = new BytecodeRecorderImpl(tcl, false, TEST_CLASS);
-        TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+        TestRecorder template = recorder.getRecordingProxy(TestRecorder.class);
         Assert.assertNotNull(template.toString());
         Assert.assertTrue(template.toString().contains("$$RecordingProxyProxy"));
     }
 
     void runTest(Consumer<BytecodeRecorderImpl> generator, Object... expected) throws Exception {
-        TestTemplate.RESULT.clear();
+        TestRecorder.RESULT.clear();
         TestClassLoader tcl = new TestClassLoader(getClass().getClassLoader());
         BytecodeRecorderImpl recorder = new BytecodeRecorderImpl(tcl, false, TEST_CLASS);
         generator.accept(recorder);
@@ -203,20 +203,20 @@ public class BytecodeRecorderTestCase {
 
         StartupTask task = (StartupTask) tcl.loadClass(TEST_CLASS).newInstance();
         task.deploy(new StartupContext());
-        Assert.assertEquals(expected.length, TestTemplate.RESULT.size());
+        Assert.assertEquals(expected.length, TestRecorder.RESULT.size());
         for (Object i : expected) {
             if (i.getClass().isArray()) {
                 if (i instanceof int[]) {
-                    Assert.assertArrayEquals((int[]) i, (int[]) TestTemplate.RESULT.poll());
+                    Assert.assertArrayEquals((int[]) i, (int[]) TestRecorder.RESULT.poll());
                 } else if (i instanceof double[]) {
-                    Assert.assertArrayEquals((double[]) i, (double[]) TestTemplate.RESULT.poll(), 0);
+                    Assert.assertArrayEquals((double[]) i, (double[]) TestRecorder.RESULT.poll(), 0);
                 } else if (i instanceof Object[]) {
-                    Assert.assertArrayEquals((Object[]) i, (Object[]) TestTemplate.RESULT.poll());
+                    Assert.assertArrayEquals((Object[]) i, (Object[]) TestRecorder.RESULT.poll());
                 } else {
                     throw new RuntimeException("not implemented");
                 }
             } else {
-                Assert.assertEquals(i, TestTemplate.RESULT.poll());
+                Assert.assertEquals(i, TestRecorder.RESULT.poll());
             }
         }
     }

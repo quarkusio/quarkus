@@ -130,7 +130,7 @@ public final class TestProcessor {
      */
     @BuildStep
     @Record(STATIC_INIT)
-    RuntimeServiceBuildItem parseServiceXmlConfig(TestTemplate template) throws JAXBException {
+    RuntimeServiceBuildItem parseServiceXmlConfig(TestRecorder template) throws JAXBException {
         RuntimeServiceBuildItem serviceBuildItem = null;
         JAXBContext context = JAXBContext.newInstance(XmlConfig.class);
         Unmarshaller unmarshaller = context.createUnmarshaller();
@@ -156,7 +156,7 @@ public final class TestProcessor {
      */
     @BuildStep
     @Record(RUNTIME_INIT)
-    ServiceStartBuildItem startRuntimeService(TestTemplate template, ShutdownContextBuildItem shutdownContextBuildItem,
+    ServiceStartBuildItem startRuntimeService(TestRecorder template, ShutdownContextBuildItem shutdownContextBuildItem,
             RuntimeServiceBuildItem serviceBuildItem) throws IOException {
         if (serviceBuildItem != null) {
             log.info("Registering service start");
@@ -177,7 +177,7 @@ public final class TestProcessor {
      */
     @BuildStep
     @Record(STATIC_INIT)
-    PublicKeyBuildItem loadDSAPublicKey(TestTemplate template,
+    PublicKeyBuildItem loadDSAPublicKey(TestRecorder template,
             BuildProducer<ObjectSubstitutionBuildItem> substitutions) throws IOException, GeneralSecurityException {
         String path = configRoot.dsaKeyLocation;
         InputStream is = getClass().getResourceAsStream(path);
@@ -209,7 +209,7 @@ public final class TestProcessor {
      */
     @BuildStep
     @Record(RUNTIME_INIT)
-    void loadDSAPublicKeyProducer(TestTemplate template, PublicKeyBuildItem publicKey, BeanContainerBuildItem beanContainer) {
+    void loadDSAPublicKeyProducer(TestRecorder template, PublicKeyBuildItem publicKey, BeanContainerBuildItem beanContainer) {
         template.loadDSAPublicKeyProducer(publicKey.getPublicKey(), beanContainer.getValue());
     }
 
@@ -332,7 +332,7 @@ public final class TestProcessor {
      */
     @BuildStep
     @Record(STATIC_INIT)
-    void scanForBeans(TestTemplate template, BeanArchiveIndexBuildItem beanArchiveIndex,
+    void scanForBeans(TestRecorder template, BeanArchiveIndexBuildItem beanArchiveIndex,
             BuildProducer<TestBeanBuildItem> testBeanProducer) {
         IndexView indexView = beanArchiveIndex.getIndex();
         Collection<AnnotationInstance> testBeans = indexView.getAnnotations(TEST_ANNOTATION);
@@ -363,7 +363,7 @@ public final class TestProcessor {
      */
     @BuildStep
     @Record(RUNTIME_INIT)
-    void configureBeans(TestTemplate template, List<TestBeanBuildItem> testBeans,
+    void configureBeans(TestRecorder template, List<TestBeanBuildItem> testBeans,
             BeanContainerBuildItem beanContainer,
             TestRunTimeConfig runTimeConfig) {
         for (TestBeanBuildItem testBeanBuildItem : testBeans) {
@@ -379,7 +379,7 @@ public final class TestProcessor {
      */
     @BuildStep
     @Record(RUNTIME_INIT)
-    void referencePrimitiveTypeClasses(TestTemplate template) {
+    void referencePrimitiveTypeClasses(TestRecorder template) {
         HashSet<Class<?>> allPrimitiveTypes = new HashSet<>();
         allPrimitiveTypes.add(byte.class);
         allPrimitiveTypes.add(char.class);

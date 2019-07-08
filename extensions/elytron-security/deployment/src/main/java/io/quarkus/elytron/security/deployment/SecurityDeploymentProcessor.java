@@ -26,7 +26,7 @@ import io.quarkus.elytron.security.runtime.MPRealmConfig;
 import io.quarkus.elytron.security.runtime.PropertiesRealmConfig;
 import io.quarkus.elytron.security.runtime.SecurityConfig;
 import io.quarkus.elytron.security.runtime.SecurityContextPrincipal;
-import io.quarkus.elytron.security.runtime.SecurityTemplate;
+import io.quarkus.elytron.security.runtime.SecurityRecorder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
 import io.undertow.security.idm.IdentityManager;
@@ -108,7 +108,7 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    AuthConfigBuildItem configureFileRealmAuthConfig(SecurityTemplate template,
+    AuthConfigBuildItem configureFileRealmAuthConfig(SecurityRecorder template,
             BuildProducer<SubstrateResourceBuildItem> resources,
             BuildProducer<SecurityRealmBuildItem> securityRealm,
             BuildProducer<PasswordRealmBuildItem> passwordRealm) throws Exception {
@@ -141,7 +141,7 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    AuthConfigBuildItem configureMPRealmConfig(SecurityTemplate template,
+    AuthConfigBuildItem configureMPRealmConfig(SecurityRecorder template,
             BuildProducer<SecurityRealmBuildItem> securityRealm,
             BuildProducer<PasswordRealmBuildItem> passwordRealm) throws Exception {
         if (security.embedded.enabled) {
@@ -185,7 +185,7 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    SecurityDomainBuildItem build(SecurityTemplate template, BuildProducer<ServletExtensionBuildItem> extension,
+    SecurityDomainBuildItem build(SecurityRecorder template, BuildProducer<ServletExtensionBuildItem> extension,
             List<SecurityRealmBuildItem> realms) throws Exception {
         log.debugf("build, hasFile=%s, hasMP=%s", security.file.enabled, security.embedded.enabled);
         if (realms.size() > 0) {
@@ -220,7 +220,7 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void configureIdentityManager(SecurityTemplate template, SecurityDomainBuildItem securityDomain,
+    void configureIdentityManager(SecurityRecorder template, SecurityDomainBuildItem securityDomain,
             BuildProducer<IdentityManagerBuildItem> identityManagerProducer,
             List<PasswordRealmBuildItem> passwordRealm) {
         if (passwordRealm.size() > 0) {
@@ -240,7 +240,7 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void addIdentityManager(SecurityTemplate template, BuildProducer<ServletExtensionBuildItem> extension,
+    void addIdentityManager(SecurityRecorder template, BuildProducer<ServletExtensionBuildItem> extension,
             SecurityDomainBuildItem securityDomain, List<IdentityManagerBuildItem> identityManagers,
             List<AuthConfigBuildItem> authConfigs) {
         // If there are no identityManagers, exit
@@ -269,7 +269,7 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void addLoginConfig(SecurityTemplate template, List<AuthConfigBuildItem> authConfigs,
+    void addLoginConfig(SecurityRecorder template, List<AuthConfigBuildItem> authConfigs,
             BuildProducer<ServletExtensionBuildItem> extension) {
         List<AuthConfig> allAuthConfigs = new ArrayList<>();
 
@@ -283,7 +283,7 @@ class SecurityDeploymentProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    ServletExtensionBuildItem addSecurityContextPrincipalHandler(SecurityTemplate template, BeanContainerBuildItem container) {
+    ServletExtensionBuildItem addSecurityContextPrincipalHandler(SecurityRecorder template, BeanContainerBuildItem container) {
         log.debugf("addSecurityContextPrincipalHandler");
         return new ServletExtensionBuildItem(template.configureSecurityContextPrincipalHandler(container.getValue()));
     }
@@ -340,7 +340,7 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void loadRealm(SecurityTemplate template, List<SecurityRealmBuildItem> realms) throws Exception {
+    void loadRealm(SecurityRecorder template, List<SecurityRealmBuildItem> realms) throws Exception {
         for (SecurityRealmBuildItem realm : realms) {
             AuthConfig authConfig = realm.getAuthConfig();
             if (authConfig.getType() != null) {

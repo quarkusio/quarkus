@@ -22,8 +22,8 @@ import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.agroal.runtime.AbstractDataSourceProducer;
 import io.quarkus.agroal.runtime.AgroalBuildTimeConfig;
+import io.quarkus.agroal.runtime.AgroalRecorder;
 import io.quarkus.agroal.runtime.AgroalRuntimeConfig;
-import io.quarkus.agroal.runtime.AgroalTemplate;
 import io.quarkus.agroal.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -64,7 +64,7 @@ class AgroalProcessor {
     @BuildStep
     BeanContainerListenerBuildItem build(
             RecorderContext recorder,
-            AgroalTemplate template,
+            AgroalRecorder template,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<SubstrateResourceBuildItem> resource,
@@ -128,7 +128,7 @@ class AgroalProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void configureRuntimeProperties(AgroalTemplate template,
+    void configureRuntimeProperties(AgroalRecorder template,
             BuildProducer<DataSourceInitializedBuildItem> dataSourceInitialized,
             AgroalRuntimeConfig agroalRuntimeConfig) {
         if (!agroalBuildTimeConfig.defaultDataSource.driver.isPresent() && agroalBuildTimeConfig.namedDataSources.isEmpty()) {
@@ -182,7 +182,7 @@ class AgroalProcessor {
             defaultDataSourceMethodCreator.addAnnotation(Produces.class);
             defaultDataSourceMethodCreator.addAnnotation(Default.class);
 
-            ResultHandle dataSourceName = defaultDataSourceMethodCreator.load(AgroalTemplate.DEFAULT_DATASOURCE_NAME);
+            ResultHandle dataSourceName = defaultDataSourceMethodCreator.load(AgroalRecorder.DEFAULT_DATASOURCE_NAME);
             ResultHandle dataSourceBuildTimeConfig = defaultDataSourceMethodCreator.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getDefaultBuildTimeConfig",
                             DataSourceBuildTimeConfig.class),

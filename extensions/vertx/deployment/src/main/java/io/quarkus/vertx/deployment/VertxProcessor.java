@@ -61,7 +61,7 @@ import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.runtime.EventConsumerInvoker;
 import io.quarkus.vertx.runtime.VertxConfiguration;
 import io.quarkus.vertx.runtime.VertxProducer;
-import io.quarkus.vertx.runtime.VertxTemplate;
+import io.quarkus.vertx.runtime.VertxRecorder;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -122,7 +122,7 @@ class VertxProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    VertxBuildItem build(VertxTemplate template, BeanContainerBuildItem beanContainer, BuildProducer<FeatureBuildItem> feature,
+    VertxBuildItem build(VertxRecorder template, BeanContainerBuildItem beanContainer, BuildProducer<FeatureBuildItem> feature,
             List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,

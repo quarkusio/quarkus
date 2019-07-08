@@ -50,7 +50,7 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanClientProducer;
 import io.quarkus.infinispan.client.runtime.InfinispanClientRuntimeConfig;
-import io.quarkus.infinispan.client.runtime.InfinispanTemplate;
+import io.quarkus.infinispan.client.runtime.InfinispanRecorder;
 
 class InfinispanClientProcessor {
     private static final Log log = LogFactory.getLog(InfinispanClientProcessor.class);
@@ -174,7 +174,7 @@ class InfinispanClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    BeanContainerListenerBuildItem build(InfinispanTemplate template, InfinispanPropertiesBuildItem builderBuildItem) {
+    BeanContainerListenerBuildItem build(InfinispanRecorder template, InfinispanPropertiesBuildItem builderBuildItem) {
         Properties properties = builderBuildItem.getProperties();
         InfinispanClientBuildTimeConfig conf = infinispanClient;
         if (log.isDebugEnabled()) {
@@ -193,7 +193,7 @@ class InfinispanClientProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void configureRuntimeProperties(InfinispanTemplate template,
+    void configureRuntimeProperties(InfinispanRecorder template,
             InfinispanClientRuntimeConfig infinispanClientRuntimeConfig) {
         template.configureRuntimeProperties(infinispanClientRuntimeConfig);
     }

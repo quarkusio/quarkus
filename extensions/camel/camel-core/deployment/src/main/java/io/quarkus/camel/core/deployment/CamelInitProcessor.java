@@ -30,8 +30,8 @@ import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
 import io.quarkus.camel.core.runtime.CamelConfig;
 import io.quarkus.camel.core.runtime.CamelConfig.BuildTime;
 import io.quarkus.camel.core.runtime.CamelProducers;
+import io.quarkus.camel.core.runtime.CamelRecorder;
 import io.quarkus.camel.core.runtime.CamelRuntime;
-import io.quarkus.camel.core.runtime.CamelTemplate;
 import io.quarkus.camel.core.runtime.support.RuntimeRegistry;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -54,7 +54,7 @@ class CamelInitProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep(applicationArchiveMarkers = { CamelSupport.CAMEL_SERVICE_BASE_PATH, CamelSupport.CAMEL_ROOT_PACKAGE_DIRECTORY })
-    CamelRuntimeBuildItem createInitTask(RecorderContext recorderContext, CamelTemplate template,
+    CamelRuntimeBuildItem createInitTask(RecorderContext recorderContext, CamelRecorder template,
             BuildProducer<RuntimeBeanBuildItem> runtimeBeans) {
         Properties properties = new Properties();
         Config configProvider = ConfigProvider.getConfig();
@@ -90,7 +90,7 @@ class CamelInitProcessor {
     AdditionalBeanBuildItem createCamelProducers(
             RecorderContext recorderContext,
             CamelRuntimeBuildItem runtime,
-            CamelTemplate template,
+            CamelRecorder template,
             BuildProducer<BeanContainerListenerBuildItem> listeners) {
 
         listeners
@@ -104,7 +104,7 @@ class CamelInitProcessor {
     void createInitTask(
             BeanContainerBuildItem beanContainerBuildItem,
             CamelRuntimeBuildItem runtime,
-            CamelTemplate template) throws Exception {
+            CamelRecorder template) throws Exception {
 
         template.init(beanContainerBuildItem.getValue(), runtime.getRuntime(), buildTimeConfig);
     }
@@ -112,7 +112,7 @@ class CamelInitProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(applicationArchiveMarkers = { CamelSupport.CAMEL_SERVICE_BASE_PATH, CamelSupport.CAMEL_ROOT_PACKAGE_DIRECTORY })
     void createRuntimeInitTask(
-            CamelTemplate template,
+            CamelRecorder template,
             CamelRuntimeBuildItem runtime,
             ShutdownContextBuildItem shutdown,
             CamelConfig.Runtime runtimeConfig)

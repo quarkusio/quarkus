@@ -6,14 +6,14 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.undertow.runtime.UndertowDeploymentTemplate;
+import io.quarkus.undertow.runtime.UndertowDeploymentRecorder;
 
 public class UndertowArcIntegrationBuildStep {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     ServletExtensionBuildItem integrateRequestContext(BeanContainerBuildItem beanContainerBuildItem,
-            UndertowDeploymentTemplate template) {
+            UndertowDeploymentRecorder template) {
         return new ServletExtensionBuildItem(template.setupRequestScope(beanContainerBuildItem.getValue()));
     }
 

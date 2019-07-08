@@ -103,9 +103,9 @@ import io.quarkus.undertow.runtime.HttpSessionContext;
 import io.quarkus.undertow.runtime.ServletProducer;
 import io.quarkus.undertow.runtime.ServletSecurityInfoProxy;
 import io.quarkus.undertow.runtime.ServletSecurityInfoSubstitution;
-import io.quarkus.undertow.runtime.UndertowDeploymentTemplate;
+import io.quarkus.undertow.runtime.UndertowDeploymentRecorder;
 import io.quarkus.undertow.runtime.UndertowHandlersConfServletExtension;
-import io.quarkus.undertow.runtime.filters.CORSTemplate;
+import io.quarkus.undertow.runtime.filters.CORSRecorder;
 import io.undertow.Undertow;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
@@ -132,16 +132,16 @@ public class UndertowBuildStep {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public ServiceStartBuildItem boot(UndertowDeploymentTemplate template,
+    public ServiceStartBuildItem boot(UndertowDeploymentRecorder template,
             ServletDeploymentManagerBuildItem servletDeploymentManagerBuildItem,
             List<HttpHandlerWrapperBuildItem> wrappers,
             ShutdownContextBuildItem shutdown,
             Consumer<UndertowBuildItem> undertowProducer,
             LaunchModeBuildItem launchMode,
             ExecutorBuildItem executorBuildItem,
-            CORSTemplate corsTemplate,
+            CORSRecorder corsRecorder,
             HttpConfig config) throws Exception {
-        corsTemplate.setHttpConfig(config);
+        corsRecorder.setHttpConfig(config);
         RuntimeValue<Undertow> ut = template.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
                 servletDeploymentManagerBuildItem.getDeploymentManager(),
                 config, wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()),
@@ -152,10 +152,10 @@ public class UndertowBuildStep {
 
     @BuildStep()
     @Record(STATIC_INIT)
-    public void buildCorsFilter(CORSTemplate corsTemplate, HttpBuildConfig buildConfig,
+    public void buildCorsFilter(CORSRecorder corsRecorder, HttpBuildConfig buildConfig,
             BuildProducer<ServletExtensionBuildItem> extensionProducer) {
         if (buildConfig.corsEnabled) {
-            extensionProducer.produce(new ServletExtensionBuildItem(corsTemplate.buildCORSExtension()));
+            extensionProducer.produce(new ServletExtensionBuildItem(corsRecorder.buildCORSExtension()));
         }
     }
 
@@ -261,7 +261,7 @@ public class UndertowBuildStep {
             List<ServletInitParamBuildItem> initParams,
             List<ServletContextAttributeBuildItem> contextParams,
             List<ServletContainerInitializerBuildItem> servletContainerInitializerBuildItems,
-            UndertowDeploymentTemplate template, RecorderContext context,
+            UndertowDeploymentRecorder template, RecorderContext context,
             List<ServletExtensionBuildItem> extensions,
             BeanContainerBuildItem bc,
             WebMetadataBuildItem webMetadataBuildItem,
@@ -456,7 +456,7 @@ public class UndertowBuildStep {
     @BuildStep
     @Record(STATIC_INIT)
     RuntimeBeanBuildItem servletContextBean(
-            UndertowDeploymentTemplate template) {
+            UndertowDeploymentRecorder template) {
         return RuntimeBeanBuildItem.builder(ServletContext.class).setScope(ApplicationScoped.class)
                 .setSupplier((Supplier) template.servletContextSupplier())
                 .build();

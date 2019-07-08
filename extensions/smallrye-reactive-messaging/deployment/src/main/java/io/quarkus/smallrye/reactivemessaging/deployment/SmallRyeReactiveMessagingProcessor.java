@@ -30,7 +30,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLifecycle;
-import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingTemplate;
+import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder;
 import io.smallrye.reactive.messaging.annotations.Emitter;
 import io.smallrye.reactive.messaging.annotations.Stream;
 
@@ -105,7 +105,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public void build(SmallRyeReactiveMessagingTemplate template, BeanContainerBuildItem beanContainer,
+    public void build(SmallRyeReactiveMessagingRecorder template, BeanContainerBuildItem beanContainer,
             List<MediatorBuildItem> mediatorMethods,
             List<EmitterBuildItem> emitterFields,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {

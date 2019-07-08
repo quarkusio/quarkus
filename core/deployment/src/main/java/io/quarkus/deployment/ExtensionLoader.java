@@ -62,6 +62,7 @@ import io.quarkus.deployment.util.ReflectUtil;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.Template;
 
 /**
@@ -71,8 +72,8 @@ public final class ExtensionLoader {
     private ExtensionLoader() {
     }
 
-    private static boolean isTemplate(AnnotatedElement element) {
-        return element.isAnnotationPresent(Template.class);
+    private static boolean isRecorder(AnnotatedElement element) {
+        return element.isAnnotationPresent(Recorder.class) || element.isAnnotationPresent(Template.class);
     }
 
     /**
@@ -180,7 +181,7 @@ public final class ExtensionLoader {
                     } else {
                         throw reportError(parameterClass, "Unknown value for ConfigPhase");
                     }
-                } else if (isTemplate(parameterClass)) {
+                } else if (isRecorder(parameterClass)) {
                     throw reportError(parameter, "Bytecode recording templates disallowed on constructor parameters");
                 } else {
                     throw reportError(parameter, "Unsupported constructor parameter type " + parameterType);
@@ -276,7 +277,7 @@ public final class ExtensionLoader {
                 } else {
                     throw reportError(fieldClass, "Unknown value for ConfigPhase");
                 }
-            } else if (isTemplate(fieldClass)) {
+            } else if (isRecorder(fieldClass)) {
                 throw reportError(field, "Bytecode recording templates disallowed on fields");
             } else {
                 throw reportError(field, "Unsupported field type " + fieldType);
@@ -401,7 +402,7 @@ public final class ExtensionLoader {
                         } else {
                             throw reportError(parameterClass, "Unknown value for ConfigPhase");
                         }
-                    } else if (isTemplate(parameter.getType())) {
+                    } else if (isRecorder(parameter.getType())) {
                         if (!isRecorder) {
                             throw reportError(parameter,
                                     "Cannot pass templates to method which is not annotated with " + Record.class);

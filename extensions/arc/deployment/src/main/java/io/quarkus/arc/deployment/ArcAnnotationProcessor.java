@@ -35,7 +35,7 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ReflectionRegistration;
 import io.quarkus.arc.processor.ResourceOutput;
 import io.quarkus.arc.runtime.AdditionalBean;
-import io.quarkus.arc.runtime.ArcDeploymentTemplate;
+import io.quarkus.arc.runtime.ArcDeploymentRecorder;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.LifecycleEventRunner;
 import io.quarkus.deployment.Capabilities;
@@ -109,7 +109,7 @@ public class ArcAnnotationProcessor {
     @BuildStep(providesCapabilities = Capabilities.CDI_ARC, applicationArchiveMarkers = { "META-INF/beans.xml",
             "META-INF/services/javax.enterprise.inject.spi.Extension" })
     @Record(STATIC_INIT)
-    public BeanContainerBuildItem build(ArcDeploymentTemplate arcTemplate,
+    public BeanContainerBuildItem build(ArcDeploymentRecorder arcTemplate,
             List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<AnnotationsTransformerBuildItem> annotationTransformers,

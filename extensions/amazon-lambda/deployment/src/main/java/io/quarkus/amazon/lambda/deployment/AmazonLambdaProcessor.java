@@ -12,7 +12,7 @@ import org.jboss.jandex.MethodInfo;
 
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
-import io.quarkus.amazon.lambda.runtime.AmazonLambdaTemplate;
+import io.quarkus.amazon.lambda.runtime.AmazonLambdaRecorder;
 import io.quarkus.amazon.lambda.runtime.FunctionError;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -81,7 +81,7 @@ public final class AmazonLambdaProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     List<AmazonLambdaBuildItem> process(List<AmazonLambdaClassNameBuildItem> items,
             RecorderContext context,
-            AmazonLambdaTemplate template) {
+            AmazonLambdaRecorder template) {
         List<AmazonLambdaBuildItem> ret = new ArrayList<>();
         for (AmazonLambdaClassNameBuildItem i : items) {
             ret.add(new AmazonLambdaBuildItem(i.getClassName(),
@@ -109,7 +109,7 @@ public final class AmazonLambdaProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     public void servlets(List<AmazonLambdaBuildItem> lambdas,
             BeanContainerBuildItem beanContainerBuildItem,
-            AmazonLambdaTemplate template,
+            AmazonLambdaRecorder template,
             RecorderContext context,
             ShutdownContextBuildItem shutdownContextBuildItem) throws IOException {
 

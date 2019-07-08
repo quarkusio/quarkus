@@ -19,7 +19,7 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.kafka.streams.runtime.KafkaStreamsTemplate;
+import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
 
 class KafkaStreamsProcessor {
 
@@ -55,7 +55,7 @@ class KafkaStreamsProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void build(KafkaStreamsTemplate template) {
+    void build(KafkaStreamsRecorder template) {
         // Explicitly loading RocksDB native libs, as that's normally done from within
         // static initializers which already ran during build
         template.loadRocksDb();

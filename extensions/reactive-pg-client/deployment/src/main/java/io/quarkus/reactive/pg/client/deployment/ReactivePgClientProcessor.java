@@ -14,7 +14,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.reactive.pg.client.runtime.DataSourceConfig;
 import io.quarkus.reactive.pg.client.runtime.PgPoolConfig;
 import io.quarkus.reactive.pg.client.runtime.PgPoolProducer;
-import io.quarkus.reactive.pg.client.runtime.PgPoolTemplate;
+import io.quarkus.reactive.pg.client.runtime.PgPoolRecorder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.reactiverse.pgclient.PgPool;
@@ -30,7 +30,7 @@ class ReactivePgClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    PgPoolBuildItem build(BuildProducer<FeatureBuildItem> feature, PgPoolTemplate template, VertxBuildItem vertx,
+    PgPoolBuildItem build(BuildProducer<FeatureBuildItem> feature, PgPoolRecorder template, VertxBuildItem vertx,
             BeanContainerBuildItem beanContainer, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
             DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig) {
 

@@ -11,7 +11,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 
 import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.arc.runtime.ArcDeploymentTemplate;
+import io.quarkus.arc.runtime.ArcDeploymentRecorder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -31,7 +31,7 @@ public class RuntimeBeanProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void build(List<RuntimeBeanBuildItem> beans,
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
-            ArcDeploymentTemplate template,
+            ArcDeploymentRecorder template,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         String beanName = "io.quarkus.arc.runtimebean.RuntimeBeanProducers";
 
@@ -74,7 +74,7 @@ public class RuntimeBeanProcessor {
             }
 
             ResultHandle staticMap = producer
-                    .readStaticField(FieldDescriptor.of(ArcDeploymentTemplate.class, "supplierMap", Map.class));
+                    .readStaticField(FieldDescriptor.of(ArcDeploymentRecorder.class, "supplierMap", Map.class));
             ResultHandle supplier = producer.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class), staticMap, producer.load(name));
             ResultHandle result = producer.invokeInterfaceMethod(MethodDescriptor.ofMethod(Supplier.class, "get", Object.class),

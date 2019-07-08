@@ -7,7 +7,7 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import io.quarkus.runtime.ExecutorTemplate;
+import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.ThreadPoolConfig;
 
 /**
@@ -17,7 +17,7 @@ public class ThreadPoolSetup {
 
     @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
-    public ExecutorBuildItem createExecutor(ExecutorTemplate setupTemplate, ShutdownContextBuildItem shutdownContextBuildItem,
+    public ExecutorBuildItem createExecutor(ExecutorRecorder setupTemplate, ShutdownContextBuildItem shutdownContextBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             ThreadPoolConfig threadPoolConfig) {
         return new ExecutorBuildItem(
@@ -27,6 +27,6 @@ public class ThreadPoolSetup {
     @BuildStep
     RuntimeInitializedClassBuildItem registerClasses() {
         // make sure that the config provider gets initialized only at run time
-        return new RuntimeInitializedClassBuildItem(ExecutorTemplate.class.getName());
+        return new RuntimeInitializedClassBuildItem(ExecutorRecorder.class.getName());
     }
 }

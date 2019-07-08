@@ -25,7 +25,7 @@ import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
-import io.quarkus.runtime.ssl.SslContextConfigurationTemplate;
+import io.quarkus.runtime.ssl.SslContextConfigurationRecorder;
 
 //TODO: this should go away, once we decide on which one of the API's we want
 class SubstrateConfigBuildStep {
@@ -36,7 +36,7 @@ class SubstrateConfigBuildStep {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void build(SslContextConfigurationTemplate sslContextConfigurationTemplate,
+    void build(SslContextConfigurationRecorder sslContextConfigurationRecorder,
             List<SubstrateConfigBuildItem> substrateConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
             List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
@@ -70,7 +70,7 @@ class SubstrateConfigBuildStep {
 
         // For now, we enable SSL native if it hasn't been explicitly disabled
         // it's probably overly conservative but it's a first step in the right direction
-        sslContextConfigurationTemplate.setSslNativeEnabled(!sslNativeConfig.isExplicitlyDisabled());
+        sslContextConfigurationRecorder.setSslNativeEnabled(!sslNativeConfig.isExplicitlyDisabled());
 
         if (sslNativeEnabled) {
             // This is an ugly hack but for now it's the only way to make the SunEC library

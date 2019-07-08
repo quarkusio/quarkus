@@ -43,8 +43,8 @@ import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationBu
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig;
 import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchBackendBuildTimeConfig;
+import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
 import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
-import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchTemplate;
 
 class HibernateSearchElasticsearchProcessor {
 
@@ -54,7 +54,7 @@ class HibernateSearchElasticsearchProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void build(HibernateSearchElasticsearchTemplate template,
+    public void build(HibernateSearchElasticsearchRecorder template,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
@@ -83,7 +83,7 @@ class HibernateSearchElasticsearchProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setRuntimeConfig(HibernateSearchElasticsearchTemplate template,
+    void setRuntimeConfig(HibernateSearchElasticsearchRecorder template,
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
         template.setRuntimeConfig(runtimeConfig);

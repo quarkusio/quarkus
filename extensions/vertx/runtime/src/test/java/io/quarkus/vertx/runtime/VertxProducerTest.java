@@ -14,13 +14,13 @@ import org.junit.Test;
 
 public class VertxProducerTest {
 
-    private VertxTemplate template;
+    private VertxRecorder template;
     private VertxProducer producer;
 
     @Before
     public void setUp() throws Exception {
         producer = new VertxProducer();
-        template = new VertxTemplate();
+        template = new VertxRecorder();
     }
 
     @After
@@ -31,7 +31,7 @@ public class VertxProducerTest {
     @Test
     public void shouldNotFailWithoutConfig() {
         template.initialize(null);
-        producer.initialize(VertxTemplate.vertx);
+        producer.initialize(VertxRecorder.vertx);
         verifyProducer();
     }
 
@@ -56,7 +56,7 @@ public class VertxProducerTest {
         configuration.warningExceptionTime = Duration.ofSeconds(1);
         configuration.internalBlockingPoolSize = 5;
         template.initialize(configuration);
-        producer.initialize(VertxTemplate.vertx);
+        producer.initialize(VertxRecorder.vertx);
         verifyProducer();
     }
 

@@ -33,7 +33,7 @@ import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
-import io.quarkus.swaggerui.runtime.SwaggerUiTemplate;
+import io.quarkus.swaggerui.runtime.SwaggerUiRecorder;
 import io.quarkus.undertow.deployment.GeneratedWebResourceBuildItem;
 import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
 
@@ -68,7 +68,7 @@ public class SwaggerUiProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void registerSwaggerUiServletExtension(SwaggerUiTemplate template,
+    public void registerSwaggerUiServletExtension(SwaggerUiRecorder template,
             BuildProducer<ServletExtensionBuildItem> servletExtension,
             BeanContainerBuildItem container,
             BuildProducer<GeneratedWebResourceBuildItem> generatedResources,

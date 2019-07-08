@@ -29,8 +29,8 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.smallrye.metrics.runtime.SmallRyeMetricsRecorder;
 import io.quarkus.smallrye.metrics.runtime.SmallRyeMetricsServlet;
-import io.quarkus.smallrye.metrics.runtime.SmallRyeMetricsTemplate;
 import io.quarkus.undertow.deployment.ServletBuildItem;
 import io.smallrye.metrics.MetricProducer;
 import io.smallrye.metrics.MetricRegistries;
@@ -113,7 +113,7 @@ public class SmallRyeMetricsProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     public void build(BeanContainerBuildItem beanContainerBuildItem,
-            SmallRyeMetricsTemplate metrics,
+            SmallRyeMetricsRecorder metrics,
             ShutdownContextBuildItem shutdown,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BeanArchiveIndexBuildItem beanArchiveIndex,
@@ -131,7 +131,7 @@ public class SmallRyeMetricsProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    void registerBaseAndVendorMetrics(SmallRyeMetricsTemplate metrics, ShutdownContextBuildItem shutdown) {
+    void registerBaseAndVendorMetrics(SmallRyeMetricsRecorder metrics, ShutdownContextBuildItem shutdown) {
         metrics.registerBaseMetrics(shutdown);
         metrics.registerVendorMetrics(shutdown);
     }

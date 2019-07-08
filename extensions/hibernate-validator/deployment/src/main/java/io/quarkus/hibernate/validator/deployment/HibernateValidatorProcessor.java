@@ -34,7 +34,7 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.hibernate.validator.runtime.HibernateValidatorTemplate;
+import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
 
@@ -71,7 +71,7 @@ class HibernateValidatorProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public void build(HibernateValidatorTemplate template, RecorderContext recorder,
+    public void build(HibernateValidatorRecorder template, RecorderContext recorder,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,

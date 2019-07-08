@@ -18,7 +18,7 @@ import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
 import io.quarkus.runtime.logging.InitialConfigurator;
 import io.quarkus.runtime.logging.LogConfig;
-import io.quarkus.runtime.logging.LoggingSetupTemplate;
+import io.quarkus.runtime.logging.LoggingSetupRecorder;
 
 public final class LoggingResourceProcessor {
 
@@ -72,13 +72,13 @@ public final class LoggingResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setupLoggingRuntimeInit(LoggingSetupTemplate setupTemplate, LogConfig log) {
+    void setupLoggingRuntimeInit(LoggingSetupRecorder setupTemplate, LogConfig log) {
         setupTemplate.initializeLogging(log);
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupLoggingStaticInit(LoggingSetupTemplate setupTemplate) {
+    void setupLoggingStaticInit(LoggingSetupRecorder setupTemplate) {
         setupTemplate.initializeLoggingForImageBuild();
     }
 

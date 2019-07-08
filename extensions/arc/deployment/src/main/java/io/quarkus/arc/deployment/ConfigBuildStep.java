@@ -25,7 +25,7 @@ import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.runtime.ConfigBeanCreator;
-import io.quarkus.arc.runtime.ConfigDeploymentTemplate;
+import io.quarkus.arc.runtime.ConfigDeploymentRecorder;
 import io.quarkus.arc.runtime.QuarkusConfigProducer;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -129,7 +129,7 @@ public class ConfigBuildStep {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    void validateConfigProperties(ConfigDeploymentTemplate template, List<ConfigPropertyBuildItem> configProperties,
+    void validateConfigProperties(ConfigDeploymentRecorder template, List<ConfigPropertyBuildItem> configProperties,
             BeanContainerBuildItem beanContainer) {
         // IMPL NOTE: we do depend on BeanContainerBuildItem to make sure that the BeanDeploymentValidator finished its processing
 

@@ -7,10 +7,10 @@ import org.jboss.jandex.AnnotationInstance;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.recording.AnnotationProxyProvider;
 import io.quarkus.deployment.recording.AnnotationProxyProvider.AnnotationProxyBuilder;
-import io.quarkus.runtime.annotations.Template;
+import io.quarkus.runtime.annotations.Recorder;
 
 /**
- * Create annotation proxies that can be used as {@link Template} parameters.
+ * Create annotation proxies that can be used as {@link Recorder} parameters.
  */
 public final class AnnotationProxyBuildItem extends SimpleBuildItem {
 

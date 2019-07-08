@@ -61,7 +61,7 @@ import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor.ResteasyCommonConfig;
 import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
 import io.quarkus.resteasy.server.common.runtime.QuarkusInjectorFactory;
-import io.quarkus.resteasy.server.common.runtime.ResteasyServerCommonTemplate;
+import io.quarkus.resteasy.server.common.runtime.ResteasyServerCommonRecorder;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -289,7 +289,7 @@ public class ResteasyServerCommonProcessor {
 
     @Record(STATIC_INIT)
     @BuildStep
-    ResteasyInjectionReadyBuildItem setupInjection(ResteasyServerCommonTemplate template,
+    ResteasyInjectionReadyBuildItem setupInjection(ResteasyServerCommonRecorder template,
             BeanContainerBuildItem beanContainerBuildItem,
             List<ProxyUnwrapperBuildItem> proxyUnwrappers) {
         List<Function<Object, Object>> unwrappers = new ArrayList<>();

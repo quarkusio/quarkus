@@ -617,7 +617,7 @@ proceeding as normal they are intercepted and recorded (hence the name). This re
 that performs the same sequence of invocations at runtime. This is essentially a form of deferred execution where invocations
 made at deployment time get deferred until runtime.
 
-Lets look at the classic 'Hello World' type example. To do this the Quarkus way we would create a recorder as follows:
+Let's look at the classic 'Hello World' type example. To do this the Quarkus way we would create a recorder as follows:
 
 [source%nowrap,java]
 ----

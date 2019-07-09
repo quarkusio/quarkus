@@ -127,6 +127,7 @@
         <debezium.version>0.9.5.Final</debezium.version>
         <zookeeper.version>3.4.14</zookeeper.version>
         <scala.version>2.12.2</scala.version>
+        <tika.version>1.21</tika.version>
         <aws-lambda-java.version>1.1.0</aws-lambda-java.version>
         <aws-lambda-java-events.version>2.2.5</aws-lambda-java-events.version>
         <aws-lambda-serverless-java-container.version>1.3.1</aws-lambda-serverless-java-container.version>
@@ -539,7 +540,11 @@
                 <artifactId>quarkus-kogito</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-tika</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Quarkus test dependencies -->
 
@@ -903,6 +908,17 @@
                 <groupId>org.scala-lang</groupId>
                 <artifactId>scala-library</artifactId>
                 <version>${scala.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tika</groupId>
+                <artifactId>tika-parsers</artifactId>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.cxf</groupId>
+                        <artifactId>cxf-rt-rs-client</artifactId>
+                    </exclusion>
+                </exclusions>
+                <version>${tika.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>

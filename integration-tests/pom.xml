@@ -52,6 +52,7 @@
         <module>amazon-lambda</module>
         <module>kogito</module>
         <module>kubernetes-client</module>
+        <module>tika</module>
     </modules>
 
     <build>

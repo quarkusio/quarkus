@@ -20,14 +20,14 @@ import io.quarkus.runtime.annotations.Recorder;
 /**
  */
 @Recorder
-public class ArcDeploymentRecorder {
+public class ArcRecorder {
 
     /**
      * Used to hold the Supplier instances used for synthetic bean declarations.
      */
     public static volatile Map<String, Supplier<Object>> supplierMap;
 
-    private static final Logger LOGGER = Logger.getLogger(ArcDeploymentRecorder.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ArcRecorder.class.getName());
 
     public ArcContainer getContainer(ShutdownContext shutdown) throws Exception {
         ArcContainer container = Arc.initialize();

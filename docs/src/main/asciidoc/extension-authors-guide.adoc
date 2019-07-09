@@ -611,10 +611,11 @@ Since `format` is not defined in these properties, the default value from `@Conf
 One of the main outputs of the build process is recorded bytecode. This bytecode actually sets up the runtime environment. For example, in order to start Undertow, the resulting application will have some bytecode that directly registers all
 Servlet instances and then starts Undertow.
 
-As writing bytecode directly is incredibly complex, this is instead done via bytecode recorders. At deployment time,
-invocations are made on recorder recorder objects that contain the actual runtime logic, but instead of these invocations
+As writing bytecode directly is complex, this is instead done via bytecode recorders. At deployment time,
+invocations are made on recorder objects that contain the actual runtime logic, but instead of these invocations
 proceeding as normal they are intercepted and recorded (hence the name). This recording is then used to generate bytecode
-that performs the same sequence of invocations at runtime.
+that performs the same sequence of invocations at runtime. This is essentially a form of deferred execution where invocations
+made at deployment time get deferred until runtime.
 
 Lets look at the classic 'Hello World' type example. To do this the Quarkus way we would create a recorder as follows:
 

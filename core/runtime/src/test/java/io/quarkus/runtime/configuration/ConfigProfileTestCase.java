@@ -66,7 +66,25 @@ public class ConfigProfileTestCase {
     }
 
     @Test
-    public void testOverrdenProdile() {
+    public void testOverridenProfile() {
+        System.setProperty("quarkus.profile", "foo");
+        try {
+            final SmallRyeConfig config = buildConfig(maps(
+                    singletonMap("foo.one", "v1"),
+                    singletonMap("foo.two", "v2"),
+                    singletonMap("%foo.foo.three", "f1"),
+                    singletonMap("%prod.foo.four", "v4")));
+            assertEquals("v1", config.getValue("foo.one", String.class));
+            assertEquals("v2", config.getValue("foo.two", String.class));
+            assertEquals("f1", config.getValue("foo.three", String.class));
+            assertFalse(config.getOptionalValue("foo.four", String.class).isPresent());
+        } finally {
+            System.clearProperty("quarkus.profile");
+        }
+    }
+
+    @Test
+    public void testBackwardCompatibleOverridenProfile() {
         System.setProperty("quarkus-profile", "foo");
         try {
             final SmallRyeConfig config = buildConfig(maps(

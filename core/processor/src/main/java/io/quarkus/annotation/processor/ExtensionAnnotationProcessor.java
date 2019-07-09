@@ -70,6 +70,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     private static final String ANNOTATION_CONFIG_ITEM = "io.quarkus.runtime.annotations.ConfigItem";
     private static final String ANNOTATION_CONFIG_ROOT = "io.quarkus.runtime.annotations.ConfigRoot";
     private static final String ANNOTATION_TEMPLATE = "io.quarkus.runtime.annotations.Template";
+    private static final String ANNOTATION_RECORDER = "io.quarkus.runtime.annotations.Recorder";
     private static final String INSTANCE_SYM = "__instance";
 
     private final Set<String> generatedAccessors = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
@@ -90,6 +91,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         ret.add(ANNOTATION_CONFIG_GROUP);
         ret.add(ANNOTATION_CONFIG_ROOT);
         ret.add(ANNOTATION_TEMPLATE);
+        ret.add(ANNOTATION_RECORDER);
         return ret;
     }
 
@@ -125,8 +127,9 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 case ANNOTATION_CONFIG_ROOT:
                     processConfigRoot(roundEnv, annotation);
                     break;
+                case ANNOTATION_RECORDER:
                 case ANNOTATION_TEMPLATE:
-                    processTemplate(roundEnv, annotation);
+                    processRecorder(roundEnv, annotation);
                     break;
             }
         }
@@ -457,7 +460,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         }
     }
 
-    private void processTemplate(RoundEnvironment roundEnv, TypeElement annotation) {
+    private void processRecorder(RoundEnvironment roundEnv, TypeElement annotation) {
         final Set<String> groupClassNames = new HashSet<>();
         for (TypeElement i : typesIn(roundEnv.getElementsAnnotatedWith(annotation))) {
             if (groupClassNames.add(i.getQualifiedName().toString())) {

@@ -15,13 +15,13 @@ import io.quarkus.runtime.annotations.Recorder;
  * @author Martin Kouba
  */
 @Recorder
-public class ConfigDeploymentRecorder {
+public class ConfigRecorder {
 
     public void validateConfigProperties(Map<String, Set<String>> properties) {
         Config config = ConfigProviderResolver.instance().getConfig();
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
-            ConfigDeploymentRecorder.class.getClassLoader();
+            ConfigRecorder.class.getClassLoader();
         }
         for (Entry<String, Set<String>> entry : properties.entrySet()) {
             Set<String> propertyTypes = entry.getValue();

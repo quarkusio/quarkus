@@ -150,7 +150,13 @@ public class ExecutorTemplate {
         // run time config variables
         builder.setCorePoolSize(threadPoolConfig.coreThreads);
         builder.setMaximumPoolSize(threadPoolConfig.maxThreads.orElse(8 * cpus));
-        builder.setMaximumQueueSize(threadPoolConfig.queueSize);
+        if (threadPoolConfig.queueSize.isPresent()) {
+            if (threadPoolConfig.queueSize.getAsInt() < 0) {
+                builder.setMaximumQueueSize(Integer.MAX_VALUE);
+            } else {
+                builder.setMaximumQueueSize(threadPoolConfig.queueSize.getAsInt());
+            }
+        }
         builder.setGrowthResistance(threadPoolConfig.growthResistance);
         builder.setKeepAliveTime(threadPoolConfig.keepAliveTime);
         return builder.build();

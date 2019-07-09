@@ -22,8 +22,8 @@ import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.agroal.runtime.AbstractDataSourceProducer;
 import io.quarkus.agroal.runtime.AgroalBuildTimeConfig;
+import io.quarkus.agroal.runtime.AgroalRecorder;
 import io.quarkus.agroal.runtime.AgroalRuntimeConfig;
-import io.quarkus.agroal.runtime.AgroalTemplate;
 import io.quarkus.agroal.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -63,8 +63,8 @@ class AgroalProcessor {
     @Record(STATIC_INIT)
     @BuildStep
     BeanContainerListenerBuildItem build(
-            RecorderContext recorder,
-            AgroalTemplate template,
+            RecorderContext recorderContext,
+            AgroalRecorder recorder,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<SubstrateResourceBuildItem> resource,
@@ -120,15 +120,15 @@ class AgroalProcessor {
 
         createDataSourceProducerBean(generatedBean, dataSourceProducerClassName);
 
-        return new BeanContainerListenerBuildItem(template.addDataSource(
-                (Class<? extends AbstractDataSourceProducer>) recorder.classProxy(dataSourceProducerClassName),
+        return new BeanContainerListenerBuildItem(recorder.addDataSource(
+                (Class<? extends AbstractDataSourceProducer>) recorderContext.classProxy(dataSourceProducerClassName),
                 agroalBuildTimeConfig,
                 sslNativeConfig.isExplicitlyDisabled()));
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void configureRuntimeProperties(AgroalTemplate template,
+    void configureRuntimeProperties(AgroalRecorder recorder,
             BuildProducer<DataSourceInitializedBuildItem> dataSourceInitialized,
             AgroalRuntimeConfig agroalRuntimeConfig) {
         if (!agroalBuildTimeConfig.defaultDataSource.driver.isPresent() && agroalBuildTimeConfig.namedDataSources.isEmpty()) {
@@ -136,7 +136,7 @@ class AgroalProcessor {
             return;
         }
 
-        template.configureRuntimeProperties(agroalRuntimeConfig);
+        recorder.configureRuntimeProperties(agroalRuntimeConfig);
 
         dataSourceInitialized.produce(new DataSourceInitializedBuildItem());
     }
@@ -182,7 +182,7 @@ class AgroalProcessor {
             defaultDataSourceMethodCreator.addAnnotation(Produces.class);
             defaultDataSourceMethodCreator.addAnnotation(Default.class);
 
-            ResultHandle dataSourceName = defaultDataSourceMethodCreator.load(AgroalTemplate.DEFAULT_DATASOURCE_NAME);
+            ResultHandle dataSourceName = defaultDataSourceMethodCreator.load(AgroalRecorder.DEFAULT_DATASOURCE_NAME);
             ResultHandle dataSourceBuildTimeConfig = defaultDataSourceMethodCreator.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getDefaultBuildTimeConfig",
                             DataSourceBuildTimeConfig.class),

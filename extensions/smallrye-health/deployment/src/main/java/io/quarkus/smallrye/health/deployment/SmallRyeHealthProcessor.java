@@ -22,8 +22,8 @@ import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.smallrye.health.runtime.SmallRyeHealthRecorder;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthServlet;
-import io.quarkus.smallrye.health.runtime.SmallRyeHealthTemplate;
 import io.quarkus.smallrye.health.runtime.SmallRyeLivenessServlet;
 import io.quarkus.smallrye.health.runtime.SmallRyeReadinessServlet;
 import io.quarkus.undertow.deployment.ServletBuildItem;
@@ -66,7 +66,7 @@ class SmallRyeHealthProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     @SuppressWarnings("unchecked")
-    void build(SmallRyeHealthTemplate template, RecorderContext recorder,
+    void build(SmallRyeHealthRecorder recorder, RecorderContext recorderContext,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<ServletBuildItem> servlet,
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
@@ -115,8 +115,8 @@ class SmallRyeHealthProcessor {
                     String.format("Multiple HealthCheckResponseProvider implementations found: %s", providers));
         }
 
-        template.registerHealthCheckResponseProvider(
-                (Class<? extends HealthCheckResponseProvider>) recorder.classProxy(providers.iterator().next()));
+        recorder.registerHealthCheckResponseProvider(
+                (Class<? extends HealthCheckResponseProvider>) recorderContext.classProxy(providers.iterator().next()));
     }
 
     @BuildStep

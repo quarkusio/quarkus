@@ -31,9 +31,9 @@ public class Timing {
     }
 
     /**
-     * An extension providing the HTTP server should set the current info (port, host, etc.) in a template method of a
+     * An extension providing the HTTP server should set the current info (port, host, etc.) in a recorder method of a
      * RUNTIME_INIT build step. Note that it is not possible to inspect thee RUN_TIME config properties through MP Config.
-     * 
+     *
      * @param info
      */
     public static void setHttpServer(String info) {

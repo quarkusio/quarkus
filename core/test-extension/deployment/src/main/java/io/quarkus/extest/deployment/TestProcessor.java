@@ -83,7 +83,7 @@ public final class TestProcessor {
 
     /**
      * Register a extension capability and feature
-     * 
+     *
      * @return test-extension feature build item
      */
     @BuildStep(providesCapabilities = "io.quarkus.test-extension")
@@ -93,7 +93,7 @@ public final class TestProcessor {
 
     /**
      * Register a custom bean defining annotation
-     * 
+     *
      * @return
      */
     @BuildStep
@@ -123,14 +123,14 @@ public final class TestProcessor {
 
     /**
      * Parse an XML configuration using JAXB into an XmlConfig instance graph
-     * 
-     * @param template - runtime template
+     *
+     * @param recorder - runtime recorder
      * @return RuntimeServiceBuildItem
      * @throws JAXBException
      */
     @BuildStep
     @Record(STATIC_INIT)
-    RuntimeServiceBuildItem parseServiceXmlConfig(TestTemplate template) throws JAXBException {
+    RuntimeServiceBuildItem parseServiceXmlConfig(TestRecorder recorder) throws JAXBException {
         RuntimeServiceBuildItem serviceBuildItem = null;
         JAXBContext context = JAXBContext.newInstance(XmlConfig.class);
         Unmarshaller unmarshaller = context.createUnmarshaller();
@@ -139,16 +139,16 @@ public final class TestProcessor {
             log.infof("Have XmlConfig, loading");
             XmlConfig config = (XmlConfig) unmarshaller.unmarshal(is);
             log.infof("Loaded XmlConfig, creating service");
-            RuntimeValue<RuntimeXmlConfigService> service = template.initRuntimeService(config);
+            RuntimeValue<RuntimeXmlConfigService> service = recorder.initRuntimeService(config);
             serviceBuildItem = new RuntimeServiceBuildItem(service);
         }
         return serviceBuildItem;
     }
 
     /**
-     * Have the runtime template start the service and install a shutdown hook
-     * 
-     * @param template - runtime template
+     * Have the runtime recorder start the service and install a shutdown hook
+     *
+     * @param recorder - runtime recorder
      * @param shutdownContextBuildItem - ShutdownContext information
      * @param serviceBuildItem - previously created RuntimeXmlConfigService container
      * @return ServiceStartBuildItem - build item indicating the RuntimeXmlConfigService startuup
@@ -156,11 +156,11 @@ public final class TestProcessor {
      */
     @BuildStep
     @Record(RUNTIME_INIT)
-    ServiceStartBuildItem startRuntimeService(TestTemplate template, ShutdownContextBuildItem shutdownContextBuildItem,
+    ServiceStartBuildItem startRuntimeService(TestRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem,
             RuntimeServiceBuildItem serviceBuildItem) throws IOException {
         if (serviceBuildItem != null) {
             log.info("Registering service start");
-            template.startRuntimeService(shutdownContextBuildItem, serviceBuildItem.getService());
+            recorder.startRuntimeService(shutdownContextBuildItem, serviceBuildItem.getService());
         } else {
             log.info("No RuntimeServiceBuildItem seen, check config.xml");
         }
@@ -169,15 +169,15 @@ public final class TestProcessor {
 
     /**
      * Load a DSAPublicKey from a resource and create an instance of it
-     * 
-     * @param template - runtime template
+     *
+     * @param recorder - runtime recorder
      * @return PublicKeyBuildItem for the DSAPublicKey
      * @throws IOException - on resource load failure
      * @throws GeneralSecurityException - on key creation failure
      */
     @BuildStep
     @Record(STATIC_INIT)
-    PublicKeyBuildItem loadDSAPublicKey(TestTemplate template,
+    PublicKeyBuildItem loadDSAPublicKey(TestRecorder recorder,
             BuildProducer<ObjectSubstitutionBuildItem> substitutions) throws IOException, GeneralSecurityException {
         String path = configRoot.dsaKeyLocation;
         InputStream is = getClass().getResourceAsStream(path);
@@ -202,20 +202,20 @@ public final class TestProcessor {
 
     /**
      * Have the runtime register the public key with the public key producer bean
-     * 
-     * @param template - runtime template
+     *
+     * @param recorder - runtime recorder
      * @param publicKey - previously loaded public key
      * @param beanContainer - BeanContainer build item
      */
     @BuildStep
     @Record(RUNTIME_INIT)
-    void loadDSAPublicKeyProducer(TestTemplate template, PublicKeyBuildItem publicKey, BeanContainerBuildItem beanContainer) {
-        template.loadDSAPublicKeyProducer(publicKey.getPublicKey(), beanContainer.getValue());
+    void loadDSAPublicKeyProducer(TestRecorder recorder, PublicKeyBuildItem publicKey, BeanContainerBuildItem beanContainer) {
+        recorder.loadDSAPublicKeyProducer(publicKey.getPublicKey(), beanContainer.getValue());
     }
 
     /**
      * Register a servlet used for interacting with native image for testing
-     * 
+     *
      * @return ServletBuildItem
      */
     @BuildStep
@@ -325,14 +325,14 @@ public final class TestProcessor {
 
     /**
      * Collect the beans with our custom bean defining annotation and configure them with the runtime config
-     * 
-     * @param template - runtime template
+     *
+     * @param recorder - runtime recorder
      * @param beanArchiveIndex - index of type information
      * @param testBeanProducer - producer for located Class<IConfigConsumer> bean types
      */
     @BuildStep
     @Record(STATIC_INIT)
-    void scanForBeans(TestTemplate template, BeanArchiveIndexBuildItem beanArchiveIndex,
+    void scanForBeans(TestRecorder recorder, BeanArchiveIndexBuildItem beanArchiveIndex,
             BuildProducer<TestBeanBuildItem> testBeanProducer) {
         IndexView indexView = beanArchiveIndex.getIndex();
         Collection<AnnotationInstance> testBeans = indexView.getAnnotations(TEST_ANNOTATION);
@@ -354,32 +354,32 @@ public final class TestProcessor {
     }
 
     /**
-     * For each IConfigConsumer type, have the runtime template create a bean and pass in the runtime related configs
-     * 
-     * @param template - runtime template
+     * For each IConfigConsumer type, have the runtime recorder create a bean and pass in the runtime related configs
+     *
+     * @param recorder - runtime recorder
      * @param testBeans - types of IConfigConsumer found
      * @param beanContainer - bean container to create test bean in
      * @param runTimeConfig - The RUN_TIME config phase root config
      */
     @BuildStep
     @Record(RUNTIME_INIT)
-    void configureBeans(TestTemplate template, List<TestBeanBuildItem> testBeans,
+    void configureBeans(TestRecorder recorder, List<TestBeanBuildItem> testBeans,
             BeanContainerBuildItem beanContainer,
             TestRunTimeConfig runTimeConfig) {
         for (TestBeanBuildItem testBeanBuildItem : testBeans) {
             Class<IConfigConsumer> beanClass = testBeanBuildItem.getConfigConsumer();
-            template.configureBeans(beanContainer.getValue(), beanClass, buildAndRunTimeConfig, runTimeConfig);
+            recorder.configureBeans(beanContainer.getValue(), beanClass, buildAndRunTimeConfig, runTimeConfig);
         }
     }
 
     /**
      * Test for https://github.com/quarkusio/quarkus/issues/1633
-     * 
-     * @param template - runtime template
+     *
+     * @param recorder - runtime recorder
      */
     @BuildStep
     @Record(RUNTIME_INIT)
-    void referencePrimitiveTypeClasses(TestTemplate template) {
+    void referencePrimitiveTypeClasses(TestRecorder recorder) {
         HashSet<Class<?>> allPrimitiveTypes = new HashSet<>();
         allPrimitiveTypes.add(byte.class);
         allPrimitiveTypes.add(char.class);
@@ -395,7 +395,7 @@ public final class TestProcessor {
         allPrimitiveTypes.add(long[].class);
         allPrimitiveTypes.add(float[].class);
         allPrimitiveTypes.add(double[].class);
-        template.validateTypes(allPrimitiveTypes);
+        recorder.validateTypes(allPrimitiveTypes);
     }
 
     @BuildStep

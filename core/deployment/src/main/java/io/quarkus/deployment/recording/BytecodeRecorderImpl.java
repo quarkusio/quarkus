@@ -60,12 +60,12 @@ import io.quarkus.runtime.StartupTask;
 
 /**
  * A class that can be used to record invocations to bytecode so they can be replayed later. This is done through the
- * use of class templates and recording proxies.
+ * use of class recorders and recording proxies.
  * <p>
- * A class template is simple a stateless class with a no arg constructor. This template will contain the runtime logic
+ * A class recorder is simply a stateless class with a no arg constructor. This recorder will contain the runtime logic
  * used to bootstrap the various frameworks.
  * <p>
- * A recording proxy is a proxy of a template that records all invocations on the template, and then writes out a sequence
+ * A recording proxy is a proxy of a recorder that records all invocations on the recorder, and then writes out a sequence
  * of java bytecode that performs the same invocations.
  * <p>
  * There are some limitations on what can be recorded. Only the following objects are allowed as parameters to
@@ -301,13 +301,13 @@ public class BytecodeRecorderImpl implements RecorderContext {
             //implementation wise.
 
             //the first step is to create list of all these values that need to be placed into the array. We do that
-            //here, as well as creating the template instances (and also preparing them to be stored in the array)
+            //here, as well as creating the recorder instances (and also preparing them to be stored in the array)
             for (BytecodeInstruction set : storedMethodCalls) {
                 if (set instanceof StoredMethodCall) {
                     StoredMethodCall call = (StoredMethodCall) set;
                     if (!classInstanceVariables.containsKey(call.theClass)) {
-                        //this is a new template, create a deffered value that will allocate an array position for
-                        //the template
+                        //this is a new recorder, create a deffered value that will allocate an array position for
+                        //the recorder
                         DeferredArrayStoreParameter value = new DeferredArrayStoreParameter() {
                             @Override
                             ResultHandle createValue(MethodContext context, MethodCreator method, ResultHandle array) {
@@ -341,7 +341,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             for (BytecodeInstruction set : storedMethodCalls) {
 
                 if (set instanceof StoredMethodCall) {
-                    //this instruction is a template invocation
+                    //this instruction is a recorder invocation
                     StoredMethodCall call = (StoredMethodCall) set;
                     for (int i = 0; i < call.parameters.length; ++i) {
                         //we need to doPrepare the loading before the write instruction call
@@ -351,8 +351,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         //it into a single method
                         call.deferredParameters[i].prepare(context);
                     }
-                    final DeferredArrayStoreParameter templateInstance = classInstanceVariables.get(call.theClass);
-                    templateInstance.prepare(context);
+                    final DeferredArrayStoreParameter recorderInstance = classInstanceVariables.get(call.theClass);
+                    recorderInstance.prepare(context);
                     //write the method invocation. Everything in the instruction group is scoped to a single method
                     context.writeInstruction(new InstructionGroup() {
                         @Override
@@ -368,7 +368,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                             //do the invocation
                             ResultHandle callResult = method.invokeVirtualMethod(ofMethod(call.method.getDeclaringClass(),
                                     call.method.getName(), call.method.getReturnType(), call.method.getParameterTypes()),
-                                    context.loadDeferred(templateInstance), params);
+                                    context.loadDeferred(recorderInstance), params);
 
                             if (call.method.getReturnType() != void.class) {
                                 if (call.returnedProxy != null) {
@@ -555,7 +555,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             //if this is a proxy we just grab the value from the StartupContext
             ReturnedProxy rp = (ReturnedProxy) param;
             if (!rp.__static$$init() && staticInit) {
-                throw new RuntimeException("Invalid proxy passed to template. " + rp
+                throw new RuntimeException("Invalid proxy passed to recorder. " + rp
                         + " was created in a runtime recorder method, while this recorder is for a static init method. The object will not have been created at the time this method is run.");
             }
             String proxyId = rp.__returned$proxy$key();

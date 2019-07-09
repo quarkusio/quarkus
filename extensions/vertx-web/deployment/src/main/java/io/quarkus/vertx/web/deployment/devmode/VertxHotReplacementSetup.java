@@ -3,7 +3,7 @@ package io.quarkus.vertx.web.deployment.devmode;
 import io.quarkus.deployment.devmode.HotReplacementContext;
 import io.quarkus.deployment.devmode.HotReplacementSetup;
 import io.quarkus.deployment.devmode.ReplacementDebugPage;
-import io.quarkus.vertx.web.runtime.VertxWebTemplate;
+import io.quarkus.vertx.web.runtime.VertxWebRecorder;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
@@ -17,7 +17,7 @@ public class VertxHotReplacementSetup implements HotReplacementSetup {
     @Override
     public void setupHotDeployment(HotReplacementContext context) {
         this.hotReplacementContext = context;
-        VertxWebTemplate.setHotReplacement(this::handleHotReplacementRequest);
+        VertxWebRecorder.setHotReplacement(this::handleHotReplacementRequest);
     }
 
     void handleHotReplacementRequest(RoutingContext routingContext) {

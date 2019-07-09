@@ -13,7 +13,7 @@ import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
-import io.quarkus.runtime.annotations.Template;
+import io.quarkus.runtime.annotations.Recorder;
 
 /**
  * Indicates that a given method is a build step that is run at deployment time to
@@ -32,7 +32,7 @@ import io.quarkus.runtime.annotations.Template;
  * <li>{@link Consumer} of any concrete subclass of {@link BuildItem}</li>
  * <li>{@link Supplier} of any concrete subclass of {@link SimpleBuildItem}</li>
  * <li>{@link Optional} instances whose value type is a subclass of {@link SimpleBuildItem}</li>
- * <li>Recorder template classes, which are annotated with {@link Template} (method parameters only, if the method is annotated
+ * <li>Recorder classes, which are annotated with {@link Recorder} (method parameters only, if the method is annotated
  * {@link Record})</li>
  * <li>{@link BytecodeRecorderImpl} (method parameters only, if the method is annotated {@link Record})</li>
  * </ul>

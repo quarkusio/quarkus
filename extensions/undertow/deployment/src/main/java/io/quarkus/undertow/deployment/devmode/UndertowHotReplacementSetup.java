@@ -8,7 +8,7 @@ import java.util.List;
 import io.quarkus.deployment.devmode.HotReplacementContext;
 import io.quarkus.deployment.devmode.HotReplacementSetup;
 import io.quarkus.deployment.devmode.ReplacementDebugPage;
-import io.quarkus.undertow.runtime.UndertowDeploymentTemplate;
+import io.quarkus.undertow.runtime.UndertowDeploymentRecorder;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -26,7 +26,7 @@ public class UndertowHotReplacementSetup implements HotReplacementSetup {
     public void setupHotDeployment(HotReplacementContext context) {
         this.context = context;
         HandlerWrapper wrapper = createHandlerWrapper();
-        UndertowDeploymentTemplate.addHotDeploymentWrapper(wrapper);
+        UndertowDeploymentRecorder.addHotDeploymentWrapper(wrapper);
         List<Path> resources = new ArrayList<>();
         for (Path i : context.getResourcesDir()) {
             Path resolved = i.resolve(META_INF_SERVICES);
@@ -34,12 +34,12 @@ public class UndertowHotReplacementSetup implements HotReplacementSetup {
                 resources.add(resolved);
             }
         }
-        UndertowDeploymentTemplate.setHotDeploymentResources(resources);
+        UndertowDeploymentRecorder.setHotDeploymentResources(resources);
     }
 
     @Override
     public void handleFailedInitialStart() {
-        UndertowDeploymentTemplate.startServerAfterFailedStart();
+        UndertowDeploymentRecorder.startServerAfterFailedStart();
     }
 
     private HandlerWrapper createHandlerWrapper() {

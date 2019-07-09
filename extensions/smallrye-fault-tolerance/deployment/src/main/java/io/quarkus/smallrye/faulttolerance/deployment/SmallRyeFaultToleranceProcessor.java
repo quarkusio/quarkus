@@ -35,7 +35,7 @@ import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildIte
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
-import io.quarkus.smallrye.faulttolerance.runtime.SmallryeFaultToleranceTemplate;
+import io.quarkus.smallrye.faulttolerance.runtime.SmallryeFaultToleranceRecorder;
 import io.smallrye.faulttolerance.DefaultCommandListenersProvider;
 import io.smallrye.faulttolerance.DefaultHystrixConcurrencyStrategy;
 import io.smallrye.faulttolerance.HystrixCommandBinding;
@@ -150,7 +150,7 @@ public class SmallRyeFaultToleranceProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    public void clearStatic(SmallryeFaultToleranceTemplate template, ShutdownContextBuildItem context) {
-        template.resetCommandContextOnUndeploy(context);
+    public void clearStatic(SmallryeFaultToleranceRecorder recorder, ShutdownContextBuildItem context) {
+        recorder.resetCommandContextOnUndeploy(context);
     }
 }

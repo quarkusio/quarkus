@@ -64,7 +64,7 @@ import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
 import io.quarkus.smallrye.restclient.runtime.IncomingHeadersProvider;
 import io.quarkus.smallrye.restclient.runtime.RestClientBase;
-import io.quarkus.smallrye.restclient.runtime.SmallRyeRestClientTemplate;
+import io.quarkus.smallrye.restclient.runtime.SmallRyeRestClientRecorder;
 import io.smallrye.restclient.DefaultResponseExceptionMapper;
 import io.smallrye.restclient.RestClientProxy;
 
@@ -99,11 +99,11 @@ class SmallRyeRestClientProcessor {
     void setup(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            SmallRyeRestClientTemplate smallRyeRestClientTemplate) {
+            SmallRyeRestClientRecorder smallRyeRestClientRecorder) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_REST_CLIENT));
 
-        smallRyeRestClientTemplate.setRestClientBuilderResolver();
+        smallRyeRestClientRecorder.setRestClientBuilderResolver();
 
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
 
@@ -131,7 +131,7 @@ class SmallRyeRestClientProcessor {
             BuildProducer<BeanRegistrarBuildItem> beanRegistrars,
             BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
-            SmallRyeRestClientTemplate smallRyeRestClientTemplate) {
+            SmallRyeRestClientRecorder smallRyeRestClientRecorder) {
 
         // According to the spec only rest client interfaces annotated with RegisterRestClient are registered as beans
         Map<DotName, ClassInfo> interfaces = new HashMap<>();
@@ -227,7 +227,7 @@ class SmallRyeRestClientProcessor {
         // Indicates that this extension would like the SSL support to be enabled
         extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.SMALLRYE_REST_CLIENT));
 
-        smallRyeRestClientTemplate.setSslEnabled(sslNativeConfig.isEnabled());
+        smallRyeRestClientRecorder.setSslEnabled(sslNativeConfig.isEnabled());
     }
 
     private ScopeInfo computeDefaultScope(Config config, Map.Entry<DotName, ClassInfo> entry) {
@@ -280,8 +280,8 @@ class SmallRyeRestClientProcessor {
     void registerProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            SmallRyeRestClientTemplate smallRyeRestClientTemplate) {
-        smallRyeRestClientTemplate.initializeResteasyProviderFactory(jaxrsProvidersToRegisterBuildItem.useBuiltIn(),
+            SmallRyeRestClientRecorder smallRyeRestClientRecorder) {
+        smallRyeRestClientRecorder.initializeResteasyProviderFactory(jaxrsProvidersToRegisterBuildItem.useBuiltIn(),
                 jaxrsProvidersToRegisterBuildItem.getProviders(), jaxrsProvidersToRegisterBuildItem.getContributedProviders());
 
         // register the providers for reflection

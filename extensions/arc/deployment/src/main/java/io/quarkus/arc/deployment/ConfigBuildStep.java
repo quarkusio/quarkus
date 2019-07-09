@@ -25,7 +25,7 @@ import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.runtime.ConfigBeanCreator;
-import io.quarkus.arc.runtime.ConfigDeploymentTemplate;
+import io.quarkus.arc.runtime.ConfigRecorder;
 import io.quarkus.arc.runtime.QuarkusConfigProducer;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -129,14 +129,14 @@ public class ConfigBuildStep {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    void validateConfigProperties(ConfigDeploymentTemplate template, List<ConfigPropertyBuildItem> configProperties,
+    void validateConfigProperties(ConfigRecorder recorder, List<ConfigPropertyBuildItem> configProperties,
             BeanContainerBuildItem beanContainer) {
         // IMPL NOTE: we do depend on BeanContainerBuildItem to make sure that the BeanDeploymentValidator finished its processing
 
         Map<String, Set<String>> propNamesToClasses = configProperties.stream().collect(
                 groupingBy(ConfigPropertyBuildItem::getPropertyName,
                         mapping(ConfigPropertyBuildItem::getPropertyType, toSet())));
-        template.validateConfigProperties(propNamesToClasses);
+        recorder.validateConfigProperties(propNamesToClasses);
     }
 
     private String getPropertyName(String name, ClassInfo declaringClass) {

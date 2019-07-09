@@ -16,7 +16,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.netty.BossGroup;
-import io.quarkus.netty.runtime.NettyTemplate;
+import io.quarkus.netty.runtime.NettyRecorder;
 
 class NettyProcessor {
 
@@ -55,10 +55,10 @@ class NettyProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void createExecutors(BuildProducer<RuntimeBeanBuildItem> runtimeBeanBuildItemBuildProducer,
-            NettyTemplate template) {
+            NettyRecorder recorder) {
         //TODO: configuration
-        Supplier<Object> boss = template.createEventLoop(1);
-        Supplier<Object> worker = template.createEventLoop(0);
+        Supplier<Object> boss = recorder.createEventLoop(1);
+        Supplier<Object> worker = recorder.createEventLoop(0);
 
         runtimeBeanBuildItemBuildProducer.produce(RuntimeBeanBuildItem.builder(EventLoopGroup.class)
                 .setSupplier(boss)

@@ -14,7 +14,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.devmode.HotReplacementContext;
 import io.quarkus.deployment.devmode.HotReplacementSetup;
-import io.quarkus.undertow.runtime.UndertowDeploymentTemplate;
+import io.quarkus.undertow.runtime.UndertowDeploymentRecorder;
 import io.quarkus.undertow.websockets.runtime.WorkerSupplier;
 import io.undertow.Handlers;
 import io.undertow.predicate.Predicates;
@@ -83,7 +83,7 @@ public class WebsocketHotReloadSetup implements HotReplacementSetup {
             DeploymentManager manager = servletContainer.addDeployment(d);
             manager.deploy();
             HttpHandler ws = manager.start();
-            UndertowDeploymentTemplate.addHotDeploymentWrapper(new HandlerWrapper() {
+            UndertowDeploymentRecorder.addHotDeploymentWrapper(new HandlerWrapper() {
                 @Override
                 public HttpHandler wrap(HttpHandler handler) {
                     return Handlers.predicate(Predicates.path(HotReplacementWebsocketEndpoint.QUARKUS_HOT_RELOAD), ws, handler);

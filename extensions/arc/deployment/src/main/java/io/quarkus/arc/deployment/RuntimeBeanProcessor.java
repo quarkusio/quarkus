@@ -11,7 +11,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 
 import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.arc.runtime.ArcDeploymentTemplate;
+import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -31,30 +31,30 @@ public class RuntimeBeanProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void build(List<RuntimeBeanBuildItem> beans,
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
-            ArcDeploymentTemplate template,
+            ArcRecorder recorder,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         String beanName = "io.quarkus.arc.runtimebean.RuntimeBeanProducers";
 
-        ClassCreator c = new ClassCreator(new ClassOutput() {
+        ClassCreator classCreator = new ClassCreator(new ClassOutput() {
             @Override
             public void write(String name, byte[] data) {
                 generatedBean.produce(new GeneratedBeanBuildItem(name, data));
             }
         }, beanName, null, Object.class.getName());
 
-        c.addAnnotation(ApplicationScoped.class);
+        classCreator.addAnnotation(ApplicationScoped.class);
         Map<String, Supplier<Object>> map = new HashMap<>();
         for (RuntimeBeanBuildItem bean : beans) {
             //deterministic name
             //as we know the maps are sorted this will result in the same hash for the same bean
             String name = bean.type.replace(".", "_") + "_" + HashUtil.sha1(bean.qualifiers.toString());
             if (bean.runtimeValue != null) {
-                map.put(name, template.createSupplier(bean.runtimeValue));
+                map.put(name, recorder.createSupplier(bean.runtimeValue));
             } else {
                 map.put(name, bean.supplier);
             }
 
-            MethodCreator producer = c.getMethodCreator("produce_" + name, bean.type);
+            MethodCreator producer = classCreator.getMethodCreator("produce_" + name, bean.type);
             producer.addAnnotation(Produces.class);
             producer.addAnnotation(bean.scope);
             for (Map.Entry<String, NavigableMap<String, Object>> qualifierEntry : bean.qualifiers.entrySet()) {
@@ -74,14 +74,14 @@ public class RuntimeBeanProcessor {
             }
 
             ResultHandle staticMap = producer
-                    .readStaticField(FieldDescriptor.of(ArcDeploymentTemplate.class, "supplierMap", Map.class));
+                    .readStaticField(FieldDescriptor.of(ArcRecorder.class, "supplierMap", Map.class));
             ResultHandle supplier = producer.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class), staticMap, producer.load(name));
             ResultHandle result = producer.invokeInterfaceMethod(MethodDescriptor.ofMethod(Supplier.class, "get", Object.class),
                     supplier);
             producer.returnValue(result);
         }
-        c.close();
-        template.initSupplierBeans(map);
+        classCreator.close();
+        recorder.initSupplierBeans(map);
     }
 }

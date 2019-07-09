@@ -73,9 +73,9 @@ But many properties like enable caching or setting the JDBC driver can safely re
 TODO: Describe where to put APIs
 I wonder if that content should be in the technical aspects
 
-=== Substitution and template
+=== Substitution and recorders
 
-TODO: Describe where Substitutions and templates should live
+TODO: Describe where Substitutions and recorders should live
 ////
 
 === Expose your components via CDI
@@ -192,7 +192,7 @@ Second best is to write Substrate VM substitutions, which are patches applied du
 
 Get a framework running::
 A framework at runtime typically reads configuration, scan the classpath and classes for metadata (annotations, getters etc), build a metamodel on top of which it runs, find options via the service loader pattern, prepare invocation calls (reflection), proxy interfaces, etc. +
-These operations should be done at build time and the metamodel be passed to the template DSL that will generate classes are runtime and boot the framework.
+These operations should be done at build time and the metamodel be passed to the recorder DSL that will generate classes are runtime and boot the framework.
 
 Get a CDI portable extension running::
 The CDI portable extension model is very flexible.
@@ -611,25 +611,50 @@ Since `format` is not defined in these properties, the default value from `@Conf
 One of the main outputs of the build process is recorded bytecode. This bytecode actually sets up the runtime environment. For example, in order to start Undertow, the resulting application will have some bytecode that directly registers all
 Servlet instances and then starts Undertow.
 
-As writing bytecode directly is incredibly complex, this is instead done via bytecode recorders. At deployment time, invocations
-are made on proxy instances of template objects that contain the actual runtime logic, and these invocations are recorded,
-including the value of method parameters. Bytecode is then created to do these same invocations on the actual template
-object at runtime.
+As writing bytecode directly is complex, this is instead done via bytecode recorders. At deployment time,
+invocations are made on recorder objects that contain the actual runtime logic, but instead of these invocations
+proceeding as normal they are intercepted and recorded (hence the name). This recording is then used to generate bytecode
+that performs the same sequence of invocations at runtime. This is essentially a form of deferred execution where invocations
+made at deployment time get deferred until runtime.
 
-In more detail, a processor class from the extensions deployment module gathers the configuration
-information within a `@BuildStep` method that is also annotated with a `@Record(STATIC_INIT)` or  `@Record(RUNTIME_INIT)` annotation along with injection of a `@Template` annotated class
-from the runtime module. A class annotated with `@Template` is known as a template because it
-provides a template of methods to configure a runtime service. The value of template that is
-injected into the deployment class is a proxy of the template, and any method invocations that are made will be recorded, and output as bytecode that will be run at application startup.
+Let's look at the classic 'Hello World' type example. To do this the Quarkus way we would create a recorder as follows:
 
-Methods on a template can return a value, which must be proxiable (if you want to return a non-proxiable item wrap it
+[source%nowrap,java]
+----
+@Recorder
+class HelloRecorder {
+
+  public void sayHello(String name) {
+    System.out.println("Hello" + name);
+  }
+
+}
+----
+
+And then create a build step that uses this recorder:
+
+[source%nowrap,java]
+----
+@Record(RUNTIME_INIT)
+@BuildStep
+public void helloBuildStep(HelloRecorder recorder) {
+    recorder.sayHello("World");
+}
+----
+
+When this build step is run nothing is printed to the console. This is because the `HelloRecorder` that is injected is
+actually a proxy that records all invocations. Instead if we run the resulting Quarkus program we will see 'Hello World' 
+printed to the console.
+
+
+Methods on a recorder can return a value, which must be proxiable (if you want to return a non-proxiable item wrap it
 in `io.quarkus.runtime.RuntimeValue`). These proxies may not be invoked directly, however they can be passed
-into other template methods. This can be any template method, including from other `@Record` methods, so a common pattern
-is to produce `BuildItem` instances that wrap the results of these template invocations.
+into other recorder methods. This can be any recorder method, including from other `@BuildStep` methods, so a common pattern
+is to produce `BuildItem` instances that wrap the results of these recorder invocations.
 
 For instance, in order to make arbitrary changes to a Servlet deployment Undertow has a `ServletExtensionBuildItem`,
-which is a `MultiBuildItem` that wraps a `ServletExtension` instance. I can return a `ServletExtension` from a template
-in another module, and Undertow will consume it and pass it into the template method that starts Undertow.
+which is a `MultiBuildItem` that wraps a `ServletExtension` instance. I can return a `ServletExtension` from a recorder
+in another module, and Undertow will consume it and pass it into the recorder method that starts Undertow.
 
 At runtime the bytecode will be invoked in the order it is generated. This means that build step dependencies implicitly
 control the order that generated bytecode is run. In the example above we know that the bytecode that produces a
@@ -643,9 +668,9 @@ this includes the ability to register creation functions for classes without no-
 substitution (basically a transformer from a non-serializable object to a serializable one and vice versa), and to create
 a class proxy. This interface can be directly injected as a method parameter into any `@Record` method.
 
-Calling `classProxy` with a given class name will create a `Class` that can be passed into template
+Calling `classProxy` with a given class name will create a `Class` that can be passed into recorder
 methods, and at runtime will be substituted with the class whose name was passed in to `classProxy`. This is basically a
-convenience to avoid the need to explicitly load classes in the templates.
+convenience to avoid the need to explicitly load classes in the recorders.
 
 
 TODO: config integration
@@ -927,7 +952,7 @@ An example of parsing a XML config file using JAXB is shown in the `TestProcesso
 ----
     @BuildStep
     @Record(STATIC_INIT)
-    RuntimeServiceBuildItem parseServiceXmlConfig(TestTemplate template) throws JAXBException {
+    RuntimeServiceBuildItem parseServiceXmlConfig(TestRecorder recorder) throws JAXBException {
         RuntimeServiceBuildItem serviceBuildItem = null;
         JAXBContext context = JAXBContext.newInstance(XmlConfig.class);
         Unmarshaller unmarshaller = context.createUnmarshaller();
@@ -969,7 +994,7 @@ If your extension defines annotations or interfaces that mark beans needing to b
 
     @BuildStep
     @Record(STATIC_INIT)
-    void scanForBeans(TestTemplate template, BeanArchiveIndexBuildItem beanArchiveIndex, <1>
+    void scanForBeans(TestRecorder recorder, BeanArchiveIndexBuildItem beanArchiveIndex, <1>
             BuildProducer<TestBeanBuildItem> testBeanProducer) {
         IndexView indexView = beanArchiveIndex.getIndex(); <2>
         Collection<AnnotationInstance> testBeans = indexView.getAnnotations(TEST_ANNOTATION); <3>
@@ -1005,17 +1030,17 @@ You can use the `io.quarkus.arc.runtime.BeanContainer` interface to interact wit
 // TestProcessor#configureBeans
     @BuildStep
     @Record(RUNTIME_INIT)
-    void configureBeans(TestTemplate template, List<TestBeanBuildItem> testBeans, <1>
+    void configureBeans(TestRecorder recorder, List<TestBeanBuildItem> testBeans, <1>
             BeanContainerBuildItem beanContainer, <2>
             TestRunTimeConfig runTimeConfig) {
 
         for (TestBeanBuildItem testBeanBuildItem : testBeans) {
             Class<IConfigConsumer> beanClass = testBeanBuildItem.getConfigConsumer();
-            template.configureBeans(beanContainer.getValue(), beanClass, buildAndRunTimeConfig, runTimeConfig); <3>
+            recorder.configureBeans(beanContainer.getValue(), beanClass, buildAndRunTimeConfig, runTimeConfig); <3>
         }
     }
 
-// TestTemplate#configureBeans
+// TestRecorder#configureBeans
     public void configureBeans(BeanContainer beanContainer, Class<IConfigConsumer> beanClass,
             TestBuildAndRunTimeConfig buildTimeConfig,
             TestRunTimeConfig runTimeConfig) {
@@ -1027,9 +1052,9 @@ You can use the `io.quarkus.arc.runtime.BeanContainer` interface to interact wit
 ----
 <1> Consume the `TestBeanBuildItem`s produced from the scanning build step.
 <2> Consume the `BeanContainerBuildItem` to order this build step to run after the CDI bean container has been created.
-<3> Call the runtime template to record the bean interactions.
-<4> Runtime template retrieves the bean using its type.
-<5> Runtime template invokes the `IConfigConsumer#loadConfig(...)` method passing in the configuration objects with runtime information.
+<3> Call the runtime recorder to record the bean interactions.
+<4> Runtime recorder retrieves the bean using its type.
+<5> Runtime recorder invokes the `IConfigConsumer#loadConfig(...)` method passing in the configuration objects with runtime information.
 
 ==== Manage Non-CDI Service
 A common purpose for an extension is to integrate a non-CDI aware service into the CDI based Quarkus runtime. Step 1 of this task is to load any configuration needed in a STATIC_INIT build step as we did in <<Parsing Config to Objects>>. Now we need to create an instance of the service using the configuration. Let's return to the `TestProcessor#parseServiceXmlConfig` method to see how this can be done.
@@ -1040,7 +1065,7 @@ A common purpose for an extension is to integrate a non-CDI aware service into t
 // TestProcessor#parseServiceXmlConfig
     @BuildStep
     @Record(STATIC_INIT)
-    RuntimeServiceBuildItem parseServiceXmlConfig(TestTemplate template) throws JAXBException {
+    RuntimeServiceBuildItem parseServiceXmlConfig(TestRecorder recorder) throws JAXBException {
         RuntimeServiceBuildItem serviceBuildItem = null;
         JAXBContext context = JAXBContext.newInstance(XmlConfig.class);
         Unmarshaller unmarshaller = context.createUnmarshaller();
@@ -1049,13 +1074,13 @@ A common purpose for an extension is to integrate a non-CDI aware service into t
             log.infof("Have XmlConfig, loading");
             XmlConfig config = (XmlConfig) unmarshaller.unmarshal(is);
             log.infof("Loaded XmlConfig, creating service");
-            RuntimeValue<RuntimeXmlConfigService> service = template.initRuntimeService(config); //<1>
+            RuntimeValue<RuntimeXmlConfigService> service = recorder.initRuntimeService(config); //<1>
             serviceBuildItem = new RuntimeServiceBuildItem(service); //<3>
         }
         return serviceBuildItem;
     }
 
-// TestTemplate#initRuntimeService
+// TestRecorder#initRuntimeService
     public RuntimeValue<RuntimeXmlConfigService> initRuntimeService(XmlConfig config) {
         RuntimeXmlConfigService service = new RuntimeXmlConfigService(config); //<2>
         return new RuntimeValue<>(service);
@@ -1074,7 +1099,7 @@ A common purpose for an extension is to integrate a non-CDI aware service into t
     }
 }
 ----
-<1> Call into the runtime template to record the creation of the service.
+<1> Call into the runtime recorder to record the creation of the service.
 <2> Using the parsed `XmlConfig` instance, create an instance of `RuntimeXmlConfigService` and wrap it in a `RuntimeValue`. Use a `RuntimeValue` wrapper for non-interface objects that are non-proxiable.
 <3> Wrap the return service value in a `RuntimeServiceBuildItem` for use in a RUNTIME_INIT build step that will start the service.
 
@@ -1087,18 +1112,18 @@ Now that you have recorded the creation of a service during the build phase, you
 // TestProcessor#startRuntimeService
     @BuildStep
     @Record(RUNTIME_INIT)
-    ServiceStartBuildItem startRuntimeService(TestTemplate template, ShutdownContextBuildItem shutdownContextBuildItem , // <1>
+    ServiceStartBuildItem startRuntimeService(TestRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem , // <1>
             RuntimeServiceBuildItem serviceBuildItem) throws IOException { // <2>
         if (serviceBuildItem != null) {
             log.info("Registering service start");
-            template.startRuntimeService(shutdownContextBuildItem, serviceBuildItem.getService()); // <3>
+            recorder.startRuntimeService(shutdownContextBuildItem, serviceBuildItem.getService()); // <3>
         } else {
             log.info("No RuntimeServiceBuildItem seen, check config.xml");
         }
         return new ServiceStartBuildItem("RuntimeXmlConfigService"); //<4>
     }
 
-// TestTemplate#startRuntimeService
+// TestRecorder#startRuntimeService
     public void startRuntimeService(ShutdownContext shutdownContext, RuntimeValue<RuntimeXmlConfigService> runtimeValue)
             throws IOException {
         RuntimeXmlConfigService service = runtimeValue.getValue();
@@ -1108,10 +1133,10 @@ Now that you have recorded the creation of a service during the build phase, you
 ----
 <1> We consume a ShutdownContextBuildItem to register the service shutdown.
 <2> We consume the previously initialized service captured in `RuntimeServiceBuildItem`.
-<3> Call the runtime template to record the service start invocation.
+<3> Call the runtime recorder to record the service start invocation.
 <4> Produce a `ServiceStartBuildItem` to indicate the startup of a service. See <<Startup and Shutdown Events>> for details.
-<5> Runtime template retrieves the service instance reference and calls its `startService` method.
-<6> Runtime template registers an invocation of the service instance `stopService` method with the Quarkus `ShutdownContext`.
+<5> Runtime recorder retrieves the service instance reference and calls its `startService` method.
+<6> Runtime recorder registers an invocation of the service instance `stopService` method with the Quarkus `ShutdownContext`.
 
 The code for the `RuntimeXmlConfigService` can be viewed here:
 {quarkus-blob-url}/core/test-extension/runtime/src/main/java/io/quarkus/extest/runtime/RuntimeXmlConfigService.java[RuntimeXmlConfigService.java]
@@ -1165,7 +1190,7 @@ we saw the production of a `ServiceStartBuildItem` in the previous section, and 
 // TestProcessor#startRuntimeService
     @BuildStep
     @Record(RUNTIME_INIT)
-    ServiceStartBuildItem startRuntimeService(TestTemplate template, ShutdownContextBuildItem shutdownContextBuildItem,
+    ServiceStartBuildItem startRuntimeService(TestRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem,
             RuntimeServiceBuildItem serviceBuildItem) throws IOException {
 ...
         return new ServiceStartBuildItem("RuntimeXmlConfigService"); //<1>
@@ -1268,7 +1293,7 @@ An extension registers this substitution by producing an `ObjectSubstitutionBuil
 ----
     @BuildStep
     @Record(STATIC_INIT)
-    PublicKeyBuildItem loadDSAPublicKey(TestTemplate template,
+    PublicKeyBuildItem loadDSAPublicKey(TestRecorder recorder,
             BuildProducer<ObjectSubstitutionBuildItem> substitutions) throws IOException, GeneralSecurityException {
 ...
         // Register how to serialize DSAPublicKey

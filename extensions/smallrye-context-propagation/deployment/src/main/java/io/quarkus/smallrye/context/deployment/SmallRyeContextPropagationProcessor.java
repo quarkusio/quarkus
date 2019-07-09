@@ -18,7 +18,7 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationProvider;
-import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationTemplate;
+import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationRecorder;
 
 /**
  * The deployment processor for MP-CP applications
@@ -34,11 +34,11 @@ class SmallRyeContextPropagationProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void buildStatic(SmallRyeContextPropagationTemplate template)
+    void buildStatic(SmallRyeContextPropagationRecorder recorder)
             throws ClassNotFoundException, IOException {
         List<ThreadContextProvider> discoveredProviders = new ArrayList<>();
         List<ContextManagerExtension> discoveredExtensions = new ArrayList<>();
-        for (Class<?> provider : ServiceUtil.classesNamedIn(SmallRyeContextPropagationTemplate.class.getClassLoader(),
+        for (Class<?> provider : ServiceUtil.classesNamedIn(SmallRyeContextPropagationRecorder.class.getClassLoader(),
                 "META-INF/services/" + ThreadContextProvider.class.getName())) {
             try {
                 discoveredProviders.add((ThreadContextProvider) provider.newInstance());
@@ -47,7 +47,7 @@ class SmallRyeContextPropagationProcessor {
                         e);
             }
         }
-        for (Class<?> extension : ServiceUtil.classesNamedIn(SmallRyeContextPropagationTemplate.class.getClassLoader(),
+        for (Class<?> extension : ServiceUtil.classesNamedIn(SmallRyeContextPropagationRecorder.class.getClassLoader(),
                 "META-INF/services/" + ContextManagerExtension.class.getName())) {
             try {
                 discoveredExtensions.add((ContextManagerExtension) extension.newInstance());
@@ -57,17 +57,17 @@ class SmallRyeContextPropagationProcessor {
             }
         }
 
-        template.configureStaticInit(discoveredProviders, discoveredExtensions);
+        recorder.configureStaticInit(discoveredProviders, discoveredExtensions);
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void build(SmallRyeContextPropagationTemplate template,
+    void build(SmallRyeContextPropagationRecorder recorder,
             BeanContainerBuildItem beanContainer,
             ExecutorBuildItem executorBuildItem,
             BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_CONTEXT_PROPAGATION));
 
-        template.configureRuntime(beanContainer.getValue(), executorBuildItem.getExecutorProxy());
+        recorder.configureRuntime(beanContainer.getValue(), executorBuildItem.getExecutorProxy());
     }
 }

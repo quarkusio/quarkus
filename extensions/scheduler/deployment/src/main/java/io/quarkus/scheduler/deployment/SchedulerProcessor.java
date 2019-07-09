@@ -61,7 +61,7 @@ import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.runtime.QuartzScheduler;
 import io.quarkus.scheduler.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.runtime.SchedulerConfiguration;
-import io.quarkus.scheduler.runtime.SchedulerDeploymentTemplate;
+import io.quarkus.scheduler.runtime.SchedulerDeploymentRecorder;
 
 /**
  * @author Martin Kouba
@@ -195,7 +195,7 @@ public class SchedulerProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public void build(SchedulerDeploymentTemplate template, BeanContainerBuildItem beanContainer,
+    public void build(SchedulerDeploymentRecorder recorder, BeanContainerBuildItem beanContainer,
             List<ScheduledBusinessMethodItem> scheduledBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<FeatureBuildItem> feature, AnnotationProxyBuildItem annotationProxy) {
@@ -213,17 +213,17 @@ public class SchedulerProcessor {
             Map<String, Object> config = new HashMap<>();
             String invokerClass = generateInvoker(businessMethod.getBean(), businessMethod.getMethod(), classOutput);
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, invokerClass));
-            config.put(SchedulerDeploymentTemplate.INVOKER_KEY, invokerClass);
+            config.put(SchedulerDeploymentRecorder.INVOKER_KEY, invokerClass);
             List<Scheduled> schedules = new ArrayList<>();
             for (AnnotationInstance scheduled : businessMethod.getSchedules()) {
                 schedules.add(annotationProxy.from(scheduled, Scheduled.class));
             }
-            config.put(SchedulerDeploymentTemplate.SCHEDULES_KEY, schedules);
-            config.put(SchedulerDeploymentTemplate.DESC_KEY,
+            config.put(SchedulerDeploymentRecorder.SCHEDULES_KEY, schedules);
+            config.put(SchedulerDeploymentRecorder.DESC_KEY,
                     businessMethod.getMethod().declaringClass() + "#" + businessMethod.getMethod().name());
             scheduleConfigurations.add(config);
         }
-        template.registerSchedules(scheduleConfigurations, beanContainer.getValue());
+        recorder.registerSchedules(scheduleConfigurations, beanContainer.getValue());
     }
 
     @BuildStep

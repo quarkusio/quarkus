@@ -1,7 +1,3 @@
-/*
- * NOHEADER
- */
-
 package io.quarkus.undertow.test;
 
 import javax.inject.Inject;

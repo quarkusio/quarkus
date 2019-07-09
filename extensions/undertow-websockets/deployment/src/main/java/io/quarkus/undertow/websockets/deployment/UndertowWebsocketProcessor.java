@@ -33,7 +33,7 @@ import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.undertow.deployment.ServletContextAttributeBuildItem;
 import io.quarkus.undertow.deployment.UndertowBuildItem;
-import io.quarkus.undertow.websockets.runtime.UndertowWebsocketTemplate;
+import io.quarkus.undertow.websockets.runtime.UndertowWebsocketRecorder;
 import io.undertow.websockets.jsr.JsrWebSocketFilter;
 import io.undertow.websockets.jsr.UndertowContainerProvider;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
@@ -76,7 +76,7 @@ public class UndertowWebsocketProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public ServletContextAttributeBuildItem deploy(final CombinedIndexBuildItem indexBuildItem,
-            UndertowWebsocketTemplate template,
+            UndertowWebsocketRecorder recorder,
             BuildProducer<ReflectiveClassBuildItem> reflection, BuildProducer<FeatureBuildItem> feature,
             List<AnnotatedWebsocketEndpointBuildItem> annotatedEndpoints) throws Exception {
 
@@ -121,7 +121,7 @@ public class UndertowWebsocketProcessor {
                 new ReflectiveClassBuildItem(true, true, ClientEndpointConfig.Configurator.class.getName()));
 
         return new ServletContextAttributeBuildItem(WebSocketDeploymentInfo.ATTRIBUTE_NAME,
-                template.createDeploymentInfo(annotated, endpoints, config));
+                recorder.createDeploymentInfo(annotated, endpoints, config));
     }
 
     private void registerCodersForReflection(BuildProducer<ReflectiveClassBuildItem> reflection,
@@ -147,8 +147,8 @@ public class UndertowWebsocketProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem setupWorker(UndertowWebsocketTemplate template, UndertowBuildItem undertow) {
-        template.setupWorker(undertow.getUndertow());
+    ServiceStartBuildItem setupWorker(UndertowWebsocketRecorder recorder, UndertowBuildItem undertow) {
+        recorder.setupWorker(undertow.getUndertow());
         return new ServiceStartBuildItem("Websockets");
     }
 

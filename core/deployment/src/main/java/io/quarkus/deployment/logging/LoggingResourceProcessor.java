@@ -18,7 +18,7 @@ import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
 import io.quarkus.runtime.logging.InitialConfigurator;
 import io.quarkus.runtime.logging.LogConfig;
-import io.quarkus.runtime.logging.LoggingSetupTemplate;
+import io.quarkus.runtime.logging.LoggingSetupRecorder;
 
 public final class LoggingResourceProcessor {
 
@@ -72,14 +72,14 @@ public final class LoggingResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setupLoggingRuntimeInit(LoggingSetupTemplate setupTemplate, LogConfig log) {
-        setupTemplate.initializeLogging(log);
+    void setupLoggingRuntimeInit(LoggingSetupRecorder recorder, LogConfig log) {
+        recorder.initializeLogging(log);
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupLoggingStaticInit(LoggingSetupTemplate setupTemplate) {
-        setupTemplate.initializeLoggingForImageBuild();
+    void setupLoggingStaticInit(LoggingSetupRecorder recorder) {
+        recorder.initializeLoggingForImageBuild();
     }
 
     // This is specifically to help out with presentations, to allow an env var to always override this value

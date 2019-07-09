@@ -4,7 +4,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import java.util.List;
 
-import io.quarkus.arc.runtime.ArcDeploymentTemplate;
+import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -14,10 +14,10 @@ public class LifecycleEventsBuildStep {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    void startupEvent(ArcDeploymentTemplate template, List<ServiceStartBuildItem> startList,
+    void startupEvent(ArcRecorder recorder, List<ServiceStartBuildItem> startList,
             BeanContainerBuildItem beanContainer,
             ShutdownContextBuildItem shutdown) {
-        template.handleLifecycleEvents(shutdown, beanContainer.getValue());
+        recorder.handleLifecycleEvents(shutdown, beanContainer.getValue());
     }
 
 }

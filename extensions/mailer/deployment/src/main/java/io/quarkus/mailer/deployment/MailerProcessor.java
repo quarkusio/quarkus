@@ -44,16 +44,16 @@ public class MailerProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    MailerBuildItem build(BuildProducer<FeatureBuildItem> feature, MailConfigTemplate template, VertxBuildItem vertx,
+    MailerBuildItem build(BuildProducer<FeatureBuildItem> feature, MailConfigRecorder recorder, VertxBuildItem vertx,
             BeanContainerBuildItem beanContainer, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
             MailConfig config) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.MAILER));
 
-        RuntimeValue<MailClient> client = template.configureTheClient(vertx.getVertx(), beanContainer.getValue(), config,
+        RuntimeValue<MailClient> client = recorder.configureTheClient(vertx.getVertx(), beanContainer.getValue(), config,
                 launchMode.getLaunchMode(), shutdown);
 
-        template.configureTheMailer(beanContainer.getValue(), config, launchMode.getLaunchMode());
+        recorder.configureTheMailer(beanContainer.getValue(), config, launchMode.getLaunchMode());
 
         return new MailerBuildItem(client);
     }

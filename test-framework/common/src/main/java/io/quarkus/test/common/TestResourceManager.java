@@ -50,6 +50,12 @@ public class TestResourceManager {
         return ret;
     }
 
+    public void inject(Object testInstance) {
+        for (QuarkusTestResourceLifecycleManager testResource : testResources) {
+            testResource.inject(testInstance);
+        }
+    }
+
     public void stop() {
         if (oldSystemProps != null) {
             for (Map.Entry<String, String> e : oldSystemProps.entrySet()) {

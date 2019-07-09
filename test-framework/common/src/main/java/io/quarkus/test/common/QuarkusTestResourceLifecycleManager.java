@@ -26,4 +26,10 @@ public interface QuarkusTestResourceLifecycleManager {
      * Stop the test resource.
      */
     void stop();
+
+    /**
+     * Allow each resource to provide custom injection of fields of the test class
+     */
+    default void inject(Object testInstance) {
+    }
 }

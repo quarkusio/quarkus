@@ -6,7 +6,7 @@ public class LogCleanupFilterElement {
     private String loggerName;
     private List<String> messageStarts;
 
-    // Required by template
+    // Required by recorder
     public LogCleanupFilterElement() {
     }
 

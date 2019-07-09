@@ -55,10 +55,10 @@ class NettyProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void createExecutors(BuildProducer<RuntimeBeanBuildItem> runtimeBeanBuildItemBuildProducer,
-            NettyRecorder template) {
+            NettyRecorder recorder) {
         //TODO: configuration
-        Supplier<Object> boss = template.createEventLoop(1);
-        Supplier<Object> worker = template.createEventLoop(0);
+        Supplier<Object> boss = recorder.createEventLoop(1);
+        Supplier<Object> worker = recorder.createEventLoop(0);
 
         runtimeBeanBuildItemBuildProducer.produce(RuntimeBeanBuildItem.builder(EventLoopGroup.class)
                 .setSupplier(boss)

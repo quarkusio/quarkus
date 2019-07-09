@@ -23,7 +23,7 @@ public class KeycloakAdapterProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    BeanContainerListenerBuildItem configureAdapter(KeycloakRecorder template, BuildProducer<AuthConfigBuildItem> authConfig,
+    BeanContainerListenerBuildItem configureAdapter(KeycloakRecorder recorder, BuildProducer<AuthConfigBuildItem> authConfig,
             BuildProducer<HotDeploymentWatchedFileBuildItem> resources,
             BuildProducer<ServletExtensionBuildItem> servletExtension) {
         // configure login info
@@ -39,12 +39,12 @@ public class KeycloakAdapterProcessor {
             adapterConfig = createAdapterConfig(keycloakConfig);
         }
 
-        QuarkusDeploymentContext deploymentContext = template.createKeycloakDeploymentContext(adapterConfig);
+        QuarkusDeploymentContext deploymentContext = recorder.createKeycloakDeploymentContext(adapterConfig);
 
         // register keycloak servlet extension
-        servletExtension.produce(new ServletExtensionBuildItem(template.createServletExtension(deploymentContext)));
+        servletExtension.produce(new ServletExtensionBuildItem(recorder.createServletExtension(deploymentContext)));
 
-        return new BeanContainerListenerBuildItem(template.createBeanContainerListener(deploymentContext));
+        return new BeanContainerListenerBuildItem(recorder.createBeanContainerListener(deploymentContext));
     }
 
     private AdapterConfig createAdapterConfig(KeycloakConfig keycloakConfig) {

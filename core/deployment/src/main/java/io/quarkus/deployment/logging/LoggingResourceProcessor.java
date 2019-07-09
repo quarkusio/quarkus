@@ -72,14 +72,14 @@ public final class LoggingResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setupLoggingRuntimeInit(LoggingSetupRecorder setupTemplate, LogConfig log) {
-        setupTemplate.initializeLogging(log);
+    void setupLoggingRuntimeInit(LoggingSetupRecorder recorder, LogConfig log) {
+        recorder.initializeLogging(log);
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupLoggingStaticInit(LoggingSetupRecorder setupTemplate) {
-        setupTemplate.initializeLoggingForImageBuild();
+    void setupLoggingStaticInit(LoggingSetupRecorder recorder) {
+        recorder.initializeLoggingForImageBuild();
     }
 
     // This is specifically to help out with presentations, to allow an env var to always override this value

@@ -119,7 +119,7 @@ class VertxWebProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem build(VertxWebRecorder template, BeanContainerBuildItem beanContainer,
+    ServiceStartBuildItem build(VertxWebRecorder recorder, BeanContainerBuildItem beanContainer,
             List<RouteHandlerBuildItem> routeHandlerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass, AnnotationProxyBuildItem annotationProxy,
             LaunchModeBuildItem launchMode,
@@ -142,7 +142,7 @@ class VertxWebProcessor {
             routeConfigs.put(handlerClass, routes);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
         }
-        template.configureRouter(vertx.getVertx(), beanContainer.getValue(), routeConfigs, vertxHttpConfiguration,
+        recorder.configureRouter(vertx.getVertx(), beanContainer.getValue(), routeConfigs, vertxHttpConfiguration,
                 launchMode.getLaunchMode(),
                 shutdown);
         return new ServiceStartBuildItem("vertx-web");

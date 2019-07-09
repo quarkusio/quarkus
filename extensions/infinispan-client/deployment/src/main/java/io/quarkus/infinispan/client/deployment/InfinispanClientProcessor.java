@@ -174,7 +174,7 @@ class InfinispanClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    BeanContainerListenerBuildItem build(InfinispanRecorder template, InfinispanPropertiesBuildItem builderBuildItem) {
+    BeanContainerListenerBuildItem build(InfinispanRecorder recorder, InfinispanPropertiesBuildItem builderBuildItem) {
         Properties properties = builderBuildItem.getProperties();
         InfinispanClientBuildTimeConfig conf = infinispanClient;
         if (log.isDebugEnabled()) {
@@ -188,14 +188,14 @@ class InfinispanClientProcessor {
             properties.putIfAbsent(ConfigurationProperties.NEAR_CACHE_MAX_ENTRIES, maxEntries);
         }
 
-        return new BeanContainerListenerBuildItem(template.configureInfinispan(properties));
+        return new BeanContainerListenerBuildItem(recorder.configureInfinispan(properties));
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void configureRuntimeProperties(InfinispanRecorder template,
+    void configureRuntimeProperties(InfinispanRecorder recorder,
             InfinispanClientRuntimeConfig infinispanClientRuntimeConfig) {
-        template.configureRuntimeProperties(infinispanClientRuntimeConfig);
+        recorder.configureRuntimeProperties(infinispanClientRuntimeConfig);
     }
 
     private static final Set<DotName> UNREMOVABLE_BEANS = Collections.unmodifiableSet(

@@ -9,7 +9,7 @@ import io.undertow.security.idm.IdentityManager;
 /**
  * Used to identify which {@linkplain IdentityManager} to install in the deployment. Even though this is a MultiBuildItem,
  * only one can be created across security related extensions. If more than one is created, the
- * {@linkplain SecurityDeploymentProcessor#addIdentityManager(SecurityTemplate, BuildProducer, SecurityDomainBuildItem, List, List)}
+ * {@linkplain SecurityDeploymentProcessor#addIdentityManager(SecurityRecorder, BuildProducer, SecurityDomainBuildItem, List, List)}
  * will throw an IllegalStateException.
  */
 public final class IdentityManagerBuildItem extends MultiBuildItem {

@@ -195,7 +195,7 @@ public class SchedulerProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public void build(SchedulerDeploymentRecorder template, BeanContainerBuildItem beanContainer,
+    public void build(SchedulerDeploymentRecorder recorder, BeanContainerBuildItem beanContainer,
             List<ScheduledBusinessMethodItem> scheduledBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<FeatureBuildItem> feature, AnnotationProxyBuildItem annotationProxy) {
@@ -223,7 +223,7 @@ public class SchedulerProcessor {
                     businessMethod.getMethod().declaringClass() + "#" + businessMethod.getMethod().name());
             scheduleConfigurations.add(config);
         }
-        template.registerSchedules(scheduleConfigurations, beanContainer.getValue());
+        recorder.registerSchedules(scheduleConfigurations, beanContainer.getValue());
     }
 
     @BuildStep

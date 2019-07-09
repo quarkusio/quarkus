@@ -8,7 +8,7 @@ import io.quarkus.runtime.ObjectSubstitution;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
- * An injectable utility class that contains methods that can be needed for dealing with templates
+ * An injectable utility class that contains methods that can be needed for dealing with recorders.
  */
 public interface RecorderContext {
 
@@ -51,7 +51,7 @@ public interface RecorderContext {
     /**
      * Creates a RuntimeValue object that represents an object created via the default constructor.
      * <p>
-     * This object can be passed into templates, but must not be used directly at deployment time
+     * This object can be passed into recorders, but must not be used directly at deployment time
      *
      * @param name The name of the class
      * @param <T> The type of the class

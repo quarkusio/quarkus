@@ -13,8 +13,8 @@ public class UndertowArcIntegrationBuildStep {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     ServletExtensionBuildItem integrateRequestContext(BeanContainerBuildItem beanContainerBuildItem,
-            UndertowDeploymentRecorder template) {
-        return new ServletExtensionBuildItem(template.setupRequestScope(beanContainerBuildItem.getValue()));
+            UndertowDeploymentRecorder recorder) {
+        return new ServletExtensionBuildItem(recorder.setupRequestScope(beanContainerBuildItem.getValue()));
     }
 
     @BuildStep

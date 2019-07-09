@@ -66,7 +66,7 @@ class FlywayProcessor {
             BuildProducer<SubstrateResourceBuildItem> resourceProducer,
             BuildProducer<BeanContainerListenerBuildItem> containerListenerProducer,
             BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
-            FlywayRecorder template,
+            FlywayRecorder recorder,
             DataSourceInitializedBuildItem dataSourceInitializedBuildItem) throws IOException, URISyntaxException {
 
         featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.FLYWAY));
@@ -77,24 +77,24 @@ class FlywayProcessor {
         registerSubstrateResources(resourceProducer, generatedResourceProducer, flywayBuildConfig);
 
         containerListenerProducer.produce(
-                new BeanContainerListenerBuildItem(template.setFlywayBuildConfig(flywayBuildConfig)));
+                new BeanContainerListenerBuildItem(recorder.setFlywayBuildConfig(flywayBuildConfig)));
     }
 
     /**
      * Handles all the operations that can be recorded in the RUNTIME_INIT execution time phase
      * 
-     * @param template Used to set the runtime config
+     * @param recorder Used to set the runtime config
      * @param flywayRuntimeConfig The Flyway configuration
      * @param dataSourceInitializedBuildItem Added this dependency to be sure that Agroal is initialized first
      */
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void configureRuntimeProperties(FlywayRecorder template,
+    void configureRuntimeProperties(FlywayRecorder recorder,
             FlywayRuntimeConfig flywayRuntimeConfig,
             BeanContainerBuildItem beanContainer,
             DataSourceInitializedBuildItem dataSourceInitializedBuildItem) {
-        template.configureFlywayProperties(flywayRuntimeConfig, beanContainer.getValue());
-        template.doStartActions(flywayRuntimeConfig, beanContainer.getValue());
+        recorder.configureFlywayProperties(flywayRuntimeConfig, beanContainer.getValue());
+        recorder.doStartActions(flywayRuntimeConfig, beanContainer.getValue());
     }
 
     private void registerSubstrateResources(BuildProducer<SubstrateResourceBuildItem> resource,

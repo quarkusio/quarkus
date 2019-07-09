@@ -30,13 +30,13 @@ class ReactivePgClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    PgPoolBuildItem build(BuildProducer<FeatureBuildItem> feature, PgPoolRecorder template, VertxBuildItem vertx,
+    PgPoolBuildItem build(BuildProducer<FeatureBuildItem> feature, PgPoolRecorder recorder, VertxBuildItem vertx,
             BeanContainerBuildItem beanContainer, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
             DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.REACTIVE_PG_CLIENT));
 
-        RuntimeValue<PgPool> pgPool = template.configurePgPool(vertx.getVertx(), beanContainer.getValue(), dataSourceConfig,
+        RuntimeValue<PgPool> pgPool = recorder.configurePgPool(vertx.getVertx(), beanContainer.getValue(), dataSourceConfig,
                 pgPoolConfig, launchMode.getLaunchMode(), shutdown);
 
         return new PgPoolBuildItem(pgPool);

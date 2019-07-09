@@ -122,7 +122,7 @@ class VertxProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    VertxBuildItem build(VertxRecorder template, BeanContainerBuildItem beanContainer, BuildProducer<FeatureBuildItem> feature,
+    VertxBuildItem build(VertxRecorder recorder, BeanContainerBuildItem beanContainer, BuildProducer<FeatureBuildItem> feature,
             List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
@@ -143,7 +143,7 @@ class VertxProcessor {
                             .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString()).build());
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, invokerClass));
         }
-        RuntimeValue<Vertx> vertx = template.configureVertx(beanContainer.getValue(), config, messageConsumerConfigurations,
+        RuntimeValue<Vertx> vertx = recorder.configureVertx(beanContainer.getValue(), config, messageConsumerConfigurations,
                 launchMode.getLaunchMode(),
                 shutdown);
         serviceStart.produce(new ServiceStartBuildItem("vertx"));

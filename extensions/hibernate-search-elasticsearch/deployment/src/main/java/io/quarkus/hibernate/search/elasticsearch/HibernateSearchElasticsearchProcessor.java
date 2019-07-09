@@ -54,7 +54,7 @@ class HibernateSearchElasticsearchProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void build(HibernateSearchElasticsearchRecorder template,
+    public void build(HibernateSearchElasticsearchRecorder recorder,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
@@ -78,15 +78,15 @@ class HibernateSearchElasticsearchProcessor {
         registerReflection(index, reflectiveClass, reflectiveHierarchy);
 
         // Register the Hibernate Search integration listener
-        template.registerHibernateSearchIntegration(buildTimeConfig);
+        recorder.registerHibernateSearchIntegration(buildTimeConfig);
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setRuntimeConfig(HibernateSearchElasticsearchRecorder template,
+    void setRuntimeConfig(HibernateSearchElasticsearchRecorder recorder,
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
-        template.setRuntimeConfig(runtimeConfig);
+        recorder.setRuntimeConfig(runtimeConfig);
 
         runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH));
     }

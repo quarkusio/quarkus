@@ -105,7 +105,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public void build(SmallRyeReactiveMessagingRecorder template, BeanContainerBuildItem beanContainer,
+    public void build(SmallRyeReactiveMessagingRecorder recorder, BeanContainerBuildItem beanContainer,
             List<MediatorBuildItem> mediatorMethods,
             List<EmitterBuildItem> emitterFields,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
@@ -127,7 +127,7 @@ public class SmallRyeReactiveMessagingProcessor {
                         .getIdentifier());
             }
         }
-        template.registerMediators(beanClassToBeanId, beanContainer.getValue(),
+        recorder.registerMediators(beanClassToBeanId, beanContainer.getValue(),
                 emitterFields.stream().map(EmitterBuildItem::getName).collect(Collectors.toList()));
     }
 

@@ -99,7 +99,7 @@ class SecurityDeploymentProcessor {
      * files
      * to include the build artifact.
      *
-     * @param template - runtime security template
+     * @param recorder - runtime security recorder
      * @param resources - SubstrateResourceBuildItem used to register the realm user/roles properties files names.
      * @param securityRealm - the producer factory for the SecurityRealmBuildItem
      * @return the AuthConfigBuildItem for the realm authentication mechanism if there was an enabled PropertiesRealmConfig,
@@ -108,7 +108,7 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    AuthConfigBuildItem configureFileRealmAuthConfig(SecurityRecorder template,
+    AuthConfigBuildItem configureFileRealmAuthConfig(SecurityRecorder recorder,
             BuildProducer<SubstrateResourceBuildItem> resources,
             BuildProducer<SecurityRealmBuildItem> securityRealm,
             BuildProducer<PasswordRealmBuildItem> passwordRealm) throws Exception {
@@ -118,8 +118,8 @@ class SecurityDeploymentProcessor {
                     realmConfig.getRoles());
             // Add the users/roles properties files resource names to build artifact
             resources.produce(new SubstrateResourceBuildItem(realmConfig.users, realmConfig.roles));
-            // Have the runtime template create the LegacyPropertiesSecurityRealm and create the build item
-            RuntimeValue<SecurityRealm> realm = template.createRealm(realmConfig);
+            // Have the runtime recorder create the LegacyPropertiesSecurityRealm and create the build item
+            RuntimeValue<SecurityRealm> realm = recorder.createRealm(realmConfig);
             securityRealm.produce(new SecurityRealmBuildItem(realm, realmConfig.getAuthConfig()));
             passwordRealm.produce(new PasswordRealmBuildItem());
             // Return the realm authentication mechanism build item
@@ -133,7 +133,7 @@ class SecurityDeploymentProcessor {
      * {@linkplain org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm}
      * runtime value.
      *
-     * @param template - runtime security template
+     * @param recorder - runtime security recorder
      * @param securityRealm - the producer factory for the SecurityRealmBuildItem
      * @return the AuthConfigBuildItem for the realm authentication mechanism if there was an enabled MPRealmConfig,
      *         null otherwise
@@ -141,7 +141,7 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    AuthConfigBuildItem configureMPRealmConfig(SecurityRecorder template,
+    AuthConfigBuildItem configureMPRealmConfig(SecurityRecorder recorder,
             BuildProducer<SecurityRealmBuildItem> securityRealm,
             BuildProducer<PasswordRealmBuildItem> passwordRealm) throws Exception {
         if (security.embedded.enabled) {
@@ -166,7 +166,7 @@ class SecurityDeploymentProcessor {
                 realmConfig.roles.put(key, roles);
             }
 
-            RuntimeValue<SecurityRealm> realm = template.createRealm(realmConfig);
+            RuntimeValue<SecurityRealm> realm = recorder.createRealm(realmConfig);
             securityRealm.produce(new SecurityRealmBuildItem(realm, realmConfig.getAuthConfig()));
             passwordRealm.produce(new PasswordRealmBuildItem());
             return new AuthConfigBuildItem(realmConfig.getAuthConfig());
@@ -177,7 +177,7 @@ class SecurityDeploymentProcessor {
     /**
      * Create the deployment SecurityDomain using the SecurityRealm and AuthConfig build items that have been created.
      *
-     * @param template - the runtime template class used to access runtime behaviors
+     * @param recorder - the runtime recorder class used to access runtime behaviors
      * @param extension - the ServletExtensionBuildItem producer used to add the Undertow identity manager and auth config
      * @param realms - the previously created SecurityRealm runtime values
      * @return the SecurityDomain runtime value build item
@@ -185,24 +185,24 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    SecurityDomainBuildItem build(SecurityRecorder template, BuildProducer<ServletExtensionBuildItem> extension,
+    SecurityDomainBuildItem build(SecurityRecorder recorder, BuildProducer<ServletExtensionBuildItem> extension,
             List<SecurityRealmBuildItem> realms) throws Exception {
         log.debugf("build, hasFile=%s, hasMP=%s", security.file.enabled, security.embedded.enabled);
         if (realms.size() > 0) {
             // Configure the SecurityDomain.Builder from the main realm
             SecurityRealmBuildItem realmBuildItem = realms.get(0);
             AuthConfig authConfig = realmBuildItem.getAuthConfig();
-            RuntimeValue<SecurityDomain.Builder> securityDomainBuilder = template
+            RuntimeValue<SecurityDomain.Builder> securityDomainBuilder = recorder
                     .configureDomainBuilder(authConfig.getRealmName(), realmBuildItem.getRealm());
             // Add any additional SecurityRealms
             for (int n = 1; n < realms.size(); n++) {
                 realmBuildItem = realms.get(n);
                 RuntimeValue<SecurityRealm> realm = realmBuildItem.getRealm();
                 authConfig = realmBuildItem.getAuthConfig();
-                template.addRealm(securityDomainBuilder, authConfig.getRealmName(), realm);
+                recorder.addRealm(securityDomainBuilder, authConfig.getRealmName(), realm);
             }
             // Actually build the runtime value for the SecurityDomain
-            RuntimeValue<SecurityDomain> securityDomain = template.buildDomain(securityDomainBuilder);
+            RuntimeValue<SecurityDomain> securityDomain = recorder.buildDomain(securityDomainBuilder);
 
             // Return the build item for the SecurityDomain runtime value
             return new SecurityDomainBuildItem(securityDomain);
@@ -214,17 +214,17 @@ class SecurityDeploymentProcessor {
      * If a password based realm was created, install the security extension
      * {@linkplain io.quarkus.elytron.security.runtime.ElytronIdentityManager}
      *
-     * @param template - runtime template
+     * @param recorder - runtime recorder
      * @param securityDomain - configured SecurityDomain
      * @param identityManagerProducer - producer factory for IdentityManagerBuildItem
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void configureIdentityManager(SecurityRecorder template, SecurityDomainBuildItem securityDomain,
+    void configureIdentityManager(SecurityRecorder recorder, SecurityDomainBuildItem securityDomain,
             BuildProducer<IdentityManagerBuildItem> identityManagerProducer,
             List<PasswordRealmBuildItem> passwordRealm) {
         if (passwordRealm.size() > 0) {
-            IdentityManager identityManager = template.createIdentityManager(securityDomain.getSecurityDomain());
+            IdentityManager identityManager = recorder.createIdentityManager(securityDomain.getSecurityDomain());
             identityManagerProducer.produce(new IdentityManagerBuildItem(identityManager));
         }
     }
@@ -232,7 +232,7 @@ class SecurityDeploymentProcessor {
     /**
      * Create the deployment SecurityDomain using the SecurityRealm and AuthConfig build items that have been created.
      *
-     * @param template - the runtime template class used to access runtime behaviors
+     * @param recorder - the runtime recorder class used to access runtime behaviors
      * @param extension - the ServletExtensionBuildItem producer used to add the Undertow identity manager and auth config
      * @param authConfigs - the authentication method information that has been registered
      * @return the SecurityDomain runtime value build item
@@ -240,7 +240,7 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void addIdentityManager(SecurityRecorder template, BuildProducer<ServletExtensionBuildItem> extension,
+    void addIdentityManager(SecurityRecorder recorder, BuildProducer<ServletExtensionBuildItem> extension,
             SecurityDomainBuildItem securityDomain, List<IdentityManagerBuildItem> identityManagers,
             List<AuthConfigBuildItem> authConfigs) {
         // If there are no identityManagers, exit
@@ -255,7 +255,7 @@ class SecurityDeploymentProcessor {
         // Create the configured identity manager
         IdentityManagerBuildItem identityManager = identityManagers.get(0);
         // Collect all of the authentication mechanisms and create a ServletExtension to register the Undertow identity manager
-        ServletExtension idmExt = template.configureUndertowIdentityManager(securityDomain.getSecurityDomain(),
+        ServletExtension idmExt = recorder.configureUndertowIdentityManager(securityDomain.getSecurityDomain(),
                 identityManager.getIdentityManager());
         extension.produce(new ServletExtensionBuildItem(idmExt));
     }
@@ -263,13 +263,13 @@ class SecurityDeploymentProcessor {
     /**
      * Produces a {@code ServletExtension} to configure Undertow {@code AuthConfigBuildItem} produced during the build
      *
-     * @param template - the runtime template class used to access runtime behaviors
+     * @param recorder - the runtime recorder class used to access runtime behaviors
      * @param extension - the ServletExtensionBuildItem producer used to add the Undertow auth config
      * @param authConfigs - the authentication method information that has been registered
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void addLoginConfig(SecurityRecorder template, List<AuthConfigBuildItem> authConfigs,
+    void addLoginConfig(SecurityRecorder recorder, List<AuthConfigBuildItem> authConfigs,
             BuildProducer<ServletExtensionBuildItem> extension) {
         List<AuthConfig> allAuthConfigs = new ArrayList<>();
 
@@ -278,19 +278,19 @@ class SecurityDeploymentProcessor {
             allAuthConfigs.add(ac);
         }
 
-        extension.produce(new ServletExtensionBuildItem(template.configureLoginConfig(allAuthConfigs)));
+        extension.produce(new ServletExtensionBuildItem(recorder.configureLoginConfig(allAuthConfigs)));
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    ServletExtensionBuildItem addSecurityContextPrincipalHandler(SecurityRecorder template, BeanContainerBuildItem container) {
+    ServletExtensionBuildItem addSecurityContextPrincipalHandler(SecurityRecorder recorder, BeanContainerBuildItem container) {
         log.debugf("addSecurityContextPrincipalHandler");
-        return new ServletExtensionBuildItem(template.configureSecurityContextPrincipalHandler(container.getValue()));
+        return new ServletExtensionBuildItem(recorder.configureSecurityContextPrincipalHandler(container.getValue()));
     }
 
     /**
      * Register the classes for reflection in the requested named providers
-     * 
+     *
      * @param classes - ReflectiveClassBuildItem producer
      * @param jcaProviders - JCAProviderBuildItem for requested providers
      */
@@ -308,7 +308,7 @@ class SecurityDeploymentProcessor {
 
     /**
      * Determine the classes that make up the provider and its services
-     * 
+     *
      * @param providerName - JCA provider name
      * @return class names that make up the provider and its services
      */
@@ -334,21 +334,21 @@ class SecurityDeploymentProcessor {
      * For each SecurityRealm, load it's runtime state. This is currently a little strange due to how the AuthConfig is
      * downcast to the type of SecurityRealm configuration instance.
      *
-     * @param template - the runtime template class used to access runtime behaviors
+     * @param recorder - the runtime recorder class used to access runtime behaviors
      * @param realms - the previously created SecurityRealm runtime values
      * @throws Exception
      */
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void loadRealm(SecurityRecorder template, List<SecurityRealmBuildItem> realms) throws Exception {
+    void loadRealm(SecurityRecorder recorder, List<SecurityRealmBuildItem> realms) throws Exception {
         for (SecurityRealmBuildItem realm : realms) {
             AuthConfig authConfig = realm.getAuthConfig();
             if (authConfig.getType() != null) {
                 Class authType = authConfig.getType();
                 if (authType.isAssignableFrom(PropertiesRealmConfig.class)) {
-                    template.loadRealm(realm.getRealm(), security.file);
+                    recorder.loadRealm(realm.getRealm(), security.file);
                 } else if (authType.isAssignableFrom(MPRealmConfig.class)) {
-                    template.loadRealm(realm.getRealm(), security.embedded);
+                    recorder.loadRealm(realm.getRealm(), security.embedded);
                 }
             }
         }

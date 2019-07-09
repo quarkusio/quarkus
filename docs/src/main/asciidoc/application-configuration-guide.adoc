@@ -74,7 +74,7 @@ String message;
 @ConfigProperty(name = "greeting.suffix", defaultValue="!") <2>
 String suffix;
 
-@ConfigProperty(name = "greeting.name") 
+@ConfigProperty(name = "greeting.name")
 Optional<String> name; <3>
 ----
 <1> If you do not provide a value for this property, the application startup fails with `javax.enterprise.inject.spi.DeploymentException: No config value of type [class java.lang.String] exists for: greeting.message`.
@@ -257,6 +257,16 @@ quarkus.http.port=9090
 
 And then set the `QUARKUS_PROFILE` environment variable to 'staging' to activate my profile.
 
+==== Miscellaneous
+The default Quarkus application runtime profile is set to the profile used to build the application.
+For example:
+[source,shell]
+----
+mvn package -Pnative -Dquarkus.profile=prod-aws`
+./target/my-app-1.0-runner // <1>
+----
+<1> The command will run with the `prod-aws` profile. This can be overridden using the `quarkus.profile` system property.
+
 == Custom Configuration
 
 === Custom configuration sources
@@ -343,7 +353,7 @@ By default, if no `@Priority` can be found on a converter, it's registered with 
 and all Quarkus core converters are registered with a priority of 200, so depending on which
 converter you would like to replace, you need to set a higher value.
 
-To demonstrate the idea let us implement a custom converter which will take precedence over 
+To demonstrate the idea let us implement a custom converter which will take precedence over
 `MicroProfileCustomValueConverter` implemented in the previous example.
 
 [source,java]

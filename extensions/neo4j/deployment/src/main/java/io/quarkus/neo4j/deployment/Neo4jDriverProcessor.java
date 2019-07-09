@@ -13,7 +13,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.neo4j.runtime.Neo4jConfiguration;
 import io.quarkus.neo4j.runtime.Neo4jDriverProducer;
-import io.quarkus.neo4j.runtime.Neo4jDriverTemplate;
+import io.quarkus.neo4j.runtime.Neo4jDriverRecorder;
 
 class Neo4jDriverProcessor {
 
@@ -32,13 +32,13 @@ class Neo4jDriverProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void configureDriverProducer(Neo4jDriverTemplate template, BeanContainerBuildItem beanContainerBuildItem,
+    void configureDriverProducer(Neo4jDriverRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
             Neo4jConfiguration configuration,
             ShutdownContextBuildItem shutdownContext) {
 
         // Indicates that this extension would like the SSL support to be enabled
         extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.NEO4J));
 
-        template.configureNeo4jProducer(beanContainerBuildItem.getValue(), configuration, shutdownContext);
+        recorder.configureNeo4jProducer(beanContainerBuildItem.getValue(), configuration, shutdownContext);
     }
 }

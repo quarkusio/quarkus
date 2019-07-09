@@ -9,6 +9,17 @@
     "artifactId": "quarkus-agroal"
   },
   {
+    "name": "Amazon DynamoDB",
+    "labels": [
+      "dynamodb",
+      "dynamo",
+      "aws",
+      "amazon"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-amazon-dynamodb"
+  },
+  {
     "name": "Apache Kafka Client",
     "labels": [
       "kafka"
@@ -51,7 +62,8 @@
     "name": "AWS Lambda",
     "labels": [
       "lambda",
-      "aws"
+      "aws",
+      "amazon"
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-amazon-lambda"

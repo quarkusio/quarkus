@@ -76,7 +76,7 @@ public class ResteasyServerCommonProcessor {
 
     private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
 
-    private static final DotName[] METHOD_ANNOTATIONS = {
+    public static final DotName[] METHOD_ANNOTATIONS = {
             ResteasyDotNames.GET,
             ResteasyDotNames.HEAD,
             ResteasyDotNames.DELETE,
@@ -525,7 +525,7 @@ public class ResteasyServerCommonProcessor {
         }
     }
 
-    private static boolean isReflectionDeclarationRequiredFor(Type type) {
+    public static boolean isReflectionDeclarationRequiredFor(Type type) {
         DotName className = getClassName(type);
 
         return className != null && !ResteasyDotNames.TYPES_IGNORED_FOR_REFLECTION.contains(className);

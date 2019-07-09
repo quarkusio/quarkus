@@ -252,6 +252,17 @@
     "guide": "https://quarkus.io/guides/transaction-guide"
   },
   {
+    "name": "Neo4j client",
+    "labels": [
+      "neo4j",
+      "graph",
+      "nosql",
+      "datastore"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-neo4j"
+  },
+  {
     "name": "RESTEasy",
     "shortName": "jax-rs",
     "labels": [

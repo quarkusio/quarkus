@@ -57,6 +57,8 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private static final String QUARKUS_PREFIX = "quarkus.";
 
+    private static final String SUPPORTED_GRAALVM_VERSION = "19.0.2";
+
     private static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("linux");
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
 
@@ -324,8 +326,6 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
         final Config config = SmallRyeConfigProviderResolver.instance().getConfig();
 
-        boolean vmVersionOutOfDate = isThisGraalVMRCObsolete();
-
         HashMap<String, String> env = new HashMap<>(System.getenv());
         List<String> nativeImage;
 
@@ -369,6 +369,9 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                 if (home != null) {
                     java = new File(home);
                 }
+            }
+            if (isThisGraalVMRCObsolete()) {
+                throw new AppCreatorException("you must update GraalVM version to " + SUPPORTED_GRAALVM_VERSION);
             }
             nativeImage = Collections.singletonList(getNativeImageExecutable(graal, java, env).getAbsolutePath());
         }
@@ -551,10 +554,13 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
         log.info("Running Quarkus native-image plugin on " + vmName);
         final List<String> obsoleteGraalVmVersions = Arrays.asList("-rc9", "-rc10", "-rc11", "-rc12", "-rc13", "-rc14",
                 "-rc15", "-rc16", "19.0.0");
-        final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(vmName::contains);
-        if (vmVersionIsObsolete) {
-            log.error("Out of date RC build of GraalVM detected! Please upgrade to GraalVM 19.0.2");
+        final List<String> newerGraalVmVersions = Arrays.asList();
+
+        if (obsoleteGraalVmVersions.stream().anyMatch(vmName::contains)) {
+            log.error("Out of date RC build of GraalVM detected! Please upgrade to GraalVM " + SUPPORTED_GRAALVM_VERSION);
             return true;
+        } else if (newerGraalVmVersions.stream().anyMatch(vmName::contains)) {
+            log.warn("Newer GraalVM version is not supported");
         }
         return false;
     }

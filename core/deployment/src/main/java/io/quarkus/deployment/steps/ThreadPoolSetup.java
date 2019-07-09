@@ -17,11 +17,11 @@ public class ThreadPoolSetup {
 
     @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
-    public ExecutorBuildItem createExecutor(ExecutorRecorder setupTemplate, ShutdownContextBuildItem shutdownContextBuildItem,
+    public ExecutorBuildItem createExecutor(ExecutorRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             ThreadPoolConfig threadPoolConfig) {
         return new ExecutorBuildItem(
-                setupTemplate.setupRunTime(shutdownContextBuildItem, threadPoolConfig, launchModeBuildItem.getLaunchMode()));
+                recorder.setupRunTime(shutdownContextBuildItem, threadPoolConfig, launchModeBuildItem.getLaunchMode()));
     }
 
     @BuildStep

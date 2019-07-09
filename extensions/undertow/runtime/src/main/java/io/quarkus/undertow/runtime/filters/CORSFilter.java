@@ -15,7 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 
 public class CORSFilter implements Filter {
 
-    // This is set in the recorded template at runtime.
+    // This is set in the recorder at runtime.
     // Must be static because the filter is created(deployed) at build time and runtime config is still not available
     static CORSConfig corsConfig;
 

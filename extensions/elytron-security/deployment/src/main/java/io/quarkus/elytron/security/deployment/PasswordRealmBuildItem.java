@@ -7,8 +7,8 @@ import io.quarkus.deployment.annotations.BuildProducer;
 
 /**
  * Marker build item indicating that a password based realm was installed.
- * 
- * @see SecurityDeploymentProcessor#configureIdentityManager(SecurityTemplate, SecurityDomainBuildItem, BuildProducer, List)
+ *
+ * @see SecurityDeploymentProcessor#configureIdentityManager(SecurityRecorder, SecurityDomainBuildItem, BuildProducer, List)
  */
 public final class PasswordRealmBuildItem extends MultiBuildItem {
     public PasswordRealmBuildItem() {

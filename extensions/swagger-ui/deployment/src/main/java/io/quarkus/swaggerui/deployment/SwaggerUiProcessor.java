@@ -68,7 +68,7 @@ public class SwaggerUiProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void registerSwaggerUiServletExtension(SwaggerUiRecorder template,
+    public void registerSwaggerUiServletExtension(SwaggerUiRecorder recorder,
             BuildProducer<ServletExtensionBuildItem> servletExtension,
             BeanContainerBuildItem container,
             BuildProducer<GeneratedWebResourceBuildItem> generatedResources,
@@ -105,7 +105,7 @@ public class SwaggerUiProcessor {
             }
             servletExtension.produce(
                     new ServletExtensionBuildItem(
-                            template.createSwaggerUiExtension(
+                            recorder.createSwaggerUiExtension(
                                     swaggerUiConfig.path,
                                     cached.cachedDirectory,
                                     container.getValue())));

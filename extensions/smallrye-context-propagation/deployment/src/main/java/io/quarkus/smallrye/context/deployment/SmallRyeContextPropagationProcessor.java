@@ -34,7 +34,7 @@ class SmallRyeContextPropagationProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void buildStatic(SmallRyeContextPropagationRecorder template)
+    void buildStatic(SmallRyeContextPropagationRecorder recorder)
             throws ClassNotFoundException, IOException {
         List<ThreadContextProvider> discoveredProviders = new ArrayList<>();
         List<ContextManagerExtension> discoveredExtensions = new ArrayList<>();
@@ -57,17 +57,17 @@ class SmallRyeContextPropagationProcessor {
             }
         }
 
-        template.configureStaticInit(discoveredProviders, discoveredExtensions);
+        recorder.configureStaticInit(discoveredProviders, discoveredExtensions);
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void build(SmallRyeContextPropagationRecorder template,
+    void build(SmallRyeContextPropagationRecorder recorder,
             BeanContainerBuildItem beanContainer,
             ExecutorBuildItem executorBuildItem,
             BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_CONTEXT_PROPAGATION));
 
-        template.configureRuntime(beanContainer.getValue(), executorBuildItem.getExecutorProxy());
+        recorder.configureRuntime(beanContainer.getValue(), executorBuildItem.getExecutorProxy());
     }
 }

@@ -150,7 +150,7 @@ public class SmallRyeFaultToleranceProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    public void clearStatic(SmallryeFaultToleranceRecorder template, ShutdownContextBuildItem context) {
-        template.resetCommandContextOnUndeploy(context);
+    public void clearStatic(SmallryeFaultToleranceRecorder recorder, ShutdownContextBuildItem context) {
+        recorder.resetCommandContextOnUndeploy(context);
     }
 }

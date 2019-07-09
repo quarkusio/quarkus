@@ -55,10 +55,10 @@ class KafkaStreamsProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void build(KafkaStreamsRecorder template) {
+    void build(KafkaStreamsRecorder recorder) {
         // Explicitly loading RocksDB native libs, as that's normally done from within
         // static initializers which already ran during build
-        template.loadRocksDb();
+        recorder.loadRocksDb();
     }
 
     private boolean isContainerBuild() {

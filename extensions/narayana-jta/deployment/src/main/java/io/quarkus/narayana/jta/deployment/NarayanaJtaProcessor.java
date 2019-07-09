@@ -49,7 +49,7 @@ class NarayanaJtaProcessor {
 
     @BuildStep(providesCapabilities = Capabilities.TRANSACTIONS)
     @Record(RUNTIME_INIT)
-    public void build(NarayanaJtaRecorder tt, BuildProducer<FeatureBuildItem> feature) {
+    public void build(NarayanaJtaRecorder recorder, BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.NARAYANA_JTA));
         additionalBeans.produce(new AdditionalBeanBuildItem(NarayanaJtaProducers.class));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(
@@ -71,8 +71,8 @@ class NarayanaJtaProcessor {
 
         //we want to force Arjuna to init at static init time
         Properties defaultProperties = PropertiesFactory.getDefaultProperties();
-        tt.setDefaultProperties(defaultProperties);
-        tt.setNodeName(transactions);
-        tt.setDefaultTimeout(transactions);
+        recorder.setDefaultProperties(defaultProperties);
+        recorder.setNodeName(transactions);
+        recorder.setDefaultTimeout(transactions);
     }
 }

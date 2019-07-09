@@ -43,7 +43,7 @@ import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
 
 /**
- * The runtime security template class that provides methods for creating RuntimeValues for the deployment security objects.
+ * The runtime security recorder class that provides methods for creating RuntimeValues for the deployment security objects.
  */
 @Recorder
 public class SecurityRecorder {
@@ -51,7 +51,7 @@ public class SecurityRecorder {
 
     /**
      * Load the user.properties and roles.properties files into the {@linkplain SecurityRealm}
-     * 
+     *
      * @param realm - a {@linkplain LegacyPropertiesSecurityRealm}
      * @param config - realm configuration info
      * @throws Exception
@@ -80,7 +80,7 @@ public class SecurityRecorder {
 
     /**
      * Load the embedded user and role information into the {@linkplain SecurityRealm}
-     * 
+     *
      * @param realm - a {@linkplain SimpleMapBackedSecurityRealm}
      * @param config - the realm config
      * @throws Exception
@@ -119,7 +119,7 @@ public class SecurityRecorder {
 
     /**
      * Create a runtime value for a {@linkplain LegacyPropertiesSecurityRealm}
-     * 
+     *
      * @param config - the realm config
      * @return - runtime value wrapper for the SecurityRealm
      * @throws Exception
@@ -142,7 +142,7 @@ public class SecurityRecorder {
 
     /**
      * Create a runtime value for a {@linkplain SimpleMapBackedSecurityRealm}
-     * 
+     *
      * @param config - the realm config
      * @return - runtime value wrapper for the SecurityRealm
      * @throws Exception
@@ -162,7 +162,7 @@ public class SecurityRecorder {
 
     /**
      * Create a {@linkplain SecurityDomain.Builder} for the given default {@linkplain SecurityRealm}.
-     * 
+     *
      * @param realmName - the default realm name
      * @param realm - the default SecurityRealm
      * @return a runtime value for the SecurityDomain.Builder
@@ -212,7 +212,7 @@ public class SecurityRecorder {
 
     /**
      * Called to add an additional realm to the {@linkplain SecurityDomain} being built
-     * 
+     *
      * @param builder - runtime value for SecurityDomain.Builder created by
      *        {@linkplain #configureDomainBuilder(String, RuntimeValue)}
      * @param realmName - the name of the SecurityRealm
@@ -224,7 +224,7 @@ public class SecurityRecorder {
 
     /**
      * Called to invoke the builder created by {@linkplain #configureDomainBuilder(String, RuntimeValue)}
-     * 
+     *
      * @param builder - the security domain builder
      * @return the security domain runtime value
      */
@@ -234,7 +234,7 @@ public class SecurityRecorder {
 
     /**
      * Create an ElytronIdentityManager for the given SecurityDomain
-     * 
+     *
      * @param domain - configured SecurityDomain
      * @return runtime value for ElytronIdentityManager
      */
@@ -292,7 +292,7 @@ public class SecurityRecorder {
          * this ends up putting the SecurityContext class into the RuntimeClassLoader while the SecurityContextPrincipalHandler
          * is loaded by the Launcher$AppClassLoade
          * return new ServletExtension() {
-         * 
+         *
          * @Override
          * public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
          * deploymentInfo.addInnerHandlerChainWrapper(SecurityContextPrincipalHandler::new);

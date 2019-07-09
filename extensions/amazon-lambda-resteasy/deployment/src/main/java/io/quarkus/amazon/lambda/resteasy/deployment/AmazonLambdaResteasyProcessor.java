@@ -16,10 +16,10 @@ public class AmazonLambdaResteasyProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setup(AmazonLambdaResteasyRecorder template, Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
+    void setup(AmazonLambdaResteasyRecorder recorder, Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
             ResteasyInjectionReadyBuildItem resteasyInjectionReady) {
         if (resteasyServerConfig.isPresent()) {
-            template.initHandler(resteasyServerConfig.get().getInitParameters(), config);
+            recorder.initHandler(resteasyServerConfig.get().getInitParameters(), config);
         }
     }
 }

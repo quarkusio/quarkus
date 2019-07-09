@@ -289,14 +289,14 @@ public class ResteasyServerCommonProcessor {
 
     @Record(STATIC_INIT)
     @BuildStep
-    ResteasyInjectionReadyBuildItem setupInjection(ResteasyServerCommonRecorder template,
+    ResteasyInjectionReadyBuildItem setupInjection(ResteasyServerCommonRecorder recorder,
             BeanContainerBuildItem beanContainerBuildItem,
             List<ProxyUnwrapperBuildItem> proxyUnwrappers) {
         List<Function<Object, Object>> unwrappers = new ArrayList<>();
         for (ProxyUnwrapperBuildItem i : proxyUnwrappers) {
             unwrappers.add(i.getUnwrapper());
         }
-        template.setupIntegration(beanContainerBuildItem.getValue(), unwrappers);
+        recorder.setupIntegration(beanContainerBuildItem.getValue(), unwrappers);
 
         return new ResteasyInjectionReadyBuildItem();
     }

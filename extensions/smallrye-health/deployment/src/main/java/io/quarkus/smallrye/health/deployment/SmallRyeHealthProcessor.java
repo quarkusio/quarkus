@@ -66,7 +66,7 @@ class SmallRyeHealthProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     @SuppressWarnings("unchecked")
-    void build(SmallRyeHealthRecorder template, RecorderContext recorder,
+    void build(SmallRyeHealthRecorder recorder, RecorderContext recorderContext,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<ServletBuildItem> servlet,
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
@@ -115,8 +115,8 @@ class SmallRyeHealthProcessor {
                     String.format("Multiple HealthCheckResponseProvider implementations found: %s", providers));
         }
 
-        template.registerHealthCheckResponseProvider(
-                (Class<? extends HealthCheckResponseProvider>) recorder.classProxy(providers.iterator().next()));
+        recorder.registerHealthCheckResponseProvider(
+                (Class<? extends HealthCheckResponseProvider>) recorderContext.classProxy(providers.iterator().next()));
     }
 
     @BuildStep

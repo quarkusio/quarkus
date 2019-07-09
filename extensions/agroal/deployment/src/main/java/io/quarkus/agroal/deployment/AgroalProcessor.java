@@ -63,8 +63,8 @@ class AgroalProcessor {
     @Record(STATIC_INIT)
     @BuildStep
     BeanContainerListenerBuildItem build(
-            RecorderContext recorder,
-            AgroalRecorder template,
+            RecorderContext recorderContext,
+            AgroalRecorder recorder,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<SubstrateResourceBuildItem> resource,
@@ -120,15 +120,15 @@ class AgroalProcessor {
 
         createDataSourceProducerBean(generatedBean, dataSourceProducerClassName);
 
-        return new BeanContainerListenerBuildItem(template.addDataSource(
-                (Class<? extends AbstractDataSourceProducer>) recorder.classProxy(dataSourceProducerClassName),
+        return new BeanContainerListenerBuildItem(recorder.addDataSource(
+                (Class<? extends AbstractDataSourceProducer>) recorderContext.classProxy(dataSourceProducerClassName),
                 agroalBuildTimeConfig,
                 sslNativeConfig.isExplicitlyDisabled()));
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void configureRuntimeProperties(AgroalRecorder template,
+    void configureRuntimeProperties(AgroalRecorder recorder,
             BuildProducer<DataSourceInitializedBuildItem> dataSourceInitialized,
             AgroalRuntimeConfig agroalRuntimeConfig) {
         if (!agroalBuildTimeConfig.defaultDataSource.driver.isPresent() && agroalBuildTimeConfig.namedDataSources.isEmpty()) {
@@ -136,7 +136,7 @@ class AgroalProcessor {
             return;
         }
 
-        template.configureRuntimeProperties(agroalRuntimeConfig);
+        recorder.configureRuntimeProperties(agroalRuntimeConfig);
 
         dataSourceInitialized.produce(new DataSourceInitializedBuildItem());
     }

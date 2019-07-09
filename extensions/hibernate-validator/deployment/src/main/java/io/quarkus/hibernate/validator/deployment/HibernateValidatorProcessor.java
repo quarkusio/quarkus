@@ -71,7 +71,7 @@ class HibernateValidatorProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public void build(HibernateValidatorRecorder template, RecorderContext recorder,
+    public void build(HibernateValidatorRecorder recorder, RecorderContext recorderContext,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
@@ -132,9 +132,9 @@ class HibernateValidatorProcessor {
 
         Set<Class<?>> classesToBeValidated = new HashSet<>();
         for (DotName className : classNamesToBeValidated) {
-            classesToBeValidated.add(recorder.classProxy(className.toString()));
+            classesToBeValidated.add(recorderContext.classProxy(className.toString()));
         }
-        template.initializeValidatorFactory(classesToBeValidated);
+        recorder.initializeValidatorFactory(classesToBeValidated);
 
         // Add the annotations transformer to add @MethodValidated annotations on the methods requiring validation
         annotationsTransformers

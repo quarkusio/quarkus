@@ -25,7 +25,7 @@ public class UndertowHandlersConfServletExtension implements ServletExtension {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         InputStream handlers = classLoader.getResourceAsStream(META_INF_UNDERTOW_HANDLERS_CONF);
         if (handlers != null) {
-            // From Stuart Douglas: Ideally these would be parsed at deployment time and passed into a template,
+            // From Stuart Douglas: Ideally these would be parsed at deployment time and passed into a recorder,
             // however they are likely not bytecode serialisable. Even though this approach
             // does not 100% align with the Quarkus ethos I think it is ok in this case as
             // the gains would be marginal compared to the cost of attempting to make

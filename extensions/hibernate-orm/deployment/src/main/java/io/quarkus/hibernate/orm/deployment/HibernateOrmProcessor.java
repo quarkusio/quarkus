@@ -27,9 +27,7 @@ import javax.persistence.spi.PersistenceUnitTransactionType;
 
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.dialect.H2Dialect;
 import org.hibernate.dialect.MariaDB103Dialect;
-import org.hibernate.dialect.PostgreSQL95Dialect;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
@@ -79,6 +77,8 @@ import io.quarkus.hibernate.orm.runtime.JPAResourceReferenceProvider;
 import io.quarkus.hibernate.orm.runtime.RequestScopedEntityManagerHolder;
 import io.quarkus.hibernate.orm.runtime.TransactionEntityManagers;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
+import io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect;
+import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL95Dialect;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -472,10 +472,10 @@ public final class HibernateOrmProcessor {
         // of all the dialects we want in so that people can override them
         String resolvedDriver = driver.orElse("NODRIVER");
         if (resolvedDriver.contains("postgresql")) {
-            return Optional.of(PostgreSQL95Dialect.class.getName());
+            return Optional.of(QuarkusPostgreSQL95Dialect.class.getName());
         }
         if (resolvedDriver.contains("org.h2.Driver")) {
-            return Optional.of(H2Dialect.class.getName());
+            return Optional.of(QuarkusH2Dialect.class.getName());
         }
         if (resolvedDriver.contains("org.mariadb.jdbc.Driver")) {
             return Optional.of(MariaDB103Dialect.class.getName());

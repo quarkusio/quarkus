@@ -21,12 +21,18 @@
     </properties>
     <dependencies>
         <!-- Special -->
+        <!-- NOT <scope>import</scope> because this is for the maven-dependency-plugin -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bom</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
-            <!-- NOT <scope>import</scope> because this is for the maven-dependency-plugin -->
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-deployment-bom</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
         </dependency>
 
         <!-- Compile -->

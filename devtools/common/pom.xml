@@ -23,7 +23,7 @@
                 <filtering>true</filtering>
             </resource>
             <resource>
-                <directory>${project.basedir}/../../bom</directory>
+                <directory>${project.basedir}/../../bom/runtime</directory>
                 <targetPath>quarkus-bom</targetPath>
                 <filtering>false</filtering>
                 <includes>

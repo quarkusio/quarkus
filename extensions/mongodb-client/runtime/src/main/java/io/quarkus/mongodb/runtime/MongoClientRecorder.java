@@ -35,14 +35,15 @@ import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.annotations.Template;
+import io.quarkus.runtime.annotations.Recorder;
 
-@Template
-public class MongoClientTemplate {
+@Recorder
+public class MongoClientRecorder {
+
+    private static final Logger LOGGER = Logger.getLogger(MongoClientRecorder.class);
 
     private static volatile MongoClient client;
     private static volatile ReactiveMongoClient reactiveMongoClient;
-    private static final Logger LOGGER = Logger.getLogger(MongoClientTemplate.class);
 
     public RuntimeValue<MongoClient> configureTheClient(
             MongoClientConfig config,

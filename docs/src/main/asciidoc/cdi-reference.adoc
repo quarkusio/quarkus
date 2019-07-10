@@ -198,8 +198,24 @@ BeanRegistrarBuildItem syntheticBean() {
 }
 ----
 
-
 NOTE: The output of a `BeanConfigurator` is recorded as bytecode. Therefore there are some limitations in how a synthetic bean instance is created. See also `BeanConfigurator.creator()` methods.
+
+If an extension needs to produce other build items during the "bean registration" phase it should use the `BeanRegistrationPhaseBuildItem` instead.
+The reason is that injected objects are only valid during a `@BuildStep` method invocation.
+
+[source,java]
+----
+@BuildStep
+void syntheticBean(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
+            BuildProducer<MyBuildItem> myBuildItem, 
+            BuildProducer<BeanConfiguratorBuildItem> beanConfigurators) {
+   beanConfigurators.produce(new BeanConfiguratorBuildItem(beanRegistrationPhase.getContext().configure(String.class).types(String.class).qualifiers(new MyQualifierLiteral()).creator(mc -> mc.returnValue(mc.load("foo")))));
+   myBuildItem.produce(new MyBuildItem());
+}
+----
+
+NOTE: See `BeanRegistrationPhaseBuildItem` javadoc for more information.
+
 
 === Annotation Transformations
 
@@ -275,6 +291,25 @@ BeanDeploymentValidatorBuildItem beanDeploymentValidator() {
 
 NOTE: See also `io.quarkus.arc.processor.BuildExtension.Key` to discover the available metadata.
 
+If an extension needs to produce other build items during the "validation" phase it should use the `ValidationPhaseBuildItem` instead.
+The reason is that injected objects are only valid during a `@BuildStep` method invocation.
+
+[source,java]
+----
+@BuildStep
+void validate(ValidationPhaseBuildItem validationPhase,
+            BuildProducer<MyBuildItem> myBuildItem, 
+            BuildProducer<ValidationErrorBuildItem> errors) {
+   if (someCondition) {
+     errors.produce(new ValidationErrorBuildItem(new IllegalStateException()));
+     myBuildItem.produce(new MyBuildItem());
+   }
+}
+----
+
+NOTE: See `ValidationPhaseBuildItem` javadoc for more information.
+
+
 === Custom Contexts
 
 An extension can register a custom `InjectableContext` implementation by means of a `ContextRegistrarBuildItem`:
@@ -290,6 +325,23 @@ ContextRegistrarBuildItem customContext() {
     });
 }
 ----
+
+If an extension needs to produce other build items during the "context registration" phase it should use the `ContextRegistrationPhaseBuildItem` instead.
+The reason is that injected objects are only valid during a `@BuildStep` method invocation.
+
+[source,java]
+----
+@BuildStep
+void addContext(ContextRegistrationPhaseBuildItem contextRegistrationPhase,
+            BuildProducer<MyBuildItem> myBuildItem, 
+            BuildProducer<ContextConfiguratorBuildItem> contexts) {
+   contexts.produce(new ContextConfiguratorBuildItem(contextRegistrationPhase.getContext().configure(CustomScoped.class).normal().contextClass(MyCustomContext.class)));
+   myBuildItem.produce(new MyBuildItem());
+}
+----
+
+NOTE: See `ContextRegistrationPhaseBuildItem` javadoc for more information.
+
 
 [[build_metadata]]
 === Available Build Time Metadata

@@ -2,7 +2,6 @@ package io.quarkus.arc.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -11,8 +10,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import javax.inject.Inject;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -24,14 +21,19 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
+import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
-import io.quarkus.arc.processor.BeanDeployment;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanProcessor;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.ContextConfigurator;
+import io.quarkus.arc.processor.ContextRegistrar;
 import io.quarkus.arc.processor.ReflectionRegistration;
 import io.quarkus.arc.processor.ResourceOutput;
 import io.quarkus.arc.runtime.AdditionalBean;
@@ -53,80 +55,54 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 
-public class ArcAnnotationProcessor {
+/**
+ * This class contains build steps that trigger various phases of the bean processing.
+ * <p>
+ * Other build steps can either register "configuring" build items, such as {@link AdditionalBeanBuildItem} or inject build
+ * items representing particular phases:
+ * <ol>
+ * <li>{@link ContextRegistrationPhaseBuildItem}</li>
+ * <li>{@link BeanRegistrationPhaseBuildItem}</li>
+ * <li>{@link ValidationPhaseBuildItem}</li>
+ * </ol>
+ * These build items are especially useful if an extension needs to produce other build items within the given phase.
+ * 
+ * @see BeanProcessor
+ */
+public class ArcProcessor {
 
-    private static final Logger log = Logger.getLogger("io.quarkus.arc.deployment.processor");
+    private static final Logger LOGGER = Logger.getLogger(ArcProcessor.class);
 
     static final DotName ADDITIONAL_BEAN = DotName.createSimple(AdditionalBean.class.getName());
 
-    @Inject
-    BeanArchiveIndexBuildItem beanArchiveIndex;
-
-    @Inject
-    BuildProducer<GeneratedClassBuildItem> generatedClass;
-
-    @Inject
-    BuildProducer<GeneratedResourceBuildItem> generatedResource;
-
-    @Inject
-    List<AdditionalBeanBuildItem> additionalBeans;
-
-    @Inject
-    BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods;
-
-    @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClasses;
-
-    @Inject
-    BuildProducer<ReflectiveFieldBuildItem> reflectiveFields;
-
-    @Inject
-    List<BeanRegistrarBuildItem> beanRegistrars;
-
-    @Inject
-    List<ContextRegistrarBuildItem> contextRegistrars;
-
-    @Inject
-    List<BeanDeploymentValidatorBuildItem> beanDeploymentValidators;
-
-    @Inject
-    List<ResourceAnnotationBuildItem> resourceAnnotations;
-
-    @Inject
-    List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations;
-
-    @Inject
-    List<UnremovableBeanBuildItem> removalExclusions;
-
-    @Inject
-    Optional<TestClassPredicateBuildItem> testClassPredicate;
-
-    /**
-     * The configuration for ArC, the CDI-based injection facility.
-     */
-    ArcConfig arc;
-
-    @BuildStep(providesCapabilities = Capabilities.CDI_ARC, applicationArchiveMarkers = { "META-INF/beans.xml",
-            "META-INF/services/javax.enterprise.inject.spi.Extension" })
-    @Record(STATIC_INIT)
-    public BeanContainerBuildItem build(ArcRecorder recorder,
-            List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
+    // PHASE 1 - build BeanProcessor, register custom contexts 
+    @BuildStep
+    public ContextRegistrationPhaseBuildItem initialize(
+            ArcConfig arcConfig,
+            BeanArchiveIndexBuildItem beanArchiveIndex,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<AnnotationsTransformerBuildItem> annotationTransformers,
             List<InjectionPointTransformerBuildItem> injectionPointTransformers,
-            ShutdownContextBuildItem shutdown, List<AdditionalStereotypeBuildItem> additionalStereotypeBuildItems,
+            List<AdditionalStereotypeBuildItem> additionalStereotypeBuildItems,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicates,
-            BuildProducer<FeatureBuildItem> feature)
-            throws Exception {
+            List<AdditionalBeanBuildItem> additionalBeans,
+            List<BeanRegistrarBuildItem> beanRegistrars,
+            List<ContextRegistrarBuildItem> contextRegistrars,
+            List<BeanDeploymentValidatorBuildItem> beanDeploymentValidators,
+            List<ResourceAnnotationBuildItem> resourceAnnotations,
+            List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations,
+            List<UnremovableBeanBuildItem> removalExclusions,
+            Optional<TestClassPredicateBuildItem> testClassPredicate,
+            BuildProducer<FeatureBuildItem> feature) {
 
-        if (!arc.isRemoveUnusedBeansFieldValid()) {
+        if (!arcConfig.isRemoveUnusedBeansFieldValid()) {
             throw new IllegalArgumentException("Invalid configuration value set for 'quarkus.arc.remove-unused-beans'." +
                     " Please use one of " + ArcConfig.ALLOWED_REMOVE_UNUSED_BEANS_VALUES);
         }
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.CDI));
 
-        List<String> additionalBeans = beanArchiveIndex.getAdditionalBeans();
+        List<String> additionalBeansTypes = beanArchiveIndex.getAdditionalBeans();
         Set<DotName> generatedClassNames = beanArchiveIndex.getGeneratedClassNames();
         IndexView index = beanArchiveIndex.getIndex();
         BeanProcessor.Builder builder = BeanProcessor.builder();
@@ -149,13 +125,13 @@ public class ArcAnnotationProcessor {
             public void transform(TransformationContext transformationContext) {
                 ClassInfo beanClass = transformationContext.getTarget().asClass();
                 String beanClassName = beanClass.name().toString();
-                if (additionalBeans.contains(beanClassName)) {
+                if (additionalBeansTypes.contains(beanClassName)) {
                     if (BuiltinScope.isDeclaredOn(beanClass)) {
                         // If it declares a built-in scope no action is needed
                         return;
                     }
                     // Try to determine the default scope
-                    DotName defaultScope = ArcAnnotationProcessor.this.additionalBeans.stream()
+                    DotName defaultScope = additionalBeans.stream()
                             .filter(ab -> ab.contains(beanClassName)).findFirst().map(AdditionalBeanBuildItem::getDefaultScope)
                             .orElse(null);
                     if (defaultScope == null && !beanClass.annotations().containsKey(ADDITIONAL_BEAN)) {
@@ -180,17 +156,6 @@ public class ArcAnnotationProcessor {
         builder.setSharedAnnotationLiterals(true);
         builder.addResourceAnnotations(
                 resourceAnnotations.stream().map(ResourceAnnotationBuildItem::getName).collect(Collectors.toList()));
-        builder.setReflectionRegistration(new ReflectionRegistration() {
-            @Override
-            public void registerMethod(MethodInfo methodInfo) {
-                reflectiveMethods.produce(new ReflectiveMethodBuildItem(methodInfo));
-            }
-
-            @Override
-            public void registerField(FieldInfo fieldInfo) {
-                reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
-            }
-        });
         // register all annotation transformers
         for (AnnotationsTransformerBuildItem transformerItem : annotationTransformers) {
             builder.addAnnotationTransformer(transformerItem.getAnnotationsTransformer());
@@ -199,25 +164,6 @@ public class ArcAnnotationProcessor {
         for (InjectionPointTransformerBuildItem transformerItem : injectionPointTransformers) {
             builder.addInjectionPointTransformer(transformerItem.getInjectionPointsTransformer());
         }
-
-        builder.setOutput(new ResourceOutput() {
-            @Override
-            public void writeResource(Resource resource) throws IOException {
-                switch (resource.getType()) {
-                    case JAVA_CLASS:
-                        log.debugf("Add %s class: %s", (resource.isApplicationClass() ? "APP" : "FWK"),
-                                resource.getFullyQualifiedName());
-                        generatedClass.produce(new GeneratedClassBuildItem(resource.isApplicationClass(), resource.getName(),
-                                resource.getData()));
-                        break;
-                    case SERVICE_PROVIDER:
-                        generatedResource.produce(
-                                new GeneratedResourceBuildItem("META-INF/services/" + resource.getName(), resource.getData()));
-                    default:
-                        break;
-                }
-            }
-        });
         for (BeanRegistrarBuildItem item : beanRegistrars) {
             builder.addBeanRegistrar(item.getBeanRegistrar());
         }
@@ -227,8 +173,8 @@ public class ArcAnnotationProcessor {
         for (BeanDeploymentValidatorBuildItem item : beanDeploymentValidators) {
             builder.addBeanDeploymentValidator(item.getBeanDeploymentValidator());
         }
-        builder.setRemoveUnusedBeans(arc.shouldEnableBeanRemoval());
-        if (arc.shouldOnlyKeepAppBeans()) {
+        builder.setRemoveUnusedBeans(arcConfig.shouldEnableBeanRemoval());
+        if (arcConfig.shouldOnlyKeepAppBeans()) {
             builder.addRemovalExclusion(new AbstractCompositeApplicationClassesPredicate<BeanInfo>(
                     applicationClassesIndex, generatedClassNames, applicationClassPredicates) {
                 @Override
@@ -238,14 +184,14 @@ public class ArcAnnotationProcessor {
             });
         }
         builder.addRemovalExclusion(new BeanClassNameExclusion(LifecycleEventRunner.class.getName()));
-        for (AdditionalBeanBuildItem additionalBean : this.additionalBeans) {
+        for (AdditionalBeanBuildItem additionalBean : additionalBeans) {
             if (!additionalBean.isRemovable()) {
                 for (String beanClass : additionalBean.getBeanClasses()) {
                     builder.addRemovalExclusion(new BeanClassNameExclusion(beanClass));
                 }
             }
         }
-        for (BeanDefiningAnnotationBuildItem annotation : this.additionalBeanDefiningAnnotations) {
+        for (BeanDefiningAnnotationBuildItem annotation : additionalBeanDefiningAnnotations) {
             if (!annotation.isRemovable()) {
                 builder.addRemovalExclusion(new BeanClassAnnotationExclusion(annotation.getName()));
             }
@@ -263,10 +209,97 @@ public class ArcAnnotationProcessor {
         }
 
         BeanProcessor beanProcessor = builder.build();
-        BeanDeployment beanDeployment = beanProcessor.process();
+        ContextRegistrar.RegistrationContext context = beanProcessor.registerCustomContexts();
+        return new ContextRegistrationPhaseBuildItem(context, beanProcessor);
+    }
+
+    // PHASE 2 - register all beans
+    @BuildStep
+    public BeanRegistrationPhaseBuildItem registerBeans(ContextRegistrationPhaseBuildItem contextRegistrationPhase,
+            List<ContextConfiguratorBuildItem> contextConfigurators) {
+
+        for (ContextConfiguratorBuildItem contextConfigurator : contextConfigurators) {
+            for (ContextConfigurator value : contextConfigurator.getValues()) {
+                // Just make sure the configurator is processed
+                value.done();
+            }
+        }
+
+        return new BeanRegistrationPhaseBuildItem(contextRegistrationPhase.getBeanProcessor().registerBeans(),
+                contextRegistrationPhase.getBeanProcessor());
+    }
+
+    // PHASE 3 - initialize and validate the bean deployment
+    @BuildStep
+    public ValidationPhaseBuildItem validate(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
+            List<BeanConfiguratorBuildItem> beanConfigurators) {
+
+        for (BeanConfiguratorBuildItem beanConfigurator : beanConfigurators) {
+            for (BeanConfigurator<?> value : beanConfigurator.getValues()) {
+                // Just make sure the configurator is processed
+                value.done();
+            }
+        }
+
+        beanRegistrationPhase.getBeanProcessor().initialize();
+        return new ValidationPhaseBuildItem(beanRegistrationPhase.getBeanProcessor().validate(),
+                beanRegistrationPhase.getBeanProcessor());
+    }
+
+    // PHASE 4 - generate resources and initialize the container
+    @BuildStep(providesCapabilities = Capabilities.CDI_ARC, applicationArchiveMarkers = { "META-INF/beans.xml",
+            "META-INF/services/javax.enterprise.inject.spi.Extension" })
+    @Record(STATIC_INIT)
+    public BeanContainerBuildItem generateResources(ArcRecorder recorder, ShutdownContextBuildItem shutdown,
+            ValidationPhaseBuildItem validationPhase,
+            List<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
+            List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+            BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResource) throws Exception {
+
+        for (ValidationErrorBuildItem validationError : validationErrors) {
+            for (Throwable error : validationError.getValues()) {
+                validationPhase.getContext().addDeploymentProblem(error);
+            }
+        }
+
+        BeanProcessor beanProcessor = validationPhase.getBeanProcessor();
+        beanProcessor.processValidationErrors(validationPhase.getContext());
+
+        long start = System.currentTimeMillis();
+        List<ResourceOutput.Resource> resources = beanProcessor.generateResources(new ReflectionRegistration() {
+            @Override
+            public void registerMethod(MethodInfo methodInfo) {
+                reflectiveMethods.produce(new ReflectiveMethodBuildItem(methodInfo));
+            }
+
+            @Override
+            public void registerField(FieldInfo fieldInfo) {
+                reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
+            }
+        });
+        for (ResourceOutput.Resource resource : resources) {
+            switch (resource.getType()) {
+                case JAVA_CLASS:
+                    LOGGER.debugf("Add %s class: %s", (resource.isApplicationClass() ? "APP" : "FWK"),
+                            resource.getFullyQualifiedName());
+                    generatedClass.produce(new GeneratedClassBuildItem(resource.isApplicationClass(), resource.getName(),
+                            resource.getData()));
+                    break;
+                case SERVICE_PROVIDER:
+                    generatedResource.produce(
+                            new GeneratedResourceBuildItem("META-INF/services/" + resource.getName(), resource.getData()));
+                default:
+                    break;
+            }
+        }
+        LOGGER.debugf("Generated %s resources in %s ms", resources.size(), System.currentTimeMillis() - start);
 
         // Register all qualifiers for reflection to support type-safe resolution at runtime in native image
-        for (ClassInfo qualifier : beanDeployment.getQualifiers()) {
+        for (ClassInfo qualifier : beanProcessor.getBeanDeployment().getQualifiers()) {
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, qualifier.name().toString()));
         }
 
@@ -274,10 +307,12 @@ public class ArcAnnotationProcessor {
         BeanContainer beanContainer = recorder.initBeanContainer(container,
                 beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener)
                         .collect(Collectors.toList()),
-                beanDeployment.getRemovedBeans().stream().flatMap(b -> b.getTypes().stream()).map(t -> t.name().toString())
+                beanProcessor.getBeanDeployment().getRemovedBeans().stream().flatMap(b -> b.getTypes().stream())
+                        .map(t -> t.name().toString())
                         .collect(Collectors.toSet()));
 
         return new BeanContainerBuildItem(beanContainer);
+
     }
 
     private abstract static class AbstractCompositeApplicationClassesPredicate<T> implements Predicate<T> {

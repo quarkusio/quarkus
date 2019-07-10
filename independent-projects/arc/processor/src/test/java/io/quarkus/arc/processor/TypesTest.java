@@ -29,7 +29,7 @@ public class TypesTest {
         Set<Type> types = Types.getTypeClosure(index.getClassByName(bazName),
                 Collections.emptyMap(),
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
-                        Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null,
+                        Collections.emptyList(), null,
                         false, Collections.emptyList(), Collections.emptyMap()),
                 resolvedTypeVariables::put);
         assertEquals(2, types.size());

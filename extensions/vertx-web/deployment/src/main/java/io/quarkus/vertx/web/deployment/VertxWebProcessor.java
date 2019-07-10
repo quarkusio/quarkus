@@ -22,13 +22,14 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.BeanDeploymentValidatorBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.AnnotationsTransformer;
-import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -73,48 +74,53 @@ class VertxWebProcessor {
     VertxHttpConfiguration vertxHttpConfiguration;
 
     @BuildStep
-    BeanDeploymentValidatorBuildItem initialize(BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<AdditionalBeanBuildItem> additionalBean,
-            BuildProducer<RouteHandlerBuildItem> routeHandlerBusinessMethods,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(FeatureBuildItem.VERTX_WEB);
+    }
 
-        additionalBean.produce(AdditionalBeanBuildItem.unremovableOf(RouterProducer.class));
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX_WEB));
+    @BuildStep
+    AdditionalBeanBuildItem additionalBeans() {
+        return AdditionalBeanBuildItem.unremovableOf(RouterProducer.class);
+    }
+
+    @BuildStep
+    void unremovableBeans(BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(ROUTE)));
         unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(ROUTES)));
+    }
 
-        return new BeanDeploymentValidatorBuildItem(new BeanDeploymentValidator() {
+    @BuildStep
+    void validateBeanDeployment(
+            ValidationPhaseBuildItem validationPhase,
+            BuildProducer<RouteHandlerBuildItem> routeHandlerBusinessMethods,
+            BuildProducer<ValidationErrorBuildItem> errors) {
 
-            @Override
-            public void validate(ValidationContext validationContext) {
-                // We need to collect all business methods annotated with @Route first
-                AnnotationStore annotationStore = validationContext.get(Key.ANNOTATION_STORE);
-                for (BeanInfo bean : validationContext.get(Key.BEANS)) {
-                    if (bean.isClassBean()) {
-                        // TODO: inherited business methods?
-                        for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
-                            List<AnnotationInstance> routes = new LinkedList<>();
-                            AnnotationInstance routeAnnotation = annotationStore.getAnnotation(method, ROUTE);
-                            if (routeAnnotation != null) {
-                                validateMethod(bean, method);
-                                routes.add(routeAnnotation);
-                            }
-                            if (routes.isEmpty()) {
-                                AnnotationInstance routesAnnotation = annotationStore.getAnnotation(method, ROUTES);
-                                if (routesAnnotation != null) {
-                                    validateMethod(bean, method);
-                                    Collections.addAll(routes, routesAnnotation.value().asNestedArray());
-                                }
-                            }
-                            if (!routes.isEmpty()) {
-                                LOGGER.debugf("Found route handler business method %s declared on %s", method, bean);
-                                routeHandlerBusinessMethods.produce(new RouteHandlerBuildItem(bean, method, routes));
-                            }
+        // We need to collect all business methods annotated with @Route first
+        AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
+        for (BeanInfo bean : validationPhase.getContext().get(BuildExtension.Key.BEANS)) {
+            if (bean.isClassBean()) {
+                // TODO: inherited business methods?
+                for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
+                    List<AnnotationInstance> routes = new LinkedList<>();
+                    AnnotationInstance routeAnnotation = annotationStore.getAnnotation(method, ROUTE);
+                    if (routeAnnotation != null) {
+                        validateMethod(bean, method);
+                        routes.add(routeAnnotation);
+                    }
+                    if (routes.isEmpty()) {
+                        AnnotationInstance routesAnnotation = annotationStore.getAnnotation(method, ROUTES);
+                        if (routesAnnotation != null) {
+                            validateMethod(bean, method);
+                            Collections.addAll(routes, routesAnnotation.value().asNestedArray());
                         }
+                    }
+                    if (!routes.isEmpty()) {
+                        LOGGER.debugf("Found route handler business method %s declared on %s", method, bean);
+                        routeHandlerBusinessMethods.produce(new RouteHandlerBuildItem(bean, method, routes));
                     }
                 }
             }
-        });
+        }
     }
 
     @BuildStep
@@ -137,7 +143,7 @@ class VertxWebProcessor {
         for (RouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
             String handlerClass = generateHandler(businessMethod.getBean(), businessMethod.getMethod(), classOutput);
             List<Route> routes = businessMethod.getRoutes().stream()
-                    .map(annotationInstance -> annotationProxy.from(annotationInstance, Route.class))
+                    .map(annotationInstance -> annotationProxy.builder(annotationInstance, Route.class).build(classOutput))
                     .collect(Collectors.toList());
             routeConfigs.put(handlerClass, routes);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));

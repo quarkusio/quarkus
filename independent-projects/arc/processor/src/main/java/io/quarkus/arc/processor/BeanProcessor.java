@@ -1,8 +1,8 @@
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
 import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import io.quarkus.arc.processor.BuildExtension.Key;
-import io.quarkus.arc.processor.DeploymentEnhancer.DeploymentContext;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import java.io.IOException;
@@ -18,15 +18,22 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
 /**
- *
- * @author Martin Kouba
+ * An integrator should create a new instance of the bean processor using the convenient {@link Builder} and then invoke the
+ * "processing" methods in the following order:
+ * 
+ * <ol>
+ * <li>{@link #registerCustomContexts()}</li>
+ * <li>{@link #registerBeans()}</li>
+ * <li>{@link #initialize()}</li>
+ * <li>{@link #validate()}</li>
+ * <li>{@link #processValidationErrors(io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext)}</li>
+ * <li>{@link #generateResources()}</li>
+ * </ol>
  */
 public class BeanProcessor {
 
@@ -40,21 +47,12 @@ public class BeanProcessor {
 
     private final String name;
 
-    private final IndexView index;
-
-    private final Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations;
-    private final Map<DotName, Collection<AnnotationInstance>> additionalStereotypes;
-
     private final ResourceOutput output;
 
     private final boolean sharedAnnotationLiterals;
 
     private final ReflectionRegistration reflectionRegistration;
 
-    private final Collection<DotName> resourceAnnotations;
-
-    private final List<AnnotationsTransformer> annotationTransformers;
-    private final List<InjectionPointsTransformer> injectionPointsTransformers;
     private final List<BeanRegistrar> beanRegistrars;
     private final List<ContextRegistrar> contextRegistrars;
     private final List<BeanDeploymentValidator> beanDeploymentValidators;
@@ -63,8 +61,7 @@ public class BeanProcessor {
 
     private final Predicate<DotName> applicationClassPredicate;
 
-    private final boolean removeUnusedBeans;
-    private final List<Predicate<BeanInfo>> unusedExclusions;
+    private final BeanDeployment beanDeployment;
 
     private BeanProcessor(String name, IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             ResourceOutput output,
@@ -72,74 +69,54 @@ public class BeanProcessor {
             List<AnnotationsTransformer> annotationTransformers,
             List<InjectionPointsTransformer> injectionPointsTransformers,
             Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars,
-            List<ContextRegistrar> contextRegistrars, List<DeploymentEnhancer> deploymentEnhancers,
+            List<ContextRegistrar> contextRegistrars,
             List<BeanDeploymentValidator> beanDeploymentValidators, Predicate<DotName> applicationClassPredicate,
             boolean unusedBeansRemovalEnabled,
             List<Predicate<BeanInfo>> unusedExclusions, Map<DotName, Collection<AnnotationInstance>> additionalStereotypes) {
         this.reflectionRegistration = reflectionRegistration;
         this.applicationClassPredicate = applicationClassPredicate;
         this.name = name;
-        this.additionalBeanDefiningAnnotations = additionalBeanDefiningAnnotations;
-        this.additionalStereotypes = additionalStereotypes;
-        this.output = Objects.requireNonNull(output);
+        this.output = output;
         this.sharedAnnotationLiterals = sharedAnnotationLiterals;
-        this.resourceAnnotations = resourceAnnotations;
-        this.removeUnusedBeans = unusedBeansRemovalEnabled;
-        this.unusedExclusions = unusedExclusions;
 
         // Initialize all build processors
         buildContext = new BuildContextImpl();
         buildContext.putInternal(Key.INDEX.asString(), index);
 
-        initAndSort(deploymentEnhancers, buildContext);
-        if (!deploymentEnhancers.isEmpty()) {
-            Indexer indexer = new Indexer();
-            DeploymentContext deploymentContext = new DeploymentContext() {
-
-                @Override
-                public void addClass(String className) {
-                    BeanArchives.index(indexer, className);
-                }
-
-                @Override
-                public void addClass(Class<?> clazz) {
-                    BeanArchives.index(indexer, clazz.getName());
-                }
-
-                @Override
-                public <V> V get(Key<V> key) {
-                    return buildContext.get(key);
-                }
-
-                @Override
-                public <V> V put(Key<V> key, V value) {
-                    return buildContext.put(key, value);
-                }
-            };
-            deploymentEnhancers.sort(BuildExtension::compare);
-            for (DeploymentEnhancer enhancer : deploymentEnhancers) {
-                enhancer.enhance(deploymentContext);
-            }
-            this.index = CompositeIndex.create(index, indexer.complete());
-        } else {
-            this.index = index;
-        }
-
-        this.annotationTransformers = initAndSort(annotationTransformers, buildContext);
-        this.injectionPointsTransformers = initAndSort(injectionPointsTransformers, buildContext);
         this.beanRegistrars = initAndSort(beanRegistrars, buildContext);
         this.contextRegistrars = initAndSort(contextRegistrars, buildContext);
         this.beanDeploymentValidators = initAndSort(beanDeploymentValidators, buildContext);
+        this.beanDeployment = new BeanDeployment(index, additionalBeanDefiningAnnotations,
+                initAndSort(annotationTransformers, buildContext),
+                initAndSort(injectionPointsTransformers, buildContext), resourceAnnotations, buildContext,
+                unusedBeansRemovalEnabled, unusedExclusions,
+                additionalStereotypes);
     }
 
-    public BeanDeployment process() throws IOException {
+    public ContextRegistrar.RegistrationContext registerCustomContexts() {
+        return beanDeployment.registerCustomContexts(contextRegistrars);
+    }
 
-        BeanDeployment beanDeployment = new BeanDeployment(index, additionalBeanDefiningAnnotations, annotationTransformers,
-                injectionPointsTransformers, resourceAnnotations, beanRegistrars, contextRegistrars, buildContext,
-                removeUnusedBeans, unusedExclusions, additionalStereotypes);
+    public BeanRegistrar.RegistrationContext registerBeans() {
+        return beanDeployment.registerBeans(beanRegistrars);
+    }
+
+    public void initialize() {
         beanDeployment.init();
-        beanDeployment.validate(buildContext, beanDeploymentValidators);
+    }
 
+    public BeanDeploymentValidator.ValidationContext validate() {
+        return beanDeployment.validate(beanDeploymentValidators);
+    }
+
+    public void processValidationErrors(BeanDeploymentValidator.ValidationContext validationContext) {
+        BeanDeployment.processErrors(validationContext.getDeploymentProblems());
+    }
+
+    public List<Resource> generateResources(ReflectionRegistration reflectionRegistration) throws IOException {
+        if (reflectionRegistration == null) {
+            reflectionRegistration = this.reflectionRegistration;
+        }
         PrivateMembersCollector privateMembers = new PrivateMembersCollector();
         AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(sharedAnnotationLiterals,
                 applicationClassPredicate);
@@ -155,7 +132,6 @@ public class BeanProcessor {
         Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
         Map<ObserverInfo, String> observerToGeneratedName = new HashMap<>();
 
-        long start = System.currentTimeMillis();
         List<Resource> resources = new ArrayList<>();
 
         // Generate interceptors
@@ -209,10 +185,25 @@ public class BeanProcessor {
             resources.addAll(annotationLiteralsGenerator.generate(name, beanDeployment, annotationLiterals.getCache()));
         }
 
-        for (Resource resource : resources) {
-            output.writeResource(resource);
+        if (output != null) {
+            for (Resource resource : resources) {
+                output.writeResource(resource);
+            }
         }
-        LOGGER.debugf("Generated %s resources in %s ms", resources.size(), System.currentTimeMillis() - start);
+        return resources;
+    }
+
+    public BeanDeployment getBeanDeployment() {
+        return beanDeployment;
+    }
+
+    public BeanDeployment process() throws IOException {
+        registerCustomContexts();
+        registerBeans();
+        initialize();
+        ValidationContext validationContext = validate();
+        processValidationErrors(validationContext);
+        generateResources(null);
         return beanDeployment;
     }
 
@@ -237,7 +228,6 @@ public class BeanProcessor {
         private final List<InjectionPointsTransformer> injectionPointTransformers = new ArrayList<>();
         private final List<BeanRegistrar> beanRegistrars = new ArrayList<>();
         private final List<ContextRegistrar> contextRegistrars = new ArrayList<>();
-        private final List<DeploymentEnhancer> deploymentEnhancers = new ArrayList<>();
         private final List<BeanDeploymentValidator> beanDeploymentValidators = new ArrayList<>();
 
         private boolean removeUnusedBeans = false;
@@ -313,11 +303,6 @@ public class BeanProcessor {
             return this;
         }
 
-        public Builder addDeploymentEnhancer(DeploymentEnhancer enhancer) {
-            this.deploymentEnhancers.add(enhancer);
-            return this;
-        }
-
         public Builder addBeanDeploymentValidator(BeanDeploymentValidator validator) {
             this.beanDeploymentValidators.add(validator);
             return this;
@@ -364,7 +349,7 @@ public class BeanProcessor {
         public BeanProcessor build() {
             return new BeanProcessor(name, index, additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals,
                     reflectionRegistration, annotationTransformers, injectionPointTransformers, resourceAnnotations,
-                    beanRegistrars, contextRegistrars, deploymentEnhancers, beanDeploymentValidators,
+                    beanRegistrars, contextRegistrars, beanDeploymentValidators,
                     applicationClassPredicate, removeUnusedBeans, removalExclusions, additionalStereotypes);
         }
 

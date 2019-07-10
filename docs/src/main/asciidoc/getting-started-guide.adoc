@@ -33,8 +33,8 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* {jdk-version} installed with `JAVA_HOME` configured appropriately
+* {maven-version}
 
 == Architecture
 
@@ -416,4 +416,3 @@ In addition, the link:tooling.html[tooling guide] document explains how to:
 * enable the _development mode_ (hot reload)
 * import the project in your favorite IDE
 * and more
-

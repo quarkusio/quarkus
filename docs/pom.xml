@@ -35,7 +35,7 @@
                 <artifactId>asciidoctor-maven-plugin</artifactId>
                 <version>${asciidoctor-maven-plugin.version}</version>
                 <configuration>
-                    <enableVerbose>true</enableVerbose>  
+                    <enableVerbose>true</enableVerbose>
                     <logHandler>
                         <failIf>
                           <severity>INFO</severity>
@@ -45,6 +45,8 @@
                         <quarkus-version>${project.version}</quarkus-version>
                         <surefire-version>${version.surefire.plugin}</surefire-version>
                         <graalvm-version>${graal-sdk.version-for-documentation}</graalvm-version>
+                        <jdk-version>${jdk-version}</jdk-version>
+                        <maven-version>${maven-version}</maven-version>
                         <axle-version>${axle-client.version}</axle-version>
                         <vertx-version>${vertx.version}</vertx-version>
                         <restassured-version>${rest-assured.version}</restassured-version>

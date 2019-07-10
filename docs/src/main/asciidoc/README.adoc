@@ -46,5 +46,7 @@ complete list of externalized variables for use is given in the following table:
 |\{quickstarts-blob-url}|{quickstarts-blob-url}| Quickstarts URL to master blob source tree; used for referencing source files.
 |\{quickstarts-tree-url}|{quickstarts-tree-url}| Quickstarts URL to master source tree root; used for referencing directories.
 
-|\{graalvm-version}|{graalvm-version}| Recommended Graal VM version to use.
+|\{graalvm-version}|{graalvm-version}| Recommended Graal VM versions to use.
+|\{jdk-version}|{jdk-version}| Recommended JDK versions to use.
+|\{maven-version}|{maven-version}| Recommended Maven versions to use.
 |===

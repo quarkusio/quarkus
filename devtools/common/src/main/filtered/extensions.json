@@ -285,6 +285,17 @@
     "guide": "https://quarkus.io/guides/sending-emails"
   },
   {
+    "name": "MongoDB Client",
+    "labels": [
+      "mongo",
+      "mongodb",
+      "nosql",
+      "datastore"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-mongodb-client"
+  },
+  {
     "name": "Narayana JTA - Transaction manager",
     "labels": [
       "narayana-jta",

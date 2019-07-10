@@ -147,6 +147,8 @@
         <flyway.version>5.2.4</flyway.version>
         <yasson.version>1.0.4</yasson.version>
         <neo4j-java-driver.version>2.0.0-alpha03</neo4j-java-driver.version>
+        <mongo-client.version>3.10.2</mongo-client.version>
+        <mongo-reactivestreams-client.version>1.11.0</mongo-reactivestreams-client.version>
         <!-- Used for integration tests, to make sure webjars work-->
         <bootstrap.version>3.1.0</bootstrap.version>
         <keycloak.version>6.0.1</keycloak.version>
@@ -154,6 +156,7 @@
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kogito.version>0.1.3</kogito.version>
         <kubernetes-client.version>4.3.0</kubernetes-client.version>
+        <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
     </properties>
 
     <dependencyManagement>
@@ -486,6 +489,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-mailer</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-mongodb-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1253,6 +1261,17 @@
                 <groupId>org.subethamail</groupId>
                 <artifactId>subethasmtp</artifactId>
                 <version>${subethasmtp.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongo-java-driver</artifactId>
+                <version>${mongo-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongodb-driver-reactivestreams</artifactId>
+                <version>${mongo-reactivestreams-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>net.minidev</groupId>
@@ -2033,6 +2052,12 @@
                 <groupId>org.awaitility</groupId>
                 <artifactId>awaitility</artifactId>
                 <version>${awaitility.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>de.flapdoodle.embed</groupId>
+                <artifactId>de.flapdoodle.embed.mongo</artifactId>
+                <version>${flapdoodle.mongo.version}</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.jprocesses</groupId>

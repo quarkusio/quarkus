@@ -13,13 +13,13 @@ import org.neo4j.driver.Logging;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.annotations.Template;
+import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.ssl.SslContextConfiguration;
 
-@Template
-public class Neo4jDriverTemplate {
+@Recorder
+public class Neo4jDriverRecorder {
 
-    private static final Logger log = Logger.getLogger(Neo4jDriverTemplate.class);
+    private static final Logger log = Logger.getLogger(Neo4jDriverRecorder.class);
 
     static volatile Driver driver;
 

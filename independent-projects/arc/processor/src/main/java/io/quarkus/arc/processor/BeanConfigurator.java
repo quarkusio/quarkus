@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import javax.enterprise.context.spi.CreationalContext;
 import org.jboss.jandex.AnnotationInstance;
@@ -29,6 +30,8 @@ import org.jboss.jandex.Type.Kind;
  * @param <T>
  */
 public final class BeanConfigurator<T> {
+
+    private final AtomicBoolean consumed;
 
     private final Consumer<BeanInfo> beanConsumer;
 
@@ -63,6 +66,7 @@ public final class BeanConfigurator<T> {
      * @param beanConsumer
      */
     BeanConfigurator(DotName implClassName, BeanDeployment beanDeployment, Consumer<BeanInfo> beanConsumer) {
+        this.consumed = new AtomicBoolean(false);
         this.implClass = beanDeployment.getIndex().getClassByName(Objects.requireNonNull(implClassName));
         this.beanDeployment = beanDeployment;
         this.beanConsumer = beanConsumer;
@@ -200,12 +204,13 @@ public final class BeanConfigurator<T> {
      * Perform sanity checks and register the bean.
      */
     public void done() {
-        // TODO sanity checks
-        beanConsumer.accept(new BeanInfo.Builder().implClazz(implClass).providerType(providerType)
-                .beanDeployment(beanDeployment).scope(scope).types(types)
-                .qualifiers(qualifiers)
-                .alternativePriority(alternativePriority).name(name).creator(creatorConsumer).destroyer(destroyerConsumer)
-                .params(params).defaultBean(isDefaultBean).build());
+        if (consumed.compareAndSet(false, true)) {
+            beanConsumer.accept(new BeanInfo.Builder().implClazz(implClass).providerType(providerType)
+                    .beanDeployment(beanDeployment).scope(scope).types(types)
+                    .qualifiers(qualifiers)
+                    .alternativePriority(alternativePriority).name(name).creator(creatorConsumer).destroyer(destroyerConsumer)
+                    .params(params).defaultBean(isDefaultBean).build());
+        }
     }
 
     @SuppressWarnings("unchecked")

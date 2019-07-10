@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -19,6 +20,8 @@ import java.util.function.Function;
  * @author Martin Kouba
  */
 public final class ContextConfigurator {
+
+    private final AtomicBoolean consumed;
 
     private final Consumer<ContextConfigurator> configuratorConsumer;
 
@@ -31,6 +34,7 @@ public final class ContextConfigurator {
     final Map<String, Object> params;
 
     ContextConfigurator(Class<? extends Annotation> scopeAnnotation, Consumer<ContextConfigurator> configuratorConsumer) {
+        this.consumed = new AtomicBoolean(false);
         this.scopeAnnotation = Objects.requireNonNull(scopeAnnotation);
         this.params = new HashMap<>();
         this.configuratorConsumer = configuratorConsumer;
@@ -112,8 +116,10 @@ public final class ContextConfigurator {
     }
 
     public void done() {
-        Objects.requireNonNull(creator);
-        Objects.requireNonNull(configuratorConsumer).accept(this);
+        if (consumed.compareAndSet(false, true)) {
+            Objects.requireNonNull(creator);
+            Objects.requireNonNull(configuratorConsumer).accept(this);
+        }
     }
 
 }

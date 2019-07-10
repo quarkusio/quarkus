@@ -17,12 +17,13 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.BeanDeploymentValidatorBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AnnotationStore;
-import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -48,53 +49,51 @@ public class SmallRyeReactiveMessagingProcessor {
     static final DotName NAME_EMITTER = DotName.createSimple(Emitter.class.getName());
 
     @BuildStep
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(FeatureBuildItem.SMALLRYE_REACTIVE_MESSAGING);
+    }
+
+    @BuildStep
     AdditionalBeanBuildItem beans() {
         return new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class);
     }
 
     @BuildStep
-    BeanDeploymentValidatorBuildItem beanDeploymentValidator(BuildProducer<MediatorBuildItem> mediatorMethods,
+    void validateBeanDeployment(
+            ValidationPhaseBuildItem validationPhase,
+            BuildProducer<MediatorBuildItem> mediatorMethods,
             BuildProducer<EmitterBuildItem> emitters,
-            BuildProducer<FeatureBuildItem> feature) {
+            BuildProducer<ValidationErrorBuildItem> errors) {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_REACTIVE_MESSAGING));
+        AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
 
-        return new BeanDeploymentValidatorBuildItem(new BeanDeploymentValidator() {
-
-            @Override
-            public void validate(ValidationContext validationContext) {
-
-                AnnotationStore annotationStore = validationContext.get(Key.ANNOTATION_STORE);
-
-                // We need to collect all business methods annotated with @Incoming/@Outgoing first
-                for (BeanInfo bean : validationContext.get(Key.BEANS)) {
-                    if (bean.isClassBean()) {
-                        // TODO: add support for inherited business methods
-                        for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
-                            if (annotationStore.hasAnnotation(method, NAME_INCOMING)
-                                    || annotationStore.hasAnnotation(method, NAME_OUTGOING)) {
-                                // TODO: validate method params and return type?
-                                mediatorMethods.produce(new MediatorBuildItem(bean, method));
-                                LOGGER.debugf("Found mediator business method %s declared on %s", method, bean);
-                            }
-                        }
-                    }
-                }
-
-                for (InjectionPointInfo injectionPoint : validationContext.get(Key.INJECTION_POINTS)) {
-                    if (injectionPoint.getRequiredType().name().equals(NAME_EMITTER)) {
-                        AnnotationInstance stream = injectionPoint.getRequiredQualifier(NAME_STREAM);
-                        if (stream != null) {
-                            // Stream.value() is mandatory
-                            String name = stream.value().asString();
-                            LOGGER.debugf("Emitter injection point '%s' detected, stream name: '%s'",
-                                    injectionPoint.getTargetInfo(), name);
-                            emitters.produce(new EmitterBuildItem(name));
-                        }
+        // We need to collect all business methods annotated with @Incoming/@Outgoing first
+        for (BeanInfo bean : validationPhase.getContext().get(BuildExtension.Key.BEANS)) {
+            if (bean.isClassBean()) {
+                // TODO: add support for inherited business methods
+                for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
+                    if (annotationStore.hasAnnotation(method, NAME_INCOMING)
+                            || annotationStore.hasAnnotation(method, NAME_OUTGOING)) {
+                        // TODO: validate method params and return type?
+                        mediatorMethods.produce(new MediatorBuildItem(bean, method));
+                        LOGGER.debugf("Found mediator business method %s declared on %s", method, bean);
                     }
                 }
             }
-        });
+        }
+
+        for (InjectionPointInfo injectionPoint : validationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
+            if (injectionPoint.getRequiredType().name().equals(NAME_EMITTER)) {
+                AnnotationInstance stream = injectionPoint.getRequiredQualifier(NAME_STREAM);
+                if (stream != null) {
+                    // Stream.value() is mandatory
+                    String name = stream.value().asString();
+                    LOGGER.debugf("Emitter injection point '%s' detected, stream name: '%s'",
+                            injectionPoint.getTargetInfo(), name);
+                    emitters.produce(new EmitterBuildItem(name));
+                }
+            }
+        }
     }
 
     @BuildStep

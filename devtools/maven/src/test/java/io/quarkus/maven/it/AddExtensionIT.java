@@ -20,7 +20,7 @@ import io.quarkus.maven.utilities.MojoUtils;
 
 class AddExtensionIT extends MojoTestBase {
 
-    private static final String QUARKUS_VERSION = "${quarkus.version}";
+    private static final String QUARKUS_VERSION = "${version.quarkus}";
     private static final String QUARKUS_GROUPID = "io.quarkus";
     private static final String VERTX_ARTIFACT_ID = "quarkus-vertx";
     private static final String COMMONS_IO = "commons-io";

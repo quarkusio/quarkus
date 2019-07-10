@@ -76,7 +76,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         final DependencyManagement dependencyManagement = model.getDependencyManagement();
         final List<Dependency> dependencies = dependencyManagement.getDependencies();
         assertThat(dependencies.stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
-                && d.getVersion().equalsIgnoreCase("${quarkus.version}")
+                && d.getVersion().equalsIgnoreCase("${version.quarkus}")
                 && d.getScope().equalsIgnoreCase("import")
                 && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
@@ -119,7 +119,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         Model model = load(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream()
                 .anyMatch(d -> d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
-                        && d.getVersion().equalsIgnoreCase("${quarkus.version}")
+                        && d.getVersion().equalsIgnoreCase("${version.quarkus}")
                         && d.getScope().equalsIgnoreCase("import")
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
@@ -158,7 +158,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("className", "org.acme.MyResource.java");
         setup(properties);
 
-        check(new File(testDir, "pom.xml"), "quarkus.version");
+        check(new File(testDir, "pom.xml"), "version.quarkus");
 
         assertThat(new File(testDir, "src/main/java")).isDirectory();
 
@@ -191,7 +191,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         Model model = load(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream()
                 .anyMatch(d -> d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
-                        && d.getVersion().equalsIgnoreCase("${quarkus.version}")
+                        && d.getVersion().equalsIgnoreCase("${version.quarkus}")
                         && d.getScope().equalsIgnoreCase("import")
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
@@ -227,7 +227,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         Model model = load(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream()
                 .anyMatch(d -> d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
-                        && d.getVersion().equalsIgnoreCase("${quarkus.version}")
+                        && d.getVersion().equalsIgnoreCase("${version.quarkus}")
                         && d.getScope().equalsIgnoreCase("import")
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
 

@@ -33,7 +33,7 @@ public class MojoUtils {
     public static final String JAVA_EXTENSION = ".java";
     public static final String KOTLIN_EXTENSION = ".kt";
 
-    private static final String PLUGIN_VERSION_PROPERTY_NAME = "quarkus.version";
+    private static final String PLUGIN_VERSION_PROPERTY_NAME = "version.quarkus";
     public static final String QUARKUS_VERSION_PROPERTY = "${" + PLUGIN_VERSION_PROPERTY_NAME + "}";
 
     private static final Properties properties = new Properties();

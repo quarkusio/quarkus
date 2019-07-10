@@ -55,7 +55,7 @@ public class SetupVerifier {
 
         //Check if the properties have been set correctly
         Properties properties = model.getProperties();
-        assertThat(properties.containsKey("quarkus.version")).isTrue();
+        assertThat(properties.containsKey("version.quarkus")).isTrue();
 
         // Check plugin is set
         Plugin plugin = maybe.orElseThrow(() -> new AssertionError("Plugin expected"));
@@ -92,7 +92,7 @@ public class SetupVerifier {
         Properties projectProps = project.getProperties();
         assertNotNull(projectProps);
         assertFalse(projectProps.isEmpty());
-        assertEquals(MojoUtils.getPluginVersion(), projectProps.getProperty("quarkus.version"));
+        assertEquals(MojoUtils.getPluginVersion(), projectProps.getProperty("version.quarkus"));
     }
 
 }

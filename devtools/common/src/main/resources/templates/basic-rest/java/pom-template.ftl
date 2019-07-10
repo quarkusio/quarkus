@@ -11,8 +11,8 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <quarkus.version>${quarkus_version}</quarkus.version>
-        <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
+        <version.quarkus>${quarkus_version}</version.quarkus>
+        <version.surefire-plugin>${surefire_plugin_version}</version.surefire-plugin>
     </properties>
 
     <dependencyManagement>
@@ -20,7 +20,7 @@
             <dependency>
                 <groupId>${plugin_groupId}</groupId>
                 <artifactId>${bom_artifactId}</artifactId>
-                <version>${quarkus.version}</version>
+                <version>${version.quarkus}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -52,7 +52,7 @@
             <plugin>
                 <groupId>${plugin_groupId}</groupId>
                 <artifactId>${plugin_artifactId}</artifactId>
-                <version>${quarkus.version}</version>
+                <version>${version.quarkus}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -65,7 +65,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${surefire-plugin.version}</version>
+                <version>${version.surefire-plugin}</version>
                 <configuration>
                     <systemProperties>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
@@ -89,7 +89,7 @@
                     <plugin>
                         <groupId>${plugin_groupId}</groupId>
                         <artifactId>${plugin_artifactId}</artifactId>
-                        <version>${quarkus.version}</version>
+                        <version>${version.quarkus}</version>
                         <executions>
                             <execution>
                                 <goals>
@@ -105,7 +105,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>${surefire-plugin.version}</version>
+                        <version>${version.surefire-plugin}</version>
                         <executions>
                             <execution>
                                 <goals>

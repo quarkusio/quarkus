@@ -252,7 +252,7 @@ public class CreateProject {
             properties = new Properties();
             model.setProperties(properties);
         }
-        properties.putIfAbsent("quarkus.version", getPluginVersion());
+        properties.putIfAbsent("version.quarkus", getPluginVersion());
     }
 
     private boolean isParentPom(Model model) {

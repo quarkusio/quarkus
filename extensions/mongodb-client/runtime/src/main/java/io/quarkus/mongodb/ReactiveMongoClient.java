@@ -38,6 +38,7 @@ public interface ReactiveMongoClient extends Closeable {
      * Closes the client, which will close all underlying cached resources, including, for example,
      * sockets and background monitoring threads.
      */
+    @Override
     void close();
 
     /**

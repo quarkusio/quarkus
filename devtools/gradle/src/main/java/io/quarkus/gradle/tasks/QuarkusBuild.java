@@ -145,7 +145,13 @@ public class QuarkusBuild extends QuarkusTask {
         }
         final Map<String, ?> properties = getProject().getProperties();
         final Properties realProperties = new Properties();
-        realProperties.putAll(properties);
+        for (Map.Entry<String, ?> entry : properties.entrySet()) {
+            final String key = entry.getKey();
+            final Object value = entry.getValue();
+            if (key != null && value instanceof String && key.startsWith("quarkus.")) {
+                realProperties.setProperty(key, (String) value);
+            }
+        }
 
         try (AppCreator appCreator = AppCreator.builder()
                 // configure the build phases we want the app to go through

@@ -39,7 +39,8 @@
     </properties>
 
     <modules>
-        <module>bom</module>
+        <module>bom/runtime</module>
+        <module>bom/deployment</module>
         <module>build-parent</module>
 
         <!-- Core components -->

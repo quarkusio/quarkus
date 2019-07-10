@@ -26,6 +26,10 @@ public class ProfileManager {
     }
 
     public static String getActiveProfile() {
+        return getActiveProfile(null);
+    }
+
+    public static String getActiveProfile(String buildProfile) {
         String profile = System.getenv(QUARKUS_PROFILE_ENV);
         if (profile != null) {
             return profile;
@@ -33,6 +37,9 @@ public class ProfileManager {
         profile = System.getProperty(QUARKUS_PROFILE_PROP);
         if (profile != null) {
             return profile;
+        }
+        if (buildProfile != null) {
+            return buildProfile;
         }
         return launchMode.getDefaultProfile();
     }

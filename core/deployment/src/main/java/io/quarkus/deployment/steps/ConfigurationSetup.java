@@ -75,6 +75,7 @@ import io.quarkus.runtime.configuration.DefaultConfigSource;
 import io.quarkus.runtime.configuration.DeploymentProfileConfigSource;
 import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
+import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.configuration.SimpleConfigurationProviderResolver;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
@@ -148,7 +149,7 @@ public class ConfigurationSetup {
 
     private static final MethodDescriptor PROFILE_WRAPPER = MethodDescriptor.ofMethod(DeploymentProfileConfigSource.class,
             "wrapper",
-            UnaryOperator.class);
+            UnaryOperator.class, String.class);
 
     private static final MethodDescriptor RTD_CTOR = MethodDescriptor.ofConstructor(RUN_TIME_DEFAULTS);
     private static final MethodDescriptor RTD_GET_VALUE = MethodDescriptor.ofMethod(RUN_TIME_DEFAULTS, "getValue", String.class,
@@ -240,7 +241,7 @@ public class ConfigurationSetup {
         // expand properties
         final ExpandingConfigSource.Cache cache = new ExpandingConfigSource.Cache();
         builder.withWrapper(ExpandingConfigSource.wrapper(cache));
-        builder.withWrapper(DeploymentProfileConfigSource.wrapper());
+        builder.withWrapper(DeploymentProfileConfigSource.wrapper(null));
         builder.addDefaultSources();
         final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
         final DefaultValuesConfigurationSource defaultSource = new DefaultValuesConfigurationSource(
@@ -535,7 +536,8 @@ public class ConfigurationSetup {
                 carc.invokeVirtualMethod(SRCB_WITH_WRAPPER, builder, wrapper);
 
                 //profiles
-                wrapper = carc.invokeStaticMethod(PROFILE_WRAPPER);
+
+                wrapper = carc.invokeStaticMethod(PROFILE_WRAPPER, carc.load(ProfileManager.getActiveProfile()));
                 carc.invokeVirtualMethod(SRCB_WITH_WRAPPER, builder, wrapper);
 
                 // write out loader for converter types
@@ -558,7 +560,7 @@ public class ConfigurationSetup {
                 final ResultHandle config = carc.checkCast(carc.invokeVirtualMethod(SRCB_BUILD, builder), SmallRyeConfig.class);
 
                 // IMPL NOTE: we do invoke ConfigProviderResolver.setInstance() in RUNTIME_INIT when an app starts, but ConfigProvider only obtains the
-                // resolver once when initializing ConfigProvider.INSTANCE. That is why we store the current Config as a static field on the
+                // resolver once when initializing ConfigProvider.INSTANCE. That is why we store the current CoConfigProfileTestCasnfig as a static field on the
                 // SimpleConfigurationProviderResolver
                 carc.invokeStaticMethod(CPR_SET_INSTANCE, carc.newInstance(SCPR_CONSTRUCT));
                 carc.invokeVirtualMethod(CPR_REGISTER_CONFIG, carc.invokeStaticMethod(CPR_INSTANCE), config, carc.loadNull());

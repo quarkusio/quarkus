@@ -15,10 +15,14 @@ public class DeploymentProfileConfigSource extends AbstractDelegatingConfigSourc
     private final String profilePrefix;
 
     public static UnaryOperator<ConfigSource> wrapper() {
+        return wrapper(null);
+    }
+
+    public static UnaryOperator<ConfigSource> wrapper(String buildProfile) {
         return new UnaryOperator<ConfigSource>() {
             @Override
             public ConfigSource apply(ConfigSource configSource) {
-                return new DeploymentProfileConfigSource(configSource, ProfileManager.getActiveProfile());
+                return new DeploymentProfileConfigSource(configSource, ProfileManager.getActiveProfile(buildProfile));
             }
         };
     }

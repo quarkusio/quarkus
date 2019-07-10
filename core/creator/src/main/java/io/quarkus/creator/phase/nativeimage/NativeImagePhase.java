@@ -414,10 +414,18 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                 enableSslNative = enableSslNativeFromProperties != null
                         ? Boolean.parseBoolean(enableSslNativeFromProperties)
                         : false;
+
                 if (!enableJni) {
                     final String enableJniFromProperties = properties.getProperty("quarkus.jni.enable");
                     enableJni = enableJniFromProperties != null
                             ? Boolean.parseBoolean(enableJniFromProperties)
+                            : false;
+                }
+
+                if (!addAllCharsets) {
+                    final String nativeEnableAllCharsetsProperty = properties.getProperty("quarkus.native.enable-all-charsets");
+                    addAllCharsets = nativeEnableAllCharsetsProperty != null
+                            ? Boolean.parseBoolean(nativeEnableAllCharsetsProperty)
                             : false;
                 }
             }

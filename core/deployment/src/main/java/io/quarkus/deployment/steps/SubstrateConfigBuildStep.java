@@ -17,6 +17,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
 import io.quarkus.deployment.builditem.JniBuildItem;
+import io.quarkus.deployment.builditem.NativeEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.SslTrustStoreSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -41,6 +42,7 @@ class SubstrateConfigBuildStep {
             List<SubstrateConfigBuildItem> substrateConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
             List<JniBuildItem> jniBuildItems,
+            List<NativeEnableAllCharsetsBuildItem> nativeEnableAllCharsetsBuildItems,
             List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
             BuildProducer<SubstrateProxyDefinitionBuildItem> proxy,
             BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle,
@@ -125,6 +127,10 @@ class SubstrateConfigBuildStep {
                 }
             }
             nativeImage.produce(new SubstrateSystemPropertyBuildItem("quarkus.jni.enable", "true"));
+        }
+
+        if (!nativeEnableAllCharsetsBuildItems.isEmpty()) {
+            nativeImage.produce(new SubstrateSystemPropertyBuildItem("quarkus.native.enable-all-charsets", "true"));
         }
     }
 

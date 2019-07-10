@@ -59,7 +59,7 @@ public class ResteasyProcessor {
             String path = resteasyServerConfig.get().getPath();
 
             //if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the whole mapped path
-            if (resteasyServerConfig.get().getPath().equals("/")) {
+            if (path.equals("/") || path.isEmpty()) {
                 filter.produce(FilterBuildItem.builder(JAX_RS_FILTER_NAME, ResteasyFilter.class.getName()).setLoadOnStartup(1)
                         .addFilterServletNameMapping("default", DispatcherType.REQUEST).setAsyncSupported(true)
                         .build());

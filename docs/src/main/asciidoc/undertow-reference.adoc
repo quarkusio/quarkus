@@ -29,3 +29,49 @@ jar files as defined by the Servlet spec.
 You can make use of the Undertow predicate language using an `undertow-handlers.conf` file. This file should be placed
 in the `META-INF` directory of your application jar. This file contains handlers defined using the
 link:http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#predicates-attributes-and-handlers[Undertow predicate language].
+
+== CORS filter
+
+link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin resource sharing] (CORS) is a mechanism that
+allows restricted resources on a web page to be requested from another domain outside the domain from which the first resource
+was served.
+
+Quarkus comes with a CORS filter which implements the `javax.servlet.Filter` interface and intercepts all incoming HTTP
+requests. It can be enabled in the Quarkus configuration file, `src/main/resources/application.properties`:
+
+[source, properties]
+----
+quarkus.http.cors=true
+----
+
+If the filter is enabled and an HTTP request is identified as cross-origin, the CORS policy and headers defined using the
+following properties will be applied before passing the request on to its actual target (servlet, JAX-RS resource, etc.):
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|quarkus.http.cors.origins||The comma-separated list of origins allowed for CORS. The filter allows any origin if this is not
+set.
+|quarkus.http.cors.methods||The comma-separated list of HTTP methods allowed for CORS. The filter allows any method if this is
+not set.
+|quarkus.http.cors.headers||The comma-separated list of HTTP headers allowed for CORS. The filter allows any header if this is
+not set.
+|quarkus.http.cors.exposed-headers||The comma-separated list of HTTP headers exposed in CORS.
+|===
+
+Here's what a full CORS filter configuration could look like:
+
+[source, properties]
+----
+quarkus.http.cors=true
+quarkus.http.cors.origins=http://foo.com,http://www.bar.io
+quarkus.http.cors.methods=GET,PUT,POST
+quarkus.http.cors.headers=X-Custom
+quarkus.http.cors.exposed-headers=Content-Disposition
+----
+
+[WARNING]
+====
+If you want to use the `keycloak` Quarkus extension in your project, you should configure CORS using the `keycloak` extension
+configuration.
+====

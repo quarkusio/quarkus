@@ -64,7 +64,8 @@ public class ConfigDefinition extends CompoundConfigType {
     // for now just list the values manually
     private static final List<String> FALSE_POSITIVE_QUARKUS_CONFIG_MISSES = Arrays
             .asList(QUARKUS_NAMESPACE + ".live-reload.password", QUARKUS_NAMESPACE + ".live-reload.url",
-                    QUARKUS_NAMESPACE + ".debug.generated-classes-dir", QUARKUS_NAMESPACE + ".debug.reflection");
+                    QUARKUS_NAMESPACE + ".debug.generated-classes-dir", QUARKUS_NAMESPACE + ".debug.reflection",
+                    QUARKUS_NAMESPACE + ".version");
 
     private final TreeMap<String, Object> rootObjectsByContainingName = new TreeMap<>();
     private final HashMap<Class<?>, Object> rootObjectsByClass = new HashMap<>();

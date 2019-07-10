@@ -22,6 +22,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.elytron.security.runtime.AuthConfig;
+import io.quarkus.elytron.security.runtime.DefaultRoleDecoder;
 import io.quarkus.elytron.security.runtime.MPRealmConfig;
 import io.quarkus.elytron.security.runtime.PropertiesRealmConfig;
 import io.quarkus.elytron.security.runtime.SecurityConfig;
@@ -67,8 +68,9 @@ class SecurityDeploymentProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem registerAdditionalBeans() {
-        return AdditionalBeanBuildItem.unremovableOf(SecurityContextPrincipal.class);
+    void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> beans) {
+        beans.produce(AdditionalBeanBuildItem.unremovableOf(SecurityContextPrincipal.class));
+        beans.produce(AdditionalBeanBuildItem.unremovableOf(DefaultRoleDecoder.class));
     }
 
     /**
@@ -185,15 +187,16 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    SecurityDomainBuildItem build(SecurityRecorder recorder, BuildProducer<ServletExtensionBuildItem> extension,
-            List<SecurityRealmBuildItem> realms) throws Exception {
+    SecurityDomainBuildItem build(SecurityRecorder recorder, List<SecurityRealmBuildItem> realms,
+            BeanContainerBuildItem beanContainer) throws Exception {
         log.debugf("build, hasFile=%s, hasMP=%s", security.file.enabled, security.embedded.enabled);
         if (realms.size() > 0) {
             // Configure the SecurityDomain.Builder from the main realm
             SecurityRealmBuildItem realmBuildItem = realms.get(0);
             AuthConfig authConfig = realmBuildItem.getAuthConfig();
+            DefaultRoleDecoder defaultRoleDecoder = recorder.createDefaultRoleDecoder(beanContainer.getValue());
             RuntimeValue<SecurityDomain.Builder> securityDomainBuilder = recorder
-                    .configureDomainBuilder(authConfig.getRealmName(), realmBuildItem.getRealm());
+                    .configureDomainBuilder(authConfig.getRealmName(), realmBuildItem.getRealm(), defaultRoleDecoder);
             // Add any additional SecurityRealms
             for (int n = 1; n < realms.size(); n++) {
                 realmBuildItem = realms.get(n);

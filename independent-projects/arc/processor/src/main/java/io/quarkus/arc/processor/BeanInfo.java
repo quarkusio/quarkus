@@ -15,6 +15,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.InterceptionType;
@@ -54,9 +55,9 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final DisposerInfo disposer;
 
-    private Map<MethodInfo, InterceptionInfo> interceptedMethods;
+    private final Map<MethodInfo, InterceptionInfo> interceptedMethods;
 
-    private Map<InterceptionType, InterceptionInfo> lifecycleInterceptors;
+    private final Map<InterceptionType, InterceptionInfo> lifecycleInterceptors;
 
     private final Integer alternativePriority;
 
@@ -127,6 +128,8 @@ public class BeanInfo implements InjectionTargetInfo {
         this.params = params;
         // Identifier must be unique for a specific deployment
         this.identifier = Hashes.sha1(toString());
+        this.interceptedMethods = new ConcurrentHashMap<>();
+        this.lifecycleInterceptors = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -182,7 +185,7 @@ public class BeanInfo implements InjectionTargetInfo {
         return false;
     }
 
-    BeanInfo getDeclaringBean() {
+    public BeanInfo getDeclaringBean() {
         return declaringBean;
     }
 
@@ -371,8 +374,8 @@ public class BeanInfo implements InjectionTargetInfo {
         if (disposer != null) {
             disposer.init(errors);
         }
-        interceptedMethods = initInterceptedMethods();
-        lifecycleInterceptors = initLifecycleInterceptors();
+        interceptedMethods.putAll(initInterceptedMethods());
+        lifecycleInterceptors.putAll(initLifecycleInterceptors());
     }
 
     protected String getType() {

@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.AbstractCollection;
 import java.util.AbstractList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -40,6 +41,8 @@ public class BeanInfoInjectionsTest {
                 new Type[] { Type.create(name(String.class), Kind.CLASS) }, null);
 
         BeanDeployment deployment = new BeanDeployment(index, null, null);
+        deployment.registerCustomContexts(Collections.emptyList());
+        deployment.registerBeans(Collections.emptyList());
         BeanInfo barBean = deployment.getBeans().stream().filter(b -> b.getTarget().get().equals(barClass)).findFirst().get();
         List<Injection> injections = barBean.getInjections();
         assertEquals(3, injections.size());

@@ -9,6 +9,43 @@
     "artifactId": "quarkus-agroal"
   },
   {
+    "name": "Amazon DynamoDB",
+    "labels": [
+      "dynamodb",
+      "dynamo",
+      "aws",
+      "amazon"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-amazon-dynamodb"
+  },
+  {
+    "name": "Apache Kafka Client",
+    "labels": [
+      "kafka"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kafka-client"
+  },
+  {
+    "name": "Apache Kafka Streams",
+    "labels": [
+      "kafka",
+      "kafka-streams"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kafka-streams"
+  },
+  {
+    "name": "Apache Tika",
+    "labels": [
+      "tika",
+      "parser"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-tika"
+  },
+  {
     "name": "Arc",
     "shortName": "CDI",
     "labels": [
@@ -25,7 +62,8 @@
     "name": "AWS Lambda",
     "labels": [
       "lambda",
-      "aws"
+      "aws",
+      "amazon"
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-amazon-lambda"
@@ -237,6 +275,16 @@
     "artifactId": "quarkus-kubernetes-client"
   },
   {
+    "name": "Mailer",
+    "labels": [
+      "mail",
+      "mailer"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-mailer",
+    "guide": "https://quarkus.io/guides/sending-emails"
+  },
+  {
     "name": "Narayana JTA - Transaction manager",
     "labels": [
       "narayana-jta",
@@ -250,6 +298,31 @@
     "groupId": "io.quarkus",
     "artifactId": "quarkus-narayana-jta",
     "guide": "https://quarkus.io/guides/transaction-guide"
+  },
+  {
+    "name": "Neo4j client",
+    "labels": [
+      "neo4j",
+      "graph",
+      "nosql",
+      "datastore"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-neo4j"
+  },
+  {
+    "name": "Reactive PostgreSQL Client",
+    "labels": [
+      "eclipse-vert.x",
+      "vertx",
+      "vert.x",
+      "reactive",
+      "database",
+      "data",
+      "postgresql"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-reactive-pg-client"
   },
   {
     "name": "RESTEasy",
@@ -513,55 +586,5 @@
     "groupId": "io.quarkus",
     "artifactId": "quarkus-vertx",
     "guide": "https://quarkus.io/guides/using-vertx"
-  },
-  {
-    "name": "Mailer",
-    "labels": [
-      "mail",
-      "mailer"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-mailer",
-    "guide": "https://quarkus.io/guides/sending-emails"
-  },
-  {
-    "name": "Reactive Postgres Client",
-    "labels": [
-      "eclipse-vert.x",
-      "vertx",
-      "vert.x",
-      "reactive",
-      "database",
-      "data",
-      "postgresql"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-reactive-pg-client"
-  },
-  {
-    "name": "Apache Kafka Client",
-    "labels": [
-      "kafka"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-kafka-client"
-  },
-  {
-    "name": "Apache Kafka Streams",
-    "labels": [
-      "kafka",
-      "kafka-streams"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-kafka-streams"
-  },
-  {
-    "name": "Apache Tika",
-    "labels": [
-      "tika",
-      "parser"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-tika"
   }
 ]

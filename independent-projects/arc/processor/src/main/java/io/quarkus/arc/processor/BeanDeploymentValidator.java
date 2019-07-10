@@ -36,6 +36,8 @@ public interface BeanDeploymentValidator extends BuildExtension {
 
         void addDeploymentProblem(Throwable t);
 
+        List<Throwable> getDeploymentProblems();
+
     }
 
     public enum ValidationRule {

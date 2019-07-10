@@ -31,14 +31,4 @@ public final class AnnotationProxyBuildItem extends SimpleBuildItem {
         return provider.builder(annotationInstance, annotationType);
     }
 
-    /**
-     * 
-     * @param annotationInstance
-     * @param annotationType
-     * @return a new annotation proxy
-     */
-    public <A extends Annotation> A from(AnnotationInstance annotationInstance, Class<A> annotationType) {
-        return provider.builder(annotationInstance, annotationType).build();
-    }
-
 }

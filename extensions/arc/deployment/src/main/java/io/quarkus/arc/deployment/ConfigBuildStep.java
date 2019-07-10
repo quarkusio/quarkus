@@ -21,7 +21,8 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
-import io.quarkus.arc.processor.BeanRegistrar;
+import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
+import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.runtime.ConfigBeanCreator;
@@ -47,79 +48,75 @@ public class ConfigBuildStep {
     }
 
     @BuildStep
-    BeanRegistrarBuildItem analyzeConfigPropertyInjectionPoints(BuildProducer<ConfigPropertyBuildItem> configProperties,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    void analyzeConfigPropertyInjectionPoints(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
+            BuildProducer<ConfigPropertyBuildItem> configProperties,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<BeanConfiguratorBuildItem> beanConfigurators) {
 
-        return new BeanRegistrarBuildItem(new BeanRegistrar() {
+        Set<Type> customBeanTypes = new HashSet<>();
 
-            @Override
-            public void register(RegistrationContext context) {
-                Set<Type> customBeanTypes = new HashSet<>();
-
-                for (InjectionPointInfo injectionPoint : context.get(Key.INJECTION_POINTS)) {
-                    if (injectionPoint.hasDefaultedQualifier()) {
-                        // Defaulted qualifier means no @ConfigProperty
-                        continue;
-                    }
-
-                    AnnotationInstance configProperty = injectionPoint.getRequiredQualifier(CONFIG_PROPERTY_NAME);
-                    if (configProperty != null) {
-                        AnnotationValue nameValue = configProperty.value("name");
-                        AnnotationValue defaultValue = configProperty.value("defaultValue");
-                        String propertyName;
-                        if (nameValue != null) {
-                            propertyName = nameValue.asString();
-                        } else {
-                            // org.acme.Foo.config
-                            if (injectionPoint.isField()) {
-                                FieldInfo field = injectionPoint.getTarget().asField();
-                                propertyName = getPropertyName(field.name(), field.declaringClass());
-                            } else if (injectionPoint.isParam()) {
-                                MethodInfo method = injectionPoint.getTarget().asMethod();
-                                propertyName = getPropertyName(method.parameterName(injectionPoint.getPosition()),
-                                        method.declaringClass());
-                            } else {
-                                throw new IllegalStateException("Unsupported injection point target: " + injectionPoint);
-                            }
-                        }
-
-                        // Register a custom bean for injection points that are not handled by ConfigProducer
-                        Type requiredType = injectionPoint.getRequiredType();
-                        if (!isHandledByProducers(requiredType)) {
-                            customBeanTypes.add(requiredType);
-                        }
-
-                        if (DotNames.OPTIONAL.equals(requiredType.name())) {
-                            // Never validate Optional values
-                            continue;
-                        }
-                        if (defaultValue != null && !ConfigProperty.UNCONFIGURED_VALUE.equals(defaultValue.asString())) {
-                            // No need to validate properties with default values
-                            continue;
-                        }
-                        String propertyType = requiredType.name().toString();
-                        if (requiredType.kind() != Kind.ARRAY && requiredType.kind() != Kind.PRIMITIVE) {
-                            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, propertyType));
-                        }
-                        configProperties.produce(new ConfigPropertyBuildItem(propertyName, propertyType));
-                    }
-                }
-
-                for (Type type : customBeanTypes) {
-                    if (type.kind() != Kind.ARRAY) {
-                        // Implicit converters are most likely used
-                        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, type.name().toString()));
-                    }
-                    context.configure(
-                            type.kind() == Kind.ARRAY ? DotName.createSimple(ConfigBeanCreator.class.getName()) : type.name())
-                            .creator(ConfigBeanCreator.class)
-                            .providerType(type)
-                            .types(type)
-                            .qualifiers(AnnotationInstance.create(CONFIG_PROPERTY_NAME, null, Collections.emptyList()))
-                            .param("requiredType", type.name().toString()).done();
-                }
+        for (InjectionPointInfo injectionPoint : beanRegistrationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
+            if (injectionPoint.hasDefaultedQualifier()) {
+                // Defaulted qualifier means no @ConfigProperty
+                continue;
             }
-        });
+
+            AnnotationInstance configProperty = injectionPoint.getRequiredQualifier(CONFIG_PROPERTY_NAME);
+            if (configProperty != null) {
+                AnnotationValue nameValue = configProperty.value("name");
+                AnnotationValue defaultValue = configProperty.value("defaultValue");
+                String propertyName;
+                if (nameValue != null) {
+                    propertyName = nameValue.asString();
+                } else {
+                    // org.acme.Foo.config
+                    if (injectionPoint.isField()) {
+                        FieldInfo field = injectionPoint.getTarget().asField();
+                        propertyName = getPropertyName(field.name(), field.declaringClass());
+                    } else if (injectionPoint.isParam()) {
+                        MethodInfo method = injectionPoint.getTarget().asMethod();
+                        propertyName = getPropertyName(method.parameterName(injectionPoint.getPosition()),
+                                method.declaringClass());
+                    } else {
+                        throw new IllegalStateException("Unsupported injection point target: " + injectionPoint);
+                    }
+                }
+
+                // Register a custom bean for injection points that are not handled by ConfigProducer
+                Type requiredType = injectionPoint.getRequiredType();
+                if (!isHandledByProducers(requiredType)) {
+                    customBeanTypes.add(requiredType);
+                }
+
+                if (DotNames.OPTIONAL.equals(requiredType.name())) {
+                    // Never validate Optional values
+                    continue;
+                }
+                if (defaultValue != null && !ConfigProperty.UNCONFIGURED_VALUE.equals(defaultValue.asString())) {
+                    // No need to validate properties with default values
+                    continue;
+                }
+                String propertyType = requiredType.name().toString();
+                if (requiredType.kind() != Kind.ARRAY && requiredType.kind() != Kind.PRIMITIVE) {
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, propertyType));
+                }
+                configProperties.produce(new ConfigPropertyBuildItem(propertyName, propertyType));
+            }
+        }
+
+        for (Type type : customBeanTypes) {
+            if (type.kind() != Kind.ARRAY) {
+                // Implicit converters are most likely used
+                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, type.name().toString()));
+            }
+            beanConfigurators.produce(new BeanConfiguratorBuildItem(beanRegistrationPhase.getContext().configure(
+                    type.kind() == Kind.ARRAY ? DotName.createSimple(ConfigBeanCreator.class.getName()) : type.name())
+                    .creator(ConfigBeanCreator.class)
+                    .providerType(type)
+                    .types(type)
+                    .qualifiers(AnnotationInstance.create(CONFIG_PROPERTY_NAME, null, Collections.emptyList()))
+                    .param("requiredType", type.name().toString())));
+        }
     }
 
     @BuildStep

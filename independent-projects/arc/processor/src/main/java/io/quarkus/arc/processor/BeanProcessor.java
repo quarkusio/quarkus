@@ -1,5 +1,6 @@
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
 import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import io.quarkus.arc.processor.BuildExtension.Key;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
@@ -30,6 +31,7 @@ import org.jboss.logging.Logger;
  * <li>{@link #registerBeans()}</li>
  * <li>{@link #initialize()}</li>
  * <li>{@link #validate()}</li>
+ * <li>{@link #processValidationErrors(io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext)}</li>
  * <li>{@link #generateResources()}</li>
  * </ol>
  */
@@ -105,6 +107,10 @@ public class BeanProcessor {
 
     public BeanDeploymentValidator.ValidationContext validate() {
         return beanDeployment.validate(beanDeploymentValidators);
+    }
+
+    public void processValidationErrors(BeanDeploymentValidator.ValidationContext validationContext) {
+        BeanDeployment.processErrors(validationContext.getDeploymentProblems());
     }
 
     public List<Resource> generateResources(ReflectionRegistration reflectionRegistration) throws IOException {
@@ -195,7 +201,8 @@ public class BeanProcessor {
         registerCustomContexts();
         registerBeans();
         initialize();
-        validate();
+        ValidationContext validationContext = validate();
+        processValidationErrors(validationContext);
         generateResources(null);
         return beanDeployment;
     }

@@ -267,6 +267,7 @@ public class ArcProcessor {
         }
 
         BeanProcessor beanProcessor = validationPhase.getBeanProcessor();
+        beanProcessor.processValidationErrors(validationPhase.getContext());
 
         long start = System.currentTimeMillis();
         List<ResourceOutput.Resource> resources = beanProcessor.generateResources(new ReflectionRegistration() {

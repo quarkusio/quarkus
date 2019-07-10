@@ -24,13 +24,14 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.BeanDeploymentValidatorBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.AnnotationsTransformer;
-import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -140,7 +141,7 @@ class VertxProcessor {
                     businessMethod.getConsumeEvent(), classOutput);
             messageConsumerConfigurations.put(invokerClass,
                     annotationProxy.builder(businessMethod.getConsumeEvent(), ConsumeEvent.class)
-                            .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString()).build());
+                            .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString()).build(classOutput));
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, invokerClass));
         }
         RuntimeValue<Vertx> vertx = recorder.configureVertx(beanContainer.getValue(), config, messageConsumerConfigurations,
@@ -156,37 +157,33 @@ class VertxProcessor {
     }
 
     @BuildStep
-    BeanDeploymentValidatorBuildItem beanDeploymentValidator(
-            BuildProducer<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods) {
+    void validateBeanDeployment(
+            ValidationPhaseBuildItem validationPhase,
+            BuildProducer<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
+            BuildProducer<ValidationErrorBuildItem> errors) {
 
-        return new BeanDeploymentValidatorBuildItem(new BeanDeploymentValidator() {
-
-            @Override
-            public void validate(ValidationContext validationContext) {
-                // We need to collect all business methods annotated with @MessageConsumer first
-                AnnotationStore annotationStore = validationContext.get(Key.ANNOTATION_STORE);
-                for (BeanInfo bean : validationContext.get(Key.BEANS)) {
-                    if (bean.isClassBean()) {
-                        // TODO: inherited business methods?
-                        for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
-                            AnnotationInstance consumeEvent = annotationStore.getAnnotation(method, CONSUME_EVENT);
-                            if (consumeEvent != null) {
-                                // Validate method params and return type
-                                List<Type> params = method.parameters();
-                                if (params.size() != 1) {
-                                    throw new IllegalStateException(String.format(
-                                            "Event consumer business method must accept exactly one parameter: %s [method: %s, bean:%s",
-                                            params, method, bean));
-                                }
-                                messageConsumerBusinessMethods
-                                        .produce(new EventConsumerBusinessMethodItem(bean, method, consumeEvent));
-                                LOGGER.debugf("Found event consumer business method %s declared on %s", method, bean);
-                            }
+        // We need to collect all business methods annotated with @MessageConsumer first
+        AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
+        for (BeanInfo bean : validationPhase.getContext().get(BuildExtension.Key.BEANS)) {
+            if (bean.isClassBean()) {
+                // TODO: inherited business methods?
+                for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
+                    AnnotationInstance consumeEvent = annotationStore.getAnnotation(method, CONSUME_EVENT);
+                    if (consumeEvent != null) {
+                        // Validate method params and return type
+                        List<Type> params = method.parameters();
+                        if (params.size() != 1) {
+                            throw new IllegalStateException(String.format(
+                                    "Event consumer business method must accept exactly one parameter: %s [method: %s, bean:%s",
+                                    params, method, bean));
                         }
+                        messageConsumerBusinessMethods
+                                .produce(new EventConsumerBusinessMethodItem(bean, method, consumeEvent));
+                        LOGGER.debugf("Found event consumer business method %s declared on %s", method, bean);
                     }
                 }
             }
-        });
+        }
     }
 
     @BuildStep

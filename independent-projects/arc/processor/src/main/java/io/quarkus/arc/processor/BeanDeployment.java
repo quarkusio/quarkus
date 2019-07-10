@@ -272,17 +272,16 @@ public class BeanDeployment {
     }
 
     ValidationContext validate(List<BeanDeploymentValidator> validators) {
-        long start = System.currentTimeMillis();
         // Validate the bean deployment
         List<Throwable> errors = new ArrayList<>();
         validateBeans(errors, validators);
         ValidationContextImpl validationContext = new ValidationContextImpl(buildContext);
+        for (Throwable error : errors) {
+            validationContext.addDeploymentProblem(error);
+        }
         for (BeanDeploymentValidator validator : validators) {
             validator.validate(validationContext);
         }
-        errors.addAll(validationContext.getErrors());
-        processErrors(errors);
-        LOGGER.debugf("Bean deployment validated in %s ms", System.currentTimeMillis() - start);
         return validationContext;
     }
 
@@ -774,7 +773,7 @@ public class BeanDeployment {
         return registrationContext;
     }
 
-    private static void processErrors(List<Throwable> errors) {
+    static void processErrors(List<Throwable> errors) {
         if (!errors.isEmpty()) {
             if (errors.size() == 1) {
                 Throwable error = errors.get(0);
@@ -878,8 +877,9 @@ public class BeanDeployment {
             errors.add(problem);
         }
 
-        List<Throwable> getErrors() {
-            return errors;
+        @Override
+        public List<Throwable> getDeploymentProblems() {
+            return Collections.unmodifiableList(errors);
         }
 
     }

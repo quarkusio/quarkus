@@ -25,7 +25,7 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.mongodb.ReactiveMongoClient;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
 import io.quarkus.mongodb.runtime.MongoClientProducer;
-import io.quarkus.mongodb.runtime.MongoClientTemplate;
+import io.quarkus.mongodb.runtime.MongoClientRecorder;
 import io.quarkus.runtime.RuntimeValue;
 
 public class MongoClientProcessor {
@@ -52,7 +52,7 @@ public class MongoClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    MongoClientBuildItem build(BuildProducer<FeatureBuildItem> feature, MongoClientTemplate template,
+    MongoClientBuildItem build(BuildProducer<FeatureBuildItem> feature, MongoClientRecorder recorder,
             BeanContainerBuildItem beanContainer, LaunchModeBuildItem launchMode,
             ShutdownContextBuildItem shutdown,
             MongoClientConfig config, CodecProviderBuildItem codecs,
@@ -62,10 +62,10 @@ public class MongoClientProcessor {
 
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.MONGODB_CLIENT));
 
-        RuntimeValue<MongoClient> client = template.configureTheClient(config, beanContainer.getValue(),
+        RuntimeValue<MongoClient> client = recorder.configureTheClient(config, beanContainer.getValue(),
                 launchMode.getLaunchMode(), shutdown,
                 codecs.getCodecProviderClassNames());
-        RuntimeValue<ReactiveMongoClient> reactiveClient = template.configureTheReactiveClient();
+        RuntimeValue<ReactiveMongoClient> reactiveClient = recorder.configureTheReactiveClient();
         return new MongoClientBuildItem(client, reactiveClient);
     }
 }

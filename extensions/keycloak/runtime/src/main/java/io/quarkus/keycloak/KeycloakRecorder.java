@@ -33,6 +33,11 @@ public class KeycloakRecorder {
                 config = loadConfig(getClass().getClassLoader());
             }
 
+            if (config == null) {
+                throw new IllegalStateException(
+                        "Keycloak configuration not found, please refer to the Quarkus documentation to learn how to configure your application");
+            }
+
             deployment = KeycloakDeploymentBuilder.build(config);
         } else {
             deployment = KeycloakDeploymentBuilder.build(defaultConfig);

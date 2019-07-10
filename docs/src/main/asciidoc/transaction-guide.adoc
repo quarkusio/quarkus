@@ -113,6 +113,14 @@ public class SantaClausService {
 <1> Inject the `TransactionManager` to be able to activate `setRollbackOnly` semantic.
 <2> Programmatically decide to set the transaction for rollback.
 
+
+=== Transaction Configuration
+
+Extended configuration of the transaction is possible with the use of the `@TransactionConfiguration` annotation that is set in addition to the standard `@Transactional` annotation on your entry method or at the class level.
+
+The `@TransactionConfiguration` annotation allows to set a timeout property, in seconds, that applies to transactions created within the annotated method.
+
+
 === Reactive extensions
 
 If your `@Transactional`-annotated method returns a reactive value, such as:

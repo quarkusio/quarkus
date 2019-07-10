@@ -28,7 +28,6 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.arc.deployment.AdditionalStereotypeBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Transformation;
@@ -93,9 +92,9 @@ public class SpringDIProcessor {
             final BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             final BuildProducer<AdditionalStereotypeBuildItem> additionalStereotypeBuildItemBuildProducer) {
         final IndexView index = beanArchiveIndexBuildItem.getIndex();
-        final Map<DotName, Set<DotName>> scopes = getStereotypeScopes(index);
+        final Map<DotName, Set<DotName>> stereotypeScopes = getStereotypeScopes(index);
         final Map<DotName, Collection<AnnotationInstance>> instances = new HashMap<>();
-        for (final DotName name : scopes.keySet()) {
+        for (final DotName name : stereotypeScopes.keySet()) {
             instances.put(name, index.getAnnotations(name)
                     .stream()
                     .filter(it -> isAnnotation(it.target().asClass().flags()))
@@ -108,8 +107,9 @@ public class SpringDIProcessor {
                 return;
             }
             final AnnotationTarget target = context.getTarget();
-            final Set<AnnotationInstance> annotationsToAdd = getAnnotationsToAdd(target, scopes, context
-                    .get(BuildExtension.Key.SCOPES).stream().map(item -> item.getDotName()).collect(Collectors.toList()));
+            // Note that only built-in scopes are used because annotation transformers can be used before custom contexts are registered
+            final Set<AnnotationInstance> annotationsToAdd = getAnnotationsToAdd(target, stereotypeScopes,
+                    Arrays.stream(BuiltinScope.values()).map(BuiltinScope::getName).collect(Collectors.toList()));
             if (!annotationsToAdd.isEmpty()) {
                 final Transformation transform = context.transform();
                 for (AnnotationInstance annotationInstance : annotationsToAdd) {

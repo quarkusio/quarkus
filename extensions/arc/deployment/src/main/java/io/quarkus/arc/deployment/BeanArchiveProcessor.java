@@ -61,12 +61,12 @@ public class BeanArchiveProcessor {
         Set<DotName> additionalIndex = new HashSet<>();
         for (String beanClass : additionalBeans) {
             IndexingUtil.indexClass(beanClass, additionalBeanIndexer, applicationIndex, additionalIndex,
-                    ArcAnnotationProcessor.class.getClassLoader());
+                    ArcProcessor.class.getClassLoader());
         }
         Set<DotName> generatedClassNames = new HashSet<>();
         for (GeneratedBeanBuildItem beanClass : generatedBeans) {
             IndexingUtil.indexClass(beanClass.getName(), additionalBeanIndexer, applicationIndex, additionalIndex,
-                    ArcAnnotationProcessor.class.getClassLoader(),
+                    ArcProcessor.class.getClassLoader(),
                     beanClass.getData());
             generatedClassNames.add(DotName.createSimple(beanClass.getName().replace('/', '.')));
             generatedClass.produce(new GeneratedClassBuildItem(true, beanClass.getName(), beanClass.getData()));

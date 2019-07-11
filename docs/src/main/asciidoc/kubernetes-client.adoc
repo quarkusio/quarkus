@@ -8,8 +8,13 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 
-Quarkus includes the `kubernetes-client` extension which enables the use of the [Fabric8 Kubernetes Client](https://github.com/fabric8io/kubernetes-client)
+Quarkus includes the `kubernetes-client` extension which enables the use of the https://github.com/fabric8io/kubernetes-client[Fabric8 Kubernetes Client]
 in native mode while also making it easier to work with.
+
+Having a Kubernetes Client extension in Quarkus is very useful in order to unlock the power of Kubernetes Operators.
+Kubernetes Operators are quickly emerging as a new class of Cloud Native applications.
+These applications essentially watch the Kubernetes API and react to changes on various resources and can be used to manage the lifecycle of all kinds of complex systems like databases, messaging systems and much much more.
+Being able to write such operators in Java with a the very low footprint that native images provide is a great match.
 
 == Configuration
 

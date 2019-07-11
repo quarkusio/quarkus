@@ -22,6 +22,6 @@ public class AsyncConfig {
     /**
      * Determine whether to block the publisher (rather than drop the message) when the queue is full
      */
-    @ConfigItem(defaultValue = "BLOCK")
+    @ConfigItem(defaultValue = "block")
     OverflowAction overflow;
 }

@@ -101,7 +101,7 @@ public abstract class AbstractDataSourceProducer {
         if (dataSourceRuntimeConfig.transactionIsolationLevel.isPresent()) {
             agroalConnectionFactoryConfigurationSupplier
                     .jdbcTransactionIsolation(
-                            dataSourceRuntimeConfig.transactionIsolationLevel.get().jdbcTransactionIsolationLevel);
+                            dataSourceRuntimeConfig.transactionIsolationLevel.get());
         }
 
         TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,

@@ -4,6 +4,7 @@ import java.io.FileDescriptor;
 import java.io.IOException;
 import java.net.URL;
 import java.security.AccessControlContext;
+import java.util.function.BooleanSupplier;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
@@ -64,13 +65,20 @@ final class Target_sun_misc_URLClassPath {
     }
 }
 
-@TargetClass(className = "sun.nio.ch.DatagramChannelImpl")
+@TargetClass(className = "sun.nio.ch.DatagramChannelImpl", onlyWith = GraalVersion19_0.class)
 final class Target_sun_nio_ch_DatagramChannelImpl {
 
     @Substitute
     private static void disconnect0(FileDescriptor fd, boolean isIPv6)
             throws IOException {
         throw new RuntimeException("Unimplemented: sun.nio.ch.DatagramChannelImpl.disconnect0(FileDescriptor, boolean)");
+    }
+}
+
+final class GraalVersion19_0 implements BooleanSupplier {
+    public boolean getAsBoolean() {
+        final String version = System.getProperty("org.graalvm.version");
+        return version.startsWith("19.0.");
     }
 }
 

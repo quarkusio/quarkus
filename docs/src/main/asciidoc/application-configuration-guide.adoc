@@ -244,7 +244,7 @@ By default Quarkus has three profiles, although it is possible to use as many as
 * *prod* - The default profile when not running in development or test mode
 
 There are two ways to set a custom profile, either via the `quarkus.profile` system property or the `QUARKUS_PROFILE`
-environment variable. If both are set the environment variable takes precedence. Note that it is not necessary to
+environment variable. If both are set the system property takes precedence. Note that it is not necessary to
 define the names of these profiles anywhere, all that is necessary is to create a config property with the profile
 name, and then set the current profile to that name. For example if I want a 'staging' profile with a different HTTP port
 I can add the following to `application.properties`:

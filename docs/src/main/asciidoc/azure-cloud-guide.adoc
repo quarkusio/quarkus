@@ -22,7 +22,7 @@ For this guide you need:
 
 * roughly 2 hours for all modalities
 * roughly 15 min for CICD
-* having access to an Azure subscription. Get a free one here [TODO]
+* having access to an Azure subscription. https://azure.microsoft.com/free/?WT.mc_id=opensource-quarkus-brborges[Get a free one here]
 
 This guide will take as input a native application developed in the link:building-native-image-guide.html[building native image guide].
 

@@ -12,6 +12,7 @@ import org.apache.tika.parser.Parser;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
@@ -31,6 +32,11 @@ public class TikaProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.TIKA);
+    }
+
+    @BuildStep
+    void setupJni(BuildProducer<JniBuildItem> jniProducer) {
+        jniProducer.produce(new JniBuildItem());
     }
 
     @BuildStep

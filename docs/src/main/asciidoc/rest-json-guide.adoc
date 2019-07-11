@@ -434,6 +434,14 @@ Now, whenever a REST method is invoked, the request will be logged into the cons
 2019-06-05 12:51:04,485 INFO  [org.acm.res.jso.LoggingFilter] (executor-thread-1) Request GET /fruits from IP 127.0.0.1
 ----
 
+== CORS filter
+
+link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin resource sharing] (CORS) is a mechanism that
+allows restricted resources on a web page to be requested from another domain outside the domain from which the first resource
+was served.
+
+Quarkus comes with a CORS filter. Read the link:undertow-reference.html#cors-filter[Undertow Reference Documentation] to learn
+how to use it.
 
 == Conclusion
 

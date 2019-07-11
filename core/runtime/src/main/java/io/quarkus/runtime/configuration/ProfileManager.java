@@ -9,8 +9,8 @@ import io.quarkus.runtime.LaunchMode;
  *
  * The profile is resolved in the following way:
  *
- * - The QUARKUS_PROFILE environment entry
  * - The quarkus.profile system property
+ * - The QUARKUS_PROFILE environment entry
  * - The default property for the launch mode
  *
  */
@@ -27,15 +27,15 @@ public class ProfileManager {
     }
 
     public static String getActiveProfile() {
-        String profile = System.getenv(QUARKUS_PROFILE_ENV);
-        if (profile != null) {
-            return profile;
-        }
-        profile = System.getProperty(QUARKUS_PROFILE_PROP);
+        String profile = System.getProperty(QUARKUS_PROFILE_PROP);
         if (profile != null) {
             return profile;
         }
         profile = System.getProperty(BACKWARD_COMPATIBLE_QUARKUS_PROFILE_PROP);
+        if (profile != null) {
+            return profile;
+        }
+        profile = System.getenv(QUARKUS_PROFILE_ENV);
         if (profile != null) {
             return profile;
         }

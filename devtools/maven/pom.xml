@@ -102,6 +102,11 @@
             <version>2.14.6</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
+        </dependency>
+
         <!-- extensions reader -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

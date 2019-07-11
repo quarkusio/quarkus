@@ -33,6 +33,9 @@
         <axle-client.version>0.0.7</axle-client.version>
         <vertx.version>3.7.1</vertx.version>
 
+        <!-- Dev tools -->
+        <freemarker.version>2.3.28</freemarker.version>
+
         <!-- Enable APT by default for Eclipse -->
         <m2e.apt.activation>jdt_apt</m2e.apt.activation>
 
@@ -79,6 +82,11 @@
                 <groupId>${project.groupId}</groupId>
                 <artifactId>quarkus-creator</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.freemarker</groupId>
+                <artifactId>freemarker</artifactId>
+                <version>${freemarker.version}</version>
             </dependency>
 
             <!-- Miscellaneous -->

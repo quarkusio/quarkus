@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+[#if grandParentGroupId?? ]    <parent>
+        <groupId>[=grandParentGroupId]</groupId>
+        <artifactId>[=grandParentArtifactId]</artifactId>
+        <version>[=grandParentVersion]</version>
+        <relativePath>[=grandParentRelativePath]</relativePath>
+    </parent>
+[/#if]
+
+[#if groupId?? && groupId != grandParentGroupId ]    <groupId>[=groupId]</groupId>
+[/#if]
+    <artifactId>[=artifactId]-parent</artifactId>
+[#if groupId?? && groupId != grandParentGroupId && version?? && version != grandParentVersion ]    <version>[=version]</version>
+[/#if]
+[#if nameBase?? ]    <name>[=namePrefix][=nameBase][=nameSegmentDelimiter]Parent</name>
+[/#if]
+
+    <packaging>pom</packaging>
+    <modules>
+        <module>deployment</module>
+        <module>runtime</module>
+    </modules>
+</project>

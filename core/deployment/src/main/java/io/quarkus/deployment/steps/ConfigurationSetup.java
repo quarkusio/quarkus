@@ -75,6 +75,7 @@ import io.quarkus.runtime.configuration.DefaultConfigSource;
 import io.quarkus.runtime.configuration.DeploymentProfileConfigSource;
 import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
+import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.configuration.SimpleConfigurationProviderResolver;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
@@ -157,6 +158,9 @@ public class ConfigurationSetup {
 
     private static final MethodDescriptor CS_POPULATE_CONVERTERS = MethodDescriptor.ofMethod(ConverterSupport.class,
             "populateConverters", void.class, ConfigBuilder.class);
+
+    private static final MethodDescriptor SET_RUNTIME_DEFAULT_PROFILE = MethodDescriptor.ofMethod(ProfileManager.class,
+            "setRuntimeDefaultProfile", void.class, String.class);
 
     private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
     private static final String[] NO_STRINGS = new String[0];
@@ -254,7 +258,7 @@ public class ConfigurationSetup {
         }
         builder.withSources(configSources);
 
-        // populate builder with all converters loaded from ServiceLoader 
+        // populate builder with all converters loaded from ServiceLoader
         ConverterSupport.populateConverters(builder);
 
         final SmallRyeConfig src = (SmallRyeConfig) builder
@@ -441,12 +445,14 @@ public class ConfigurationSetup {
             // static init block
             try (MethodCreator clinit = cc.getMethodCreator("<clinit>", void.class)) {
                 clinit.setModifiers(Opcodes.ACC_STATIC);
+                // set default profile to build profile
+                clinit.invokeStaticMethod(SET_RUNTIME_DEFAULT_PROFILE, clinit.load(ProfileManager.getActiveProfile()));
 
                 // make implicit converters available to native image run time
-
                 final BranchResult inImageBuild = clinit.ifNonZero(clinit
                         .invokeStaticMethod(MethodDescriptor.ofMethod(ImageInfo.class, "inImageBuildtimeCode", boolean.class)));
                 try (BytecodeCreator yes = inImageBuild.trueBranch()) {
+
                     final ResultHandle array = yes.newArray(Converter.class, yes.load(converterCnt));
                     for (int i = 0; i < converterCnt; i++) {
                         yes.writeArrayValue(array, i,

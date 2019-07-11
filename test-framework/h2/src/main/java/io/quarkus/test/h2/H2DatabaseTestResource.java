@@ -9,6 +9,10 @@ import org.h2.tools.Server;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
+/**
+ * Quarkus Test resource that configures an H2 instance to run on a test.
+ * This test resource overrides database configuration to use the ones to connect to the provided H2 instance.
+ */
 public class H2DatabaseTestResource implements QuarkusTestResourceLifecycleManager {
 
     private Server tcpServer;

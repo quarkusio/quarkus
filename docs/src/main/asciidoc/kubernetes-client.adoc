@@ -34,6 +34,39 @@ This will add the following to your pom.xml:
     </dependency>
 ----
 
+== Usage
+
+Quarkus configures a Bean of type `KubernetesClient` which can be injected into application code using the well known CDI methods.
+This client can be configured using various properties as can be seen in the following example:
+
+[source]
+----
+quarkus.kubernetes-client.trust-certs=false
+quarkus.kubernetes-client.namespace=default
+----
+
+Note that the full list of properties is available in the [KubernetesClientBuildConfig](https://github.com/quarkusio/quarkus/blob/master/extensions/kubernetes-client/runtime/src/main/java/io/quarkus/kubernetes/client/runtime/KubernetesClientBuildConfig.java) class.
+
+=== Overriding
+
+The extension also allows application code to override either of  `io.fabric8.kubernetes.client.Config` or `io.fabric8.kubernetes.client.KubernetesClient` which are
+normally provided by the extension by simply declaring custom versions of those beans.
+
+An example of this can be seen in the following snippet:
+
+[source,java]
+----
+@ApplicationScoped
+public class KubernetesClientProducer {
+
+    @Produces
+    public KubernetesClient kubernetesClient() {
+        // here you would create a custom client
+        return new DefaultKubernetesClient();
+    }
+}
+----
+
 == Testing
 
 To make testing against a mock Kubernetes API extremely simple, Quarkus provides the `KubernetesMockServerTestResource` which automatically launches

@@ -21,6 +21,7 @@ import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.proxy.EntityNotFoundDelegate;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
+import org.hibernate.tool.schema.spi.CommandAcceptanceException;
 import org.hibernate.tool.schema.spi.DelayedDropRegistryNotAvailableImpl;
 import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
 
@@ -100,6 +101,12 @@ public final class FastBootEntityManagerFactoryBuilder implements EntityManagerF
                         + " and SSL was not disabled automatically for your driver.";
                 break;
             }
+
+            if (t instanceof CommandAcceptanceException) {
+                message = "Invalid import file. Make sure your statements are valid and properly separated by a semi-colon.";
+                break;
+            }
+
             t = t.getCause();
         }
 

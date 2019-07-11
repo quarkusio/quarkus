@@ -1,7 +1,9 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor;
 import org.hibernate.type.EnumType;
 
+import antlr.CommonToken;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
@@ -36,7 +38,7 @@ public final class HibernateOrmReflections {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, com.arjuna.ats.jta.UserTransaction.class.getName()));
         reflectiveClass
                 .produce(new ReflectiveClassBuildItem(true, false, com.arjuna.ats.jta.TransactionManager.class.getName()));
-
+        simpleConstructor(reflectiveClass, MultipleLinesSqlCommandExtractor.class);
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.HqlToken.class);
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.tree.Node.class);
 
@@ -93,6 +95,7 @@ public final class HibernateOrmReflections {
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.tree.ConstructorNode.class);
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.tree.LiteralNode.class);
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.tree.BinaryArithmeticOperatorNode.class);
+        simpleConstructor(reflectiveClass, CommonToken.class);
 
         //The CoreMessageLogger is sometimes looked up without it necessarily being a field, so we're
         //not processing it the same way as other Logger lookups.

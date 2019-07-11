@@ -33,6 +33,7 @@ import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 import org.hibernate.loader.BatchFetchStyle;
 import org.hibernate.service.spi.ServiceContributor;
+import org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.CompositeIndex;
@@ -434,6 +435,9 @@ public final class HibernateOrmProcessor {
                             String resourceAsString = root.getArchiveRoot().relativize(loadScriptPath.get()).toString();
                             resourceProducer.produce(new SubstrateResourceBuildItem(resourceAsString));
                             desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, importFile);
+                            desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR,
+                                    MultipleLinesSqlCommandExtractor.class.getName());
+
                         });
 
                 //raise exception if explicit file is not present (i.e. not the default)

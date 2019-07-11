@@ -103,7 +103,6 @@
                                 <configuration>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                    <enableJni>true</enableJni>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
                                 </configuration>
                             </execution>

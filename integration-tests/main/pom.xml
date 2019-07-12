@@ -15,7 +15,7 @@
     <description>The main integration tests module</description>
 
     <properties>
-        <datasource.url>jdbc:h2:tcp://localhost/mem:test</datasource.url>
+        <datasource.url>jdbc:h2:tcp://localhost/mem:test_quarkus</datasource.url>
         <datasource.driver>org.h2.Driver</datasource.driver>
         <datasource.username></datasource.username>
         <datasource.password></datasource.password>

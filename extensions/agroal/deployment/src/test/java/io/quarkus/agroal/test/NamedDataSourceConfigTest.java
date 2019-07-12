@@ -32,7 +32,7 @@ public class NamedDataSourceConfigTest {
 
     @Test
     public void testNamedDataSourceInjection() throws SQLException {
-        dataSourceAssert("testing", ds, "jdbc:h2:tcp://localhost/mem:testing",
+        dataSourceAssert("testing", ds, "jdbc:h2:mem:testing",
                 "username-named", 3, 13);
     }
 

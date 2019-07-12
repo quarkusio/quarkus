@@ -18,6 +18,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
@@ -92,7 +93,8 @@ public class TestResourceManager {
             }
         }
 
-        Set<QuarkusTestResourceLifecycleManager> testResourceRunners = new LinkedHashSet<>();
+        Set<QuarkusTestResourceLifecycleManager> testResourceRunners = new TreeSet<>(
+                new QuarkusTestResourceLifecycleManagerComparator());
 
         for (Class<? extends QuarkusTestResourceLifecycleManager> testResourceRunnerClass : testResourceRunnerClasses) {
             try {

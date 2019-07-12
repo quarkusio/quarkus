@@ -32,4 +32,14 @@ public interface QuarkusTestResourceLifecycleManager {
      */
     default void inject(Object testInstance) {
     }
+
+    /**
+     * If multiple Test Resources are specified,
+     * this control the order of which they will be executed.
+     * 
+     * @return The order to be executed. The larger the number, the later the Resource is invoked.
+     */
+    default int order() {
+        return 0;
+    }
 }

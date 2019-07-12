@@ -33,22 +33,26 @@ public class ProfileManager {
     }
 
     public static String getActiveProfile() {
+        if (launchMode == LaunchMode.TEST) {
+            return launchMode.getDefaultProfile();
+        }
+
         String profile = System.getProperty(QUARKUS_PROFILE_PROP);
         if (profile != null) {
             return profile;
         }
+
         profile = System.getProperty(BACKWARD_COMPATIBLE_QUARKUS_PROFILE_PROP);
         if (profile != null) {
             return profile;
         }
-        profile = System.getenv(QUARKUS_PROFILE_ENV);
 
+        profile = System.getenv(QUARKUS_PROFILE_ENV);
         if (profile != null) {
             return profile;
         }
 
         profile = runtimeDefaultProfile;
-
         if (profile != null) {
             return profile;
         }

@@ -304,10 +304,10 @@ class ArcContainerImpl implements ArcContainer {
             boolean resetCurrentInjectionPoint) {
         if (bean != null) {
             if (parentContext == null && Dependent.class.equals(bean.getScope())) {
-                parentContext = new CreationalContextImpl<>();
+                parentContext = new CreationalContextImpl<>(null);
             }
-            CreationalContextImpl<T> creationalContext = parentContext != null ? parentContext.child()
-                    : new CreationalContextImpl<>();
+            CreationalContextImpl<T> creationalContext = parentContext != null ? parentContext.child(bean)
+                    : new CreationalContextImpl<>(bean);
             InjectionPoint prev = null;
             if (resetCurrentInjectionPoint) {
                 prev = InjectionPointProvider.set(CurrentInjectionPointProvider.EMPTY);

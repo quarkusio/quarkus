@@ -38,6 +38,12 @@ final class MethodDescriptors {
             CreationalContextImpl.class,
             CreationalContext.class);
 
+    static final MethodDescriptor CREATIONAL_CTX_CHILD_CONTEXTUAL = MethodDescriptor.ofMethod(CreationalContextImpl.class,
+            "child",
+            CreationalContextImpl.class,
+            InjectableReferenceProvider.class,
+            CreationalContext.class);
+
     static final MethodDescriptor MAP_GET = MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class);
 
     static final MethodDescriptor MAP_PUT = MethodDescriptor.ofMethod(Map.class, "put", Object.class, Object.class,

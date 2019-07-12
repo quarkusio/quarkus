@@ -15,6 +15,7 @@ import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Disposes;
 import javax.enterprise.inject.Instance;
+import javax.enterprise.inject.Intercepted;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.Stereotype;
 import javax.enterprise.inject.Typed;
@@ -55,6 +56,7 @@ public final class DotNames {
     public static final DotName INJECTION_POINT = create(InjectionPoint.class);
     public static final DotName INTERCEPTOR = create(Interceptor.class);
     public static final DotName INTERCEPTOR_BINDING = create(InterceptorBinding.class);
+    public static final DotName INTERCEPTED = create(Intercepted.class);
     public static final DotName AROUND_INVOKE = create(AroundInvoke.class);
     public static final DotName AROUND_CONSTRUCT = create(AroundConstruct.class);
     public static final DotName PRIORITY = create(Priority.class);

@@ -86,7 +86,7 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public <T> CreationalContext<T> createCreationalContext(Contextual<T> contextual) {
-        return new CreationalContextImpl<>();
+        return new CreationalContextImpl<>(contextual);
     }
 
     @Override
@@ -287,7 +287,7 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public Instance<Object> createInstance() {
-        return new InstanceImpl<>(null, INSTANCE_LITERAL.getType(), Collections.emptySet(), new CreationalContextImpl<>(),
+        return new InstanceImpl<>(null, INSTANCE_LITERAL.getType(), Collections.emptySet(), new CreationalContextImpl<>(null),
                 Collections.emptySet(), null, -1);
     }
 

@@ -135,7 +135,7 @@ class InstanceImpl<T> implements Instance<T> {
     }
 
     private T getBeanInstance(InjectableBean<T> bean) {
-        CreationalContextImpl<T> ctx = creationalContext.child();
+        CreationalContextImpl<T> ctx = creationalContext.child(bean);
         InjectionPoint prev = InjectionPointProvider
                 .set(new InjectionPointImpl(injectionPointType, requiredType, requiredQualifiers, targetBean, annotations,
                         javaMember, position));

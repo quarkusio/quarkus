@@ -54,10 +54,10 @@
     <dependencyManagement>
         <dependencies>
 
-            <!-- Quarkus Extensions Dependencies are coming from quarkus-deployment-bom (that also imports quarkus-bom) -->
+            <!-- Quarkus Extensions Dependencies are coming from quarkus-bom-deployment (that also imports quarkus-bom) -->
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-deployment-bom</artifactId>
+                <artifactId>quarkus-bom-deployment</artifactId>
                 <version>${project.version}</version>
                 <type>pom</type>
                 <scope>import</scope>

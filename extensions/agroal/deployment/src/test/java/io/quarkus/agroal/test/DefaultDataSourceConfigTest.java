@@ -45,7 +45,7 @@ public class DefaultDataSourceConfigTest {
         AgroalConnectionFactoryConfiguration agroalConnectionFactoryConfiguration = configuration
                 .connectionFactoryConfiguration();
 
-        assertEquals("jdbc:h2:tcp://localhost/mem:default", agroalConnectionFactoryConfiguration.jdbcUrl());
+        assertEquals("jdbc:h2:mem:default", agroalConnectionFactoryConfiguration.jdbcUrl());
         assertEquals(username, agroalConnectionFactoryConfiguration.principal().getName());
         assertEquals(minSize, configuration.minSize());
         assertEquals(maxSize, configuration.maxSize());

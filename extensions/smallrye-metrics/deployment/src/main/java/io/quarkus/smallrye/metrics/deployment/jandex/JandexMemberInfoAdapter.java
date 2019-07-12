@@ -3,11 +3,10 @@ package io.quarkus.smallrye.metrics.deployment.jandex;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.IndexView;
 
-import io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsProcessor;
+import io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames;
 import io.smallrye.metrics.elementdesc.AnnotationInfo;
 import io.smallrye.metrics.elementdesc.MemberInfo;
 import io.smallrye.metrics.elementdesc.MemberType;
@@ -36,23 +35,27 @@ public class JandexMemberInfoAdapter implements MemberInfoAdapter<AnnotationTarg
             }
         }
 
-        String declaringClassName;
-        String declaringClassSimpleName;
-        String name;
-        List<AnnotationInfo> annotationInfos;
+        final List<AnnotationInfo> annotationInformation;
+        final String name, declaringClassSimpleName, declaringClassName;
         JandexAnnotationInfoAdapter annotationInfoAdapter = new JandexAnnotationInfoAdapter(indexView);
         if (input.kind().equals(AnnotationTarget.Kind.METHOD)) {
             declaringClassName = input.asMethod().declaringClass().name().toString();
             declaringClassSimpleName = input.asMethod().declaringClass().simpleName();
             name = input.asMethod().name();
-            annotationInfos = input.asMethod().annotations().stream().filter(this::isMetricAnnotation)
+            annotationInformation = input.asMethod()
+                    .annotations()
+                    .stream()
+                    .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
                     .map(annotationInfoAdapter::convert)
                     .collect(Collectors.toList());
         } else {
             declaringClassName = input.asField().declaringClass().name().toString();
             declaringClassSimpleName = input.asField().declaringClass().simpleName();
             name = input.asField().name();
-            annotationInfos = input.asField().annotations().stream().filter(this::isMetricAnnotation)
+            annotationInformation = input.asField()
+                    .annotations()
+                    .stream()
+                    .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
                     .map(annotationInfoAdapter::convert)
                     .collect(Collectors.toList());
         }
@@ -61,11 +64,6 @@ public class JandexMemberInfoAdapter implements MemberInfoAdapter<AnnotationTarg
                 declaringClassName,
                 declaringClassSimpleName,
                 name,
-                annotationInfos);
+                annotationInformation);
     }
-
-    private boolean isMetricAnnotation(AnnotationInstance instance) {
-        return SmallRyeMetricsProcessor.metricsAnnotations.contains(instance.name());
-    }
-
 }

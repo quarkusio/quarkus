@@ -20,9 +20,14 @@ public class VertxHotReplacementSetup implements HotReplacementSetup {
         VertxWebRecorder.setHotReplacement(this::handleHotReplacementRequest);
     }
 
+    @Override
+    public void handleFailedInitialStart() {
+        VertxWebRecorder.startServerAfterFailedStart();
+    }
+
     void handleHotReplacementRequest(RoutingContext routingContext) {
 
-        if (nextUpdate > System.currentTimeMillis()) {
+        if (nextUpdate > System.currentTimeMillis() && !hotReplacementContext.isTest()) {
             if (hotReplacementContext.getDeploymentProblem() != null) {
                 handleDeploymentProblem(routingContext, hotReplacementContext.getDeploymentProblem());
                 return;
@@ -32,7 +37,7 @@ public class VertxHotReplacementSetup implements HotReplacementSetup {
         }
         boolean restart = false;
         synchronized (this) {
-            if (nextUpdate < System.currentTimeMillis()) {
+            if (nextUpdate < System.currentTimeMillis() || hotReplacementContext.isTest()) {
                 try {
                     restart = hotReplacementContext.doScan(true);
                 } catch (Exception e) {

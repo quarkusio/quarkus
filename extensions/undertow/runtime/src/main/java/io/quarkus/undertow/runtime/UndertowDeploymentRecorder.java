@@ -1,8 +1,6 @@
 package io.quarkus.undertow.runtime;
 
-import java.io.Closeable;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.security.SecureRandom;
@@ -14,9 +12,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-import javax.net.ssl.SSLContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -28,26 +24,22 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 import org.jboss.logging.Logger;
-import org.wildfly.common.net.Inet;
-import org.xnio.Xnio;
-import org.xnio.XnioWorker;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.ThreadPoolConfig;
-import io.quarkus.runtime.Timing;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.runtime.configuration.ConfigInstantiator;
-import io.undertow.Undertow;
+import io.undertow.httpcore.BufferAllocator;
+import io.undertow.httpcore.StatusCodes;
+import io.undertow.server.DefaultExchangeHandler;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.CachingResourceManager;
@@ -75,7 +67,9 @@ import io.undertow.servlet.handlers.ServletPathMatches;
 import io.undertow.servlet.handlers.ServletRequestContext;
 import io.undertow.servlet.spec.HttpServletRequestImpl;
 import io.undertow.util.AttachmentKey;
-import io.undertow.util.StatusCodes;
+import io.undertow.vertx.VertxHttpExchange;
+import io.vertx.core.Handler;
+import io.vertx.core.http.HttpServerRequest;
 
 /**
  * Provides the runtime methods to bootstrap Undertow. This class is present in the final uber-jar,
@@ -93,7 +87,6 @@ public class UndertowDeploymentRecorder {
         }
     };
 
-    private static volatile Undertow undertow;
     private static final List<HandlerWrapper> hotDeploymentWrappers = new CopyOnWriteArrayList<>();
     private static volatile List<Path> hotDeploymentResourcePaths;
     private static volatile HttpHandler currentRoot = ResponseCodeHandler.HANDLE_404;
@@ -102,34 +95,49 @@ public class UndertowDeploymentRecorder {
     private static final AttachmentKey<InjectableContext.ContextState> REQUEST_CONTEXT = AttachmentKey
             .create(InjectableContext.ContextState.class);
 
+    /**
+     * TODO: configuration
+     */
+    protected static final int BUFFER_SIZE = 8 * 1024;
+
+    //TODO: clean this up
+    private static BufferAllocator ALLOCATOR = new BufferAllocator() {
+        @Override
+        public ByteBuf allocateBuffer() {
+            return PooledByteBufAllocator.DEFAULT.buffer(BUFFER_SIZE);
+        }
+
+        @Override
+        public ByteBuf allocateBuffer(boolean direct) {
+            if (direct) {
+                return PooledByteBufAllocator.DEFAULT.directBuffer(BUFFER_SIZE);
+            } else {
+                return PooledByteBufAllocator.DEFAULT.heapBuffer(BUFFER_SIZE);
+            }
+        }
+
+        @Override
+        public ByteBuf allocateBuffer(int bufferSize) {
+            return PooledByteBufAllocator.DEFAULT.buffer(bufferSize);
+        }
+
+        @Override
+        public ByteBuf allocateBuffer(boolean direct, int bufferSize) {
+            if (direct) {
+                return PooledByteBufAllocator.DEFAULT.directBuffer(bufferSize);
+            } else {
+                return PooledByteBufAllocator.DEFAULT.heapBuffer(bufferSize);
+            }
+        }
+
+        @Override
+        public int getBufferSize() {
+            return BUFFER_SIZE;
+        }
+    };
+
     public static void setHotDeploymentResources(List<Path> resources) {
         hotDeploymentResourcePaths = resources;
-    }
-
-    public static void startServerAfterFailedStart() {
-        try {
-            HttpConfig config = new HttpConfig();
-            ConfigInstantiator.handleObject(config);
-
-            ThreadPoolConfig threadPoolConfig = new ThreadPoolConfig();
-            ConfigInstantiator.handleObject(threadPoolConfig);
-
-            ExecutorService service = ExecutorRecorder.createDevModeExecutorForFailedStart(threadPoolConfig);
-            //we can't really do
-            doServerStart(config, LaunchMode.DEVELOPMENT, config.ssl.toSSLContext(), service);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static void stopDevMode() {
-        //TODO: we need a cleaner abstraction for all this
-        if (undertow != null) {
-            undertow.stop();
-            undertow = null;
-        }
-        hotDeploymentResourcePaths = null;
-        hotDeploymentWrappers.clear();
     }
 
     public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
@@ -169,7 +177,9 @@ public class UndertowDeploymentRecorder {
         d.addWelcomePages("index.html", "index.htm");
 
         d.addServlet(new ServletInfo(ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class).setAsyncSupported(true));
-
+        for (HandlerWrapper i : hotDeploymentWrappers) {
+            d.addOuterHandlerChainWrapper(i);
+        }
         context.addShutdownTask(new Runnable() {
             @Override
             public void run() {
@@ -184,11 +194,6 @@ public class UndertowDeploymentRecorder {
     }
 
     public static SocketAddress getHttpAddress() {
-        for (Undertow.ListenerInfo info : undertow.getListenerInfo()) {
-            if (info.getProtcol().equals("http") && info.getSslContext() == null) {
-                return info.getAddress();
-            }
-        }
         return null;
     }
 
@@ -291,40 +296,10 @@ public class UndertowDeploymentRecorder {
         info.getValue().addInitParameter(name, value);
     }
 
-    public Closeable undertowDevModeCloseTask() {
-        //task that is
-        return new Closeable() {
-            @Override
-            public void close() throws IOException {
-                if (undertow != null) {
-                    undertow.stop();
-                    undertow = null;
-                }
-            }
-        };
-    }
+    public Handler<HttpServerRequest> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
+            DeploymentManager manager,
+            List<HandlerWrapper> wrappers) throws Exception {
 
-    public RuntimeValue<Undertow> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
-            DeploymentManager manager, HttpConfig config,
-            List<HandlerWrapper> wrappers, LaunchMode launchMode) throws Exception {
-
-        if (undertow == null) {
-            SSLContext context = config.ssl.toSSLContext();
-            doServerStart(config, launchMode, context, executorService);
-
-            if (launchMode != LaunchMode.DEVELOPMENT) {
-                //in development mode undertow should not be shut down
-                shutdown.addShutdownTask(new Runnable() {
-                    @Override
-                    public void run() {
-                        XnioWorker worker = undertow.getWorker();
-                        undertow.stop();
-                        worker.shutdown();
-                        undertow = null;
-                    }
-                });
-            }
-        }
         shutdown.addShutdownTask(new Runnable() {
             @Override
             public void run() {
@@ -347,67 +322,18 @@ public class UndertowDeploymentRecorder {
         }
         currentRoot = main;
 
-        Timing.setHttpServer(String.format(
-                "Listening on: " + undertow.getListenerInfo().stream().map(l -> {
-                    String address;
-                    if (l.getAddress() instanceof InetSocketAddress) {
-                        InetSocketAddress inetAddress = (InetSocketAddress) l.getAddress();
-                        address = Inet.toURLString(inetAddress.getAddress(), true) + ":" + inetAddress.getPort();
-                    } else {
-                        address = l.getAddress().toString();
-                    }
-                    return l.getProtcol() + "://" + address;
-                }).collect(Collectors.joining(", "))));
-
-        return new RuntimeValue<>(undertow);
+        DefaultExchangeHandler defaultHandler = new DefaultExchangeHandler(ROOT_HANDLER);
+        return new Handler<HttpServerRequest>() {
+            @Override
+            public void handle(HttpServerRequest event) {
+                VertxHttpExchange exchange = new VertxHttpExchange(event, ALLOCATOR, executorService);
+                defaultHandler.handle(exchange);
+            }
+        };
     }
 
     public static void addHotDeploymentWrapper(HandlerWrapper handlerWrapper) {
         hotDeploymentWrappers.add(handlerWrapper);
-    }
-
-    /**
-     * Used for quarkus:run, where we want undertow to start very early in the process.
-     * <p>
-     * This enables recovery from errors on boot. In a normal boot undertow is one of the last things start, so there would
-     * be no chance to use hot deployment to fix the error. In development mode we start Undertow early, so any error
-     * on boot can be corrected via the hot deployment handler
-     */
-    private static void doServerStart(HttpConfig config, LaunchMode launchMode, SSLContext sslContext, ExecutorService executor)
-            throws ServletException {
-        if (undertow == null) {
-            int port = config.determinePort(launchMode);
-            int sslPort = config.determineSslPort(launchMode);
-            log.debugf("Starting Undertow on port %d", port);
-            HttpHandler rootHandler = new CanonicalPathHandler(ROOT_HANDLER);
-            for (HandlerWrapper i : hotDeploymentWrappers) {
-                rootHandler = i.wrap(rootHandler);
-            }
-
-            XnioWorker.Builder workerBuilder = Xnio.getInstance().createWorkerBuilder()
-                    .setExternalExecutorService(executor);
-
-            Undertow.Builder builder = Undertow.builder()
-                    .addHttpListener(port, config.host)
-                    .setHandler(rootHandler);
-            if (config.ioThreads.isPresent()) {
-                workerBuilder.setWorkerIoThreads(config.ioThreads.getAsInt());
-            } else if (launchMode.isDevOrTest()) {
-                //we limit the number of IO and worker threads in development and testing mode
-                workerBuilder.setWorkerIoThreads(2);
-            } else {
-                workerBuilder.setWorkerIoThreads(Runtime.getRuntime().availableProcessors() * 2);
-            }
-            XnioWorker worker = workerBuilder.build();
-            builder.setWorker(worker);
-            if (sslContext != null) {
-                log.debugf("Starting Undertow HTTPS listener on port %d", sslPort);
-                builder.addHttpsListener(sslPort, config.host, sslContext);
-            }
-            undertow = builder
-                    .build();
-            undertow.start();
-        }
     }
 
     public Supplier<ServletContext> servletContextSupplier() {

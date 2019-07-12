@@ -10,13 +10,12 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-undertow-parent</artifactId>
+    <artifactId>quarkus-http-parent</artifactId>
     <name>Quarkus - Undertow</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>
         <module>runtime</module>
-        <module>common</module>
     </modules>
 
 </project>

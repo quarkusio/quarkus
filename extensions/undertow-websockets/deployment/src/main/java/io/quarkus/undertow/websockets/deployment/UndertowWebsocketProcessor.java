@@ -26,13 +26,13 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.undertow.deployment.ServletContextAttributeBuildItem;
-import io.quarkus.undertow.deployment.UndertowBuildItem;
 import io.quarkus.undertow.websockets.runtime.UndertowWebsocketRecorder;
 import io.undertow.websockets.jsr.JsrWebSocketFilter;
 import io.undertow.websockets.jsr.UndertowContainerProvider;
@@ -147,8 +147,8 @@ public class UndertowWebsocketProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem setupWorker(UndertowWebsocketRecorder recorder, UndertowBuildItem undertow) {
-        recorder.setupWorker(undertow.getUndertow());
+    ServiceStartBuildItem setupWorker(UndertowWebsocketRecorder recorder, ExecutorBuildItem exec) {
+        recorder.setupWorker(exec.getExecutorProxy());
         return new ServiceStartBuildItem("Websockets");
     }
 

@@ -1,4 +1,4 @@
-package io.quarkus.undertow.test;
+package io.quarkus.vertx.web;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.core.IsNull.nullValue;
@@ -11,12 +11,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class CORSDisabledServletTestCase {
+public class CORSDisabledHandlerTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestServlet.class));
+                    .addClasses(TestRoute.class));
 
     @Test
     @DisplayName("Doesn't return CORS headers if not configured")

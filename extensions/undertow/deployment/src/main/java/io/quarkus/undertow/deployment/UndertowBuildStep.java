@@ -90,29 +90,25 @@ import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
-import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.undertow.runtime.HttpBuildConfig;
-import io.quarkus.undertow.runtime.HttpConfig;
 import io.quarkus.undertow.runtime.HttpSessionContext;
 import io.quarkus.undertow.runtime.ServletProducer;
 import io.quarkus.undertow.runtime.ServletSecurityInfoProxy;
 import io.quarkus.undertow.runtime.ServletSecurityInfoSubstitution;
 import io.quarkus.undertow.runtime.UndertowDeploymentRecorder;
 import io.quarkus.undertow.runtime.UndertowHandlersConfServletExtension;
-import io.quarkus.undertow.runtime.filters.CORSRecorder;
-import io.undertow.Undertow;
+import io.quarkus.vertx.web.deployment.DefaultRouteBuildItem;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.HttpMethodSecurityInfo;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
+import io.vertx.core.Handler;
+import io.vertx.core.http.HttpServerRequest;
 
 //TODO: break this up, it is getting too big
 public class UndertowBuildStep {
@@ -136,27 +132,14 @@ public class UndertowBuildStep {
             ServletDeploymentManagerBuildItem servletDeploymentManagerBuildItem,
             List<HttpHandlerWrapperBuildItem> wrappers,
             ShutdownContextBuildItem shutdown,
-            Consumer<UndertowBuildItem> undertowProducer,
-            LaunchModeBuildItem launchMode,
-            ExecutorBuildItem executorBuildItem,
-            CORSRecorder corsRecorder,
-            HttpConfig config) throws Exception {
-        corsRecorder.setHttpConfig(config);
-        RuntimeValue<Undertow> ut = recorder.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
+            Consumer<DefaultRouteBuildItem> undertowProducer,
+            ExecutorBuildItem executorBuildItem) throws Exception {
+        Handler<HttpServerRequest> ut = recorder.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
                 servletDeploymentManagerBuildItem.getDeploymentManager(),
-                config, wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()),
-                launchMode.getLaunchMode());
-        undertowProducer.accept(new UndertowBuildItem(ut));
-        return new ServiceStartBuildItem("undertow");
-    }
+                wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()));
 
-    @BuildStep()
-    @Record(STATIC_INIT)
-    public void buildCorsFilter(CORSRecorder corsRecorder, HttpBuildConfig buildConfig,
-            BuildProducer<ServletExtensionBuildItem> extensionProducer) {
-        if (buildConfig.corsEnabled) {
-            extensionProducer.produce(new ServletExtensionBuildItem(corsRecorder.buildCORSExtension()));
-        }
+        undertowProducer.accept(new DefaultRouteBuildItem(ut));
+        return new ServiceStartBuildItem("undertow");
     }
 
     @BuildStep
@@ -171,25 +154,6 @@ public class UndertowBuildStep {
             }
         }));
         listeners.produce(new ListenerBuildItem(HttpSessionContext.class.getName()));
-    }
-
-    @BuildStep
-    SubstrateConfigBuildItem config() {
-        return SubstrateConfigBuildItem.builder()
-                .addRuntimeInitializedClass("io.undertow.server.protocol.ajp.AjpServerResponseConduit")
-                .addRuntimeInitializedClass("io.undertow.server.protocol.ajp.AjpServerRequestConduit")
-                .build();
-    }
-
-    @BuildStep
-    void runtimeReinit(BuildProducer<RuntimeReinitializedClassBuildItem> producer) {
-        producer.produce(new RuntimeReinitializedClassBuildItem("org.wildfly.common.net.HostName"));
-        producer.produce(new RuntimeReinitializedClassBuildItem("org.wildfly.common.os.Process"));
-    }
-
-    @BuildStep
-    public void kubernetes(HttpConfig config, BuildProducer<KubernetesPortBuildItem> portProducer) {
-        portProducer.produce(new KubernetesPortBuildItem(config.port, "http"));
     }
 
     /**
@@ -285,8 +249,7 @@ public class UndertowBuildStep {
         ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(ServletSecurityInfo.class,
                 ServletSecurityInfoProxy.class, ServletSecurityInfoSubstitution.class);
         substitutions.produce(new ObjectSubstitutionBuildItem(holder));
-        reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, DefaultServlet.class.getName(),
-                "io.undertow.server.protocol.http.HttpRequestParser$$generated"));
+        reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, DefaultServlet.class.getName()));
 
         WebMetaData webMetaData = webMetadataBuildItem.getWebMetaData();
         final IndexView index = combinedIndexBuildItem.getIndex();

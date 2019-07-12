@@ -43,7 +43,7 @@ jobs:
     displayName: 'Maven Build'
     inputs:
       goals: 'install'
-      options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-dynamodb -Ddynamodb-local.port=8000 -Dnative-image.xmx=6g -Dnative -Dno-format'
+      options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-dynamodb -Ddynamodb-local.port=8000 -Dnative-image.xmx=6g  -Dnative -Dno-format'
 
 - job: Windows_Build
   timeoutInMinutes: 60

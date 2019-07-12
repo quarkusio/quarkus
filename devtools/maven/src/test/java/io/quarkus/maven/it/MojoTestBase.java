@@ -276,7 +276,7 @@ public class MojoTestBase {
         assertThat(logs.contains(infoLogLevel)).isTrue();
         Predicate<String> datePattern = Pattern.compile("\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2},\\d{3}\\s").asPredicate();
         assertThat(datePattern.test(logs)).isTrue();
-        assertThat(logs.contains("features: [cdi, resteasy, undertow-websockets]")).isTrue();
+        assertThat(logs.contains("features: [cdi, resteasy, undertow-websockets, vertx, vertx-web]")).isTrue();
         assertThat(logs.contains("JBoss Threads version")).isFalse();
     }
 }

@@ -1,19 +1,19 @@
 package io.quarkus.security.test;
 
 import static io.undertow.UndertowMessages.MESSAGES;
-import static io.undertow.util.Headers.AUTHORIZATION;
-import static io.undertow.util.Headers.BASIC;
-import static io.undertow.util.Headers.WWW_AUTHENTICATE;
-import static io.undertow.util.StatusCodes.UNAUTHORIZED;
+import static io.undertow.httpcore.HttpHeaderNames.AUTHORIZATION;
+import static io.undertow.httpcore.HttpHeaderNames.BASIC;
+import static io.undertow.httpcore.HttpHeaderNames.WWW_AUTHENTICATE;
+import static io.undertow.httpcore.StatusCodes.UNAUTHORIZED;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 
 import org.jboss.logging.Logger;
 
+import io.netty.buffer.ByteBuf;
 import io.undertow.UndertowLogger;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
@@ -37,7 +37,7 @@ public class CustomAuth implements AuthenticationMechanism {
 
     @Override
     public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
-        List<String> authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
+        List<String> authHeaders = exchange.getRequestHeaders(AUTHORIZATION);
         log.info("CustomAuth, authHeaders: " + authHeaders);
         if (authHeaders != null) {
             for (String current : authHeaders) {
@@ -46,10 +46,9 @@ public class CustomAuth implements AuthenticationMechanism {
                     String base64Challenge = current.substring(PREFIX_LENGTH);
                     String plainChallenge = null;
                     try {
-                        ByteBuffer decode = FlexBase64.decode(base64Challenge);
+                        ByteBuf decode = FlexBase64.decode(base64Challenge);
 
-                        plainChallenge = new String(decode.array(), decode.arrayOffset(), decode.limit(),
-                                StandardCharsets.UTF_8);
+                        plainChallenge = decode.toString(StandardCharsets.UTF_8);
                         UndertowLogger.SECURITY_LOGGER.infof("Found basic auth header %s (decoded using charset %s) in %s",
                                 plainChallenge, StandardCharsets.UTF_8, exchange);
                     } catch (IOException e) {
@@ -94,7 +93,7 @@ public class CustomAuth implements AuthenticationMechanism {
 
     @Override
     public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
-        exchange.getResponseHeaders().add(WWW_AUTHENTICATE, "BASIC realm=CUSTOM");
+        exchange.addResponseHeader(WWW_AUTHENTICATE, "BASIC realm=CUSTOM");
         UndertowLogger.SECURITY_LOGGER.infof("Sending basic auth challenge for %s", exchange);
         return new ChallengeResult(true, UNAUTHORIZED);
     }

@@ -35,16 +35,8 @@
             <artifactId>svm</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.undertow</groupId>
-            <artifactId>undertow-servlet</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.xnio</groupId>
-            <artifactId>xnio-nio</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.xnio</groupId>
-            <artifactId>xnio-api</artifactId>
+            <groupId>io.quarkus.http</groupId>
+            <artifactId>quarkus-http-servlet</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

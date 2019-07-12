@@ -1,4 +1,4 @@
-package io.quarkus.undertow.runtime.filters;
+package io.quarkus.vertx.web.runtime.cors;
 
 import java.util.Optional;
 

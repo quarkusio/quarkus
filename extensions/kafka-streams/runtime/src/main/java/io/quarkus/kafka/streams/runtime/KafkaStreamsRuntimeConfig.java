@@ -1,5 +1,7 @@
 package io.quarkus.kafka.streams.runtime;
 
+import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -19,7 +21,7 @@ public class KafkaStreamsRuntimeConfig {
      * A comma-separated list of host:port pairs identifying the Kafka bootstrap server(s)
      */
     @ConfigItem(defaultValue = "localhost:9012")
-    public String bootstrapServers;
+    public List<InetSocketAddress> bootstrapServers;
 
     /**
      * A unique identifier of this application instance, typically in the form host:port.

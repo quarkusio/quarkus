@@ -1,9 +1,11 @@
 package io.quarkus.kafka.streams.runtime;
 
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -12,6 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
@@ -69,14 +72,15 @@ public class KafkaStreamsTopologyManager {
     /**
      * Returns all properties to be passed to Kafka Streams.
      */
-    private static Properties getStreamsProperties(Properties properties, KafkaStreamsRuntimeConfig runtimeConfig) {
+    private static Properties getStreamsProperties(Properties properties, String bootstrapServersConfig,
+            KafkaStreamsRuntimeConfig runtimeConfig) {
         Properties streamsProperties = new Properties();
 
         // build-time options
         streamsProperties.putAll(properties);
 
         // add runtime options
-        streamsProperties.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, runtimeConfig.bootstrapServers);
+        streamsProperties.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServersConfig);
         streamsProperties.put(StreamsConfig.APPLICATION_ID_CONFIG, runtimeConfig.applicationId);
 
         if (runtimeConfig.applicationServer.isPresent()) {
@@ -86,12 +90,20 @@ public class KafkaStreamsTopologyManager {
         return streamsProperties;
     }
 
+    private static String asString(List<InetSocketAddress> addresses) {
+        return addresses.stream()
+                .map(InetSocketAddress::toString)
+                .collect(Collectors.joining(","));
+    }
+
     void onStart(@Observes StartupEvent ev) {
         if (executor == null) {
             return;
         }
 
-        Properties streamsProperties = getStreamsProperties(properties, runtimeConfig);
+        String bootstrapServersConfig = asString(runtimeConfig.bootstrapServers);
+
+        Properties streamsProperties = getStreamsProperties(properties, bootstrapServersConfig, runtimeConfig);
 
         Set<String> topicsToAwait = runtimeConfig.topics
                 .map(n -> n.split(","))
@@ -104,7 +116,7 @@ public class KafkaStreamsTopologyManager {
 
         executor.execute(() -> {
             try {
-                waitForTopicsToBeCreated(topicsToAwait);
+                waitForTopicsToBeCreated(topicsToAwait, bootstrapServersConfig);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return;
@@ -127,9 +139,10 @@ public class KafkaStreamsTopologyManager {
         return streams;
     }
 
-    private void waitForTopicsToBeCreated(Set<String> topicsToAwait) throws InterruptedException {
+    private void waitForTopicsToBeCreated(Set<String> topicsToAwait, String bootstrapServersConfig)
+            throws InterruptedException {
         Map<String, Object> config = new HashMap<>();
-        config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, runtimeConfig.bootstrapServers);
+        config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServersConfig);
 
         try (AdminClient adminClient = AdminClient.create(config)) {
             while (true) {

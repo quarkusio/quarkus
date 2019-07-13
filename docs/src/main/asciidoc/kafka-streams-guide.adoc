@@ -1099,10 +1099,11 @@ http --follow 2af13fe516a9:8080/weather-stations/data/1
 
 == Running Native
 
-To run the `producer` and `aggregator` applications as native binaries via GraalVM,
-the Maven builds can be run using the `native` profile.
+The Quarkus extension for Kafka Streams enables the execution of stream processing applications
+natively via GraalVM without further configuration.
 
-Then build the two applications like so:
+To run both the `producer` and `aggregator` applications in native mode,
+the Maven builds can be executed using the `native` profile:
 
 [source, shell]
 ----

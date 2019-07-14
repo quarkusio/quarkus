@@ -11,7 +11,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class HttpBuildConfig {
 
     /**
-     * The CORS config
+     * Enable the CORS filter.
      */
     @ConfigItem(name = "cors")
     public boolean corsEnabled = false;

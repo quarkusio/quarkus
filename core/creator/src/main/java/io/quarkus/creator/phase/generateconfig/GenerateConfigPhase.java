@@ -118,7 +118,6 @@ public class GenerateConfigPhase implements AppCreationPhase<GenerateConfigPhase
             runnerClassLoader = new URLClassLoader(cpUrls.toArray(new URL[cpUrls.size()]), getClass().getClassLoader());
 
             ClassLoader old = Thread.currentThread().getContextClassLoader();
-            BuildResult result;
             try {
                 Thread.currentThread().setContextClassLoader(runnerClassLoader);
 

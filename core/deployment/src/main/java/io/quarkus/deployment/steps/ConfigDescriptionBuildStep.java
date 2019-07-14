@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.BuildTimeConfigurationBuildItem;
+import io.quarkus.deployment.builditem.BuildTimeRunTimeFixedConfigurationBuildItem;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationBuildItem;
 import io.quarkus.deployment.configuration.ConfigDefinition;
@@ -20,7 +21,8 @@ public class ConfigDescriptionBuildStep {
     @BuildStep
     List<ConfigDescriptionBuildItem> createConfigDescriptions(
             RunTimeConfigurationBuildItem runtimeConfig,
-            BuildTimeConfigurationBuildItem buildTimeConfig) throws Exception {
+            BuildTimeConfigurationBuildItem buildTimeConfig,
+            BuildTimeRunTimeFixedConfigurationBuildItem buildTimeRuntimeConfig) throws Exception {
         Properties javadoc = new Properties();
         Enumeration<URL> resources = Thread.currentThread().getContextClassLoader()
                 .getResources("META-INF/quarkus-javadoc.properties");
@@ -32,6 +34,7 @@ public class ConfigDescriptionBuildStep {
         List<ConfigDescriptionBuildItem> ret = new ArrayList<>();
         processConfig(runtimeConfig.getConfigDefinition(), ret, javadoc);
         processConfig(buildTimeConfig.getConfigDefinition(), ret, javadoc);
+        processConfig(buildTimeRuntimeConfig.getConfigDefinition(), ret, javadoc);
         return ret;
     }
 

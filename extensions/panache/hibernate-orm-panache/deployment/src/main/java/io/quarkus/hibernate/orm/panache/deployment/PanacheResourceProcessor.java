@@ -25,6 +25,10 @@ import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
+import io.quarkus.panache.common.deployment.EntityField;
+import io.quarkus.panache.common.deployment.EntityModel;
+import io.quarkus.panache.common.deployment.MetamodelInfo;
+import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
 
 public final class PanacheResourceProcessor {
 
@@ -100,8 +104,9 @@ public final class PanacheResourceProcessor {
             transformers.produce(new BytecodeTransformerBuildItem(modelClass, modelEnhancer));
         }
 
-        if (!modelEnhancer.entities.isEmpty()) {
-            PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelEnhancer.entities);
+        MetamodelInfo<EntityModel<EntityField>> modelInfo = modelEnhancer.getModelInfo();
+        if (modelInfo.hasEntities()) {
+            PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
             for (ClassInfo classInfo : applicationIndex.getIndex().getKnownClasses()) {
                 String className = classInfo.name().toString();
                 if (!modelClasses.contains(className)) {

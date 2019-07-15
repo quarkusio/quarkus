@@ -1,12 +1,10 @@
-package io.quarkus.hibernate.orm.panache.deployment;
-
-import io.quarkus.panache.common.deployment.JavaBeanUtil;
+package io.quarkus.panache.common.deployment;
 
 public class EntityField {
 
-    final String name;
-    final String descriptor;
-    String signature;
+    public final String name;
+    public final String descriptor;
+    public String signature;
 
     public EntityField(String name, String descriptor) {
         this.name = name;

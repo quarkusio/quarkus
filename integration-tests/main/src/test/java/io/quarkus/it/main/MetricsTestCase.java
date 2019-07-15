@@ -3,6 +3,8 @@ package io.quarkus.it.main;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -10,63 +12,78 @@ import io.restassured.RestAssured;
 
 @QuarkusTest
 public class MetricsTestCase {
-    private static final String metricsPrefix = "application:io_quarkus_it_metrics_";
+    private static final String metricsPrefix = "application_io_quarkus_it_metrics_";
 
     @Test
     public void testCounter() {
+        assertMetricExactValue(metricsPrefix + "MetricsResource_a_counted_resource_total", "0.0");
         invokeCounter();
-        assertMetricExactValue(metricsPrefix + "metrics_resource_a_counted_resource", "1.0");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_a_counted_resource_total", "1.0");
     }
 
     @Test
     public void testGauge() {
         invokeGauge();
-        assertMetricExactValue(metricsPrefix + "metrics_resource_gauge", "42.0");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_gauge", "42.0");
+    }
+
+    @Test
+    public void testConcurrentGauge() throws InterruptedException {
+        try {
+            RestAssured.when().get("/metricsresource/cgauge");
+            RestAssured.when().get("/metricsresource/cgauge");
+            RestAssured.when().get("/metricsresource/cgauge");
+            RestAssured.when().get("/metricsresource/cgauge");
+            TimeUnit.SECONDS.sleep(2);
+            assertMetricExactValue(metricsPrefix + "MetricsResource_cgauge_current", "4.0");
+        } finally {
+            RestAssured.when().get("/metricsresource/cgauge_finish");
+        }
     }
 
     @Test
     public void testMeter() {
         invokeMeter();
-        assertMetricExactValue(metricsPrefix + "metrics_resource_meter_total", "1.0");
-        assertMetricExists(metricsPrefix + "metrics_resource_meter_rate_per_second");
-        assertMetricExists(metricsPrefix + "metrics_resource_meter_one_min_rate_per_second");
-        assertMetricExists(metricsPrefix + "metrics_resource_meter_five_min_rate_per_second");
-        assertMetricExists(metricsPrefix + "metrics_resource_meter_fifteen_min_rate_per_second");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_meter_total", "1.0");
+        assertMetricExists(metricsPrefix + "MetricsResource_meter_rate_per_second");
+        assertMetricExists(metricsPrefix + "MetricsResource_meter_one_min_rate_per_second");
+        assertMetricExists(metricsPrefix + "MetricsResource_meter_five_min_rate_per_second");
+        assertMetricExists(metricsPrefix + "MetricsResource_meter_fifteen_min_rate_per_second");
     }
 
     @Test
     public void testTimer() {
         invokeTimer();
-        assertMetricExactValue(metricsPrefix + "metrics_resource_timer_metric_seconds_count", "1.0");
-        assertMetricExists(metricsPrefix + "metrics_resource_timer_metric_seconds{quantile=\"0.5\"}");
-        assertMetricExists(metricsPrefix + "metrics_resource_timer_metric_seconds{quantile=\"0.75\"}");
-        assertMetricExists(metricsPrefix + "metrics_resource_timer_metric_seconds{quantile=\"0.95\"}");
-        assertMetricExists(metricsPrefix + "metrics_resource_timer_metric_seconds{quantile=\"0.98\"}");
-        assertMetricExists(metricsPrefix + "metrics_resource_timer_metric_seconds{quantile=\"0.99\"}");
-        assertMetricExists(metricsPrefix + "metrics_resource_timer_metric_seconds{quantile=\"0.999\"}");
-        assertMetricExists(metricsPrefix + "metrics_resource_timer_metric_one_min_rate_per_second");
-        assertMetricExists(metricsPrefix + "metrics_resource_timer_metric_five_min_rate_per_second");
-        assertMetricExists(metricsPrefix + "metrics_resource_timer_metric_fifteen_min_rate_per_second");
-        assertMetricExists(metricsPrefix + "metrics_resource_timer_metric_min_seconds");
-        assertMetricExists(metricsPrefix + "metrics_resource_timer_metric_max_seconds");
-        assertMetricExists(metricsPrefix + "metrics_resource_timer_metric_mean_seconds");
-        assertMetricExists(metricsPrefix + "metrics_resource_timer_metric_stddev_seconds");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_timer_metric_seconds_count", "1.0");
+        assertMetricExists(metricsPrefix + "MetricsResource_timer_metric_seconds{quantile=\"0.5\"}");
+        assertMetricExists(metricsPrefix + "MetricsResource_timer_metric_seconds{quantile=\"0.75\"}");
+        assertMetricExists(metricsPrefix + "MetricsResource_timer_metric_seconds{quantile=\"0.95\"}");
+        assertMetricExists(metricsPrefix + "MetricsResource_timer_metric_seconds{quantile=\"0.98\"}");
+        assertMetricExists(metricsPrefix + "MetricsResource_timer_metric_seconds{quantile=\"0.99\"}");
+        assertMetricExists(metricsPrefix + "MetricsResource_timer_metric_seconds{quantile=\"0.999\"}");
+        assertMetricExists(metricsPrefix + "MetricsResource_timer_metric_one_min_rate_per_second");
+        assertMetricExists(metricsPrefix + "MetricsResource_timer_metric_five_min_rate_per_second");
+        assertMetricExists(metricsPrefix + "MetricsResource_timer_metric_fifteen_min_rate_per_second");
+        assertMetricExists(metricsPrefix + "MetricsResource_timer_metric_min_seconds");
+        assertMetricExists(metricsPrefix + "MetricsResource_timer_metric_max_seconds");
+        assertMetricExists(metricsPrefix + "MetricsResource_timer_metric_mean_seconds");
+        assertMetricExists(metricsPrefix + "MetricsResource_timer_metric_stddev_seconds");
     }
 
     @Test
     public void testHistogram() {
         invokeHistogram();
-        assertMetricExactValue(metricsPrefix + "metrics_resource_histogram_count", "1.0");
-        assertMetricExactValue(metricsPrefix + "metrics_resource_histogram_min", "42.0");
-        assertMetricExactValue(metricsPrefix + "metrics_resource_histogram_max", "42.0");
-        assertMetricExactValue(metricsPrefix + "metrics_resource_histogram_mean", "42.0");
-        assertMetricExactValue(metricsPrefix + "metrics_resource_histogram_stddev", "0.0");
-        assertMetricExactValue(metricsPrefix + "metrics_resource_histogram{quantile=\"0.5\"}", "42.0");
-        assertMetricExactValue(metricsPrefix + "metrics_resource_histogram{quantile=\"0.75\"}", "42.0");
-        assertMetricExactValue(metricsPrefix + "metrics_resource_histogram{quantile=\"0.95\"}", "42.0");
-        assertMetricExactValue(metricsPrefix + "metrics_resource_histogram{quantile=\"0.98\"}", "42.0");
-        assertMetricExactValue(metricsPrefix + "metrics_resource_histogram{quantile=\"0.99\"}", "42.0");
-        assertMetricExactValue(metricsPrefix + "metrics_resource_histogram{quantile=\"0.999\"}", "42.0");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_histogram_count", "1.0");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_histogram_min", "42.0");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_histogram_max", "42.0");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_histogram_mean", "42.0");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_histogram_stddev", "0.0");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_histogram{quantile=\"0.5\"}", "42.0");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_histogram{quantile=\"0.75\"}", "42.0");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_histogram{quantile=\"0.95\"}", "42.0");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_histogram{quantile=\"0.98\"}", "42.0");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_histogram{quantile=\"0.99\"}", "42.0");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_histogram{quantile=\"0.999\"}", "42.0");
     }
 
     @Test
@@ -79,13 +96,13 @@ public class MetricsTestCase {
     @Test
     public void testMetricWithAbsoluteName() {
         invokeCounterWithAbsoluteName();
-        assertMetricExactValue("application:counter_absolute", "1.0");
+        assertMetricExactValue("application_counter_absolute_total", "1.0");
     }
 
     @Test
     public void testMetricWithCustomTags() {
         invokeCounterWithTags();
-        assertMetricExactValue(metricsPrefix + "metrics_resource_counter_with_tags{foo=\"bar\"}", "1.0");
+        assertMetricExactValue(metricsPrefix + "MetricsResource_counter_with_tags_total{foo=\"bar\"}", "1.0");
     }
 
     @Test
@@ -100,27 +117,27 @@ public class MetricsTestCase {
     public void testBaseMetrics() {
         RestAssured.when().get("/metrics/base").then().statusCode(200)
                 // the spaces at the end are there on purpose to make sure the metrics are named exactly this way
-                .body(containsString("base:classloader_total_loaded_class_count "))
-                .body(containsString("base:cpu_system_load_average "))
-                .body(containsString("base:thread_count "))
-                .body(containsString("base:classloader_current_loaded_class_count "))
-                .body(containsString("base:jvm_uptime_seconds "))
-                .body(containsString("base:thread_max_count "))
-                .body(containsString("base:memory_committed_heap_bytes "))
-                .body(containsString("base:cpu_available_processors "))
-                .body(containsString("base:thread_daemon_count "))
-                .body(containsString("base:classloader_total_unloaded_class_count "))
-                .body(containsString("base:memory_max_heap_bytes "))
-                .body(containsString("base:memory_used_heap_bytes "));
+                .body(containsString("base_classloader_loadedClasses_total "))
+                .body(containsString("base_cpu_systemLoadAverage "))
+                .body(containsString("base_thread_count_total "))
+                .body(containsString("base_classloader_loadedClasses_count "))
+                .body(containsString("base_jvm_uptime_seconds "))
+                .body(containsString("base_thread_max_count_total "))
+                .body(containsString("base_memory_committedHeap_bytes "))
+                .body(containsString("base_cpu_availableProcessors "))
+                .body(containsString("base_thread_daemon_count_total "))
+                .body(containsString("base_classloader_unloadedClasses_total "))
+                .body(containsString("base_memory_maxHeap_bytes "))
+                .body(containsString("base_memory_usedHeap_bytes "));
     }
 
     @Test
     public void testVendorMetrics() {
         RestAssured.when().get("/metrics/vendor").then().statusCode(200)
                 // the spaces at the end are there on purpose to make sure the metrics are named exactly this way
-                .body(containsString("vendor:memory_committed_non_heap_bytes "))
-                .body(containsString("vendor:memory_used_non_heap_bytes "))
-                .body(containsString("vendor:memory_max_non_heap_bytes "));
+                .body(containsString("vendor_memory_committedNonHeap_bytes "))
+                .body(containsString("vendor_memory_usedNonHeap_bytes "))
+                .body(containsString("vendor_memory_maxNonHeap_bytes "));
     }
 
     /**
@@ -150,6 +167,11 @@ public class MetricsTestCase {
     public void invokeGauge() {
         RestAssured.when().get("/metricsresource/gauge").then()
                 .body(is("42"));
+    }
+
+    public void invokeConcurrentGauge() {
+        RestAssured.when().get("/metricsresource/cgauge").then()
+                .body(is("OK"));
     }
 
     public void invokeMeter() {

@@ -180,6 +180,24 @@ Now, the application should work as expected:
 
 When working with containers, the idea is to bundle both the SunEC library and the certificates in the container and to point your binary to them using the system properties mentioned above.
 
+You can for example modify your `Dockerfile.native` as following to allow copying the required lib in your final image:
+
+[source, subs=attributes+]
+----
+FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-version} as nativebuilder
+RUN mkdir -p /tmp/ssl-libs/lib \
+  && cp /opt/graalvm/jre/lib/security/cacerts /tmp/ssl-libs \
+  && cp /opt/graalvm/jre/lib/amd64/libsunec.so /tmp/ssl-libs/lib/ 
+
+FROM registry.access.redhat.com/ubi8/ubi-minimal
+WORKDIR /work/
+COPY target/*-runner /work/application
+COPY --from=nativebuilder /tmp/ssl-libs/ /work/
+RUN chmod 775 /work
+EXPOSE 8080
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0", "-Djava.library.path=/work/lib", "-Djavax.net.ssl.trustStore=/work/cacerts"]
+----
+
 [TIP]
 ====
 The root certificates file of GraalVM might not be totally up to date.

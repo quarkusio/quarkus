@@ -11,6 +11,7 @@ import io.quarkus.arc.processor.BeanProcessor;
 import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.ContextRegistrar;
 import io.quarkus.arc.processor.InjectionPointsTransformer;
+import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.arc.processor.ResourceOutput;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -50,6 +51,7 @@ public class ArcTestContainer implements TestRule {
         private final List<Class<? extends Annotation>> resourceAnnotations;
         private final List<BeanRegistrar> beanRegistrars;
         private final List<ContextRegistrar> contextRegistrars;
+        private final List<InterceptorBindingRegistrar> interceptorBindingRegistrars;
         private final List<AnnotationsTransformer> annotationsTransformers;
         private final List<InjectionPointsTransformer> injectionsPointsTransformers;
         private final List<BeanDeploymentValidator> beanDeploymentValidators;
@@ -63,6 +65,7 @@ public class ArcTestContainer implements TestRule {
             resourceAnnotations = new ArrayList<>();
             beanRegistrars = new ArrayList<>();
             contextRegistrars = new ArrayList<>();
+            interceptorBindingRegistrars = new ArrayList<>();
             annotationsTransformers = new ArrayList<>();
             injectionsPointsTransformers = new ArrayList<>();
             beanDeploymentValidators = new ArrayList<>();
@@ -105,6 +108,11 @@ public class ArcTestContainer implements TestRule {
             return this;
         }
 
+        public Builder interceptorBindingRegistrars(InterceptorBindingRegistrar... registrars) {
+            Collections.addAll(this.interceptorBindingRegistrars, registrars);
+            return this;
+        }
+
         public Builder beanDeploymentValidators(BeanDeploymentValidator... validators) {
             Collections.addAll(this.beanDeploymentValidators, validators);
             return this;
@@ -127,7 +135,7 @@ public class ArcTestContainer implements TestRule {
 
         public ArcTestContainer build() {
             return new ArcTestContainer(resourceReferenceProviders, beanClasses, resourceAnnotations, beanRegistrars,
-                    contextRegistrars, annotationsTransformers, injectionsPointsTransformers,
+                    contextRegistrars, interceptorBindingRegistrars, annotationsTransformers, injectionsPointsTransformers,
                     beanDeploymentValidators, shouldFail, removeUnusedBeans, exclusions);
         }
 
@@ -142,6 +150,8 @@ public class ArcTestContainer implements TestRule {
     private final List<BeanRegistrar> beanRegistrars;
 
     private final List<ContextRegistrar> contextRegistrars;
+
+    List<InterceptorBindingRegistrar> bindingRegistrars;
 
     private final List<AnnotationsTransformer> annotationsTransformers;
 
@@ -159,7 +169,7 @@ public class ArcTestContainer implements TestRule {
 
     public ArcTestContainer(Class<?>... beanClasses) {
         this(Collections.emptyList(), Arrays.asList(beanClasses), Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyList(),
+                Collections.emptyList(), Collections.emptyList(),
                 Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), false, false,
                 Collections.emptyList());
     }
@@ -167,6 +177,7 @@ public class ArcTestContainer implements TestRule {
     public ArcTestContainer(List<Class<?>> resourceReferenceProviders, List<Class<?>> beanClasses,
             List<Class<? extends Annotation>> resourceAnnotations,
             List<BeanRegistrar> beanRegistrars, List<ContextRegistrar> contextRegistrars,
+            List<InterceptorBindingRegistrar> bindingRegistrars,
             List<AnnotationsTransformer> annotationsTransformers, List<InjectionPointsTransformer> ipTransformers,
             List<BeanDeploymentValidator> beanDeploymentValidators, boolean shouldFail, boolean removeUnusedBeans,
             List<Predicate<BeanInfo>> exclusions) {
@@ -175,6 +186,7 @@ public class ArcTestContainer implements TestRule {
         this.resourceAnnotations = resourceAnnotations;
         this.beanRegistrars = beanRegistrars;
         this.contextRegistrars = contextRegistrars;
+        this.bindingRegistrars = bindingRegistrars;
         this.annotationsTransformers = annotationsTransformers;
         this.injectionPointsTransformers = ipTransformers;
         this.beanDeploymentValidators = beanDeploymentValidators;
@@ -269,6 +281,9 @@ public class ArcTestContainer implements TestRule {
             }
             for (ContextRegistrar registrar : contextRegistrars) {
                 beanProcessorBuilder.addContextRegistrar(registrar);
+            }
+            for (InterceptorBindingRegistrar registrar : bindingRegistrars) {
+                beanProcessorBuilder.addInterceptorbindingRegistrar(registrar);
             }
             for (AnnotationsTransformer annotationsTransformer : annotationsTransformers) {
                 beanProcessorBuilder.addAnnotationTransformer(annotationsTransformer);

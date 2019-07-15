@@ -86,7 +86,7 @@ public class BeanDeployment {
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             List<AnnotationsTransformer> annotationTransformers) {
         this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList(),
-                null, false, null, Collections.emptyMap());
+                null, false, null, Collections.emptyMap(), Collections.emptyList());
     }
 
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
@@ -94,7 +94,8 @@ public class BeanDeployment {
             List<InjectionPointsTransformer> injectionPointsTransformers,
             Collection<DotName> resourceAnnotations,
             BuildContextImpl buildContext, boolean removeUnusedBeans, List<Predicate<BeanInfo>> unusedExclusions,
-            Map<DotName, Collection<AnnotationInstance>> additionalStereotypes) {
+            Map<DotName, Collection<AnnotationInstance>> additionalStereotypes,
+            List<InterceptorBindingRegistrar> bindingRegistrars) {
         this.buildContext = buildContext;
         Set<BeanDefiningAnnotation> beanDefiningAnnotations = new HashSet<>();
         if (additionalBeanDefiningAnnotations != null) {
@@ -118,6 +119,17 @@ public class BeanDeployment {
         buildContextPut(Key.QUALIFIERS.asString(), Collections.unmodifiableMap(qualifiers));
 
         this.interceptorBindings = findInterceptorBindings(index);
+        for (InterceptorBindingRegistrar registrar : bindingRegistrars) {
+            for (DotName dotName : registrar.registerAdditionalBindings()) {
+                ClassInfo classInfo = index.getClassByName(dotName);
+                if (classInfo != null) {
+                    interceptorBindings.put(dotName, classInfo);
+                } else {
+                    throw new RuntimeException("An attempt was made to turn class " + dotName + " into an interceptor " +
+                            "binding but the class was not found in Jandex index.");
+                }
+            }
+        }
         buildContextPut(Key.INTERCEPTOR_BINDINGS.asString(), Collections.unmodifiableMap(interceptorBindings));
 
         this.stereotypes = findStereotypes(index, interceptorBindings, beanDefiningAnnotations, customContexts,

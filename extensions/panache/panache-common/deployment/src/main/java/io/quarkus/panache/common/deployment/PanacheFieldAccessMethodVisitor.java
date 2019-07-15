@@ -1,27 +1,23 @@
-package io.quarkus.hibernate.orm.panache.deployment;
-
-import java.util.Map;
+package io.quarkus.panache.common.deployment;
 
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import io.quarkus.panache.common.deployment.JavaBeanUtil;
-
-class PanacheFieldAccessMethodVisitor extends MethodVisitor {
+public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
 
     private final String methodName;
-    private Map<String, EntityModel> entities;
     private String owner;
     private String methodDescriptor;
+    private MetamodelInfo<?> modelInfo;
 
-    PanacheFieldAccessMethodVisitor(MethodVisitor methodVisitor, String owner,
+    public PanacheFieldAccessMethodVisitor(MethodVisitor methodVisitor, String owner,
             String methodName, String methodDescriptor,
-            Map<String, EntityModel> entities) {
+            MetamodelInfo<?> modelInfo) {
         super(Opcodes.ASM7, methodVisitor);
         this.owner = owner;
         this.methodName = methodName;
         this.methodDescriptor = methodDescriptor;
-        this.entities = entities;
+        this.modelInfo = modelInfo;
     }
 
     @Override
@@ -56,7 +52,7 @@ class PanacheFieldAccessMethodVisitor extends MethodVisitor {
      * @param className a dot-separated class name
      */
     boolean isEntityField(String className, String fieldName) {
-        EntityModel entityModel = entities.get(className);
+        EntityModel<?> entityModel = modelInfo.getEntityModel(className);
         if (entityModel == null)
             return false;
         EntityField field = entityModel.fields.get(fieldName);

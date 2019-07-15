@@ -1,6 +1,5 @@
-package io.quarkus.hibernate.orm.panache.deployment;
+package io.quarkus.panache.common.deployment;
 
-import java.util.Map;
 import java.util.function.BiFunction;
 
 import org.objectweb.asm.ClassVisitor;
@@ -9,25 +8,25 @@ import org.objectweb.asm.Opcodes;
 
 public class PanacheFieldAccessEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
-    private Map<String, EntityModel> entities;
+    private MetamodelInfo<?> modelInfo;
 
-    public PanacheFieldAccessEnhancer(Map<String, EntityModel> entities) {
-        this.entities = entities;
+    public PanacheFieldAccessEnhancer(MetamodelInfo<?> modelInfo) {
+        this.modelInfo = modelInfo;
     }
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new FieldAccessClassVisitor(className, outputClassVisitor, entities);
+        return new FieldAccessClassVisitor(className, outputClassVisitor, modelInfo);
     }
 
     static class FieldAccessClassVisitor extends ClassVisitor {
 
-        private Map<String, EntityModel> entities;
         private String classBinaryName;
+        private MetamodelInfo<?> modelInfo;
 
-        public FieldAccessClassVisitor(String className, ClassVisitor outputClassVisitor, Map<String, EntityModel> entities) {
+        public FieldAccessClassVisitor(String className, ClassVisitor outputClassVisitor, MetamodelInfo<?> modelInfo) {
             super(Opcodes.ASM7, outputClassVisitor);
-            this.entities = entities;
+            this.modelInfo = modelInfo;
             this.classBinaryName = className.replace('.', '/');
         }
 
@@ -35,7 +34,7 @@ public class PanacheFieldAccessEnhancer implements BiFunction<String, ClassVisit
         public MethodVisitor visitMethod(int access, String methodName, String descriptor, String signature,
                 String[] exceptions) {
             MethodVisitor superVisitor = super.visitMethod(access, methodName, descriptor, signature, exceptions);
-            return new PanacheFieldAccessMethodVisitor(superVisitor, classBinaryName, methodName, descriptor, entities);
+            return new PanacheFieldAccessMethodVisitor(superVisitor, classBinaryName, methodName, descriptor, modelInfo);
         }
     }
 }

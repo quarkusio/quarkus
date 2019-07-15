@@ -1,11 +1,11 @@
-package io.quarkus.hibernate.orm.panache.deployment;
+package io.quarkus.panache.common.deployment;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.signature.SignatureVisitor;
 
-class DaoTypeFetcher extends SignatureVisitor {
+public class DaoTypeFetcher extends SignatureVisitor {
 
-    String foundType;
+    public String foundType;
     private String daoBinaryName;
 
     public DaoTypeFetcher(String daoBinaryName) {

@@ -393,16 +393,17 @@ public class ConfigDefinition extends CompoundConfigType {
                         final LeafConfigType leafType = definition.leafPatterns.match(name);
                         if (leafType != null) {
                             name.goToEnd();
-                            leafType.acceptConfigurationValue(name, cache, config);
                             final String nameString = name.toString();
                             if (definition.deferResolution) {
                                 boolean old = ExpandingConfigSource.setExpanding(false);
                                 try {
+                                    leafType.acceptConfigurationValue(name, cache, config);
                                     definition.loadedProperties.put(nameString, config.getValue(nameString, String.class));
                                 } finally {
                                     ExpandingConfigSource.setExpanding(old);
                                 }
                             } else {
+                                leafType.acceptConfigurationValue(name, cache, config);
                                 definition.loadedProperties.put(nameString, config.getValue(nameString, String.class));
                             }
                             continue outer;

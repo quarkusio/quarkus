@@ -159,18 +159,18 @@ public class VertxRecorder {
 
     private void initializeClusterOptions(VertxConfiguration conf, VertxOptions options) {
         ClusterConfiguration cluster = conf.cluster;
-        options.setClustered(cluster.clustered);
-        options.setClusterPingReplyInterval(cluster.pingReplyInterval.toMillis());
-        options.setClusterPingInterval(cluster.pingInterval.toMillis());
+        options.getEventBusOptions().setClustered(cluster.clustered);
+        options.getEventBusOptions().setClusterPingReplyInterval(cluster.pingReplyInterval.toMillis());
+        options.getEventBusOptions().setClusterPingInterval(cluster.pingInterval.toMillis());
         if (cluster.host != null) {
-            options.setClusterHost(cluster.host);
+            options.getEventBusOptions().setHost(cluster.host);
         }
         if (cluster.port.isPresent()) {
-            options.setClusterPort(cluster.port.getAsInt());
+            options.getEventBusOptions().setPort(cluster.port.getAsInt());
         }
-        cluster.publicHost.ifPresent(options::setClusterPublicHost);
+        cluster.publicHost.ifPresent(options.getEventBusOptions()::setClusterPublicHost);
         if (cluster.publicPort.isPresent()) {
-            options.setClusterPort(cluster.publicPort.getAsInt());
+            options.getEventBusOptions().setPort(cluster.publicPort.getAsInt());
         }
     }
 

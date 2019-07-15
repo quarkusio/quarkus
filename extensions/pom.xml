@@ -106,6 +106,9 @@
 
         <!-- kogito -->
         <module>kogito</module>
+
+        <!-- Event Sourcing -->
+        <module>axon</module>
     </modules>
 
 </project>

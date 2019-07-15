@@ -1,0 +1,226 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Using the Axon Framework extension
+
+include::./attributes.adoc[]
+
+This guide explains how to use the Quarkus in combination with Axon server to enable a message sourcing strategy
+with very little effort.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.5.3+
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `axon-client` directory.
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,shell,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=axon-client \
+    -Dextensions="axon"
+----
+== Or use it in an existing Quarkus project
+
+Add the following dependency to your projects pom file.
+
+[source,shell,subs=attributes+]
+---
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-axon</artifactId>
+    </dependency>
+---
+
+
+== Setting up the model
+
+In this guide we will be demonstrating how to use the Axon framework in Quarkus. The syntax is (almost) equal with
+the Axon Framework / Axon Spring Boot plugin.
+
+[source,java]
+----
+package org.acme.axonclient;
+
+import org.axonframework.commandhandling.CommandHandler;
+import org.axonframework.eventsourcing.EventSourcingHandler;
+import org.axonframework.modelling.command.AggregateIdentifier;
+import org.axonframework.modelling.command.AggregateRoot;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.axonframework.modelling.command.AggregateLifecycle.apply;
+
+@AggregateRoot
+public class Order {
+
+    @AggregateIdentifier
+    private String orderId;
+    private List<OrderItem> orderItems;
+
+    public Order(){}
+
+    public String getOrderId() {
+        return orderId;
+    }
+
+    @CommandHandler
+    public Order(CreateOrderCommand createOrderCommand) {
+        apply(new OrderCreatedEvent(createOrderCommand.getOrderId()));
+    }
+
+    @EventSourcingHandler
+    public void on(OrderCreatedEvent orderCreatedEvent) {
+        this.orderId = orderCreatedEvent.getOrderId();
+        this.orderItems = new ArrayList<>();
+    }
+
+    @CommandHandler // OrderService will be injected
+    public void handle(AddOrderItemCommand addOrderItemCommand, OrderService orderService) {
+        if (orderService.isAllowToAddItemToOrder(this, addOrderItemCommand.getOrderItem())) {
+            apply(new OrderItemAddedEvent(orderId, addOrderItemCommand.getOrderItem()));
+        }
+    }
+
+    @EventSourcingHandler
+    public void on(OrderItemAddedEvent orderItemAddedEvent) {
+        orderItems.add(orderItemAddedEvent.getOrderItem());
+    }
+
+}
+----
+
+The model above displays an example usage of an aggregate with command and event sourcing handlers.
+
+[source,java]
+----
+
+package org.acme.axonclient;
+
+import org.axonframework.eventhandling.EventHandler;
+import org.axonframework.queryhandling.QueryHandler;
+
+import java.util.List;
+
+import static java.util.Collections.emptyList;
+
+public class OrderProjection {
+
+    public OrderProjection() {
+    }
+
+    @EventHandler
+    public void on(OrderCreatedEvent orderCreatedEvent) {
+        // save to some repository
+    }
+
+    @EventHandler
+    public void on(OrderItemAddedEvent orderItemAddedEvent) {
+        // Updated item in the repository
+    }
+
+    @QueryHandler
+    public List<OrderProjectionItem> queryAllOrders(FindAllOrdersQuery findAllOrdersQuery) {
+        return emptyList(); // repository.findAll();
+    }
+}
+----
+
+And it's also possible to use normal events handlers and/or build query handlers, that can be used to build projections. And of course Saga's are also supported.
+
+
+[source,java]
+----
+package org.acme.axonclient;
+
+import org.axonframework.commandhandling.gateway.CommandGateway;
+import org.axonframework.eventhandling.Timestamp;
+import org.axonframework.modelling.saga.EndSaga;
+import org.axonframework.modelling.saga.SagaEventHandler;
+import org.axonframework.modelling.saga.StartSaga;
+
+import javax.inject.Inject;
+import java.util.Date;
+
+public class CustomerOrderItemsSaga {
+
+    @Inject
+    CommandGateway commandGateway;
+
+    @StartSaga
+    @SagaEventHandler(associationProperty = "orderId")
+    public void on(OrderProcesStarted event, @Timestamp Date eventTime) {
+        commandGateway.send(new CheckAccountBalance(event.getCustomerId(), event.getOrderId(), event.getTotalOrderPrice()));
+    }
+
+    @SagaEventHandler(associationProperty = "orderId")
+    public void on(BalanceSuffientEvent event, @Timestamp Date eventTime) {
+        commandGateway.send(new ShipOrderCommand(event.getCustomerId(), event.getOrderId()));
+    }
+
+    @EndSaga
+    @SagaEventHandler(associationProperty = "orderId")
+    public void on(OrderShippedEvent event, @Timestamp Date eventTime) {
+    }
+
+}
+----
+
+== Create the configuration
+
+By default he Axon extension will connect to Axon server on the localhost:8124. This can be changed by configuring settings in `application.properties`.
+
+[source,shell]
+----
+# Your configuration properties
+
+# Can be changed set to false to make changes on the default configuration before starting/connecting the client.
+quarkus.axon.autostart=true
+
+# The server where to connect with. Can also be something like "server1:8124, server2:4321"
+quarkus.axon.servers=localhost
+
+# The client id of your application
+quarkus.axon.client-id=text-client
+
+# The component name of your application
+quarkus.axon.component-name=Unit-Tests
+
+# Connect over a secure connection
+quarkus.axon.ssl-enabled=true
+
+# The location of the certificate
+quarkus.axon.cert-file=/some/location/acertfile
+
+----
+
+== Package and run the application
+
+Run the application with: `./mvnw compile quarkus:dev`.
+
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+You can also generate the native executable with `./mvnw clean package -Pnative`.
+
+== Further reading
+
+ * link:https://axoniq.io/product-overview/axon-framework[Axon Framework]

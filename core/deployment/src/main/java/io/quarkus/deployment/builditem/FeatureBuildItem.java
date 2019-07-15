@@ -1,8 +1,8 @@
 package io.quarkus.deployment.builditem;
 
-import java.util.Objects;
-
 import io.quarkus.builder.item.MultiBuildItem;
+
+import java.util.Objects;
 
 /**
  * Describes a functionality provided by an extension. The info is displayed to users.
@@ -10,6 +10,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class FeatureBuildItem extends MultiBuildItem {
 
     public static final String AGROAL = "agroal";
+    public static final String AXON = "axon";
     public static final String CAMEL_CORE = "camel-core";
     public static final String CAMEL_INFINISPAN = "camel-infinispan";
     public static final String CAMEL_AWS_S3 = "camel-aws-s3";

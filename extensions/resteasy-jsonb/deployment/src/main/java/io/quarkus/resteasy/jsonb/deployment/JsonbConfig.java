@@ -21,6 +21,14 @@ public class JsonbConfig {
                     PropertyOrderStrategy.REVERSE)));
 
     /**
+     * If enabled, Quarkus will a create a JAX-RS resolves that configures JSON-B with the properties
+     * specified here
+     * It will also attempt to generate serializers for JAX-RS return types
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean enabled;
+
+    /**
      * default locale to use
      */
     @ConfigItem

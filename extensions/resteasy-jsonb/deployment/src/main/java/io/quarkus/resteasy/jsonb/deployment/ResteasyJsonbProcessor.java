@@ -12,7 +12,6 @@ import javax.json.bind.serializer.SerializationContext;
 import javax.json.stream.JsonGenerator;
 import javax.ws.rs.ext.Provider;
 
-import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
@@ -28,6 +27,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
@@ -61,10 +61,14 @@ public class ResteasyJsonbProcessor {
      */
     @BuildStep
     void generateClasses(CombinedIndexBuildItem combinedIndexBuildItem,
-                         BuildProducer<GeneratedClassBuildItem> generatedClass,
-                         BuildProducer<ResteasyJaxrsProviderBuildItem> jaxrsProvider,
-                         BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses) {
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ResteasyJaxrsProviderBuildItem> jaxrsProvider,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses) {
         IndexView index = combinedIndexBuildItem.getIndex();
+
+        if (!jsonbConfig.enabled) {
+            return;
+        }
 
         // if the user has declared a custom ContextResolver for Jsonb, we don't generate anything
         if (hasCustomContextResolverBeenDeclared(index)) {
@@ -130,7 +134,8 @@ public class ResteasyJsonbProcessor {
 
         // ensure that the default locale is read at runtime
         runtimeClasses.produce(new RuntimeInitializedClassBuildItem(AdditionalClassGenerator.QUARKUS_DEFAULT_LOCALE_PROVIDER));
-        runtimeClasses.produce(new RuntimeInitializedClassBuildItem(AdditionalClassGenerator.QUARKUS_DEFAULT_DATE_FORMATTER_PROVIDER));
+        runtimeClasses.produce(
+                new RuntimeInitializedClassBuildItem(AdditionalClassGenerator.QUARKUS_DEFAULT_DATE_FORMATTER_PROVIDER));
     }
 
     private boolean hasCustomContextResolverBeenDeclared(IndexView index) {

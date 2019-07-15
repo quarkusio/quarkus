@@ -56,13 +56,4 @@
         </plugins>
     </build>
 
-    <profiles>
-        <profile>
-            <id>axonextension.test</id>
-            <properties>
-                <axonextension.test>true</axonextension.test>
-            </properties>
-        </profile>
-    </profiles>
-
 </project>

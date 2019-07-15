@@ -1,13 +1,14 @@
 package io.quarkus.axon.deployment.sagatest;
 
+import java.util.Date;
+
+import javax.inject.Inject;
+
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.eventhandling.Timestamp;
 import org.axonframework.modelling.saga.EndSaga;
 import org.axonframework.modelling.saga.SagaEventHandler;
 import org.axonframework.modelling.saga.StartSaga;
-
-import javax.inject.Inject;
-import java.util.Date;
 
 public class TestSaga {
 

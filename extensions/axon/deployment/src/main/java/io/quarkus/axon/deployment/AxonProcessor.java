@@ -1,5 +1,20 @@
 package io.quarkus.axon.deployment;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Function;
+
+import org.axonframework.commandhandling.CommandHandler;
+import org.axonframework.eventhandling.EventHandler;
+import org.axonframework.modelling.command.AggregateRoot;
+import org.axonframework.modelling.saga.StartSaga;
+import org.axonframework.queryhandling.QueryHandler;
+import org.jboss.jandex.*;
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -10,20 +25,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import org.axonframework.commandhandling.CommandHandler;
-import org.axonframework.eventhandling.EventHandler;
-import org.axonframework.modelling.command.AggregateRoot;
-import org.axonframework.modelling.saga.StartSaga;
-import org.axonframework.queryhandling.QueryHandler;
-import org.jboss.jandex.*;
-import org.jboss.logging.Logger;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.function.Function;
-
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 public class AxonProcessor {
 

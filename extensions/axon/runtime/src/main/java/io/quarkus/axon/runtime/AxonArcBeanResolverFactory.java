@@ -1,13 +1,15 @@
 package io.quarkus.axon.runtime;
 
-import io.quarkus.arc.runtime.BeanContainer;
+import java.lang.reflect.Executable;
+import java.lang.reflect.Parameter;
+
+import javax.enterprise.context.ApplicationScoped;
+
 import org.axonframework.messaging.Message;
 import org.axonframework.messaging.annotation.ParameterResolver;
 import org.axonframework.messaging.annotation.ParameterResolverFactory;
 
-import javax.enterprise.context.ApplicationScoped;
-import java.lang.reflect.Executable;
-import java.lang.reflect.Parameter;
+import io.quarkus.arc.runtime.BeanContainer;
 
 @ApplicationScoped
 public class AxonArcBeanResolverFactory implements ParameterResolverFactory {

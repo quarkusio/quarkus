@@ -1,9 +1,10 @@
 package io.quarkus.axon.runtime;
 
-import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.runtime.annotations.Template;
 import org.axonframework.config.Configuration;
 import org.jboss.logging.Logger;
+
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.annotations.Template;
 
 @Template
 public class AxonRuntimeTemplate {

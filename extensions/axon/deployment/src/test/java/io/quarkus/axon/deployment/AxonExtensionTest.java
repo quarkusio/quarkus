@@ -1,12 +1,11 @@
 package io.quarkus.axon.deployment;
 
-import io.quarkus.axon.deployment.aggregatetest.*;
-import io.quarkus.axon.deployment.querytest.QueryTestHandler;
-import io.quarkus.axon.deployment.querytest.RequestTestItemQuery;
-import io.quarkus.axon.deployment.sagatest.StartSagaFlowCommand;
-import io.quarkus.axon.deployment.sagatest.TestSaga;
-import io.quarkus.axon.deployment.sagatest.TestSagaAggregate;
-import io.quarkus.test.QuarkusUnitTest;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.UUID;
+
+import javax.inject.Inject;
+
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.queryhandling.QueryGateway;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -15,10 +14,13 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import javax.inject.Inject;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import io.quarkus.axon.deployment.aggregatetest.*;
+import io.quarkus.axon.deployment.querytest.QueryTestHandler;
+import io.quarkus.axon.deployment.querytest.RequestTestItemQuery;
+import io.quarkus.axon.deployment.sagatest.StartSagaFlowCommand;
+import io.quarkus.axon.deployment.sagatest.TestSaga;
+import io.quarkus.axon.deployment.sagatest.TestSagaAggregate;
+import io.quarkus.test.QuarkusUnitTest;
 
 @Disabled // See README.md
 public class AxonExtensionTest {

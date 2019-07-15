@@ -1,7 +1,8 @@
 package io.quarkus.axon.deployment.querytest;
 
-import io.quarkus.axon.deployment.aggregatetest.TestItem;
 import org.axonframework.queryhandling.QueryHandler;
+
+import io.quarkus.axon.deployment.aggregatetest.TestItem;
 
 public class QueryTestHandler {
 

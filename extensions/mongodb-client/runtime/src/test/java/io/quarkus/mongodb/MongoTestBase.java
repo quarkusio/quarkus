@@ -68,7 +68,11 @@ public class MongoTestBase {
     @AfterAll
     public static void stopMongoDatabase() {
         if (MONGO != null) {
-            MONGO.stop();
+            try {
+                MONGO.stop();
+            } catch (Exception e) {
+                LOGGER.error("Unable to stop MongoDB", e);
+            }
         }
     }
 

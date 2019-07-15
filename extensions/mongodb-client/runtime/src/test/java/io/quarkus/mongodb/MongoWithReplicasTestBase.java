@@ -28,7 +28,6 @@ import de.flapdoodle.embed.mongo.config.MongoCmdOptionsBuilder;
 import de.flapdoodle.embed.mongo.config.MongodConfigBuilder;
 import de.flapdoodle.embed.mongo.config.Net;
 import de.flapdoodle.embed.mongo.distribution.Version;
-import de.flapdoodle.embed.process.runtime.Executable;
 import de.flapdoodle.embed.process.runtime.Network;
 
 public class MongoWithReplicasTestBase {
@@ -63,7 +62,13 @@ public class MongoWithReplicasTestBase {
 
     @AfterAll
     public static void stopMongoDatabase() {
-        MONGOS.forEach(Executable::stop);
+        MONGOS.forEach(mongod -> {
+            try {
+                mongod.stop();
+            } catch (Exception e) {
+                LOGGER.error("Unable to stop MongoDB", e);
+            }
+        });
     }
 
     protected String getConnectionString() {

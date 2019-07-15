@@ -92,7 +92,6 @@
                 <artifactId>quarkus-legacy-launcher</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 

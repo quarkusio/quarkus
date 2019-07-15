@@ -45,6 +45,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String NEO4J = "neo4j";
     public static final String RESTEASY = "resteasy";
     public static final String RESTEASY_JSONB = "resteasy-jsonb";
+    public static final String REST_CLIENT = "rest-client";
     public static final String SCHEDULER = "scheduler";
     public static final String SECURITY = "security";
     public static final String SMALLRYE_CONTEXT_PROPAGATION = "smallrye-context-propagation";
@@ -60,7 +61,6 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String SMALLRYE_REACTIVE_MESSAGING_MQTT = "smallrye-reactive-messaging-mqtt";
     public static final String SMALLRYE_REACTIVE_STREAMS_OPERATORS = "smallrye-reactive-streams-operators";
     public static final String SMALLRYE_REACTIVE_TYPE_CONVERTERS = "smallrye-reactive-type-converters";
-    public static final String SMALLRYE_REST_CLIENT = "smallrye-rest-client";
     public static final String SPRING_DI = "spring-di";
     public static final String SWAGGER_UI = "swagger-ui";
     public static final String TIKA = "tika";

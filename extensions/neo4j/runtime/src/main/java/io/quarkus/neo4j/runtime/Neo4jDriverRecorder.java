@@ -1,5 +1,7 @@
 package io.quarkus.neo4j.runtime;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import java.util.logging.Level;
 
 import org.graalvm.nativeimage.ImageInfo;
@@ -41,18 +43,15 @@ public class Neo4jDriverRecorder {
             authToken = AuthTokens.basic(configuration.authentication.username, configuration.authentication.password);
         }
 
-        // Disable encryption regardless of user configuration when ssl is not natively enabled.
-        Config.ConfigBuilder configBuilder = createBaseConfig(configuration);
-        if (ImageInfo.inImageRuntimeCode() && !SslContextConfiguration.isSslNativeEnabled()) {
-            log.warn("Native SSL is disabled, communication between this client and the Neo4j server won't be encrypted.");
-            configBuilder = configBuilder.withoutEncryption();
-        }
+        Config.ConfigBuilder configBuilder = createBaseConfig();
+        configureSsl(configBuilder);
+        configurePoolSettings(configBuilder, configuration.pool);
 
         driver = GraphDatabase.driver(uri, authToken, configBuilder.build());
         shutdownContext.addShutdownTask(driver::close);
     }
 
-    private Config.ConfigBuilder createBaseConfig(Neo4jConfiguration neo4jConfiguration) {
+    private static Config.ConfigBuilder createBaseConfig() {
         Config.ConfigBuilder configBuilder = Config.builder();
         Logging logging;
         try {
@@ -62,6 +61,37 @@ public class Neo4jDriverRecorder {
         }
         configBuilder.withLogging(logging);
         return configBuilder;
+    }
 
+    private static void configureSsl(Config.ConfigBuilder configBuilder) {
+
+        // Disable encryption regardless of user configuration when ssl is not natively enabled.
+        if (ImageInfo.inImageRuntimeCode() && !SslContextConfiguration.isSslNativeEnabled()) {
+            log.warn(
+                    "Native SSL is disabled, communication between this client and the Neo4j server won't be encrypted.");
+            configBuilder.withoutEncryption();
+        }
+    }
+
+    private static void configurePoolSettings(Config.ConfigBuilder configBuilder, Neo4jConfiguration.Pool pool) {
+
+        if (log.isDebugEnabled()) {
+            log.debug("Configuring Neo4j pool settings with " + pool);
+        }
+
+        if (pool.logLeakedSessions) {
+            configBuilder.withLeakedSessionsLogging();
+        }
+
+        configBuilder.withMaxConnectionPoolSize(pool.maxConnectionPoolSize);
+        configBuilder.withConnectionLivenessCheckTimeout(pool.idleTimeBeforeConnectionTest.toMillis(), MILLISECONDS);
+        configBuilder.withMaxConnectionLifetime(pool.maxConnectionLifetime.toMillis(), MILLISECONDS);
+        configBuilder.withConnectionAcquisitionTimeout(pool.connectionAcquisitionTimeout.toMillis(), MILLISECONDS);
+
+        if (pool.metricsEnabled) {
+            configBuilder.withDriverMetrics();
+        } else {
+            configBuilder.withoutDriverMetrics();
+        }
     }
 }

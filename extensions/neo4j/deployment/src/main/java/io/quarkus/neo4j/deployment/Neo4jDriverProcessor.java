@@ -1,7 +1,5 @@
 package io.quarkus.neo4j.deployment;
 
-import javax.inject.Inject;
-
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -17,11 +15,12 @@ import io.quarkus.neo4j.runtime.Neo4jDriverRecorder;
 
 class Neo4jDriverProcessor {
 
-    @Inject
-    BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport;
-
     @BuildStep
-    FeatureBuildItem createFeature() {
+    FeatureBuildItem createFeature(BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
+
+        // Indicates that this extension would like the SSL support to be enabled
+        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.NEO4J));
+
         return new FeatureBuildItem(FeatureBuildItem.NEO4J);
     }
 
@@ -35,9 +34,6 @@ class Neo4jDriverProcessor {
     void configureDriverProducer(Neo4jDriverRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
             Neo4jConfiguration configuration,
             ShutdownContextBuildItem shutdownContext) {
-
-        // Indicates that this extension would like the SSL support to be enabled
-        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.NEO4J));
 
         recorder.configureNeo4jProducer(beanContainerBuildItem.getValue(), configuration, shutdownContext);
     }

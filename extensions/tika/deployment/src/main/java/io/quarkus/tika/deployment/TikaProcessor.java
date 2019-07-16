@@ -9,14 +9,19 @@ import org.apache.tika.detect.Detector;
 import org.apache.tika.detect.EncodingDetector;
 import org.apache.tika.parser.Parser;
 
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.tika.runtime.TikaConfiguration;
+import io.quarkus.tika.runtime.TikaRecorder;
 
 public class TikaProcessor {
     private static final Set<String> NOT_NATIVE_READY_PARSERS = Arrays.stream(new String[] {
@@ -29,7 +34,15 @@ public class TikaProcessor {
             "org.apache.tika.parser.geo.topic.GeoParser"
     }).collect(Collectors.toSet());
 
+    private TikaConfiguration config;
+
     @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void initializeTikaParser(BeanContainerBuildItem beanContainer, TikaRecorder recorder) {
+        recorder.initTikaParser(beanContainer.getValue(), config);
+    }
+
+    @BuildStep(providesCapabilities = "io.quarkus.tika")
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.TIKA);
     }

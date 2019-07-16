@@ -84,6 +84,7 @@ public class SmallRyeOpenApiProcessor {
 
     SmallRyeOpenApiConfig openapi;
 
+    @BuildStep
     List<HotDeploymentWatchedFileBuildItem> configFiles() {
         return Stream.of(META_INF_OPENAPI_YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YAML,
                 META_INF_OPENAPI_YML, WEB_INF_CLASSES_META_INF_OPENAPI_YML,

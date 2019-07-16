@@ -1,6 +1,7 @@
 
 package io.quarkus.smallrye.metrics.deployment;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.GAUGE;
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METRICS_ANNOTATIONS;
@@ -135,7 +136,7 @@ public class SmallRyeMetricsProcessor {
     }
 
     @BuildStep
-    @Record(STATIC_INIT)
+    @Record(RUNTIME_INIT)
     void registerBaseAndVendorMetrics(SmallRyeMetricsRecorder metrics, ShutdownContextBuildItem shutdown) {
         metrics.registerBaseMetrics(shutdown);
         metrics.registerVendorMetrics(shutdown);

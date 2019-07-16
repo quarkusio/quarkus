@@ -121,7 +121,7 @@ public class KogitoAssetsProcessor {
     private ApplicationGenerator createApplicationGenerator(ArchiveRootBuildItem root, LaunchMode launchMode,
             boolean generateRuleUnits, boolean generateProcesses, CombinedIndexBuildItem combinedIndexBuildItem)
             throws IOException {
-        Path targetClassesPath = root.getPath();
+        Path targetClassesPath = root.getArchiveLocation();
         Path projectPath = targetClassesPath.toString().endsWith("target" + File.separator + "classes")
                 ? targetClassesPath.getParent().getParent()
                 : targetClassesPath;

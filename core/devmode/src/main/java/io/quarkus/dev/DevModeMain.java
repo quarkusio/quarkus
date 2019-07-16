@@ -122,7 +122,7 @@ public class DevModeMain {
         try {
             final URL[] urls = new URL[classesRoots.size()];
             for (int i = 0; i < classesRoots.size(); i++) {
-                urls[i] = classesRoots.get(i).toURL();
+                urls[i] = classesRoots.get(i).toURI().toURL();
             }
             runtimeCl = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
             currentAppClassLoader = runtimeCl;

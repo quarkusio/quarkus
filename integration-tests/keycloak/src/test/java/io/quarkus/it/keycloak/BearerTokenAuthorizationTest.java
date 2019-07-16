@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.everyItem;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -126,7 +127,7 @@ public class BearerTokenAuthorizationTest {
     private static void configureConfidentialResourcePermission(ResourceServerRepresentation authorizationSettings) {
         ResourceRepresentation resource = new ResourceRepresentation("Confidential Resource");
 
-        resource.setUri("/api/confidential");
+        resource.setUris(Collections.singleton("/api/confidential"));
 
         authorizationSettings.getResources().add(resource);
 
@@ -159,7 +160,7 @@ public class BearerTokenAuthorizationTest {
     private static void configurePermissionResourcePermission(ResourceServerRepresentation authorizationSettings) {
         ResourceRepresentation resource = new ResourceRepresentation("Permission Resource");
 
-        resource.setUri("/api/permission");
+        resource.setUris(Collections.singleton("/api/permission"));
 
         authorizationSettings.getResources().add(resource);
 

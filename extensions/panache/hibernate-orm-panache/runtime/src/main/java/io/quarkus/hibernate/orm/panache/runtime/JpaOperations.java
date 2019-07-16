@@ -171,6 +171,19 @@ public class JpaOperations {
         return "DELETE FROM " + getEntityName(entityClass) + " WHERE " + query;
     }
 
+    private static String toOrderBy(Sort sort) {
+        StringBuilder sb = new StringBuilder(" ORDER BY ");
+        for (int i = 0; i < sort.getColumns().size(); i++) {
+            Sort.Column column = sort.getColumns().get(i);
+            if (i > 0)
+                sb.append(" , ");
+            sb.append(column.getName());
+            if (column.getDirection() != Sort.Direction.Ascending)
+                sb.append(" DESC");
+        }
+        return sb.toString();
+    }
+
     //
     // Queries
 
@@ -187,7 +200,7 @@ public class JpaOperations {
         String findQuery = createFindQuery(entityClass, query, paramCount(params));
         EntityManager em = getEntityManager();
         // FIXME: check for duplicate ORDER BY clause?
-        Query jpaQuery = em.createQuery(sort != null ? findQuery + sort.toOrderBy() : findQuery);
+        Query jpaQuery = em.createQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
         bindParameters(jpaQuery, params);
         return new PanacheQueryImpl(em, jpaQuery, findQuery, params);
     }
@@ -201,7 +214,7 @@ public class JpaOperations {
         String findQuery = createFindQuery(entityClass, query, paramCount(params));
         EntityManager em = getEntityManager();
         // FIXME: check for duplicate ORDER BY clause?
-        Query jpaQuery = em.createQuery(sort != null ? findQuery + sort.toOrderBy() : findQuery);
+        Query jpaQuery = em.createQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
         bindParameters(jpaQuery, params);
         return new PanacheQueryImpl(em, jpaQuery, findQuery, params);
     }
@@ -272,7 +285,7 @@ public class JpaOperations {
     @SuppressWarnings("rawtypes")
     public static PanacheQuery<?> findAll(Class<?> entityClass, Sort sort) {
         String query = "FROM " + getEntityName(entityClass);
-        String sortedQuery = query + sort.toOrderBy();
+        String sortedQuery = query + toOrderBy(sort);
         EntityManager em = getEntityManager();
         return new PanacheQueryImpl(em, em.createQuery(sortedQuery), query, null);
     }

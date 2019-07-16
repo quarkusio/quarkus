@@ -35,7 +35,7 @@ public class AsyncFileHandlerTest {
         assertThat(Logger.getLogger("").getHandlers()).contains(delayedHandler);
         assertThat(delayedHandler.getLevel()).isEqualTo(Level.ALL);
 
-        Handler handler = Arrays.asList(delayedHandler.getHandlers()).stream()
+        Handler handler = Arrays.stream(delayedHandler.getHandlers())
                 .filter(h -> (h instanceof AsyncHandler))
                 .findFirst().get();
         assertThat(handler).isNotNull();
@@ -46,7 +46,7 @@ public class AsyncFileHandlerTest {
         assertThat(asyncHandler.getQueueLength()).isEqualTo(1024);
         assertThat(asyncHandler.getOverflowAction()).isEqualTo(AsyncHandler.OverflowAction.BLOCK);
 
-        Handler nestedFileHandler = Arrays.asList(asyncHandler.getHandlers()).stream()
+        Handler nestedFileHandler = Arrays.stream(asyncHandler.getHandlers())
                 .filter(h -> (h instanceof FileHandler))
                 .findFirst().get();
 

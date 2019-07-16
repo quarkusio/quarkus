@@ -1,6 +1,10 @@
 package io.quarkus.runtime.logging;
 
+import static org.wildfly.common.net.HostName.getQualifiedHostName;
+import static org.wildfly.common.os.Process.getProcessName;
+
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +26,7 @@ import org.jboss.logmanager.handlers.FileHandler;
 import org.jboss.logmanager.handlers.PeriodicRotatingFileHandler;
 import org.jboss.logmanager.handlers.PeriodicSizeRotatingFileHandler;
 import org.jboss.logmanager.handlers.SizeRotatingFileHandler;
+import org.jboss.logmanager.handlers.SyslogHandler;
 
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -52,74 +57,120 @@ public class LoggingSetupRecorder {
         for (Entry<String, CleanupFilterConfig> entry : filters.entrySet()) {
             filterElements.add(new LogCleanupFilterElement(entry.getKey(), entry.getValue().ifStartsWith));
         }
-        ArrayList<Handler> handlers = new ArrayList<>(2);
+        ArrayList<Handler> handlers = new ArrayList<>(3);
         if (config.console.enable) {
-            final PatternFormatter formatter;
-            if (config.console.color && System.console() != null) {
-                formatter = new ColorPatternFormatter(config.console.darken, config.console.format);
-            } else {
-                formatter = new PatternFormatter(config.console.format);
-            }
-            final ConsoleHandler handler = new ConsoleHandler(formatter);
-            handler.setLevel(config.console.level);
-            handler.setErrorManager(errorManager);
-            handler.setFilter(new LogCleanupFilter(filterElements));
-            if (config.console.async.enable) {
-                final AsyncHandler asyncHandler = new AsyncHandler(config.console.async.queueLength);
-                asyncHandler.setOverflowAction(config.console.async.overflow);
-                asyncHandler.addHandler(handler);
-                asyncHandler.setLevel(config.console.level);
-                handlers.add(asyncHandler);
-            } else {
-                handlers.add(handler);
-            }
-            errorManager = handler.getLocalErrorManager();
+            errorManager = configureConsoleHandler(config.console, errorManager, filterElements, handlers);
         }
 
         if (config.file.enable) {
-            FileHandler handler = new FileHandler();
-            FileConfig.RotationConfig rotationConfig = config.file.rotation;
-            if (rotationConfig.maxFileSize.isPresent() && rotationConfig.fileSuffix.isPresent()) {
-                PeriodicSizeRotatingFileHandler periodicSizeRotatingFileHandler = new PeriodicSizeRotatingFileHandler();
-                periodicSizeRotatingFileHandler.setSuffix(rotationConfig.fileSuffix.get());
-                periodicSizeRotatingFileHandler.setRotateSize(rotationConfig.maxFileSize.get().asLongValue());
-                periodicSizeRotatingFileHandler.setRotateOnBoot(rotationConfig.rotateOnBoot);
-                periodicSizeRotatingFileHandler.setMaxBackupIndex(rotationConfig.maxBackupIndex);
-                handler = periodicSizeRotatingFileHandler;
-            } else if (rotationConfig.maxFileSize.isPresent()) {
-                SizeRotatingFileHandler sizeRotatingFileHandler = new SizeRotatingFileHandler(
-                        rotationConfig.maxFileSize.get().asLongValue(), rotationConfig.maxBackupIndex);
-                sizeRotatingFileHandler.setRotateOnBoot(rotationConfig.rotateOnBoot);
-                handler = sizeRotatingFileHandler;
-            } else if (rotationConfig.fileSuffix.isPresent()) {
-                PeriodicRotatingFileHandler periodicRotatingFileHandler = new PeriodicRotatingFileHandler();
-                periodicRotatingFileHandler.setSuffix(rotationConfig.fileSuffix.get());
-                handler = periodicRotatingFileHandler;
-            }
+            configureFileHandler(config.file, errorManager, filterElements, handlers);
+        }
 
-            final PatternFormatter formatter = new PatternFormatter(config.file.format);
+        if (config.syslog.enable) {
+            configureSyslogHandler(config.syslog, errorManager, filterElements, handlers);
+        }
+
+        InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+    }
+
+    private ErrorManager configureConsoleHandler(ConsoleConfig config, ErrorManager errorManager,
+            List<LogCleanupFilterElement> filterElements, ArrayList<Handler> handlers) {
+        final PatternFormatter formatter;
+        if (config.color && System.console() != null) {
+            formatter = new ColorPatternFormatter(config.darken, config.format);
+        } else {
+            formatter = new PatternFormatter(config.format);
+        }
+        final ConsoleHandler handler = new ConsoleHandler(formatter);
+        handler.setLevel(config.level);
+        handler.setErrorManager(errorManager);
+        handler.setFilter(new LogCleanupFilter(filterElements));
+        if (config.async.enable) {
+            final AsyncHandler asyncHandler = new AsyncHandler(config.async.queueLength);
+            asyncHandler.setOverflowAction(config.async.overflow);
+            asyncHandler.addHandler(handler);
+            asyncHandler.setLevel(config.level);
+            handlers.add(asyncHandler);
+        } else {
+            handlers.add(handler);
+        }
+        errorManager = handler.getLocalErrorManager();
+        return errorManager;
+    }
+
+    private void configureFileHandler(FileConfig config, ErrorManager errorManager,
+            List<LogCleanupFilterElement> filterElements, ArrayList<Handler> handlers) {
+        FileHandler handler = new FileHandler();
+        FileConfig.RotationConfig rotationConfig = config.rotation;
+        if (rotationConfig.maxFileSize.isPresent() && rotationConfig.fileSuffix.isPresent()) {
+            PeriodicSizeRotatingFileHandler periodicSizeRotatingFileHandler = new PeriodicSizeRotatingFileHandler();
+            periodicSizeRotatingFileHandler.setSuffix(rotationConfig.fileSuffix.get());
+            periodicSizeRotatingFileHandler.setRotateSize(rotationConfig.maxFileSize.get().asLongValue());
+            periodicSizeRotatingFileHandler.setRotateOnBoot(rotationConfig.rotateOnBoot);
+            periodicSizeRotatingFileHandler.setMaxBackupIndex(rotationConfig.maxBackupIndex);
+            handler = periodicSizeRotatingFileHandler;
+        } else if (rotationConfig.maxFileSize.isPresent()) {
+            SizeRotatingFileHandler sizeRotatingFileHandler = new SizeRotatingFileHandler(
+                    rotationConfig.maxFileSize.get().asLongValue(), rotationConfig.maxBackupIndex);
+            sizeRotatingFileHandler.setRotateOnBoot(rotationConfig.rotateOnBoot);
+            handler = sizeRotatingFileHandler;
+        } else if (rotationConfig.fileSuffix.isPresent()) {
+            PeriodicRotatingFileHandler periodicRotatingFileHandler = new PeriodicRotatingFileHandler();
+            periodicRotatingFileHandler.setSuffix(rotationConfig.fileSuffix.get());
+            handler = periodicRotatingFileHandler;
+        }
+
+        final PatternFormatter formatter = new PatternFormatter(config.format);
+        handler.setFormatter(formatter);
+        handler.setAppend(true);
+        try {
+            handler.setFile(config.path);
+        } catch (FileNotFoundException e) {
+            errorManager.error("Failed to set log file", e, ErrorManager.OPEN_FAILURE);
+        }
+        handler.setErrorManager(errorManager);
+        handler.setLevel(config.level);
+        handler.setFilter(new LogCleanupFilter(filterElements));
+        if (config.async.enable) {
+            final AsyncHandler asyncHandler = new AsyncHandler(config.async.queueLength);
+            asyncHandler.setOverflowAction(config.async.overflow);
+            asyncHandler.addHandler(handler);
+            asyncHandler.setLevel(config.level);
+            handlers.add(asyncHandler);
+        } else {
+            handlers.add(handler);
+        }
+    }
+
+    private void configureSyslogHandler(SyslogConfig config, ErrorManager errorManager,
+            List<LogCleanupFilterElement> filterElements, ArrayList<Handler> handlers) {
+        try {
+            final SyslogHandler handler = new SyslogHandler(config.endpoint.getAddress(), config.endpoint.getPort());
+            handler.setAppName(config.appName.orElse(getProcessName()));
+            handler.setHostname(config.hostname.orElse(getQualifiedHostName()));
+            handler.setFacility(config.facility);
+            handler.setSyslogType(config.syslogType);
+            handler.setProtocol(config.protocol);
+            handler.setBlockOnReconnect(config.blockOnReconnect);
+            handler.setTruncate(config.truncate);
+            handler.setUseCountingFraming(config.useCountingFraming);
+            handler.setLevel(config.level);
+            final PatternFormatter formatter = new PatternFormatter(config.format);
             handler.setFormatter(formatter);
-            handler.setAppend(true);
-            try {
-                handler.setFile(config.file.path);
-            } catch (FileNotFoundException e) {
-                errorManager.error("Failed to set log file", e, ErrorManager.OPEN_FAILURE);
-            }
             handler.setErrorManager(errorManager);
-            handler.setLevel(config.file.level);
             handler.setFilter(new LogCleanupFilter(filterElements));
-            if (config.file.async.enable) {
-                final AsyncHandler asyncHandler = new AsyncHandler(config.file.async.queueLength);
-                asyncHandler.setOverflowAction(config.file.async.overflow);
+            if (config.async.enable) {
+                final AsyncHandler asyncHandler = new AsyncHandler(config.async.queueLength);
+                asyncHandler.setOverflowAction(config.async.overflow);
                 asyncHandler.addHandler(handler);
-                asyncHandler.setLevel(config.file.level);
+                asyncHandler.setLevel(config.level);
                 handlers.add(asyncHandler);
             } else {
                 handlers.add(handler);
             }
+        } catch (IOException e) {
+            errorManager.error("Failed to create syslog handler", e, ErrorManager.OPEN_FAILURE);
         }
-
-        InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
     }
 
     public void initializeLoggingForImageBuild() {

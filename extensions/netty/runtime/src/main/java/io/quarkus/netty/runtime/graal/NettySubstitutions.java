@@ -15,9 +15,11 @@ import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.RecomputeFieldValue.Kind;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+import com.oracle.svm.core.jdk.JDK11OrLater;
 
 import io.netty.bootstrap.AbstractBootstrapConfig;
 import io.netty.bootstrap.ChannelFactory;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.DefaultChannelPromise;
@@ -130,6 +132,25 @@ final class Target_io_netty_handler_ssl_SslHandler$SslEngineType {
 @Delete
 @TargetClass(className = "io.netty.handler.ssl.ConscryptAlpnSslEngine")
 final class Target_io_netty_handler_ssl_ConscryptAlpnSslEngine {
+}
+
+@TargetClass(className = "io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator$AlpnWrapper", onlyWith = JDK11OrLater.class)
+final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_AlpnWrapper {
+    @Substitute
+    public SSLEngine wrapSslEngine(SSLEngine engine, ByteBufAllocator alloc,
+            JdkApplicationProtocolNegotiator applicationNegotiator, boolean isServer) {
+        return (SSLEngine) (Object) new Target_io_netty_handler_ssl_Java9SslEngine(engine, applicationNegotiator, isServer);
+    }
+
+}
+
+@TargetClass(className = "io.netty.handler.ssl.Java9SslEngine", onlyWith = JDK11OrLater.class)
+final class Target_io_netty_handler_ssl_Java9SslEngine {
+    @Alias
+    Target_io_netty_handler_ssl_Java9SslEngine(final SSLEngine engine,
+            final JdkApplicationProtocolNegotiator applicationNegotiator, final boolean isServer) {
+
+    }
 }
 
 @TargetClass(className = "io.netty.handler.ssl.SslContext")

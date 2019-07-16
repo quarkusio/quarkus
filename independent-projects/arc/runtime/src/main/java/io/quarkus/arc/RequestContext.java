@@ -1,13 +1,13 @@
 package io.quarkus.arc;
 
+import io.quarkus.arc.EventImpl.Notifier;
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Destroyed;
@@ -28,22 +28,16 @@ class RequestContext implements ManagedContext {
     private static final Logger LOGGER = Logger.getLogger(RequestContext.class.getPackage().getName());
 
     // It's a normal scope so there may be no more than one mapped instance per contextual type per thread
-    private final ThreadLocal<Map<Contextual<?>, ContextInstanceHandle<?>>> currentContext = new ThreadLocal<>();
+    private final ThreadLocal<ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>>> currentContext = new ThreadLocal<>();
 
-    private final LazyValue<EventImpl.Notifier<Object>> initializedNotifier;
-    private final LazyValue<EventImpl.Notifier<Object>> beforeDestroyedNotifier;
-    private final LazyValue<EventImpl.Notifier<Object>> destroyedNotifier;
+    private final LazyValue<Notifier<Object>> initializedNotifier;
+    private final LazyValue<Notifier<Object>> beforeDestroyedNotifier;
+    private final LazyValue<Notifier<Object>> destroyedNotifier;
 
     public RequestContext() {
-        this.initializedNotifier = new LazyValue<>(() -> EventImpl.createNotifier(Object.class, Object.class,
-                new HashSet<>(Arrays.asList(Initialized.Literal.REQUEST, Any.Literal.INSTANCE)),
-                ArcContainerImpl.instance()));
-        this.beforeDestroyedNotifier = new LazyValue<>(() -> EventImpl.createNotifier(Object.class, Object.class,
-                new HashSet<>(Arrays.asList(BeforeDestroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
-                ArcContainerImpl.instance()));
-        this.destroyedNotifier = new LazyValue<>(() -> EventImpl.createNotifier(Object.class, Object.class,
-                new HashSet<>(Arrays.asList(Destroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
-                ArcContainerImpl.instance()));
+        this.initializedNotifier = new LazyValue<>(RequestContext::createInitializedNotifier);
+        this.beforeDestroyedNotifier = new LazyValue<>(RequestContext::createBeforeDestroyedNotifier);
+        this.destroyedNotifier = new LazyValue<>(RequestContext::createDestroyedNotifier);
     }
 
     @Override
@@ -75,15 +69,6 @@ class RequestContext implements ManagedContext {
     }
 
     @Override
-    public Collection<ContextInstanceHandle<?>> getAll() {
-        Map<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
-        if (ctx == null) {
-            return Collections.emptyList();
-        }
-        return new ArrayList<>(ctx.values());
-    }
-
-    @Override
     public boolean isActive() {
         return currentContext.get() != null;
     }
@@ -101,32 +86,34 @@ class RequestContext implements ManagedContext {
         }
     }
 
-    private void fireIfNotEmpty(LazyValue<EventImpl.Notifier<Object>> value) {
-        EventImpl.Notifier<Object> notifier = value.get();
-        if (!notifier.isEmpty()) {
-            notifier.notify(toString());
+    @Override
+    public void activate(ContextState initialState) {
+        if (initialState == null) {
+            currentContext.set(new ConcurrentHashMap<>());
+        } else {
+            if (initialState instanceof RequestContextState) {
+                currentContext.set(((RequestContextState) initialState).value);
+            } else {
+                throw new IllegalArgumentException("Invalid inital state: " + initialState);
+            }
         }
+        // Fire an event with qualifier @Initialized(RequestScoped.class) if there are any observers for it
+        fireIfNotEmpty(initializedNotifier);
+    }
+
+    @Override
+    public InjectableContext.ContextState getState() {
+        ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
+        if (ctx == null) {
+            // Thread local not set - context is not active!
+            throw new ContextNotActiveException();
+        }
+        return new RequestContextState(ctx);
     }
 
     @Override
     public void deactivate() {
         currentContext.remove();
-    }
-
-    @Override
-    public void activate(Collection<ContextInstanceHandle<?>> initialState) {
-        Map<Contextual<?>, ContextInstanceHandle<?>> state = new HashMap<>();
-        if (initialState != null) {
-            for (ContextInstanceHandle<?> instanceHandle : initialState) {
-                if (!instanceHandle.getBean().getScope().equals(getScope())) {
-                    throw new IllegalArgumentException("Invalid bean scope: " + instanceHandle.getBean());
-                }
-                state.put(instanceHandle.getBean(), instanceHandle);
-            }
-        }
-        currentContext.set(state);
-        // Fire an event with qualifier @Initialized(RequestScoped.class) if there are any observers for it
-        fireIfNotEmpty(initializedNotifier);
     }
 
     @Override
@@ -156,5 +143,46 @@ class RequestContext implements ManagedContext {
                 ctx.clear();
             }
         }
+    }
+
+    private void fireIfNotEmpty(LazyValue<Notifier<Object>> value) {
+        Notifier<Object> notifier = value.get();
+        if (!notifier.isEmpty()) {
+            notifier.notify(toString());
+        }
+    }
+
+    private static Notifier<Object> createInitializedNotifier() {
+        return EventImpl.createNotifier(Object.class, Object.class,
+                new HashSet<>(Arrays.asList(Initialized.Literal.REQUEST, Any.Literal.INSTANCE)),
+                ArcContainerImpl.instance());
+    }
+
+    private static Notifier<Object> createBeforeDestroyedNotifier() {
+        return EventImpl.createNotifier(Object.class, Object.class,
+                new HashSet<>(Arrays.asList(BeforeDestroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
+                ArcContainerImpl.instance());
+    }
+
+    private static Notifier<Object> createDestroyedNotifier() {
+        return EventImpl.createNotifier(Object.class, Object.class,
+                new HashSet<>(Arrays.asList(Destroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
+                ArcContainerImpl.instance());
+    }
+
+    private static class RequestContextState implements ContextState {
+
+        private final ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value;
+
+        RequestContextState(ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value) {
+            this.value = value;
+        }
+
+        @Override
+        public Map<InjectableBean<?>, Object> getContextualInstances() {
+            return value.values().stream()
+                    .collect(Collectors.toMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
+        }
+
     }
 }

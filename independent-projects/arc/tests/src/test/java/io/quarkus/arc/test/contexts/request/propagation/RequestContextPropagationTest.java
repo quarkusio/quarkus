@@ -8,10 +8,9 @@ import static org.junit.Assert.fail;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.ContextInstanceHandle;
+import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.test.ArcTestContainer;
-import java.util.Collection;
 import javax.enterprise.context.ContextNotActiveException;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,7 +42,7 @@ public class RequestContextPropagationTest {
         assertTrue(controller2.getButton() == controller1.getButton());
 
         // Store existing instances
-        Collection<ContextInstanceHandle<?>> instances = requestContext.getAll();
+        ContextState state = requestContext.getState();
         // Deactivate but don't destroy
         requestContext.deactivate();
 
@@ -57,7 +56,7 @@ public class RequestContextPropagationTest {
         } catch (ContextNotActiveException expected) {
         }
 
-        requestContext.activate(instances);
+        requestContext.activate(state);
         assertEquals(arc.instance(SuperController.class).get().getId(), controller2Id);
 
         requestContext.terminate();

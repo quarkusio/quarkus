@@ -1,7 +1,5 @@
 package io.quarkus.arc;
 
-import java.util.Collection;
-
 /**
  *
  * @author Martin Kouba
@@ -16,13 +14,11 @@ public interface ManagedContext extends InjectableContext {
     }
 
     /**
-     * Activate the context. All instance handles from the initial state must have the same scope as the context, otherwise an
-     * {@link IllegalArgumentException}
-     * is thrown.
-     *
+     * Activate the context.
+     * 
      * @param initialState The initial state, may be {@code null}
      */
-    void activate(Collection<ContextInstanceHandle<?>> initialState);
+    void activate(ContextState initialState);
 
     /**
      * Deactivate the context - do not destoy existing contextual instances.

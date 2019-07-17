@@ -23,6 +23,10 @@ import javax.validation.TraversableResolver;
 import javax.validation.ValidationException;
 import javax.validation.ValidatorFactory;
 
+import org.hibernate.validator.HibernateValidatorFactory;
+import org.hibernate.validator.internal.properties.DefaultGetterPropertySelectionStrategy;
+import org.hibernate.validator.spi.scripting.ScriptEvaluator;
+import org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -46,6 +50,11 @@ public class CustomConfigurationViaBeansTest {
         assertThat(validatorFactory.getMessageInterpolator()).isInstanceOf(MyMessageInterpolator.class);
         assertThat(validatorFactory.getParameterNameProvider()).isInstanceOf(MyParameterNameProvider.class);
         assertThat(validatorFactory.getTraversableResolver()).isInstanceOf(MyTraversableResolver.class);
+
+        HibernateValidatorFactory hibernateValidatorFactory = validatorFactory.unwrap(HibernateValidatorFactory.class);
+        assertThat(hibernateValidatorFactory.getScriptEvaluatorFactory()).isInstanceOf(MyScriptEvaluatorFactory.class);
+        assertThat(hibernateValidatorFactory.getGetterPropertySelectionStrategy())
+                .isInstanceOf(MyGetterPropertySelectionStrategy.class);
     }
 
     @ApplicationScoped
@@ -117,5 +126,22 @@ public class CustomConfigurationViaBeansTest {
                 Path pathToTraversableObject, ElementType elementType) {
             return false;
         }
+    }
+
+    @ApplicationScoped
+    public static class MyScriptEvaluatorFactory implements ScriptEvaluatorFactory {
+
+        @Override
+        public void clear() {
+        }
+
+        @Override
+        public ScriptEvaluator getScriptEvaluatorByLanguageName(String arg0) {
+            return null;
+        }
+    }
+
+    @ApplicationScoped
+    public static class MyGetterPropertySelectionStrategy extends DefaultGetterPropertySelectionStrategy {
     }
 }

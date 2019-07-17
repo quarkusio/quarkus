@@ -17,6 +17,8 @@ import javax.validation.valueextraction.ValueExtractor;
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
+import org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy;
+import org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
@@ -83,6 +85,20 @@ public class HibernateValidatorRecorder {
                 InstanceHandle<ClockProvider> configuredClockProvider = Arc.container().instance(ClockProvider.class);
                 if (configuredClockProvider.isAvailable()) {
                     configuration.clockProvider(configuredClockProvider.get());
+                }
+
+                // Hibernate Validator-specific configuration
+
+                InstanceHandle<ScriptEvaluatorFactory> configuredScriptEvaluatorFactory = Arc.container()
+                        .instance(ScriptEvaluatorFactory.class);
+                if (configuredScriptEvaluatorFactory.isAvailable()) {
+                    configuration.scriptEvaluatorFactory(configuredScriptEvaluatorFactory.get());
+                }
+
+                InstanceHandle<GetterPropertySelectionStrategy> configuredGetterPropertySelectionStrategy = Arc.container()
+                        .instance(GetterPropertySelectionStrategy.class);
+                if (configuredGetterPropertySelectionStrategy.isAvailable()) {
+                    configuration.getterPropertySelectionStrategy(configuredGetterPropertySelectionStrategy.get());
                 }
 
                 // Automatically add all the values extractors declared as beans

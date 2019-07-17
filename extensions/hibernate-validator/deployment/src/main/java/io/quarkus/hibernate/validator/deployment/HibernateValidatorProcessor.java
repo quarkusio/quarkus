@@ -22,6 +22,8 @@ import javax.validation.valueextraction.ValueExtractor;
 
 import org.hibernate.validator.internal.metadata.core.ConstraintHelper;
 import org.hibernate.validator.messageinterpolation.AbstractMessageInterpolator;
+import org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy;
+import org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -58,6 +60,9 @@ class HibernateValidatorProcessor {
     private static final DotName TRAVERSABLE_RESOLVER = DotName.createSimple(TraversableResolver.class.getName());
     private static final DotName PARAMETER_NAME_PROVIDER = DotName.createSimple(ParameterNameProvider.class.getName());
     private static final DotName CLOCK_PROVIDER = DotName.createSimple(ClockProvider.class.getName());
+    private static final DotName SCRIPT_EVALUATOR_FACTORY = DotName.createSimple(ScriptEvaluatorFactory.class.getName());
+    private static final DotName GETTER_PROPERTY_SELECTION_STRATEGY = DotName
+            .createSimple(GetterPropertySelectionStrategy.class.getName());
 
     private static final DotName CONSTRAINT_VALIDATOR = DotName.createSimple(ConstraintValidator.class.getName());
     private static final DotName VALUE_EXTRACTOR = DotName.createSimple(ValueExtractor.class.getName());
@@ -98,7 +103,8 @@ class HibernateValidatorProcessor {
                 return beanInfo.hasType(CONSTRAINT_VALIDATOR) || beanInfo.hasType(CONSTRAINT_VALIDATOR_FACTORY)
                         || beanInfo.hasType(MESSAGE_INTERPOLATOR) || beanInfo.hasType(TRAVERSABLE_RESOLVER)
                         || beanInfo.hasType(PARAMETER_NAME_PROVIDER) || beanInfo.hasType(CLOCK_PROVIDER)
-                        || beanInfo.hasType(VALUE_EXTRACTOR);
+                        || beanInfo.hasType(VALUE_EXTRACTOR) || beanInfo.hasType(SCRIPT_EVALUATOR_FACTORY)
+                        || beanInfo.hasType(GETTER_PROPERTY_SELECTION_STRATEGY);
             }
         }));
     }

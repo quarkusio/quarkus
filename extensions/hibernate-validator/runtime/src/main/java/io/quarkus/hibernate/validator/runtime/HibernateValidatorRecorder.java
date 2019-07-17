@@ -11,32 +11,42 @@ import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class HibernateValidatorRecorder {
 
-    public void initializeValidatorFactory(Set<Class<?>> classesToBeValidated) {
-        PredefinedScopeHibernateValidatorConfiguration configuration = Validation
-                .byProvider(PredefinedScopeHibernateValidator.class)
-                .configure();
+    public BeanContainerListener initializeValidatorFactory(Set<Class<?>> classesToBeValidated) {
+        BeanContainerListener beanContainerListener = new BeanContainerListener() {
 
-        Set<Locale> localesToInitialize = Collections.singleton(Locale.getDefault());
+            @Override
+            public void created(BeanContainer container) {
+                PredefinedScopeHibernateValidatorConfiguration configuration = Validation
+                        .byProvider(PredefinedScopeHibernateValidator.class)
+                        .configure();
 
-        try {
-            Class<?> cl = Class.forName("javax.el.ELManager");
-            Method method = cl.getDeclaredMethod("getExpressionFactory");
-            method.invoke(null);
-        } catch (Throwable t) {
-            //if EL is not on the class path we use the parameter message interpolator
-            configuration.messageInterpolator(new ParameterMessageInterpolator(localesToInitialize));
-        }
+                Set<Locale> localesToInitialize = Collections.singleton(Locale.getDefault());
 
-        configuration
-                .initializeBeanMetaData(classesToBeValidated)
-                .initializeLocales(localesToInitialize)
-                .beanMetaDataClassNormalizer(new ArcProxyBeanMetaDataClassNormalizer());
+                try {
+                    Class<?> cl = Class.forName("javax.el.ELManager");
+                    Method method = cl.getDeclaredMethod("getExpressionFactory");
+                    method.invoke(null);
+                } catch (Throwable t) {
+                    //if EL is not on the class path we use the parameter message interpolator
+                    configuration.messageInterpolator(new ParameterMessageInterpolator(localesToInitialize));
+                }
 
-        ValidatorHolder.initialize(configuration.buildValidatorFactory());
+                configuration
+                        .initializeBeanMetaData(classesToBeValidated)
+                        .initializeLocales(localesToInitialize)
+                        .beanMetaDataClassNormalizer(new ArcProxyBeanMetaDataClassNormalizer());
+
+                ValidatorHolder.initialize(configuration.buildValidatorFactory());
+            }
+        };
+
+        return beanContainerListener;
     }
 }

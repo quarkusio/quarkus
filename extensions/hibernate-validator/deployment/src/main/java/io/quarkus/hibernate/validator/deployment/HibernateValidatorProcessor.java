@@ -23,6 +23,7 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -76,7 +77,8 @@ class HibernateValidatorProcessor {
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            BuildProducer<FeatureBuildItem> feature) throws Exception {
+            BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<BeanContainerListenerBuildItem> beanContainerListener) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_VALIDATOR));
 
@@ -130,15 +132,17 @@ class HibernateValidatorProcessor {
             }
         }
 
+        // Add the annotations transformer to add @MethodValidated annotations on the methods requiring validation
+        annotationsTransformers
+                .produce(new AnnotationsTransformerBuildItem(new MethodValidatedAnnotationsTransformer(consideredAnnotations)));
+
         Set<Class<?>> classesToBeValidated = new HashSet<>();
         for (DotName className : classNamesToBeValidated) {
             classesToBeValidated.add(recorderContext.classProxy(className.toString()));
         }
-        recorder.initializeValidatorFactory(classesToBeValidated);
 
-        // Add the annotations transformer to add @MethodValidated annotations on the methods requiring validation
-        annotationsTransformers
-                .produce(new AnnotationsTransformerBuildItem(new MethodValidatedAnnotationsTransformer(consideredAnnotations)));
+        beanContainerListener
+                .produce(new BeanContainerListenerBuildItem(recorder.initializeValidatorFactory(classesToBeValidated)));
     }
 
     @BuildStep

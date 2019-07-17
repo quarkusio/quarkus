@@ -12,16 +12,25 @@ public class StereotypeInfo {
     private final Integer alternativePriority;
     private final boolean isNamed;
     private final ClassInfo target;
+    // allows to differentiate between standard stereotype and one that is in fact additional bean defining annotation
+    private final boolean isAdditionalBeanDefiningAnnotation;
 
     public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
             Integer alternativePriority,
-            boolean isNamed, ClassInfo target) {
+            boolean isNamed, boolean isAdditionalBeanDefiningAnnotation, ClassInfo target) {
         this.defaultScope = defaultScope;
         this.interceptorBindings = interceptorBindings;
         this.alternative = alternative;
         this.alternativePriority = alternativePriority;
         this.isNamed = isNamed;
         this.target = target;
+        this.isAdditionalBeanDefiningAnnotation = isAdditionalBeanDefiningAnnotation;
+    }
+
+    public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
+            Integer alternativePriority,
+            boolean isNamed, ClassInfo target) {
+        this(defaultScope, interceptorBindings, alternative, alternativePriority, isNamed, false, target);
     }
 
     public ScopeInfo getDefaultScope() {
@@ -48,4 +57,7 @@ public class StereotypeInfo {
         return target;
     }
 
+    public boolean isAdditionalBeanDefiningAnnotation() {
+        return isAdditionalBeanDefiningAnnotation;
+    }
 }

@@ -24,8 +24,12 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -33,6 +37,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.jboss.logging.Logger;
 import org.wildfly.common.function.Functions;
 
 import io.quarkus.builder.BuildChainBuilder;
@@ -56,14 +61,26 @@ import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
+import io.quarkus.deployment.builditem.UnmatchedConfigBuildItem;
+import io.quarkus.deployment.configuration.ConfigDefinition;
+import io.quarkus.deployment.configuration.DefaultValuesConfigurationSource;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ReflectUtil;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.Template;
+import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSource;
+import io.quarkus.runtime.configuration.ConverterSupport;
+import io.quarkus.runtime.configuration.DeploymentProfileConfigSource;
+import io.quarkus.runtime.configuration.ExpandingConfigSource;
+import io.smallrye.config.PropertiesConfigSource;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
  * Utility class to load build steps, runtime recorders, and configuration roots from a given extension class.
@@ -71,6 +88,20 @@ import io.quarkus.runtime.annotations.Template;
 public final class ExtensionLoader {
     private ExtensionLoader() {
     }
+
+    private static final Logger cfgLog = Logger.getLogger("io.quarkus.configuration");
+
+    public static final String BUILD_TIME_CONFIG = "io.quarkus.runtime.generated.BuildTimeConfig";
+    public static final String BUILD_TIME_CONFIG_ROOT = "io.quarkus.runtime.generated.BuildTimeConfigRoot";
+    public static final String RUN_TIME_CONFIG = "io.quarkus.runtime.generated.RunTimeConfig";
+    public static final String RUN_TIME_CONFIG_ROOT = "io.quarkus.runtime.generated.RunTimeConfigRoot";
+
+    private static final FieldDescriptor RUN_TIME_CONFIG_FIELD = FieldDescriptor.of(RUN_TIME_CONFIG, "runConfig",
+            RUN_TIME_CONFIG_ROOT);
+    private static final FieldDescriptor BUILD_TIME_CONFIG_FIELD = FieldDescriptor.of(BUILD_TIME_CONFIG, "buildConfig",
+            BUILD_TIME_CONFIG_ROOT);
+
+    private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
 
     private static boolean isRecorder(AnnotatedElement element) {
         return element.isAnnotationPresent(Recorder.class) || element.isAnnotationPresent(Template.class);
@@ -86,7 +117,107 @@ public final class ExtensionLoader {
      */
     public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader)
             throws IOException, ClassNotFoundException {
+        return loadStepsFrom(classLoader, new Properties());
+    }
+
+    /**
+     * Load all the build steps from the given class loader.
+     *
+     * @param classLoader the class loader
+     * @return a consumer which adds the steps to the given chain builder
+     * @throws IOException if the class loader could not load a resource
+     * @throws ClassNotFoundException if a build step class is not found
+     */
+    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Map<String, String> buildSystemProps)
+            throws IOException, ClassNotFoundException {
+        final Properties props = new Properties();
+        props.putAll(buildSystemProps);
+        return loadStepsFrom(classLoader, props);
+    }
+
+    /**
+     * Load all the build steps from the given class loader.
+     *
+     * @param classLoader the class loader
+     * @param buildSystemProps the build system properties to use
+     * @return a consumer which adds the steps to the given chain builder
+     * @throws IOException if the class loader could not load a resource
+     * @throws ClassNotFoundException if a build step class is not found
+     */
+    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps)
+            throws IOException, ClassNotFoundException {
+
+        // set up the configuration definitions
+        final ConfigDefinition buildTimeConfig = new ConfigDefinition(FieldDescriptor.of("Bogus", "No field", "Nothing"));
+        final ConfigDefinition buildTimeRunTimeConfig = new ConfigDefinition(BUILD_TIME_CONFIG_FIELD);
+        final ConfigDefinition runTimeConfig = new ConfigDefinition(RUN_TIME_CONFIG_FIELD, true);
+
+        // populate it with all known types
+        for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, CONFIG_ROOTS_LIST)) {
+            final ConfigRoot annotation = clazz.getAnnotation(ConfigRoot.class);
+            if (annotation == null) {
+                cfgLog.warnf("Ignoring configuration root %s because it has no annotation", clazz);
+            } else {
+                final ConfigPhase phase = annotation.phase();
+                if (phase == ConfigPhase.RUN_TIME) {
+                    runTimeConfig.registerConfigRoot(clazz);
+                } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
+                    buildTimeRunTimeConfig.registerConfigRoot(clazz);
+                } else if (phase == ConfigPhase.BUILD_TIME) {
+                    buildTimeConfig.registerConfigRoot(clazz);
+                } else {
+                    cfgLog.warnf("Unrecognized configuration phase \"%s\" on %s", phase, clazz);
+                }
+            }
+        }
+
+        // now prepare & load the build configuration
+        final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
+
+        // expand properties
+        final ExpandingConfigSource.Cache cache = new ExpandingConfigSource.Cache();
+        builder.withWrapper(ExpandingConfigSource.wrapper(cache));
+        builder.withWrapper(DeploymentProfileConfigSource.wrapper());
+        builder.addDefaultSources();
+        final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
+        final DefaultValuesConfigurationSource defaultSource = new DefaultValuesConfigurationSource(
+                buildTimeConfig.getLeafPatterns());
+        final PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
+
+        builder.withSources(inJar, defaultSource, pcs);
+
+        // populate builder with all converters loaded from ServiceLoader
+        ConverterSupport.populateConverters(builder);
+
+        final SmallRyeConfig src = (SmallRyeConfig) builder
+                .addDefaultSources()
+                .addDiscoveredSources()
+                .addDiscoveredConverters()
+                .build();
+
+        SmallRyeConfigProviderResolver.instance().registerConfig(src, classLoader);
+
+        Set<String> unmatched = new HashSet<>();
+
+        ConfigDefinition.loadConfiguration(cache, src,
+                unmatched,
+                buildTimeConfig,
+                buildTimeRunTimeConfig, // this one is only for generating a default-values config source
+                runTimeConfig);
+
+        unmatched.removeIf(s -> !inJar.getPropertyNames().contains(s) && !s.startsWith("quarkus."));
+
         Consumer<BuildChainBuilder> result = Functions.discardingConsumer();
+        result = result.andThen(bcb -> bcb.addBuildStep(bc -> {
+            bc.produce(new BuildTimeConfigurationBuildItem(buildTimeConfig));
+            bc.produce(new BuildTimeRunTimeFixedConfigurationBuildItem(buildTimeRunTimeConfig));
+            bc.produce(new RunTimeConfigurationBuildItem(runTimeConfig));
+            bc.produce(new UnmatchedConfigBuildItem(Collections.unmodifiableSet(unmatched)));
+        }).produces(BuildTimeConfigurationBuildItem.class)
+                .produces(BuildTimeRunTimeFixedConfigurationBuildItem.class)
+                .produces(RunTimeConfigurationBuildItem.class)
+                .produces(UnmatchedConfigBuildItem.class)
+                .build());
         for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, "META-INF/quarkus-build-steps.list")) {
             result = result.andThen(ExtensionLoader.loadStepsFrom(clazz));
         }

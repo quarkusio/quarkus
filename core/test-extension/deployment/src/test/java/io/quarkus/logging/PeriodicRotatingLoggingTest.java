@@ -35,7 +35,7 @@ public class PeriodicRotatingLoggingTest {
         DelayedHandler delayedHandler = InitialConfigurator.DELAYED_HANDLER;
         assertThat(Logger.getLogger("").getHandlers()).contains(delayedHandler);
 
-        Handler handler = Arrays.asList(delayedHandler.getHandlers()).stream()
+        Handler handler = Arrays.stream(delayedHandler.getHandlers())
                 .filter(h -> (h instanceof PeriodicRotatingFileHandler))
                 .findFirst().get();
         assertThat(handler).isNotNull();

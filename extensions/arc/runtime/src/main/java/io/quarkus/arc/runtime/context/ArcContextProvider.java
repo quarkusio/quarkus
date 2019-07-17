@@ -18,9 +18,6 @@ import io.quarkus.arc.ManagedContext;
  */
 public class ArcContextProvider implements ThreadContextProvider {
 
-    private static ThreadContextSnapshot NOOP_SNAPSHOT = () -> () -> {
-    };
-
     @Override
     public ThreadContextSnapshot currentContext(Map<String, String> map) {
         ArcContainer arc = Arc.container();
@@ -29,13 +26,8 @@ public class ArcContextProvider implements ThreadContextProvider {
             return null;
         }
 
-        if (!isContextActiveOnThisThread(arc)) {
-            // request context not active, nothing to propagate, return no-op
-            return NOOP_SNAPSHOT;
-        }
-
-        // capture the state
-        InjectableContext.ContextState state = arc.requestContext().getState();
+        // capture the state, null indicates no active context while capturing snapshot
+        InjectableContext.ContextState state = isContextActiveOnThisThread(arc) ? arc.requestContext().getState() : null;
         return () -> {
             // can be called later on, we should retrieve the container again
             ArcContainer arcContainer = Arc.container();
@@ -49,17 +41,30 @@ public class ArcContextProvider implements ThreadContextProvider {
                 // context active, store current state, feed it new one and restore state afterwards
                 InjectableContext.ContextState stateToRestore = requestContext.getState();
                 requestContext.deactivate();
-                requestContext.activate(state);
+                if (state != null) {
+                    // only activate if previous thread had it active
+                    requestContext.activate(state);
+                }
                 controller = () -> {
                     // clean up, reactivate context with previous values
-                    requestContext.deactivate();
+                    if (state != null) {
+                        // only deactivate if previous thread had it active
+                        requestContext.deactivate();
+                    }
                     requestContext.activate(stateToRestore);
                 };
             } else {
                 // context not active, activate and pass it new instance, deactivate afterwards
-                requestContext.activate(state);
+                if (state != null) {
+                    // only activate if previous thread had it active
+                    requestContext.activate(state);
+
+                }
                 controller = () -> {
-                    requestContext.deactivate();
+                    if (state != null) {
+                        // only deactivate if previous thread had it active
+                        requestContext.deactivate();
+                    }
                 };
             }
             return controller;
@@ -73,11 +78,6 @@ public class ArcContextProvider implements ThreadContextProvider {
         if (arc == null || !arc.isRunning()) {
             //return null as per docs to state that propagation of this context is not supported
             return null;
-        }
-
-        if (!isContextActiveOnThisThread(arc)) {
-            // request context not active, nothing to propagate, return no-op
-            return NOOP_SNAPSHOT;
         }
 
         return () -> {

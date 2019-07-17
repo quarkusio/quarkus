@@ -5,6 +5,8 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -42,6 +44,7 @@ public class QuarkusAugmentor {
     private final List<Consumer<BuildChainBuilder>> buildChainCustomizers;
     private final LaunchMode launchMode;
     private final List<Path> additionalApplicationArchives;
+    private final Collection<Path> excludedFromIndexing;
     private final LiveReloadBuildItem liveReloadBuildItem;
     private final Properties buildSystemProperties;
 
@@ -53,6 +56,7 @@ public class QuarkusAugmentor {
         this.buildChainCustomizers = new ArrayList<>(builder.buildChainCustomizers);
         this.launchMode = builder.launchMode;
         this.additionalApplicationArchives = new ArrayList<>(builder.additionalApplicationArchives);
+        this.excludedFromIndexing = builder.excludedFromIndexing;
         this.liveReloadBuildItem = builder.liveReloadState;
         this.buildSystemProperties = builder.buildSystemProperties;
     }
@@ -101,7 +105,7 @@ public class QuarkusAugmentor {
             BuildExecutionBuilder execBuilder = chain.createExecutionBuilder("main")
                     .produce(QuarkusConfig.INSTANCE)
                     .produce(liveReloadBuildItem)
-                    .produce(new ArchiveRootBuildItem(root, rootFs == null ? root : rootFs.getPath("/")))
+                    .produce(new ArchiveRootBuildItem(root, rootFs == null ? root : rootFs.getPath("/"), excludedFromIndexing))
                     .produce(new ClassOutputBuildItem(output))
                     .produce(new ShutdownContextBuildItem())
                     .produce(new LaunchModeBuildItem(launchMode))
@@ -144,6 +148,7 @@ public class QuarkusAugmentor {
     public static final class Builder {
 
         List<Path> additionalApplicationArchives = new ArrayList<>();
+        Collection<Path> excludedFromIndexing = Collections.emptySet();
         ClassOutput output;
         ClassLoader classLoader;
         Path root;
@@ -164,6 +169,11 @@ public class QuarkusAugmentor {
 
         public Builder addAdditionalApplicationArchive(Path archive) {
             this.additionalApplicationArchives.add(archive);
+            return this;
+        }
+
+        public Builder excludeFromIndexing(Collection<Path> excludedFromIndexing) {
+            this.excludedFromIndexing = excludedFromIndexing;
             return this;
         }
 

@@ -489,7 +489,8 @@ public class BeanDeployment {
             for (BeanDefiningAnnotation i : additionalBeanDefiningAnnotations) {
                 if (i.getDefaultScope() != null) {
                     ScopeInfo scope = getScope(i.getDefaultScope(), customContexts);
-                    stereotypes.put(i.getAnnotation(), new StereotypeInfo(scope, Collections.emptyList(), false, null, false,
+                    stereotypes.put(i.getAnnotation(), new StereotypeInfo(scope, Collections.emptyList(),
+                            false, null, false, true,
                             index.getClassByName(i.getAnnotation())));
                 }
             }

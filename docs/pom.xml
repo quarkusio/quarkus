@@ -45,8 +45,8 @@
                         <quarkus-version>${project.version}</quarkus-version>
                         <surefire-version>${version.surefire.plugin}</surefire-version>
                         <graalvm-version>${graal-sdk.version-for-documentation}</graalvm-version>
-                        <jdk-version>${jdk-version}</jdk-version>
-                        <maven-version>${maven-version}</maven-version>
+                        <jdk-version>JDK 8 or 11</jdk-version>
+                        <maven-version>Apache Maven 3.5.3+</maven-version>
                         <axle-version>${axle-client.version}</axle-version>
                         <vertx-version>${vertx.version}</vertx-version>
                         <restassured-version>${rest-assured.version}</restassured-version>

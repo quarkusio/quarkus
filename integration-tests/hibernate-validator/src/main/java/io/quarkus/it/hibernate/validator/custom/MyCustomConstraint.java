@@ -10,7 +10,7 @@ import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
 
-@Target({ ElementType.TYPE_USE })
+@Target({ ElementType.TYPE_USE, ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = MyCustomConstraint.Validator.class)
 public @interface MyCustomConstraint {

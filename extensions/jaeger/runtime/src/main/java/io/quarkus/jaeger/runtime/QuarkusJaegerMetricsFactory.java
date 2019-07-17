@@ -63,6 +63,7 @@ public class QuarkusJaegerMetricsFactory implements MetricsFactory {
 
     static Metadata meta(String name, MetricType type) {
         return Metadata.builder()
+                .withName(name)
                 .withDisplayName(name)
                 .withType(type)
                 .withUnit("none")

@@ -6,6 +6,7 @@ import java.util.Locale;
 import java.util.Set;
 
 import javax.validation.Validation;
+import javax.validation.ValidatorFactory;
 
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
@@ -13,12 +14,14 @@ import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class HibernateValidatorRecorder {
 
-    public BeanContainerListener initializeValidatorFactory(Set<Class<?>> classesToBeValidated) {
+    public BeanContainerListener initializeValidatorFactory(Set<Class<?>> classesToBeValidated,
+            ShutdownContext shutdownContext) {
         BeanContainerListener beanContainerListener = new BeanContainerListener() {
 
             @Override
@@ -43,7 +46,16 @@ public class HibernateValidatorRecorder {
                         .initializeLocales(localesToInitialize)
                         .beanMetaDataClassNormalizer(new ArcProxyBeanMetaDataClassNormalizer());
 
-                ValidatorHolder.initialize(configuration.buildValidatorFactory());
+                ValidatorFactory validatorFactory = configuration.buildValidatorFactory();
+                ValidatorHolder.initialize(validatorFactory);
+
+                // Close the ValidatorFactory on shutdown
+                shutdownContext.addShutdownTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        validatorFactory.close();
+                    }
+                });
             }
         };
 

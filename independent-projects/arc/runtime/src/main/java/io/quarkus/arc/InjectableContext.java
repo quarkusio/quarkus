@@ -1,6 +1,6 @@
 package io.quarkus.arc;
 
-import java.util.Collection;
+import java.util.Map;
 import javax.enterprise.context.spi.AlterableContext;
 
 /**
@@ -10,15 +10,26 @@ import javax.enterprise.context.spi.AlterableContext;
 public interface InjectableContext extends AlterableContext {
 
     /**
-     * Note that we cannot actually return just a map of contextuals to contextual instances because we need to preserve the
-     * {@link javax.enterprise.context.spi.CreationalContext} too so that we're able to destroy the dependent objects correctly.
-     *
-     * @return all existing contextual instances
-     */
-    Collection<ContextInstanceHandle<?>> getAll();
-
-    /**
      * Destroy all existing contextual instances.
      */
     void destroy();
+
+    /**
+     * @return the current state
+     */
+    ContextState getState();
+
+    /**
+    *
+    */
+    interface ContextState {
+
+        /**
+         * The changes to the map are not reflected in the underlying context state.
+         * 
+         * @return a map of contextual instances
+         */
+        Map<InjectableBean<?>, Object> getContextualInstances();
+
+    }
 }

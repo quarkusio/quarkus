@@ -28,7 +28,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
@@ -63,8 +62,7 @@ public class ResteasyJsonbProcessor {
     @BuildStep
     void generateClasses(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
-            BuildProducer<ResteasyJaxrsProviderBuildItem> jaxrsProvider,
-            BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses) {
+            BuildProducer<ResteasyJaxrsProviderBuildItem> jaxrsProvider) {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         if (!jsonbConfig.enabled) {
@@ -132,16 +130,6 @@ public class ResteasyJsonbProcessor {
         additionalClassGenerator.generateJsonbContextResolver(classOutput, typeToGeneratedSerializers);
 
         jaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(AdditionalClassGenerator.QUARKUS_CONTEXT_RESOLVER));
-
-        // ensure that the default locale is read at runtime when it's not set in the configuration (meaning the system default is needed)
-        if (!jsonbConfig.locale.isPresent()) {
-            runtimeClasses
-                    .produce(new RuntimeInitializedClassBuildItem(AdditionalClassGenerator.QUARKUS_DEFAULT_LOCALE_PROVIDER));
-            runtimeClasses.produce(
-                    new RuntimeInitializedClassBuildItem(AdditionalClassGenerator.QUARKUS_DEFAULT_DATE_FORMATTER_PROVIDER));
-            runtimeClasses.produce(
-                    new RuntimeInitializedClassBuildItem(AdditionalClassGenerator.QUARKUS_CONTEXT_RESOLVER));
-        }
     }
 
     private boolean hasCustomContextResolverBeenDeclared(IndexView index) {

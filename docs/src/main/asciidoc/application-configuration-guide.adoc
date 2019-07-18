@@ -109,7 +109,7 @@ Once set, check the application with:
 
 [source,shell]
 ----
-$ curl http://localhost:8080/greeting
+$ curl http://localhost:8080/hello
 hello quarkus!
 ----
 

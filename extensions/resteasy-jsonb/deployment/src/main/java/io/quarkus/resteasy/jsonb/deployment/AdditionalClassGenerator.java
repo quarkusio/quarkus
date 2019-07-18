@@ -95,11 +95,15 @@ public class AdditionalClassGenerator {
                 ResultHandle locale = instanceNull.invokeStaticMethod(
                         MethodDescriptor.ofMethod(QUARKUS_DEFAULT_LOCALE_PROVIDER, "get", Locale.class));
 
+                ResultHandle localeStr = instanceNull.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(Locale.class, "toLanguageTag", String.class),
+                        locale);
+
                 ResultHandle format = instanceNull.load(jsonbConfig.dateFormat.orElse(JsonbDateFormat.DEFAULT_FORMAT));
 
                 ResultHandle jsonbDateFormatter = instanceNull.newInstance(
                         MethodDescriptor.ofConstructor(JsonbDateFormatter.class, String.class, String.class),
-                        format, locale);
+                        format, localeStr);
                 instanceNull.writeStaticField(instance, jsonbDateFormatter);
                 instanceNull.returnValue(jsonbDateFormatter);
             }

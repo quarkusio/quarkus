@@ -1,17 +1,20 @@
 package io.quarkus.resteasy.jsonb.deployment;
 
 import java.lang.reflect.Modifier;
-import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
 import javax.json.bind.annotation.JsonbDateFormat;
 import javax.json.bind.serializer.JsonbSerializer;
+import javax.json.spi.JsonProvider;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
 
 import org.eclipse.yasson.YassonProperties;
+import org.eclipse.yasson.internal.JsonbContext;
+import org.eclipse.yasson.internal.MappingContext;
+import org.eclipse.yasson.internal.serializer.ContainerSerializerProvider;
 import org.eclipse.yasson.internal.serializer.JsonbDateFormatter;
 
 import io.quarkus.gizmo.ClassCreator;
@@ -20,6 +23,8 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.resteasy.jsonb.runtime.serializers.QuarkusJsonbBinding;
+import io.quarkus.resteasy.jsonb.runtime.serializers.SimpleContainerSerializerProvider;
 
 public class AdditionalClassGenerator {
 
@@ -98,7 +103,7 @@ public class AdditionalClassGenerator {
         }
     }
 
-    void generateJsonbContextResolver(ClassOutput classOutput, List<String> generatedSerializers) {
+    void generateJsonbContextResolver(ClassOutput classOutput, Map<String, String> typeToGeneratedSerializers) {
         try (ClassCreator cc = ClassCreator.builder()
                 .classOutput(classOutput).className(QUARKUS_CONTEXT_RESOLVER)
                 .interfaces(ContextResolver.class)
@@ -114,9 +119,18 @@ public class AdditionalClassGenerator {
             try (MethodCreator clinit = cc.getMethodCreator("<clinit>", void.class).setModifiers(Modifier.STATIC)) {
                 final Class<javax.json.bind.JsonbConfig> jsonbConfigClass = javax.json.bind.JsonbConfig.class;
 
-                //create the JsonbConfig object
-                MethodDescriptor configCtor = MethodDescriptor.ofConstructor(jsonbConfigClass);
-                ResultHandle config = clinit.newInstance(configCtor);
+                // create the JsonbConfig object
+                ResultHandle config = clinit.newInstance(MethodDescriptor.ofConstructor(jsonbConfigClass));
+
+                // create the jsonbContext object
+                ResultHandle provider = clinit
+                        .invokeStaticMethod(MethodDescriptor.ofMethod(JsonProvider.class, "provider", JsonProvider.class));
+                ResultHandle jsonbContext = clinit.newInstance(
+                        MethodDescriptor.ofConstructor(JsonbContext.class, jsonbConfigClass, JsonProvider.class),
+                        config, provider);
+                ResultHandle mappingContext = clinit.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(JsonbContext.class, "getMappingContext", MappingContext.class),
+                        jsonbContext);
 
                 //handle locale
                 ResultHandle locale = null;
@@ -171,13 +185,32 @@ public class AdditionalClassGenerator {
                                 clinit.load(jsonbConfig.failOnUnknownProperties)));
 
                 // add generated serializers to config
-                if (!generatedSerializers.isEmpty()) {
+                if (!typeToGeneratedSerializers.isEmpty()) {
                     ResultHandle serializersArray = clinit.newArray(JsonbSerializer.class,
-                            clinit.load(generatedSerializers.size()));
-                    for (int i = 0; i < generatedSerializers.size(); i++) {
+                            clinit.load(typeToGeneratedSerializers.size()));
+                    int i = 0;
+                    for (Map.Entry<String, String> entry : typeToGeneratedSerializers.entrySet()) {
+
                         ResultHandle serializer = clinit
-                                .newInstance(MethodDescriptor.ofConstructor(generatedSerializers.get(i)));
+                                .newInstance(MethodDescriptor.ofConstructor(entry.getValue()));
+
+                        // build up the serializers array that will be passed to JsonbConfig
                         clinit.writeArrayValue(serializersArray, clinit.load(i), serializer);
+
+                        ResultHandle clazz = clinit.invokeStaticMethod(
+                                MethodDescriptor.ofMethod(Class.class, "forName", Class.class, String.class),
+                                clinit.load(entry.getKey()));
+
+                        // add a ContainerSerializerProvider for the serializer
+                        ResultHandle serializerProvider = clinit.newInstance(
+                                MethodDescriptor.ofConstructor(SimpleContainerSerializerProvider.class, JsonbSerializer.class),
+                                serializer);
+                        clinit.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(MappingContext.class, "addSerializerProvider", void.class,
+                                        Class.class, ContainerSerializerProvider.class),
+                                mappingContext, clazz, serializerProvider);
+
+                        i++;
                     }
                     clinit.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(jsonbConfigClass, "withSerializers", jsonbConfigClass,
@@ -185,11 +218,11 @@ public class AdditionalClassGenerator {
                             config, serializersArray);
                 }
 
-                //create Jsonb from JsonbBuilder#create using the previously created config
-                ResultHandle jsonb = clinit.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(JsonbBuilder.class, "create", Jsonb.class, jsonbConfigClass), config);
-
+                // create jsonb from QuarkusJsonbBinding
+                ResultHandle jsonb = clinit.newInstance(
+                        MethodDescriptor.ofConstructor(QuarkusJsonbBinding.class, JsonbContext.class), jsonbContext);
                 clinit.writeStaticField(instance, jsonb);
+
                 clinit.returnValue(null);
             }
 

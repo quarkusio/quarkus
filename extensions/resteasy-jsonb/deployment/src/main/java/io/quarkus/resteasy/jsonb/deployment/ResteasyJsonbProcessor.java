@@ -1,9 +1,10 @@
 package io.quarkus.resteasy.jsonb.deployment;
 
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.json.bind.Jsonb;
@@ -111,20 +112,20 @@ public class ResteasyJsonbProcessor {
             }
         }
 
-        List<String> generatedSerializers = new ArrayList<>();
+        Map<String, String> typeToGeneratedSerializers = new HashMap<>();
         for (ClassType type : serializerCandidates) {
             String generatedSerializerClassName = generateSerializerForClassType(type,
                     typeSerializerGeneratorRegistry,
                     classOutput);
             if (generatedSerializerClassName != null) {
-                generatedSerializers.add(generatedSerializerClassName);
+                typeToGeneratedSerializers.put(type.name().toString(), generatedSerializerClassName);
             }
         }
 
         AdditionalClassGenerator additionalClassGenerator = new AdditionalClassGenerator(jsonbConfig);
         additionalClassGenerator.generateDefaultLocaleProvider(classOutput);
         additionalClassGenerator.generateJsonbDefaultJsonbDateFormatterProvider(classOutput);
-        additionalClassGenerator.generateJsonbContextResolver(classOutput, generatedSerializers);
+        additionalClassGenerator.generateJsonbContextResolver(classOutput, typeToGeneratedSerializers);
 
         jaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(AdditionalClassGenerator.QUARKUS_CONTEXT_RESOLVER));
 

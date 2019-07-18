@@ -56,9 +56,8 @@ public class MethodUtils {
         switch (a.kind()) {
             case CLASS:
             case PRIMITIVE:
-                return a.name();
             case ARRAY:
-                break;
+                return a.name();
             case PARAMETERIZED_TYPE:
                 return a.asParameterizedType().name();
             case TYPE_VARIABLE:
@@ -67,7 +66,6 @@ public class MethodUtils {
             default:
                 return DotNames.OBJECT;
         }
-        return DotNames.OBJECT;
     }
 
     private MethodUtils() {

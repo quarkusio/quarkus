@@ -38,8 +38,12 @@ public class InetSocketAddressConverter implements Converter<InetSocketAddress> 
         while (hostPart.startsWith("[") && hostPart.endsWith("]")) {
             hostPart = hostPart.substring(1, hostPart.length() - 1);
         }
-        InetAddress resolved = Inet.parseInetAddress(hostPart);
-        return resolved == null ? InetSocketAddress.createUnresolved(hostPart, portPart)
-                : new InetSocketAddress(resolved, portPart);
+        if (hostPart.isEmpty()) {
+            return new InetSocketAddress(portPart);
+        } else {
+            InetAddress resolved = Inet.parseInetAddress(hostPart);
+            return resolved == null ? InetSocketAddress.createUnresolved(hostPart, portPart)
+                    : new InetSocketAddress(resolved, portPart);
+        }
     }
 }

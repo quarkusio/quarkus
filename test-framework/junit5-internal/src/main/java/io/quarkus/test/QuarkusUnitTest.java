@@ -65,6 +65,7 @@ public class QuarkusUnitTest
     private Path deploymentDir;
     private Consumer<Throwable> assertException;
     private Supplier<JavaArchive> archiveProducer;
+    private List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
     private Runnable afterUndeployListener;
     private String logFileName;
 
@@ -100,6 +101,11 @@ public class QuarkusUnitTest
 
     public QuarkusUnitTest setArchiveProducer(Supplier<JavaArchive> archiveProducer) {
         this.archiveProducer = archiveProducer;
+        return this;
+    }
+
+    public QuarkusUnitTest addBuildChainCustomizer(Consumer<BuildChainBuilder> customizer) {
+        this.buildChainCustomizers.add(customizer);
         return this;
     }
 
@@ -195,14 +201,14 @@ public class QuarkusUnitTest
 
             exportArchive(deploymentDir, testClass);
 
-            List<Consumer<BuildChainBuilder>> customiers = new ArrayList<>();
+            List<Consumer<BuildChainBuilder>> customizers = new ArrayList<>(buildChainCustomizers);
 
             try {
                 //this is a bit of a hack to avoid requiring a dep on the arc extension,
                 //as this would mean we cannot use this to test the extension
                 Class<? extends BuildItem> buildItem = Class
                         .forName("io.quarkus.arc.deployment.AdditionalBeanBuildItem").asSubclass(BuildItem.class);
-                customiers.add(new Consumer<BuildChainBuilder>() {
+                customizers.add(new Consumer<BuildChainBuilder>() {
                     @Override
                     public void accept(BuildChainBuilder buildChainBuilder) {
                         buildChainBuilder.addBuildStep(new BuildStep() {
@@ -231,7 +237,7 @@ public class QuarkusUnitTest
                     .setTarget(deploymentDir)
                     .excludeFromIndexing(testLocation)
                     .setFrameworkClassesPath(testLocation)
-                    .addChainCustomizers(customiers)
+                    .addChainCustomizers(customizers)
                     .build();
 
             try {

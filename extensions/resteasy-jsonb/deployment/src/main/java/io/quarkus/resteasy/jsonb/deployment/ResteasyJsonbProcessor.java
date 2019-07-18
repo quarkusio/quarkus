@@ -132,10 +132,15 @@ public class ResteasyJsonbProcessor {
 
         jaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(AdditionalClassGenerator.QUARKUS_CONTEXT_RESOLVER));
 
-        // ensure that the default locale is read at runtime
-        runtimeClasses.produce(new RuntimeInitializedClassBuildItem(AdditionalClassGenerator.QUARKUS_DEFAULT_LOCALE_PROVIDER));
-        runtimeClasses.produce(
-                new RuntimeInitializedClassBuildItem(AdditionalClassGenerator.QUARKUS_DEFAULT_DATE_FORMATTER_PROVIDER));
+        // ensure that the default locale is read at runtime when it's not set in the configuration (meaning the system default is needed)
+        if (!jsonbConfig.locale.isPresent()) {
+            runtimeClasses
+                    .produce(new RuntimeInitializedClassBuildItem(AdditionalClassGenerator.QUARKUS_DEFAULT_LOCALE_PROVIDER));
+            runtimeClasses.produce(
+                    new RuntimeInitializedClassBuildItem(AdditionalClassGenerator.QUARKUS_DEFAULT_DATE_FORMATTER_PROVIDER));
+            runtimeClasses.produce(
+                    new RuntimeInitializedClassBuildItem(AdditionalClassGenerator.QUARKUS_CONTEXT_RESOLVER));
+        }
     }
 
     private boolean hasCustomContextResolverBeenDeclared(IndexView index) {

@@ -23,7 +23,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mailer</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>

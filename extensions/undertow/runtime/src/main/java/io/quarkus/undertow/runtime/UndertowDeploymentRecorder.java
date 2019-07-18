@@ -47,6 +47,7 @@ import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.CanonicalPathHandler;
+import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.CachingResourceManager;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
@@ -121,12 +122,12 @@ public class UndertowDeploymentRecorder {
     }
 
     public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
-            LaunchMode launchMode, ShutdownContext context) {
+            LaunchMode launchMode, ShutdownContext context, String contextPath) {
         DeploymentInfo d = new DeploymentInfo();
         d.setSessionIdGenerator(new QuarkusSessionIdGenerator());
         d.setClassLoader(getClass().getClassLoader());
         d.setDeploymentName(name);
-        d.setContextPath("/");
+        d.setContextPath(contextPath);
         d.setEagerFilterInit(true);
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
@@ -314,6 +315,11 @@ public class UndertowDeploymentRecorder {
         HttpHandler main = manager.getDeployment().getHandler();
         for (HandlerWrapper i : wrappers) {
             main = i.wrap(main);
+        }
+        if (!manager.getDeployment().getDeploymentInfo().getContextPath().equals("/")) {
+            PathHandler pathHandler = new PathHandler()
+                    .addPrefixPath(manager.getDeployment().getDeploymentInfo().getContextPath(), main);
+            main = pathHandler;
         }
         currentRoot = main;
 

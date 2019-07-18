@@ -269,7 +269,8 @@ public class UndertowBuildStep {
             Consumer<ReflectiveClassBuildItem> reflectiveClasses,
             LaunchModeBuildItem launchMode,
             ShutdownContextBuildItem shutdownContext,
-            KnownPathsBuildItem knownPaths) throws Exception {
+            KnownPathsBuildItem knownPaths,
+            ServletConfig servletConfig) throws Exception {
 
         ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(ServletSecurityInfo.class,
                 ServletSecurityInfoProxy.class, ServletSecurityInfoSubstitution.class);
@@ -277,13 +278,26 @@ public class UndertowBuildStep {
         reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, DefaultServlet.class.getName(),
                 "io.undertow.server.protocol.http.HttpRequestParser$$generated"));
 
-        RuntimeValue<DeploymentInfo> deployment = recorder.createDeployment("test", knownPaths.knownFiles,
-                knownPaths.knownDirectories,
-                launchMode.getLaunchMode(), shutdownContext);
-
         WebMetaData webMetaData = webMetadataBuildItem.getWebMetaData();
         final IndexView index = combinedIndexBuildItem.getIndex();
         processAnnotations(index, webMetaData);
+
+        String contextPath;
+        if (servletConfig.contextPath.isPresent()) {
+            if (!servletConfig.contextPath.get().startsWith("/")) {
+                contextPath = "/" + servletConfig.contextPath;
+            } else {
+                contextPath = servletConfig.contextPath.get();
+            }
+        } else if (webMetaData.getDefaultContextPath() != null) {
+            contextPath = webMetaData.getDefaultContextPath();
+        } else {
+            contextPath = "/";
+        }
+        RuntimeValue<DeploymentInfo> deployment = recorder.createDeployment("test", knownPaths.knownFiles,
+                knownPaths.knownDirectories,
+                launchMode.getLaunchMode(), shutdownContext, contextPath);
+
         //add servlets
         if (webMetaData.getServlets() != null) {
             for (ServletMetaData servlet : webMetaData.getServlets()) {

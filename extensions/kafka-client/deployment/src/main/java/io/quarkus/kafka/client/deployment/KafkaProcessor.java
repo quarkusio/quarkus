@@ -37,6 +37,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -71,7 +72,8 @@ public class KafkaProcessor {
     static final String TARGET_JAVA_9_CHECKSUM_FACTORY = "io.quarkus.kafka.client.generated.Target_Java9ChecksumFactory";
 
     @BuildStep
-    public void build(CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    public void build(CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<JniBuildItem> jni) {
         Collection<ClassInfo> serializers = indexBuildItem.getIndex()
                 .getAllKnownSubclasses(DotName.createSimple(Serializer.class.getName()));
         Collection<ClassInfo> deserializers = indexBuildItem.getIndex()
@@ -97,6 +99,8 @@ public class KafkaProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, RoundRobinAssignor.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, StickyAssignor.class.getName()));
 
+        // enable JNI
+        jni.produce(new JniBuildItem());
     }
 
     /**

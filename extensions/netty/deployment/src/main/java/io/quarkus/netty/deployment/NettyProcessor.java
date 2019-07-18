@@ -13,6 +13,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.netty.BossGroup;
@@ -26,7 +27,9 @@ class NettyProcessor {
     private static final Logger log = Logger.getLogger(NettyProcessor.class);
 
     @BuildStep
-    SubstrateConfigBuildItem build() {
+    SubstrateConfigBuildItem build(BuildProducer<JniBuildItem> jni) {
+        jni.produce(new JniBuildItem());
+
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioSocketChannel"));
         reflectiveClass
                 .produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioServerSocketChannel"));

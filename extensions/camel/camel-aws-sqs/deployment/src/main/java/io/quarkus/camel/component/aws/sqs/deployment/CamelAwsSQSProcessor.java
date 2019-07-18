@@ -24,6 +24,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
@@ -38,6 +39,11 @@ class CamelAwsSQSProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.CAMEL_AWS_SQS);
+    }
+
+    @BuildStep
+    JniBuildItem jni() {
+        return new JniBuildItem();
     }
 
     @BuildStep

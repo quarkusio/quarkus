@@ -17,6 +17,8 @@ import org.eclipse.yasson.internal.MappingContext;
 import org.eclipse.yasson.internal.serializer.ContainerSerializerProvider;
 import org.eclipse.yasson.internal.serializer.JsonbDateFormatter;
 
+import io.quarkus.gizmo.BranchResult;
+import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -44,29 +46,30 @@ public class AdditionalClassGenerator {
                 .build()) {
 
             FieldDescriptor instance = cc.getFieldCreator("INSTANCE", Locale.class)
-                    .setModifiers(Modifier.FINAL | Modifier.STATIC | Modifier.PRIVATE)
+                    .setModifiers(Modifier.STATIC | Modifier.PRIVATE)
                     .getFieldDescriptor();
-
-            try (MethodCreator clinit = cc.getMethodCreator("<clinit>", void.class).setModifiers(Modifier.STATIC)) {
-
-                ResultHandle locale;
-                if (jsonbConfig.locale.isPresent()) {
-                    locale = clinit.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(Locale.class, "forLanguageTag", Locale.class, String.class),
-                            clinit.load(jsonbConfig.locale.get()));
-                } else {
-                    locale = clinit.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(Locale.class, "getDefault", Locale.class));
-                }
-
-                clinit.writeStaticField(instance, locale);
-                clinit.returnValue(null);
-            }
 
             try (MethodCreator get = cc.getMethodCreator("get", Locale.class)) {
                 get.setModifiers(Modifier.STATIC | Modifier.PUBLIC);
 
-                get.returnValue(get.readStaticField(instance));
+                BranchResult branchResult = get.ifNull(get.readStaticField(instance));
+
+                BytecodeCreator instanceNotNull = branchResult.falseBranch();
+                instanceNotNull.returnValue(instanceNotNull.readStaticField(instance));
+
+                BytecodeCreator instanceNull = branchResult.trueBranch();
+                ResultHandle locale;
+                if (jsonbConfig.locale.isPresent()) {
+                    locale = instanceNull.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(Locale.class, "forLanguageTag", Locale.class, String.class),
+                            instanceNull.load(jsonbConfig.locale.get()));
+                } else {
+                    locale = instanceNull.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(Locale.class, "getDefault", Locale.class));
+                }
+
+                instanceNull.writeStaticField(instance, locale);
+                instanceNull.returnValue(locale);
             }
         }
     }
@@ -77,28 +80,28 @@ public class AdditionalClassGenerator {
                 .build()) {
 
             FieldDescriptor instance = cc.getFieldCreator("INSTANCE", JsonbDateFormatter.class)
-                    .setModifiers(Modifier.FINAL | Modifier.STATIC | Modifier.PRIVATE)
+                    .setModifiers(Modifier.STATIC | Modifier.PRIVATE)
                     .getFieldDescriptor();
-
-            try (MethodCreator clinit = cc.getMethodCreator("<clinit>", void.class).setModifiers(Modifier.STATIC)) {
-
-                ResultHandle locale = clinit.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(QUARKUS_DEFAULT_LOCALE_PROVIDER, "get", Locale.class));
-
-                ResultHandle format = clinit.load(jsonbConfig.dateFormat.orElse(JsonbDateFormat.DEFAULT_FORMAT));
-
-                ResultHandle jsonbDateFormatter = clinit.newInstance(
-                        MethodDescriptor.ofConstructor(JsonbDateFormatter.class, String.class, String.class),
-                        format, locale);
-
-                clinit.writeStaticField(instance, jsonbDateFormatter);
-                clinit.returnValue(null);
-            }
 
             try (MethodCreator get = cc.getMethodCreator("get", JsonbDateFormatter.class)) {
                 get.setModifiers(Modifier.STATIC | Modifier.PUBLIC);
 
-                get.returnValue(get.readStaticField(instance));
+                BranchResult branchResult = get.ifNull(get.readStaticField(instance));
+
+                BytecodeCreator instanceNotNull = branchResult.falseBranch();
+                instanceNotNull.returnValue(instanceNotNull.readStaticField(instance));
+
+                BytecodeCreator instanceNull = branchResult.trueBranch();
+                ResultHandle locale = instanceNull.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(QUARKUS_DEFAULT_LOCALE_PROVIDER, "get", Locale.class));
+
+                ResultHandle format = instanceNull.load(jsonbConfig.dateFormat.orElse(JsonbDateFormat.DEFAULT_FORMAT));
+
+                ResultHandle jsonbDateFormatter = instanceNull.newInstance(
+                        MethodDescriptor.ofConstructor(JsonbDateFormatter.class, String.class, String.class),
+                        format, locale);
+                instanceNull.writeStaticField(instance, jsonbDateFormatter);
+                instanceNull.returnValue(jsonbDateFormatter);
             }
         }
     }
@@ -113,124 +116,133 @@ public class AdditionalClassGenerator {
             cc.addAnnotation(Provider.class);
 
             FieldDescriptor instance = cc.getFieldCreator("INSTANCE", Jsonb.class)
-                    .setModifiers(Modifier.FINAL | Modifier.STATIC | Modifier.PRIVATE)
+                    .setModifiers(Modifier.STATIC | Modifier.PRIVATE)
                     .getFieldDescriptor();
 
-            try (MethodCreator clinit = cc.getMethodCreator("<clinit>", void.class).setModifiers(Modifier.STATIC)) {
-                final Class<javax.json.bind.JsonbConfig> jsonbConfigClass = javax.json.bind.JsonbConfig.class;
+            try (MethodCreator getContext = cc.getMethodCreator("getContext", Jsonb.class, Class.class)) {
+                BranchResult branchResult = getContext.ifNull(getContext.readStaticField(instance));
+
+                BytecodeCreator instanceNotNull = branchResult.falseBranch();
+                instanceNotNull.returnValue(instanceNotNull.readStaticField(instance));
+
+                BytecodeCreator instanceNull = branchResult.trueBranch();
+
+                Class<javax.json.bind.JsonbConfig> jsonbConfigClass = javax.json.bind.JsonbConfig.class;
 
                 // create the JsonbConfig object
-                ResultHandle config = clinit.newInstance(MethodDescriptor.ofConstructor(jsonbConfigClass));
+                ResultHandle config = instanceNull.newInstance(MethodDescriptor.ofConstructor(jsonbConfigClass));
 
                 // create the jsonbContext object
-                ResultHandle provider = clinit
+                ResultHandle provider = instanceNull
                         .invokeStaticMethod(MethodDescriptor.ofMethod(JsonProvider.class, "provider", JsonProvider.class));
-                ResultHandle jsonbContext = clinit.newInstance(
+                ResultHandle jsonbContext = instanceNull.newInstance(
                         MethodDescriptor.ofConstructor(JsonbContext.class, jsonbConfigClass, JsonProvider.class),
                         config, provider);
-                ResultHandle mappingContext = clinit.invokeVirtualMethod(
+                ResultHandle mappingContext = instanceNull.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(JsonbContext.class, "getMappingContext", MappingContext.class),
                         jsonbContext);
 
                 //handle locale
                 ResultHandle locale = null;
                 if (jsonbConfig.locale.isPresent()) {
-                    locale = clinit.invokeStaticMethod(
+                    locale = instanceNull.invokeStaticMethod(
                             MethodDescriptor.ofMethod(QUARKUS_DEFAULT_LOCALE_PROVIDER, "get", Locale.class));
-                    clinit.invokeVirtualMethod(
+                    instanceNull.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(jsonbConfigClass, "withLocale", jsonbConfigClass, Locale.class),
                             config, locale);
                 }
 
                 // handle date format
                 if (jsonbConfig.dateFormat.isPresent()) {
-                    clinit.invokeVirtualMethod(
+                    instanceNull.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(jsonbConfigClass, "withDateFormat", jsonbConfigClass, String.class,
                                     Locale.class),
                             config,
-                            clinit.load(jsonbConfig.dateFormat.get()),
-                            locale != null ? locale : clinit.loadNull());
+                            instanceNull.load(jsonbConfig.dateFormat.get()),
+                            locale != null ? locale : instanceNull.loadNull());
                 }
 
                 // handle serializeNullValues
-                clinit.invokeVirtualMethod(
+                instanceNull.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(jsonbConfigClass, "withNullValues", jsonbConfigClass, Boolean.class),
                         config,
-                        clinit.invokeStaticMethod(
+                        instanceNull.invokeStaticMethod(
                                 MethodDescriptor.ofMethod(Boolean.class, "valueOf", Boolean.class, boolean.class),
-                                clinit.load(jsonbConfig.serializeNullValues)));
+                                instanceNull.load(jsonbConfig.serializeNullValues)));
 
                 // handle propertyOrderStrategy
-                clinit.invokeVirtualMethod(
+                instanceNull.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(jsonbConfigClass, "withPropertyOrderStrategy", jsonbConfigClass,
                                 String.class),
-                        config, clinit.load(jsonbConfig.propertyOrderStrategy.toUpperCase()));
+                        config, instanceNull.load(jsonbConfig.propertyOrderStrategy.toUpperCase()));
 
                 // handle encoding
                 if (jsonbConfig.encoding.isPresent()) {
-                    clinit.invokeVirtualMethod(
+                    instanceNull.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(jsonbConfigClass, "withEncoding", jsonbConfigClass,
                                     String.class),
-                            config, clinit.load(jsonbConfig.encoding.get()));
+                            config, instanceNull.load(jsonbConfig.encoding.get()));
                 }
 
                 // handle failOnUnknownProperties
-                clinit.invokeVirtualMethod(
+                instanceNull.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(jsonbConfigClass, "setProperty", jsonbConfigClass, String.class,
                                 Object.class),
                         config,
-                        clinit.load(YassonProperties.FAIL_ON_UNKNOWN_PROPERTIES),
-                        clinit.invokeStaticMethod(
+                        instanceNull.load(YassonProperties.FAIL_ON_UNKNOWN_PROPERTIES),
+                        instanceNull.invokeStaticMethod(
                                 MethodDescriptor.ofMethod(Boolean.class, "valueOf", Boolean.class, boolean.class),
-                                clinit.load(jsonbConfig.failOnUnknownProperties)));
+                                instanceNull.load(jsonbConfig.failOnUnknownProperties)));
 
                 // add generated serializers to config
                 if (!typeToGeneratedSerializers.isEmpty()) {
-                    ResultHandle serializersArray = clinit.newArray(JsonbSerializer.class,
-                            clinit.load(typeToGeneratedSerializers.size()));
+                    ResultHandle serializersArray = instanceNull.newArray(JsonbSerializer.class,
+                            instanceNull.load(typeToGeneratedSerializers.size()));
                     int i = 0;
                     for (Map.Entry<String, String> entry : typeToGeneratedSerializers.entrySet()) {
 
-                        ResultHandle serializer = clinit
+                        ResultHandle serializer = instanceNull
                                 .newInstance(MethodDescriptor.ofConstructor(entry.getValue()));
 
                         // build up the serializers array that will be passed to JsonbConfig
-                        clinit.writeArrayValue(serializersArray, clinit.load(i), serializer);
+                        instanceNull.writeArrayValue(serializersArray, instanceNull.load(i), serializer);
 
-                        ResultHandle clazz = clinit.invokeStaticMethod(
+                        ResultHandle clazz = instanceNull.invokeStaticMethod(
                                 MethodDescriptor.ofMethod(Class.class, "forName", Class.class, String.class),
-                                clinit.load(entry.getKey()));
+                                instanceNull.load(entry.getKey()));
 
                         // add a ContainerSerializerProvider for the serializer
-                        ResultHandle serializerProvider = clinit.newInstance(
+                        ResultHandle serializerProvider = instanceNull.newInstance(
                                 MethodDescriptor.ofConstructor(SimpleContainerSerializerProvider.class, JsonbSerializer.class),
                                 serializer);
-                        clinit.invokeVirtualMethod(
+                        instanceNull.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(MappingContext.class, "addSerializerProvider", void.class,
                                         Class.class, ContainerSerializerProvider.class),
                                 mappingContext, clazz, serializerProvider);
 
                         i++;
                     }
-                    clinit.invokeVirtualMethod(
+                    instanceNull.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(jsonbConfigClass, "withSerializers", jsonbConfigClass,
                                     JsonbSerializer[].class),
                             config, serializersArray);
                 }
 
                 // create jsonb from QuarkusJsonbBinding
-                ResultHandle jsonb = clinit.newInstance(
+                ResultHandle jsonb = instanceNull.newInstance(
                         MethodDescriptor.ofConstructor(QuarkusJsonbBinding.class, JsonbContext.class), jsonbContext);
-                clinit.writeStaticField(instance, jsonb);
 
-                clinit.returnValue(null);
-            }
-
-            try (MethodCreator getContext = cc.getMethodCreator("getContext", Jsonb.class, Class.class)) {
-                getContext.returnValue(getContext.readStaticField(instance));
+                instanceNull.writeStaticField(instance, jsonb);
+                instanceNull.returnValue(jsonb);
             }
 
             try (MethodCreator bridgeGetContext = cc.getMethodCreator("getContext", Object.class, Class.class)) {
+                MethodDescriptor getContext = MethodDescriptor.ofMethod(QUARKUS_CONTEXT_RESOLVER, "getContext",
+                        "javax.json.bind.Jsonb",
+                        "java.lang.Class");
+                ResultHandle result = bridgeGetContext.invokeVirtualMethod(getContext, bridgeGetContext.getThis(),
+                        bridgeGetContext.getMethodParam(0));
+                bridgeGetContext.returnValue(result);
                 bridgeGetContext.returnValue(bridgeGetContext.readStaticField(instance));
             }
         }

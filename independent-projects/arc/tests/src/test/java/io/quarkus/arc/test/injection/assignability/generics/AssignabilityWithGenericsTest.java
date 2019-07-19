@@ -108,6 +108,7 @@ public class AssignabilityWithGenericsTest {
 
     }
 
+    @ApplicationScoped
     static class Bar extends DefinitelyNotBar<Integer> {
 
     }

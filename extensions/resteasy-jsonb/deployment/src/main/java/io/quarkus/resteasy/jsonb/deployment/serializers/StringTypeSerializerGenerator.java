@@ -10,8 +10,8 @@ import io.quarkus.resteasy.jsonb.deployment.DotNames;
 public class StringTypeSerializerGenerator extends AbstractTypeSerializerGenerator {
 
     @Override
-    public boolean supports(Type type, TypeSerializerGeneratorRegistry registry) {
-        return DotNames.STRING.equals(type.name());
+    public Supported supports(Type type, TypeSerializerGeneratorRegistry registry) {
+        return DotNames.STRING.equals(type.name()) ? Supported.FULLY : Supported.UNSUPPORTED;
     }
 
     @Override

@@ -16,16 +16,19 @@ import io.quarkus.resteasy.jsonb.deployment.CollectionUtil;
 public class CollectionTypeSerializerGenerator extends AbstractTypeSerializerGenerator {
 
     @Override
-    public boolean supports(Type type, TypeSerializerGeneratorRegistry registry) {
+    public Supported supports(Type type, TypeSerializerGeneratorRegistry registry) {
         if (!CollectionUtil.isCollection(type.name())) {
-            return false;
+            return Supported.UNSUPPORTED;
         }
 
         Type genericType = CollectionUtil.getGenericType(type);
         if (genericType == null) {
-            return false;
+            return Supported.UNSUPPORTED;
         }
-        return (registry.correspondingTypeSerializer(genericType) != null);
+
+        TypeSerializerGenerator typeSerializerGenerator = registry.correspondingTypeSerializer(genericType);
+        return typeSerializerGenerator != null ? typeSerializerGenerator.supports(genericType, registry)
+                : Supported.UNSUPPORTED;
     }
 
     @Override

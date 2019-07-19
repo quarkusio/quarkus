@@ -11,7 +11,13 @@ import io.quarkus.gizmo.ResultHandle;
 
 public interface TypeSerializerGenerator {
 
-    boolean supports(Type type, TypeSerializerGeneratorRegistry registry);
+    Supported supports(Type type, TypeSerializerGeneratorRegistry registry);
+
+    enum Supported {
+        FULLY,
+        WITH_UNHANDLED,
+        UNSUPPORTED
+    }
 
     void generate(GenerateContext context);
 
@@ -19,6 +25,7 @@ public interface TypeSerializerGenerator {
         private final Type type;
         private final BytecodeCreator bytecodeCreator;
         private final ResultHandle jsonGenerator;
+        private final ResultHandle serializationContext;
         private final ResultHandle currentItem;
         private final TypeSerializerGeneratorRegistry registry;
         private final GlobalSerializationConfig globalConfig;
@@ -28,12 +35,13 @@ public interface TypeSerializerGenerator {
         private final Map<DotName, AnnotationInstance> effectivePropertyAnnotations;
 
         public GenerateContext(Type type, BytecodeCreator bytecodeCreator, ResultHandle jsonGenerator,
-                ResultHandle currentItem,
+                ResultHandle serializationContext, ResultHandle currentItem,
                 TypeSerializerGeneratorRegistry registry, GlobalSerializationConfig globalConfig,
                 boolean nullChecked, Map<DotName, AnnotationInstance> effectivePropertyAnnotations) {
             this.type = type;
             this.bytecodeCreator = bytecodeCreator;
             this.jsonGenerator = jsonGenerator;
+            this.serializationContext = serializationContext;
             this.currentItem = currentItem;
             this.registry = registry;
             this.globalConfig = globalConfig;
@@ -51,6 +59,10 @@ public interface TypeSerializerGenerator {
 
         ResultHandle getJsonGenerator() {
             return jsonGenerator;
+        }
+
+        ResultHandle getSerializationContext() {
+            return serializationContext;
         }
 
         ResultHandle getCurrentItem() {
@@ -75,7 +87,8 @@ public interface TypeSerializerGenerator {
 
         GenerateContext changeItem(BytecodeCreator newBytecodeCreator, Type newType, ResultHandle newCurrentItem,
                 boolean newNullChecked) {
-            return new GenerateContext(newType, newBytecodeCreator, jsonGenerator, newCurrentItem, registry,
+            return new GenerateContext(newType, newBytecodeCreator, jsonGenerator, serializationContext, newCurrentItem,
+                    registry,
                     globalConfig,
                     newNullChecked, effectivePropertyAnnotations);
         }
@@ -83,12 +96,13 @@ public interface TypeSerializerGenerator {
         GenerateContext changeItem(BytecodeCreator newBytecodeCreator, Type newType,
                 ResultHandle newCurrentItem, boolean newNullChecked,
                 Map<DotName, AnnotationInstance> newEffectivePropertyAnnotations) {
-            return new GenerateContext(newType, newBytecodeCreator, jsonGenerator, newCurrentItem, registry,
+            return new GenerateContext(newType, newBytecodeCreator, jsonGenerator, serializationContext, newCurrentItem,
+                    registry,
                     globalConfig, newNullChecked, newEffectivePropertyAnnotations);
         }
 
         GenerateContext changeByteCodeCreator(BytecodeCreator newBytecodeCreator) {
-            return new GenerateContext(type, newBytecodeCreator, jsonGenerator, currentItem, registry,
+            return new GenerateContext(type, newBytecodeCreator, jsonGenerator, serializationContext, currentItem, registry,
                     globalConfig, nullChecked, effectivePropertyAnnotations);
         }
     }

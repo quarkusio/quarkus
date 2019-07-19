@@ -17,8 +17,8 @@ import io.quarkus.resteasy.jsonb.runtime.serializers.LocalDateTimeSerializerHelp
 public class LocalDateTimeSerializerGenerator extends AbstractDatetimeSerializerGenerator {
 
     @Override
-    public boolean supports(Type type, TypeSerializerGeneratorRegistry registry) {
-        return DotNames.LOCAL_DATE_TIME.equals(type.name());
+    public Supported supports(Type type, TypeSerializerGeneratorRegistry registry) {
+        return DotNames.LOCAL_DATE_TIME.equals(type.name()) ? Supported.FULLY : Supported.UNSUPPORTED;
     }
 
     @Override

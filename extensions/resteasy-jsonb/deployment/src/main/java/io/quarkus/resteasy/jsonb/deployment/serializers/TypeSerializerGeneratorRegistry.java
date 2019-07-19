@@ -11,6 +11,7 @@ import io.quarkus.resteasy.jsonb.deployment.SerializationClassInspector;
 public final class TypeSerializerGeneratorRegistry {
 
     private final TypeSerializerGenerator objectSerializer = new ObjectTypeSerializerGenerator();
+
     private final List<TypeSerializerGenerator> typeSerializerGenerators = Arrays.asList(new StringTypeSerializerGenerator(),
             new IntegerTypeSerializerGenerator(), new LocalDateTimeSerializerGenerator(),
             objectSerializer,
@@ -24,7 +25,7 @@ public final class TypeSerializerGeneratorRegistry {
 
     public TypeSerializerGenerator correspondingTypeSerializer(Type type) {
         for (TypeSerializerGenerator typeSerializerGenerator : typeSerializerGenerators) {
-            if (typeSerializerGenerator.supports(type, this)) {
+            if (typeSerializerGenerator.supports(type, this) != TypeSerializerGenerator.Supported.UNSUPPORTED) {
                 return typeSerializerGenerator;
             }
         }

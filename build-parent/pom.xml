@@ -306,7 +306,7 @@
                         <artifactId>formatter-maven-plugin</artifactId>
                         <executions>
                             <execution>
-                                <phase>process-sources</phase>
+                                <phase>validate</phase>
                                 <goals>
                                     <goal>validate</goal>
                                 </goals>
@@ -321,7 +321,7 @@
                         </configuration>
                         <executions>
                             <execution>
-                                <id>check-imports</id>
+                                <phase>validate</phase>
                                 <goals>
                                     <goal>check</goal>
                                 </goals>

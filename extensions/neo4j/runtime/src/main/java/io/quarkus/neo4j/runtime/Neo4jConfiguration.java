@@ -1,5 +1,7 @@
 package io.quarkus.neo4j.runtime;
 
+import java.time.Duration;
+
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -13,8 +15,7 @@ public class Neo4jConfiguration {
     static final String DEFAULT_PASSWORD = "neo4j";
 
     /**
-     * The uri this driver should connect to. The driver supports bolt, bolt+routing or neo4j as schemes. If uri is empty,
-     * the driver tries to connect to 'neo4j://localhost:7687'.
+     * The uri this driver should connect to. The driver supports bolt, bolt+routing or neo4j as schemes.
      */
     @ConfigItem(defaultValue = DEFAULT_SERVER_URI)
     public String uri;
@@ -24,6 +25,12 @@ public class Neo4jConfiguration {
      */
     @ConfigItem
     public Authentication authentication;
+
+    /**
+     * Advanced settings for the drivers internal connection pool.
+     */
+    @ConfigItem
+    public Pool pool;
 
     @ConfigGroup
     static class Authentication {
@@ -45,5 +52,60 @@ public class Neo4jConfiguration {
          */
         @ConfigItem(defaultValue = "false")
         public boolean disabled = false;
+    }
+
+    @ConfigGroup
+    static class Pool {
+
+        /**
+         * Flag, if metrics are enabled.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean metricsEnabled;
+
+        /**
+         * Flag, if leaked sessions logging is enabled.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean logLeakedSessions;
+
+        /**
+         * The maximum amount of connections in the connection pool towards a single database.
+         */
+        @ConfigItem(defaultValue = "100")
+        public int maxConnectionPoolSize;
+
+        /**
+         * Pooled connections that have been idle in the pool for longer than this timeout will be tested before they are used
+         * again. The value {@literal 0} means connections will always be tested for validity and negative values mean
+         * connections
+         * will never be tested.
+         */
+        @ConfigItem(defaultValue = "-0.001S")
+        public Duration idleTimeBeforeConnectionTest;
+
+        /**
+         * Pooled connections older than this threshold will be closed and removed from the pool.
+         */
+        @ConfigItem(defaultValue = "1H")
+        public Duration maxConnectionLifetime;
+
+        /**
+         * Acquisition of new connections will be attempted for at most configured timeout.
+         */
+        @ConfigItem(defaultValue = "1M")
+        public Duration connectionAcquisitionTimeout;
+
+        @Override
+        public String toString() {
+            return "Pool{" +
+                    "metricsEnabled=" + metricsEnabled +
+                    ", logLeakedSessions=" + logLeakedSessions +
+                    ", maxConnectionPoolSize=" + maxConnectionPoolSize +
+                    ", idleTimeBeforeConnectionTest=" + idleTimeBeforeConnectionTest +
+                    ", maxConnectionLifetime=" + maxConnectionLifetime +
+                    ", connectionAcquisitionTimeout=" + connectionAcquisitionTimeout +
+                    '}';
+        }
     }
 }

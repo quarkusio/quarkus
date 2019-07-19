@@ -36,7 +36,7 @@ public class CredentialConfig {
     /**
      * Configures the source of the authentication credentials.
      * This is typically the database that the credentials have been created. The value defaults to the database
-     * specified in the path portion of the connection string.
+     * specified in the path portion of the connection string or in the 'database' configuration property..
      * If the database is specified in neither place, the default value is {@code admin}. This option is only
      * respected when using the MONGO-CR mechanism (the default).
      */

@@ -69,6 +69,12 @@ public class MongoClientConfig {
     public List<String> hosts;
 
     /**
+     * Configure the database name.
+     */
+    @ConfigItem
+    public Optional<String> database;
+
+    /**
      * Configures the application name.
      */
     @ConfigItem

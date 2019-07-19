@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.codecs.pojo.Conventions;
+import org.bson.codecs.pojo.PojoCodecProvider;
 import org.jboss.logging.Logger;
 
 import com.mongodb.AuthenticationMechanism;
@@ -86,17 +88,25 @@ public class MongoClientRecorder {
             settings.applyConnectionString(connectionString);
         }
 
-        CodecRegistry registry = defaultCodecRegistry;
+        List<CodecProvider> providers = new ArrayList<>();
         if (!codecProviders.isEmpty()) {
-            registry = CodecRegistries.fromRegistries(defaultCodecRegistry,
-                    CodecRegistries.fromProviders(getCodecProviders(codecProviders)));
+            providers.addAll(getCodecProviders(codecProviders));
         }
+        // add pojo codec provider with automatic capabilities
+        // it always needs to be the last codec provided
+        CodecProvider pojoCodecProvider = PojoCodecProvider.builder()
+                .automatic(true)
+                .conventions(Conventions.DEFAULT_CONVENTIONS)
+                .build();
+        providers.add(pojoCodecProvider);
+        CodecRegistry registry = CodecRegistries.fromRegistries(defaultCodecRegistry,
+                CodecRegistries.fromProviders(providers));
         settings.codecRegistry(registry);
 
         config.applicationName.ifPresent(settings::applicationName);
 
         if (config.credentials != null) {
-            MongoCredential credential = createMongoCredential(config.credentials);
+            MongoCredential credential = createMongoCredential(config);
             if (credential != null) {
                 settings.credential(credential);
             }
@@ -176,6 +186,7 @@ public class MongoClientRecorder {
                 LOGGER.warnf("Unable to load the codec provider class %s", name, e);
             }
         }
+
         return providers;
     }
 
@@ -189,18 +200,19 @@ public class MongoClientRecorder {
         return mechanism;
     }
 
-    private MongoCredential createMongoCredential(CredentialConfig config) {
-        String username = config.username.orElse(null);
+    private MongoCredential createMongoCredential(MongoClientConfig config) {
+        String username = config.credentials.username.orElse(null);
         if (username == null) {
             return null;
         }
 
-        char[] password = config.password.map(String::toCharArray).orElse(null);
-        //admin is the default auth source in mongo and null is not allowed
-        String authSource = config.authSource.orElse("admin");
+        char[] password = config.credentials.password.map(String::toCharArray).orElse(null);
+        // get the authsource, or the database from the config, or 'admin' as it is the default auth source in mongo
+        // and null is not allowed
+        String authSource = config.credentials.authSource.orElse(config.database.orElse("admin"));
         // AuthMechanism
         AuthenticationMechanism mechanism = null;
-        Optional<String> maybeMechanism = config.authMechanism;
+        Optional<String> maybeMechanism = config.credentials.authMechanism;
         if (maybeMechanism.isPresent()) {
             mechanism = getAuthenticationMechanism(maybeMechanism.get());
         }
@@ -222,8 +234,8 @@ public class MongoClientRecorder {
         }
 
         //add the properties
-        if (!config.authMechanismProperties.isEmpty()) {
-            for (Map.Entry<String, String> entry : config.authMechanismProperties.entrySet()) {
+        if (!config.credentials.authMechanismProperties.isEmpty()) {
+            for (Map.Entry<String, String> entry : config.credentials.authMechanismProperties.entrySet()) {
                 credential = credential.withMechanismProperty(entry.getKey(), entry.getValue());
             }
         }

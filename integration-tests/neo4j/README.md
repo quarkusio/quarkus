@@ -24,7 +24,7 @@ The configuration file in our test is written in a way that it automatically set
 from the environment, so you don't have to change the sources.
 
 
-To open a connection to a different host or with different authentication from the generated Jar-Runner or binary, 
+To open a connection to a different host or with different authentication from the generated Jar-Runner or binary,
 pass on your details as system properties, i.e.:
 
 ```
@@ -54,7 +54,6 @@ The Quarkus maven plugin must be configured like this:
                 <enableHttpUrlHandler>true</enableHttpUrlHandler>
                 <enableHttpsUrlHandler>true</enableHttpsUrlHandler>
                 <enableAllSecurityServices>true</enableAllSecurityServices>
-                <enableJni>true</enableJni>                
             </configuration>
         </execution>
     </executions>
@@ -63,5 +62,5 @@ The Quarkus maven plugin must be configured like this:
 
 That's exactly the way the example project here is configured.
 
-If you opt out of native SSL support by setting `quarkus.ssl.native=false`, 
+If you opt out of native SSL support by setting `quarkus.ssl.native=false`,
 we disable encryption between the client and the Neo4j server which is *not* recommended.

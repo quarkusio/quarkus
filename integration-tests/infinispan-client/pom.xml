@@ -165,7 +165,6 @@
                                     -->
                                     <graalvmHome>${graalvmHome}</graalvmHome>
                                     <!-- next two are to enable security - If not needed it is recommended not to enable these-->
-                                    <enableJni>true</enableJni>
                                     <enableAllSecurityServices>true</enableAllSecurityServices>
                                 </configuration>
                             </execution>

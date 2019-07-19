@@ -5,6 +5,7 @@ import org.apache.camel.component.salesforce.SalesforceLoginConfig;
 
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 
 class CamelSalesforceProcessor {
@@ -12,6 +13,11 @@ class CamelSalesforceProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.CAMEL_SALESFORCE);
+    }
+
+    @BuildStep
+    JniBuildItem jni() {
+        return new JniBuildItem();
     }
 
     @BuildStep

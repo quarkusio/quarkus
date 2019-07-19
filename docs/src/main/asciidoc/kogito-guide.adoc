@@ -251,7 +251,7 @@ In the response, the person should be approved as an adult and that should also 
 
 [source,JSON]
 ----
-{"id":1,"person":{"adult":true,"age":20,"name":"John Quark"}}
+{"id":"dace1d6a-a5fa-429d-b253-d6b66e265bbc","person":{"adult":true,"age":20,"name":"John Quark"}}
 ----
 
 You can also verify that there are no more active instances
@@ -273,30 +273,116 @@ curl -X POST http://localhost:8080/persons \
     -d '{"person": {"name":"Jenny Quark", "age": 15}}'
 ----
 
-this time there should be one active instance
+this time there should be one active instance, replace `{uuid}` with the id attribute taken from the response
 
 [source,bash]
 ----
-curl -X GET http://localhost:8080/persons/2/tasks \
+curl -X GET http://localhost:8080/persons/{uuid}/tasks \
     -H 'content-type: application/json' \
     -H 'accept: application/json'
 ----
 
-You can get the details of the task by calling another endpoint
+You can get the details of the task by calling another endpoint, replace `uuids` with the values taken from
+the responses (`uuid-1` is the process instance id and `uuid-2` is the task instance id).
+First corresponds to the process instance id and the other to the task instance id.
 
 [source,bash]
 ----
-curl -X GET http://localhost:8080/persons/2/ChildrenHandling/1 \
+curl -X GET http://localhost:8080/persons/{uuid-1}/ChildrenHandling/{uuid-2} \
     -H 'content-type: application/json' \
     -H 'accept: application/json'
 ----
 
-You can complete this person evaluation process instance by calling the same endpoint but with POST
+You can complete this person evaluation process instance by calling the same endpoint but with POST,
+replace `uuids` with the values taken from the responses (`uuid-1` is the process instance id and `uuid-2` is the task instance id).
 
 [source,bash]
 ----
-curl -X POST http://localhost:8080/persons/2/ChildrenHandling/1 \
+curl -X POST http://localhost:8080/persons/{uuid-1}/ChildrenHandling/{uuid-2} \
     -H 'content-type: application/json' \
     -H 'accept: application/json' \
     -d '{}'
 ----
+
+== Enabling persistence
+
+Since 0.3.0 of Kogito, there is an option to enable persistence to preserve process instance state
+across application restarts. That supports long running process instances that can be resumed at any
+point in time.
+
+=== Prerequisites
+
+Kogito uses Infinispan as the persistence service so you need to have Infinispan server installed and running.
+Version of the Infinispan is aligned with Quarkus BOM so make sure the right version is installed.
+
+=== Add dependencies to project
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-infinispan-client</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>infinispan-persistence-addon</artifactId>
+  <version>${kogito.version}</version>
+</dependency>
+----
+
+=== Configure connection with Infinispan server
+
+Add following into the src/main/resources/application.properties file (create the file if it does not exist)
+
+[source,plain]
+----
+quarkus.infinispan-client.server-list=localhost:11222
+----
+
+NOTE: Adjust the host and port number according to your Infinispan server installation.
+
+=== Test with enabled persistence
+
+After configuring persistence on the project level, you can test and verify that the process instance
+state is preserved across application restarts.
+
+* start Infinispan server
+* build and run your project
+* execute non adult use case
+
+[source,bash]
+----
+curl -X POST http://localhost:8080/persons \
+    -H 'content-type: application/json' \
+    -H 'accept: application/json' \
+    -d '{"person": {"name":"Jenny Quark", "age": 15}}'
+----
+
+You can also verify that there is active instance
+
+[source,bash]
+----
+curl -X GET http://localhost:8080/persons \
+    -H 'content-type: application/json' \
+    -H 'accept: application/json'
+----
+
+Restart your application while keeping Infinispan server up and running.
+
+Check if you can see active instance which should have exactly the same id
+
+[source,bash]
+----
+curl -X GET http://localhost:8080/persons \
+    -H 'content-type: application/json' \
+    -H 'accept: application/json'
+----
+
+
+To learn more about persistence in Kogito visit https://github.com/kiegroup/kogito-runtimes/wiki/Persistence[this page]
+
+
+== References
+
+* https://kogito.kie.org[Kogito website]
+* https://github.com/kiegroup/kogito-runtimes/wiki[Kogito wiki]

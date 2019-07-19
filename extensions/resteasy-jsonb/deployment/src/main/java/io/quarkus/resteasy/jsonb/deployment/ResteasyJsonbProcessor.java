@@ -36,6 +36,7 @@ import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.jsonb.deployment.serializers.GlobalSerializationConfig;
 import io.quarkus.resteasy.jsonb.deployment.serializers.TypeSerializerGenerator;
 import io.quarkus.resteasy.jsonb.deployment.serializers.TypeSerializerGeneratorRegistry;
+import io.quarkus.resteasy.server.common.deployment.ResteasyAdditionalReturnTypesWithoutReflectionBuildItem;
 import io.quarkus.resteasy.server.common.deployment.ResteasyServerCommonProcessor;
 
 public class ResteasyJsonbProcessor {
@@ -58,7 +59,8 @@ public class ResteasyJsonbProcessor {
     @BuildStep
     void generateClasses(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
-            BuildProducer<ResteasyJaxrsProviderBuildItem> jaxrsProvider) {
+            BuildProducer<ResteasyJaxrsProviderBuildItem> jaxrsProvider,
+            BuildProducer<ResteasyAdditionalReturnTypesWithoutReflectionBuildItem> typesWithoutReflection) {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         if (!jsonbConfig.enabled) {
@@ -126,6 +128,9 @@ public class ResteasyJsonbProcessor {
         additionalClassGenerator.generateJsonbContextResolver(classOutput, typeToGeneratedSerializers);
 
         jaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(AdditionalClassGenerator.QUARKUS_CONTEXT_RESOLVER));
+        for (String type : typeToGeneratedSerializers.keySet()) {
+            typesWithoutReflection.produce(new ResteasyAdditionalReturnTypesWithoutReflectionBuildItem(type));
+        }
     }
 
     private boolean hasCustomContextResolverBeenDeclared(IndexView index) {

@@ -149,7 +149,9 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) throws Exception {
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            List<ResteasyAdditionalReturnTypesWithoutReflectionBuildItem> ignoreReflectionRegistrationBuildItems)
+            throws Exception {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         resource.produce(new SubstrateResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
@@ -220,7 +222,7 @@ public class ResteasyServerCommonProcessor {
         registerContextProxyDefinitions(index, proxyDefinition);
 
         registerReflectionForSerialization(reflectiveClass, reflectiveHierarchy, combinedIndexBuildItem,
-                beanArchiveIndexBuildItem);
+                beanArchiveIndexBuildItem, ignoreReflectionRegistrationBuildItems);
 
         for (ClassInfo implementation : index.getAllKnownImplementors(ResteasyDotNames.DYNAMIC_FEATURE)) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, implementation.name().toString()));
@@ -483,9 +485,15 @@ public class ResteasyServerCommonProcessor {
     private static void registerReflectionForSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            List<ResteasyAdditionalReturnTypesWithoutReflectionBuildItem> returnTypesWithoutReflectionBuiltItem) {
         IndexView index = combinedIndexBuildItem.getIndex();
         IndexView beanArchiveIndex = beanArchiveIndexBuildItem.getIndex();
+
+        Set<String> returnTypesWithoutReflection = new HashSet<>();
+        for (ResteasyAdditionalReturnTypesWithoutReflectionBuildItem item : returnTypesWithoutReflectionBuiltItem) {
+            returnTypesWithoutReflection.add(item.getClassName());
+        }
 
         // This is probably redundant with the automatic resolution we do just below but better be safe
         for (AnnotationInstance annotation : index.getAnnotations(JSONB_ANNOTATION)) {
@@ -498,8 +506,8 @@ public class ResteasyServerCommonProcessor {
         // Declare reflection for all the types implicated in the Rest end points (return types and parameters).
         // It might be needed for serialization.
         for (DotName annotationType : METHOD_ANNOTATIONS) {
-            scanMethodParameters(annotationType, reflectiveHierarchy, index);
-            scanMethodParameters(annotationType, reflectiveHierarchy, beanArchiveIndex);
+            scanMethodParameters(annotationType, reflectiveHierarchy, index, returnTypesWithoutReflection);
+            scanMethodParameters(annotationType, reflectiveHierarchy, beanArchiveIndex, returnTypesWithoutReflection);
         }
 
         // In the case of a constraint violation, these elements might be returned as entities and will be serialized
@@ -508,11 +516,13 @@ public class ResteasyServerCommonProcessor {
     }
 
     private static void scanMethodParameters(DotName annotationType,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, IndexView index) {
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, IndexView index,
+            Set<String> returnTypesWithoutReflection) {
         Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
         for (AnnotationInstance instance : instances) {
             MethodInfo method = instance.target().asMethod();
-            if (isReflectionDeclarationRequiredFor(method.returnType())) {
+            if (isReflectionDeclarationRequiredFor(method.returnType()) &&
+                    !returnTypesWithoutReflection.contains(method.returnType().name().toString())) {
                 reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType(), index));
             }
             for (short i = 0; i < method.parameters().size(); i++) {

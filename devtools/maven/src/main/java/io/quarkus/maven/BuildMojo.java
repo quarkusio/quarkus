@@ -183,6 +183,8 @@ public class BuildMojo extends AbstractMojo {
                 realProperties.setProperty(name, projectProperties.getProperty(name));
             }
         }
+        realProperties.putIfAbsent("quarkus.application.name", project.getArtifactId());
+        realProperties.putIfAbsent("quarkus.application.version", project.getVersion());
         try (AppCreator appCreator = AppCreator.builder()
                 // configure the build phases we want the app to go through
                 .addPhase(new AugmentPhase()

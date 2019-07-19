@@ -48,7 +48,6 @@ import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.deployment.ApplicationInfoUtil;
 import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
 import io.quarkus.maven.components.MavenVersionEnforcer;
@@ -331,7 +330,6 @@ public class DevMojo extends AbstractMojo {
             }
 
             outputDirectory.mkdirs();
-            ApplicationInfoUtil.writeApplicationInfoProperties(appModel.getAppArtifact(), outputDirectory.toPath());
 
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());

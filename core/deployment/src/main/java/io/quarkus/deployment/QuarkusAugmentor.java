@@ -22,7 +22,6 @@ import io.quarkus.builder.BuildResult;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
-import io.quarkus.deployment.builditem.BuildTimeConfigurationSourceBuildItem;
 import io.quarkus.deployment.builditem.ClassOutputBuildItem;
 import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -31,7 +30,6 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.runtime.LaunchMode;
-import io.smallrye.config.PropertiesConfigSource;
 
 public class QuarkusAugmentor {
 
@@ -71,7 +69,11 @@ public class QuarkusAugmentor {
 
             final BuildChainBuilder chainBuilder = BuildChain.builder();
 
-            ExtensionLoader.loadStepsFrom(classLoader).accept(chainBuilder);
+            if (buildSystemProperties != null) {
+                ExtensionLoader.loadStepsFrom(classLoader, buildSystemProperties).accept(chainBuilder);
+            } else {
+                ExtensionLoader.loadStepsFrom(classLoader).accept(chainBuilder);
+            }
             chainBuilder.loadProviders(classLoader);
 
             chainBuilder
@@ -88,10 +90,6 @@ public class QuarkusAugmentor {
             }
             chainBuilder.addFinal(GeneratedClassBuildItem.class)
                     .addFinal(GeneratedResourceBuildItem.class);
-
-            if (buildSystemProperties != null) {
-                chainBuilder.addInitial(BuildTimeConfigurationSourceBuildItem.class);
-            }
 
             for (Consumer<BuildChainBuilder> i : buildChainCustomizers) {
                 i.accept(chainBuilder);
@@ -112,11 +110,6 @@ public class QuarkusAugmentor {
                     .produce(new ExtensionClassLoaderBuildItem(classLoader));
             for (Path i : additionalApplicationArchives) {
                 execBuilder.produce(new AdditionalApplicationArchiveBuildItem(i));
-            }
-            if (buildSystemProperties != null) {
-                execBuilder.produce(
-                        new BuildTimeConfigurationSourceBuildItem(
-                                new PropertiesConfigSource(buildSystemProperties, "Build system")));
             }
             BuildResult buildResult = execBuilder
                     .execute();

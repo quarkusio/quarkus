@@ -152,6 +152,8 @@ public class QuarkusBuild extends QuarkusTask {
                 realProperties.setProperty(key, (String) value);
             }
         }
+        realProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
+        realProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
 
         try (AppCreator appCreator = AppCreator.builder()
                 // configure the build phases we want the app to go through

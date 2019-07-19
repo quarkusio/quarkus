@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -36,9 +37,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
-import io.quarkus.deployment.builditem.BuildTimeConfigurationBuildItem;
-import io.quarkus.deployment.builditem.BuildTimeConfigurationDefaultBuildItem;
-import io.quarkus.deployment.builditem.BuildTimeConfigurationSourceBuildItem;
 import io.quarkus.deployment.builditem.BuildTimeRunTimeFixedConfigurationBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
@@ -47,12 +45,12 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceBuildItem;
+import io.quarkus.deployment.builditem.UnmatchedConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigDefinition;
 import io.quarkus.deployment.configuration.ConfigPatternMap;
-import io.quarkus.deployment.configuration.DefaultValuesConfigurationSource;
 import io.quarkus.deployment.configuration.LeafConfigType;
 import io.quarkus.deployment.recording.ObjectLoader;
 import io.quarkus.deployment.util.ServiceUtil;
@@ -64,7 +62,6 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.AbstractRawDefaultConfigSource;
 import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSource;
@@ -77,10 +74,8 @@ import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.configuration.SimpleConfigurationProviderResolver;
-import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
-import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
  * Setup steps for configuration purposes.
@@ -162,121 +157,39 @@ public class ConfigurationSetup {
     private static final MethodDescriptor SET_RUNTIME_DEFAULT_PROFILE = MethodDescriptor.ofMethod(ProfileManager.class,
             "setRuntimeDefaultProfile", void.class, String.class);
 
-    private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
     private static final String[] NO_STRINGS = new String[0];
 
     public ConfigurationSetup() {
     }
 
     /**
-     * Calculate the build-time default values.
-     *
-     * @param defaultItems default values items
-     * @return the default values config source
-     */
-    @BuildStep
-    public BuildTimeConfigurationSourceBuildItem buildTimeDefaults(
-            List<BuildTimeConfigurationDefaultBuildItem> defaultItems) {
-        Map<String, String> map = new HashMap<>();
-        for (BuildTimeConfigurationDefaultBuildItem item : defaultItems) {
-            map.put(item.getKey(), item.getValue());
-        }
-        PropertiesConfigSource pcs = new PropertiesConfigSource(map, "Build time supplemental defaults", 0);
-        return new BuildTimeConfigurationSourceBuildItem(pcs);
-    }
-
-    /**
      * Run before anything that consumes configuration; sets up the main configuration definition instance.
      *
-     * @param runTimeConfigConsumer the run time config consumer
-     * @param buildTimeConfigConsumer the build time config consumer
-     * @param buildTimeRunTimeConfigConsumer the build time/run time fixed config consumer
+     * @param runTimeConfigItem the run time config item
+     * @param buildTimeRunTimeConfigItem the build time/run time fixed config item
      * @param resourceConsumer
      * @param niResourceConsumer
      * @param runTimeDefaultConsumer
-     * @param configSourceItems the build-time config source build items
+     * @param unmatchedConfigBuildItem the build item holding the unmatched config keys
      * @param extensionClassLoaderBuildItem the extension class loader build item
      * @param archiveRootBuildItem the application archive root
      * @throws IOException
-     * @throws ClassNotFoundException
      */
     @BuildStep
     public void initializeConfiguration(
-            Consumer<RunTimeConfigurationBuildItem> runTimeConfigConsumer,
-            Consumer<BuildTimeConfigurationBuildItem> buildTimeConfigConsumer,
-            Consumer<BuildTimeRunTimeFixedConfigurationBuildItem> buildTimeRunTimeConfigConsumer,
+            RunTimeConfigurationBuildItem runTimeConfigItem,
+            BuildTimeRunTimeFixedConfigurationBuildItem buildTimeRunTimeConfigItem,
             Consumer<GeneratedResourceBuildItem> resourceConsumer,
             Consumer<SubstrateResourceBuildItem> niResourceConsumer,
             Consumer<RunTimeConfigurationDefaultBuildItem> runTimeDefaultConsumer,
-            List<BuildTimeConfigurationSourceBuildItem> configSourceItems,
-            List<BuildTimeConfigurationDefaultBuildItem> buildTimeDefaultItems,
+            UnmatchedConfigBuildItem unmatchedConfigBuildItem,
             ExtensionClassLoaderBuildItem extensionClassLoaderBuildItem,
-            ArchiveRootBuildItem archiveRootBuildItem) throws IOException, ClassNotFoundException {
+            ArchiveRootBuildItem archiveRootBuildItem) throws IOException {
 
-        // set up the configuration definitions
-        final ConfigDefinition buildTimeConfig = new ConfigDefinition(FieldDescriptor.of("Bogus", "No field", "Nothing"));
-        final ConfigDefinition buildTimeRunTimeConfig = new ConfigDefinition(BUILD_TIME_CONFIG_FIELD);
-        final ConfigDefinition runTimeConfig = new ConfigDefinition(RUN_TIME_CONFIG_FIELD, true);
+        SmallRyeConfig src = (SmallRyeConfig) ConfigProvider.getConfig();
 
-        // populate it with all known types
-        for (Class<?> clazz : ServiceUtil.classesNamedIn(extensionClassLoaderBuildItem.getExtensionClassLoader(),
-                CONFIG_ROOTS_LIST)) {
-            final ConfigRoot annotation = clazz.getAnnotation(ConfigRoot.class);
-            if (annotation == null) {
-                log.warnf("Ignoring configuration root %s because it has no annotation", clazz);
-            } else {
-                final ConfigPhase phase = annotation.phase();
-                if (phase == ConfigPhase.RUN_TIME) {
-                    runTimeConfig.registerConfigRoot(clazz);
-                } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                    buildTimeRunTimeConfig.registerConfigRoot(clazz);
-                } else if (phase == ConfigPhase.BUILD_TIME) {
-                    buildTimeConfig.registerConfigRoot(clazz);
-                } else {
-                    log.warnf("Unrecognized configuration phase \"%s\" on %s", phase, clazz);
-                }
-            }
-        }
-
-        // now prepare & load the build configuration
-        final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
-
-        // expand properties
-        final ExpandingConfigSource.Cache cache = new ExpandingConfigSource.Cache();
-        builder.withWrapper(ExpandingConfigSource.wrapper(cache));
-        builder.withWrapper(DeploymentProfileConfigSource.wrapper());
-        builder.addDefaultSources();
-        final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
-        final DefaultValuesConfigurationSource defaultSource = new DefaultValuesConfigurationSource(
-                buildTimeConfig.getLeafPatterns());
-        builder.withSources(inJar, defaultSource);
-        final int cnt = configSourceItems.size();
-        final ConfigSource[] configSources = new ConfigSource[cnt];
-        int i = 0;
-        for (BuildTimeConfigurationSourceBuildItem item : configSourceItems) {
-            configSources[i++] = item.getConfigSourceSupplier().get();
-        }
-        builder.withSources(configSources);
-
-        // populate builder with all converters loaded from ServiceLoader
-        ConverterSupport.populateConverters(builder);
-
-        final SmallRyeConfig src = (SmallRyeConfig) builder
-                .addDefaultSources()
-                .addDiscoveredSources()
-                .addDiscoveredConverters()
-                .build();
-
-        SmallRyeConfigProviderResolver.instance().registerConfig(src, Thread.currentThread().getContextClassLoader());
-
-        final Set<String> unmatched = new HashSet<>();
-        ConfigDefinition.loadConfiguration(cache, src, unmatched,
-                buildTimeConfig,
-                buildTimeRunTimeConfig, // this one is only for generating a default-values config source
-                runTimeConfig);
-        // exclude any default config property names that aren't part of application.properties
-        final Set<String> inJarPropertyNames = inJar.getPropertyNames();
-        unmatched.removeIf(s -> !inJarPropertyNames.contains(s) && !s.startsWith("quarkus."));
+        final ConfigDefinition runTimeConfig = runTimeConfigItem.getConfigDefinition();
+        final ConfigDefinition buildTimeRunTimeConfig = buildTimeRunTimeConfigItem.getConfigDefinition();
 
         // store the expanded values from the build
         final byte[] bytes;
@@ -295,6 +208,9 @@ public class ConfigurationSetup {
                 new SubstrateResourceBuildItem(BuildTimeConfigFactory.BUILD_TIME_CONFIG_NAME));
 
         // produce defaults for user-provided config
+
+        final Set<String> unmatched = new HashSet<>();
+        unmatched.addAll(unmatchedConfigBuildItem.getSet());
         unmatched.addAll(runTimeConfig.getLoadedProperties().keySet());
         final boolean old = ExpandingConfigSource.setExpanding(false);
         try {
@@ -306,10 +222,6 @@ public class ConfigurationSetup {
             ExpandingConfigSource.setExpanding(old);
         }
 
-        // produce the config objects
-        runTimeConfigConsumer.accept(new RunTimeConfigurationBuildItem(runTimeConfig));
-        buildTimeRunTimeConfigConsumer.accept(new BuildTimeRunTimeFixedConfigurationBuildItem(buildTimeRunTimeConfig));
-        buildTimeConfigConsumer.accept(new BuildTimeConfigurationBuildItem(buildTimeConfig));
     }
 
     @BuildStep

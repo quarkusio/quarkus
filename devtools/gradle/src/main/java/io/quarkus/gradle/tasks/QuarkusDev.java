@@ -50,7 +50,6 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.deployment.ApplicationInfoUtil;
 import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
 import io.quarkus.gradle.QuarkusPluginExtension;
@@ -289,7 +288,6 @@ public class QuarkusDev extends QuarkusTask {
             }
 
             extension.outputDirectory().mkdirs();
-            ApplicationInfoUtil.writeApplicationInfoProperties(appModel.getAppArtifact(), extension.outputDirectory().toPath());
 
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());

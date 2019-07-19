@@ -13,6 +13,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.netty.BossGroup;
@@ -26,7 +27,9 @@ class NettyProcessor {
     private static final Logger log = Logger.getLogger(NettyProcessor.class);
 
     @BuildStep
-    SubstrateConfigBuildItem build() {
+    SubstrateConfigBuildItem build(BuildProducer<JniBuildItem> jni) {
+        boolean enableJni = false;
+
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioSocketChannel"));
         reflectiveClass
                 .produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioServerSocketChannel"));
@@ -51,6 +54,7 @@ class NettyProcessor {
 
         try {
             Class.forName("io.netty.channel.unix.UnixChannel");
+            enableJni = true;
             builder.addRuntimeInitializedClass("io.netty.channel.unix.Errors")
                     .addRuntimeInitializedClass("io.netty.channel.unix.FileDescriptor")
                     .addRuntimeInitializedClass("io.netty.channel.unix.IovArray")
@@ -62,6 +66,7 @@ class NettyProcessor {
 
         try {
             Class.forName("io.netty.channel.epoll.EpollMode");
+            enableJni = true;
             builder.addRuntimeInitializedClass("io.netty.channel.epoll.Epoll")
                     .addRuntimeInitializedClass("io.netty.channel.epoll.EpollEventArray")
                     .addRuntimeInitializedClass("io.netty.channel.epoll.EpollEventLoop")
@@ -73,6 +78,7 @@ class NettyProcessor {
 
         try {
             Class.forName("io.netty.channel.kqueue.AcceptFilter");
+            enableJni = true;
             builder.addRuntimeInitializedClass("io.netty.channel.kqueue.KQueue")
                     .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueEventArray")
                     .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueEventLoop")
@@ -80,6 +86,10 @@ class NettyProcessor {
         } catch (ClassNotFoundException e) {
             //ignore
             log.debug("Not registering Netty native kqueue classes as they were not found");
+        }
+
+        if (enableJni) {
+            jni.produce(new JniBuildItem());
         }
 
         return builder //TODO: make configurable

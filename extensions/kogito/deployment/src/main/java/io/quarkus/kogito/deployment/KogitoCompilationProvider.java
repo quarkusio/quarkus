@@ -13,6 +13,7 @@ import java.util.Set;
 import org.kie.kogito.codegen.ApplicationGenerator;
 import org.kie.kogito.codegen.GeneratedFile;
 import org.kie.kogito.codegen.Generator;
+import org.kie.kogito.codegen.di.CDIDependencyInjectionAnnotator;
 
 import io.quarkus.dev.JavaCompilationProvider;
 
@@ -30,7 +31,7 @@ public abstract class KogitoCompilationProvider extends JavaCompilationProvider 
         try {
 
             ApplicationGenerator appGen = new ApplicationGenerator(appPackageName, outputDirectory)
-                    .withDependencyInjection(true);
+                    .withDependencyInjection(new CDIDependencyInjectionAnnotator());
             Generator generator = addGenerator(appGen, filesToCompile, context);
 
             Collection<GeneratedFile> generatedFiles = generator.generate();

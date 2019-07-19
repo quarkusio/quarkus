@@ -374,6 +374,7 @@ An example is as shown here, with a comment highlighting them:
            <configuration>
                <enableHttpUrlHandler>true</enableHttpUrlHandler>
                <!-- next two are to enable security - If not needed it is recommended not to enable these-->
+               <enableJni>true</enableJni>
                <enableAllSecurityServices>true</enableAllSecurityServices>
            </configuration>
        </execution>

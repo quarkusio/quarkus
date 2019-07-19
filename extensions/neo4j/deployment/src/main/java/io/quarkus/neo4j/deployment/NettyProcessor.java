@@ -6,7 +6,6 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 
@@ -18,9 +17,7 @@ class NettyProcessor {
     private static final Logger log = Logger.getLogger(NettyProcessor.class);
 
     @BuildStep
-    SubstrateConfigBuildItem build(BuildProducer<JniBuildItem> jni) {
-        jni.produce(new JniBuildItem());
-
+    SubstrateConfigBuildItem build() {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 "org.neo4j.driver.internal.shaded.io.netty.channel.socket.nio.NioSocketChannel"));
         reflectiveClass

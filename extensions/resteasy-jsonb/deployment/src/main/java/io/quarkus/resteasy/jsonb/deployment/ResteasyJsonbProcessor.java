@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.jsonb.deployment;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -113,12 +114,16 @@ public class ResteasyJsonbProcessor {
         }
 
         Map<String, String> typeToGeneratedSerializers = new HashMap<>();
+        List<String> typesThatDontNeedReflection = new ArrayList<>();
         for (ClassType type : serializerCandidates) {
-            String generatedSerializerClassName = generateSerializerForClassType(type,
+            GenerationResult generationResult = generateSerializerForClassType(type,
                     typeSerializerGeneratorRegistry,
                     classOutput);
-            if (generatedSerializerClassName != null) {
-                typeToGeneratedSerializers.put(type.name().toString(), generatedSerializerClassName);
+            if (generationResult.isGenerated()) {
+                typeToGeneratedSerializers.put(type.name().toString(), generationResult.getClassName());
+                if (!generationResult.isNeedsReflection()) {
+                    typesThatDontNeedReflection.add(type.name().toString());
+                }
             }
         }
 
@@ -128,7 +133,7 @@ public class ResteasyJsonbProcessor {
         additionalClassGenerator.generateJsonbContextResolver(classOutput, typeToGeneratedSerializers);
 
         jaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(AdditionalClassGenerator.QUARKUS_CONTEXT_RESOLVER));
-        for (String type : typeToGeneratedSerializers.keySet()) {
+        for (String type : typesThatDontNeedReflection) {
             typesWithoutReflection.produce(new ResteasyAdditionalReturnTypesWithoutReflectionBuildItem(type));
         }
     }
@@ -174,10 +179,11 @@ public class ResteasyJsonbProcessor {
     /**
      * @return The full name of the generated class or null if a serializer could not be generated
      */
-    private String generateSerializerForClassType(ClassType classType, TypeSerializerGeneratorRegistry registry,
+    private GenerationResult generateSerializerForClassType(ClassType classType, TypeSerializerGeneratorRegistry registry,
             ClassOutput classOutput) {
-        if (!registry.getObjectSerializer().supports(classType, registry)) {
-            return null;
+        TypeSerializerGenerator.Supported supported = registry.getObjectSerializer().supports(classType, registry);
+        if (supported == TypeSerializerGenerator.Supported.UNSUPPORTED) {
+            return GenerationResult.notGenerated();
         }
 
         DotName classDotName = classType.name();
@@ -194,10 +200,12 @@ public class ResteasyJsonbProcessor {
                     JsonGenerator.class.getName(), SerializationContext.class.getName())) {
                 ResultHandle object = serialize.getMethodParam(0);
                 ResultHandle jsonGenerator = serialize.getMethodParam(1);
+                ResultHandle serializationContext = serialize.getMethodParam(2);
 
                 // delegate to object serializer
                 registry.getObjectSerializer().generate(
-                        new TypeSerializerGenerator.GenerateContext(classType, serialize, jsonGenerator, object, registry,
+                        new TypeSerializerGenerator.GenerateContext(classType, serialize, jsonGenerator, serializationContext,
+                                object, registry,
                                 getGlobalConfig(), false, null));
 
                 serialize.returnValue(null);
@@ -217,11 +225,50 @@ public class ResteasyJsonbProcessor {
             }
         }
 
-        return generatedSerializerName;
+        return supported == TypeSerializerGenerator.Supported.FULLY
+                ? GenerationResult.noReflectionNeeded(generatedSerializerName)
+                : GenerationResult.reflectionNeeded(generatedSerializerName);
     }
 
     private GlobalSerializationConfig getGlobalConfig() {
         return new GlobalSerializationConfig(
                 jsonbConfig.locale, jsonbConfig.dateFormat, jsonbConfig.serializeNullValues, jsonbConfig.propertyOrderStrategy);
     }
+
+    static class GenerationResult {
+        private final boolean generated;
+        private final String className;
+        private final boolean needsReflection;
+
+        private GenerationResult(boolean generated, String className, boolean needsReflection) {
+            this.generated = generated;
+            this.className = className;
+            this.needsReflection = needsReflection;
+        }
+
+        static GenerationResult notGenerated() {
+            return new GenerationResult(false, null, false);
+        }
+
+        static GenerationResult noReflectionNeeded(String className) {
+            return new GenerationResult(true, className, false);
+        }
+
+        static GenerationResult reflectionNeeded(String className) {
+            return new GenerationResult(true, className, true);
+        }
+
+        boolean isGenerated() {
+            return generated;
+        }
+
+        String getClassName() {
+            return className;
+        }
+
+        boolean isNeedsReflection() {
+            return needsReflection;
+        }
+    }
+
 }

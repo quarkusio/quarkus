@@ -15,6 +15,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
@@ -30,33 +31,46 @@ import io.quarkus.resteasy.jsonb.deployment.SerializationClassInspector;
 public class ObjectTypeSerializerGenerator extends AbstractTypeSerializerGenerator {
 
     @Override
-    public boolean supports(Type type, TypeSerializerGeneratorRegistry registry) {
+    public Supported supports(Type type, TypeSerializerGeneratorRegistry registry) {
         if (type instanceof ArrayType) {
-            return false;
+            return Supported.UNSUPPORTED;
         }
 
         if (type.name().toString().startsWith("java")) {
-            return false;
+            return Supported.UNSUPPORTED;
         }
 
         final SerializationClassInspector.Result inspectionsResult = registry.getInspector().inspect(type.name());
         if (!inspectionsResult.isPossible()) {
-            return false;
+            return Supported.UNSUPPORTED;
         }
 
+        boolean foundUnhandledType = false;
         for (MethodInfo getter : inspectionsResult.getGetters().keySet()) {
             if (registry.correspondingTypeSerializer(getter.returnType()) == null) {
-                return false;
+                if (canUseUnhandledTypeGenerator(getter.returnType())) {
+                    foundUnhandledType = true;
+                } else {
+                    return Supported.UNSUPPORTED;
+                }
             }
         }
 
         for (FieldInfo field : inspectionsResult.getVisibleFieldsWithoutGetters()) {
             if (registry.correspondingTypeSerializer(field.type()) == null) {
-                return false;
+                if (canUseUnhandledTypeGenerator(field.type())) {
+                    foundUnhandledType = true;
+                } else {
+                    return Supported.UNSUPPORTED;
+                }
             }
         }
 
-        return true;
+        return foundUnhandledType ? Supported.WITH_UNHANDLED : Supported.FULLY;
+    }
+
+    private boolean canUseUnhandledTypeGenerator(Type type) {
+        return type instanceof ClassType;
     }
 
     @Override
@@ -88,14 +102,18 @@ public class ObjectTypeSerializerGenerator extends AbstractTypeSerializerGenerat
         for (Map.Entry<MethodInfo, FieldInfo> entry : inspectionResult.getGetters().entrySet()) {
             MethodInfo getterMethodInfo = entry.getKey();
             FieldInfo fieldInfo = entry.getValue();
+            String defaultKeyName = PropertyUtil.toFieldName(getterMethodInfo);
             Type returnType = getterMethodInfo.returnType();
             TypeSerializerGenerator getterTypeSerializerGenerator = serializerRegistry.correspondingTypeSerializer(returnType);
             if (getterTypeSerializerGenerator == null) {
-                throw new IllegalStateException("Could not generate serializer for getter " + getterMethodInfo.name()
-                        + " of type " + classDotNate);
+                if (canUseUnhandledTypeGenerator(returnType)) {
+                    getterTypeSerializerGenerator = new UnhandledTypeGenerator(context.getType(), defaultKeyName);
+                } else {
+                    throw new IllegalStateException("Could not generate serializer for getter " + getterMethodInfo.name()
+                            + " of type " + classDotNate);
+                }
             }
 
-            String defaultKeyName = PropertyUtil.toFieldName(getterMethodInfo);
             Map<DotName, AnnotationInstance> effectiveGetterAnnotations = getEffectiveGetterAnnotations(getterMethodInfo,
                     fieldInfo, serializerRegistry.getInspector());
             String finalKeyName = getFinalKeyName(defaultKeyName, effectiveGetterAnnotations);

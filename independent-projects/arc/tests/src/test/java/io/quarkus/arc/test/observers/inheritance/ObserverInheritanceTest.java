@@ -15,7 +15,7 @@ import org.junit.Test;
  *         <br>
  *         Date: 18/07/2019
  */
-public class CDIObserverTestCase {
+public class ObserverInheritanceTest {
 
     @Rule
     public ArcTestContainer container = new ArcTestContainer(ObservingBean.THIS.class, EmittingBean.class, ObservingBean.class,
@@ -28,6 +28,7 @@ public class CDIObserverTestCase {
 
     EmittingBean emittingBean;
 
+    @SuppressWarnings("serial")
     @Before
     public void setUp() {
         observingBean = Arc.container().instance(ObservingBean.class, new AnnotationLiteral<ObservingBean.THIS>() {

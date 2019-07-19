@@ -19,6 +19,5 @@ public class EmittingBean {
 
     public void trigger() {
         emitter.fire(new SimpleEvent(VALUE));
-        System.out.println("Emitted!");
     }
 }

@@ -5,7 +5,7 @@ import java.util.Locale;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.resteasy.jsonb.deployment.AdditionalClassGenerator;
+import io.quarkus.resteasy.jsonb.deployment.JsonbSupportClassGenerator;
 
 final class SerializerGeneratorUtil {
 
@@ -16,7 +16,7 @@ final class SerializerGeneratorUtil {
         if (locale == null) {
             // just use the default locale
             return bytecodeCreator
-                    .invokeStaticMethod(MethodDescriptor.ofMethod(AdditionalClassGenerator.QUARKUS_DEFAULT_LOCALE_PROVIDER,
+                    .invokeStaticMethod(MethodDescriptor.ofMethod(JsonbSupportClassGenerator.QUARKUS_DEFAULT_LOCALE_PROVIDER,
                             "get", Locale.class));
         }
 

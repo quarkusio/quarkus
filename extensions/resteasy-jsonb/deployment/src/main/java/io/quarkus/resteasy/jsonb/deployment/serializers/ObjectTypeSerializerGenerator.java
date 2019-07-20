@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -70,7 +71,9 @@ public class ObjectTypeSerializerGenerator extends AbstractTypeSerializerGenerat
     }
 
     private boolean canUseUnhandledTypeGenerator(Type type) {
-        return type instanceof ClassType;
+        // Parameterized types are unsupported because we don't have the proper Yasson metadata
+        // to tell Yasson the serializer to use
+        return type instanceof ClassType || type instanceof ArrayType;
     }
 
     @Override
@@ -325,6 +328,13 @@ public class ObjectTypeSerializerGenerator extends AbstractTypeSerializerGenerat
             } else {
                 // in this case we only write the property and value if the value is not null
                 BytecodeCreator getterNotNull = bytecodeCreator.ifNull(getter).falseBranch();
+                if (DotNames.OPTIONAL.equals(returnType.name())) {
+                    ResultHandle isPresent = getterNotNull.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(Optional.class, "isPresent", boolean.class),
+                            getter);
+
+                    getterNotNull = getterNotNull.ifNonZero(isPresent).trueBranch();
+                }
 
                 writeKey(getterNotNull, jsonGenerator, input.getFinalKeyName());
                 getterTypeSerializerGenerator.generate(input.getContext().changeItem(getterNotNull,

@@ -5,7 +5,6 @@ import java.util.Locale;
 import java.util.Map;
 
 import javax.json.bind.Jsonb;
-import javax.json.bind.annotation.JsonbDateFormat;
 import javax.json.bind.serializer.JsonbSerializer;
 import javax.json.spi.JsonProvider;
 import javax.ws.rs.ext.ContextResolver;
@@ -15,7 +14,6 @@ import org.eclipse.yasson.YassonProperties;
 import org.eclipse.yasson.internal.JsonbContext;
 import org.eclipse.yasson.internal.MappingContext;
 import org.eclipse.yasson.internal.serializer.ContainerSerializerProvider;
-import org.eclipse.yasson.internal.serializer.JsonbDateFormatter;
 
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -28,86 +26,14 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.resteasy.jsonb.runtime.serializers.QuarkusJsonbBinding;
 import io.quarkus.resteasy.jsonb.runtime.serializers.SimpleContainerSerializerProvider;
 
-public class AdditionalClassGenerator {
+class ResteasyJsonbClassGenerator {
 
-    public static final String QUARKUS_CONTEXT_RESOLVER = "io.quarkus.jsonb.QuarkusJsonbContextResolver";
-    public static final String QUARKUS_DEFAULT_DATE_FORMATTER_PROVIDER = "io.quarkus.jsonb.QuarkusDefaultJsonbDateFormatterProvider";
-    public static final String QUARKUS_DEFAULT_LOCALE_PROVIDER = "io.quarkus.jsonb.QuarkusDefaultJsonbLocaleProvider";
+    static final String QUARKUS_CONTEXT_RESOLVER = "io.quarkus.jsonb.QuarkusJsonbContextResolver";
 
     private final JsonbConfig jsonbConfig;
 
-    public AdditionalClassGenerator(JsonbConfig jsonbConfig) {
+    public ResteasyJsonbClassGenerator(JsonbConfig jsonbConfig) {
         this.jsonbConfig = jsonbConfig;
-    }
-
-    void generateDefaultLocaleProvider(ClassOutput classOutput) {
-        try (ClassCreator cc = ClassCreator.builder()
-                .classOutput(classOutput).className(QUARKUS_DEFAULT_LOCALE_PROVIDER)
-                .build()) {
-
-            FieldDescriptor instance = cc.getFieldCreator("INSTANCE", Locale.class)
-                    .setModifiers(Modifier.STATIC | Modifier.PRIVATE)
-                    .getFieldDescriptor();
-
-            try (MethodCreator get = cc.getMethodCreator("get", Locale.class)) {
-                get.setModifiers(Modifier.STATIC | Modifier.PUBLIC);
-
-                BranchResult branchResult = get.ifNull(get.readStaticField(instance));
-
-                BytecodeCreator instanceNotNull = branchResult.falseBranch();
-                instanceNotNull.returnValue(instanceNotNull.readStaticField(instance));
-
-                BytecodeCreator instanceNull = branchResult.trueBranch();
-                ResultHandle locale;
-                if (jsonbConfig.locale.isPresent()) {
-                    locale = instanceNull.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(Locale.class, "forLanguageTag", Locale.class, String.class),
-                            instanceNull.load(jsonbConfig.locale.get()));
-                } else {
-                    locale = instanceNull.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(Locale.class, "getDefault", Locale.class));
-                }
-
-                instanceNull.writeStaticField(instance, locale);
-                instanceNull.returnValue(locale);
-            }
-        }
-    }
-
-    void generateJsonbDefaultJsonbDateFormatterProvider(ClassOutput classOutput) {
-        try (ClassCreator cc = ClassCreator.builder()
-                .classOutput(classOutput).className(QUARKUS_DEFAULT_DATE_FORMATTER_PROVIDER)
-                .build()) {
-
-            FieldDescriptor instance = cc.getFieldCreator("INSTANCE", JsonbDateFormatter.class)
-                    .setModifiers(Modifier.STATIC | Modifier.PRIVATE)
-                    .getFieldDescriptor();
-
-            try (MethodCreator get = cc.getMethodCreator("get", JsonbDateFormatter.class)) {
-                get.setModifiers(Modifier.STATIC | Modifier.PUBLIC);
-
-                BranchResult branchResult = get.ifNull(get.readStaticField(instance));
-
-                BytecodeCreator instanceNotNull = branchResult.falseBranch();
-                instanceNotNull.returnValue(instanceNotNull.readStaticField(instance));
-
-                BytecodeCreator instanceNull = branchResult.trueBranch();
-                ResultHandle locale = instanceNull.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(QUARKUS_DEFAULT_LOCALE_PROVIDER, "get", Locale.class));
-
-                ResultHandle localeStr = instanceNull.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(Locale.class, "toLanguageTag", String.class),
-                        locale);
-
-                ResultHandle format = instanceNull.load(jsonbConfig.dateFormat.orElse(JsonbDateFormat.DEFAULT_FORMAT));
-
-                ResultHandle jsonbDateFormatter = instanceNull.newInstance(
-                        MethodDescriptor.ofConstructor(JsonbDateFormatter.class, String.class, String.class),
-                        format, localeStr);
-                instanceNull.writeStaticField(instance, jsonbDateFormatter);
-                instanceNull.returnValue(jsonbDateFormatter);
-            }
-        }
     }
 
     void generateJsonbContextResolver(ClassOutput classOutput, Map<String, String> typeToGeneratedSerializers) {
@@ -150,7 +76,8 @@ public class AdditionalClassGenerator {
                 ResultHandle locale = null;
                 if (jsonbConfig.locale.isPresent()) {
                     locale = instanceNull.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(QUARKUS_DEFAULT_LOCALE_PROVIDER, "get", Locale.class));
+                            MethodDescriptor.ofMethod(JsonbSupportClassGenerator.QUARKUS_DEFAULT_LOCALE_PROVIDER, "get",
+                                    Locale.class));
                     instanceNull.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(jsonbConfigClass, "withLocale", jsonbConfigClass, Locale.class),
                             config, locale);

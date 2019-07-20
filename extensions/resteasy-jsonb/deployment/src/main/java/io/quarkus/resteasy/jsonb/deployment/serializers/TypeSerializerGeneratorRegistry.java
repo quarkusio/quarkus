@@ -13,9 +13,14 @@ public final class TypeSerializerGeneratorRegistry {
     private final TypeSerializerGenerator objectSerializer = new ObjectTypeSerializerGenerator();
 
     private final List<TypeSerializerGenerator> typeSerializerGenerators = Arrays.asList(new StringTypeSerializerGenerator(),
-            new IntegerTypeSerializerGenerator(), new LocalDateTimeSerializerGenerator(),
+            new PrimitiveIntTypeSerializerGenerator(), new PrimitiveLongTypeSerializerGenerator(),
+            new PrimitiveBooleanTypeSerializerGenerator(),
+            new BooleanTypeSerializerGenerator(), new IntegerTypeSerializerGenerator(), new LongTypeSerializerGenerator(),
+            new BigDecimalTypeSerializerGenerator(),
+            new LocalDateTimeSerializerGenerator(),
             objectSerializer,
-            new CollectionTypeSerializerGenerator());
+            new ObjectArrayTypeSerializerGenerator(), new CollectionTypeSerializerGenerator(),
+            new MapTypeSerializerGenerator(), new OptionalTypeSerializerGenerator());
 
     private final SerializationClassInspector inspector;
 

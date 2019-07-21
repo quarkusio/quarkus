@@ -278,3 +278,69 @@ image:validation-guide-screenshot.png[alt=Application]
 
 As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
 You can also build the native executable using `./mvnw package -Pnative`.
+
+== Going further
+
+=== Hibernate Validator extension and CDI
+
+The Hibernate Validator extension is tightly integrated with CDI.
+
+==== Configuring the ValidatorFactory
+
+Sometimes, you might need to configure the behavior of the `ValidatorFactory`, for instance to use a specific `ParameterNameProvider`.
+
+While the `ValidatorFactory` is instantiated by Quarkus itself,
+you can very easily tweak it by declaring replacement beans that will be injected in the configuration.
+
+If you create a bean of the following types in your application, it will automatically be injected into the `ValidatorFactory` configuration:
+
+ * `javax.validation.ClockProvider`
+ * `javax.validation.ConstraintValidator`
+ * `javax.validation.ConstraintValidatorFactory`
+ * `javax.validation.MessageInterpolator`
+ * `javax.validation.ParameterNameProvider`
+ * `javax.validation.TraversableResolver`
+ * `org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy`
+ * `org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory`
+
+You don't have to wire anything.
+
+[WARNING]
+====
+Obviously, for each listed type, you can declare only one bean.
+
+These beans should be declared as `@ApplicationScoped`.
+====
+
+==== Constraint validators as beans
+
+You can declare your constraint validators as CDI beans:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyConstraintValidator implements ConstraintValidator<MyConstraint, String> {
+
+    @Inject
+    MyService service;
+
+    @Override
+    public boolean isValid(String value, ConstraintValidatorContext context) {
+        if (value == null) {
+            return true;
+        }
+
+        return service.validate(value);
+    }
+}
+----
+
+When initializing a constraint validator of a given type,
+Quarkus will check if a bean of this type is available and, if so, it will use it instead of instantiating one.
+
+Thus, as demonstrated in our example, you can fully use injection in your constraint validator beans.
+
+[NOTE]
+====
+Except in very specific situations, it is recommended to make the said beans `@ApplicationScoped`.
+====

@@ -77,4 +77,16 @@ public class HibernateValidatorFunctionalityTest {
                 .statusCode(400)
                 .body(containsString("numeric value out of bounds"));
     }
+
+    @Test
+    public void testInjection() throws Exception {
+        StringBuilder expected = new StringBuilder();
+        expected.append("passed").append("\n");
+        expected.append("failed: value (InjectedConstraintValidatorConstraint violation)");
+
+        RestAssured.when()
+                .get("/hibernate-validator/test/injection")
+                .then()
+                .body(is(expected.toString()));
+    }
 }

@@ -56,6 +56,7 @@
         <module>virtual-http</module>
         <module>artemis-core</module>
         <module>artemis-jms</module>
+        <module>caffeine</module>
     </modules>
 
     <build>

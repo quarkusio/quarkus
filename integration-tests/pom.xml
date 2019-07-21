@@ -93,6 +93,7 @@
         <module>quartz</module>
         <module>logging-gelf</module>
         <module>cache</module>
+        <module>caffeine</module>
     </modules>
 
     <build>

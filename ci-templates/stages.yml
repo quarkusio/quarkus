@@ -311,6 +311,7 @@ stages:
             - infinispan-cache-jpa
             - infinispan-client
             - cache
+            - caffeine
           name: cache
 
       - template: native-build-steps.yaml

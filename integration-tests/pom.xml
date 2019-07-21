@@ -92,6 +92,7 @@
         <module>jpa-without-entity</module>
         <module>quartz</module>
         <module>logging-gelf</module>
+        <module>cache</module>
     </modules>
 
     <build>

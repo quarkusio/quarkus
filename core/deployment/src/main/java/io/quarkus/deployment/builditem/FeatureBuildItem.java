@@ -13,6 +13,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String AMAZON_LAMBDA = "amazon-lambda";
     public static final String ARTEMIS_CORE = "artemis-core";
     public static final String ARTEMIS_JMS = "artemis-jms";
+    public static final String CACHE = "cache";
     public static final String CDI = "cdi";
     public static final String CONFIG_YAML = "config-yaml";
     public static final String DYNAMODB = "dynamodb";

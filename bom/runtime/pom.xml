@@ -120,7 +120,7 @@
         <json-smart.version>2.3</json-smart.version>
         <infinispan.version>10.0.0.Final</infinispan.version>
         <infinispan.protostream.version>4.3.1.Final</infinispan.protostream.version>
-        <caffeine.version>2.6.2</caffeine.version>
+        <caffeine.version>2.8.0</caffeine.version>
         <netty.version>4.1.42.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <test-containers.version>1.12.4</test-containers.version>
@@ -177,6 +177,8 @@
         <logstash-gelf.version>1.14.0</logstash-gelf.version>
         <jsch.version>0.1.55</jsch.version>
         <jzlib.version>1.1.1</jzlib.version>
+        <checker-qual.version>2.5.2</checker-qual.version>
+        <error-prone-annotations.version>2.2.0</error-prone-annotations.version>
     </properties>
 
     <dependencyManagement>
@@ -759,6 +761,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-logging-gelf</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-cache</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -2487,6 +2494,17 @@
                 <groupId>org.webjars</groupId>
                 <artifactId>bootstrap</artifactId>
                 <version>${bootstrap.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.checkerframework</groupId>
+                <artifactId>checker-qual</artifactId>
+                <version>${checker-qual.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>error_prone_annotations</artifactId>
+                <version>${error-prone-annotations.version}</version>
             </dependency>
 
             <!-- Kogito -->

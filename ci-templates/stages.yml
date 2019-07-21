@@ -311,7 +311,8 @@ stages:
           modules:
             - infinispan-cache-jpa
             - infinispan-client
-          name: infinispan
+            - cache
+          name: cache
 
       - template: native-build-steps.yaml
         parameters:

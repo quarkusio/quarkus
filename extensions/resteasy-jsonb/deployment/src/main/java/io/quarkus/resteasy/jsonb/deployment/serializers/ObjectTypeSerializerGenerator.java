@@ -16,6 +16,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -23,6 +24,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.resteasy.jsonb.deployment.DotNames;
@@ -93,15 +95,17 @@ public class ObjectTypeSerializerGenerator extends AbstractTypeSerializerGenerat
         }
 
         // instead of generating the bytecode for each property right away, we instead introduce
-        // a Generator interface that will do the job on demand
+        // a Generator interface that will do the job on lazily
         // this allows us to add the keys from both getters and fields and have them both sorted
+        // using the proper strategy
         SortedMap<String, Generator<?>> propertyNameToGenerator = PropertyOrderStrategy.REVERSE
                 .equalsIgnoreCase(context.getGlobalConfig().getPropertyOrderStrategy())
                         ? new TreeMap<>(Collections.reverseOrder())
-                        : new TreeMap<>();
+                        : new TreeMap<>(); //use lexicographical order by default
         Map<String, String> defaultToFinaKeyName = new HashMap<>();
         Map<String, String> finalToDefaultKeyName = new HashMap<>();
 
+        // setup getter generation
         for (Map.Entry<MethodInfo, FieldInfo> entry : inspectionResult.getGetters().entrySet()) {
             MethodInfo getterMethodInfo = entry.getKey();
             FieldInfo fieldInfo = entry.getValue();
@@ -133,9 +137,38 @@ public class ObjectTypeSerializerGenerator extends AbstractTypeSerializerGenerat
                             context, getterMethodInfo, fieldInfo, getterTypeSerializerGenerator, finalKeyName, isNillable)));
         }
 
-        // TODO serialize fields
+        // setup field generation
+        for (FieldInfo fieldInfo : inspectionResult.getVisibleFieldsWithoutGetters()) {
+            Type fieldType = fieldInfo.type();
+            String defaultKeyName = fieldInfo.name();
+            TypeSerializerGenerator getterTypeSerializerGenerator = serializerRegistry.correspondingTypeSerializer(fieldType);
+            if (getterTypeSerializerGenerator == null) {
+                if (canUseUnhandledTypeGenerator(fieldType)) {
+                    getterTypeSerializerGenerator = new UnhandledTypeGenerator(context.getType(), defaultKeyName);
+                } else {
+                    throw new IllegalStateException("Could not generate serializer for field " + defaultKeyName
+                            + " of type " + classDotNate);
+                }
+            }
+
+            Map<DotName, AnnotationInstance> effectiveGetterAnnotations = getEffectiveFieldAnnotations(fieldInfo,
+                    serializerRegistry.getInspector());
+            String finalKeyName = getFinalKeyName(defaultKeyName, effectiveGetterAnnotations);
+
+            defaultToFinaKeyName.put(defaultKeyName, finalKeyName);
+            finalToDefaultKeyName.put(finalKeyName, defaultKeyName);
+
+            boolean isNillable = isPropertyNillable(effectiveGetterAnnotations.get(DotNames.JSONB_PROPERTY),
+                    context.getGlobalConfig(), inspectionResult);
+
+            propertyNameToGenerator.put(
+                    finalKeyName,
+                    new FieldGenerator(new GeneratorInput<>(
+                            context, fieldInfo, null, getterTypeSerializerGenerator, finalKeyName, isNillable)));
+        }
 
         // TODO handle @JsonbPropertyOrder meta-annotations
+        // setup the properties in the correct order if the @JsonbPropertyOrder annotation is used
         if (inspectionResult.getEffectiveClassAnnotations().containsKey(DotNames.JSONB_PROPERTY_ORDER)) {
             LinkedHashSet<String> customOrder = new LinkedHashSet<>();
             AnnotationInstance annotationInstance = inspectionResult.getEffectiveClassAnnotations()
@@ -238,15 +271,35 @@ public class ObjectTypeSerializerGenerator extends AbstractTypeSerializerGenerat
             }
         }
 
-        Map<DotName, AnnotationInstance> effectiveClassAnnotations = inspector.inspect(getterMethodInfo.declaringClass().name())
+        addEffectiveClassAnnotations(inspector, getterMethodInfo.declaringClass(), result);
+
+        return result;
+    }
+
+    private static Map<DotName, AnnotationInstance> getEffectiveFieldAnnotations(FieldInfo fieldInfo,
+            SerializationClassInspector inspector) {
+        Map<DotName, AnnotationInstance> result = new HashMap<>();
+
+        for (AnnotationInstance annotationInstance : fieldInfo.annotations()) {
+            if (!result.containsKey(annotationInstance.name())) {
+                result.put(annotationInstance.name(), annotationInstance);
+            }
+        }
+
+        addEffectiveClassAnnotations(inspector, fieldInfo.declaringClass(), result);
+
+        return result;
+    }
+
+    private static void addEffectiveClassAnnotations(SerializationClassInspector inspector, ClassInfo classInfo,
+            Map<DotName, AnnotationInstance> result) {
+        Map<DotName, AnnotationInstance> effectiveClassAnnotations = inspector.inspect(classInfo.name())
                 .getEffectiveClassAnnotations();
         for (DotName classAnnotationDotName : effectiveClassAnnotations.keySet()) {
             if (!result.containsKey(classAnnotationDotName)) {
                 result.put(classAnnotationDotName, effectiveClassAnnotations.get(classAnnotationDotName));
             }
         }
-
-        return result;
     }
 
     private static class GeneratorInput<T extends AnnotationTarget> {
@@ -300,7 +353,7 @@ public class ObjectTypeSerializerGenerator extends AbstractTypeSerializerGenerat
 
         private GeneratorInput<MethodInfo> input;
 
-        public GetterGenerator(GeneratorInput<MethodInfo> input) {
+        GetterGenerator(GeneratorInput<MethodInfo> input) {
             this.input = input;
         }
 
@@ -339,6 +392,52 @@ public class ObjectTypeSerializerGenerator extends AbstractTypeSerializerGenerat
                 writeKey(getterNotNull, jsonGenerator, input.getFinalKeyName());
                 getterTypeSerializerGenerator.generate(input.getContext().changeItem(getterNotNull,
                         returnType, getter, true, effectivePropertyAnnotations));
+            }
+        }
+    }
+
+    private static class FieldGenerator implements Generator<GeneratorInput<FieldInfo>> {
+
+        private GeneratorInput<FieldInfo> input;
+
+        FieldGenerator(GeneratorInput<FieldInfo> input) {
+            this.input = input;
+        }
+
+        @Override
+        public void generate() {
+            BytecodeCreator bytecodeCreator = input.getContext().getBytecodeCreator();
+            ResultHandle jsonGenerator = input.getContext().getJsonGenerator();
+            DotName classDotNate = input.getContext().getType().name();
+            FieldInfo fieldInfo = input.getInstanceInfo();
+            Type fieldType = fieldInfo.type();
+            TypeSerializerGenerator fieldTypeSerializerGenerator = input.getTypeSerializerGenerator();
+
+            ResultHandle field = bytecodeCreator.readInstanceField(
+                    FieldDescriptor.of(classDotNate.toString(), fieldInfo.name(),
+                            fieldType.name().toString()),
+                    input.getContext().getCurrentItem());
+
+            Map<DotName, AnnotationInstance> effectivePropertyAnnotations = getEffectiveFieldAnnotations(fieldInfo,
+                    input.getContext().getRegistry().getInspector());
+            if (input.isNillable()) {
+                writeKey(bytecodeCreator, jsonGenerator, input.getFinalKeyName());
+                fieldTypeSerializerGenerator.generate(input.getContext().changeItem(
+                        bytecodeCreator, fieldType, field, false, effectivePropertyAnnotations));
+            } else {
+                // in this case we only write the property and value if the value is not null
+                BytecodeCreator fieldNotNull = bytecodeCreator.ifNull(field).falseBranch();
+                if (DotNames.OPTIONAL.equals(fieldType.name())) {
+                    ResultHandle isPresent = fieldNotNull.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(Optional.class, "isPresent", boolean.class),
+                            field);
+
+                    fieldNotNull = fieldNotNull.ifNonZero(isPresent).trueBranch();
+                }
+
+                writeKey(fieldNotNull, jsonGenerator, input.getFinalKeyName());
+                fieldTypeSerializerGenerator.generate(input.getContext().changeItem(fieldNotNull,
+                        fieldType, field, true, effectivePropertyAnnotations));
             }
         }
     }

@@ -6,7 +6,6 @@ import static java.util.stream.Collectors.toList;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,9 +24,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Opcodes;
 
 import io.quarkus.deployment.devmode.HotReplacementContext;
 import io.quarkus.deployment.devmode.HotReplacementSetup;
@@ -196,11 +192,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                         .filter(path -> path.toString().endsWith(CLASS_EXTENSION))
                         .collect(Collectors.toSet());
 
-                final RuntimeUpdatesClassVisitor visitor = new RuntimeUpdatesClassVisitor(module);
-
                 for (Path classFilePath : classFilePaths) {
                     final Path sourceFilePath = retrieveSourceFilePathForClassFile(classFilePath, moduleChangedSourceFiles,
-                            visitor);
+                            module);
                     if (sourceFilePath == null) {
                         Files.deleteIfExists(classFilePath);
                         classFilePathToSourceFilePath.remove(classFilePath);
@@ -239,16 +233,10 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     }
 
     private Path retrieveSourceFilePathForClassFile(Path classFilePath, List<Path> moduleChangedSourceFiles,
-            RuntimeUpdatesClassVisitor visitor) {
+            DevModeContext.ModuleInfo module) {
         Path sourceFilePath = classFilePathToSourceFilePath.get(classFilePath);
         if (sourceFilePath == null || moduleChangedSourceFiles.contains(sourceFilePath)) {
-            try (final InputStream inputStream = Files.newInputStream(classFilePath)) {
-                final ClassReader reader = new ClassReader(inputStream);
-                reader.accept(visitor, 0);
-                sourceFilePath = visitor.getSourceFileForClass(classFilePath);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            sourceFilePath = compiler.findSourcePath(classFilePath, module.getSourcePaths(), module.getClassesPath());
         }
         return sourceFilePath;
     }
@@ -366,35 +354,4 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
         }
     }
 
-    class RuntimeUpdatesClassVisitor extends ClassVisitor {
-        final private DevModeContext.ModuleInfo module;
-        private String sourceFile;
-
-        public RuntimeUpdatesClassVisitor(DevModeContext.ModuleInfo module) {
-            super(Opcodes.ASM7);
-            this.module = module;
-        }
-
-        @Override
-        public void visitSource(String source, String debug) {
-            this.sourceFile = source;
-        }
-
-        public Path getSourceFileForClass(final Path classFilePath) {
-            for (String moduleSourcePath : module.getSourcePaths()) {
-                final Path sourcesDir = Paths.get(moduleSourcePath);
-                final Path classesDir = Paths.get(module.getClassesPath());
-                final StringBuilder sourceRelativeDir = new StringBuilder();
-                sourceRelativeDir.append(classesDir.relativize(classFilePath.getParent()));
-                sourceRelativeDir.append(File.separator);
-                sourceRelativeDir.append(sourceFile);
-                final Path sourceFilePath = sourcesDir.resolve(Paths.get(sourceRelativeDir.toString()));
-                if (Files.exists(sourceFilePath)) {
-                    return sourceFilePath;
-                }
-            }
-
-            return null;
-        }
-    }
 }

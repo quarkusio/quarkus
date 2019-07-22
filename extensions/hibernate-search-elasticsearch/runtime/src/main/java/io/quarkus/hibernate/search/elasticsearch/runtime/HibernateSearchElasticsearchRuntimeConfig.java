@@ -77,7 +77,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * Configuration for the automatic indexing.
          */
         @ConfigItem
-        AutomaticIndexing automaticIndexing;
+        AutomaticIndexingConfig automaticIndexing;
 
         /**
          * The default configuration for the Elasticsearch indexes.
@@ -130,7 +130,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     }
 
     @ConfigGroup
-    public static class AutomaticIndexing {
+    public static class AutomaticIndexingConfig {
 
         /**
          * The synchronization strategy to use when indexing automatically.

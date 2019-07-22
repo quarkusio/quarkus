@@ -1,10 +1,10 @@
 package io.quarkus.hibernate.search.elasticsearch;
 
+import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.BINDING_DECLARATION_ANNOTATIONS_ON_PROPERTIES;
+import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.BINDING_DECLARATION_ANNOTATIONS_ON_TYPES;
 import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.FIELD_ANNOTATIONS;
 import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.INDEXED;
-import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.PROPERTY_BRIDGE_DECLARATION_ANNOTATION;
 import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.SCHEMA_MAPPING_CLASSES;
-import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.TYPE_BRIDGE_DECLARATION_ANNOTATION;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -153,25 +153,29 @@ class HibernateSearchElasticsearchProcessor {
 
         Set<Type> reflectiveHierarchyCollector = new HashSet<>();
 
-        for (AnnotationInstance propertyBridgeMappingInstance : index.getAnnotations(PROPERTY_BRIDGE_DECLARATION_ANNOTATION)) {
-            for (AnnotationInstance propertyBridgeInstance : index.getAnnotations(propertyBridgeMappingInstance.name())) {
-                AnnotationTarget annotationTarget = propertyBridgeInstance.target();
-                if (annotationTarget.kind() == Kind.FIELD) {
-                    FieldInfo fieldInfo = annotationTarget.asField();
-                    addReflectiveClass(index, reflectiveClassCollector, reflectiveTypeCollector, fieldInfo.declaringClass());
-                    reflectiveHierarchyCollector.add(fieldInfo.type());
-                } else if (annotationTarget.kind() == Kind.METHOD) {
-                    MethodInfo methodInfo = annotationTarget.asMethod();
-                    addReflectiveClass(index, reflectiveClassCollector, reflectiveTypeCollector, methodInfo.declaringClass());
-                    reflectiveHierarchyCollector.add(methodInfo.returnType());
+        for (DotName bindingDeclarationOnProperties : BINDING_DECLARATION_ANNOTATIONS_ON_PROPERTIES) {
+            for (AnnotationInstance propertyBridgeMappingInstance : index.getAnnotations(bindingDeclarationOnProperties)) {
+                for (AnnotationInstance propertyBridgeInstance : index.getAnnotations(propertyBridgeMappingInstance.name())) {
+                    AnnotationTarget annotationTarget = propertyBridgeInstance.target();
+                    if (annotationTarget.kind() == Kind.FIELD) {
+                        FieldInfo fieldInfo = annotationTarget.asField();
+                        addReflectiveClass(index, reflectiveClassCollector, reflectiveTypeCollector, fieldInfo.declaringClass());
+                        reflectiveHierarchyCollector.add(fieldInfo.type());
+                    } else if (annotationTarget.kind() == Kind.METHOD) {
+                        MethodInfo methodInfo = annotationTarget.asMethod();
+                        addReflectiveClass(index, reflectiveClassCollector, reflectiveTypeCollector, methodInfo.declaringClass());
+                        reflectiveHierarchyCollector.add(methodInfo.returnType());
+                    }
                 }
             }
         }
 
-        for (AnnotationInstance typeBridgeMappingInstance : index.getAnnotations(TYPE_BRIDGE_DECLARATION_ANNOTATION)) {
-            for (AnnotationInstance typeBridgeInstance : index.getAnnotations(typeBridgeMappingInstance.name())) {
-                addReflectiveClass(index, reflectiveClassCollector, reflectiveTypeCollector,
-                        typeBridgeInstance.target().asClass());
+        for (DotName bindingDeclarationOnTypes : BINDING_DECLARATION_ANNOTATIONS_ON_TYPES) {
+            for (AnnotationInstance typeBridgeMappingInstance : index.getAnnotations(bindingDeclarationOnTypes)) {
+                for (AnnotationInstance typeBridgeInstance : index.getAnnotations(typeBridgeMappingInstance.name())) {
+                    addReflectiveClass(index, reflectiveClassCollector, reflectiveTypeCollector,
+                            typeBridgeInstance.target().asClass());
+                }
             }
         }
 

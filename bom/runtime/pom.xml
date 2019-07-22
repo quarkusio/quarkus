@@ -80,7 +80,7 @@
         <javax.el-impl.version>3.0.1-b11</javax.el-impl.version>
         <hibernate-validator.version>6.1.0.Alpha6</hibernate-validator.version>
         <hibernate-orm.version>5.4.4.Final</hibernate-orm.version>
-        <hibernate-search.version>6.0.0.Alpha7</hibernate-search.version>
+        <hibernate-search.version>6.0.0.Alpha9</hibernate-search.version>
         <narayana.version>5.9.6.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.5</agroal.version>

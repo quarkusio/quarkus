@@ -268,6 +268,98 @@ public class CountriesResourceTest {
 
 The code above uses link:http://rest-assured.io/[REST Assured]'s link:https://github.com/rest-assured/rest-assured/wiki/GettingStarted#jsonpath[json-path] capabilities.
 
+
+== Async Support
+The rest client supports asynchronous rest calls. Let's see it in action by adding a `getByNameAsync` method in our `CountriesService` REST interface. The code should look like:
+
+[source, java]
+----
+package org.acme.restclient;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import java.util.concurrent.CompletionStage;
+import java.util.Set;
+
+@Path("/v2")
+@RegisterRestClient
+public interface CountriesService {
+
+    @GET
+    @Path("/name/{name}")
+    @Produces("application/json")
+    Set<Country> getByName(@PathParam("name") String name);
+
+    @GET
+    @Path("/name/{name}")
+    @Produces("application/json")
+    CompletionStage<Set<Country>> getByNameAsync(@PathParam("name") String name);
+}
+----
+
+Open the `src/main/java/org/acme/restclient/CountriesResource.java` file and update it with the following content:
+
+[source,java]
+----
+package org.acme.restclient;
+
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import java.util.concurrent.CompletionStage;
+import java.util.Set;
+
+@Path("/country")
+public class CountriesResource {
+
+    @Inject
+    @RestClient
+    CountriesService countriesService;
+
+
+    @GET
+    @Path("/name/{name}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Set<Country> name(@PathParam("name") String name) {
+        return countriesService.getByName(name);
+    }
+
+    @GET
+    @Path("/name-async/{name}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public CompletionStage<Set<Country>> nameAsync(@PathParam("name") String name) {
+        return countriesService.getByNameAsync(name);
+    }
+}
+----
+
+To test asynchronous methods, add the test method below in `CountriesResourceTest`:
+[source,java]
+----
+@Test
+public void testCountryNameAsyncEndpoint() {
+    given()
+    .when().get("/country/name-async/greece")
+    .then()
+        .statusCode(200)
+        .body("$.size()", is(1),
+             "[0].alpha2Code", is("GR"),
+             "[0].capital", is("Athens"),
+             "[0].currencies.size()", is(1),
+             "[0].currencies[0].name", is("Euro")
+        );
+    }
+----
+
 == Package and run the application
 
 Run the application with: `./mvnw compile quarkus:dev`.

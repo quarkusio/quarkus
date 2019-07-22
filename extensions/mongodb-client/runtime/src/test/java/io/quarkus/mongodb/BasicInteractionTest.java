@@ -306,7 +306,7 @@ class BasicInteractionTest extends MongoTestBase {
         assertThat(i).isEqualTo("my-index");
         assertThat(collection.listIndexes().toList().run().toCompletableFuture().join()).hasSize(2);
 
-        collection.dropIndex(i);
+        collection.dropIndex(i).toCompletableFuture().join();
         assertThat(collection.listIndexes().toList().run().toCompletableFuture().join()).hasSize(1);
 
     }

@@ -24,7 +24,6 @@ import org.axonframework.config.DefaultConfigurer;
 import org.axonframework.eventhandling.EventBus;
 import org.axonframework.queryhandling.*;
 import org.axonframework.serialization.Serializer;
-import org.axonframework.serialization.json.JacksonSerializer;
 import org.axonframework.serialization.upcasting.event.NoOpEventUpcaster;
 import org.axonframework.serialization.xml.XStreamSerializer;
 
@@ -56,7 +55,7 @@ public class AxonClientProducer {
     @Produces
     @Dependent
     public Configurer quarkusDefaultConfigurer(EventBus eventBus, CommandBus commandBus, QueryBus queryBus,
-                                                Serializer serializer) {
+            Serializer serializer) {
 
         Configurer configurer = DefaultConfigurer.defaultConfiguration(false)
                 .configureEventBus(c -> eventBus)
@@ -102,13 +101,13 @@ public class AxonClientProducer {
     @Produces
     @Dependent
     public AxonServerConnectionManager axonServerConnectionManager(AxonServerConfiguration axonServerConfiguration) {
-       return new AxonServerConnectionManager(axonServerConfiguration);
+        return new AxonServerConnectionManager(axonServerConfiguration);
     }
 
     @Produces
     @Dependent
     public EventBus eventBus(Serializer serializer, AxonServerConfiguration axonServerConfiguration,
-                                AxonServerConnectionManager axonServerConnectionManager) {
+            AxonServerConnectionManager axonServerConnectionManager) {
 
         return AxonServerEventStore.builder()
                 .eventSerializer(serializer)
@@ -117,30 +116,32 @@ public class AxonClientProducer {
                 .platformConnectionManager(axonServerConnectionManager)
                 .upcasterChain(NoOpEventUpcaster.INSTANCE)
                 .build();
-}
-
-    @Produces
-    @Dependent
-    public CommandBus commandBus(AxonServerConnectionManager axonServerConnectionManager,
-                                    AxonServerConfiguration axonServerConfiguration, Serializer serializer) {
-
-        return new AxonServerCommandBus(axonServerConnectionManager, axonServerConfiguration, SimpleCommandBus.builder().build(),
-                                            serializer, new AnnotationRoutingStrategy());
     }
 
     @Produces
     @Dependent
-    public QueryBus queryBus(AxonServerConnectionManager axonServerConnectionManager, AxonServerConfiguration axonServerConfiguration,
-                             Serializer serializer) {
-        
+    public CommandBus commandBus(AxonServerConnectionManager axonServerConnectionManager,
+            AxonServerConfiguration axonServerConfiguration, Serializer serializer) {
+
+        return new AxonServerCommandBus(axonServerConnectionManager, axonServerConfiguration,
+                SimpleCommandBus.builder().build(),
+                serializer, new AnnotationRoutingStrategy());
+    }
+
+    @Produces
+    @Dependent
+    public QueryBus queryBus(AxonServerConnectionManager axonServerConnectionManager,
+            AxonServerConfiguration axonServerConfiguration,
+            Serializer serializer) {
+
         return new AxonServerQueryBus(axonServerConnectionManager, axonServerConfiguration,
                 SimpleQueryUpdateEmitter.builder().build(), SimpleQueryBus.builder().build(), serializer, serializer,
                 new QueryPriorityCalculator() {
-                        @Override
-                        public int determinePriority(QueryMessage<?, ?> queryMessage) {
-                            return 0;
-                        }
-                    });
+                    @Override
+                    public int determinePriority(QueryMessage<?, ?> queryMessage) {
+                        return 0;
+                    }
+                });
     }
 
     @Produces

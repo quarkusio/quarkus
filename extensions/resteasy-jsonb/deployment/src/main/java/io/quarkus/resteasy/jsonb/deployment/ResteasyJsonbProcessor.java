@@ -9,9 +9,11 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.json.bind.Jsonb;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
@@ -32,6 +34,8 @@ import io.quarkus.resteasy.server.common.deployment.ResteasyAdditionalReturnType
 import io.quarkus.resteasy.server.common.deployment.ResteasyServerCommonProcessor;
 
 public class ResteasyJsonbProcessor {
+
+    private static final DotName JAX_RS_PRODUCES = DotName.createSimple("javax.ws.rs.Produces");
 
     @BuildStep
     void build(BuildProducer<FeatureBuildItem> feature) {
@@ -146,6 +150,11 @@ public class ResteasyJsonbProcessor {
             Collection<AnnotationInstance> jaxrsMethodInstances = index.getAnnotations(annotationType);
             for (AnnotationInstance jaxrsMethodInstance : jaxrsMethodInstances) {
                 MethodInfo method = jaxrsMethodInstance.target().asMethod();
+
+                if (!producesJson(method)) {
+                    continue;
+                }
+
                 Type returnType = method.returnType();
                 if (!ResteasyServerCommonProcessor.isReflectionDeclarationRequiredFor(returnType)
                         || returnType.name().toString().startsWith("java.lang")) {
@@ -168,6 +177,29 @@ public class ResteasyJsonbProcessor {
             }
         }
         return serializerCandidates;
+    }
+
+    private boolean producesJson(MethodInfo method) {
+        AnnotationInstance produces = method.annotation(JAX_RS_PRODUCES);
+        if (produces == null) {
+            method.declaringClass().classAnnotation(JAX_RS_PRODUCES);
+        }
+        if (produces == null) {
+            return false;
+        }
+
+        AnnotationValue value = produces.value();
+        if (value == null) {
+            return false;
+        }
+
+        for (String mediaTypeStr : value.asStringArray()) {
+            MediaType mediaType = MediaType.valueOf(mediaTypeStr);
+            if (MediaType.APPLICATION_JSON_TYPE.equals(mediaType)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void validateConfiguration() {

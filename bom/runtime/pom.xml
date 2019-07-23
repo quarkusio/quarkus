@@ -86,7 +86,7 @@
         <agroal.version>1.5</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
         <javax.persistence-api.version>2.2</javax.persistence-api.version>
-        <elasticsearch-rest-client.version>7.1.1</elasticsearch-rest-client.version>
+        <elasticsearch-rest-client.version>7.3.0</elasticsearch-rest-client.version>
         <rxjava1.version>1.3.8</rxjava1.version>
         <rxjava.version>2.2.9</rxjava.version>
         <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>

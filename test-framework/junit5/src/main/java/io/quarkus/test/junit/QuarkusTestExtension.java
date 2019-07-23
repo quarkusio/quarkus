@@ -7,11 +7,13 @@ import java.io.Closeable;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -73,18 +75,7 @@ public class QuarkusTestExtension
 
         Path appClassLocation = getAppClassLocation(context.getRequiredTestClass());
 
-        try {
-            appCl = BootstrapClassLoaderFactory.newInstance()
-                    .setAppClasses(appClassLocation)
-                    .setParent(getClass().getClassLoader())
-                    .setOffline(PropertyUtils.getBooleanOrNull(BootstrapClassLoaderFactory.PROP_OFFLINE))
-                    .setLocalProjectsDiscovery(
-                            PropertyUtils.getBoolean(BootstrapClassLoaderFactory.PROP_WS_DISCOVERY, true))
-                    .setEnableClasspathCache(PropertyUtils.getBoolean(BootstrapClassLoaderFactory.PROP_CP_CACHE, true))
-                    .newDeploymentClassLoader();
-        } catch (BootstrapException e) {
-            throw new IllegalStateException("Failed to create the boostrap class loader", e);
-        }
+        appCl = createQuarkusBuildClassLoader(appClassLocation);
         originalCl = setCCL(appCl);
 
         final Path testClassLocation = getTestClassesLocation(context.getRequiredTestClass());
@@ -260,6 +251,47 @@ public class QuarkusTestExtension
             }
         }, "Quarkus Test Cleanup Shutdown task"));
         return new ExtensionState(testResourceManager, shutdownTask, false);
+    }
+
+    /**
+     * Creates a classloader that will be used to build the test application.
+     *
+     * This method assumes that the runtime classes are already on the classpath
+     * of the classloader that loaded this class.
+     * What this method does is it resolves the required deployment classpath
+     * and creates a new URL classloader that includes the deployment CP with
+     * the classloader that loaded this class as its parent.
+     *
+     * @param appClassLocation location of the test application classes
+     * @return application build classloader
+     */
+    private URLClassLoader createQuarkusBuildClassLoader(Path appClassLocation) {
+        // The deployment classpath could be passed in as a system property.
+        // This is how integration with the Gradle plugin is achieved.
+        final String deploymentCp = PropertyUtils.getProperty(BootstrapClassLoaderFactory.PROP_DEPLOYMENT_CP);
+        if (deploymentCp != null && !deploymentCp.isEmpty()) {
+            final List<URL> list = new ArrayList<>();
+            for (String entry : deploymentCp.split("\\s")) {
+                try {
+                    list.add(new URL(entry));
+                } catch (MalformedURLException e) {
+                    throw new IllegalStateException("Failed to parse a deployment classpath entry " + entry, e);
+                }
+            }
+            return new URLClassLoader(list.toArray(new URL[list.size()]), getClass().getClassLoader());
+        }
+        try {
+            return BootstrapClassLoaderFactory.newInstance()
+                    .setAppClasses(appClassLocation)
+                    .setParent(getClass().getClassLoader())
+                    .setOffline(PropertyUtils.getBooleanOrNull(BootstrapClassLoaderFactory.PROP_OFFLINE))
+                    .setLocalProjectsDiscovery(
+                            PropertyUtils.getBoolean(BootstrapClassLoaderFactory.PROP_WS_DISCOVERY, true))
+                    .setEnableClasspathCache(PropertyUtils.getBoolean(BootstrapClassLoaderFactory.PROP_CP_CACHE, true))
+                    .newDeploymentClassLoader();
+        } catch (BootstrapException e) {
+            throw new IllegalStateException("Failed to create the boostrap class loader", e);
+        }
     }
 
     @Override

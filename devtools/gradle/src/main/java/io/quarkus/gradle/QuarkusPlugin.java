@@ -7,6 +7,7 @@ import org.gradle.api.Task;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.api.tasks.testing.Test;
 import org.gradle.util.GradleVersion;
 
 import io.quarkus.gradle.tasks.QuarkusAddExtension;
@@ -15,6 +16,7 @@ import io.quarkus.gradle.tasks.QuarkusDev;
 import io.quarkus.gradle.tasks.QuarkusGenerateConfig;
 import io.quarkus.gradle.tasks.QuarkusListExtensions;
 import io.quarkus.gradle.tasks.QuarkusNative;
+import io.quarkus.gradle.tasks.QuarkusTestConfig;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -51,6 +53,10 @@ public class QuarkusPlugin implements Plugin<Project> {
                 });
 
         tasks.create("buildNative", QuarkusNative.class).dependsOn(quarkusBuild);
+
+        // Quarkus test configuration task which should be executed before any Quarkus test
+        final QuarkusTestConfig quarkusTestConfig = tasks.create("quarkusTestConfig", QuarkusTestConfig.class);
+        tasks.withType(Test.class).forEach(t -> t.dependsOn(quarkusTestConfig));
     }
 
     private void verifyGradleVersion() {

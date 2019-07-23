@@ -13,8 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Priority;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
+import javax.ws.rs.Priorities;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -33,6 +35,7 @@ import io.quarkus.runtime.TemplateHtmlBuilder;
  * 
  */
 @Provider
+@Priority(Priorities.USER + 1)
 public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundException> {
 
     @Context

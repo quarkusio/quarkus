@@ -38,12 +38,25 @@ public class SerializationClassInspector {
             return SerializationClassInspector.Result.notPossible(classInfo);
         }
 
-        if (Modifier.isInterface(classInfo.flags()) || !index.getAllKnownSubclasses(classDotName).isEmpty()) {
+        if (Modifier.isInterface(classInfo.flags())) {
+            Collection<ClassInfo> allKnownImplementors = index.getAllKnownImplementors(classInfo.name());
+            if (allKnownImplementors.size() != 1) {
+                // when the type is an interface than we can correctly generate a serializer at build time
+                // if there is a single implementation
+                // TODO investigate if this can possible be relaxed by checking and comparing all fields, getters and
+                //  class annotations of the implementations
+                return SerializationClassInspector.Result.notPossible(classInfo);
+            } else {
+                return inspect(allKnownImplementors.iterator().next().name());
+            }
+        }
+
+        if (!index.getAllKnownSubclasses(classDotName).isEmpty()) {
             // if the class is an interface or is subclassed  we ignore it because json-b
             // adds all the properties of the implementation or subclasses (which we can't know)
             // TODO investigate if we could relax these constraints by checking if there
-            // there are no implementations or subclasses that contain properties other than those
-            // of the interface or class
+            //  there are no implementations or subclasses that contain properties other than those
+            //  of the interface or class
             return SerializationClassInspector.Result.notPossible(classInfo);
         }
 
@@ -52,7 +65,7 @@ public class SerializationClassInspector {
         }
 
         if (!DotNames.OBJECT.equals(classInfo.superName())) {
-            // for now don't handle classes with super types other than object, too many corner cases
+            // for now don't handle classes with super types other than object because there are too many corner cases
             return SerializationClassInspector.Result.notPossible(classInfo);
         }
 

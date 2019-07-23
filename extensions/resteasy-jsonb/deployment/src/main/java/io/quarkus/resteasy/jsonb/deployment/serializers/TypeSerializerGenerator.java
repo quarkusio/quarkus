@@ -85,6 +85,11 @@ public interface TypeSerializerGenerator {
             return effectivePropertyAnnotations;
         }
 
+        GenerateContext changeItem(Type newType, ResultHandle newItem) {
+            return new GenerateContext(newType, bytecodeCreator, jsonGenerator, serializationContext, newItem, registry,
+                    globalConfig, nullChecked, effectivePropertyAnnotations);
+        }
+
         GenerateContext changeItem(BytecodeCreator newBytecodeCreator, Type newType, ResultHandle newCurrentItem,
                 boolean newNullChecked) {
             return new GenerateContext(newType, newBytecodeCreator, jsonGenerator, serializationContext, newCurrentItem,

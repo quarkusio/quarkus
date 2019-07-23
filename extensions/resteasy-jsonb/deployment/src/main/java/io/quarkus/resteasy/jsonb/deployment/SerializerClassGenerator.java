@@ -31,7 +31,12 @@ public class SerializerClassGenerator {
             return Result.notGenerated();
         }
 
-        DotName classDotName = classType.name();
+        // use the inspection result because it gives us the actual type that we need to generate a serializer for
+        // this is needed in case the input is an interface in which case we actually generate a serializer for the single
+        // implementation
+        SerializationClassInspector.Result inspectionResult = registry.getInspector().inspect(classType.name());
+
+        DotName classDotName = inspectionResult.getClassInfo().name();
         String generatedSerializerName = "io.quarkus.jsonb.serializers." + classDotName.withoutPackagePrefix() + "Serializer";
         try (ClassCreator cc = ClassCreator.builder()
                 .classOutput(classOutput).className(generatedSerializerName)
@@ -71,8 +76,8 @@ public class SerializerClassGenerator {
         }
 
         return supported == TypeSerializerGenerator.Supported.FULLY
-                ? Result.noReflectionNeeded(generatedSerializerName)
-                : Result.reflectionNeeded(generatedSerializerName);
+                ? Result.noReflectionNeeded(classDotName, generatedSerializerName)
+                : Result.reflectionNeeded(classDotName, generatedSerializerName);
     }
 
     private GlobalSerializationConfig getGlobalConfig() {
@@ -82,33 +87,39 @@ public class SerializerClassGenerator {
 
     static class Result {
         private final boolean generated;
-        private final String className;
+        private final DotName classActuallyUsed; // will be the input class if that was a regular class or the single implementation if it was an interface
+        private final String generatedClassName;
         private final boolean needsReflection;
 
-        private Result(boolean generated, String className, boolean needsReflection) {
+        private Result(boolean generated, DotName classActuallyUsed, String generatedClassName, boolean needsReflection) {
             this.generated = generated;
-            this.className = className;
+            this.classActuallyUsed = classActuallyUsed;
+            this.generatedClassName = generatedClassName;
             this.needsReflection = needsReflection;
         }
 
         static Result notGenerated() {
-            return new Result(false, null, false);
+            return new Result(false, null, null, false);
         }
 
-        static Result noReflectionNeeded(String className) {
-            return new Result(true, className, false);
+        static Result noReflectionNeeded(DotName classActuallyUsed, String generatedClassName) {
+            return new Result(true, classActuallyUsed, generatedClassName, false);
         }
 
-        static Result reflectionNeeded(String className) {
-            return new Result(true, className, true);
+        static Result reflectionNeeded(DotName classActuallyUsed, String generatedClassName) {
+            return new Result(true, classActuallyUsed, generatedClassName, true);
         }
 
         boolean isGenerated() {
             return generated;
         }
 
-        String getClassName() {
-            return className;
+        public DotName getClassActuallyUsed() {
+            return classActuallyUsed;
+        }
+
+        String getGeneratedClassName() {
+            return generatedClassName;
         }
 
         boolean isNeedsReflection() {

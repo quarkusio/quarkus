@@ -134,9 +134,7 @@
         <aws-lambda-serverless-java-container.version>1.3.1</aws-lambda-serverless-java-container.version>
         <awssdk.version>2.7.0</awssdk.version>
         <kotlin.version>1.3.31</kotlin.version>
-        <camel.version>3.0.0-M2</camel.version>
         <dekorate.version>0.6.1</dekorate.version>
-        <javax.xml.soap-api.version>1.4.0</javax.xml.soap-api.version>
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
         <jline.version>2.14.6</jline.version>
         <maven-invoker.version>3.0.1</maven-invoker.version>
@@ -255,51 +253,6 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-agroal</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-aws-s3</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-aws-sns</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-aws-sqs</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-jdbc</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-salesforce</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-servlet</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-netty4-http</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-infinispan</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -612,110 +565,6 @@
             </dependency>
 
             <!-- External dependencies -->
-
-            <!-- Camel -->
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-core</artifactId>
-                <version>${camel.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.sun.xml.messaging.saaj</groupId>
-                        <artifactId>saaj-impl</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-aws-s3</artifactId>
-                <version>${camel.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.sun.xml.messaging.saaj</groupId>
-                        <artifactId>saaj-impl</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-aws-sns</artifactId>
-                <version>${camel.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.sun.xml.messaging.saaj</groupId>
-                        <artifactId>saaj-impl</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-aws-sqs</artifactId>
-                <version>${camel.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.sun.xml.messaging.saaj</groupId>
-                        <artifactId>saaj-impl</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-headersmap</artifactId>
-                <version>${camel.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.sun.xml.messaging.saaj</groupId>
-                        <artifactId>saaj-impl</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-jdbc</artifactId>
-                <version>${camel.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-salesforce</artifactId>
-                <version>${camel.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.sun.xml.messaging.saaj</groupId>
-                        <artifactId>saaj-impl</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-netty4-http</artifactId>
-                <version>${camel.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.sun.xml.messaging.saaj</groupId>
-                        <artifactId>saaj-impl</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-infinispan</artifactId>
-                <version>${camel.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.infinispan</groupId>
-                        <artifactId>infinispan-core</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.sun.xml.messaging.saaj</groupId>
-                        <artifactId>saaj-impl</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-servlet</artifactId>
-                <version>${camel.version}</version>
-            </dependency>
 
             <!-- dekorate -->
             <dependency>
@@ -1357,12 +1206,6 @@
                         <artifactId>javax.activation-api</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <!-- Camel transitive dep-->
-            <dependency>
-                <groupId>javax.xml.soap</groupId>
-                <artifactId>javax.xml.soap-api</artifactId>
-                <version>${javax.xml.soap-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.spec.javax.security.jacc</groupId>

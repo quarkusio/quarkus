@@ -10,15 +10,6 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class FeatureBuildItem extends MultiBuildItem {
 
     public static final String AGROAL = "agroal";
-    public static final String CAMEL_CORE = "camel-core";
-    public static final String CAMEL_INFINISPAN = "camel-infinispan";
-    public static final String CAMEL_AWS_S3 = "camel-aws-s3";
-    public static final String CAMEL_AWS_SNS = "camel-aws-sns";
-    public static final String CAMEL_AWS_SQS = "camel-aws-sqs";
-    public static final String CAMEL_JDBC = "camel-jdbc";
-    public static final String CAMEL_NETTY4_HTTP = "camel-netty4-http";
-    public static final String CAMEL_SALESFORCE = "camel-salesforce";
-    public static final String CAMEL_SERVLET = "camel-servlet";
     public static final String CDI = "cdi";
     public static final String DYNAMODB = "dynamodb";
     public static final String ELASTICSEARCH_REST_CLIENT = "elasticsearch-rest-client";

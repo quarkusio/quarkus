@@ -4,7 +4,6 @@ import io.quarkus.arc.BeanManagerProvider;
 import io.quarkus.arc.BeanMetadataProvider;
 import io.quarkus.arc.EventProvider;
 import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.InjectionPointProvider;
 import io.quarkus.arc.InstanceProvider;
 import io.quarkus.arc.ResourceProvider;
@@ -12,6 +11,7 @@ import io.quarkus.arc.processor.InjectionPointInfo.InjectionPointKind;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -19,6 +19,7 @@ import java.lang.reflect.Member;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -48,9 +49,11 @@ enum BuiltinBean {
                             InjectableBean.class, Set.class, Member.class, int.class),
                     parameterizedType, qualifiers, constructor.getThis(), annotationsHandle, javaMemberHandle,
                     constructor.load(injectionPoint.getPosition()));
+            FunctionCreator instanceProviderSuppler = constructor.createFunction(Supplier.class);
+            instanceProviderSuppler.getBytecode().returnValue(instanceProvider);
             constructor.writeInstanceField(
-                    FieldDescriptor.of(clazzCreator.getClassName(), providerName, InjectableReferenceProvider.class.getName()),
-                    constructor.getThis(), instanceProvider);
+                    FieldDescriptor.of(clazzCreator.getClassName(), providerName, Supplier.class.getName()),
+                    constructor.getThis(), instanceProviderSuppler.getInstance());
 
         }
     }, BuiltinBean::isInstanceInjectionPoint),
@@ -60,12 +63,16 @@ enum BuiltinBean {
                 void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
                         ClassCreator clazzCreator,
                         MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
-                    // this.injectionPointProvider1 = new InjectionPointProvider();
+                    // this.injectionPointProvider1 = () -> new InjectionPointProvider();
+                    ResultHandle injectionPointProvider = constructor.newInstance(
+                            MethodDescriptor.ofConstructor(InjectionPointProvider.class));
+                    FunctionCreator injectionPointProviderSupplier = constructor.createFunction(Supplier.class);
+                    injectionPointProviderSupplier.getBytecode().returnValue(injectionPointProvider);
                     constructor.writeInstanceField(
                             FieldDescriptor.of(clazzCreator.getClassName(), providerName,
-                                    InjectableReferenceProvider.class.getName()),
+                                    Supplier.class.getName()),
                             constructor.getThis(),
-                            constructor.newInstance(MethodDescriptor.ofConstructor(InjectionPointProvider.class)));
+                            injectionPointProviderSupplier.getInstance());
                 }
             }),
     BEAN(DotNames.BEAN, new Generator() {
@@ -73,12 +80,15 @@ enum BuiltinBean {
         void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
                 ClassCreator clazzCreator,
                 MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
-            // this.beanProvider1 = new BeanMetadataProvider<>();
+            // this.beanProviderSupplier1 = () -> new BeanMetadataProvider<>();
+            ResultHandle beanProvider = constructor.newInstance(MethodDescriptor.ofConstructor(BeanMetadataProvider.class));
+            FunctionCreator beanProviderSupplier = constructor.createFunction(Supplier.class);
+            beanProviderSupplier.getBytecode().returnValue(beanProvider);
             constructor.writeInstanceField(
                     FieldDescriptor.of(clazzCreator.getClassName(), providerName,
-                            InjectableReferenceProvider.class.getName()),
+                            Supplier.class.getName()),
                     constructor.getThis(),
-                    constructor.newInstance(MethodDescriptor.ofConstructor(BeanMetadataProvider.class)));
+                    beanProviderSupplier.getInstance());
         }
     }),
     BEAN_MANAGER(DotNames.BEAN_MANAGER, new Generator() {
@@ -86,11 +96,15 @@ enum BuiltinBean {
         void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
                 ClassCreator clazzCreator,
                 MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
+            ResultHandle beanManagerProvider = constructor.newInstance(
+                    MethodDescriptor.ofConstructor(BeanManagerProvider.class));
+            FunctionCreator injectionPointProviderSupplier = constructor.createFunction(Supplier.class);
+            injectionPointProviderSupplier.getBytecode().returnValue(beanManagerProvider);
             constructor.writeInstanceField(
                     FieldDescriptor.of(clazzCreator.getClassName(), providerName,
-                            InjectableReferenceProvider.class.getName()),
+                            Supplier.class.getName()),
                     constructor.getThis(),
-                    constructor.newInstance(MethodDescriptor.ofConstructor(BeanManagerProvider.class)));
+                    injectionPointProviderSupplier.getInstance());
         }
     }),
     EVENT(DotNames.EVENT, new Generator() {
@@ -124,10 +138,12 @@ enum BuiltinBean {
                     MethodDescriptor.ofConstructor(EventProvider.class, java.lang.reflect.Type.class,
                             Set.class),
                     parameterizedType, qualifiers);
+            FunctionCreator eventProviderSupplier = constructor.createFunction(Supplier.class);
+            eventProviderSupplier.getBytecode().returnValue(eventProvider);
             constructor.writeInstanceField(
                     FieldDescriptor.of(clazzCreator.getClassName(), providerName,
-                            InjectableReferenceProvider.class.getName()),
-                    constructor.getThis(), eventProvider);
+                            Supplier.class.getName()),
+                    constructor.getThis(), eventProviderSupplier.getInstance());
         }
     }),
     RESOURCE(DotNames.OBJECT, new Generator() {
@@ -153,10 +169,12 @@ enum BuiltinBean {
                     MethodDescriptor.ofConstructor(ResourceProvider.class, java.lang.reflect.Type.class,
                             Set.class),
                     parameterizedType, annotations);
+            FunctionCreator resourceProviderSupplier = constructor.createFunction(Supplier.class);
+            resourceProviderSupplier.getBytecode().returnValue(resourceProvider);
             constructor.writeInstanceField(
                     FieldDescriptor.of(clazzCreator.getClassName(), providerName,
-                            InjectableReferenceProvider.class.getName()),
-                    constructor.getThis(), resourceProvider);
+                            Supplier.class.getName()),
+                    constructor.getThis(), resourceProviderSupplier.getInstance());
         }
     }, ip -> ip.getKind() == InjectionPointKind.RESOURCE),
     EVENT_METADATA(DotNames.EVENT_METADATA, new Generator() {

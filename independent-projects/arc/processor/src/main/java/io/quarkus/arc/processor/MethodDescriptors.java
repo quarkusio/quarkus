@@ -35,6 +35,8 @@ import javax.interceptor.InvocationContext;
  */
 final class MethodDescriptors {
 
+    static final MethodDescriptor SUPPLIER_GET = MethodDescriptor.ofMethod(Supplier.class, "get", Object.class);
+
     static final MethodDescriptor CREATIONAL_CTX_CHILD = MethodDescriptor.ofMethod(CreationalContextImpl.class, "child",
             CreationalContextImpl.class,
             CreationalContext.class);

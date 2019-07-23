@@ -8,7 +8,6 @@ import io.quarkus.arc.CreationalContextImpl;
 import io.quarkus.arc.CurrentInjectionPointProvider;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableObserverMethod;
-import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
@@ -19,6 +18,7 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.enterprise.event.Reception;
 import javax.enterprise.inject.spi.EventContext;
 import javax.enterprise.inject.spi.ObserverMethod;
@@ -144,7 +145,7 @@ public class ObserverGenerator extends AbstractGenerator {
                 // We do not need a provider for event metadata
                 continue;
             }
-            injectionPointToProvider.put(injectionPoint, "observerProvider" + providerIdx++);
+            injectionPointToProvider.put(injectionPoint, "observerProviderSupplier" + providerIdx++);
         }
     }
 
@@ -184,11 +185,12 @@ public class ObserverGenerator extends AbstractGenerator {
 
         AssignableResultHandle declaringProviderInstanceHandle = notify.createVariable(Object.class);
         AssignableResultHandle ctxHandle = notify.createVariable(CreationalContextImpl.class);
-        ResultHandle declaringProviderHandle = notify
-                .readInstanceField(
-                        FieldDescriptor.of(observerCreator.getClassName(), "declaringProvider",
-                                InjectableBean.class.getName()),
-                        notify.getThis());
+        ResultHandle declaringProviderSupplierHandle = notify.readInstanceField(
+                FieldDescriptor.of(observerCreator.getClassName(), "declaringProviderSupplier",
+                        Supplier.class.getName()),
+                notify.getThis());
+        ResultHandle declaringProviderHandle = notify.invokeInterfaceMethod(
+                MethodDescriptors.SUPPLIER_GET, declaringProviderSupplierHandle);
         // It is safe to skip CreationalContext.release() for normal scoped declaring provider and no injection points
         boolean skipRelease = observer.getDeclaringBean().getScope().isNormal()
                 && observer.getInjection().injectionPoints.isEmpty();
@@ -238,9 +240,12 @@ public class ObserverGenerator extends AbstractGenerator {
                         notify.getMethodParam(0));
             } else {
                 ResultHandle childCtxHandle = notify.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD, ctxHandle);
-                ResultHandle providerHandle = notify.readInstanceField(FieldDescriptor.of(observerCreator.getClassName(),
-                        injectionPointToProviderField.get(injectionPointsIterator.next()),
-                        InjectableReferenceProvider.class.getName()), notify.getThis());
+                ResultHandle providerSupplierHandle = notify
+                        .readInstanceField(FieldDescriptor.of(observerCreator.getClassName(),
+                                injectionPointToProviderField.get(injectionPointsIterator.next()),
+                                Supplier.class.getName()), notify.getThis());
+                ResultHandle providerHandle = notify.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
+                        providerSupplierHandle);
                 ResultHandle referenceHandle = notify.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
                         providerHandle, childCtxHandle);
                 referenceHandles[i] = referenceHandle;
@@ -285,10 +290,10 @@ public class ObserverGenerator extends AbstractGenerator {
     protected void createProviderFields(ClassCreator observerCreator, ObserverInfo observer,
             Map<InjectionPointInfo, String> injectionPointToProvider) {
         // Declaring bean provider
-        observerCreator.getFieldCreator("declaringProvider", InjectableBean.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
+        observerCreator.getFieldCreator("declaringProviderSupplier", Supplier.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
         // Injection points
         for (String provider : injectionPointToProvider.values()) {
-            observerCreator.getFieldCreator(provider, InjectableReferenceProvider.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
+            observerCreator.getFieldCreator(provider, Supplier.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
     }
 
@@ -298,10 +303,10 @@ public class ObserverGenerator extends AbstractGenerator {
 
         // First collect all param types
         List<String> parameterTypes = new ArrayList<>();
-        parameterTypes.add(InjectableBean.class.getName());
+        parameterTypes.add(Supplier.class.getName());
         for (InjectionPointInfo injectionPoint : observer.getInjection().injectionPoints) {
             if (BuiltinBean.resolve(injectionPoint) == null) {
-                parameterTypes.add(InjectableReferenceProvider.class.getName());
+                parameterTypes.add(Supplier.class.getName());
             }
         }
 
@@ -311,7 +316,7 @@ public class ObserverGenerator extends AbstractGenerator {
 
         int paramIdx = 0;
         constructor.writeInstanceField(
-                FieldDescriptor.of(observerCreator.getClassName(), "declaringProvider", InjectableBean.class.getName()),
+                FieldDescriptor.of(observerCreator.getClassName(), "declaringProviderSupplier", Supplier.class.getName()),
                 constructor.getThis(), constructor.getMethodParam(0));
         paramIdx++;
         for (InjectionPointInfo injectionPoint : observer.getInjection().injectionPoints) {
@@ -337,23 +342,28 @@ public class ObserverGenerator extends AbstractGenerator {
                             observer.getDeclaringBean().getDeployment(), constructor,
                             injectionPoint, annotationLiterals);
                     ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(constructor, injectionPoint);
+
+                    // Wrap the constructor arg in a Supplier so we can pass it to CurrentInjectionPointProvider c'tor.
+                    FunctionCreator delegateSupplier = constructor.createFunction(Supplier.class);
+                    delegateSupplier.getBytecode().returnValue(constructor.getMethodParam(paramIdx++));
+
                     ResultHandle wrapHandle = constructor.newInstance(
                             MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class,
-                                    InjectableReferenceProvider.class, java.lang.reflect.Type.class,
+                                    Supplier.class, java.lang.reflect.Type.class,
                                     Set.class, Set.class, Member.class, int.class),
-                            constructor.getThis(), constructor.getMethodParam(paramIdx++),
+                            constructor.getThis(), delegateSupplier.getInstance(),
                             Types.getTypeHandle(constructor, injectionPoint.getRequiredType()),
                             requiredQualifiersHandle, annotationsHandle, javaMemberHandle,
                             constructor.load(injectionPoint.getPosition()));
 
                     constructor.writeInstanceField(FieldDescriptor.of(observerCreator.getClassName(),
                             injectionPointToProviderField.get(injectionPoint),
-                            InjectableReferenceProvider.class.getName()), constructor.getThis(), wrapHandle);
+                            Supplier.class.getName()), constructor.getThis(), wrapHandle);
                 } else {
                     constructor.writeInstanceField(
                             FieldDescriptor.of(observerCreator.getClassName(),
                                     injectionPointToProviderField.get(injectionPoint),
-                                    InjectableReferenceProvider.class.getName()),
+                                    Supplier.class.getName()),
                             constructor.getThis(), constructor.getMethodParam(paramIdx++));
                 }
             }

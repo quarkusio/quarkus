@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.spi.Annotated;
 import javax.enterprise.inject.spi.AnnotatedCallable;
@@ -32,13 +33,13 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
     static final InjectionPoint EMPTY = new InjectionPointImpl(Object.class, Object.class, Collections.emptySet(), null, null,
             null, -1);
 
-    private final InjectableReferenceProvider<T> delegate;
+    private final Supplier<InjectableReferenceProvider<T>> delegateSupplier;
 
     private final InjectionPoint injectionPoint;
 
-    public CurrentInjectionPointProvider(InjectableBean<?> bean, InjectableReferenceProvider<T> delegate, Type requiredType,
-            Set<Annotation> qualifiers, Set<Annotation> annotations, Member javaMember, int position) {
-        this.delegate = delegate;
+    public CurrentInjectionPointProvider(InjectableBean<?> bean, Supplier<InjectableReferenceProvider<T>> delegateSupplier,
+            Type requiredType, Set<Annotation> qualifiers, Set<Annotation> annotations, Member javaMember, int position) {
+        this.delegateSupplier = delegateSupplier;
         this.injectionPoint = new InjectionPointImpl(requiredType, requiredType, qualifiers, bean, annotations, javaMember,
                 position);
     }
@@ -47,7 +48,7 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
     public T get(CreationalContext<T> creationalContext) {
         InjectionPoint prev = InjectionPointProvider.set(injectionPoint);
         try {
-            return delegate.get(creationalContext);
+            return delegateSupplier.get().get(creationalContext);
         } finally {
             InjectionPointProvider.set(prev);
         }

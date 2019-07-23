@@ -298,7 +298,7 @@ NOTE: Other types may be supported for injection, please see other sections for 
 
 == Querying
 
-The Infinispan client supports both indexed and non indexed querying as long as the 
+The Infinispan client supports both indexed and non indexed querying as long as the
 `ProtoStreamMarshaller` is configured above. This allows the user to query based on the
 properties of the proto schema.
 

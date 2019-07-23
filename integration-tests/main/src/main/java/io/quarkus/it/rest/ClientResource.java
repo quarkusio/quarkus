@@ -3,6 +3,7 @@ package io.quarkus.it.rest;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -41,13 +42,18 @@ public class ClientResource {
     }
 
     @GET
+    @Path("/async/cdi")
+    public CompletionStage<String> asyncCdi() {
+        return restInterface.asyncGet();
+    }
+
+    @GET
     @Path("manual/jackson")
     @Produces("application/json")
     public TestResource.MyData getDataManual() throws Exception {
         ProgrammaticRestInterface iface = RestClientBuilder.newBuilder()
                 .baseUrl(new URL(System.getProperty("test.url")))
                 .build(ProgrammaticRestInterface.class);
-        System.out.println(iface.getData());
         return iface.getData();
     }
 
@@ -56,6 +62,13 @@ public class ClientResource {
     @Produces("application/json")
     public TestResource.MyData getDataCdi() {
         return restClientInterface.getData();
+    }
+
+    @GET
+    @Path("async/cdi/jackson")
+    @Produces("application/json")
+    public CompletionStage<TestResource.MyData> getDataAsync() {
+        return restInterface.getDataAsync();
     }
 
     @GET

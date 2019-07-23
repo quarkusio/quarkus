@@ -4,16 +4,21 @@ import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.spi.Bean;
 
 /**
- * Dummy {@link Bean} provider.
+ * {@link Bean} metadata provider.
  *
  * @author Martin Kouba
  */
-public class BeanMetadataProvider<T> implements InjectableReferenceProvider<T> {
+public class BeanMetadataProvider implements InjectableReferenceProvider<InjectableBean<?>> {
+
+    private final String beanId;
+
+    public BeanMetadataProvider(String beanId) {
+        this.beanId = beanId;
+    }
 
     @Override
-    public T get(CreationalContext<T> creationalContext) {
-        // TODO log a warning
-        return null;
+    public InjectableBean<?> get(CreationalContext<InjectableBean<?>> creationalContext) {
+        return Arc.container().bean(beanId);
     }
 
 }

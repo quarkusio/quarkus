@@ -28,7 +28,7 @@
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
-        <graal-sdk.version-for-documentation>19.0.2</graal-sdk.version-for-documentation>
+        <graal-sdk.version-for-documentation>19.1.1</graal-sdk.version-for-documentation>
         <rest-assured.version>3.3.0</rest-assured.version>
         <axle-client.version>0.0.7</axle-client.version>
         <vertx.version>3.7.1</vertx.version>
@@ -54,10 +54,10 @@
     <dependencyManagement>
         <dependencies>
 
-            <!-- Quarkus Extensions Dependencies are coming from quarkus-deployment-bom (that also imports quarkus-bom) -->
+            <!-- Quarkus Extensions Dependencies are coming from quarkus-bom-deployment (that also imports quarkus-bom) -->
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-deployment-bom</artifactId>
+                <artifactId>quarkus-bom-deployment</artifactId>
                 <version>${project.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
@@ -92,7 +92,6 @@
                 <artifactId>quarkus-legacy-launcher</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 

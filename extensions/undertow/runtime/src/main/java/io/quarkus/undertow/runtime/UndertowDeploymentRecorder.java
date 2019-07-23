@@ -6,7 +6,6 @@ import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +31,7 @@ import org.wildfly.common.net.Inet;
 import org.xnio.Xnio;
 import org.xnio.XnioWorker;
 
+import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.ExecutorRecorder;
@@ -47,6 +47,7 @@ import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.CanonicalPathHandler;
+import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.CachingResourceManager;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
@@ -97,8 +98,8 @@ public class UndertowDeploymentRecorder {
     private static volatile HttpHandler currentRoot = ResponseCodeHandler.HANDLE_404;
     private static volatile ServletContext servletContext;
 
-    private static final AttachmentKey<Collection<io.quarkus.arc.ContextInstanceHandle<?>>> REQUEST_CONTEXT = AttachmentKey
-            .create(Collection.class);
+    private static final AttachmentKey<InjectableContext.ContextState> REQUEST_CONTEXT = AttachmentKey
+            .create(InjectableContext.ContextState.class);
 
     public static void setHotDeploymentResources(List<Path> resources) {
         hotDeploymentResourcePaths = resources;
@@ -121,12 +122,12 @@ public class UndertowDeploymentRecorder {
     }
 
     public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
-            LaunchMode launchMode, ShutdownContext context) {
+            LaunchMode launchMode, ShutdownContext context, String contextPath) {
         DeploymentInfo d = new DeploymentInfo();
         d.setSessionIdGenerator(new QuarkusSessionIdGenerator());
         d.setClassLoader(getClass().getClassLoader());
         d.setDeploymentName(name);
-        d.setContextPath("/");
+        d.setContextPath(contextPath);
         d.setEagerFilterInit(true);
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
@@ -315,6 +316,11 @@ public class UndertowDeploymentRecorder {
         for (HandlerWrapper i : wrappers) {
             main = i.wrap(main);
         }
+        if (!manager.getDeployment().getDeploymentInfo().getContextPath().equals("/")) {
+            PathHandler pathHandler = new PathHandler()
+                    .addPrefixPath(manager.getDeployment().getDeploymentInfo().getContextPath(), main);
+            main = pathHandler;
+        }
         currentRoot = main;
 
         Timing.setHttpServer(String.format(
@@ -476,7 +482,7 @@ public class UndertowDeploymentRecorder {
                                 if (requestContext.isActive()) {
                                     return action.call(exchange, context);
                                 } else {
-                                    Collection<io.quarkus.arc.ContextInstanceHandle<?>> existingRequestContext = exchange
+                                    InjectableContext.ContextState existingRequestContext = exchange
                                             .getAttachment(REQUEST_CONTEXT);
                                     try {
                                         requestContext.activate(existingRequestContext);
@@ -486,16 +492,15 @@ public class UndertowDeploymentRecorder {
                                                 .getAttachment(ServletRequestContext.ATTACHMENT_KEY);
                                         HttpServletRequestImpl req = src.getOriginalRequest();
                                         if (req.isAsyncStarted()) {
-                                            exchange.putAttachment(REQUEST_CONTEXT, requestContext.getAll());
+                                            exchange.putAttachment(REQUEST_CONTEXT, requestContext.getState());
                                             requestContext.deactivate();
                                             if (existingRequestContext == null) {
                                                 req.getAsyncContextInternal().addListener(new AsyncListener() {
                                                     @Override
                                                     public void onComplete(AsyncEvent event) throws IOException {
-                                                        for (io.quarkus.arc.InstanceHandle<?> i : exchange
-                                                                .getAttachment(REQUEST_CONTEXT)) {
-                                                            i.destroy();
-                                                        }
+                                                        requestContext.activate(exchange
+                                                                .getAttachment(REQUEST_CONTEXT));
+                                                        requestContext.terminate();
                                                     }
 
                                                     @Override

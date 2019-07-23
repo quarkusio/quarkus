@@ -2,6 +2,7 @@ package io.quarkus.runtime.graal;
 
 import java.util.logging.Handler;
 
+import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.handlers.DelayedHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,19 @@ final class Target_io_quarkus_runtime_logging_InitialConfigurator {
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FromAlias)
     @Alias
     public static DelayedHandler DELAYED_HANDLER = new DelayedHandler();
+}
+
+@TargetClass(java.util.logging.Logger.class)
+final class Target_java_util_logging_Logger {
+    @Substitute
+    static java.util.logging.Logger getLogger(String name) {
+        return LogContext.getLogContext().getLogger(name);
+    }
+
+    @Substitute
+    static java.util.logging.Logger getLogger(String name, String ignored) {
+        return LogContext.getLogContext().getLogger(name);
+    }
 }
 
 final class LoggingSubstitutions {

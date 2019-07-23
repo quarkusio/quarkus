@@ -23,12 +23,19 @@ public class ResteasyFilter extends Filter30Dispatcher {
             throws IOException, ServletException {
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         HttpServletRequest request = (HttpServletRequest) servletRequest;
-        if (request.getMethod().equals("GET") || request.getMethod().equals("HEAD")) {
-            //we only serve get requests from the default servlet
+        if (request.getMethod().equals("GET") || request.getMethod().equals("HEAD") || isCORSPreflightRequest(request)) {
+            //we only serve get requests from the default servlet and CORS preflight requests
             filterChain.doFilter(servletRequest, new ResteasyResponseWrapper(response, request));
         } else {
             servletContainerDispatcher.service(request.getMethod(), request, response, true);
         }
+    }
+
+    private boolean isCORSPreflightRequest(HttpServletRequest request) {
+        return request.getMethod().equals("OPTIONS")
+                && request.getHeader("Origin") != null
+                && request.getHeader("Access-Control-Request-Method") != null
+                && request.getHeader("Access-Control-Request-Headers") != null;
     }
 
     private class ResteasyResponseWrapper extends HttpServletResponseWrapper {

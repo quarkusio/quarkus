@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import javax.enterprise.context.ContextNotActiveException;
+import javax.enterprise.context.spi.Contextual;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -196,7 +197,8 @@ public class ClientProxyGenerator extends AbstractGenerator {
         creator.assign(ret, creator.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET_IF_PRESENT, context, bean));
         BytecodeCreator isNullBranch = creator.ifNull(ret).trueBranch();
         // Create a new contextual instance - new CreationalContextImpl<>()
-        ResultHandle creationContext = isNullBranch.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class));
+        ResultHandle creationContext = isNullBranch
+                .newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), bean);
         isNullBranch.assign(ret,
                 isNullBranch.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET, context, bean, creationContext));
         creator.returnValue(ret);

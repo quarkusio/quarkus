@@ -45,7 +45,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-rest-client-deployment</artifactId>
+            <artifactId>quarkus-rest-client-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

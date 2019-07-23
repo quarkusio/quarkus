@@ -1101,32 +1101,8 @@ http --follow 2af13fe516a9:8080/weather-stations/data/1
 
 To run the `producer` and `aggregator` applications as native binaries via GraalVM,
 the Maven builds can be run using the `native` profile.
-As RocksDB, a dependency of Kafka Streams, uses JNI (the Java Native Interface),
-one adjustment to the `pom.xml` file of the `aggregator` application is needed:
-add the line `<enableJni>true</enableJni>` to the configuration of the `native-image` execution of the Maven Quarkus plug-in,
-which then should look like so:
 
-[source,xml]
-----
-<plugin>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-maven-plugin</artifactId>
-  <version>${quarkus.version}</version>
-  <executions>
-    <execution>
-      <goals>
-        <goal>native-image</goal>
-      </goals>
-      <configuration>
-        <enableHttpUrlHandler>true</enableHttpUrlHandler>
-        <enableJni>true</enableJni>
-      </configuration>
-    </execution>
-  </executions>
-</plugin>
-----
-
-The build the two applications like so:
+Then build the two applications like so:
 
 [source, shell]
 ----

@@ -69,42 +69,6 @@
     "artifactId": "quarkus-amazon-lambda"
   },
   {
-    "name": "Camel Core",
-    "labels": [
-      "camel-core",
-      "camel"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-camel-core"
-  },
-  {
-    "name": "Camel Infinispan",
-    "labels": [
-      "camel-infinispan",
-      "camel"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-camel-infinispan"
-  },
-  {
-    "name": "Camel Netty4 HTTP",
-    "labels": [
-      "camel-netty4-http",
-      "camel"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-camel-netty4-http"
-  },
-  {
-    "name": "Camel Salesforce",
-    "labels": [
-      "camel-salesforce",
-      "camel"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-camel-salesforce"
-  },
-  {
     "name": "Flyway",
     "labels": [
       "flyway",
@@ -532,15 +496,14 @@
     "guide": "https://quarkus.io/guides/amqp-guide"
   },
   {
-    "name": "SmallRye REST Client",
+    "name": "REST Client",
     "labels": [
-      "smallrye-rest-client",
       "rest-client",
       "web-client",
       "microprofile-rest-client"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-rest-client",
+    "artifactId": "quarkus-rest-client",
     "guide": "https://quarkus.io/guides/rest-client-guide"
   },
   {

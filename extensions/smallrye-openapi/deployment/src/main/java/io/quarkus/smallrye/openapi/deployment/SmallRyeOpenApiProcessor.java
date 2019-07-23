@@ -56,6 +56,7 @@ import io.smallrye.openapi.api.OpenApiDocument;
 import io.smallrye.openapi.runtime.OpenApiProcessor;
 import io.smallrye.openapi.runtime.OpenApiStaticFile;
 import io.smallrye.openapi.runtime.io.OpenApiSerializer;
+import io.smallrye.openapi.runtime.scanner.FilteredIndexView;
 import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
 
 /**
@@ -84,6 +85,7 @@ public class SmallRyeOpenApiProcessor {
 
     SmallRyeOpenApiConfig openapi;
 
+    @BuildStep
     List<HotDeploymentWatchedFileBuildItem> configFiles() {
         return Stream.of(META_INF_OPENAPI_YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YAML,
                 META_INF_OPENAPI_YML, WEB_INF_CLASSES_META_INF_OPENAPI_YML,
@@ -102,11 +104,22 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    public void registerOpenApiSchemaClassesForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, CombinedIndexBuildItem combinedIndexBuildItem,
+    OpenApiFilteredIndexViewBuildItem smallryeOpenApiIndex(CombinedIndexBuildItem combinedIndexBuildItem,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
-        IndexView index = CompositeIndex.create(combinedIndexBuildItem.getIndex(), beanArchiveIndexBuildItem.getIndex());
+        CompositeIndex compositeIndex = CompositeIndex.create(combinedIndexBuildItem.getIndex(),
+                beanArchiveIndexBuildItem.getIndex());
+        return new OpenApiFilteredIndexViewBuildItem(
+                new FilteredIndexView(
+                        compositeIndex,
+                        new OpenApiConfigImpl(ConfigProvider.getConfig())));
+    }
 
+    @BuildStep
+    public void registerOpenApiSchemaClassesForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
+            OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem) {
+
+        FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
         // Generate reflection declaration from MP OpenAPI Schema definition
         // They are needed for serialization.
         Collection<AnnotationInstance> schemaAnnotationInstances = index.getAnnotations(OPENAPI_SCHEMA);
@@ -186,12 +199,12 @@ public class SmallRyeOpenApiProcessor {
 
     @BuildStep
     public void build(ApplicationArchivesBuildItem archivesBuildItem,
-            CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<FeatureBuildItem> feature,
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
             BuildProducer<GeneratedWebResourceBuildItem> resourceBuildItemBuildProducer,
-            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) throws Exception {
+            OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem) throws Exception {
 
-        IndexView index = CompositeIndex.create(combinedIndexBuildItem.getIndex(), beanArchiveIndexBuildItem.getIndex());
+        FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
         OpenAPI staticModel = generateStaticModel(archivesBuildItem);

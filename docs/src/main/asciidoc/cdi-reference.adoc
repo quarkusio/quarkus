@@ -242,6 +242,30 @@ AnnotationsTransformerBuildItem transform() {
 }
 ----
 
+=== Additional Interceptor Bindings
+
+In rare cases it might be handy to programmatically register an existing annotation as interceptor binding.
+This is similar to what pure CDI achieves through `BeforeBeanDiscovery#addInterceptorBinding()`.
+Though here we are going to use `InterceptorBindingRegistrarBuildItem` to get it done.
+Note that you can register multiple annotations in one go:
+
+[source,java]
+----
+@BuildStep
+InterceptorBindingRegistrarBuildItem addInterceptorBindings() {
+    InterceptorBindingRegistrarBuildItem additionalBindingsRegistrar = new InterceptorBindingRegistrarBuildItem(new InterceptorBindingRegistrar() {
+        @Override
+        public Collection<DotName> registerAdditionalBindings() {
+            Collection<DotName> result = new HashSet<>();
+            result.add(DotName.createSimple(MyAnnotation.class.getName()));
+            result.add(DotName.createSimple(MyOtherAnnotation.class.getName()));
+            return result;
+        }
+    });
+    return additionalBindingsRegistrar;
+}
+----
+
 === Injection Point Transformation
 
 Every now and then it is handy to be able to change qualifiers of an injection point programmatically.

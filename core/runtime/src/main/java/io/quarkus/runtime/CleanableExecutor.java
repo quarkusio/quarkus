@@ -176,20 +176,19 @@ public final class CleanableExecutor implements ExecutorService {
         private static final long inheritableThreadLocalMapOffs;
 
         static {
-            final Field threadLocals = AccessController.doPrivileged(new DeclaredFieldAction(Thread.class, "threadLocals"));
-            threadLocalMapOffs = threadLocals == null ? 0 : unsafe.objectFieldOffset(threadLocals);
-            final Field inheritableThreadLocals = AccessController
-                    .doPrivileged(new DeclaredFieldAction(Thread.class, "inheritableThreadLocals"));
-            inheritableThreadLocalMapOffs = inheritableThreadLocals == null ? 0
-                    : unsafe.objectFieldOffset(inheritableThreadLocals);
+            try {
+                threadLocalMapOffs = unsafe.objectFieldOffset(Thread.class.getDeclaredField("threadLocals"));
+                inheritableThreadLocalMapOffs = unsafe
+                        .objectFieldOffset(Thread.class.getDeclaredField("inheritableThreadLocals"));
+            } catch (NoSuchFieldException e) {
+                throw new NoSuchFieldError(e.getMessage());
+            }
         }
 
         static void run() {
             final Thread thread = Thread.currentThread();
-            if (threadLocalMapOffs != 0)
-                unsafe.putObject(thread, threadLocalMapOffs, null);
-            if (inheritableThreadLocalMapOffs != 0)
-                unsafe.putObject(thread, inheritableThreadLocalMapOffs, null);
+            unsafe.putObject(thread, threadLocalMapOffs, null);
+            unsafe.putObject(thread, inheritableThreadLocalMapOffs, null);
         }
     }
 
@@ -209,24 +208,6 @@ public final class CleanableExecutor implements ExecutorService {
                 }
             }
         });
-    }
-
-    static final class DeclaredFieldAction implements PrivilegedAction<Field> {
-        private final Class<?> clazz;
-        private final String fieldName;
-
-        DeclaredFieldAction(final Class<?> clazz, final String fieldName) {
-            this.clazz = clazz;
-            this.fieldName = fieldName;
-        }
-
-        public Field run() {
-            try {
-                return clazz.getDeclaredField(fieldName);
-            } catch (NoSuchFieldException e) {
-                return null;
-            }
-        }
     }
 
     private class CleaningRunnable implements Runnable {

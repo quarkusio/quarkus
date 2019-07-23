@@ -5,6 +5,8 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -20,7 +22,6 @@ import io.quarkus.builder.BuildResult;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
-import io.quarkus.deployment.builditem.BuildTimeConfigurationSourceBuildItem;
 import io.quarkus.deployment.builditem.ClassOutputBuildItem;
 import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -29,7 +30,6 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.runtime.LaunchMode;
-import io.smallrye.config.PropertiesConfigSource;
 
 public class QuarkusAugmentor {
 
@@ -42,6 +42,7 @@ public class QuarkusAugmentor {
     private final List<Consumer<BuildChainBuilder>> buildChainCustomizers;
     private final LaunchMode launchMode;
     private final List<Path> additionalApplicationArchives;
+    private final Collection<Path> excludedFromIndexing;
     private final LiveReloadBuildItem liveReloadBuildItem;
     private final Properties buildSystemProperties;
 
@@ -53,6 +54,7 @@ public class QuarkusAugmentor {
         this.buildChainCustomizers = new ArrayList<>(builder.buildChainCustomizers);
         this.launchMode = builder.launchMode;
         this.additionalApplicationArchives = new ArrayList<>(builder.additionalApplicationArchives);
+        this.excludedFromIndexing = builder.excludedFromIndexing;
         this.liveReloadBuildItem = builder.liveReloadState;
         this.buildSystemProperties = builder.buildSystemProperties;
     }
@@ -67,7 +69,11 @@ public class QuarkusAugmentor {
 
             final BuildChainBuilder chainBuilder = BuildChain.builder();
 
-            ExtensionLoader.loadStepsFrom(classLoader).accept(chainBuilder);
+            if (buildSystemProperties != null) {
+                ExtensionLoader.loadStepsFrom(classLoader, buildSystemProperties).accept(chainBuilder);
+            } else {
+                ExtensionLoader.loadStepsFrom(classLoader).accept(chainBuilder);
+            }
             chainBuilder.loadProviders(classLoader);
 
             chainBuilder
@@ -85,10 +91,6 @@ public class QuarkusAugmentor {
             chainBuilder.addFinal(GeneratedClassBuildItem.class)
                     .addFinal(GeneratedResourceBuildItem.class);
 
-            if (buildSystemProperties != null) {
-                chainBuilder.addInitial(BuildTimeConfigurationSourceBuildItem.class);
-            }
-
             for (Consumer<BuildChainBuilder> i : buildChainCustomizers) {
                 i.accept(chainBuilder);
             }
@@ -101,18 +103,13 @@ public class QuarkusAugmentor {
             BuildExecutionBuilder execBuilder = chain.createExecutionBuilder("main")
                     .produce(QuarkusConfig.INSTANCE)
                     .produce(liveReloadBuildItem)
-                    .produce(new ArchiveRootBuildItem(root, rootFs == null ? root : rootFs.getPath("/")))
+                    .produce(new ArchiveRootBuildItem(root, rootFs == null ? root : rootFs.getPath("/"), excludedFromIndexing))
                     .produce(new ClassOutputBuildItem(output))
                     .produce(new ShutdownContextBuildItem())
                     .produce(new LaunchModeBuildItem(launchMode))
                     .produce(new ExtensionClassLoaderBuildItem(classLoader));
             for (Path i : additionalApplicationArchives) {
                 execBuilder.produce(new AdditionalApplicationArchiveBuildItem(i));
-            }
-            if (buildSystemProperties != null) {
-                execBuilder.produce(
-                        new BuildTimeConfigurationSourceBuildItem(
-                                new PropertiesConfigSource(buildSystemProperties, "Build system")));
             }
             BuildResult buildResult = execBuilder
                     .execute();
@@ -144,6 +141,7 @@ public class QuarkusAugmentor {
     public static final class Builder {
 
         List<Path> additionalApplicationArchives = new ArrayList<>();
+        Collection<Path> excludedFromIndexing = Collections.emptySet();
         ClassOutput output;
         ClassLoader classLoader;
         Path root;
@@ -164,6 +162,11 @@ public class QuarkusAugmentor {
 
         public Builder addAdditionalApplicationArchive(Path archive) {
             this.additionalApplicationArchives.add(archive);
+            return this;
+        }
+
+        public Builder excludeFromIndexing(Collection<Path> excludedFromIndexing) {
+            this.excludedFromIndexing = excludedFromIndexing;
             return this;
         }
 

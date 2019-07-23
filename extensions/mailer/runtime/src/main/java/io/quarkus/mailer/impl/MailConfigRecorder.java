@@ -16,16 +16,13 @@ public class MailConfigRecorder {
     private static volatile MailClient client;
 
     public RuntimeValue<MailClient> configureTheClient(RuntimeValue<Vertx> vertx, BeanContainer container,
-            MailConfig config, LaunchMode launchMode, ShutdownContext shutdown) {
+            MailConfig config, ShutdownContext shutdown) {
 
         initialize(vertx.getValue(), config);
-
         MailClientProducer producer = container.instance(MailClientProducer.class);
         producer.initialize(client);
 
-        if (!launchMode.isDevOrTest()) {
-            shutdown.addShutdownTask(this::close);
-        }
+        shutdown.addShutdownTask(this::close);
         return new RuntimeValue<>(client);
     }
 
@@ -41,10 +38,6 @@ public class MailConfigRecorder {
     }
 
     void initialize(Vertx vertx, MailConfig config) {
-        if (client != null) {
-            // Already configured
-            return;
-        }
         io.vertx.ext.mail.MailConfig cfg = toVertxMailConfig(config);
         client = MailClient.createNonShared(vertx, cfg);
     }

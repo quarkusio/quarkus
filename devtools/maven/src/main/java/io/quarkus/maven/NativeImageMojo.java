@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
@@ -274,10 +275,16 @@ public class NativeImageMojo extends AbstractMojo {
                 throw new MojoExecutionException("Failed to resolve application model dependencies for " + appCoords, e);
             }
 
+            final Properties buildSystemProperties = project.getProperties();
+            final Properties projectProperties = new Properties();
+            projectProperties.putAll(buildSystemProperties);
+            projectProperties.putIfAbsent("quarkus.application.name", project.getArtifactId());
+            projectProperties.putIfAbsent("quarkus.application.version", project.getVersion());
+
             creatorBuilder.addPhase(new AugmentPhase()
                     .setAppClassesDir(new File(outputDirectory, "classes").toPath())
                     .setWiringClassesDir(wiringClassesDirectory.toPath())
-                    .setBuildSystemProperties(project.getProperties()))
+                    .setBuildSystemProperties(projectProperties))
                     .addPhase(new RunnerJarPhase()
                             .setFinalName(finalName))
                     .setWorkDir(buildDir.toPath());

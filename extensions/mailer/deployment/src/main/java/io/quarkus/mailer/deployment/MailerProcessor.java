@@ -51,7 +51,7 @@ public class MailerProcessor {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.MAILER));
 
         RuntimeValue<MailClient> client = recorder.configureTheClient(vertx.getVertx(), beanContainer.getValue(), config,
-                launchMode.getLaunchMode(), shutdown);
+                shutdown);
 
         recorder.configureTheMailer(beanContainer.getValue(), config, launchMode.getLaunchMode());
 

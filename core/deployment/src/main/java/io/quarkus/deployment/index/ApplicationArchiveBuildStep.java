@@ -84,25 +84,26 @@ public class ApplicationArchiveBuildStep {
         }
 
         List<ApplicationArchive> applicationArchives = scanForOtherIndexes(Thread.currentThread().getContextClassLoader(),
-                markerFiles, root.getArchiveLocation(), additionalApplicationArchiveBuildItem, indexCache);
+                markerFiles, root, additionalApplicationArchiveBuildItem, indexCache);
         return new ApplicationArchivesBuildItem(
                 new ApplicationArchiveImpl(appindex.getIndex(), root.getArchiveRoot(), null, false, root.getArchiveLocation()),
                 applicationArchives);
     }
 
     private List<ApplicationArchive> scanForOtherIndexes(ClassLoader classLoader, Set<String> applicationArchiveFiles,
-            Path appRoot, List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives, IndexCache indexCache)
+            ArchiveRootBuildItem root, List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives,
+            IndexCache indexCache)
             throws IOException {
         Set<Path> dependenciesToIndex = new HashSet<>();
         //get paths that are included via index-dependencies
-        dependenciesToIndex.addAll(getIndexDependencyPaths(classLoader));
+        dependenciesToIndex.addAll(getIndexDependencyPaths(classLoader, root));
         //get paths that are included via marker files
         Set<String> markers = new HashSet<>(applicationArchiveFiles);
         markers.add(JANDEX_INDEX);
-        dependenciesToIndex.addAll(getMarkerFilePaths(classLoader, markers));
+        dependenciesToIndex.addAll(getMarkerFilePaths(classLoader, markers, root));
 
         //we don't index the application root, this is handled elsewhere
-        dependenciesToIndex.remove(appRoot);
+        dependenciesToIndex.remove(root.getArchiveLocation());
 
         for (AdditionalApplicationArchiveBuildItem i : additionalApplicationArchives) {
             dependenciesToIndex.add(i.getPath());
@@ -111,7 +112,7 @@ public class ApplicationArchiveBuildStep {
         return indexPaths(dependenciesToIndex, classLoader, indexCache);
     }
 
-    public List<Path> getIndexDependencyPaths(ClassLoader classLoader) {
+    public List<Path> getIndexDependencyPaths(ClassLoader classLoader, ArchiveRootBuildItem root) {
         ArtifactIndex artifactIndex = new ArtifactIndex(new ClassPathArtifactResolver(classLoader));
         try {
             List<Path> ret = new ArrayList<>();
@@ -124,7 +125,9 @@ public class ApplicationArchiveBuildStep {
                     path = artifactIndex.getPath(entry.getValue().groupId, entry.getValue().artifactId,
                             entry.getValue().classifier);
                 }
-                ret.add(path);
+                if (!root.isExcludedFromIndexing(path)) {
+                    ret.add(path);
+                }
             }
             return ret;
         } catch (Exception e) {
@@ -152,29 +155,39 @@ public class ApplicationArchiveBuildStep {
         return ret;
     }
 
-    private static Collection<? extends Path> getMarkerFilePaths(ClassLoader classLoader, Set<String> applicationArchiveFiles)
+    private static Collection<? extends Path> getMarkerFilePaths(ClassLoader classLoader, Set<String> applicationArchiveFiles,
+            ArchiveRootBuildItem root)
             throws IOException {
         List<Path> ret = new ArrayList<>();
         for (String file : applicationArchiveFiles) {
             Enumeration<URL> e = classLoader.getResources(file);
             while (e.hasMoreElements()) {
-                URL url = e.nextElement();
-                ret.add(urlToPath(url));
+                final URL url = e.nextElement();
+                final Path path = urlToPath(url, file);
+                if (!root.isExcludedFromIndexing(path)) {
+                    ret.add(path);
+                }
             }
         }
         return ret;
     }
 
     // package protected for testing purpose
-    static Path urlToPath(URL url) {
+    static Path urlToPath(URL url, String resource) {
         try {
             if (url.getProtocol().equals("jar")) {
                 String jarPath = url.getPath().substring(0, url.getPath().lastIndexOf('!'));
                 return Paths.get(new URI(jarPath));
             } else if (url.getProtocol().equals("file")) {
                 final Path path = Paths.get(url.toURI());
+                if (resource.isEmpty()) {
+                    return path;
+                }
                 final String filePath = path.toString();
-                final int index = filePath.lastIndexOf(File.separator + "META-INF");
+                if (File.separatorChar != '/') {
+                    resource = resource.replace('/', File.separatorChar);
+                }
+                final int index = filePath.lastIndexOf(File.separator + resource);
                 if (index == -1) {
                     return path;
                 }
@@ -222,26 +235,24 @@ public class ApplicationArchiveBuildStep {
         return indexCache.cache.computeIfAbsent(path, new Function<Path, Index>() {
             @Override
             public Index apply(Path path) {
-                try {
-                    try (JarFile file = new JarFile(path.toFile())) {
-                        ZipEntry existing = file.getEntry(JANDEX_INDEX);
-                        if (existing != null) {
-                            try (InputStream in = file.getInputStream(existing)) {
-                                IndexReader reader = new IndexReader(in);
-                                if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
-                                    LOGGER.warnf(
-                                            "Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency",
-                                            path);
-                                    return indexJar(file);
-                                } else {
-                                    return reader.read();
-                                }
+                try (JarFile file = new JarFile(path.toFile())) {
+                    ZipEntry existing = file.getEntry(JANDEX_INDEX);
+                    if (existing != null) {
+                        try (InputStream in = file.getInputStream(existing)) {
+                            IndexReader reader = new IndexReader(in);
+                            if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
+                                LOGGER.warnf(
+                                        "Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency",
+                                        path);
+                                return indexJar(file);
+                            } else {
+                                return reader.read();
                             }
                         }
-                        return indexJar(file);
                     }
+                    return indexJar(file);
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    throw new RuntimeException("Failed to process " + path, e);
                 }
             }
         });

@@ -18,6 +18,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.kie.kogito.codegen.ApplicationGenerator;
 import org.kie.kogito.codegen.GeneratedFile;
+import org.kie.kogito.codegen.di.CDIDependencyInjectionAnnotator;
 import org.kie.kogito.codegen.process.ProcessCodegen;
 import org.kie.kogito.codegen.rules.RuleCodegen;
 
@@ -121,7 +122,7 @@ public class KogitoAssetsProcessor {
     private ApplicationGenerator createApplicationGenerator(ArchiveRootBuildItem root, LaunchMode launchMode,
             boolean generateRuleUnits, boolean generateProcesses, CombinedIndexBuildItem combinedIndexBuildItem)
             throws IOException {
-        Path targetClassesPath = root.getPath();
+        Path targetClassesPath = root.getArchiveLocation();
         Path projectPath = targetClassesPath.toString().endsWith("target" + File.separator + "classes")
                 ? targetClassesPath.getParent().getParent()
                 : targetClassesPath;
@@ -129,7 +130,7 @@ public class KogitoAssetsProcessor {
         String appPackageName = "org.kie.kogito.app";
 
         ApplicationGenerator appGen = new ApplicationGenerator(appPackageName, new File(projectPath.toFile(), "target"))
-                .withDependencyInjection(true);
+                .withDependencyInjection(new CDIDependencyInjectionAnnotator());
 
         if (generateRuleUnits) {
             appGen.withGenerator(RuleCodegen.ofPath(projectPath, launchMode == LaunchMode.DEVELOPMENT))

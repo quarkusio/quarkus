@@ -19,6 +19,7 @@ public class ProfileManager {
 
     public static final String QUARKUS_PROFILE_ENV = "QUARKUS_PROFILE";
     public static final String QUARKUS_PROFILE_PROP = "quarkus.profile";
+    public static final String QUARKUS_TEST_PROFILE_PROP = "quarkus.test.profile";
     private static final String BACKWARD_COMPATIBLE_QUARKUS_PROFILE_PROP = "quarkus-profile";
 
     private static volatile LaunchMode launchMode = LaunchMode.NORMAL;
@@ -33,22 +34,30 @@ public class ProfileManager {
     }
 
     public static String getActiveProfile() {
+        if (launchMode == LaunchMode.TEST) {
+            String profile = System.getProperty(QUARKUS_TEST_PROFILE_PROP);
+            if (profile != null) {
+                return profile;
+            }
+            return launchMode.getDefaultProfile();
+        }
+
         String profile = System.getProperty(QUARKUS_PROFILE_PROP);
         if (profile != null) {
             return profile;
         }
+
         profile = System.getProperty(BACKWARD_COMPATIBLE_QUARKUS_PROFILE_PROP);
         if (profile != null) {
             return profile;
         }
-        profile = System.getenv(QUARKUS_PROFILE_ENV);
 
+        profile = System.getenv(QUARKUS_PROFILE_ENV);
         if (profile != null) {
             return profile;
         }
 
         profile = runtimeDefaultProfile;
-
         if (profile != null) {
             return profile;
         }

@@ -9,7 +9,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>quarkus-deployment-bom</artifactId>
+    <artifactId>quarkus-bom-deployment</artifactId>
     <name>Quarkus - Deployment BOM</name>
     <packaging>pom</packaging>
 
@@ -98,41 +98,6 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-core-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-aws-s3-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-aws-sns-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-aws-sqs-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-salesforce-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-netty4-http-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-infinispan-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -198,7 +163,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-rest-client-deployment</artifactId>
+                <artifactId>quarkus-rest-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -264,6 +229,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-panache-common-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-mongodb-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

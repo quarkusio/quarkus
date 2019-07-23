@@ -144,6 +144,39 @@ as recommended here:
 https://docs.gradle.org/current/userguide/java_testing.html#sec:configuring_java_integration_tests[Configuring integration tests].
 Quarkus supports running Substrate tests with Gradle, but the `buildNative` task is required to be completed first.
 
+[[custom-test-configuration-profile]]
+=== Custom test configuration profile
+
+By default, Quarkus tests are run using the `test` configuration profile. If you are not familiar with Quarkus configuration
+profiles, everything you need to know is explained in the
+link:application-configuration-guide.html#configuration-profiles[Configuration Profiles Documentation].
+
+It is however possible to use a custom configuration profile for your tests with the Gradle build configuration shown below.
+This can be useful if you need for example to run some tests using a specific database which is not your default testing
+database.
+
+[source,groovy,subs=attributes+]
+----
+test {
+    useJUnitPlatform()
+    systemProperty "quarkus.test.profile", "foo" <1>
+}
+----
+
+or, if you use the Gradle Kotlin DSL:
+
+[source,kotlin,subs=attributes+]
+----
+tasks {
+    "test"(Test::class) {
+        useJUnitPlatform()
+        systemProperty("quarkus.test.profile", "foo") <1>
+    }
+}
+----
+
+<1> The `foo` configuration profile will be used to run the tests.
+
 == Dealing with extensions
 
 From inside a Quarkus project, you can obtain a list of the available extensions with:

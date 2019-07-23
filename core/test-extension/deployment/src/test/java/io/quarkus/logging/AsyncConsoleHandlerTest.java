@@ -35,7 +35,7 @@ public class AsyncConsoleHandlerTest {
         assertThat(Logger.getLogger("").getHandlers()).contains(delayedHandler);
         assertThat(delayedHandler.getLevel()).isEqualTo(Level.ALL);
 
-        Handler handler = Arrays.asList(delayedHandler.getHandlers()).stream()
+        Handler handler = Arrays.stream(delayedHandler.getHandlers())
                 .filter(h -> (h instanceof AsyncHandler))
                 .findFirst().get();
         assertThat(handler).isNotNull();
@@ -46,7 +46,7 @@ public class AsyncConsoleHandlerTest {
         assertThat(asyncHandler.getQueueLength()).isEqualTo(256);
         assertThat(asyncHandler.getOverflowAction()).isEqualTo(AsyncHandler.OverflowAction.DISCARD);
 
-        Handler nestedConsoleHandler = Arrays.asList(asyncHandler.getHandlers()).stream()
+        Handler nestedConsoleHandler = Arrays.stream(asyncHandler.getHandlers())
                 .filter(h -> (h instanceof ConsoleHandler))
                 .findFirst().get();
 

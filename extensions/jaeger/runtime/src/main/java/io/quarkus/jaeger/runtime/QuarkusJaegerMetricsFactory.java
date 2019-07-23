@@ -1,6 +1,5 @@
 package io.quarkus.jaeger.runtime;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -8,6 +7,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.microprofile.metrics.Metadata;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.MetricType;
+import org.eclipse.microprofile.metrics.Tag;
 
 import io.jaegertracing.internal.metrics.Counter;
 import io.jaegertracing.internal.metrics.Gauge;
@@ -21,7 +21,7 @@ public class QuarkusJaegerMetricsFactory implements MetricsFactory {
 
     @Override
     public Counter createCounter(final String name, final Map<String, String> tags) {
-        org.eclipse.microprofile.metrics.Counter counter = registry.counter(meta(name, tags, MetricType.COUNTER));
+        org.eclipse.microprofile.metrics.Counter counter = registry.counter(meta(name, MetricType.COUNTER), toTagArray(tags));
 
         return new Counter() {
             @Override
@@ -33,7 +33,7 @@ public class QuarkusJaegerMetricsFactory implements MetricsFactory {
 
     @Override
     public Timer createTimer(final String name, final Map<String, String> tags) {
-        org.eclipse.microprofile.metrics.Timer timer = registry.timer(meta(name, tags, MetricType.TIMER));
+        org.eclipse.microprofile.metrics.Timer timer = registry.timer(meta(name, MetricType.TIMER), toTagArray(tags));
 
         return new Timer() {
             @Override
@@ -45,7 +45,7 @@ public class QuarkusJaegerMetricsFactory implements MetricsFactory {
 
     @Override
     public Gauge createGauge(final String name, final Map<String, String> tags) {
-        JaegerGauge gauge = registry.register(meta(name, tags, MetricType.GAUGE), new JaegerGauge());
+        JaegerGauge gauge = registry.register(meta(name, MetricType.GAUGE), new JaegerGauge(), toTagArray(tags));
 
         return new Gauge() {
             @Override
@@ -55,14 +55,21 @@ public class QuarkusJaegerMetricsFactory implements MetricsFactory {
         };
     }
 
-    static Metadata meta(String name, final Map<String, String> tags, MetricType type) {
-        Metadata meta = new Metadata(name, type);
-        meta.setDisplayName(name);
-        meta.setUnit("none");
-        meta.setDescription(name);
-        meta.setTags(new HashMap<String, String>(tags));
-        meta.setReusable(true);
-        return meta;
+    private Tag[] toTagArray(Map<String, String> tags) {
+        return tags.entrySet().stream()
+                .map(entry -> new Tag(entry.getKey(), entry.getValue()))
+                .toArray(Tag[]::new);
+    }
+
+    static Metadata meta(String name, MetricType type) {
+        return Metadata.builder()
+                .withName(name)
+                .withDisplayName(name)
+                .withType(type)
+                .withUnit("none")
+                .withDescription(name)
+                .reusable()
+                .build();
     }
 
     static class JaegerGauge implements org.eclipse.microprofile.metrics.Gauge<Long> {

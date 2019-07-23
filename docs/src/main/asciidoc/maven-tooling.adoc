@@ -485,3 +485,51 @@ Uber-Jar's final name is configurable via a Maven's build settings `finalName` o
 
 <1> This configuration will output a file `uber-jar-name-runner.jar` inside the `target` directory. When `finalName` option is not set, project's build final name is used.
 
+[[custom-test-configuration-profile]]
+=== Custom test configuration profile
+
+By default, Quarkus tests are run using the `test` configuration profile. If you are not familiar with Quarkus configuration
+profiles, everything you need to know is explained in the
+link:application-configuration-guide.html#configuration-profiles[Configuration Profiles Documentation].
+
+It is however possible to use a custom configuration profile for your tests with the Maven Surefire and Maven Failsafe
+configurations shown below. This can be useful if you need for example to run some tests using a specific database which is not
+your default testing database.
+
+[source,xml,subs=attributes+]
+----
+<project>
+  [...]
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${surefire-plugin.version}</version>
+        <configuration>
+          <systemPropertyVariables>
+            <quarkus.test.profile>foo</quarkus.test.profile> <1>
+            <buildDirectory>${project.build.directory}</buildDirectory>
+            [...]
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>${failsafe-plugin.version}</version>
+        <configuration>
+          <systemPropertyVariables>
+            <quarkus.test.profile>foo</quarkus.test.profile> <1>
+            <buildDirectory>${project.build.directory}</buildDirectory>
+            [...]
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  [...]
+</project>
+----
+
+<1> The `foo` configuration profile will be used to run the tests.

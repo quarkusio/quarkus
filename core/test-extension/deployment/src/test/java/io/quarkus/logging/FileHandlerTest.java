@@ -34,7 +34,7 @@ public class FileHandlerTest {
         DelayedHandler delayedHandler = InitialConfigurator.DELAYED_HANDLER;
         assertThat(Logger.getLogger("").getHandlers()).contains(delayedHandler);
 
-        Handler handler = Arrays.asList(delayedHandler.getHandlers()).stream().filter(h -> (h instanceof FileHandler))
+        Handler handler = Arrays.stream(delayedHandler.getHandlers()).filter(h -> (h instanceof FileHandler))
                 .findFirst().get();
         assertThat(handler).isNotNull();
         assertThat(handler.getLevel()).isEqualTo(Level.INFO);

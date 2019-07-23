@@ -1,9 +1,9 @@
 package io.quarkus.arc;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 
@@ -31,8 +31,15 @@ abstract class AbstractSharedContext implements InjectableContext {
     }
 
     @Override
-    public Collection<ContextInstanceHandle<?>> getAll() {
-        return new ArrayList<>(instances.getPresentValues());
+    public ContextState getState() {
+        return new ContextState() {
+
+            @Override
+            public Map<InjectableBean<?>, Object> getContextualInstances() {
+                return instances.getPresentValues().stream()
+                        .collect(Collectors.toMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
+            }
+        };
     }
 
     @Override

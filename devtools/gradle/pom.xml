@@ -30,7 +30,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-deployment-bom</artifactId>
+            <artifactId>quarkus-bom-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
         </dependency>

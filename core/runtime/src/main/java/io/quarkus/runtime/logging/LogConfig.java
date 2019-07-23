@@ -46,4 +46,9 @@ public final class LogConfig {
      * File logging config
      */
     public FileConfig file;
+
+    /**
+     * Syslog logging config
+     */
+    public SyslogConfig syslog;
 }

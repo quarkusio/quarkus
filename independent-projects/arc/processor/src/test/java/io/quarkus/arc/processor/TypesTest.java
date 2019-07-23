@@ -30,7 +30,7 @@ public class TypesTest {
                 Collections.emptyMap(),
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
                         Collections.emptyList(), null,
-                        false, Collections.emptyList(), Collections.emptyMap()),
+                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList()),
                 resolvedTypeVariables::put);
         assertEquals(2, types.size());
         assertTrue(types.contains(Type.create(bazName, Kind.CLASS)));

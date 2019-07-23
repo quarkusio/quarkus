@@ -2,6 +2,8 @@ package io.quarkus.deployment.builditem;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Collections;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
@@ -9,17 +11,23 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
 
     private final Path archiveLocation;
     private final Path archiveRoot;
+    private final Collection<Path> excludedFromIndexing;
 
     public ArchiveRootBuildItem(Path appClassesDir) {
         this(appClassesDir, appClassesDir);
     }
 
     public ArchiveRootBuildItem(Path archiveLocation, Path archiveRoot) {
+        this(archiveLocation, archiveRoot, Collections.emptySet());
+    }
+
+    public ArchiveRootBuildItem(Path archiveLocation, Path archiveRoot, Collection<Path> excludedFromIndexing) {
         this.archiveLocation = archiveLocation;
         if (!Files.isDirectory(archiveRoot)) {
             throw new IllegalArgumentException(archiveRoot + " does not point to the application classes directory");
         }
         this.archiveRoot = archiveRoot;
+        this.excludedFromIndexing = excludedFromIndexing;
     }
 
     /**
@@ -47,5 +55,9 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
      */
     public Path getArchiveRoot() {
         return archiveRoot;
+    }
+
+    public boolean isExcludedFromIndexing(Path p) {
+        return excludedFromIndexing.contains(p);
     }
 }

@@ -39,7 +39,7 @@
         <module>resteasy-server-common</module>
         <module>resteasy</module>
         <module>resteasy-jsonb</module>
-        <module>smallrye-rest-client</module>
+        <module>rest-client</module>
         <module>smallrye-openapi-common</module>
         <module>smallrye-openapi</module>
         <module>swagger-ui</module>
@@ -90,9 +90,6 @@
         <module>amazon-lambda</module>
         <module>amazon-lambda-resteasy</module>
         <module>amazon-dynamodb</module>
-
-        <!-- Camel -->
-        <module>camel</module>
 
         <!-- Additional languages -->
         <module>kotlin</module>

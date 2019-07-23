@@ -75,7 +75,7 @@ The following table lists the properties that can be configured:
 | port | Integer | the SMTP server port | `25`
 | username | String | the username |
 | password | String | the password |
-| ssl | Boolean | Enables or disables SSL | `false`
+| ssl | Boolean | Enables or disables SSL. If enabled, you must also link:native-and-ssl-guide.html[set `quarkus.ssl.native` to true] when building a native image. | `false`
 | trust-all | Boolean | Set whether to trust all certificates | `false`
 | max-pool-size | Integer | Configures the maximum number of open connections to the mail server | `10`
 | own-host-name | String | The hostname to be used for `HELO/EHLO` and the `Message-ID` |
@@ -231,9 +231,9 @@ class MailTest {
         .when()
         .get("/send-email")
         .then()
-           .statusCode(200)    
+           .statusCode(200)
            .body(is("OK"));
-        
+
         // verify that it was sent
         List<Mail> sent = mailbox.getMessagesSentTo(TO);
         assertThat(sent).hasSize(1);

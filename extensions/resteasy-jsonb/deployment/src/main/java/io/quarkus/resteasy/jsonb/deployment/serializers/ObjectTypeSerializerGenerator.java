@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.jsonb.deployment.serializers;
 
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -82,8 +83,6 @@ public class ObjectTypeSerializerGenerator extends AbstractTypeSerializerGenerat
     protected void generateNotNull(GenerateContext context) {
         BytecodeCreator bytecodeCreator = context.getBytecodeCreator();
         ResultHandle jsonGenerator = context.getJsonGenerator();
-        bytecodeCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(JsonGenerator.class, "writeStartObject", JsonGenerator.class), jsonGenerator);
 
         TypeSerializerGeneratorRegistry serializerRegistry = context.getRegistry();
         DotName classDotNate = context.getType().name();
@@ -93,6 +92,17 @@ public class ObjectTypeSerializerGenerator extends AbstractTypeSerializerGenerat
             // should never happen when used property (meaning that supports is called before this method)
             throw new IllegalStateException("Could not generate serializer for " + classDotNate);
         }
+
+        // if the type is an interface, we need to cast to the actual type that will be used
+        ClassInfo classInfo = context.getRegistry().getIndex().getClassByName(context.getType().name());
+        if (Modifier.isInterface(classInfo.flags())) {
+            ClassInfo concreteType = inspectionResult.getClassInfo();
+            ResultHandle castedToConcrete = bytecodeCreator.checkCast(context.getCurrentItem(), concreteType.name().toString());
+            context = context.changeItem(Type.create(concreteType.name(), Type.Kind.CLASS), castedToConcrete);
+        }
+
+        bytecodeCreator.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(JsonGenerator.class, "writeStartObject", JsonGenerator.class), jsonGenerator);
 
         // instead of generating the bytecode for each property right away, we instead introduce
         // a Generator interface that will do the job on lazily

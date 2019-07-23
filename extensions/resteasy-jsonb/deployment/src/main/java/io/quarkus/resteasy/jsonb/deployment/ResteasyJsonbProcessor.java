@@ -92,9 +92,10 @@ public class ResteasyJsonbProcessor {
                     typeSerializerGeneratorRegistry,
                     classOutput);
             if (generationResult.isGenerated()) {
-                typeToGeneratedSerializers.put(type.name().toString(), generationResult.getClassName());
+                typeToGeneratedSerializers.put(generationResult.getClassActuallyUsed().toString(),
+                        generationResult.getGeneratedClassName());
                 if (!generationResult.isNeedsReflection()) {
-                    typesThatDontNeedReflection.add(type.name().toString());
+                    typesThatDontNeedReflection.add(generationResult.getClassActuallyUsed().toString());
                 }
             }
         }

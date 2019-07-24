@@ -7,7 +7,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.kie.kogito.codegen.ApplicationGenerator;
@@ -19,6 +21,10 @@ import io.quarkus.dev.JavaCompilationProvider;
 
 public abstract class KogitoCompilationProvider extends JavaCompilationProvider {
 
+    protected static Map<Path, Path> classToSource = new HashMap<>();
+
+    private String appPackageName = System.getProperty("kogito.codegen.packageName", "org.kie.kogito.app");
+
     @Override
     public Set<String> handledSourcePaths() {
         return Collections.singleton("src" + File.separator + "main" + File.separator + "resources");
@@ -26,7 +32,7 @@ public abstract class KogitoCompilationProvider extends JavaCompilationProvider 
 
     @Override
     public final void compile(Set<File> filesToCompile, Context context) {
-        String appPackageName = System.getProperty("kogito.codegen.packageName", "org.kie.kogito.app");
+
         File outputDirectory = context.getOutputDirectory();
         try {
 
@@ -46,6 +52,15 @@ public abstract class KogitoCompilationProvider extends JavaCompilationProvider 
         } catch (IOException e) {
             throw new KogitoCompilerException(e);
         }
+    }
+
+    @Override
+    public Path getSourcePath(Path classFilePath, Set<String> sourcePaths, String classesPath) {
+        if (classToSource.containsKey(classFilePath)) {
+            return classToSource.get(classFilePath);
+        }
+
+        return null;
     }
 
     protected abstract Generator addGenerator(ApplicationGenerator appGen, Set<File> filesToCompile, Context context)

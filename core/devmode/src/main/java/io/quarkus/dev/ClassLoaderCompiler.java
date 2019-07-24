@@ -7,6 +7,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -144,5 +145,16 @@ public class ClassLoaderCompiler {
                 }
             }
         }
+    }
+
+    public Path findSourcePath(Path classFilePath, Set<String> sourcePaths, String classesPath) {
+        for (CompilationProvider compilationProvider : compilationProviders) {
+            Path sourcePath = compilationProvider.getSourcePath(classFilePath, sourcePaths, classesPath);
+
+            if (sourcePath != null) {
+                return sourcePath;
+            }
+        }
+        return null;
     }
 }

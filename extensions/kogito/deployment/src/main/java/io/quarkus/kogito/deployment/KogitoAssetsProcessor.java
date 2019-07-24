@@ -1,5 +1,6 @@
 package io.quarkus.kogito.deployment;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,14 +13,17 @@ import org.drools.compiler.commons.jci.compilers.CompilationResult;
 import org.drools.compiler.commons.jci.compilers.JavaCompiler;
 import org.drools.compiler.commons.jci.compilers.JavaCompilerSettings;
 import org.drools.compiler.compiler.io.memory.MemoryFileSystem;
+import org.drools.compiler.kproject.models.KieModuleModelImpl;
 import org.drools.modelcompiler.builder.JavaParserCompiler;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.kie.api.builder.model.KieModuleModel;
 import org.kie.kogito.codegen.ApplicationGenerator;
 import org.kie.kogito.codegen.GeneratedFile;
 import org.kie.kogito.codegen.di.CDIDependencyInjectionAnnotator;
 import org.kie.kogito.codegen.process.ProcessCodegen;
+import org.kie.kogito.codegen.rules.IncrementalRuleCodegen;
 import org.kie.kogito.codegen.rules.RuleCodegen;
 
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -52,40 +56,53 @@ public class KogitoAssetsProcessor {
             return;
         }
 
+        Path targetClassesPath = root.getArchiveLocation();
+        Path projectPath = targetClassesPath.toString().endsWith("target" + File.separator + "classes")
+                ? targetClassesPath.getParent().getParent()
+                : targetClassesPath;
+
         boolean generateRuleUnits = true;
         boolean generateProcesses = true;
 
-        ApplicationGenerator appGen = createApplicationGenerator(root, launchMode.getLaunchMode(), generateRuleUnits,
+        ApplicationGenerator appGen = createApplicationGenerator(projectPath, launchMode.getLaunchMode(), generateRuleUnits,
                 generateProcesses, combinedIndexBuildItem);
         Collection<GeneratedFile> generatedFiles = appGen.generate();
 
         if (!generatedFiles.isEmpty()) {
             MemoryFileSystem trgMfs = new MemoryFileSystem();
-            CompilationResult result = compile(root, trgMfs, generatedFiles, generatedBeans, launchMode.getLaunchMode());
-            register(trgMfs, generatedBeans, launchMode.getLaunchMode(), result);
+            CompilationResult result = compile(root, trgMfs, generatedFiles, generatedBeans, launchMode.getLaunchMode(),
+                    targetClassesPath);
+            register(trgMfs, generatedBeans, launchMode.getLaunchMode(), result, targetClassesPath);
         }
     }
 
     private CompilationResult compile(ArchiveRootBuildItem root, MemoryFileSystem trgMfs,
             Collection<GeneratedFile> generatedFiles,
-            BuildProducer<GeneratedBeanBuildItem> generatedBeans, LaunchMode launchMode)
+            BuildProducer<GeneratedBeanBuildItem> generatedBeans, LaunchMode launchMode, Path projectPath)
             throws IOException {
 
         JavaCompiler javaCompiler = JavaParserCompiler.getCompiler();
         JavaCompilerSettings compilerSettings = javaCompiler.createDefaultSettings();
-        compilerSettings.addClasspath(root.getPath().toString());
+        compilerSettings.addClasspath(root.getArchiveLocation().toString());
 
         MemoryFileSystem srcMfs = new MemoryFileSystem();
 
         String[] sources = new String[generatedFiles.size()];
         int index = 0;
         for (GeneratedFile entry : generatedFiles) {
-            String fileName = toRuntimeSource(toClassName(entry.relativePath()));
+            String generatedClassFile = entry.relativePath().replace("src/main/java/", "");
+            String fileName = toRuntimeSource(toClassName(generatedClassFile));
             sources[index++] = fileName;
 
             srcMfs.write(fileName, entry.contents());
 
-            writeGeneratedFile(entry);
+            String location = generatedClassesDir;
+            if (launchMode == LaunchMode.DEVELOPMENT) {
+                location = Paths.get(projectPath.toString()).toString();
+            }
+
+            writeGeneratedFile(entry, location);
+
         }
 
         return javaCompiler.compile(sources, srcMfs, trgMfs,
@@ -93,7 +110,7 @@ public class KogitoAssetsProcessor {
     }
 
     private void register(MemoryFileSystem trgMfs, BuildProducer<GeneratedBeanBuildItem> generatedBeans, LaunchMode launchMode,
-            CompilationResult result) throws IOException {
+            CompilationResult result, Path projectPath) throws IOException {
         if (result.getErrors().length > 0) {
             StringBuilder errorInfo = new StringBuilder();
             Arrays.stream(result.getErrors()).forEach(cp -> errorInfo.append(cp.toString()));
@@ -106,26 +123,31 @@ public class KogitoAssetsProcessor {
             generatedBeans.produce(new GeneratedBeanBuildItem(className, data));
 
             if (launchMode == LaunchMode.DEVELOPMENT) {
-                writeFile(fileName, data);
+                Path path = writeFile(fileName, data);
+
+                String sourceFile = path.toString().replaceFirst("\\.class", ".java");
+                if (sourceFile.contains("$")) {
+                    sourceFile = sourceFile.substring(0, sourceFile.indexOf("$")) + ".java";
+                }
+                KogitoCompilationProvider.classToSource.put(Paths.get(projectPath.toString(), path.toString()),
+                        Paths.get(projectPath.toString(), sourceFile));
             }
         }
     }
 
-    private void writeFile(String fileName, byte[] data) throws IOException {
+    private Path writeFile(String fileName, byte[] data) throws IOException {
         Path path = Paths.get(fileName);
         if (!Files.exists(path.getParent())) {
             Files.createDirectories(path.getParent());
         }
         Files.write(path, data);
+
+        return path;
     }
 
-    private ApplicationGenerator createApplicationGenerator(ArchiveRootBuildItem root, LaunchMode launchMode,
+    private ApplicationGenerator createApplicationGenerator(Path projectPath, LaunchMode launchMode,
             boolean generateRuleUnits, boolean generateProcesses, CombinedIndexBuildItem combinedIndexBuildItem)
             throws IOException {
-        Path targetClassesPath = root.getArchiveLocation();
-        Path projectPath = targetClassesPath.toString().endsWith("target" + File.separator + "classes")
-                ? targetClassesPath.getParent().getParent()
-                : targetClassesPath;
 
         String appPackageName = "org.kie.kogito.app";
 
@@ -133,9 +155,22 @@ public class KogitoAssetsProcessor {
                 .withDependencyInjection(new CDIDependencyInjectionAnnotator());
 
         if (generateRuleUnits) {
-            appGen.withGenerator(RuleCodegen.ofPath(projectPath, launchMode == LaunchMode.DEVELOPMENT))
+            Path moduleXmlPath = projectPath.resolve("src/main/resources").resolve(KieModuleModelImpl.KMODULE_JAR_PATH);
+            KieModuleModel kieModuleModel = null;
+            if (Files.exists(moduleXmlPath)) {
+                kieModuleModel = KieModuleModelImpl.fromXML(
+                        new ByteArrayInputStream(
+                                Files.readAllBytes(moduleXmlPath)));
+            } else {
+                kieModuleModel = KieModuleModelImpl.fromXML(
+                        "<kmodule xmlns=\"http://www.drools.org/xsd/kmodule\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"/>");
+            }
+
+            appGen.withGenerator(IncrementalRuleCodegen.ofPath(projectPath))
                     .withRuleEventListenersConfig(customRuleEventListenerConfigExists(projectPath, appPackageName,
-                            combinedIndexBuildItem.getIndex()));
+                            combinedIndexBuildItem.getIndex()))
+                    .withKModule(kieModuleModel)
+                    .withClassLoader(Thread.currentThread().getContextClassLoader());
         }
 
         if (generateProcesses) {
@@ -190,18 +225,18 @@ public class KogitoAssetsProcessor {
         return sourceName.replace('/', '.');
     }
 
-    private void writeGeneratedFile(GeneratedFile f) throws IOException {
-        if (generatedClassesDir == null) {
+    private void writeGeneratedFile(GeneratedFile f, String location) throws IOException {
+        if (location == null) {
             return;
         }
-
+        String generatedClassFile = f.relativePath().replace("src/main/java", "");
         Files.write(
-                pathOf(f.relativePath()),
+                pathOf(location, generatedClassFile),
                 f.contents());
     }
 
-    private Path pathOf(String end) {
-        Path path = Paths.get(generatedClassesDir, end);
+    private Path pathOf(String location, String end) {
+        Path path = Paths.get(location, end);
         path.getParent().toFile().mkdirs();
         return path;
     }

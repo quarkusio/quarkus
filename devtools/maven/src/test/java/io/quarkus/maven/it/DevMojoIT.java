@@ -286,34 +286,6 @@ public class DevMojoIT extends MojoTestBase {
         assertThat(classDeletionResourceClassFile).doesNotExist();
     }
 
-    private void runAndCheck(String... options) throws FileNotFoundException, MavenInvocationException {
-        assertThat(testDir).isDirectory();
-        running = new RunningInvoker(testDir, false);
-        final List<String> args = new ArrayList<>(2 + options.length);
-        args.add("compile");
-        args.add("quarkus:dev");
-        for (String option : options) {
-            args.add(option);
-        }
-        running.execute(args, Collections.emptyMap());
-
-        String resp = getHttpResponse();
-
-        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
-                .containsIgnoringCase("1.0-SNAPSHOT");
-
-        String greeting = getHttpResponse("/app/hello");
-        assertThat(greeting).containsIgnoringCase("hello");
-    }
-
-    private void runAndExpectError() throws FileNotFoundException, MavenInvocationException {
-        assertThat(testDir).isDirectory();
-        running = new RunningInvoker(testDir, false);
-        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
-
-        getHttpErrorResponse();
-    }
-
     @Test
     public void testThatTheApplicationIsReloadedOnConfigChange() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-config-change");
@@ -544,5 +516,48 @@ public class DevMojoIT extends MojoTestBase {
         MavenProcessInvocationResult result = running.execute(Collections.singletonList("quarkus:dev"), Collections.emptyMap());
         await().until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
+    }
+
+    @Test
+    public void testThatTheKogitoApplicationRuns() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/simple-kogito", "projects/project-classic-run-kogito");
+        run();
+
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/persons").equals("[]"));
+
+    }
+
+    private void run(String... options) throws FileNotFoundException, MavenInvocationException {
+        assertThat(testDir).isDirectory();
+        running = new RunningInvoker(testDir, false);
+        final List<String> args = new ArrayList<>(2 + options.length);
+        args.add("compile");
+        args.add("quarkus:dev");
+        for (String option : options) {
+            args.add(option);
+        }
+        running.execute(args, Collections.emptyMap());
+    }
+
+    private void runAndCheck(String... options) throws FileNotFoundException, MavenInvocationException {
+        run(options);
+
+        String resp = getHttpResponse();
+
+        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
+                .containsIgnoringCase("1.0-SNAPSHOT");
+
+        String greeting = getHttpResponse("/app/hello");
+        assertThat(greeting).containsIgnoringCase("hello");
+    }
+
+    private void runAndExpectError() throws FileNotFoundException, MavenInvocationException {
+        assertThat(testDir).isDirectory();
+        running = new RunningInvoker(testDir, false);
+        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
+
+        getHttpErrorResponse();
     }
 }

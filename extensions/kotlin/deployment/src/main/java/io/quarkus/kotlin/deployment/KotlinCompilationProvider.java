@@ -1,6 +1,7 @@
 package io.quarkus.kotlin.deployment;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -45,6 +46,12 @@ public class KotlinCompilationProvider implements CompilationProvider {
         if (messageCollector.hasErrors()) {
             throw new RuntimeException("Compilation failed" + String.join("\n", messageCollector.getErrors()));
         }
+    }
+
+    @Override
+    public Path getSourcePath(Path classFilePath, Set<String> sourcePaths, String classesPath) {
+        // return same class so it is not removed
+        return classFilePath;
     }
 
     private static class SimpleKotlinCompilerMessageCollector implements MessageCollector {

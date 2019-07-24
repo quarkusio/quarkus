@@ -1,6 +1,7 @@
 package io.quarkus.dev;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Set;
 
@@ -13,6 +14,8 @@ public interface CompilationProvider {
     }
 
     void compile(Set<File> files, Context context);
+
+    Path getSourcePath(Path classFilePath, Set<String> sourcePaths, String classesPath);
 
     class Context {
 

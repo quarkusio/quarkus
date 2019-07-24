@@ -170,6 +170,10 @@ public class SpringWebProcessor {
 
         if (useAllAvailable) {
             providersToRegister = availableProviders;
+        } else {
+            // for Spring Web we register all the json providers by default because using "produces" in @RequestMapping
+            // and friends is optional
+            providersToRegister.addAll(categorizedWriters.getPossible(MediaType.APPLICATION_JSON_TYPE));
         }
 
         for (String provider : providersToRegister) {

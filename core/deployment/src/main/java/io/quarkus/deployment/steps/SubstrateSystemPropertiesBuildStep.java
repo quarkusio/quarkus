@@ -20,11 +20,12 @@ public class SubstrateSystemPropertiesBuildStep {
 
         final Properties properties = new Properties();
         for (SubstrateSystemPropertyBuildItem i : props) {
-            if (properties.containsKey(i.getKey())) {
+            if (!properties.containsKey(i.getKey())) {
+                properties.put(i.getKey(), i.getValue());
+            } else if (!properties.get(i.getKey()).equals(i.getValue())) {
                 throw new RuntimeException("Duplicate native image system property under " + i.getKey()
                         + " conflicting values of " + i.getValue() + " and " + properties.get(i.getKey()));
             }
-            properties.put(i.getKey(), i.getValue());
         }
         try (FileOutputStream os = new FileOutputStream(new File(root.getArchiveRoot().toFile(), "native-image.properties"))) {
             try (OutputStreamWriter osw = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {

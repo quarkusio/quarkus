@@ -60,4 +60,8 @@ public class VertxHotReplacementSetup implements HotReplacementSetup {
         response.end(bodyText);
     }
 
+    @Override
+    public void close() {
+        VertxWebRecorder.shutDownDevMode();
+    }
 }

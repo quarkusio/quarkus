@@ -312,6 +312,10 @@ public class DevMojo extends AbstractMojo {
             }
             getLog().debug("Executable jar: " + tempFile.getAbsolutePath());
 
+            devModeContext.getClassesRoots().add(outputDirectory.getAbsoluteFile());
+            devModeContext.setFrameworkClassesDir(wiringClassesDirectory.getAbsoluteFile());
+            devModeContext.setCacheDir(new File(buildDir, "transformer-cache").getAbsoluteFile());
+
             try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(tempFile))) {
                 out.putNextEntry(new ZipEntry("META-INF/"));
                 Manifest manifest = new Manifest();
@@ -333,9 +337,6 @@ public class DevMojo extends AbstractMojo {
 
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
-            args.add(outputDirectory.getAbsolutePath());
-            args.add(wiringClassesDirectory.getAbsolutePath());
-            args.add(new File(buildDir, "transformer-cache").getAbsolutePath());
             // Display the launch command line in debug mode
             getLog().debug("Launching JVM with command line: " + args.toString());
             ProcessBuilder pb = new ProcessBuilder(args.toArray(new String[0]));

@@ -17,6 +17,7 @@ import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactDescriptorResult;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.VersionRangeResult;
@@ -134,11 +135,80 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     private AppModel doResolveModel(AppArtifact appArtifact, List<Dependency> directMvnDeps, AppArtifact managingProject) throws AppModelResolverException {
         List<Dependency> managedDeps = Collections.emptyList();
+        List<RemoteRepository> managedRepos = Collections.emptyList();
         if(managingProject != null) {
-            managedDeps = mvn.resolveDescriptor(toAetherArtifact(managingProject)).getManagedDependencies();
+            final ArtifactDescriptorResult managingDescr = mvn.resolveDescriptor(toAetherArtifact(managingProject));
+            managedDeps = managingDescr.getManagedDependencies();
+            managedRepos = mvn.newResolutionRepositories(managingDescr.getRepositories());
         }
-        return injectDeploymentDependencies(appArtifact, mvn.resolveManagedDependencies(toAetherArtifact(appArtifact),
-                directMvnDeps, managedDeps, devmode ? new String[] { "test" } : new String[0]).getRoot(), managedDeps);
+
+        DependencyNode resolvedDeps = mvn.resolveManagedDependencies(toAetherArtifact(appArtifact),
+                directMvnDeps, managedDeps, managedRepos, devmode ? new String[] { "test" } : new String[0]).getRoot();
+
+        final Set<AppArtifactKey> appDeps = new HashSet<>();
+        final List<AppDependency> userDeps = new ArrayList<>();
+        final TreeDependencyVisitor visitor = new TreeDependencyVisitor(new DependencyVisitor() {
+            @Override
+            public boolean visitEnter(DependencyNode node) {
+                return true;
+            }
+
+            @Override
+            public boolean visitLeave(DependencyNode node) {
+                final Dependency dep = node.getDependency();
+                if(dep != null) {
+                    final AppArtifact appArtifact = toAppArtifact(dep.getArtifact());
+                    appDeps.add(appArtifact.getKey());
+                    userDeps.add(new AppDependency(appArtifact, dep.getScope(), dep.isOptional()));
+                }
+                return true;
+            }});
+        for(DependencyNode child : resolvedDeps.getChildren()) {
+            child.accept(visitor);
+        }
+
+        final DeploymentInjectingDependencyVisitor deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn,
+                managedDeps, mvn.aggregateRepositories(managedRepos, mvn.newResolutionRepositories(mvn.resolveDescriptor(toAetherArtifact(appArtifact)).getRepositories())));
+        try {
+            resolvedDeps.accept(new TreeDependencyVisitor(deploymentInjector));
+        } catch (DeploymentInjectionException e) {
+            throw new AppModelResolverException("Failed to inject extension deployment dependencies for " + resolvedDeps.getArtifact(), e.getCause());
+        }
+
+        List<AppDependency> deploymentDeps = Collections.emptyList();
+        if(deploymentInjector.isInjectedDeps()) {
+            final DependencyGraphTransformationContext context = new SimpleDependencyGraphTransformationContext(mvn.getSession());
+            try {
+                // add conflict IDs to the added deployments
+                resolvedDeps = new ConflictMarker().transformGraph(resolvedDeps, context);
+                // resolves version conflicts
+                resolvedDeps = new ConflictIdSorter().transformGraph(resolvedDeps, context);
+                resolvedDeps = mvn.getSession().getDependencyGraphTransformer().transformGraph(resolvedDeps, context);
+            } catch (RepositoryException e) {
+                throw new AppModelResolverException("Failed to normalize the dependency graph", e);
+            }
+            final BuildDependencyGraphVisitor buildDepsVisitor = new BuildDependencyGraphVisitor(appDeps, buildTreeConsumer);
+            buildDepsVisitor.visit(resolvedDeps);
+            final List<ArtifactRequest> requests = buildDepsVisitor.getArtifactRequests();
+            if(!requests.isEmpty()) {
+                final List<ArtifactResult> results = mvn.resolve(requests);
+                // update the artifacts in the graph
+                for (ArtifactResult result : results) {
+                    final Artifact artifact = result.getArtifact();
+                    if (artifact != null) {
+                        result.getRequest().getDependencyNode().setArtifact(artifact);
+                    }
+                }
+                final List<DependencyNode> deploymentDepNodes = buildDepsVisitor.getDeploymentNodes();
+                deploymentDeps = new ArrayList<>(deploymentDepNodes.size());
+                for (DependencyNode dep : deploymentDepNodes) {
+                    deploymentDeps.add(new AppDependency(BootstrapAppModelResolver.toAppArtifact(dep.getArtifact()),
+                            dep.getDependency().getScope(), dep.getDependency().isOptional()));
+                }
+            }
+        }
+
+        return new AppModel(appArtifact, userDeps, deploymentDeps);
     }
 
     @Override
@@ -193,73 +263,6 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     public void install(AppArtifact appArtifact, Path localPath) throws AppModelResolverException {
         mvn.install(new DefaultArtifact(appArtifact.getGroupId(), appArtifact.getArtifactId(), appArtifact.getClassifier(),
                 appArtifact.getType(), appArtifact.getVersion(), Collections.emptyMap(), localPath.toFile()));
-    }
-
-    private AppModel injectDeploymentDependencies(AppArtifact appArtifact, DependencyNode root, List<Dependency> managedDeps) throws AppModelResolverException {
-
-        final Set<AppArtifactKey> appDeps = new HashSet<>();
-        final List<AppDependency> userDeps = new ArrayList<>();
-        final TreeDependencyVisitor visitor = new TreeDependencyVisitor(new DependencyVisitor() {
-            @Override
-            public boolean visitEnter(DependencyNode node) {
-                return true;
-            }
-
-            @Override
-            public boolean visitLeave(DependencyNode node) {
-                final Dependency dep = node.getDependency();
-                if(dep != null) {
-                    final AppArtifact appArtifact = toAppArtifact(dep.getArtifact());
-                    appDeps.add(appArtifact.getKey());
-                    userDeps.add(new AppDependency(appArtifact, dep.getScope(), dep.isOptional()));
-                }
-                return true;
-            }});
-        for(DependencyNode child : root.getChildren()) {
-            child.accept(visitor);
-        }
-
-        final DeploymentInjectingDependencyVisitor deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn, managedDeps);
-        try {
-            root.accept(new TreeDependencyVisitor(deploymentInjector));
-        } catch (DeploymentInjectionException e) {
-            throw new AppModelResolverException("Failed to inject extension deployment dependencies for " + root.getArtifact(), e.getCause());
-        }
-
-        List<AppDependency> deploymentDeps = Collections.emptyList();
-        if(deploymentInjector.isInjectedDeps()) {
-            final DependencyGraphTransformationContext context = new SimpleDependencyGraphTransformationContext(mvn.getSession());
-            try {
-                // add conflict IDs to the added deployments
-                root = new ConflictMarker().transformGraph(root, context);
-                // resolves version conflicts
-                root = new ConflictIdSorter().transformGraph(root, context);
-                root = mvn.getSession().getDependencyGraphTransformer().transformGraph(root, context);
-            } catch (RepositoryException e) {
-                throw new AppModelResolverException("Failed to normalize the dependency graph", e);
-            }
-            final BuildDependencyGraphVisitor buildDepsVisitor = new BuildDependencyGraphVisitor(appDeps, buildTreeConsumer);
-            buildDepsVisitor.visit(root);
-            final List<ArtifactRequest> requests = buildDepsVisitor.getArtifactRequests();
-            if(!requests.isEmpty()) {
-                final List<ArtifactResult> results = mvn.resolve(requests);
-                // update the artifacts in the graph
-                for (ArtifactResult result : results) {
-                    final Artifact artifact = result.getArtifact();
-                    if (artifact != null) {
-                        result.getRequest().getDependencyNode().setArtifact(artifact);
-                    }
-                }
-                final List<DependencyNode> deploymentDepNodes = buildDepsVisitor.getDeploymentNodes();
-                deploymentDeps = new ArrayList<>(deploymentDepNodes.size());
-                for (DependencyNode dep : deploymentDepNodes) {
-                    deploymentDeps.add(new AppDependency(BootstrapAppModelResolver.toAppArtifact(dep.getArtifact()),
-                            dep.getDependency().getScope(), dep.getDependency().isOptional()));
-                }
-            }
-        }
-
-        return new AppModel(appArtifact, userDeps, deploymentDeps);
     }
 
     private VersionRangeResult resolveVersionRangeResult(AppArtifact appArtifact, String fromVersion, boolean fromVersionIncluded, String upToVersion, boolean upToVersionIncluded)

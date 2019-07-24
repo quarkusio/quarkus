@@ -15,6 +15,7 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
@@ -37,13 +38,15 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
 
     private final MavenArtifactResolver resolver;
     private final List<Dependency> managedDeps;
+    private final List<RemoteRepository> mainRepos;
     private DependencyNode node;
 
     boolean injectedDeps;
 
-    public DeploymentInjectingDependencyVisitor(MavenArtifactResolver resolver, List<Dependency> managedDeps) {
+    public DeploymentInjectingDependencyVisitor(MavenArtifactResolver resolver, List<Dependency> managedDeps, List<RemoteRepository> mainRepos) {
         this.resolver = resolver;
         this.managedDeps = managedDeps;
+        this.mainRepos = mainRepos;
     }
 
     public boolean isInjectedDeps() {
@@ -124,7 +127,8 @@ public class DeploymentInjectingDependencyVisitor implements DependencyVisitor {
             artifact = artifact.setVersion(node.getArtifact().getVersion());
         }
         try {
-            return managedDeps.isEmpty() ? resolver.collectDependencies(artifact).getRoot() : resolver.collectManagedDependencies(artifact, Collections.emptyList(), managedDeps).getRoot();
+            return managedDeps.isEmpty() ? resolver.collectDependencies(artifact, Collections.emptyList(), mainRepos).getRoot()
+                    : resolver.collectManagedDependencies(artifact, Collections.emptyList(), managedDeps, mainRepos).getRoot();
         } catch (AppModelResolverException e) {
             throw new DeploymentInjectionException(e);
         }

@@ -297,11 +297,21 @@ public class SpringDIProcessor {
                         target,
                         Collections.emptyList()));
             } else if (!(isAnnotation && scopes.isEmpty()) && !classInfo.annotations().containsKey(CONFIGURATION_ANNOTATION)) { // Annotations without an explicit scope shouldn't default to anything
-                final DotName scope = validateScope(classInfo, scopes, scopeStereotypes);
-                annotationsToAdd.add(create(
-                        scope,
-                        target,
-                        Collections.emptyList()));
+                boolean shouldAdd = false;
+                for (final DotName clazzAnnotation : clazzAnnotations) {
+                    if (stereotypes.contains(clazzAnnotation) || scopeStereotypes.contains(clazzAnnotation)) {
+                        shouldAdd = true;
+                        break;
+                    }
+                }
+
+                if (shouldAdd) {
+                    final DotName scope = validateScope(classInfo, scopes, scopeStereotypes);
+                    annotationsToAdd.add(create(
+                            scope,
+                            target,
+                            Collections.emptyList()));
+                }
             }
             final String name = validateName(classInfo, names);
             if (name != null) {

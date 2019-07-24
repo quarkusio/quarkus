@@ -1,8 +1,7 @@
 package io.quarkus.spring.web.deployment;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -10,9 +9,6 @@ import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
 import javax.ws.rs.ext.Providers;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -21,11 +17,13 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.resteasy.core.MediaTypeMap;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.metadata.SpringResourceBuilder;
-import org.jboss.resteasy.web.ResponseEntityReturnTypeHandler;
-import org.jboss.resteasy.web.ResponseStatusBuiltResponseProcessor;
+import org.jboss.resteasy.spring.web.ResponseEntityFeature;
+import org.jboss.resteasy.spring.web.ResponseStatusFeature;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
@@ -35,11 +33,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
-import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor;
 import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.server.common.deployment.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
@@ -49,6 +43,12 @@ import io.quarkus.undertow.deployment.BlacklistedServletContainerInitializerBuil
 import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
 
 public class SpringWebProcessor {
+
+    private static final DotName EXCEPTION = DotName.createSimple("java.lang.Exception");
+    private static final DotName RUNTIME_EXCEPTION = DotName.createSimple("java.lang.RuntimeException");
+
+    private static final DotName OBJECT = DotName.createSimple("java.lang.Object");
+    private static final DotName STRING = DotName.createSimple("java.lang.String");
 
     private static final DotName REST_CONTROLLER_ANNOTATION = DotName
             .createSimple("org.springframework.web.bind.annotation.RestController");
@@ -61,9 +61,23 @@ public class SpringWebProcessor {
             DotName.createSimple("org.springframework.web.bind.annotation.DeleteMapping"),
             DotName.createSimple("org.springframework.web.bind.annotation.PatchMapping"));
 
-    private static final DotName EXCEPTION = DotName.createSimple("java.lang.Exception");
-    private static final DotName RUNTIME_EXCEPTION = DotName.createSimple("java.lang.RuntimeException");
-    private static final DotName OBJECT = DotName.createSimple("java.lang.Object");
+    private static final DotName RESPONSE_STATUS = DotName
+            .createSimple("org.springframework.web.bind.annotation.ResponseStatus");
+    private static final DotName EXCEPTION_HANDLER = DotName
+            .createSimple("org.springframework.web.bind.annotation.ExceptionHandler");
+
+    private static final DotName REST_CONTROLLER_ADVICE = DotName
+            .createSimple("org.springframework.web.bind.annotation.RestControllerAdvice");
+
+    private static final DotName MODEL_AND_VIEW = DotName.createSimple("org.springframework.web.servlet.ModelAndView");
+    private static final DotName VIEW = DotName.createSimple("org.springframework.web.servlet.View");
+    private static final DotName MODEL = DotName.createSimple("org.springframework.ui.Model");
+
+    private static final DotName HTTP_ENTITY = DotName.createSimple("org.springframework.http.HttpEntity");
+    private static final DotName RESPONSE_ENTITY = DotName.createSimple("org.springframework.http.ResponseEntity");
+
+    private static final Set<DotName> DISALLOWED_EXCEPTION_CONTROLLER_RETURN_TYPES = new HashSet<>(Arrays.asList(
+            MODEL_AND_VIEW, VIEW, MODEL, HTTP_ENTITY, STRING));
 
     @BuildStep
     public BlacklistedServletContainerInitializerBuildItem blacklistSpringServlet() {
@@ -95,6 +109,8 @@ public class SpringWebProcessor {
     public void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
         beanDefiningAnnotations
                 .produce(new BeanDefiningAnnotationBuildItem(REST_CONTROLLER_ANNOTATION, BuiltinScope.SINGLETON.getName()));
+        beanDefiningAnnotations
+                .produce(new BeanDefiningAnnotationBuildItem(REST_CONTROLLER_ADVICE, BuiltinScope.SINGLETON.getName()));
     }
 
     @BuildStep
@@ -117,18 +133,6 @@ public class SpringWebProcessor {
                 new ServletInitParamBuildItem(
                         ResteasyContextParameters.RESTEASY_SCANNED_RESOURCE_CLASSES_WITH_BUILDER,
                         SpringResourceBuilder.class.getName() + ":" + String.join(",", classNames)));
-
-        // TODO perhaps only register if we detect the use of ResponseEntity ?
-        initParamProducer.produce(
-                new ServletInitParamBuildItem(
-                        ResteasyContextParameters.RESTEASY_ADDITIONAL_RESPONSE_TYPE_HANDLERS,
-                        ResponseEntityReturnTypeHandler.class.getName()));
-
-        // TODO perhaps only register if we detect the use of @ResponseStatus ?
-        initParamProducer.produce(
-                new ServletInitParamBuildItem(
-                        ResteasyContextParameters.RESTEASY_BUILT_RESPONSE_PROCESSORS,
-                        ResponseStatusBuiltResponseProcessor.class.getName()));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, SpringResourceBuilder.class.getName()));
     }
@@ -174,6 +178,9 @@ public class SpringWebProcessor {
             // for Spring Web we register all the json providers by default because using "produces" in @RequestMapping
             // and friends is optional
             providersToRegister.addAll(categorizedWriters.getPossible(MediaType.APPLICATION_JSON_TYPE));
+            // we also need to register the custom Spring related providers
+            providersToRegister.add(ResponseEntityFeature.class.getName());
+            providersToRegister.add(ResponseStatusFeature.class.getName());
         }
 
         for (String provider : providersToRegister) {
@@ -200,24 +207,30 @@ public class SpringWebProcessor {
     @BuildStep
     public void generateExceptionMapperProviders(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedExceptionMappers,
-            BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer) {
+            BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
 
         // Look for all exception classes that are annotated with @ResponseStatus
 
         IndexView index = beanArchiveIndexBuildItem.getIndex();
-        Collection<AnnotationInstance> responseStatusInstances = index
-                .getAnnotations(DotName.createSimple("org.springframework.web.bind.annotation.ResponseStatus"));
-
-        if (responseStatusInstances.isEmpty()) {
-            return;
-        }
-
         ClassOutput classOutput = new ClassOutput() {
             @Override
             public void write(String name, byte[] data) {
                 generatedExceptionMappers.produce(new GeneratedClassBuildItem(true, name, data));
             }
         };
+        generateMappersForResponseStatusOnException(providersProducer, index, classOutput);
+        generateMappersForExceptionHandlerInControllerAdvice(providersProducer, reflectiveClassProducer, index, classOutput);
+    }
+
+    private void generateMappersForResponseStatusOnException(BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,
+            IndexView index, ClassOutput classOutput) {
+        Collection<AnnotationInstance> responseStatusInstances = index
+                .getAnnotations(RESPONSE_STATUS);
+
+        if (responseStatusInstances.isEmpty()) {
+            return;
+        }
 
         for (AnnotationInstance instance : responseStatusInstances) {
             if (AnnotationTarget.Kind.CLASS != instance.target().kind()) {
@@ -227,12 +240,77 @@ public class SpringWebProcessor {
                 continue;
             }
 
-            String name = generateExceptionMapper(instance, classOutput);
+            String name = new ResponseStatusOnExceptionGenerator(instance.target().asClass(), classOutput).generate();
             providersProducer.produce(new ResteasyJaxrsProviderBuildItem(name));
         }
     }
 
+    private void generateMappersForExceptionHandlerInControllerAdvice(
+            BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer, IndexView index, ClassOutput classOutput) {
+
+        AnnotationInstance controllerAdviceInstance = getSingleControllerAdviceInstance(index);
+        if (controllerAdviceInstance == null) {
+            return;
+        }
+
+        ClassInfo controllerAdvice = controllerAdviceInstance.target().asClass();
+        List<MethodInfo> methods = controllerAdvice.methods();
+        for (MethodInfo method : methods) {
+            AnnotationInstance exceptionHandlerInstance = method.annotation(EXCEPTION_HANDLER);
+            if (exceptionHandlerInstance == null) {
+                continue;
+            }
+
+            if (!Modifier.isPublic(method.flags()) || Modifier.isStatic(method.flags())) {
+                throw new IllegalStateException(
+                        "@ExceptionHandler methods in @ControllerAdvice must be public instance methods");
+            }
+
+            DotName returnTypeDotName = method.returnType().name();
+            if (DISALLOWED_EXCEPTION_CONTROLLER_RETURN_TYPES.contains(returnTypeDotName)) {
+                throw new IllegalStateException(
+                        "@ExceptionHandler methods in @ControllerAdvice classes can only have void, ResponseEntity or POJO return types");
+            }
+
+            if (!RESPONSE_ENTITY.equals(returnTypeDotName)) {
+                reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, true, returnTypeDotName.toString()));
+            }
+
+            AnnotationInstance responseStatusInstance = method.annotation(RESPONSE_STATUS);
+            if ((method.returnType().kind() == Type.Kind.VOID) && (responseStatusInstance == null)) {
+                throw new IllegalStateException(
+                        "void methods annotated with @ExceptionHandler must also be annotated with @ResponseStatus");
+            }
+
+            List<Type> parameters = method.parameters();
+            boolean parametersSupported = true;
+            if (parameters.size() > 1) {
+                parametersSupported = false;
+            } else if (parameters.size() == 1) {
+                parametersSupported = isException(index.getClassByName(parameters.get(0).name()), index);
+            }
+
+            if (!parametersSupported) {
+                throw new IllegalStateException(
+                        "The only supported (optional) parameter type method for methods annotated with @ExceptionHandler is the exception type");
+            }
+
+            Type[] handledExceptionTypes = exceptionHandlerInstance.value().asClassArray();
+            for (Type handledExceptionType : handledExceptionTypes) {
+                String name = new ControllerAdviceAbstractExceptionMapperGenerator(method, handledExceptionType.name(),
+                        classOutput, index).generate();
+                providersProducer.produce(new ResteasyJaxrsProviderBuildItem(name));
+            }
+
+        }
+    }
+
     private boolean isException(ClassInfo classInfo, IndexView index) {
+        if (classInfo == null) {
+            return false;
+        }
+
         if (OBJECT.equals(classInfo.name())) {
             return false;
         }
@@ -244,93 +322,18 @@ public class SpringWebProcessor {
         return isException(index.getClassByName(classInfo.superName()), index);
     }
 
-    /**
-     * Generates an ExceptionMapper
-     * Also generates a dummy subtype to get past the RESTEasy's check for synthetic classes
-     */
-    private String generateExceptionMapper(AnnotationInstance responseStatusInstance, ClassOutput classOutput) {
-        ClassInfo exceptionClassInfo = responseStatusInstance.target().asClass();
-        String generatedClassName = "io.quarkus.spring.web.mappers." + exceptionClassInfo.simpleName() + "Mapper";
-        String generatedSubtypeClassName = "io.quarkus.spring.web.mappers.Subtype" + exceptionClassInfo.simpleName() + "Mapper";
-        String exceptionClassName = exceptionClassInfo.name().toString();
+    private AnnotationInstance getSingleControllerAdviceInstance(IndexView index) {
+        Collection<AnnotationInstance> controllerAdviceInstances = index.getAnnotations(REST_CONTROLLER_ADVICE);
 
-        try (ClassCreator cc = ClassCreator.builder()
-                .classOutput(classOutput).className(generatedClassName)
-                .interfaces(ExceptionMapper.class)
-                .signature(String.format("Ljava/lang/Object;Ljavax/ws/rs/ext/ExceptionMapper<L%s;>;",
-                        exceptionClassName.replace('.', '/')))
-                .build()) {
-
-            try (MethodCreator toResponse = cc.getMethodCreator("toResponse", Response.class.getName(), exceptionClassName)) {
-
-                ResultHandle status = toResponse.load(getHttpStatusFromAnnotation(responseStatusInstance));
-                ResultHandle responseBuilder = toResponse.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(Response.class, "status", Response.ResponseBuilder.class, int.class),
-                        status);
-                ResultHandle exceptionMessage = toResponse.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(Throwable.class, "getMessage", String.class),
-                        toResponse.getMethodParam(0));
-                toResponse.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "entity", Response.ResponseBuilder.class,
-                                Object.class),
-                        responseBuilder, exceptionMessage);
-                ResultHandle httpResponseType = toResponse.load("text/plain");
-                toResponse.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "type", Response.ResponseBuilder.class,
-                                String.class),
-                        responseBuilder, httpResponseType);
-
-                ResultHandle response = toResponse.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "build", Response.class),
-                        responseBuilder);
-                toResponse.returnValue(response);
-            }
-
-            // bridge method
-            try (MethodCreator bridgeToResponse = cc.getMethodCreator("toResponse", Response.class, Throwable.class)) {
-                MethodDescriptor toResponse = MethodDescriptor.ofMethod(generatedClassName, "toResponse",
-                        Response.class.getName(), exceptionClassName);
-                ResultHandle castedObject = bridgeToResponse.checkCast(bridgeToResponse.getMethodParam(0), exceptionClassName);
-                ResultHandle result = bridgeToResponse.invokeVirtualMethod(toResponse, bridgeToResponse.getThis(),
-                        castedObject);
-                bridgeToResponse.returnValue(result);
-            }
+        if (controllerAdviceInstances.isEmpty()) {
+            return null;
         }
 
-        try (ClassCreator cc = ClassCreator.builder()
-                .classOutput(classOutput).className(generatedSubtypeClassName)
-                .superClass(generatedClassName)
-                .build()) {
-            cc.addAnnotation(Provider.class);
+        if (controllerAdviceInstances.size() > 1) {
+            throw new IllegalStateException("You can only have a single class annotated with @ControllerAdvice");
         }
 
-        return generatedSubtypeClassName;
+        return controllerAdviceInstances.iterator().next();
     }
 
-    private int getHttpStatusFromAnnotation(AnnotationInstance responseStatusInstance) {
-        AnnotationValue code = responseStatusInstance.value("code");
-        if (code != null) {
-            return enumValueToHttpStatus(code.asString());
-        }
-
-        AnnotationValue value = responseStatusInstance.value();
-        if (value != null) {
-            return enumValueToHttpStatus(value.asString());
-        }
-
-        return 500; // the default value of @ResponseStatus
-    }
-
-    private int enumValueToHttpStatus(String enumValue) {
-        try {
-            Class<?> httpStatusClass = Class.forName("org.springframework.http.HttpStatus");
-            Enum correspondingEnum = Enum.valueOf((Class<Enum>) httpStatusClass, enumValue);
-            Method valueMethod = httpStatusClass.getDeclaredMethod("value");
-            return (int) valueMethod.invoke(correspondingEnum);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("No spring web dependency found on the build classpath");
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

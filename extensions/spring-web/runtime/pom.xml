@@ -23,6 +23,13 @@
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-spring-web</artifactId>
         </dependency>
+        <!-- TODO examine if we should be providing specific spring versions or not -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>5.0.14.RELEASE</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

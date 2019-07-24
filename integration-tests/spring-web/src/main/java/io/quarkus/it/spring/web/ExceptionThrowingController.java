@@ -19,4 +19,19 @@ public class ExceptionThrowingController {
         throw new SecondException();
     }
 
+    @GetMapping("/void")
+    public void runtimeException() {
+        throw new RuntimeException();
+    }
+
+    @GetMapping("/responseEntity")
+    public Greeting handledByResponseEntity() {
+        throw new IllegalStateException("bad state");
+    }
+
+    @GetMapping("/pojo")
+    public Greeting greetingWithIllegalArgumentException() {
+        throw new IllegalArgumentException("hello from error");
+    }
+
 }

@@ -57,6 +57,7 @@
         <module>mongodb-client</module>
         <module>jackson</module>
         <module>resteasy-jackson</module>
+        <module>resteasy-jsonb</module>
         <module>jgit</module>
         <module>virtual-http</module>
         <module>artemis-core</module>

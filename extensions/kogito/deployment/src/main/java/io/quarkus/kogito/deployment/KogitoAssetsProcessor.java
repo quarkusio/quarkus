@@ -149,6 +149,7 @@ public class KogitoAssetsProcessor {
             boolean generateRuleUnits, boolean generateProcesses, CombinedIndexBuildItem combinedIndexBuildItem)
             throws IOException {
 
+        Path srcPath = projectPath.resolve("src");
         String appPackageName = "org.kie.kogito.app";
 
         ApplicationGenerator appGen = new ApplicationGenerator(appPackageName, new File(projectPath.toFile(), "target"))
@@ -166,25 +167,25 @@ public class KogitoAssetsProcessor {
                         "<kmodule xmlns=\"http://www.drools.org/xsd/kmodule\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"/>");
             }
 
-            appGen.withGenerator(IncrementalRuleCodegen.ofPath(projectPath))
-                    .withRuleEventListenersConfig(customRuleEventListenerConfigExists(projectPath, appPackageName,
+            appGen.withGenerator(IncrementalRuleCodegen.ofPath(srcPath))
+                    .withRuleEventListenersConfig(customRuleEventListenerConfigExists(appPackageName,
                             combinedIndexBuildItem.getIndex()))
                     .withKModule(kieModuleModel)
                     .withClassLoader(Thread.currentThread().getContextClassLoader());
         }
 
         if (generateProcesses) {
-            appGen.withGenerator(ProcessCodegen.ofPath(projectPath))
+            appGen.withGenerator(ProcessCodegen.ofPath(srcPath))
                     .withWorkItemHandlerConfig(
-                            customWorkItemConfigExists(projectPath, appPackageName, combinedIndexBuildItem.getIndex()))
+                            customWorkItemConfigExists(appPackageName, combinedIndexBuildItem.getIndex()))
                     .withProcessEventListenerConfig(
-                            customProcessListenerConfigExists(projectPath, appPackageName, combinedIndexBuildItem.getIndex()));
+                            customProcessListenerConfigExists(appPackageName, combinedIndexBuildItem.getIndex()));
         }
 
         return appGen;
     }
 
-    private String customWorkItemConfigExists(Path projectPath, String appPackageName, IndexView index) {
+    private String customWorkItemConfigExists(String appPackageName, IndexView index) {
         String workItemHandlerConfigClass = ProcessCodegen.defaultWorkItemHandlerConfigClass(appPackageName);
 
         ClassInfo workItemHandlerConfigClassInfo = index
@@ -193,7 +194,7 @@ public class KogitoAssetsProcessor {
         return workItemHandlerConfigClassInfo != null ? workItemHandlerConfigClass : null;
     }
 
-    private String customProcessListenerConfigExists(Path projectPath, String appPackageName, IndexView index) {
+    private String customProcessListenerConfigExists(String appPackageName, IndexView index) {
         String processEventListenerClass = ProcessCodegen.defaultProcessListenerConfigClass(appPackageName);
         ClassInfo processEventListenerClassInfo = index
                 .getClassByName(createDotName(processEventListenerClass));
@@ -201,7 +202,7 @@ public class KogitoAssetsProcessor {
         return processEventListenerClassInfo != null ? processEventListenerClass : null;
     }
 
-    private String customRuleEventListenerConfigExists(Path projectPath, String appPackageName, IndexView index) {
+    private String customRuleEventListenerConfigExists(String appPackageName, IndexView index) {
         String ruleEventListenerConfiglass = RuleCodegen.defaultRuleEventListenerConfigClass(appPackageName);
         ClassInfo ruleEventListenerConfiglassInfo = index
                 .getClassByName(createDotName(ruleEventListenerConfiglass));

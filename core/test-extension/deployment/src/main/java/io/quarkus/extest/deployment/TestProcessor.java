@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -437,5 +438,21 @@ public final class TestProcessor {
                 .finalFieldsWritable(true)
                 .build();
         classes.produce(finalField);
+    }
+
+    @BuildStep(onlyIf = Never.class)
+    void neverRunThisOne() {
+        throw new IllegalStateException("Not supposed to run!");
+    }
+
+    public static final class Never implements BooleanSupplier {
+        TestBuildTimeConfig config;
+
+        public boolean getAsBoolean() {
+            if (config == null) {
+                throw new IllegalStateException("Expected config");
+            }
+            return false;
+        }
     }
 }

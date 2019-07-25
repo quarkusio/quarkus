@@ -24,6 +24,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -69,6 +71,7 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ReflectUtil;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.Recorder;
@@ -124,15 +127,14 @@ public final class ExtensionLoader {
      * Load all the build steps from the given class loader.
      *
      * @param classLoader the class loader
+     * @param launchMode the launch mode
      * @return a consumer which adds the steps to the given chain builder
      * @throws IOException if the class loader could not load a resource
      * @throws ClassNotFoundException if a build step class is not found
      */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Map<String, String> buildSystemProps)
+    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, LaunchMode launchMode)
             throws IOException, ClassNotFoundException {
-        final Properties props = new Properties();
-        props.putAll(buildSystemProps);
-        return loadStepsFrom(classLoader, props);
+        return loadStepsFrom(classLoader, new Properties(), launchMode);
     }
 
     /**
@@ -145,6 +147,21 @@ public final class ExtensionLoader {
      * @throws ClassNotFoundException if a build step class is not found
      */
     public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps)
+            throws IOException, ClassNotFoundException {
+        return loadStepsFrom(classLoader, buildSystemProps, LaunchMode.NORMAL);
+    }
+
+    /**
+     * Load all the build steps from the given class loader.
+     *
+     * @param classLoader the class loader
+     * @param buildSystemProps the build system properties to use
+     * @return a consumer which adds the steps to the given chain builder
+     * @throws IOException if the class loader could not load a resource
+     * @throws ClassNotFoundException if a build step class is not found
+     */
+    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps,
+            LaunchMode launchMode)
             throws IOException, ClassNotFoundException {
 
         // set up the configuration definitions
@@ -219,7 +236,7 @@ public final class ExtensionLoader {
                 .produces(UnmatchedConfigBuildItem.class)
                 .build());
         for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, "META-INF/quarkus-build-steps.list")) {
-            result = result.andThen(ExtensionLoader.loadStepsFrom(clazz));
+            result = result.andThen(ExtensionLoader.loadStepsFrom(clazz, buildTimeConfig, buildTimeRunTimeConfig, launchMode));
         }
         return result;
     }
@@ -228,9 +245,13 @@ public final class ExtensionLoader {
      * Load all the build steps from the given class.
      *
      * @param clazz the class to load from (must not be {@code null})
+     * @param buildTimeConfig the build time configuration (must not be {@code null})
+     * @param buildTimeRunTimeConfig the build time/run time visible config (must not be {@code null})
+     * @param launchMode
      * @return a consumer which adds the steps to the given chain builder
      */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(Class<?> clazz) {
+    public static Consumer<BuildChainBuilder> loadStepsFrom(Class<?> clazz, ConfigDefinition buildTimeConfig,
+            ConfigDefinition buildTimeRunTimeConfig, final LaunchMode launchMode) {
         final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         // this is the chain configuration that will contain all steps on this class and be returned
         Consumer<BuildChainBuilder> chainConfig = Functions.discardingConsumer();
@@ -238,6 +259,7 @@ public final class ExtensionLoader {
         Consumer<BuildStepBuilder> stepConfig = Functions.discardingConsumer();
         // this is the build step instance setup that applies to all steps on this class
         BiConsumer<BuildContext, Object> stepInstanceSetup = Functions.discardingBiConsumer();
+        Map<Class<? extends BooleanSupplier>, BooleanSupplier> condCache = new HashMap<>();
 
         if (constructors.length != 1) {
             throw reportError(clazz, "Build step classes must have exactly one constructor");
@@ -430,24 +452,131 @@ public final class ExtensionLoader {
             final BuildStep buildStep = method.getAnnotation(BuildStep.class);
             final String[] archiveMarkers = buildStep.applicationArchiveMarkers();
             final String[] capabilities = buildStep.providesCapabilities();
+            final Class<? extends BooleanSupplier>[] onlyIf = buildStep.onlyIf();
+            final Class<? extends BooleanSupplier>[] onlyIfNot = buildStep.onlyIfNot();
             final Parameter[] methodParameters = method.getParameters();
             final Record recordAnnotation = method.getAnnotation(Record.class);
             final boolean isRecorder = recordAnnotation != null;
             final List<BiFunction<BuildContext, BytecodeRecorderImpl, Object>> methodParamFns;
             Consumer<BuildStepBuilder> methodStepConfig = Functions.discardingConsumer();
+            BooleanSupplier addStep = () -> true;
+            for (boolean inv : new boolean[] { false, true }) {
+                Class<? extends BooleanSupplier>[] testClasses = inv ? onlyIfNot : onlyIf;
+                for (Class<? extends BooleanSupplier> testClass : testClasses) {
+                    BooleanSupplier bs = condCache.get(testClass);
+                    if (bs == null) {
+                        // construct a new supplier instance
+                        Consumer<BooleanSupplier> setup = o -> {
+                        };
+                        final Constructor<?>[] ctors = testClass.getDeclaredConstructors();
+                        if (ctors.length != 1) {
+                            throw reportError(testClass, "Conditional class must declare exactly one constructor");
+                        }
+                        final Constructor<?> ctor = ctors[0];
+                        ctor.setAccessible(true);
+                        List<Supplier<?>> paramSuppList = new ArrayList<>();
+                        for (Parameter parameter : ctor.getParameters()) {
+                            final Class<?> parameterClass = parameter.getType();
+                            if (parameterClass == LaunchMode.class) {
+                                paramSuppList.add(() -> launchMode);
+                            } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
+                                final ConfigRoot annotation = parameterClass.getAnnotation(ConfigRoot.class);
+                                final ConfigPhase phase = annotation.phase();
+                                ConfigDefinition confDef;
+                                if (phase == ConfigPhase.BUILD_TIME) {
+                                    confDef = buildTimeConfig;
+                                } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
+                                    confDef = buildTimeRunTimeConfig;
+                                } else {
+                                    throw reportError(parameter,
+                                            "Unsupported conditional class configuration build phase " + phase);
+                                }
+                                paramSuppList.add(() -> confDef.getRealizedInstance(parameterClass));
+                            } else {
+                                throw reportError(parameter,
+                                        "Unsupported conditional class constructor parameter type " + parameterClass);
+                            }
+                        }
+                        for (Field field : testClass.getDeclaredFields()) {
+                            final int fieldMods = field.getModifiers();
+                            if (Modifier.isStatic(fieldMods)) {
+                                // ignore static fields
+                                continue;
+                            }
+                            if (Modifier.isFinal(fieldMods)) {
+                                // ignore final fields
+                                continue;
+                            }
+                            if (!Modifier.isPublic(fieldMods) || !Modifier.isPublic(field.getDeclaringClass().getModifiers())) {
+                                field.setAccessible(true);
+                            }
+                            final Class<?> fieldClass = field.getType();
+                            if (fieldClass == LaunchMode.class) {
+                                setup = setup.andThen(o -> ReflectUtil.setFieldVal(field, o, launchMode));
+                            } else if (fieldClass.isAnnotationPresent(ConfigRoot.class)) {
+                                final ConfigRoot annotation = fieldClass.getAnnotation(ConfigRoot.class);
+                                final ConfigPhase phase = annotation.phase();
+                                ConfigDefinition confDef;
+                                if (phase == ConfigPhase.BUILD_TIME) {
+                                    confDef = buildTimeConfig;
+                                } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
+                                    confDef = buildTimeRunTimeConfig;
+                                } else {
+                                    throw reportError(field,
+                                            "Unsupported conditional class configuration build phase " + phase);
+                                }
+                                setup = setup.andThen(
+                                        o -> ReflectUtil.setFieldVal(field, o, confDef.getRealizedInstance(fieldClass)));
+                            } else {
+                                throw reportError(field, "Unsupported conditional class field type " + fieldClass);
+                            }
+                        }
+                        // make it
+                        Object[] args = new Object[paramSuppList.size()];
+                        int idx = 0;
+                        for (Supplier<?> supplier : paramSuppList) {
+                            args[idx++] = supplier.get();
+                        }
+                        try {
+                            bs = (BooleanSupplier) ctor.newInstance(args);
+                        } catch (InstantiationException e) {
+                            throw ReflectUtil.toError(e);
+                        } catch (IllegalAccessException e) {
+                            throw ReflectUtil.toError(e);
+                        } catch (InvocationTargetException e) {
+                            try {
+                                throw e.getCause();
+                            } catch (RuntimeException | Error e2) {
+                                throw e2;
+                            } catch (Throwable throwable) {
+                                throw new IllegalStateException(throwable);
+                            }
+                        }
+                        setup.accept(bs);
+                        condCache.put(testClass, bs);
+                    }
+                    if (inv) {
+                        addStep = and(addStep, not(bs));
+                    } else {
+                        addStep = and(addStep, bs);
+                    }
+                }
+            }
+            final BooleanSupplier finalAddStep = addStep;
+
             if (archiveMarkers.length > 0) {
                 chainConfig = chainConfig.andThen(bcb -> bcb.addBuildStep(bc -> {
                     for (String marker : archiveMarkers) {
                         bc.produce(new AdditionalApplicationArchiveMarkerBuildItem(marker));
                     }
-                }).produces(AdditionalApplicationArchiveMarkerBuildItem.class).build());
+                }).produces(AdditionalApplicationArchiveMarkerBuildItem.class).buildIf(finalAddStep));
             }
             if (capabilities.length > 0) {
                 chainConfig = chainConfig.andThen(bcb -> bcb.addBuildStep(bc -> {
                     for (String capability : capabilities) {
                         bc.produce(new CapabilityBuildItem(capability));
                     }
-                }).produces(CapabilityBuildItem.class).build());
+                }).produces(CapabilityBuildItem.class).buildIf(finalAddStep));
             }
 
             if (isRecorder) {
@@ -599,7 +728,7 @@ public final class ExtensionLoader {
             }
 
             final Consumer<BuildStepBuilder> finalStepConfig = stepConfig.andThen(methodStepConfig)
-                    .andThen(BuildStepBuilder::build);
+                    .andThen(buildStepBuilder -> buildStepBuilder.buildIf(finalAddStep));
             final BiConsumer<BuildContext, Object> finalStepInstanceSetup = stepInstanceSetup;
             final String name = clazz.getName() + "#" + method.getName();
             chainConfig = chainConfig
@@ -666,6 +795,14 @@ public final class ExtensionLoader {
                     })));
         }
         return chainConfig;
+    }
+
+    private static BooleanSupplier and(BooleanSupplier a, BooleanSupplier b) {
+        return () -> a.getAsBoolean() && b.getAsBoolean();
+    }
+
+    private static BooleanSupplier not(BooleanSupplier x) {
+        return () -> !x.getAsBoolean();
     }
 
     private static IllegalArgumentException reportError(AnnotatedElement e, String msg) {

@@ -3,6 +3,7 @@ package io.quarkus.builder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 
 import org.wildfly.common.Assert;
 
@@ -343,6 +344,16 @@ public final class BuildStepBuilder {
         final BuildChainBuilder chainBuilder = this.buildChainBuilder;
         chainBuilder.addStep(this, new Exception().getStackTrace());
         return chainBuilder;
+    }
+
+    /**
+     * Build this step into the chain if the supplier returns {@code true}.
+     *
+     * @param supp the {@code boolean} supplier (must not be {@code null})
+     * @return the chain builder that this step was added to, or {@code null} if it was not added
+     */
+    public BuildChainBuilder buildIf(BooleanSupplier supp) {
+        return supp.getAsBoolean() ? build() : null;
     }
 
     // -- //

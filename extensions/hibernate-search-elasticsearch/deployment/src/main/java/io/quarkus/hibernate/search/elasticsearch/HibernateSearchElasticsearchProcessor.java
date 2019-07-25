@@ -159,11 +159,13 @@ class HibernateSearchElasticsearchProcessor {
                     AnnotationTarget annotationTarget = propertyBridgeInstance.target();
                     if (annotationTarget.kind() == Kind.FIELD) {
                         FieldInfo fieldInfo = annotationTarget.asField();
-                        addReflectiveClass(index, reflectiveClassCollector, reflectiveTypeCollector, fieldInfo.declaringClass());
+                        addReflectiveClass(index, reflectiveClassCollector, reflectiveTypeCollector,
+                                fieldInfo.declaringClass());
                         reflectiveHierarchyCollector.add(fieldInfo.type());
                     } else if (annotationTarget.kind() == Kind.METHOD) {
                         MethodInfo methodInfo = annotationTarget.asMethod();
-                        addReflectiveClass(index, reflectiveClassCollector, reflectiveTypeCollector, methodInfo.declaringClass());
+                        addReflectiveClass(index, reflectiveClassCollector, reflectiveTypeCollector,
+                                methodInfo.declaringClass());
                         reflectiveHierarchyCollector.add(methodInfo.returnType());
                     }
                 }

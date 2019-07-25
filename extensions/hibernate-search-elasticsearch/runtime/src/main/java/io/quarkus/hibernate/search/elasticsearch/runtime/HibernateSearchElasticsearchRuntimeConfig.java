@@ -9,25 +9,39 @@ import java.util.OptionalInt;
 import org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchIndexLifecycleStrategyName;
 import org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchIndexStatus;
 import org.hibernate.search.mapper.orm.cfg.HibernateOrmAutomaticIndexingSynchronizationStrategyName;
+import org.hibernate.search.mapper.orm.search.loading.EntityLoadingCacheLookupStrategy;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(name = "hibernate-search", phase = ConfigPhase.RUN_TIME)
+@ConfigRoot(name = "hibernate-search.elasticsearch", phase = ConfigPhase.RUN_TIME)
 public class HibernateSearchElasticsearchRuntimeConfig {
 
     /**
      * Configuration of the default backend.
      */
-    ElasticsearchBackendRuntimeConfig elasticsearch;
+    @ConfigItem(name = ConfigItem.PARENT)
+    ElasticsearchBackendRuntimeConfig defaultBackend;
 
     /**
      * Configuration of optional additional backends.
      */
-    @ConfigItem(name = "elasticsearch.backends")
+    @ConfigItem(name = "backends")
     Map<String, ElasticsearchBackendRuntimeConfig> additionalBackends;
+
+    /**
+     * Configuration for how entities are loaded by a search query.
+     */
+    @ConfigItem(name = "query.loading")
+    SearchQueryLoadingConfig queryLoading;
+
+    /**
+     * Configuration for the automatic indexing.
+     */
+    @ConfigItem
+    AutomaticIndexingConfig automaticIndexing;
 
     @ConfigGroup
     public static class ElasticsearchBackendRuntimeConfig {
@@ -72,12 +86,6 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          */
         @ConfigItem
         DiscoveryConfig discovery;
-
-        /**
-         * Configuration for the automatic indexing.
-         */
-        @ConfigItem
-        AutomaticIndexingConfig automaticIndexing;
 
         /**
          * The default configuration for the Elasticsearch indexes.
@@ -139,7 +147,9 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * <p>
          * Can be either one of "queued", "committed" or "searchable".
          * <p>
-         * Using "searchable" is recommend in unit tests.
+         * Using "searchable" is recommended in unit tests.
+         * <p>
+         * Defaults to "committed".
          */
         @ConfigItem
         Optional<HibernateOrmAutomaticIndexingSynchronizationStrategyName> synchronizationStrategy;
@@ -152,6 +162,26 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          */
         @ConfigItem
         Optional<Boolean> enableDirtyCheck;
+    }
+
+    @ConfigGroup
+    public static class SearchQueryLoadingConfig {
+
+        /**
+         * The strategy to use when loading entities during the execution of a search query.
+         * <p>
+         * Can be either one of "skip", "persistence-context" or "persistence-context-then-second-level-cache".
+         * <p>
+         * Defaults to "skip".
+         */
+        @ConfigItem
+        Optional<EntityLoadingCacheLookupStrategy> cacheLookupStrategy;
+
+        /**
+         * The fetch size to use when loading entities during the execution of a search query.
+         */
+        @ConfigItem(defaultValue = "100")
+        int fetchSize;
     }
 
     @ConfigGroup

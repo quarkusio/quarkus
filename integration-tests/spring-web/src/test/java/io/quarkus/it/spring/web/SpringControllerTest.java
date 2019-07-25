@@ -19,6 +19,13 @@ public class SpringControllerTest {
     }
 
     @Test
+    public void testJsonInputAndResult() {
+        RestAssured.given().contentType("application/json").body("{\"name\":\"George\"}").post("/greeting/person").then()
+                .contentType("application/json")
+                .body(containsString("hello George"));
+    }
+
+    @Test
     public void testFirstResponseStatusHoldingException() {
         RestAssured.when().get("/exception/first").then()
                 .contentType("text/plain")

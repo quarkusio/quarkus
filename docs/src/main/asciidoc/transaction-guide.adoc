@@ -120,6 +120,11 @@ Extended configuration of the transaction is possible with the use of the `@Tran
 
 The `@TransactionConfiguration` annotation allows to set a timeout property, in seconds, that applies to transactions created within the annotated method.
 
+This annotation may only be placed on the top level method delineating the transaction.
+Annotated nested methods once a transaction has started will throw an exception.
+
+If defined on a class, it is equivalent to defining it on all the methods of the class marked with `@Transactional`.
+The configuration defined on a method takes precedence over the configuration defined on a class.
 
 === Reactive extensions
 

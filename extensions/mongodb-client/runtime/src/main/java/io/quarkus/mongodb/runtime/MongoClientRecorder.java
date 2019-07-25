@@ -183,7 +183,7 @@ public class MongoClientRecorder {
                 Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass(name);
                 providers.add((CodecProvider) clazz.newInstance());
             } catch (Exception e) {
-                LOGGER.warnf("Unable to load the codec provider class %s", name, e);
+                LOGGER.warnf(e, "Unable to load the codec provider class %s", name);
             }
         }
 

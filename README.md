@@ -1,6 +1,7 @@
 # Quarkus
 
 [![Build Status](https://dev.azure.com/quarkus-ci/quarkus/_apis/build/status/quarkusio.quarkus)](https://dev.azure.com/quarkus-ci/quarkus/_build/latest?definitionId=1)
+[![Project Chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://quarkusio.zulipchat.com/)
 
 > Quarkus - Supersonic Subatomic Java
 

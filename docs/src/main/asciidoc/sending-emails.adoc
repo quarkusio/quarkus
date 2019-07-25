@@ -246,6 +246,36 @@ class MailTest {
 }
 ----
 
+== Gmail specific configuration
+
+If you want to use the Gmail SMTP server, first create a dedicated password in `Google Account > Security > App passwords` or go to https://myaccount.google.com/apppasswords.
+
+When done, you can configure your Quarkus application by adding the following properties to your `application.properties`: 
+
+With TLS:
+
+[source]
+----
+quarkus.mailer.from=YOUREMAIL@gmail.com
+quarkus.mailer.host=smtp.gmail.com
+quarkus.mailer.port=587
+quarkus.mailer.start-tls=REQUIRED
+quarkus.mailer.username=YOUREMAIL@gmail.com
+quarkus.mailer.password=YOURGENERATEDAPPLICATIONPASSWORD
+----
+
+Or with SSL:
+
+[source]
+----
+quarkus.mailer.from=YOUREMAIL@gmail.com
+quarkus.mailer.host=smtp.gmail.com
+quarkus.mailer.port=465
+quarkus.mailer.ssl=true
+quarkus.mailer.username=YOUREMAIL@gmail.com
+quarkus.mailer.password=YOURGENERATEDAPPLICATIONPASSWORD
+---- 
+
 == Using the underlying Vert.x Mail Client
 
 The Quarkus Mailer is implemented on top of the https://vertx.io/docs/vertx-mail-client/java/[Vert.x Mail Client], providing an asynchronous and non-blocking way to send emails.

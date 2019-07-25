@@ -454,6 +454,7 @@ A `Map` can be used for configuration at any position where a configuration grou
 map *must* be `String`, and its value may be either a configuration group class or a valid leaf type.  The configuration
 key segment following the map's key segment will be used as the key for map values.
 
+[id=configuration-roots]
 ==== Configuration Roots
 
 Configuration roots are configuration groups that appear in the root of the configuration tree.  A configuration property's full
@@ -605,6 +606,36 @@ quarkus.log.file.path=/tmp/debug.log
 ----
 
 Since `format` is not defined in these properties, the default value from `@ConfigItem` will be used instead.
+
+=== Conditional Step Inclusion
+
+It is possible to only include a given `@BuildStep` under certain conditions.  The `@BuildStep` annotation
+has two optional parameters: `onlyIf` and `onlyIfNot`.  These parameters can be set to one or more classes
+which implement `BooleanSupplier`.  The build step will only be included when the method returns
+`true` (for `onlyIf`) or `false` (for `onlyIfNot`).
+
+The condition class can inject <<configuration-roots,configuration roots>> as long as they belong to
+a build-time phase.  Run time configuration is not available for condition classes.
+
+The condition class may also inject a value of type `io.quarkus.runtime.LaunchMode`.
+Constructor parameter and field injection is supported.
+
+.An example of a conditional build step
+[source%nowrap,java]
+----
+@BuildStep(onlyIf = IsDevMode.class)
+LogCategoryBuildItem enableDebugLogging() {
+    return new LogCategoryBuildItem("org.your.quarkus.extension", Level.DEBUG);
+}
+
+static class IsDevMode implements BooleanSupplier {
+    LaunchMode launchMode;
+
+    public boolean getAsBoolean() {
+        return launchMode == LaunchMode.DEVELOPMENT;
+    }
+}
+----
 
 === Bytecode Recording
 

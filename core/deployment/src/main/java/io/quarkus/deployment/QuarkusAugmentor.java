@@ -70,9 +70,9 @@ public class QuarkusAugmentor {
             final BuildChainBuilder chainBuilder = BuildChain.builder();
 
             if (buildSystemProperties != null) {
-                ExtensionLoader.loadStepsFrom(classLoader, buildSystemProperties).accept(chainBuilder);
+                ExtensionLoader.loadStepsFrom(classLoader, buildSystemProperties, launchMode).accept(chainBuilder);
             } else {
-                ExtensionLoader.loadStepsFrom(classLoader).accept(chainBuilder);
+                ExtensionLoader.loadStepsFrom(classLoader, launchMode).accept(chainBuilder);
             }
             chainBuilder.loadProviders(classLoader);
 

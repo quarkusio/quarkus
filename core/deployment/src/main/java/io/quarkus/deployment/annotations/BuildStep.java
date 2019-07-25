@@ -6,6 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -79,4 +80,18 @@ public @interface BuildStep {
      * TODO: this should be a different annotation?
      */
     String[] applicationArchiveMarkers() default {};
+
+    /**
+     * Only include this build step if the given supplier class(es) return {@code true}.
+     *
+     * @return the supplier class array
+     */
+    Class<? extends BooleanSupplier>[] onlyIf() default {};
+
+    /**
+     * Only include this build step if the given supplier class(es) return {@code false}.
+     *
+     * @return the supplier class array
+     */
+    Class<? extends BooleanSupplier>[] onlyIfNot() default {};
 }

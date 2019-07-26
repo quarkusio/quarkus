@@ -13,6 +13,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
@@ -22,6 +23,8 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -38,7 +41,7 @@ public class ResteasyJsonbProcessor {
 
     private static final DotName JAX_RS_PRODUCES = DotName.createSimple("javax.ws.rs.Produces");
 
-    @BuildStep
+    @BuildStep(providesCapabilities = Capabilities.RESTEASY_JSON_EXTENSION)
     void build(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY_JSONB));
     }
@@ -57,7 +60,9 @@ public class ResteasyJsonbProcessor {
     void generateClasses(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ResteasyJaxrsProviderBuildItem> jaxrsProvider,
-            BuildProducer<ResteasyAdditionalReturnTypesWithoutReflectionBuildItem> typesWithoutReflection) {
+            BuildProducer<ResteasyAdditionalReturnTypesWithoutReflectionBuildItem> typesWithoutReflection,
+            BuildProducer<GeneratedBeanBuildItem> generatedBean,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBean) {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         if (!jsonbConfig.enabled) {
@@ -65,7 +70,29 @@ public class ResteasyJsonbProcessor {
         }
 
         // if the user has declared a custom ContextResolver for Jsonb, we don't generate anything
-        if (hasCustomContextResolverBeenDeclared(index)) {
+        if (hasCustomContextResolverBeenSupplied(index)) {
+            return;
+        }
+
+        ClassOutput classOutput = new ClassOutput() {
+            @Override
+            public void write(String name, byte[] data) {
+                generatedClass.produce(new GeneratedClassBuildItem(true, name, data));
+            }
+        };
+
+        // we generate a context resolver which pulls the jsonb bean out of Arc
+        // this is done regardless of whether the user has configured a bean or not
+        // because we always want the jsonb bean to be used by RESTEasy
+        ResteasyJsonbClassGenerator resteasyJsonbClassGenerator = new ResteasyJsonbClassGenerator();
+        resteasyJsonbClassGenerator.generateJsonbContextResolver(classOutput);
+        jaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(ResteasyJsonbClassGenerator.QUARKUS_CONTEXT_RESOLVER));
+
+        // we need to make user supplied jsonb producer beans unremovable since there are injection points
+        Set<String> userSuppliedProducers = getUserSuppliedJsonbProducerBeans(index);
+        if (!userSuppliedProducers.isEmpty()) {
+            unremovableBean.produce(new UnremovableBeanBuildItem(
+                    new UnremovableBeanBuildItem.BeanClassNamesExclusion(userSuppliedProducers)));
             return;
         }
 
@@ -74,13 +101,6 @@ public class ResteasyJsonbProcessor {
         SerializationClassInspector serializationClassInspector = new SerializationClassInspector(index);
         TypeSerializerGeneratorRegistry typeSerializerGeneratorRegistry = new TypeSerializerGeneratorRegistry(
                 serializationClassInspector);
-
-        ClassOutput classOutput = new ClassOutput() {
-            @Override
-            public void write(String name, byte[] data) {
-                generatedClass.produce(new GeneratedClassBuildItem(true, name, data));
-            }
-        };
 
         Set<ClassType> serializerCandidates = determineSerializationCandidates(index);
 
@@ -101,20 +121,27 @@ public class ResteasyJsonbProcessor {
             }
         }
 
+        JsonbBeanProducerGenerator jsonbBeanProducerGenerator = new JsonbBeanProducerGenerator(jsonbConfig);
+        jsonbBeanProducerGenerator.generateJsonbContextResolver(new ClassOutput() {
+            @Override
+            public void write(String name, byte[] data) {
+                generatedBean.produce(new GeneratedBeanBuildItem(name, data));
+            }
+        }, typeToGeneratedSerializers);
+
+        unremovableBean.produce(new UnremovableBeanBuildItem(
+                new UnremovableBeanBuildItem.BeanClassNameExclusion(JsonbBeanProducerGenerator.JSONB_PRODUCER)));
+
         JsonbSupportClassGenerator jsonbSupportClassGenerator = new JsonbSupportClassGenerator(jsonbConfig);
         jsonbSupportClassGenerator.generateDefaultLocaleProvider(classOutput);
         jsonbSupportClassGenerator.generateJsonbDefaultJsonbDateFormatterProvider(classOutput);
 
-        ResteasyJsonbClassGenerator resteasyJsonbClassGenerator = new ResteasyJsonbClassGenerator(jsonbConfig);
-        resteasyJsonbClassGenerator.generateJsonbContextResolver(classOutput, typeToGeneratedSerializers);
-
-        jaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(ResteasyJsonbClassGenerator.QUARKUS_CONTEXT_RESOLVER));
         for (String type : typesThatDontNeedReflection) {
             typesWithoutReflection.produce(new ResteasyAdditionalReturnTypesWithoutReflectionBuildItem(type));
         }
     }
 
-    private boolean hasCustomContextResolverBeenDeclared(IndexView index) {
+    private boolean hasCustomContextResolverBeenSupplied(IndexView index) {
         for (ClassInfo contextResolver : index.getAllKnownImplementors(DotNames.CONTEXT_RESOLVER)) {
             if (contextResolver.classAnnotation(DotName.createSimple(Provider.class.getName())) == null) {
                 continue;
@@ -143,6 +170,21 @@ public class ResteasyJsonbProcessor {
             }
         }
         return false;
+    }
+
+    // we need to find all the user supplied producers and mark them as unremovable since there are no actual injection points
+    // for the ObjectMapper
+    private Set<String> getUserSuppliedJsonbProducerBeans(IndexView index) {
+        Set<String> result = new HashSet<>();
+        for (AnnotationInstance annotation : index.getAnnotations(DotName.createSimple("javax.enterprise.inject.Produces"))) {
+            if (annotation.target().kind() != AnnotationTarget.Kind.METHOD) {
+                continue;
+            }
+            if (DotNames.JSONB.equals(annotation.target().asMethod().returnType().name())) {
+                result.add(annotation.target().asMethod().declaringClass().name().toString());
+            }
+        }
+        return result;
     }
 
     private Set<ClassType> determineSerializationCandidates(IndexView index) {

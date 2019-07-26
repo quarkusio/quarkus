@@ -58,7 +58,7 @@ public class DoubleConfigType extends LeafConfigType {
             final SmallRyeConfig config) {
         try {
             Double value = ConfigUtils.getValue(config, name.toString(), Double.class, converterClass);
-            field.setDouble(enclosing, value != null ? value : 0d);
+            field.setDouble(enclosing, value != null ? value.doubleValue() : 0d);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -101,7 +101,7 @@ public class DoubleConfigType extends LeafConfigType {
         try {
             Double value = ConfigUtils.convert(config,
                     ExpandingConfigSource.expandValue(defaultValue, cache), Double.class, converterClass);
-            field.setDouble(enclosing, value != null ? value : 0d);
+            field.setDouble(enclosing, value != null ? value.doubleValue() : 0d);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }

@@ -284,33 +284,26 @@ public class ConfigDefinition extends CompoundConfigType {
 
                 Type mapValueType = typeOfParameter(fieldType, 1);
                 Class<?> mapValueRawType = rawTypeOf(mapValueType);
-                Class<? extends Converter<?>> converterClass = loadEnhancedConverter(field, mapValueRawType, subKey);
-                gct.addField(processMap(field.getName(), gct, field, consume, subKey, mapValueType, accessorFinder, javadocKey,
-                        converterClass));
+                addMapField(field, gct, consume, subKey, mapValueType, accessorFinder, javadocKey, mapValueRawType);
             } else if (fieldClass == List.class) {
                 // list leaf class
                 final LeafConfigType leaf;
-                final Class<?> listType = rawTypeOfParameter(fieldType, 0);
-                ObjectListConfigType objectListConfigType = new ObjectListConfigType(field.getName(), gct, consume,
-                        mapDefaultValue(defaultValue, listType), listType, javadocKey, subKey,
-                        (Class) loadEnhancedConverter(field, listType, subKey));
+                ObjectListConfigType<?> objectListConfigType = newObjectListConfigType(field, gct, consume, defaultValue,
+                        javadocKey, subKey);
                 gct.addField(leaf = objectListConfigType);
                 container.getConfigDefinition().getLeafPatterns().addPattern(subKey, leaf);
             } else if (fieldClass == Optional.class) {
                 final LeafConfigType leaf;
                 // optional config property
-                final Class<?> optionalType = rawTypeOfParameter(fieldType, 0);
-                OptionalObjectConfigType optionalObjectConfigType = new OptionalObjectConfigType(field.getName(), gct, consume,
-                        defaultValue.equals(ConfigItem.NO_DEFAULT) ? "" : defaultValue, optionalType,
-                        javadocKey, subKey, (Class) loadEnhancedConverter(field, optionalType, subKey));
+                OptionalObjectConfigType<?> optionalObjectConfigType = newOptionalObjectConfigType(field, gct, consume,
+                        defaultValue, javadocKey, subKey);
                 gct.addField(leaf = optionalObjectConfigType);
                 container.getConfigDefinition().getLeafPatterns().addPattern(subKey, leaf);
             } else {
                 final LeafConfigType leaf;
                 // it's a plain config property
-                ObjectConfigType objectConfigType = new ObjectConfigType(field.getName(), gct, consume,
-                        mapDefaultValue(defaultValue, fieldClass), fieldClass, javadocKey, subKey,
-                        (Class) loadEnhancedConverter(field, fieldClass, subKey));
+                ObjectConfigType<?> objectConfigType = newObjectConfigType(field, gct, consume, defaultValue, javadocKey,
+                        subKey);
                 gct.addField(leaf = objectConfigType);
                 container.getConfigDefinition().getLeafPatterns().addPattern(subKey, leaf);
             }
@@ -318,7 +311,40 @@ public class ConfigDefinition extends CompoundConfigType {
         return gct;
     }
 
-    private <T> Class<Converter<T>> loadEnhancedConverter(Field field, Class<T> clazz, String configProperty) {
+    private <T> void addMapField(Field field, GroupConfigType gct, boolean consume, String subKey, Type mapValueType,
+            AccessorFinder accessorFinder, String javadocKey, Class<T> mapValueRawType) {
+        final Class<? extends Converter<T>> converterClass = loadEnhancedConverter(field, mapValueRawType, subKey);
+        gct.addField(processMap(field.getName(), gct, field, consume, subKey, mapValueType, accessorFinder, javadocKey,
+                converterClass));
+    }
+
+    private <T> ObjectConfigType<T> newObjectConfigType(Field field, GroupConfigType gct, boolean consume, String defaultValue,
+            String javadocKey, String subKey) {
+        @SuppressWarnings("unchecked")
+        Class<T> fieldClass = (Class<T>) field.getType();
+        return new ObjectConfigType<>(field.getName(), gct, consume,
+                mapDefaultValue(defaultValue, fieldClass), fieldClass, javadocKey, subKey,
+                loadEnhancedConverter(field, fieldClass, subKey));
+    }
+
+    private <T> OptionalObjectConfigType<T> newOptionalObjectConfigType(Field field, GroupConfigType gct, boolean consume,
+            String defaultValue, String javadocKey, String subKey) {
+        @SuppressWarnings("unchecked")
+        final Class<T> optionalType = (Class<T>) rawTypeOfParameter(field.getGenericType(), 0);
+        return new OptionalObjectConfigType<>(field.getName(), gct, consume,
+                defaultValue.equals(ConfigItem.NO_DEFAULT) ? "" : defaultValue, optionalType, javadocKey, subKey,
+                loadEnhancedConverter(field, optionalType, subKey));
+    }
+
+    private <T> ObjectListConfigType<T> newObjectListConfigType(Field field, GroupConfigType gct, boolean consume,
+            String defaultValue, String javadocKey, String subKey) {
+        @SuppressWarnings("unchecked")
+        final Class<T> listType = (Class<T>) rawTypeOfParameter(field.getGenericType(), 0);
+        return new ObjectListConfigType<>(field.getName(), gct, consume, mapDefaultValue(defaultValue, listType), listType,
+                javadocKey, subKey, loadEnhancedConverter(field, listType, subKey));
+    }
+
+    private <T> Class<? extends Converter<T>> loadEnhancedConverter(Field field, Class<T> clazz, String configProperty) {
         final DefaultConverter defaultConverter = field.getAnnotation(DefaultConverter.class);
         final ConvertWith convertWith = field.getAnnotation(ConvertWith.class);
 
@@ -333,7 +359,8 @@ public class ConfigDefinition extends CompoundConfigType {
         }
 
         if (convertWith != null) {
-            final Class<Converter<T>> converterClass = (Class<Converter<T>>) convertWith.value();
+            @SuppressWarnings("unchecked")
+            final Class<? extends Converter<T>> converterClass = (Class<? extends Converter<T>>) convertWith.value();
             try {
                 final Method method = converterClass.getMethod("convert", String.class);
                 final Type type = method.getAnnotatedReturnType().getType();
@@ -349,16 +376,19 @@ public class ConfigDefinition extends CompoundConfigType {
         }
 
         if (clazz.isEnum()) {
-            return (Class) HyphenateEnumConverter.class;
+            // clean up with SmallRye Config upgrade
+            @SuppressWarnings({ "unchecked", "RedundantCast" })
+            final Class<? extends Converter<T>> converterClass = (Class<? extends Converter<T>>) (Class<?>) HyphenateEnumConverter.class;
+            return converterClass;
         }
 
         return null; // use built in MP converters or custom converters
     }
 
-    private MapConfigType processMap(final String containingName, final CompoundConfigType container,
+    private <T> MapConfigType processMap(final String containingName, final CompoundConfigType container,
             final AnnotatedElement containingElement, final boolean consumeSegment, final String baseKey,
             final Type mapValueType, final AccessorFinder accessorFinder, String javadocKey,
-            Class<? extends Converter<?>> converterClass) {
+            Class<? extends Converter<T>> converterClass) {
         MapConfigType mct = new MapConfigType(containingName, container, consumeSegment);
         final Class<?> valueClass = rawTypeOf(mapValueType);
         final String subKey = baseKey + ".{*}";
@@ -372,8 +402,9 @@ public class ConfigDefinition extends CompoundConfigType {
         } else if (valueClass == List.class) {
             if (!(mapValueType instanceof ParameterizedType))
                 throw reportError(containingElement, "List must be parameterized");
-            Class<?> listType = rawTypeOfParameter(mapValueType, 0);
-            final ObjectListConfigType leaf = new ObjectListConfigType(NO_CONTAINING_NAME, mct, consumeSegment, "",
+            @SuppressWarnings("unchecked")
+            Class<T> listType = (Class<T>) rawTypeOfParameter(mapValueType, 0);
+            final ObjectListConfigType<T> leaf = new ObjectListConfigType<>(NO_CONTAINING_NAME, mct, consumeSegment, "",
                     listType, javadocKey, subKey, converterClass);
             container.getConfigDefinition().getLeafPatterns().addPattern(subKey, leaf);
         } else if (valueClass == Optional.class || valueClass == OptionalInt.class || valueClass == OptionalDouble.class
@@ -381,8 +412,9 @@ public class ConfigDefinition extends CompoundConfigType {
             throw reportError(containingElement, "Optionals are not allowed as a map value type");
         } else {
             // treat as a plain object
-            final ObjectConfigType leaf = new ObjectConfigType(NO_CONTAINING_NAME, mct, true, "", valueClass, javadocKey,
-                    subKey, converterClass);
+            @SuppressWarnings("unchecked")
+            final ObjectConfigType<T> leaf = new ObjectConfigType<>(NO_CONTAINING_NAME, mct, true, "", (Class<T>) valueClass,
+                    javadocKey, subKey, converterClass);
             container.getConfigDefinition().getLeafPatterns().addPattern(subKey, leaf);
         }
         return mct;

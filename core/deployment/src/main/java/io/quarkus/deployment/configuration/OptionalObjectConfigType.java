@@ -20,11 +20,11 @@ import io.smallrye.config.SmallRyeConfig;
 
 /**
  */
-public class OptionalObjectConfigType extends ObjectConfigType {
+public class OptionalObjectConfigType<T> extends ObjectConfigType<T> {
 
     public OptionalObjectConfigType(final String containingName, final CompoundConfigType container,
-            final boolean consumeSegment, final String defaultValue, final Class<?> expectedType, String javadocKey,
-            String configKey, Class<? extends Converter<?>> converterClass) {
+            final boolean consumeSegment, final String defaultValue, final Class<T> expectedType, String javadocKey,
+            String configKey, Class<? extends Converter<T>> converterClass) {
         super(containingName, container, consumeSegment, defaultValue, expectedType, javadocKey, configKey, converterClass);
     }
 
@@ -56,7 +56,7 @@ public class OptionalObjectConfigType extends ObjectConfigType {
             } else {
                 String value = ExpandingConfigSource.expandValue(defaultValue, cache);
                 field.set(enclosing,
-                        Optional.ofNullable(ConfigUtils.convert(config, value, expectedType, (Class) converterClass)));
+                        Optional.ofNullable(ConfigUtils.convert(config, value, expectedType, converterClass)));
             }
         } catch (IllegalAccessException e) {
             throw toError(e);
@@ -78,7 +78,7 @@ public class OptionalObjectConfigType extends ObjectConfigType {
     public void acceptConfigurationValueIntoGroup(final Object enclosing, final Field field, final NameIterator name,
             final SmallRyeConfig config) {
         try {
-            field.set(enclosing, ConfigUtils.getOptionalValue(config, name.toString(), expectedType, (Class) converterClass));
+            field.set(enclosing, ConfigUtils.getOptionalValue(config, name.toString(), expectedType, converterClass));
         } catch (IllegalAccessException e) {
             throw toError(e);
         }

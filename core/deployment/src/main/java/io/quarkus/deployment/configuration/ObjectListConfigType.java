@@ -24,7 +24,7 @@ import io.smallrye.config.SmallRyeConfig;
 
 /**
  */
-public class ObjectListConfigType extends ObjectConfigType {
+public class ObjectListConfigType<T> extends ObjectConfigType<T> {
     static final MethodDescriptor ALF_GET_INST_METHOD = MethodDescriptor.ofMethod(ArrayListFactory.class, "getInstance",
             ArrayListFactory.class);
     static final MethodDescriptor EMPTY_LIST_METHOD = MethodDescriptor.ofMethod(Collections.class, "emptyList", List.class);
@@ -35,8 +35,8 @@ public class ObjectListConfigType extends ObjectConfigType {
             SmallRyeConfig.class, String.class, Class.class, Class.class);
 
     public ObjectListConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment,
-            final String defaultValue, final Class<?> expectedType, String javadocKey, String configKey,
-            Class<? extends Converter<?>> converterClass) {
+            final String defaultValue, final Class<T> expectedType, String javadocKey, String configKey,
+            Class<? extends Converter<T>> converterClass) {
         super(containingName, container, consumeSegment, defaultValue, expectedType, javadocKey, configKey, converterClass);
     }
 
@@ -70,7 +70,7 @@ public class ObjectListConfigType extends ObjectConfigType {
                         config,
                         ExpandingConfigSource.expandValue(defaultValue, cache),
                         expectedType,
-                        (Class) converterClass,
+                        converterClass,
                         ArrayListFactory.getInstance());
                 field.set(enclosing, defaults);
             }
@@ -99,7 +99,7 @@ public class ObjectListConfigType extends ObjectConfigType {
     public void acceptConfigurationValueIntoGroup(final Object enclosing, final Field field, final NameIterator name,
             final SmallRyeConfig config) {
         try {
-            field.set(enclosing, ConfigUtils.getValues(config, name.toString(), expectedType, (Class) converterClass));
+            field.set(enclosing, ConfigUtils.getValues(config, name.toString(), expectedType, converterClass));
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -113,7 +113,7 @@ public class ObjectListConfigType extends ObjectConfigType {
     void acceptConfigurationValueIntoMap(final Map<String, Object> enclosing, final NameIterator name,
             final SmallRyeConfig config) {
         enclosing.put(name.getNextSegment(),
-                ConfigUtils.getValues(config, name.toString(), expectedType, (Class) converterClass));
+                ConfigUtils.getValues(config, name.toString(), expectedType, converterClass));
     }
 
     void generateAcceptConfigurationValueIntoMap(final BytecodeCreator body, final ResultHandle enclosing,

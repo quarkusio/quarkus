@@ -59,7 +59,7 @@ public class FloatConfigType extends LeafConfigType {
             final SmallRyeConfig config) {
         try {
             final Float value = ConfigUtils.getValue(config, name.toString(), Float.class, converterClass);
-            field.setFloat(enclosing, value != null ? value : 0f);
+            field.setFloat(enclosing, value != null ? value.floatValue() : 0f);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -102,7 +102,7 @@ public class FloatConfigType extends LeafConfigType {
         try {
             final Float value = ConfigUtils.convert(config, ExpandingConfigSource.expandValue(defaultValue, cache), Float.class,
                     converterClass);
-            field.setFloat(enclosing, value != null ? value : 0f);
+            field.setFloat(enclosing, value != null ? value.floatValue() : 0f);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }

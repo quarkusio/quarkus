@@ -58,7 +58,7 @@ public class IntConfigType extends LeafConfigType {
             final SmallRyeConfig config) {
         try {
             Integer value = ConfigUtils.getValue(config, name.toString(), Integer.class, converterClass);
-            field.setInt(enclosing, value != null ? value : 0);
+            field.setInt(enclosing, value != null ? value.intValue() : 0);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -101,7 +101,7 @@ public class IntConfigType extends LeafConfigType {
         try {
             Integer value = ConfigUtils.convert(config, ExpandingConfigSource.expandValue(defaultValue, cache),
                     Integer.class, converterClass);
-            field.setInt(enclosing, value != null ? value : 0);
+            field.setInt(enclosing, value != null ? value.intValue() : 0);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }

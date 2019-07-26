@@ -18,14 +18,14 @@ import io.smallrye.config.SmallRyeConfig;
 
 /**
  */
-public class ObjectConfigType extends LeafConfigType {
+public class ObjectConfigType<T> extends LeafConfigType {
     final String defaultValue;
-    final Class<?> expectedType;
-    Class<? extends Converter<?>> converterClass;
+    final Class<T> expectedType;
+    Class<? extends Converter<T>> converterClass;
 
     public ObjectConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment,
-            final String defaultValue, final Class<?> expectedType, String javadocKey, String configKey,
-            Class<? extends Converter<?>> converterClass) {
+            final String defaultValue, final Class<T> expectedType, String javadocKey, String configKey,
+            Class<? extends Converter<T>> converterClass) {
         super(containingName, container, consumeSegment, javadocKey, configKey);
         this.defaultValue = defaultValue;
         this.expectedType = expectedType;
@@ -33,7 +33,7 @@ public class ObjectConfigType extends LeafConfigType {
     }
 
     @Override
-    public Class<?> getItemClass() {
+    public Class<T> getItemClass() {
         return expectedType;
     }
 
@@ -41,7 +41,7 @@ public class ObjectConfigType extends LeafConfigType {
             final SmallRyeConfig config, final Field field) {
         try {
             String value = ExpandingConfigSource.expandValue(defaultValue, cache);
-            field.set(enclosing, ConfigUtils.convert(config, value, expectedType, (Class) converterClass));
+            field.set(enclosing, ConfigUtils.convert(config, value, expectedType, converterClass));
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -91,7 +91,7 @@ public class ObjectConfigType extends LeafConfigType {
             final SmallRyeConfig config) {
         try {
             field.set(enclosing,
-                    ConfigUtils.getOptionalValue(config, name.toString(), expectedType, (Class) converterClass)
+                    ConfigUtils.getOptionalValue(config, name.toString(), expectedType, converterClass)
                             .orElse(null));
         } catch (IllegalAccessException e) {
             throw toError(e);
@@ -106,7 +106,7 @@ public class ObjectConfigType extends LeafConfigType {
     void acceptConfigurationValueIntoMap(final Map<String, Object> enclosing, final NameIterator name,
             final SmallRyeConfig config) {
         enclosing.put(name.getNextSegment(),
-                ConfigUtils.getOptionalValue(config, name.toString(), expectedType, (Class) converterClass).orElse(null));
+                ConfigUtils.getOptionalValue(config, name.toString(), expectedType, converterClass).orElse(null));
     }
 
     void generateAcceptConfigurationValueIntoMap(final BytecodeCreator body, final ResultHandle enclosing,
@@ -131,7 +131,7 @@ public class ObjectConfigType extends LeafConfigType {
     }
 
     @Override
-    public Class<? extends Converter<?>> getConverterClass() {
+    public Class<? extends Converter<T>> getConverterClass() {
         return converterClass;
     }
 }

@@ -57,7 +57,7 @@ public class LongConfigType extends LeafConfigType {
             final SmallRyeConfig config) {
         try {
             Long value = ConfigUtils.getValue(config, name.toString(), Long.class, converterClass);
-            field.setLong(enclosing, value != null ? value : 0l);
+            field.setLong(enclosing, value != null ? value.longValue() : 0L);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -77,7 +77,7 @@ public class LongConfigType extends LeafConfigType {
                 body.loadClass(Long.class), loadConverterClass(body)), Long.class);
         final BranchResult ifNull = body.ifNull(longValue);
         final BytecodeCreator isNull = ifNull.trueBranch();
-        isNull.assign(result, isNull.load(0l));
+        isNull.assign(result, isNull.load(0L));
         final BytecodeCreator isNotNull = ifNull.falseBranch();
         isNotNull.assign(result,
                 isNotNull.invokeVirtualMethod(
@@ -100,7 +100,7 @@ public class LongConfigType extends LeafConfigType {
         try {
             Long value = ConfigUtils.convert(config, ExpandingConfigSource.expandValue(defaultValue, cache), Long.class,
                     converterClass);
-            field.setLong(enclosing, value != null ? value : 0l);
+            field.setLong(enclosing, value != null ? value.longValue() : 0L);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }

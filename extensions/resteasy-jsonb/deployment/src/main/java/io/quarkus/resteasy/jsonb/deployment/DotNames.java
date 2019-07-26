@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import javax.json.bind.Jsonb;
 import javax.json.bind.annotation.JsonbDateFormat;
 import javax.json.bind.annotation.JsonbNillable;
 import javax.json.bind.annotation.JsonbNumberFormat;
@@ -49,6 +50,7 @@ public final class DotNames {
 
     public static final DotName CONTEXT_RESOLVER = DotName.createSimple(ContextResolver.class.getName());
 
+    public static final DotName JSONB = DotName.createSimple(Jsonb.class.getName());
     public static final DotName JSONB_TRANSIENT = DotName.createSimple(JsonbTransient.class.getName());
     public static final DotName JSONB_PROPERTY = DotName.createSimple(JsonbProperty.class.getName());
     public static final DotName JSONB_TYPE_SERIALIZER = DotName.createSimple(JsonbTypeSerializer.class.getName());

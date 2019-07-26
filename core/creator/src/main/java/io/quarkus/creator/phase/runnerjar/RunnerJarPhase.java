@@ -372,6 +372,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         if (Files.exists(augmentOutcome.getConfigDir())) {
             copyFiles(augmentOutcome.getConfigDir(), runnerZipFs, services);
         }
+        // needs to be done after copying the app classes in order for the transformed classes to replace the app classes
         copyFiles(augmentOutcome.getTransformedClassesDir(), runnerZipFs, services);
 
         generateManifest(runnerZipFs, classPath.toString());
@@ -449,6 +450,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
 
     /**
      * Copy files from {@code dir} to {@code fs}, filtering out service providers into the given map.
+     * Replaces files if they already exist
      *
      * @param dir the source directory
      * @param fs the destination filesystem

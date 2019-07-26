@@ -319,6 +319,12 @@ And finally, run it with:
 docker run -i --rm -p 8080:8080 quarkus-quickstart/getting-started
 ----
 
+[TIP]
+====
+If you need SSL support in your native executable, you can easily include the necessary libraries in your Docker image.
+
+Please see link:native-and-ssl-guide.html#working-with-containers[our Using SSL With Native Executables guide] for more information.
+====
 
 == What's next?
 

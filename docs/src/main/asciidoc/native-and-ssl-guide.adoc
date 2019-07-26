@@ -178,9 +178,22 @@ Now, the application should work as expected:
  * you should see a JSON output with some information about Greece
  * hit `Ctrl+C` to stop the application
 
+[TIP]
+====
+The root certificates file of GraalVM might not be totally up to date.
+If you have issues with some certificates, your best bet is to include the `cacerts` file of a regular JDK instead.
+====
+
+[WARNING]
+====
+Don't forget to move your GraalVM directory back to where it was.
+====
+
+=== Working with containers
+
 When working with containers, the idea is to bundle both the SunEC library and the certificates in the container and to point your binary to them using the system properties mentioned above.
 
-You can for example modify your `Dockerfile.native` as following to allow copying the required lib in your final image:
+You can for example modify your `Dockerfile.native` as follows to copy the required files to your final image:
 
 [source, subs=attributes+]
 ----
@@ -197,17 +210,6 @@ RUN chmod 775 /work
 EXPOSE 8080
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0", "-Djava.library.path=/work/lib", "-Djavax.net.ssl.trustStore=/work/cacerts"]
 ----
-
-[TIP]
-====
-The root certificates file of GraalVM might not be totally up to date.
-If you have issues with some certificates, your best bet is to include the `cacerts` file of a regular JDK instead.
-====
-
-[WARNING]
-====
-Don't forget to move your GraalVM directory back to where it was.
-====
 
 == Conclusion
 

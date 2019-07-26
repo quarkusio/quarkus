@@ -10,11 +10,11 @@ import javax.ws.rs.core.Application;
 
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.runtime.NotFoundExceptionMapper;
@@ -22,7 +22,6 @@ import io.quarkus.resteasy.runtime.ResteasyFilter;
 import io.quarkus.resteasy.runtime.RolesFilterRegistrar;
 import io.quarkus.resteasy.server.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.resteasy.server.common.deployment.ResteasyServerConfigBuildItem;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.undertow.deployment.FilterBuildItem;
 import io.quarkus.undertow.deployment.ServletBuildItem;
 import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
@@ -85,12 +84,10 @@ public class ResteasyProcessor {
         providers.produce(new ResteasyJaxrsProviderBuildItem(RolesFilterRegistrar.class.getName()));
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsDevelopment.class)
     @Record(RUNTIME_INIT)
-    void setupExceptionMapper(BuildProducer<ResteasyJaxrsProviderBuildItem> providers, LaunchModeBuildItem launchMode) {
-        if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
-            providers.produce(new ResteasyJaxrsProviderBuildItem(NotFoundExceptionMapper.class.getName()));
-        }
+    void setupExceptionMapper(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
+        providers.produce(new ResteasyJaxrsProviderBuildItem(NotFoundExceptionMapper.class.getName()));
     }
 
     private String getMappingPath(String path) {

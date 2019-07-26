@@ -194,7 +194,7 @@ public class FruitResource {
 
 The implementation is pretty straightforward and you just need to define your endpoints using the JAX-RS annotations and use the `FruitService` to list/add new fruits.
 
-== Configuring the mongo database
+== Configuring the MongoDB database
 The main property to configure is the URL to access to MongoDB, almost all configuration can be included in the connection URI so we advise you to do so, you can find more information in the MongoDB documentation: https://docs.mongodb.com/manual/reference/connection-string/
 
 A sample configuration should look like this:
@@ -215,10 +215,10 @@ quarkus.mongodb.connection-string = mongodb://localhost:27017
 
 If you need more configuration properties, there is a full list at the end of this guide.
 
-== Running a Mongo Database
-As by default, `MongoClient` is configure to access a local Mongo database on port 27017 (the default MongoDB port), if you have a local running database on this port, there is nothing more to do before being able to test it!
+== Running a MongoDB Database
+As by default, `MongoClient` is configure to access a local MongoDB database on port 27017 (the default MongoDB port), if you have a local running database on this port, there is nothing more to do before being able to test it!
 
-If you want to use Docker to run a Mongo database, you can use the following command to launch one:
+If you want to use Docker to run a MongoDB database, you can use the following command to launch one:
 [source,shell]
 ----
 docker run -ti --rm -p 27017:27017 mongo:4.0
@@ -468,9 +468,11 @@ public class CodecFruitService {
 You can use the MongoDB client in a native executable.
 
 If you want to use SSL/TLS encryption, you need to add these properties in your `application.properties`:
+
+[source,properties]
 ----
 quarkus.mongodb.tls=true
-quarkus.mongodb.tls-insecure=true #only if TLS certificat cannot be validated
+quarkus.mongodb.tls-insecure=true # only if TLS certificate cannot be validated
 ----
 
 You can then build a native executable with the usual command `./mvnw package -Pnative`.
@@ -486,7 +488,7 @@ Currently, Quarkus doesn't support the `mongodb+srv` protocol in native mode.
 
 == Conclusion
 
-Accessing a Mongo database from a MongoDB Client is easy with Quarkus as it provides configuration and native support for it.
+Accessing a MongoDB database from a MongoDB Client is easy with Quarkus as it provides configuration and native support for it.
 
 == Connection properties
 `quarkus.mongodb.connection-string`:: (e.g. `mongodb://mongo1:27017,mongo2:27017`)

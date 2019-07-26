@@ -737,6 +737,9 @@ producing the other build item.  If the other build item is ultimately consumed 
 and the class would be generated.  If nothing consumes the other build item, the step would not be included in the build
 process.
 
+In the example above, `GeneratedClassBuildItem` would only be produced if `ExecutorClassBuildItem` is consumed by
+some other build step.
+
 Note that when using <<bytecode-recording,bytecode recording>>, the implicitly generated class can be declared to be weak by
 using the `optional` attribute of the `@io.quarkus.deployment.annotations.Record` annotation.
 

@@ -29,6 +29,8 @@ import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.LaunchMode;
@@ -92,7 +94,6 @@ public class RuntimeRunner implements Runnable, Closeable {
             QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder();
             builder.setRoot(target);
             builder.setClassLoader(loader);
-            builder.setOutput(classOutput);
             builder.setLaunchMode(launchMode);
             if (liveReloadState != null) {
                 builder.setLiveReloadState(liveReloadState);
@@ -118,10 +119,17 @@ public class RuntimeRunner implements Runnable, Closeable {
 
                 transformerTarget.setTransformers(functions);
             }
+
             if (loader instanceof RuntimeClassLoader) {
                 ApplicationArchivesBuildItem archives = result.consume(ApplicationArchivesBuildItem.class);
                 ((RuntimeClassLoader) loader).setApplicationArchives(archives.getApplicationArchives().stream()
                         .map(ApplicationArchive::getArchiveRoot).collect(Collectors.toList()));
+            }
+            for (GeneratedClassBuildItem i : result.consumeMulti(GeneratedClassBuildItem.class)) {
+                classOutput.writeClass(i.isApplicationClass(), i.getName(), i.getClassData());
+            }
+            for (GeneratedResourceBuildItem i : result.consumeMulti(GeneratedResourceBuildItem.class)) {
+                classOutput.writeResource(i.getName(), i.getClassData());
             }
 
             final Application application;

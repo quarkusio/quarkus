@@ -51,6 +51,22 @@ public final class BuildResult {
     }
 
     /**
+     * Consume the value produced for the named item.
+     *
+     * @param type the item type (must not be {@code null})
+     * @return the produced item (may be {@code null})
+     * @throws ClassCastException if the cast failed
+     */
+    public <T extends SimpleBuildItem> T consumeOptional(Class<T> type) {
+        final ItemId itemId = new ItemId(type, null);
+        final Object item = simpleItems.get(itemId);
+        if (item == null) {
+            return null;
+        }
+        return type.cast(item);
+    }
+
+    /**
      * Consume all of the values produced for the named item.
      *
      * @param type the item element type (must not be {@code null})

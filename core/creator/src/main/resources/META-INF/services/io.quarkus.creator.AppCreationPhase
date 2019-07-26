@@ -1,4 +1,4 @@
-io.quarkus.creator.phase.augment.AugmentPhase
-io.quarkus.creator.phase.curate.CuratePhase
+io.quarkus.creator.phase.augment.AugmentTask
+io.quarkus.creator.curator.Curator
 io.quarkus.creator.phase.nativeimage.NativeImagePhase
-io.quarkus.creator.phase.runnerjar.RunnerJarPhase
+io.quarkus.creator.phase.runnerjar.ExecutableOutputTask

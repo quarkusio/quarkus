@@ -13,8 +13,11 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.builder.BuildChain;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildExecutionBuilder;
@@ -22,20 +25,20 @@ import io.quarkus.builder.BuildResult;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
-import io.quarkus.deployment.builditem.ClassOutputBuildItem;
 import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusAugmentor {
 
     private static final Logger log = Logger.getLogger(QuarkusAugmentor.class);
 
-    private final ClassOutput output;
     private final ClassLoader classLoader;
     private final Path root;
     private final Set<Class<? extends BuildItem>> finalResults;
@@ -45,9 +48,13 @@ public class QuarkusAugmentor {
     private final Collection<Path> excludedFromIndexing;
     private final LiveReloadBuildItem liveReloadBuildItem;
     private final Properties buildSystemProperties;
+    private final Path targetDir;
+    private final AppModel effectiveModel;
+    private final AppModelResolver resolver;
+    private final String baseName;
+    private final Consumer<ConfigBuilder> configCustomizer;
 
     QuarkusAugmentor(Builder builder) {
-        this.output = builder.output;
         this.classLoader = builder.classLoader;
         this.root = builder.root;
         this.finalResults = new HashSet<>(builder.finalResults);
@@ -57,6 +64,11 @@ public class QuarkusAugmentor {
         this.excludedFromIndexing = builder.excludedFromIndexing;
         this.liveReloadBuildItem = builder.liveReloadState;
         this.buildSystemProperties = builder.buildSystemProperties;
+        this.targetDir = builder.targetDir;
+        this.effectiveModel = builder.effectiveModel;
+        this.resolver = builder.resolver;
+        this.baseName = builder.baseName;
+        this.configCustomizer = builder.configCustomizer;
     }
 
     public BuildResult run() throws Exception {
@@ -70,9 +82,10 @@ public class QuarkusAugmentor {
             final BuildChainBuilder chainBuilder = BuildChain.builder();
 
             if (buildSystemProperties != null) {
-                ExtensionLoader.loadStepsFrom(classLoader, buildSystemProperties, launchMode).accept(chainBuilder);
+                ExtensionLoader.loadStepsFrom(classLoader, buildSystemProperties, launchMode, configCustomizer)
+                        .accept(chainBuilder);
             } else {
-                ExtensionLoader.loadStepsFrom(classLoader, launchMode).accept(chainBuilder);
+                ExtensionLoader.loadStepsFrom(classLoader, launchMode, configCustomizer).accept(chainBuilder);
             }
             chainBuilder.loadProviders(classLoader);
 
@@ -80,11 +93,12 @@ public class QuarkusAugmentor {
                     .addInitial(QuarkusConfig.class)
                     .addInitial(ArchiveRootBuildItem.class)
                     .addInitial(ShutdownContextBuildItem.class)
-                    .addInitial(ClassOutputBuildItem.class)
                     .addInitial(LaunchModeBuildItem.class)
                     .addInitial(LiveReloadBuildItem.class)
                     .addInitial(AdditionalApplicationArchiveBuildItem.class)
-                    .addInitial(ExtensionClassLoaderBuildItem.class);
+                    .addInitial(ExtensionClassLoaderBuildItem.class)
+                    .addInitial(OutputTargetBuildItem.class)
+                    .addInitial(CurateOutcomeBuildItem.class);
             for (Class<? extends BuildItem> i : finalResults) {
                 chainBuilder.addFinal(i);
             }
@@ -104,23 +118,16 @@ public class QuarkusAugmentor {
                     .produce(QuarkusConfig.INSTANCE)
                     .produce(liveReloadBuildItem)
                     .produce(new ArchiveRootBuildItem(root, rootFs == null ? root : rootFs.getPath("/"), excludedFromIndexing))
-                    .produce(new ClassOutputBuildItem(output))
                     .produce(new ShutdownContextBuildItem())
                     .produce(new LaunchModeBuildItem(launchMode))
-                    .produce(new ExtensionClassLoaderBuildItem(classLoader));
+                    .produce(new ExtensionClassLoaderBuildItem(classLoader))
+                    .produce(new OutputTargetBuildItem(targetDir, baseName))
+                    .produce(new CurateOutcomeBuildItem(effectiveModel, resolver));
             for (Path i : additionalApplicationArchives) {
                 execBuilder.produce(new AdditionalApplicationArchiveBuildItem(i));
             }
             BuildResult buildResult = execBuilder
                     .execute();
-
-            //TODO: this seems wrong
-            for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
-                output.writeClass(i.isApplicationClass(), i.getName(), i.getClassData());
-            }
-            for (GeneratedResourceBuildItem i : buildResult.consumeMulti(GeneratedResourceBuildItem.class)) {
-                output.writeResource(i.getName(), i.getClassData());
-            }
             log.info("Quarkus augmentation completed in " + (System.currentTimeMillis() - time) + "ms");
             return buildResult;
         } finally {
@@ -142,14 +149,19 @@ public class QuarkusAugmentor {
 
         List<Path> additionalApplicationArchives = new ArrayList<>();
         Collection<Path> excludedFromIndexing = Collections.emptySet();
-        ClassOutput output;
         ClassLoader classLoader;
         Path root;
+        Path targetDir;
         Set<Class<? extends BuildItem>> finalResults = new HashSet<>();
         private final List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
         LaunchMode launchMode = LaunchMode.NORMAL;
         LiveReloadBuildItem liveReloadState = new LiveReloadBuildItem();
         Properties buildSystemProperties;
+
+        AppModel effectiveModel;
+        AppModelResolver resolver;
+        String baseName = "quarkus-application";
+        Consumer<ConfigBuilder> configCustomizer;
 
         public Builder addBuildChainCustomizer(Consumer<BuildChainBuilder> customizer) {
             this.buildChainCustomizers.add(customizer);
@@ -167,15 +179,6 @@ public class QuarkusAugmentor {
 
         public Builder excludeFromIndexing(Collection<Path> excludedFromIndexing) {
             this.excludedFromIndexing = excludedFromIndexing;
-            return this;
-        }
-
-        public ClassOutput getOutput() {
-            return output;
-        }
-
-        public Builder setOutput(ClassOutput output) {
-            this.output = output;
             return this;
         }
 
@@ -211,6 +214,15 @@ public class QuarkusAugmentor {
             return this;
         }
 
+        public String getBaseName() {
+            return baseName;
+        }
+
+        public Builder setBaseName(String baseName) {
+            this.baseName = baseName;
+            return this;
+        }
+
         public Properties getBuildSystemProperties() {
             return buildSystemProperties;
         }
@@ -230,6 +242,26 @@ public class QuarkusAugmentor {
 
         public Builder setLiveReloadState(LiveReloadBuildItem liveReloadState) {
             this.liveReloadState = liveReloadState;
+            return this;
+        }
+
+        public Builder setTargetDir(Path outputDir) {
+            targetDir = outputDir;
+            return this;
+        }
+
+        public Builder setEffectiveModel(AppModel effectiveModel) {
+            this.effectiveModel = effectiveModel;
+            return this;
+        }
+
+        public Builder setResolver(AppModelResolver resolver) {
+            this.resolver = resolver;
+            return this;
+        }
+
+        public Builder setConfigCustomizer(Consumer<ConfigBuilder> configCustomizer) {
+            this.configCustomizer = configCustomizer;
             return this;
         }
     }

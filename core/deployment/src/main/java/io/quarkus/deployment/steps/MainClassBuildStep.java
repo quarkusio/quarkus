@@ -13,14 +13,14 @@ import java.util.stream.Collectors;
 import org.graalvm.nativeimage.ImageInfo;
 
 import io.quarkus.builder.Version;
-import io.quarkus.deployment.ClassOutput;
+import io.quarkus.deployment.GizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
-import io.quarkus.deployment.builditem.ClassOutputBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
@@ -66,7 +66,7 @@ class MainClassBuildStep {
             List<FeatureBuildItem> features,
             BuildProducer<ApplicationClassNameBuildItem> appClassNameProducer,
             List<BytecodeRecorderObjectLoaderBuildItem> loaders,
-            ClassOutputBuildItem classOutput,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
             LaunchModeBuildItem launchMode,
             ApplicationInfoBuildItem applicationInfo) {
 
@@ -74,7 +74,8 @@ class MainClassBuildStep {
         appClassNameProducer.produce(new ApplicationClassNameBuildItem(appClassName));
 
         // Application class
-        ClassCreator file = new ClassCreator(ClassOutput.gizmoAdaptor(classOutput.getClassOutput(), true), appClassName, null,
+        GizmoAdaptor gizmoOutput = new GizmoAdaptor(generatedClass, true);
+        ClassCreator file = new ClassCreator(gizmoOutput, appClassName, null,
                 Application.class.getName());
 
         // Application class: static init
@@ -106,7 +107,7 @@ class MainClassBuildStep {
                 for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
                     recorder.registerObjectLoader(item.getObjectLoader());
                 }
-                recorder.writeBytecode(classOutput.getClassOutput());
+                recorder.writeBytecode(gizmoOutput);
 
                 ResultHandle dup = tryBlock.newInstance(ofConstructor(recorder.getClassName()));
                 tryBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup,
@@ -186,7 +187,7 @@ class MainClassBuildStep {
                 for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
                     recorder.registerObjectLoader(item.getObjectLoader());
                 }
-                recorder.writeBytecode(classOutput.getClassOutput());
+                recorder.writeBytecode(gizmoOutput);
                 ResultHandle dup = tryBlock.newInstance(ofConstructor(recorder.getClassName()));
                 tryBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup,
                         startupContext);
@@ -227,7 +228,7 @@ class MainClassBuildStep {
 
         // Main class
 
-        file = new ClassCreator(ClassOutput.gizmoAdaptor(classOutput.getClassOutput(), true), MAIN_CLASS, null,
+        file = new ClassCreator(gizmoOutput, MAIN_CLASS, null,
                 Object.class.getName());
 
         mv = file.getMethodCreator("main", void.class, String[].class);

@@ -39,6 +39,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.jboss.logging.Logger;
 import org.wildfly.common.function.Functions;
 
@@ -136,9 +137,10 @@ public final class ExtensionLoader {
      * @throws IOException if the class loader could not load a resource
      * @throws ClassNotFoundException if a build step class is not found
      */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, LaunchMode launchMode)
+    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, LaunchMode launchMode,
+            Consumer<ConfigBuilder> configCustomizer)
             throws IOException, ClassNotFoundException {
-        return loadStepsFrom(classLoader, new Properties(), launchMode);
+        return loadStepsFrom(classLoader, new Properties(), launchMode, configCustomizer);
     }
 
     /**
@@ -152,7 +154,7 @@ public final class ExtensionLoader {
      */
     public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps)
             throws IOException, ClassNotFoundException {
-        return loadStepsFrom(classLoader, buildSystemProps, LaunchMode.NORMAL);
+        return loadStepsFrom(classLoader, buildSystemProps, LaunchMode.NORMAL, null);
     }
 
     /**
@@ -165,7 +167,7 @@ public final class ExtensionLoader {
      * @throws ClassNotFoundException if a build step class is not found
      */
     public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps,
-            LaunchMode launchMode)
+            LaunchMode launchMode, Consumer<ConfigBuilder> configCustomizer)
             throws IOException, ClassNotFoundException {
 
         // set up the configuration definitions
@@ -210,6 +212,9 @@ public final class ExtensionLoader {
         // populate builder with all converters loaded from ServiceLoader
         ConverterSupport.populateConverters(builder);
 
+        if (configCustomizer != null) {
+            configCustomizer.accept(builder);
+        }
         final SmallRyeConfig src = (SmallRyeConfig) builder
                 .addDefaultSources()
                 .addDiscoveredSources()
@@ -240,7 +245,12 @@ public final class ExtensionLoader {
                 .produces(UnmatchedConfigBuildItem.class)
                 .build());
         for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, "META-INF/quarkus-build-steps.list")) {
-            result = result.andThen(ExtensionLoader.loadStepsFrom(clazz, buildTimeConfig, buildTimeRunTimeConfig, launchMode));
+            try {
+                result = result
+                        .andThen(ExtensionLoader.loadStepsFrom(clazz, buildTimeConfig, buildTimeRunTimeConfig, launchMode));
+            } catch (Throwable e) {
+                throw new RuntimeException("Failed to load steps from " + clazz, e);
+            }
         }
         return result;
     }

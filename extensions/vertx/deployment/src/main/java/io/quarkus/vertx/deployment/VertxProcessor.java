@@ -25,6 +25,7 @@ import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
+import io.quarkus.deployment.GizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -66,12 +67,7 @@ class VertxProcessor {
             List<MessageCodecBuildItem> codecs, RecorderContext recorderContext) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX));
         Map<String, ConsumeEvent> messageConsumerConfigurations = new HashMap<>();
-        ClassOutput classOutput = new ClassOutput() {
-            @Override
-            public void write(String name, byte[] data) {
-                generatedClass.produce(new GeneratedClassBuildItem(true, name, data));
-            }
-        };
+        ClassOutput classOutput = new GizmoAdaptor(generatedClass, true);
         for (EventConsumerBusinessMethodItem businessMethod : messageConsumerBusinessMethods) {
             String invokerClass = EventBusConsumer.generateInvoker(businessMethod.getBean(), businessMethod.getMethod(),
                     businessMethod.getConsumeEvent(), classOutput);

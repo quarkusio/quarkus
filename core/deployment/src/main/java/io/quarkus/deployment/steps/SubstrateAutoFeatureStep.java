@@ -20,12 +20,21 @@ import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 
-import io.quarkus.deployment.ClassOutput;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.ClassOutputBuildItem;
-import io.quarkus.deployment.builditem.substrate.*;
+import io.quarkus.deployment.builditem.GeneratedSubstrateClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveFieldBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -47,7 +56,7 @@ public class SubstrateAutoFeatureStep {
     static final String LOCALIZATION_SUPPORT = "com.oracle.svm.core.jdk.LocalizationSupport";
 
     @BuildStep
-    SubstrateOutputBuildItem generateFeature(ClassOutputBuildItem output,
+    void generateFeature(BuildProducer<GeneratedSubstrateClassBuildItem> substrateClass,
             List<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems,
             List<RuntimeReinitializedClassBuildItem> runtimeReinitializedClassBuildItems,
             List<SubstrateProxyDefinitionBuildItem> proxies,
@@ -57,7 +66,12 @@ public class SubstrateAutoFeatureStep {
             List<ReflectiveFieldBuildItem> reflectiveFields,
             List<ReflectiveClassBuildItem> reflectiveClassBuildItems,
             List<ServiceProviderBuildItem> serviceProviderBuildItems) {
-        ClassCreator file = new ClassCreator(ClassOutput.gizmoAdaptor(output.getClassOutput(), true), GRAAL_AUTOFEATURE, null,
+        ClassCreator file = new ClassCreator(new ClassOutput() {
+            @Override
+            public void write(String s, byte[] bytes) {
+                substrateClass.produce(new GeneratedSubstrateClassBuildItem(s, bytes));
+            }
+        }, GRAAL_AUTOFEATURE, null,
                 Object.class.getName(), Feature.class.getName());
         file.addAnnotation("com.oracle.svm.core.annotate.AutomaticFeature");
 
@@ -271,7 +285,6 @@ public class SubstrateAutoFeatureStep {
         beforeAn.returnValue(null);
 
         file.close();
-        return new SubstrateOutputBuildItem();
     }
 
     public void addReflectiveMethod(Map<String, ReflectionInfo> reflectiveClasses, ReflectiveMethodBuildItem methodInfo) {

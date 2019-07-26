@@ -5,27 +5,22 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Properties;
 
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
-import io.quarkus.creator.AppCreator;
-import io.quarkus.creator.phase.curate.CurateOutcome;
-import io.quarkus.creator.phase.curate.CuratePhase;
-import io.quarkus.creator.phase.curate.VersionUpdate;
-import io.quarkus.creator.phase.curate.VersionUpdateNumber;
+import io.quarkus.creator.CuratedApplicationCreator;
+import io.quarkus.creator.VersionUpdate;
+import io.quarkus.creator.VersionUpdateNumber;
+import io.quarkus.creator.curator.CurateOutcome;
 import io.quarkus.creator.phase.runnerjar.test.CreatorOutcomeTestBase;
 
 public class CheckUpdatesDisableTest extends CreatorOutcomeTestBase {
 
     @Override
-    protected void initProps(Properties props) {
-        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE),
-                VersionUpdate.NONE.getName()); // NONE, next, latest
-        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE_NUMBER),
-                VersionUpdateNumber.MAJOR.getName()); // major, minor, MICRO
+    protected void initProps(CuratedApplicationCreator.Builder builder) {
+        builder.setUpdate(VersionUpdate.NONE).setUpdateNumber(VersionUpdateNumber.MAJOR);
     }
 
     @Override
@@ -47,8 +42,8 @@ public class CheckUpdatesDisableTest extends CreatorOutcomeTestBase {
     }
 
     @Override
-    protected void testCreator(AppCreator creator) throws Exception {
-        final CurateOutcome outcome = creator.resolveOutcome(CurateOutcome.class);
+    protected void testCreator(CuratedApplicationCreator creator) throws Exception {
+        final CurateOutcome outcome = creator.runTask(CurateOutcomeCuratedTask.INSTANCE);
 
         assertFalse(outcome.hasUpdatedDeps());
 

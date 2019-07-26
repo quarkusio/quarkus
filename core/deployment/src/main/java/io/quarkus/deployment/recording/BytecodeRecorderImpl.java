@@ -43,7 +43,6 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.wildfly.common.Assert;
 
-import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.proxy.ProxyConfiguration;
 import io.quarkus.deployment.proxy.ProxyFactory;
 import io.quarkus.deployment.recording.AnnotationProxyProvider.AnnotationProxy;
@@ -52,6 +51,7 @@ import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -318,7 +318,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
     }
 
     public void writeBytecode(ClassOutput classOutput) {
-        ClassCreator file = ClassCreator.builder().classOutput(ClassOutput.gizmoAdaptor(classOutput, true))
+        ClassCreator file = ClassCreator.builder().classOutput(classOutput)
                 .className(className)
                 .superClass(Object.class).interfaces(StartupTask.class).build();
         MethodCreator mainMethod = file.getMethodCreator("deploy", void.class, StartupContext.class);

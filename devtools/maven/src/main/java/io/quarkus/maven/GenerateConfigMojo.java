@@ -23,11 +23,9 @@ import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.phase.curate.CurateOutcome;
-import io.quarkus.creator.phase.generateconfig.ConfigPhaseOutcome;
-import io.quarkus.creator.phase.generateconfig.GenerateConfigPhase;
+import io.quarkus.creator.CuratedApplicationCreator;
+import io.quarkus.creator.phase.generateconfig.GenerateConfigTask;
 
 /**
  * Generates an example application-config.properties, with all properties commented out
@@ -76,12 +74,6 @@ public class GenerateConfigMojo extends AbstractMojo {
      */
     @Parameter(defaultValue = "${project.remotePluginRepositories}", readonly = true, required = true)
     private List<RemoteRepository> pluginRepos;
-
-    /**
-     * The directory for compiled classes.
-     */
-    @Parameter(readonly = true, required = true, defaultValue = "${project.build.outputDirectory}")
-    private File outputDirectory;
 
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     protected MavenProject project;
@@ -135,19 +127,14 @@ public class GenerateConfigMojo extends AbstractMojo {
             name = "application.properties.example";
         }
 
-        try (AppCreator appCreator = AppCreator.builder()
+        try (CuratedApplicationCreator appCreationContext = CuratedApplicationCreator.builder()
                 // configure the build phases we want the app to go through
-                .addPhase(new GenerateConfigPhase()
-                        .setConfigFile(new File(target, name).toPath()))
                 .setWorkDir(buildDir.toPath())
+                .setModelResolver(modelResolver)
+                .setAppArtifact(appModel.getAppArtifact())
                 .build()) {
 
-            // push resolved application state
-            appCreator.pushOutcome(CurateOutcome.builder()
-                    .setAppModelResolver(modelResolver)
-                    .setAppModel(appModel)
-                    .build());
-            appCreator.resolveOutcome(ConfigPhaseOutcome.class);
+            appCreationContext.runTask(new GenerateConfigTask(new File(target, name).toPath()));
             getLog().info("Generated config file " + name);
         } catch (AppCreatorException e) {
             throw new MojoExecutionException("Failed to generate config file", e);

@@ -42,6 +42,7 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.GizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -200,12 +201,7 @@ public class SchedulerProcessor {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SCHEDULER));
         List<Map<String, Object>> scheduleConfigurations = new ArrayList<>();
-        ClassOutput classOutput = new ClassOutput() {
-            @Override
-            public void write(String name, byte[] data) {
-                generatedClass.produce(new GeneratedClassBuildItem(true, name, data));
-            }
-        };
+        ClassOutput classOutput = new GizmoAdaptor(generatedClass, true);
 
         for (ScheduledBusinessMethodItem businessMethod : scheduledBusinessMethods) {
             Map<String, Object> config = new HashMap<>();

@@ -29,12 +29,16 @@ public class PackageIT extends MojoTestBase {
 
         running = new RunningInvoker(testDir, false);
         final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
-                Collections.emptyMap());
+                new HashMap<String, String>() {
+                    {
+                        put("QUARKUS_PACKAGE_TYPES", "thin-jar");
+                    }
+                });
 
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
         final File targetDir = getTargetDir();
-        assertThat(getNumberOfFilesEndingWith(targetDir, ".jar")).isEqualTo(2);
+        assertThat(getNumberOfFilesEndingWith(new File(targetDir, "acme-1.0-SNAPSHOT"), ".jar")).isEqualTo(1);
     }
 
     @Test
@@ -46,7 +50,7 @@ public class PackageIT extends MojoTestBase {
         final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
                 new HashMap<String, String>() {
                     {
-                        put("UBER_JAR", "true");
+                        put("QUARKUS_PACKAGE_TYPES", "uber-jar");
                     }
                 });
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
@@ -73,14 +77,14 @@ public class PackageIT extends MojoTestBase {
                 Collections.emptyMap());
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
-        final File targetDir = getTargetDir();
+        final File targetDir = new File(getTargetDir(), "acme-custom-packaging-app-1.0-SNAPSHOT"); //thin jars end up in a sub directory
         final File[] files = targetDir.listFiles(f -> f.getName().endsWith(".jar"));
         Set<String> jarNames = new HashSet<>(files.length);
         for (File f : files) {
             jarNames.add(f.getName());
         }
-        assertEquals(new HashSet<>(Arrays.asList(new String[] { "acme-custom-packaging-app-1.0-SNAPSHOT-runner.jar",
-                "acme-custom-packaging-app-1.0-SNAPSHOT.jar" })), jarNames);
+        assertEquals(new HashSet<>(Arrays.asList(new String[] { "acme-custom-packaging-app-1.0-SNAPSHOT-runner.jar" })),
+                jarNames);
     }
 
     private int getNumberOfFilesEndingWith(File dir, String suffix) {

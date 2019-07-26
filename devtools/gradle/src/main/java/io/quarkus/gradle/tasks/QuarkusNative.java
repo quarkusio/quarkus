@@ -1,23 +1,27 @@
 package io.quarkus.gradle.tasks;
 
-import java.nio.file.Path;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
+import java.util.function.Consumer;
 
+import org.eclipse.microprofile.config.spi.ConfigBuilder;
+import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
-import io.quarkus.creator.AppCreator;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.phase.augment.AugmentOutcome;
-import io.quarkus.creator.phase.nativeimage.NativeImageOutcome;
-import io.quarkus.creator.phase.nativeimage.NativeImagePhase;
-import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
+import io.quarkus.creator.CuratedApplicationCreator;
+import io.quarkus.creator.phase.augment.AugmentTask;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -373,91 +377,151 @@ public class QuarkusNative extends QuarkusTask {
     @TaskAction
     public void buildNative() {
         getLogger().lifecycle("building native image");
-        try (AppCreator appCreator = AppCreator.builder()
-                // configure the build phase we want the app to go through
-                .addPhase(new NativeImagePhase()
-                        .setAddAllCharsets(addAllCharsets)
-                        .setAdditionalBuildArgs(getAdditionalBuildArgs())
-                        .setAutoServiceLoaderRegistration(isAutoServiceLoaderRegistration())
-                        .setOutputDir(getProject().getBuildDir().toPath())
-                        .setCleanupServer(isCleanupServer())
-                        .setDebugBuildProcess(isDebugBuildProcess())
-                        .setDebugSymbols(isDebugSymbols())
-                        .setDisableReports(isDisableReports())
-                        .setContainerRuntime(getContainerRuntime())
-                        .setContainerRuntimeOptions(getContainerRuntimeOptions())
-                        .setDockerBuild(getDockerBuild())
-                        .setDumpProxies(isDumpProxies())
-                        .setEnableAllSecurityServices(isEnableAllSecurityServices())
-                        .setEnableCodeSizeReporting(isEnableCodeSizeReporting())
-                        .setEnableHttpsUrlHandler(isEnableHttpsUrlHandler())
-                        .setEnableHttpUrlHandler(isEnableHttpUrlHandler())
-                        .setEnableIsolates(isEnableIsolates())
-                        .setEnableJni(isEnableJni())
-                        .setEnableRetainedHeapReporting(isEnableRetainedHeapReporting())
-                        .setEnableServer(isEnableServer())
-                        .setEnableVMInspection(isEnableVMInspection())
-                        .setEnableFallbackImages(isEnableFallbackImages())
-                        .setFullStackTraces(isFullStackTraces())
-                        .setGraalvmHome(getGraalvmHome())
-                        .setNativeImageXmx(getNativeImageXmx())
-                        .setReportErrorsAtRuntime(isReportErrorsAtRuntime())
-                        .setReportExceptionStackTraces(isReportExceptionStackTraces()))
 
-                .build()) {
+        final AppArtifact appArtifact = extension().getAppArtifact();
+        final AppModel appModel;
+        final AppModelResolver modelResolver = extension().resolveAppModel();
+        try {
+            appModel = modelResolver.resolveModel(appArtifact);
+        } catch (AppModelResolverException e) {
+            throw new GradleException("Failed to resolve application model " + appArtifact + " dependencies", e);
+        }
+        final Map<String, ?> properties = getProject().getProperties();
+        final Properties realProperties = new Properties();
+        for (Map.Entry<String, ?> entry : properties.entrySet()) {
+            final String key = entry.getKey();
+            final Object value = entry.getValue();
+            if (key != null && value instanceof String && key.startsWith("quarkus.")) {
+                realProperties.setProperty(key, (String) value);
+            }
+        }
+        realProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
+        realProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
 
-            appCreator.pushOutcome(AugmentOutcome.class, new AugmentOutcome() {
-                final Path classesDir = extension().outputDirectory().toPath();
+        try (CuratedApplicationCreator appCreationContext = CuratedApplicationCreator.builder()
+                .setWorkDir(getProject().getBuildDir().toPath())
+                .setModelResolver(modelResolver)
+                .setBaseName(extension().finalName())
+                .setAppArtifact(appArtifact).build()) {
 
-                @Override
-                public Path getAppClassesDir() {
-                    return classesDir;
-                }
-
-                @Override
-                public Path getTransformedClassesDir() {
-                    // not relevant for this mojo
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public Path getWiringClassesDir() {
-                    // not relevant for this mojo
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public Path getConfigDir() {
-                    return extension().outputConfigDirectory().toPath();
-                }
-
-                @Override
-                public Map<Path, Set<String>> getTransformedClassesByJar() {
-                    return Collections.emptyMap();
-                }
-            }).pushOutcome(RunnerJarOutcome.class, new RunnerJarOutcome() {
-                final Path runnerJar = getProject().getBuildDir().toPath().resolve(extension().finalName() + "-runner.jar");
-                final Path originalJar = getProject().getBuildDir().toPath().resolve(extension().finalName() + ".jar");
-
-                @Override
-                public Path getRunnerJar() {
-                    return runnerJar;
-                }
-
-                @Override
-                public Path getLibDir() {
-                    return runnerJar.getParent().resolve("lib");
-                }
-
-                @Override
-                public Path getOriginalJar() {
-                    return originalJar;
-                }
-            }).resolveOutcome(NativeImageOutcome.class);
-
+            AugmentTask task = AugmentTask.builder().setBuildSystemProperties(realProperties)
+                    .setConfigCustomizer(createCustomConfig())
+                    .setAppClassesDir(extension().outputDirectory().toPath())
+                    .setConfigDir(extension().outputConfigDirectory().toPath()).build();
+            appCreationContext.runTask(task);
         } catch (AppCreatorException e) {
             throw new GradleException("Failed to generate a native image", e);
         }
 
+    }
+
+    private Consumer<ConfigBuilder> createCustomConfig() {
+        return new Consumer<ConfigBuilder>() {
+            @Override
+            public void accept(ConfigBuilder configBuilder) {
+                InMemoryConfigSource type = new InMemoryConfigSource(Integer.MAX_VALUE, "Native Image Type")
+                        .add("quarkus.package.types", "NATIVE");
+                configBuilder.withSources(type);
+
+                InMemoryConfigSource configs = new InMemoryConfigSource(0, "Native Image Maven Settings");
+
+                configs.add("quarkus.native.add-all-charsets", addAllCharsets);
+
+                if (additionalBuildArgs != null) {
+                    configs.add("quarkus.native.additional-build-args", additionalBuildArgs);
+                }
+                configs.add("quarkus.native.auto-serviceloader-registration", autoServiceLoaderRegistration);
+
+                configs.add("quarkus.native.cleanup-server", cleanupServer);
+                configs.add("quarkus.native.debug-build-process", debugBuildProcess);
+
+                configs.add("quarkus.native.debug-symbols", debugSymbols);
+                configs.add("quarkus.native.disable-reports", disableReports);
+                if (dockerBuild != null) {
+                    configs.add("quarkus.native.docker-build", dockerBuild);
+                }
+                if (containerRuntime != null) {
+                    configs.add("quarkus.native.container-runtime", containerRuntime);
+                }
+                if (containerRuntimeOptions != null) {
+                    configs.add("quarkus.native.container-runtime-options", containerRuntimeOptions);
+                }
+                configs.add("quarkus.native.dump-proxies", dumpProxies);
+                configs.add("quarkus.native.enable-all-security-services", enableAllSecurityServices);
+                configs.add("quarkus.native.enable-code-size-reporting", enableCodeSizeReporting);
+                configs.add("quarkus.native.enable-fallback-images", enableFallbackImages);
+                configs.add("quarkus.native.enable-https-url-handler", enableHttpsUrlHandler);
+
+                configs.add("quarkus.native.enable-http-url-handler", enableHttpUrlHandler);
+                configs.add("quarkus.native.enable-isolates", enableIsolates);
+                configs.add("quarkus.native.enable-jni", enableJni);
+                configs.add("quarkus.native.enable-retained-heap-reporting", enableRetainedHeapReporting);
+
+                configs.add("quarkus.native.enable-server", enableServer);
+
+                configs.add("quarkus.native.enable-vm-inspection", enableVMInspection);
+
+                configs.add("quarkus.native.full-stack-traces", fullStackTraces);
+
+                if (graalvmHome != null) {
+                    configs.add("quarkus.native.graalvm-home", graalvmHome);
+                }
+                if (nativeImageXmx != null) {
+                    configs.add("quarkus.native.native-image-xmx", nativeImageXmx);
+                }
+                configs.add("quarkus.native.report-errors-at-runtime", reportErrorsAtRuntime);
+
+                configs.add("quarkus.native.report-exception-stack-traces", reportExceptionStackTraces);
+
+            }
+        };
+
+    }
+
+    private static final class InMemoryConfigSource implements ConfigSource {
+
+        private final Map<String, String> values = new HashMap<>();
+        private final int ordinal;
+        private final String name;
+
+        private InMemoryConfigSource(int ordinal, String name) {
+            this.ordinal = ordinal;
+            this.name = name;
+        }
+
+        public InMemoryConfigSource add(String key, String value) {
+            values.put(key, value);
+            return this;
+        }
+
+        public InMemoryConfigSource add(String key, Object value) {
+            values.put(key, value.toString());
+            return this;
+        }
+
+        @Override
+        public Map<String, String> getProperties() {
+            return values;
+        }
+
+        @Override
+        public Set<String> getPropertyNames() {
+            return values.keySet();
+        }
+
+        @Override
+        public int getOrdinal() {
+            return ordinal;
+        }
+
+        @Override
+        public String getValue(String propertyName) {
+            return values.get(propertyName);
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
     }
 }

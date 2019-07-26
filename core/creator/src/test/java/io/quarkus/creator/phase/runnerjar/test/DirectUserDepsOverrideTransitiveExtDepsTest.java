@@ -3,7 +3,7 @@ package io.quarkus.creator.phase.runnerjar.test;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
 
-public class DirectUserDepsOverrideTransitiveExtDepsTest extends RunnerJarOutcomeTestBase {
+public class DirectUserDepsOverrideTransitiveExtDepsTest extends ExecutableOutputOutcomeTestBase {
 
     @Override
     protected TsArtifact modelApp() {

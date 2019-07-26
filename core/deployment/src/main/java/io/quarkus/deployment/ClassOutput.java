@@ -25,22 +25,4 @@ public interface ClassOutput {
         return NullWriter.INSTANCE;
     }
 
-    //TODO: we should not need both these classes
-    static io.quarkus.gizmo.ClassOutput gizmoAdaptor(ClassOutput out, boolean applicationClass) {
-        return new io.quarkus.gizmo.ClassOutput() {
-            @Override
-            public void write(String name, byte[] data) {
-                try {
-                    out.writeClass(applicationClass, name, data);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            @Override
-            public Writer getSourceWriter(final String className) {
-                return out.writeSource(className);
-            }
-        };
-    }
 }

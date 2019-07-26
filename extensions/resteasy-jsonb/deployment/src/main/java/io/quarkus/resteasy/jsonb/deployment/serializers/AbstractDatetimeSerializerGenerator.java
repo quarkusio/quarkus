@@ -28,6 +28,9 @@ public abstract class AbstractDatetimeSerializerGenerator extends AbstractTypeSe
                 locale = localeValue.asString();
             }
         }
+        if (format.equals(JsonbDateFormat.DEFAULT_FORMAT) && context.getGlobalConfig().getDateFormat().isPresent()) {
+            format = context.getGlobalConfig().getDateFormat().get();
+        }
 
         doGenerate(context, format, locale);
     }

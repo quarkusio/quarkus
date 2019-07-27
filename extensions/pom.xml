@@ -19,6 +19,7 @@
         <module>scheduler</module>
 
         <!-- Formats -->
+        <module>jackson</module>
         <module>jaxb</module>
         <module>jsonp</module>
         <module>jsonb</module>

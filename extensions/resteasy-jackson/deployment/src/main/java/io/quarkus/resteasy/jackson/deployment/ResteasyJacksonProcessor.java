@@ -61,10 +61,6 @@ public class ResteasyJacksonProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<UnremovableBeanBuildItem> unremovable) {
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
-                "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
-                "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer"));
-
         IndexView index = combinedIndexBuildItem.getIndex();
 
         // if the user has declared a custom ContextResolver for ObjectMapper, we don't generate anything

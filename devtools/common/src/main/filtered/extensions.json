@@ -170,6 +170,15 @@
     "artifactId": "quarkus-jdbc-postgresql"
   },
   {
+    "name": "Jackson",
+    "labels": [
+      "jackson",
+      "json"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jackson"
+  },
+  {
     "name": "JSON-B",
     "labels": [
       "jsonb",

@@ -24,6 +24,16 @@ public final class PathTestHelper {
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "java" + File.separator + "test",
                 "classes" + File.separator + "java" + File.separator + "main");
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "kotlin" + File.separator + "test",
+                "classes" + File.separator + "kotlin" + File.separator + "main");
+
+=======
+>>>>>>> parent of 175075e58... Add Kotlin to search path for test classes
+>>>>>>> 5cae15dd5... Add kotlin to test search path
         // maven
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 File.separator + "test-classes",

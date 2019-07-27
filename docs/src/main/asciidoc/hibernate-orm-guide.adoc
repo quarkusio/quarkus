@@ -326,7 +326,7 @@ to select different behaviors depending on your environment.
 [source,bash]
 
 --
-mvn compile quarkus:dev -Dquarkus.profile=dev-with-data
+./mvnw compile quarkus:dev -Dquarkus.profile=dev-with-data
 --
 
 == Caching

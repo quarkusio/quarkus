@@ -242,7 +242,7 @@ First compile it:
 
 [source,bash]
 ----
-mvn package
+./mvnw package
 ----
 
 Then run it:
@@ -265,7 +265,7 @@ let's build again by enabling the `native` profile:
 
 [source,bash]
 ----
-mvn package -Dnative
+./mvnw package -Pnative
 ----
 
 After getting a cup of coffee, you'll be able to run this binary directly:

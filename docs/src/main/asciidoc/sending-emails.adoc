@@ -41,7 +41,7 @@ If you already have an existing project, add the `mailer` extension:
 
 [source]
 ----
-mvn quarkus:add-extensions -Dextensions="mailer"
+./mvnw quarkus:add-extensions -Dextensions="mailer"
 ----
 
 == Configuring the mailer

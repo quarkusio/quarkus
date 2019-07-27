@@ -88,6 +88,8 @@ public class KubernetesClientProcessor {
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, deserializerClasses));
 
         reflectiveClasses
+                .produce(new ReflectiveClassBuildItem(true, false, "io.fabric8.kubernetes.api.model.IntOrString"));
+        reflectiveClasses
                 .produce(new ReflectiveClassBuildItem(true, false, "io.fabric8.kubernetes.internal.KubernetesDeserializer"));
 
         // Enable SSL support by default

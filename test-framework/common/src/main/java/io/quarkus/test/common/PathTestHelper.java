@@ -23,8 +23,8 @@ public final class PathTestHelper {
         // gradle
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "java" + File.separator + "test",
-                "classes" + File.separator + "java" + File.separator + "main");
-                "classes" + File.separator + "kotlin" + File.separator + "test";
+                "classes" + File.separator + "java" + File.separator + "main"),
+                "classes" + File.separator + "kotlin" + File.separator + "test",
                 "classes" + File.separator + "kotlin" + File.separator + "main");
 
         // maven

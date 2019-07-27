@@ -33,7 +33,7 @@ the `add-extension` command:
 
 [source,shell]
 ----
-mvn quarkus:add-extension -Dextensions="vertx"
+./mvnw quarkus:add-extension -Dextensions="vertx"
 ----
 
 Otherwise, you can manually add this to the dependencies section of your `pom.xml` file:
@@ -172,7 +172,7 @@ Now start Quarkus in `dev` mode with:
 
 [source, shell]
 ----
-mvn compile quarkus:dev
+./mvnw compile quarkus:dev
 ----
 
 Eventually, open your browser and navigate to http://localhost:8080/hello/Quarkus, you should see:
@@ -450,7 +450,7 @@ Run the application with:
 
 [source, shell]
 ----
-mvn compile quarkus:dev
+./mvnw compile quarkus:dev
 ----
 
 And then, open a browser to: http://localhost:8080/swapi/1. You should get _Luke Skywalker_.
@@ -468,7 +468,7 @@ Then, create the native executable with:
 
 [source, shell]
 ----
-mvn package -Pnative
+./mvnw package -Pnative
 ----
 
 == Going further

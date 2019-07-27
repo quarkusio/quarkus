@@ -92,7 +92,7 @@ If no extension is found or if more than one extensions match, you will see a re
 
 [source,shell]
 ----
-$ mvn quarkus:add-extensions -Dextensions=jdbc,agroal,non-exist-ent
+$ ./mvnw quarkus:add-extensions -Dextensions=jdbc,agroal,non-exist-ent
 [...]
 ❌ Multiple extensions matching 'jdbc'
      * io.quarkus:quarkus-jdbc-h2
@@ -237,7 +237,7 @@ To be able to use it, the following plugin configuration has to be added to the 
             </plugin>
 ----
 
-Now you should be able to execute `mvn quarkus-bootstrap:build-tree` on your project and see something like:
+Now you should be able to execute `./mvnw quarkus-bootstrap:build-tree` on your project and see something like:
 
 [source,shell,subs=attributes+]
 ----

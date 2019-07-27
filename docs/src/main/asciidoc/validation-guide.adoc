@@ -265,9 +265,10 @@ In the `src/main/resources/META-INF/resources` directory, replace the `index.htm
 
 Now, let's see our application in action. Run it with:
 
-```
+[source, bash]
+----
 ./mvnw compile quarkus:dev
-```
+----
 
 Then, open your browser to http://localhost:8080/:
 

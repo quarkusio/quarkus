@@ -262,7 +262,7 @@ The default Quarkus application runtime profile is set to the profile used to bu
 For example:
 [source,shell]
 ----
-mvn package -Pnative -Dquarkus.profile=prod-aws`
+./mvnw package -Pnative -Dquarkus.profile=prod-aws`
 ./target/my-app-1.0-runner // <1>
 ----
 <1> The command will run with the `prod-aws` profile. This can be overridden using the `quarkus.profile` system property.

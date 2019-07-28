@@ -78,5 +78,5 @@ quarkus.http.cors.exposed-headers=Content-Disposition
 [WARNING]
 ====
 If you want to use the `keycloak` Quarkus extension in your project, you should configure CORS using the `keycloak` extension
-configuration.
+configuration. See link:keycloak-guide#configuring-cors[the Keycloak guide] for more details.
 ====

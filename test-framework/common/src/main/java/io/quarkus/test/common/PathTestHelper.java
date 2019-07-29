@@ -24,6 +24,10 @@ public final class PathTestHelper {
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "java" + File.separator + "test",
                 "classes" + File.separator + "java" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "kotlin" + File.separator + "test",
+                "classes" + File.separator + "kotlin" + File.separator + "main");
+
         // maven
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 File.separator + "test-classes",

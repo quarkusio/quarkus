@@ -98,7 +98,7 @@ public class QuarkusPluginExtension {
 
     public String finalName() {
         if (finalName == null || finalName.length() == 0)
-            return project.getName();
+            return project.getName() + "-" + project.getVersion();
         else
             return finalName;
     }

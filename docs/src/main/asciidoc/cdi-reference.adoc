@@ -120,6 +120,7 @@ public class CounterBean {
 * `beans.xml` descriptor content is ignored
 * Passivation and passivating scopes are not supported
 * Interceptor methods on superclasses are not implemented yet
+* `BEFORE_COMPLETION`, `AFTER_COMPLETION`, `AFTER_FAILURE` and `AFTER_SUCCESS` transactional observers are not implemented yet
 
 == Build Time Extension Points
 

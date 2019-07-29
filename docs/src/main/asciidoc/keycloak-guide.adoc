@@ -210,6 +210,43 @@ quarkus.keycloak.policy-enforcer.enforcement-mode=PERMISSIVE
 }
 ----
 
+=== Configuring CORS
+
+If you plan to consume this application from a Web Application running on a different domain, you will need to configure CORS (Cross-origin resource sharing). The Keycloak extension have an option for that :
+
+[source,properties]
+----
+quarkus.keycloak.enable-cors=true
+----
+
+Or if you are using the `keycloak.json` format :
+
+[source,json]
+----
+{
+  ...
+  "enable-cors" : true
+}
+----
+
+For most use case that will be enough but if you need a more fined-grained CORS configuration you can set these different options :
+
+[source,properties]
+----
+quarkus.keycloak.cors-max-age=1000
+quarkus.keycloak.cors-allowed-methods=POST, PUT, DELETE, GET
+quarkus.keycloak.cors-exposed-headers=WWW-Authenticate, My-custom-exposed-Header
+----
+
+
+[source,json]
+----
+{
+  "cors-max-age" : 1000,
+  "cors-allowed-methods" : "POST, PUT, DELETE, GET",
+  "cors-exposed-headers" : "WWW-Authenticate, My-custom-exposed-Header"
+}
+----
 
 For more details about this file and all the supported options, please take a look at https://www.keycloak.org/docs/latest/securing_apps/index.html#_java_adapter_config[Keycloak Adapter Config].
 

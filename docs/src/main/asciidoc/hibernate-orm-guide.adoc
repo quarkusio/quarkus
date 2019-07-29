@@ -137,6 +137,7 @@ The storage engine to use when the dialect supports multiple storage engines.
 `quarkus.hibernate-orm.sql-load-script`::
 (defaults to `/import.sql`) Name of the file containing the SQL statements to execute when Hibernate ORM starts.
 By default, simply add `import.sql` in the root of your resources directory and it will be picked up without having to set this property.
+Pass `no-file` to force Hibernate ORM to ignore the SQL import file.
 If you need different SQL statements between dev mode, test (`@QuarkusTest`) and in production, use Quarkus https://quarkus.io/guides/application-configuration-guide#configuration-profiles[configuration profiles facility].
 
 [source,property]
@@ -144,12 +145,13 @@ If you need different SQL statements between dev mode, test (`@QuarkusTest`) and
 --
 %dev.quarkus.hibernate-orm.sql-load-script = import-dev.sql
 %test.quarkus.hibernate-orm.sql-load-script = import-test.sql
-%prod.quarkus.hibernate-orm.sql-load-script = import-prod.sql
+%prod.quarkus.hibernate-orm.sql-load-script = no-file
 --
 
 [NOTE]
 ====
-Quarkus supports `.sql` file with sql statements or comments spread over multiple lines. Each SQL statement must be terminated by a semicolon.
+Quarkus supports `.sql` file with SQL statements or comments spread over multiple lines.
+Each SQL statement must be terminated by a semicolon.
 ====
 
 `quarkus.hibernate-orm.batch-fetch-size`:: (defaults to `-1` i.e. batch fetching is disabled).
@@ -317,10 +319,10 @@ to select different behaviors depending on your environment.
 %dev.quarkus.hibernate-orm.sql-load-script = import-dev.sql
 
 %dev-with-data.quarkus.hibernate-orm.database.generation = update
-%dev-with-data.quarkus.hibernate-orm.sql-load-script =
+%dev-with-data.quarkus.hibernate-orm.sql-load-script = no-file
 
 %prod.quarkus.hibernate-orm.database.generation = none
-%prod.quarkus.hibernate-orm.sql-load-script =
+%prod.quarkus.hibernate-orm.sql-load-script = no-file
 --
 
 [source,bash]

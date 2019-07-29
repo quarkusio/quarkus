@@ -133,7 +133,7 @@ public class CustomTracerConfiguration {
 ==== How to Override a Bean Defined by a Library/Quarkus Extension that doesn't use @DefaultBean
 
 Although `@DefaultBean` is the recommended approach, it is also possible for application code to override beans provided by an extension by marking beans as a CDI `@Alternative` and including `@Priority` annotation.
-Let's show a simple example. 
+Let's show a simple example.
 Suppose we work on an imaginary "quarkus-parser" extension and we have a default bean implementation:
 
 [source%nowrap,java]
@@ -178,7 +178,7 @@ class MyParser extends Parser {
 <1> `MyParser` is an alternative bean.
 <2> Enables the alternative. The priority could be any number to override the default bean but if there are multiple alternatives the highest priority wins.
 
-NOTE: CDI alternatives are only considered during injection and type-safe resolution. For example the default implementation would still receive observer notifications. 
+NOTE: CDI alternatives are only considered during injection and type-safe resolution. For example the default implementation would still receive observer notifications.
 
 === Some types of extensions
 
@@ -251,7 +251,7 @@ Your extension project should be setup as a multi-module project with two submod
 2. A runtime submodule that contains the runtime behavior that will provide the extension behavior in the native executable or runtime JVM.
 
 Your runtime artifact should depend on `io.quarkus:quarkus-core`, and possibly the runtime artifacts of other Quarkus
-modules if you want to use functionality provided by them. 
+modules if you want to use functionality provided by them.
 You will also need to include the `io.quarkus:quarkus-bootstrap-maven-plugin` to generate the Quarkus extension descriptor included into the runtime artifact, if you are using the Quarkus parent pom it will automatically inherit the correct configuration.
 Futhermore, you'll need to configure the `maven-compiler-plugin` to detect the `quarkus-extension-processor` annotation processor.
 
@@ -310,7 +310,7 @@ in pulling all the deployment time code into runtime scope, which defeats the pu
 ====
 
 Your deployment time module should depend on `io.quarkus:quarkus-core-deployment`, your runtime artifact,
-and possibly the deployment artifacts of other Quarkus modules if you want to use functionality provided by them. 
+and possibly the deployment artifacts of other Quarkus modules if you want to use functionality provided by them.
 You will also need to configure the `maven-compiler-plugin` to detect the `quarkus-extension-processor` annotation processor.
 
 [source%nowrap,xml]
@@ -519,6 +519,7 @@ For all cases other than the `BUILD_TIME` case, the configuration root class and
 ----
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.DefaultConverter
 
 import java.io.File;
 import java.util.logging.Level;
@@ -541,6 +542,7 @@ public class FileConfig {
     /**
      * The level of logs to be written into the file.
      */
+    @DefaultConverter
     @ConfigItem(defaultValue = "ALL")
     Level level;
 
@@ -637,6 +639,100 @@ static class IsDevMode implements BooleanSupplier {
 }
 ----
 
+==== Enhanced conversion
+You can use enhanced conversion of a config item by using the `@ConvertWith` annotation which accepts a `Converter` class object.
+If the annotation is present on a config item, the implicit or custom built in converter in use will be overridden by the value provided.
+To do, see the example below which converts `YES` or `NO` values to `boolean`.
+[source%nowrap,java]
+----
+@ConfigRoot
+public class SomeConfig {
+    /**
+     * Config item with enhanced converter
+     */
+    @ConvertWith(YesNoConverter.class) // <1>
+    @ConfigItem(defaultValue = "NO")
+    Boolean answer;
+
+
+    public static class YesNoConverter implements Converter<Boolean> {
+
+        public YesNoConverter() {}
+
+        @Override
+        public Boolean convert(String s) {
+            if (s == null || s.isEmpty()) {
+                return false;
+            }
+
+            switch (s) {
+                case "YES":
+                    return true;
+                case "NO":
+                    return false;
+            }
+
+            throw new IllegalArgumentException("Unsupported value " + s + " given");
+        }
+    }
+}
+----
+1. Override the default `Boolean` converter and use the provided converter which accepts a `YES` or `NO` config values.
+
+
+The corresponding `application.properties` will look like.
+[source%nowrap,properties]
+----
+quarkus.some.answer=YES
+----
+
+[NOTE]
+=====
+Enum values (config items) are translated to skewed-case (hyphenated) by default. The table below illustrates an enum name and their canonical equivalence:
+
+|===
+|Java enum| Canonical equivalent
+
+|DISCARD
+|discard
+
+|READ_UNCOMMITTED
+|read-uncommitted
+
+|SIGUSR1
+|sigusr1
+
+|JavaEnum
+|java-enum
+
+|MAKING_LifeDifficult
+|making-life-difficult
+
+|YeOldeJBoss
+|ye-olde-jboss
+
+|camelCaseEnum
+|camel-case-enum
+
+|===
+
+To use the default behaviour which is based on implicit converter or a custom defined one add `@DefaultConverter` annotation to the configuration item
+[source%nowrap,java]
+----
+@ConfigRoot
+public class SomeLogConfig {
+    /**
+     * The level of logs to be written into the file.
+     */
+    @DefaultConverter // <1>
+    @ConfigItem(defaultValue = "ALL")
+    Level level;
+}
+----
+1. Use the default converter (built in or a custom converter) to convert `Level.class` enum.
+=====
+
+
 === Bytecode Recording
 
 One of the main outputs of the build process is recorded bytecode. This bytecode actually sets up the runtime environment. For example, in order to start Undertow, the resulting application will have some bytecode that directly registers all
@@ -674,7 +770,7 @@ public void helloBuildStep(HelloRecorder recorder) {
 ----
 
 When this build step is run nothing is printed to the console. This is because the `HelloRecorder` that is injected is
-actually a proxy that records all invocations. Instead if we run the resulting Quarkus program we will see 'Hello World' 
+actually a proxy that records all invocations. Instead if we run the resulting Quarkus program we will see 'Hello World'
 printed to the console.
 
 

@@ -1,4 +1,4 @@
-package io.quarkus.deployment.util;
+package io.quarkus.runtime.util;
 
 import java.util.Iterator;
 import java.util.Locale;

@@ -7,10 +7,13 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import javax.inject.Inject;
 
@@ -20,6 +23,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.extest.runtime.config.MyEnum;
 import io.quarkus.extest.runtime.config.NestedConfig;
 import io.quarkus.extest.runtime.config.ObjectOfValue;
 import io.quarkus.extest.runtime.config.ObjectValueOf;
@@ -112,6 +116,13 @@ public class ConfiguredBeanTest {
         }
         Assertions.assertNotEquals("${java.vm.version}", buildTimeConfig.allValues.expandedDefault);
         Assertions.assertFalse(buildTimeConfig.allValues.expandedDefault.isEmpty());
+        List<MyEnum> enums = Arrays.asList(MyEnum.OPTIONAL, MyEnum.ENUM_ONE, MyEnum.Enum_Two);
+        Assertions.assertEquals(enums, configuredBean.getBuildTimeConfig().myEnums);
+        Assertions.assertEquals(MyEnum.OPTIONAL, configuredBean.getBuildTimeConfig().myEnum);
+        List<Integer> mapValues = new ArrayList<>(Arrays.asList(1, 2));
+        List<Integer> actualMapValues = new ArrayList<>(configuredBean.getBuildTimeConfig().mapOfNumbers.values());
+        Assertions.assertEquals(mapValues, actualMapValues);
+
     }
 
     /**
@@ -221,4 +232,26 @@ public class ConfiguredBeanTest {
                 .body(is("/ping-ack"));
     }
 
+    @Test
+    public void testHyphenatedEnumConversion() {
+        List<MyEnum> enums = Arrays.asList(MyEnum.ENUM_ONE, MyEnum.Enum_Two);
+        Assertions.assertEquals(enums, configuredBean.getRunTimeConfig().myEnums);
+        Assertions.assertEquals(MyEnum.Enum_Two, configuredBean.getRunTimeConfig().myEnum);
+        Assertions.assertEquals(MyEnum.OPTIONAL, configuredBean.getRunTimeConfig().myOptionalEnums.get());
+        Assertions.assertEquals(MyEnum.ENUM_ONE, configuredBean.getRunTimeConfig().noHyphenateFirstEnum.get());
+        Assertions.assertEquals(MyEnum.Enum_Two, configuredBean.getRunTimeConfig().noHyphenateSecondEnum.get());
+    }
+
+    @Test
+    public void testConversionUsingConvertWith() {
+        Assertions.assertTrue(configuredBean.getRunTimeConfig().primitiveBoolean);
+        Assertions.assertFalse(configuredBean.getRunTimeConfig().objectBoolean);
+        Assertions.assertEquals(2, configuredBean.getRunTimeConfig().primitiveInteger);
+        Assertions.assertEquals(9, configuredBean.getRunTimeConfig().objectInteger);
+        List<Integer> oneToNine = IntStream.range(1, 10).mapToObj(Integer::new).collect(Collectors.toList());
+        Assertions.assertEquals(oneToNine, configuredBean.getRunTimeConfig().oneToNine);
+        List<Integer> mapValues = new ArrayList<>(Arrays.asList(1, 2));
+        List<Integer> actualMapValues = new ArrayList<>(configuredBean.getRunTimeConfig().mapOfNumbers.values());
+        Assertions.assertEquals(mapValues, actualMapValues);
+    }
 }

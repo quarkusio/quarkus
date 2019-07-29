@@ -1,10 +1,10 @@
-package io.quarkus.deployment.util;
+package io.quarkus.runtime.util;
 
-import static io.quarkus.deployment.util.StringUtil.camelHumpsIterator;
-import static io.quarkus.deployment.util.StringUtil.join;
-import static io.quarkus.deployment.util.StringUtil.lowerCase;
-import static io.quarkus.deployment.util.StringUtil.lowerCaseFirst;
-import static io.quarkus.deployment.util.StringUtil.withoutSuffix;
+import static io.quarkus.runtime.util.StringUtil.camelHumpsIterator;
+import static io.quarkus.runtime.util.StringUtil.join;
+import static io.quarkus.runtime.util.StringUtil.lowerCase;
+import static io.quarkus.runtime.util.StringUtil.lowerCaseFirst;
+import static io.quarkus.runtime.util.StringUtil.withoutSuffix;
 
 import org.junit.Assert;
 import org.junit.Test;

@@ -66,11 +66,13 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.AbstractRawDefaultConfigSource;
 import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSource;
 import io.quarkus.runtime.configuration.BuildTimeConfigFactory;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConverterFactory;
 import io.quarkus.runtime.configuration.ConverterSupport;
 import io.quarkus.runtime.configuration.DefaultConfigSource;
 import io.quarkus.runtime.configuration.DeploymentProfileConfigSource;
 import io.quarkus.runtime.configuration.ExpandingConfigSource;
+import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.configuration.SimpleConfigurationProviderResolver;
@@ -156,6 +158,10 @@ public class ConfigurationSetup {
 
     private static final MethodDescriptor SET_RUNTIME_DEFAULT_PROFILE = MethodDescriptor.ofMethod(ProfileManager.class,
             "setRuntimeDefaultProfile", void.class, String.class);
+    private static final MethodDescriptor HYPHENATED_ENUM_CONVERTER_CTOR = MethodDescriptor
+            .ofConstructor(HyphenateEnumConverter.class, Class.class);
+    private static final MethodDescriptor CU_EXPLICIT_RUNTIME_CONVERTER = MethodDescriptor.ofMethod(ConfigUtils.class,
+            "populateExplicitRuntimeConverter", void.class, Class.class, Class.class, Converter.class);
 
     private static final String[] NO_STRINGS = new String[0];
 
@@ -335,6 +341,7 @@ public class ConfigurationSetup {
 
         final HashSet<Class<?>> encountered = new HashSet<>();
         final ArrayList<Class<?>> configTypes = new ArrayList<>();
+
         for (LeafConfigType item : runTimePatterns) {
             final Class<?> typeClass = item.getItemClass();
             if (!typeClass.isPrimitive() && encountered.add(typeClass)
@@ -342,6 +349,7 @@ public class ConfigurationSetup {
                 configTypes.add(typeClass);
             }
         }
+
         // stability
         configTypes.sort(Comparator.comparing(Class::getName));
         int converterCnt = configTypes.size();
@@ -446,6 +454,26 @@ public class ConfigurationSetup {
 
                 // custom run time converters
                 carc.invokeStaticMethod(CS_POPULATE_CONVERTERS, builder);
+
+                // cache explicit converts and make them available during runtime
+                for (LeafConfigType item : runTimePatterns) {
+                    final Class<?> typeClass = item.getItemClass();
+                    Class<? extends Converter<?>> itemConverterClass = item.getConverterClass();
+                    if (itemConverterClass == null) {
+                        continue;
+                    }
+
+                    ResultHandle typeClassHandle = carc.loadClass(typeClass);
+                    final ResultHandle converter;
+                    if (HyphenateEnumConverter.class.equals(itemConverterClass)) {
+                        converter = carc.newInstance(HYPHENATED_ENUM_CONVERTER_CTOR, typeClassHandle);
+                    } else {
+                        converter = carc.newInstance(MethodDescriptor.ofConstructor(itemConverterClass));
+                    }
+
+                    carc.invokeStaticMethod(CU_EXPLICIT_RUNTIME_CONVERTER, typeClassHandle, carc.loadClass(itemConverterClass),
+                            converter);
+                }
 
                 // property expansion
                 final ResultHandle cache = carc.newInstance(ECS_CACHE_CONSTRUCT);

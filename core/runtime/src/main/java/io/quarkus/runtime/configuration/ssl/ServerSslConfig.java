@@ -34,6 +34,7 @@ import org.wildfly.security.ssl.SSLContextBuilder;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.DefaultConverter;
 
 /**
  * Shared configuration for setting up server-side SSL.
@@ -54,6 +55,7 @@ public class ServerSslConfig {
     /**
      * The list of protocols to explicitly enable.
      */
+    @DefaultConverter
     @ConfigItem(defaultValue = "TLSv1.3,TLSv1.2")
     public List<Protocol> protocols;
 

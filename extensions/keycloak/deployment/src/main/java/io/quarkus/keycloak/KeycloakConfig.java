@@ -9,6 +9,7 @@ import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.DefaultConverter;
 
 @ConfigRoot(name = "keycloak")
 public final class KeycloakConfig {
@@ -406,6 +407,7 @@ public final class KeycloakConfig {
             /**
              * Specifies how policies are enforced
              */
+            @DefaultConverter
             @ConfigItem(name = "enforcement-mode", defaultValue = "ENFORCING")
             PolicyEnforcerConfig.EnforcementMode enforcementMode;
 
@@ -436,6 +438,7 @@ public final class KeycloakConfig {
             /**
              * A string referencing the enforcement mode for the scopes associated with a method
              */
+            @DefaultConverter
             @ConfigItem(name = "scopes-enforcement-mode", defaultValue = "ALL")
             PolicyEnforcerConfig.ScopeEnforcementMode scopesEnforcementMode;
         }

@@ -4,6 +4,7 @@ import java.util.logging.Level;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.DefaultConverter;
 
 @ConfigGroup
 public class ConsoleConfig {
@@ -23,6 +24,7 @@ public class ConsoleConfig {
     /**
      * The console log level
      */
+    @DefaultConverter
     @ConfigItem(defaultValue = "ALL")
     Level level;
 

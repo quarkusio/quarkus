@@ -35,6 +35,69 @@ You can make use of the Undertow predicate language using an `undertow-handlers.
 in the `META-INF` directory of your application jar. This file contains handlers defined using the
 link:http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#predicates-attributes-and-handlers[Undertow predicate language].
 
+== Supporting secure connections with SSL
+
+In order to have Undertow support secure connections, you must either provide a certificate and associated key file, or supply a keystore.
+
+In both cases, a password must be provided. See the designated paragraph for a detailed description of how to provide it.
+
+[TIP]
+====
+To enable SSL support with native executables, please refer to our link:native-and-ssl-guide[Using SSL With Native Executables guide].
+====
+
+=== Providing a certificate and key file
+
+If the certificate has not been loaded into a keystore, it can be provided directly using the properties listed below.
+Quarkus will first try to load the given files as resources, and uses the filesystem as a fallback.
+The certificate / key pair will be loaded into a newly created keystore on startup.
+
+Your `application.properties` would then look like this:
+
+[source,properties]
+----
+quarkus.http.ssl.certificate.file=/path/to/certificate
+quarkus.http.ssl.certificate.key-file=/path/to/key
+----
+
+=== Providing a keystore
+
+An alternate solution is to directly provide a keystore which already contains a default entry with a certificate
+ You will need to at least provide the file and a password.
+
+As with the certificate/key file combination, Quarkus will first try to resolve the given path as a resource, before attempting to read it from the filesystem.
+
+Add the following property to your `application.properties`:
+
+[source,shell]
+----
+quarkus.http.ssl.certificate.key-store-file=/path/to/keystore
+----
+
+As an optional hint, the type of keystore can be provided as one of the options listed.
+If the type is not provided, Quarkus will try to deduce it from the file extensions, defaulting to type JKS.
+
+[source,properties]
+----
+quarkus.http.ssl.certificate.key-store-file-type=[one of JKS, JCEKS, P12, PKCS12, PFX]
+----
+
+=== Setting the password
+
+In both aforementioned scenarios, a password needs to be provided to create/load the keystore with.
+The password can be set in your `application.properties` (in plain-text) using the following property:
+
+[source, properties]
+----
+quarkus.http.ssl.certificate.key-store-password=your-password
+----
+
+However, instead of providing the password as plain-text in the configuration file (which is considered bad practice), it can instead be supplied (using link:https://microprofile.io/project/eclipse/microprofile-config[MicroProfile config])
+as the environment variable `QUARKUS_HTTP_SSL_CERTIFICATE_KEY_STORE_PASSWORD`.
+This will also work in tandem with link:https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables[Kubernetes secrets].
+
+_Note: in order to remain compatible with earlier versions of Quarkus (before 0.16) the default password is set to "password". It is therefore not a mandatory parameter!_
+
 == CORS filter
 
 link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin resource sharing] (CORS) is a mechanism that

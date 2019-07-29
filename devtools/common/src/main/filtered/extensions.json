@@ -170,6 +170,15 @@
     "artifactId": "quarkus-jdbc-postgresql"
   },
   {
+    "name": "Jackson",
+    "labels": [
+      "jackson",
+      "json"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jackson"
+  },
+  {
     "name": "JSON-B",
     "labels": [
       "jsonb",
@@ -326,6 +335,20 @@
     "groupId": "io.quarkus",
     "artifactId": "quarkus-resteasy-jsonb",
     "guide": "https://quarkus.io/guides/rest-json-guide"
+  },
+  {
+    "name": "RESTEasy - Jackson",
+    "labels": [
+      "resteasy-jackson",
+      "jaxrs-json",
+      "resteasy-json",
+      "resteasy",
+      "jaxrs",
+      "json",
+      "jackson"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-resteasy-jackson"
   },
   {
     "name": "Scheduler",

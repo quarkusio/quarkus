@@ -173,6 +173,37 @@ They are analyzed at build time and Quarkus restricts the number of JAX-RS provi
 It allows to reduce the size of the native executable.
 ====
 
+=== Using Jackson
+
+Quarkus provides the option of using https://github.com/FasterXML/jackson[Jackson] instead of JSON-B. To do so, the `quarkus-resteasy-jsonb` dependency needs to be replaced with:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jackson</artifactId>
+</dependency>
+----
+
+When using Jackson, Quarkus allows users to customize the `ObjectMapper` very easily - all that needs to be done is to configure a CDI producer bean like so:
+
+[source,java]
+----
+@ApplicationScoped
+public class CustomObjectMapperConfig {
+
+    @Singleton
+    @Produces
+    public ObjectMapper objectMapper() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        // perform configuration
+        return objectMapper;
+    }
+}
+----
+
+If no such bean is provided, a default `ObjectMapper` is used.
+
 == Creating a frontend
 
 Now let's add a simple web page to interact with our `FruitResource`.

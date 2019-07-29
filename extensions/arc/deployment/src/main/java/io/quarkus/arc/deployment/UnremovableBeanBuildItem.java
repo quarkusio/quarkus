@@ -3,6 +3,7 @@ package io.quarkus.arc.deployment;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -38,6 +39,21 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
         @Override
         public boolean test(BeanInfo bean) {
             return bean.getBeanClass().toString().equals(className);
+        }
+
+    }
+
+    public static class BeanClassNamesExclusion implements Predicate<BeanInfo> {
+
+        private final Set<String> classNames;
+
+        public BeanClassNamesExclusion(Set<String> classNames) {
+            this.classNames = Objects.requireNonNull(classNames);
+        }
+
+        @Override
+        public boolean test(BeanInfo bean) {
+            return classNames.contains(bean.getBeanClass().toString());
         }
 
     }

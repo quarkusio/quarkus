@@ -234,6 +234,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jackson</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jsonb</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -408,6 +413,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-resteasy</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-jackson</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1358,6 +1368,11 @@
                         <artifactId>jaxb-api</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.resteasy</groupId>
+                <artifactId>resteasy-jackson2-provider</artifactId>
+                <version>${resteasy.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>

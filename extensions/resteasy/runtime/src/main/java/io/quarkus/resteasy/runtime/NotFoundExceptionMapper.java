@@ -98,7 +98,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
                 for (ResourceInvoker invoker : entry.getValue()) {
                     ResourceMethodInvoker method = (ResourceMethodInvoker) invoker;
 
-                    String subPath = null;
+                    String subPath = "";
                     for (Annotation annotation : method.getMethodAnnotations()) {
                         if (annotation.annotationType().equals(Path.class)) {
                             subPath = ((Path) annotation).value();

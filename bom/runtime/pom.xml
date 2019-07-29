@@ -68,7 +68,7 @@
            is not available in Maven fast enough: -->
         <graal-sdk.version>19.1.1</graal-sdk.version>
         <gizmo.version>1.0.0.Alpha5</gizmo.version>
-        <jackson.version>2.9.9</jackson.version>
+        <jackson.version>2.9.9.20190727</jackson.version>
         <commons-beanutils.version>1.9.3</commons-beanutils.version>
         <commons-logging.version>1.2</commons-logging.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
@@ -179,14 +179,6 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-            <!-- The Jackson BOM imports version 2.9.0 and we want all the versions to be in sync.
-                Especially, 2.9.1 adds an automatic module name. -->
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-
 
             <!-- RESTEasy dependencies, imported as a BOM -->
             <!-- As RESTEasy also imports Jackson, we need to import its BOM after the Jackson BOM -->

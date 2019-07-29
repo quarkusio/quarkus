@@ -23,18 +23,16 @@ public class Neo4jDriverRecorder {
 
     private static final Logger log = Logger.getLogger(Neo4jDriverRecorder.class);
 
-    static volatile Driver driver;
-
     public void configureNeo4jProducer(BeanContainer beanContainer, Neo4jConfiguration configuration,
             ShutdownContext shutdownContext) {
 
-        initializeDriver(configuration, shutdownContext);
+        Driver driver = initializeDriver(configuration, shutdownContext);
 
         Neo4jDriverProducer driverProducer = beanContainer.instance(Neo4jDriverProducer.class);
         driverProducer.initialize(driver);
     }
 
-    private void initializeDriver(Neo4jConfiguration configuration,
+    private Driver initializeDriver(Neo4jConfiguration configuration,
             ShutdownContext shutdownContext) {
 
         String uri = configuration.uri;
@@ -47,8 +45,9 @@ public class Neo4jDriverRecorder {
         configureSsl(configBuilder);
         configurePoolSettings(configBuilder, configuration.pool);
 
-        driver = GraphDatabase.driver(uri, authToken, configBuilder.build());
+        Driver driver = GraphDatabase.driver(uri, authToken, configBuilder.build());
         shutdownContext.addShutdownTask(driver::close);
+        return driver;
     }
 
     private static Config.ConfigBuilder createBaseConfig() {

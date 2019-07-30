@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.openapi.OASConfig;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
@@ -208,8 +209,11 @@ public class SmallRyeOpenApiProcessor {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
         OpenAPI staticModel = generateStaticModel(archivesBuildItem);
+
         OpenAPI annotationModel;
-        if (resteasyJaxrsConfig.isPresent()) {
+        Config config = ConfigProvider.getConfig();
+        boolean scanDisable = config.getOptionalValue(OASConfig.SCAN_DISABLE, Boolean.class).orElse(false);
+        if (resteasyJaxrsConfig.isPresent() && !scanDisable) {
             annotationModel = generateAnnotationModel(index, resteasyJaxrsConfig.get());
         } else {
             annotationModel = null;

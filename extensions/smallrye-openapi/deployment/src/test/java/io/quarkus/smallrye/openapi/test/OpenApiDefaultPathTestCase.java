@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.openapi.test;
 
+import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,10 @@ public class OpenApiDefaultPathTestCase {
                 .then().header("Content-Type", "application/json;charset=UTF-8");
         RestAssured.given().queryParam("format", "JSON")
                 .when().get(OPEN_API_PATH)
-                .then().header("Content-Type", "application/json;charset=UTF-8");
+                .then()
+                .header("Content-Type", "application/json;charset=UTF-8")
+                .body("openapi", Matchers.startsWith("3.0"))
+                .body("info.title", Matchers.equalTo("Generated API"))
+                .body("paths", Matchers.hasKey("/resource"));
     }
 }

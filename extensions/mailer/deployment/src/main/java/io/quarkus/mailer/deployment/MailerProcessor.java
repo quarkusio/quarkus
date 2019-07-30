@@ -6,6 +6,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -27,6 +28,11 @@ public class MailerProcessor {
         return AdditionalBeanBuildItem.builder()
                 .addBeanClasses(ReactiveMailerImpl.class, BlockingMailerImpl.class, MockMailboxImpl.class)
                 .build();
+    }
+
+    @BuildStep
+    ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
+        return new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.MAILER);
     }
 
     @BuildStep

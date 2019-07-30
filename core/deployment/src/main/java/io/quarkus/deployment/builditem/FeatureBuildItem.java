@@ -40,6 +40,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String REST_CLIENT = "rest-client";
     public static final String SCHEDULER = "scheduler";
     public static final String SECURITY = "security";
+    public static final String SECURITY_OAUTH2 = "security-oauth2";
     public static final String SMALLRYE_CONTEXT_PROPAGATION = "smallrye-context-propagation";
     public static final String SMALLRYE_FAULT_TOLERANCE = "smallrye-fault-tolerance";
     public static final String SMALLRYE_HEALTH = "smallrye-health";

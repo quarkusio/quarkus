@@ -49,7 +49,19 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dextensions="resteasy-jsonb"
 ----
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS and JSON-B extensions.
+This command generates a Maven structure importing the RESTEasy/JAX-RS and http://json-b.net/[JSON-B] extensions.
+
+Quarkus also supports https://github.com/FasterXML/jackson[Jackson] so, if you prefer Jackson over JSON-B, you can create a project relying on the RESTEasy Jackson extension instead:
+
+[source,shell,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=rest-json \
+    -DclassName="org.acme.rest.json.FruitResource" \
+    -Dpath="/fruits" \
+    -Dextensions="resteasy-jackson"
+----
 
 == Creating your first JSON REST service
 
@@ -164,7 +176,8 @@ public class FruitResource {
 
 The implementation is pretty straightforward and you just need to define your endpoints using the JAX-RS annotations.
 
-The `Fruit` objects will be automatically serialized/deserialized by http://json-b.net/[JSON-B].
+The `Fruit` objects will be automatically serialized/deserialized by http://json-b.net/[JSON-B] or https://github.com/FasterXML/jackson[Jackson],
+depending on the extension you chose when initializing the project.
 
 [NOTE]
 ====
@@ -173,17 +186,9 @@ They are analyzed at build time and Quarkus restricts the number of JAX-RS provi
 It allows to reduce the size of the native executable.
 ====
 
-=== Using Jackson
+=== More on our Jackson support
 
-Quarkus provides the option of using https://github.com/FasterXML/jackson[Jackson] instead of JSON-B. To do so, the `quarkus-resteasy-jsonb` dependency needs to be replaced with:
-
-[source,xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-jackson</artifactId>
-</dependency>
-----
+As stated above, Quarkus provides the option of using https://github.com/FasterXML/jackson[Jackson] instead of JSON-B via the use of the `quarkus-resteasy-jackson` extension.
 
 When using Jackson, Quarkus allows users to customize the `ObjectMapper` very easily - all that needs to be done is to configure a CDI producer bean like so:
 
@@ -226,10 +231,9 @@ You can then point your browser to `http://localhost:8080/fruits.html` and use y
 
 == About serialization
 
-The library we use to serialize Java objects to JSON documents is http://json-b.net/[JSON-B].
-It uses Java reflection to get the properties of an object and serialize them.
+JSON serialization libraries use Java reflection to get the properties of an object and serialize them.
 
-Using native executables with GraalVM, all classes that will be used with reflection need to be registered.
+When using native executables with GraalVM, all classes that will be used with reflection need to be registered.
 The good news is that Quarkus does that work for you most of the time.
 So far, we haven't registered any class, not even `Fruit`, for reflection usage and everything is working fine.
 
@@ -380,11 +384,11 @@ The interesting part starts when running the application as a native executable:
 No legumes there.
 
 As mentioned above, the issue is that Quarkus was not able to determine the `Legume` class will require some reflection by analyzing the REST endpoints.
-JSON-B tries to get the list of fields of `Legume` and gets an empty list so it does not serialize the fields' data.
+The JSON serialization library tries to get the list of fields of `Legume` and gets an empty list so it does not serialize the fields' data.
 
 [NOTE]
 ====
-At the moment, when JSON-B tries to get the list of fields of a class, if the class is not registered for reflection, no exception will be thrown.
+At the moment, when JSON-B or Jackson tries to get the list of fields of a class, if the class is not registered for reflection, no exception will be thrown.
 GraalVM will simply return an empty list of fields.
 
 Hopefully, this will change in the future and make the error more obvious.
@@ -473,6 +477,12 @@ was served.
 
 Quarkus comes with a CORS filter. Read the link:undertow-reference.html#cors-filter[Undertow Reference Documentation] to learn
 how to use it.
+
+[WARNING]
+====
+If you want to use the `keycloak` Quarkus extension in your project, you should configure CORS using the `keycloak` extension
+configuration. See link:keycloak-guide#configuring-cors[the Keycloak guide] for more details.
+====
 
 == Conclusion
 

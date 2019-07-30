@@ -246,6 +246,11 @@ public class FastBootMetadataBuilder {
 
         mergedSettings.configurationValues.put("hibernate.temp.use_jdbc_metadata_defaults", "false");
 
+        //Enable the new Enhanced Proxies capability (unless it was specifically disabled):
+        if (!mergedSettings.configurationValues.containsKey(AvailableSettings.ALLOW_ENHANCEMENT_AS_PROXY)) {
+            mergedSettings.configurationValues.put(AvailableSettings.ALLOW_ENHANCEMENT_AS_PROXY, Boolean.TRUE.toString());
+        }
+
         if (readBooleanConfigurationValue(mergedSettings.configurationValues, WRAP_RESULT_SETS)) {
             LOG.warn("Wrapping result sets is not supported. Setting " + WRAP_RESULT_SETS + " to false.");
         }

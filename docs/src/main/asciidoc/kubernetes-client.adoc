@@ -73,7 +73,7 @@ To make testing against a mock Kubernetes API extremely simple, Quarkus provides
 a mock of the Kubernetes API server and sets the proper environment variables needed so that the Kubernetes Client configures itself to use said mock.
 Tests can inject the mock and set it up in any way necessary for the particular testing using the `@MockServer` annotation.
 
-Lets assume we have a REST endpoint defined like so:
+Let's assume we have a REST endpoint defined like so:
 
 [source%nowrap,java]
 ----

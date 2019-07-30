@@ -65,9 +65,17 @@ They enable the native SSL support for your native executable.
 
 As SSL is ipso facto the standard nowadays, we decided to enable its support automatically for some of our extensions:
 
- * the SmallRye REST client extension,
- * the Agroal connection pooling extension,
- * the Jaeger extension.
+ * the Agroal connection pooling extension (`quarkus-agroal`),
+ * the Amazon DynamoDB extension (`quarkus-amazon-dynamodb`),
+ * the Hibernate Search Elasticsearch extension (`quarkus-hibernate-search-elasticsearch`),
+ * the Jaeger extension (`quarkus-jaeger`),
+ * the Keycloak extension (`quarkus-keycloak`),
+ * the Kubernetes client extension (`quarkus-kubernetes-client`),
+ * the Mailer extension (`quarkus-mailer`),
+ * the MongoDB extension (`quarkus-mongodb-client`),
+ * the Neo4j extension (`quarkus-neo4j`),
+ * the REST client extension (`quarkus-rest-client`).
+
 
 As long as you have one of those extensions in your project, the SSL support will be enabled by default.
 
@@ -200,7 +208,7 @@ You can for example modify your `Dockerfile.native` as follows to copy the requi
 FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-version} as nativebuilder
 RUN mkdir -p /tmp/ssl-libs/lib \
   && cp /opt/graalvm/jre/lib/security/cacerts /tmp/ssl-libs \
-  && cp /opt/graalvm/jre/lib/amd64/libsunec.so /tmp/ssl-libs/lib/ 
+  && cp /opt/graalvm/jre/lib/amd64/libsunec.so /tmp/ssl-libs/lib/
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal
 WORKDIR /work/

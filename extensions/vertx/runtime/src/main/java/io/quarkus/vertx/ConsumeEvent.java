@@ -66,7 +66,7 @@ public @interface ConsumeEvent {
      * @return {@code true} if the address should not be propagated across the cluster
      * @see io.vertx.core.eventbus.EventBus#localConsumer(String)
      */
-    boolean local() default false;
+    boolean local() default true;
 
     /**
      * 

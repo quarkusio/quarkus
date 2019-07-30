@@ -105,9 +105,9 @@ We could write a test for this endpoint very easily like so:
 public class KubernetesClientTest {
 
     @MockServer
-    private KubernetesMockServer mockServer;
+    KubernetesMockServer mockServer;
 
-    @Test
+    @BeforeEach
     public void before() {
         final Pod pod1 = new PodBuilder().withNewMetadata().withName("pod1").withNamespace("test").and().build();
         final Pod pod2 = new PodBuilder().withNewMetadata().withName("pod2").withNamespace("test").and().build();

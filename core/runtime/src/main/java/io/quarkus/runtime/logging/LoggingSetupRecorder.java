@@ -145,7 +145,7 @@ public class LoggingSetupRecorder {
     private void configureSyslogHandler(SyslogConfig config, ErrorManager errorManager,
             List<LogCleanupFilterElement> filterElements, ArrayList<Handler> handlers) {
         try {
-            final SyslogHandler handler = new SyslogHandler(config.endpoint.getAddress(), config.endpoint.getPort());
+            final SyslogHandler handler = new SyslogHandler(config.endpoint.getHostString(), config.endpoint.getPort());
             handler.setAppName(config.appName.orElse(getProcessName()));
             handler.setHostname(config.hostname.orElse(getQualifiedHostName()));
             handler.setFacility(config.facility);

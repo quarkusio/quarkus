@@ -13,7 +13,6 @@ import org.jboss.logmanager.handlers.DelayedHandler;
 import org.jboss.logmanager.handlers.SyslogHandler;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -61,8 +60,5 @@ public class AsyncSyslogHandlerTest {
         assertThat(syslogHandler.isUseCountingFraming()).isEqualTo(true);
         assertThat(syslogHandler.isTruncate()).isEqualTo(false);
         assertThat(syslogHandler.isBlockOnReconnect()).isEqualTo(false);
-
-        Assertions.assertThrows(NullPointerException.class,
-                () -> assertThat(syslogHandler.getServerAddress().getHostName()).isEqualTo("localhost"));
     }
 }

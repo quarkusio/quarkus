@@ -1,0 +1,225 @@
+
+`quarkus.vertx.caching`:: Enables or disables the Vert.x cache.
+
+type: `boolean`; default value: `true`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.classpath-resolving`:: Enables or disabled the Vert.x classpath resource resolver.
+
+type: `boolean`; default value: `true`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.cluster.clustered`:: Enables or disables the clustering.
+
+type: `boolean`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.cluster.host`:: The host name.
+
+type: `java.lang.String`; default value: `localhost`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.cluster.ping-interval`:: The ping interval.
+
+type: `java.time.Duration`. _See duration note below_; default value: `20`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.cluster.ping-reply-interval`:: The ping reply interval.
+
+type: `java.time.Duration`. _See duration note below_; default value: `20`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.cluster.port`:: The port.
+
+type: `java.lang.Integer`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.cluster.public-host`:: The public host name.
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.cluster.public-port`:: The public port.
+
+type: `java.lang.Integer`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.event-loops-pool-size`:: The number of event loops. 2 x the number of core by default.
+
+type: `java.lang.Integer`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.accept-backlog`:: The accept backlog.
+
+type: `java.lang.Integer`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.client-auth`:: The client authentication.
+
+type: `java.lang.String`; default value: `NONE`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.connect-timeout`:: The connect timeout.
+
+type: `java.time.Duration`. _See duration note below_; default value: `60`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.idle-timeout`:: The idle timeout in milliseconds.
+
+type: `java.time.Duration`. _See duration note below_; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.key-certificate-jks.password`:: Password of the key file.
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.key-certificate-jks.path`:: Path of the key file (JKS format).
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.key-certificate-pem.certs`:: Comma-separated list of the path to the certificate files (Pem format).
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.key-certificate-pem.keys`:: Comma-separated list of the path to the key files (Pem format).
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.key-certificate-pfx.password`:: Password of the key.
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.key-certificate-pfx.path`:: Path to the key file (PFX format)
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.receive-buffer-size`:: The receive buffer size.
+
+type: `java.lang.Integer`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.reconnect-attempts`:: The number of reconnection attempts.
+
+type: `int`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.reconnect-interval`:: The reconnection interval in milliseconds.
+
+type: `java.time.Duration`. _See duration note below_; default value: `1`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.reuse-address`:: Whether or not to reuse the address.
+
+type: `boolean`; default value: `true`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.reuse-port`:: Whether or not to reuse the port.
+
+type: `boolean`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.send-buffer-size`:: The send buffer size.
+
+type: `java.lang.Integer`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.soLinger`:: The so linger.
+
+type: `java.lang.Integer`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.ssl`:: Enables or Disabled SSL.
+
+type: `boolean`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.tcp-keep-alive`:: Whether or not to keep the TCP connection opened (keep-alive).
+
+type: `boolean`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.tcp-no-delay`:: Configure the TCP no delay.
+
+type: `boolean`; default value: `true`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.traffic-class`:: Configure the traffic class.
+
+type: `java.lang.Integer`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.trust-all`:: Enables or disables the trust all parameter.
+
+type: `boolean`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.trust-certificate-jks.password`:: Password of the key file.
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.trust-certificate-jks.path`:: Path of the key file (JKS format).
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.trust-certificate-pem.certs`:: Comma-separated list of the trust certificate files (Pem format).
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.trust-certificate-pfx.password`:: Password of the key.
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.eventbus.trust-certificate-pfx.path`:: Path to the key file (PFX format)
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.internal-blocking-pool-size`:: The size of the internal thread pool (used for the file system).
+
+type: `int`; default value: `20`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.max-event-loop-execute-time`:: The maximum amount of time the event loop can be blocked.
+
+type: `java.time.Duration`. _See duration note below_; default value: `2`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.max-worker-execute-time`:: The maximum amount of time the worker thread can be blocked.
+
+type: `java.time.Duration`. _See duration note below_; default value: `60`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.use-async-dns`:: Enables the async DNS resolver.
+
+type: `boolean`; The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.warning-exception-time`:: The amount of time before a warning is displayed if the event loop is blocked.
+
+type: `java.time.Duration`. _See duration note below_; default value: `2`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx.worker-pool-size`:: The size of the worker thread pool.
+
+type: `int`; default value: `20`. The configuration is overridable at runtime. 
+
+
+[NOTE]
+====
+The format for durations uses the standard `java.time.Duration` format.
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+
+You can also provide duration values starting with a number.
+In this case, if the value consists only of a number, the converter treats the value as seconds.
+Otherwise, `PT` is implicitly appended to the value to obtain a standard `java.time.Duration` format.
+====

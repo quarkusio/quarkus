@@ -1,0 +1,164 @@
+
+`quarkus.datasource."<named-data-sources>".acquisition-timeout`:: The timeout before cancelling the acquisition of a new connection
+
+type: `java.time.Duration`. _See duration note below_; default value: `5`. The configuration is overridable at runtime. 
+
+
+`quarkus.datasource."<named-data-sources>".background-validation-interval`:: The interval at which we validate idle connections in the background
+
+type: `java.time.Duration`. _See duration note below_; default value: `2M`. The configuration is overridable at runtime. 
+
+
+`quarkus.datasource."<named-data-sources>".driver`:: The datasource driver class name
+
+type: `java.lang.String`; The configuration is visible at build and runtime time, read only at runtime. 
+
+
+`quarkus.datasource."<named-data-sources>".enable-metrics`:: Enable datasource metrics collection.
+
+type: `boolean`; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource."<named-data-sources>".idle-removal-interval`:: The interval at which we try to remove idle connections.
+
+type: `java.time.Duration`. _See duration note below_; default value: `5M`. The configuration is overridable at runtime. 
+
+
+`quarkus.datasource."<named-data-sources>".initial-size`:: The initial size of the pool
+
+type: `java.lang.Integer`; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource."<named-data-sources>".leak-detection-interval`:: The interval at which we check for connection leaks.
+
+type: `java.time.Duration`. _See duration note below_; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource."<named-data-sources>".max-lifetime`:: The max lifetime of a connection.
+
+type: `java.time.Duration`. _See duration note below_; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource."<named-data-sources>".max-size`:: The datasource pool maximum size
+
+type: `int`; default value: `20`. The configuration is overridable at runtime. 
+
+
+`quarkus.datasource."<named-data-sources>".min-size`:: The datasource pool minimum size
+
+type: `int`; default value: `5`. The configuration is overridable at runtime. 
+
+
+`quarkus.datasource."<named-data-sources>".password`:: The datasource password
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource."<named-data-sources>".transaction-isolation-level`:: The transaction isolation level.
+
+type: `io.agroal.api.configuration.AgroalConnectionFactoryConfiguration.TransactionIsolation`; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource."<named-data-sources>".url`:: The datasource URL
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource."<named-data-sources>".username`:: The datasource username
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource."<named-data-sources>".xa`:: Whether we want to use XA.
+
+If used, the driver has to support it.
+
+type: `boolean`; default value: `false`. The configuration is visible at build and runtime time, read only at runtime. 
+
+
+`quarkus.datasource.acquisition-timeout`:: The timeout before cancelling the acquisition of a new connection
+
+type: `java.time.Duration`. _See duration note below_; default value: `5`. The configuration is overridable at runtime. 
+
+
+`quarkus.datasource.background-validation-interval`:: The interval at which we validate idle connections in the background
+
+type: `java.time.Duration`. _See duration note below_; default value: `2M`. The configuration is overridable at runtime. 
+
+
+`quarkus.datasource.driver`:: The datasource driver class name
+
+type: `java.lang.String`; The configuration is visible at build and runtime time, read only at runtime. 
+
+
+`quarkus.datasource.enable-metrics`:: Enable datasource metrics collection.
+
+type: `boolean`; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource.idle-removal-interval`:: The interval at which we try to remove idle connections.
+
+type: `java.time.Duration`. _See duration note below_; default value: `5M`. The configuration is overridable at runtime. 
+
+
+`quarkus.datasource.initial-size`:: The initial size of the pool
+
+type: `java.lang.Integer`; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource.leak-detection-interval`:: The interval at which we check for connection leaks.
+
+type: `java.time.Duration`. _See duration note below_; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource.max-lifetime`:: The max lifetime of a connection.
+
+type: `java.time.Duration`. _See duration note below_; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource.max-size`:: The datasource pool maximum size
+
+type: `int`; default value: `20`. The configuration is overridable at runtime. 
+
+
+`quarkus.datasource.min-size`:: The datasource pool minimum size
+
+type: `int`; default value: `5`. The configuration is overridable at runtime. 
+
+
+`quarkus.datasource.password`:: The datasource password
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource.transaction-isolation-level`:: The transaction isolation level.
+
+type: `io.agroal.api.configuration.AgroalConnectionFactoryConfiguration.TransactionIsolation`; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource.url`:: The datasource URL
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource.username`:: The datasource username
+
+type: `java.lang.String`; The configuration is overridable at runtime. 
+
+
+`quarkus.datasource.xa`:: Whether we want to use XA.
+
+If used, the driver has to support it.
+
+type: `boolean`; default value: `false`. The configuration is visible at build and runtime time, read only at runtime. 
+
+
+[NOTE]
+====
+The format for durations uses the standard `java.time.Duration` format.
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+
+You can also provide duration values starting with a number.
+In this case, if the value consists only of a number, the converter treats the value as seconds.
+Otherwise, `PT` is implicitly appended to the value to obtain a standard `java.time.Duration` format.
+====

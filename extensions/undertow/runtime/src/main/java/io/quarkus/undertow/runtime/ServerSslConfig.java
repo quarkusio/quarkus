@@ -1,4 +1,4 @@
-package io.quarkus.runtime.configuration.ssl;
+package io.quarkus.undertow.runtime;
 
 import java.util.List;
 

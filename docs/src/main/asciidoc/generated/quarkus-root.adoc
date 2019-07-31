@@ -1,0 +1,10 @@
+
+`quarkus.root.dsa-key-location`:: 
+
+type: `java.lang.String`; The configuration is visible at build and runtime time, read only at runtime. 
+
+
+`quarkus.root.validate-build-config`:: 
+
+type: `boolean`; The configuration is visible at build and runtime time, read only at runtime. 
+

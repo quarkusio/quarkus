@@ -1,0 +1,10 @@
+
+`quarkus.reactive-pg-client.cache-prepared-statements`:: Whether prepared statements should be cached on the client side.
+
+type: `java.lang.Boolean`; The configuration is overridable at runtime. 
+
+
+`quarkus.reactive-pg-client.pipelining-limit`:: The maximum number of inflight database commands that can be pipelined.
+
+type: `java.lang.Integer`; The configuration is overridable at runtime. 
+

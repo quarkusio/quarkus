@@ -1,0 +1,5 @@
+
+`quarkus.amazon-lambda-resteasy.debug`:: Indicates if we are in debug mode.
+
+type: `boolean`; default value: `false`. The configuration is visible at build and runtime time, read only at runtime. 
+

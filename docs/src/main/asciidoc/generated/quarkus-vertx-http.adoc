@@ -1,0 +1,15 @@
+
+`quarkus.vertx-http.host`:: The HTTP host
+
+type: `java.lang.String`; default value: `0.0.0.0`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx-http.port`:: The HTTP port
+
+type: `int`; default value: `8080`. The configuration is overridable at runtime. 
+
+
+`quarkus.vertx-http.test-port`:: The HTTP port used to run tests
+
+type: `int`; default value: `8081`. The configuration is overridable at runtime. 
+

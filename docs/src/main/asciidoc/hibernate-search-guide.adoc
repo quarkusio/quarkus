@@ -413,7 +413,7 @@ We use:
  * an analyzer called `name` for person names,
  * an analyzer called `english` for book titles,
  * a normalizer called `sort` for our sort fields
- 
+
 but we haven't set them up yet.
 
 Let's see how you can do it with Hibernate Search.
@@ -543,6 +543,9 @@ While, on a production setup, the `committed` default might be a suitable value,
 <8> We consider the `yellow` status is sufficient to connect to the Elasticsearch cluster.
 This is for testing purposes with the Elasticsearch Docker container.
 It should not be used in production.
+
+== Hibernate Search Configuration
+include::generated/quarkus-hibernate-search.adoc[]
 
 == Creating a frontend
 

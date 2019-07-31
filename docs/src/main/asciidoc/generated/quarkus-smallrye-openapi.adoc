@@ -1,0 +1,5 @@
+
+`quarkus.smallrye-openapi.path`:: The path at which to register the OpenAPI Servlet.
+
+type: `java.lang.String`; default value: `/openapi`. The configuration is visible at build time only. 
+

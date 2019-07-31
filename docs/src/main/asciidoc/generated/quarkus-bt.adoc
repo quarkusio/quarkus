@@ -1,0 +1,105 @@
+
+`quarkus.bt.all-values.double-primitive`:: a double primitive
+
+type: `double`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.expanded-default`:: A configuration item that has a default value that is an expression
+
+type: `java.lang.String`; default value: `${java.vm.version}`. The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.long-list`:: A List of long values
+
+type: `java.lang.Long`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.long-primitive`:: a long primitive
+
+type: `long`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.long-value`:: a long value
+
+type: `java.lang.Long`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.nested-config-map."<nested-config-map>".nested-value`:: A nested string value
+
+type: `java.lang.String`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.nested-config-map."<nested-config-map>".oov`:: A nested ObjectOfValue value
+
+type: `io.quarkus.extest.runtime.config.ObjectOfValue`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.oov`:: A config object with a static of(String) method
+
+type: `io.quarkus.extest.runtime.config.ObjectOfValue`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.oov-with-default`:: A config object with a static of(String) method and default value
+
+type: `io.quarkus.extest.runtime.config.ObjectOfValue`; default value: `defaultPart1+defaultPart2`. The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.opt-double-value`:: an optional double value
+
+type: `java.lang.Double`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.opt-long-value`:: an optional long value
+
+type: `java.lang.Long`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.optional-long-value`:: an optional long value
+
+type: `java.lang.Long`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.ovo`:: A config object with a static valueOf(String) method
+
+type: `io.quarkus.extest.runtime.config.ObjectValueOf`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.ovo-with-default`:: A config object with a static of(String) method and default value
+
+type: `io.quarkus.extest.runtime.config.ObjectValueOf`; default value: `defaultPart1+defaultPart2`. The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.string-list`:: A List of string values
+
+type: `java.lang.String`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.string-list-map."<string-list-map>".{*}`:: A map of property lists
+
+type: `java.util.List<java.lang.String>`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.all-values.string-map."<string-map>".{*}`:: A map of properties
+
+type: `java.lang.String`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.bt-sbv`:: A config object with ctor(String)
+
+type: `io.quarkus.extest.runtime.config.StringBasedValue`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.bt-sbv-with-default`:: A config object with ctor(String) and default value
+
+type: `io.quarkus.extest.runtime.config.StringBasedValue`; default value: `btSBVWithDefaultValue`. The configuration is visible at build time only. 
+
+
+`quarkus.bt.bt-string-opt`:: A config string
+
+type: `java.lang.String`; The configuration is visible at build time only. 
+
+
+`quarkus.bt.bt-string-opt-with-default`:: A config string with default value
+
+type: `java.lang.String`; default value: `btStringOptWithDefaultValue`. The configuration is visible at build time only. 
+

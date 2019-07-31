@@ -1,4 +1,4 @@
-package io.quarkus.runtime.configuration.ssl;
+package io.quarkus.undertow.runtime;
 
 import java.nio.file.Path;
 import java.util.Optional;

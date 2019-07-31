@@ -176,7 +176,7 @@ public class JpaOperations {
         return "DELETE FROM " + getEntityName(entityClass) + " WHERE " + query;
     }
 
-    private static String toOrderBy(Sort sort) {
+    public static String toOrderBy(Sort sort) {
         StringBuilder sb = new StringBuilder(" ORDER BY ");
         for (int i = 0; i < sort.getColumns().size(); i++) {
             Sort.Column column = sort.getColumns().get(i);
@@ -327,6 +327,22 @@ public class JpaOperations {
 
     public static long count(Class<?> entityClass, String query, Parameters params) {
         return count(entityClass, query, params.map());
+    }
+
+    public static boolean exists(Class<?> entityClass) {
+        return count(entityClass) > 0;
+    }
+
+    public static boolean exists(Class<?> entityClass, String query, Object... params) {
+        return count(entityClass, query, params) > 0;
+    }
+
+    public static boolean exists(Class<?> entityClass, String query, Map<String, Object> params) {
+        return count(entityClass, query, params) > 0;
+    }
+
+    public static boolean exists(Class<?> entityClass, String query, Parameters params) {
+        return count(entityClass, query, params) > 0;
     }
 
     public static long deleteAll(Class<?> entityClass) {

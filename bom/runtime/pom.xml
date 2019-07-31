@@ -160,6 +160,7 @@
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <wiremock.version>2.23.2</wiremock.version>
         <spring.version>5.1.8.RELEASE</spring.version>
+        <spring-data.version>2.1.9.RELEASE</spring-data.version>
     </properties>
 
     <dependencyManagement>
@@ -499,6 +500,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-spring-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-data-jpa</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2021,7 +2027,7 @@
                 <artifactId>jetty-webapp</artifactId>
                 <version>${jetty.version}</version>
             </dependency>
-            
+
 
 
             <dependency>
@@ -2121,6 +2127,11 @@
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-web</artifactId>
                 <version>${spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.data</groupId>
+                <artifactId>spring-data-jpa</artifactId>
+                <version>${spring-data.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

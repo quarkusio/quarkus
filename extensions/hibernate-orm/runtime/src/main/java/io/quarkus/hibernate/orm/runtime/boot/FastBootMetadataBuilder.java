@@ -74,6 +74,7 @@ import org.hibernate.jpa.internal.util.PersistenceUnitTransactionTypeHelper;
 import org.hibernate.jpa.spi.IdentifierGeneratorStrategyProvider;
 import org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl;
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
+import org.hibernate.service.Service;
 import org.hibernate.service.internal.AbstractServiceRegistryImpl;
 import org.hibernate.service.internal.ProvidedService;
 import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
@@ -135,6 +136,28 @@ public class FastBootMetadataBuilder {
         registerIdentifierGenerators(standardServiceRegistry);
 
         this.providedServices = ssrBuilder.getProvidedServices();
+
+        /**
+         * This is required to properly integrate Hibernate Envers.
+         *
+         * The EnversService requires multiple steps to be properly built, the most important ones are:
+         *
+         * 1. The EnversServiceContributor contributes the EnversServiceInitiator to the RecordableBootstrap.
+         * 2. After RecordableBootstrap builds a StandardServiceRegistry, the first time the EnversService is
+         * requested, it is created by the initiator and configured by the registry.
+         * 3. The MetadataBuildingProcess completes by calling the AdditionalJaxbMappingProducer which
+         * initializes the EnversService and produces some additional mapping documents.
+         * 4. After that point the EnversService appears to be fully functional.
+         *
+         * The following trick uses the aforementioned steps to setup the EnversService and then turns it into
+         * a ProvidedService so that it is not necessary to repeat all these complex steps during the reactivation
+         * of the destroyed service registry in PreconfiguredServiceRegistryBuilder.
+         *
+         */
+        for (Class<? extends Service> postBuildProvidedService : ssrBuilder.getPostBuildProvidedServices()) {
+            providedServices.add(new ProvidedService(postBuildProvidedService,
+                    standardServiceRegistry.getService(postBuildProvidedService)));
+        }
 
         final MetadataSources metadataSources = new MetadataSources(bsr);
         addPUManagedClassNamesToMetadataSources(persistenceUnit, metadataSources);

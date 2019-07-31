@@ -60,6 +60,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     private final Map settings;
     private final List<StandardServiceInitiator> initiators = standardInitiatorList();
     private final List<ProvidedService> providedServices = new ArrayList<ProvidedService>();
+    private final List<Class<? extends Service>> postBuildProvidedServices = new ArrayList<>();
 
     private boolean autoCloseRegistry = true;
 
@@ -279,6 +280,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     @SuppressWarnings({ "UnusedDeclaration" })
     public StandardServiceRegistryBuilder addInitiator(StandardServiceInitiator initiator) {
         initiators.add(initiator);
+        postBuildProvidedServices.add(initiator.getServiceInitiated());
         return this;
     }
 
@@ -400,4 +402,12 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
         ((StandardServiceRegistryImpl) serviceRegistry).destroy();
     }
+
+    /**
+     * @return the list of services to get from the service registry and turn into provided services
+     */
+    public List<Class<? extends Service>> getPostBuildProvidedServices() {
+        return postBuildProvidedServices;
+    }
+
 }

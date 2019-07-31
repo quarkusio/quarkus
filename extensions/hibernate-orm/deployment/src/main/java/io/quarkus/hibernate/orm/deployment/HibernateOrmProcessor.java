@@ -421,35 +421,39 @@ public final class HibernateOrmProcessor {
                 // sql-load-script
                 // explicit file or default one
                 String importFile = hibernateConfig.sqlLoadScript.orElse("import.sql"); //default Hibernate ORM file imported
+                boolean isNoFile = "no-file".equalsIgnoreCase(importFile);
 
-                Optional<Path> loadScriptPath = Optional
-                        .ofNullable(applicationArchivesBuildItem.getRootArchive().getChildPath(importFile));
+                if (isNoFile) {
+                    // explicitly set a no file and ignore all other operations
+                    desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, importFile);
+                } else {
+                    Optional<Path> loadScriptPath = Optional
+                            .ofNullable(applicationArchivesBuildItem.getRootArchive().getChildPath(importFile));
 
-                // we enroll for hot deployment even if the file does not exist
-                hotDeploymentProducer.produce(new HotDeploymentWatchedFileBuildItem(importFile));
+                    // enlist resource if present
+                    loadScriptPath
+                            .filter(path -> !Files.isDirectory(path))
+                            .ifPresent(path -> {
+                                String resourceAsString = root.getArchiveRoot().relativize(loadScriptPath.get()).toString();
+                                resourceProducer.produce(new SubstrateResourceBuildItem(resourceAsString));
+                                desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, importFile);
+                                desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR,
+                                        MultipleLinesSqlCommandExtractor.class.getName());
 
-                // enlist resource if present
-                loadScriptPath
-                        .filter(path -> !Files.isDirectory(path))
-                        .ifPresent(path -> {
-                            String resourceAsString = root.getArchiveRoot().relativize(loadScriptPath.get()).toString();
-                            resourceProducer.produce(new SubstrateResourceBuildItem(resourceAsString));
-                            desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, importFile);
-                            desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR,
-                                    MultipleLinesSqlCommandExtractor.class.getName());
+                            });
 
-                        });
-
-                //raise exception if explicit file is not present (i.e. not the default)
-                hibernateConfig.sqlLoadScript
-                        .filter(o -> !loadScriptPath.filter(path -> !Files.isDirectory(path)).isPresent())
-                        .ifPresent(
-                                c -> {
-                                    throw new ConfigurationError(
-                                            "Unable to find file referenced in '" + HIBERNATE_ORM_CONFIG_PREFIX
-                                                    + "sql-load-script="
-                                                    + c + "'. Remove property or add file to your path.");
-                                });
+                    //raise exception if explicit file is not present (i.e. not the default)
+                    hibernateConfig.sqlLoadScript
+                            .filter(o -> !isNoFile)
+                            .filter(o -> !loadScriptPath.filter(path -> !Files.isDirectory(path)).isPresent())
+                            .ifPresent(
+                                    c -> {
+                                        throw new ConfigurationError(
+                                                "Unable to find file referenced in '" + HIBERNATE_ORM_CONFIG_PREFIX
+                                                        + "sql-load-script="
+                                                        + c + "'. Remove property or add file to your path.");
+                                    });
+                }
 
                 // Caching
                 Map<String, String> cacheConfigEntries = HibernateConfigUtil

@@ -488,28 +488,7 @@ public class UndertowBuildStep {
                     servlet.setAsyncSupported(asyncSupported.asBoolean());
                 }
                 AnnotationValue initParamsValue = annotation.value("initParams");
-                if (initParamsValue != null) {
-                    AnnotationInstance[] initParamsAnnotations = initParamsValue.asNestedArray();
-                    if (initParamsAnnotations != null && initParamsAnnotations.length > 0) {
-                        List<ParamValueMetaData> initParams = new ArrayList<ParamValueMetaData>();
-                        for (AnnotationInstance initParamsAnnotation : initParamsAnnotations) {
-                            ParamValueMetaData initParam = new ParamValueMetaData();
-                            AnnotationValue initParamName = initParamsAnnotation.value("name");
-                            AnnotationValue initParamValue = initParamsAnnotation.value();
-                            AnnotationValue initParamDescription = initParamsAnnotation.value("description");
-                            initParam.setParamName(initParamName.asString());
-                            initParam.setParamValue(initParamValue.asString());
-                            if (initParamDescription != null) {
-                                Descriptions descriptions = getDescription(initParamDescription.asString());
-                                if (descriptions != null) {
-                                    initParam.setDescriptions(descriptions);
-                                }
-                            }
-                            initParams.add(initParam);
-                        }
-                        servlet.setInitParam(initParams);
-                    }
-                }
+                servlet.setInitParam(getInitParams(initParamsValue));
                 AnnotationValue descriptionValue = annotation.value("description");
                 AnnotationValue displayNameValue = annotation.value("displayName");
                 AnnotationValue smallIconValue = annotation.value("smallIcon");
@@ -573,28 +552,7 @@ public class UndertowBuildStep {
                     filter.setAsyncSupported(asyncSupported.asBoolean());
                 }
                 AnnotationValue initParamsValue = annotation.value("initParams");
-                if (initParamsValue != null) {
-                    AnnotationInstance[] initParamsAnnotations = initParamsValue.asNestedArray();
-                    if (initParamsAnnotations != null && initParamsAnnotations.length > 0) {
-                        List<ParamValueMetaData> initParams = new ArrayList<ParamValueMetaData>();
-                        for (AnnotationInstance initParamsAnnotation : initParamsAnnotations) {
-                            ParamValueMetaData initParam = new ParamValueMetaData();
-                            AnnotationValue initParamName = initParamsAnnotation.value("name");
-                            AnnotationValue initParamValue = initParamsAnnotation.value();
-                            AnnotationValue initParamDescription = initParamsAnnotation.value("description");
-                            initParam.setParamName(initParamName.asString());
-                            initParam.setParamValue(initParamValue.asString());
-                            if (initParamDescription != null) {
-                                Descriptions descriptions = getDescription(initParamDescription.asString());
-                                if (descriptions != null) {
-                                    initParam.setDescriptions(descriptions);
-                                }
-                            }
-                            initParams.add(initParam);
-                        }
-                        filter.setInitParam(initParams);
-                    }
-                }
+                filter.setInitParam(getInitParams(initParamsValue));
                 AnnotationValue descriptionValue = annotation.value("description");
                 AnnotationValue displayNameValue = annotation.value("displayName");
                 AnnotationValue smallIconValue = annotation.value("smallIcon");
@@ -827,6 +785,34 @@ public class UndertowBuildStep {
                 annotationMD.setServletSecurity(servletSecurity);
             }
         }
+    }
+
+    private List<ParamValueMetaData> getInitParams(AnnotationValue initParamsValue) {
+        List<ParamValueMetaData> paramValuesMetaData = new ArrayList<>();
+        if (initParamsValue == null) {
+            return paramValuesMetaData;
+        }
+
+        AnnotationInstance[] initParamsAnnotations = initParamsValue.asNestedArray();
+        if (initParamsAnnotations != null && initParamsAnnotations.length > 0) {
+            for (AnnotationInstance initParamsAnnotation : initParamsAnnotations) {
+                ParamValueMetaData initParam = new ParamValueMetaData();
+                AnnotationValue initParamName = initParamsAnnotation.value("name");
+                AnnotationValue initParamValue = initParamsAnnotation.value();
+                AnnotationValue initParamDescription = initParamsAnnotation.value("description");
+                initParam.setParamName(initParamName.asString());
+                initParam.setParamValue(initParamValue.asString());
+                if (initParamDescription != null) {
+                    Descriptions descriptions = getDescription(initParamDescription.asString());
+                    if (descriptions != null) {
+                        initParam.setDescriptions(descriptions);
+                    }
+                }
+                paramValuesMetaData.add(initParam);
+            }
+        }
+
+        return paramValuesMetaData;
     }
 
     /**

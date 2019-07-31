@@ -21,7 +21,7 @@
         </dependency>
         <dependency>
             <groupId>org.acme</groupId>
-            <artifactId>my-project-minimal-extension-runtime</artifactId>
+            <artifactId>my-project-minimal-extension</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

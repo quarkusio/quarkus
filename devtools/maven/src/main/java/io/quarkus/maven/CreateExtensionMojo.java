@@ -7,9 +7,12 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Locale;
 import java.util.Stack;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import javax.lang.model.SourceVersion;
 
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
@@ -443,7 +446,10 @@ public class CreateExtensionMojo extends AbstractMojo {
                 segments.add(segment);
             }
         }
-        return segments.stream().collect(Collectors.joining("."));
+        return segments.stream() //
+                .map(s -> s.toLowerCase(Locale.ROOT)) //
+                .map(s -> SourceVersion.isKeyword(s) ? s + "_" : s) //
+                .collect(Collectors.joining("."));
     }
 
     void newParent(Path path) {

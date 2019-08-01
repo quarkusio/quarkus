@@ -18,6 +18,7 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -41,11 +42,14 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     @Context
     private Registry registry = null;
 
-    private static final class MethodDescription {
-        private String method;
-        private String fullPath;
-        private String produces;
-        private String consumes;
+    @Context
+    private HttpHeaders headers;
+
+    public static final class MethodDescription {
+        public String method;
+        public String fullPath;
+        public String produces;
+        public String consumes;
 
         public MethodDescription(String method, String fullPath, String produces, String consumes) {
             super();
@@ -57,9 +61,9 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
 
     }
 
-    private static final class ResourceDescription {
-        private String basePath;
-        private List<MethodDescription> calls;
+    public static final class ResourceDescription {
+        public String basePath;
+        public List<MethodDescription> calls;
 
         public ResourceDescription(String basePath) {
             this.basePath = basePath;
@@ -117,10 +121,10 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     @SuppressWarnings("unchecked")
     @Override
     public Response toResponse(NotFoundException exception) {
-        TemplateHtmlBuilder sb = new TemplateHtmlBuilder();
         if (registry == null) {
-            return Response.status(Status.NOT_FOUND).entity(sb.toString()).build();
+            return respond();
         }
+
         Map<String, List<ResourceInvoker>> bounded = null;
         if (registry instanceof ResourceMethodRegistry) {
             bounded = ((ResourceMethodRegistry) registry).getBounded();
@@ -133,37 +137,57 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
                 //ignore it
             }
         }
-
         if (bounded == null) {
-            return Response.status(Status.NOT_FOUND).entity(sb.toString()).build();
+            return respond();
         }
 
         List<ResourceDescription> descriptions = ResourceDescription
                 .fromBoundResourceInvokers(bounded
                         .entrySet());
+        return respond(descriptions);
+    }
 
+    private Response respond() {
+        if (headers.getAcceptableMediaTypes().contains(MediaType.APPLICATION_JSON_TYPE)) {
+            ErrorMessage errorMessage = new ErrorMessage();
+            errorMessage.errorMessage = "Resource Not Found";
+            return Response.status(Status.NOT_FOUND).entity(errorMessage).type(MediaType.APPLICATION_JSON_TYPE).build();
+        }
+
+        TemplateHtmlBuilder sb = new TemplateHtmlBuilder();
+        return Response.status(Status.NOT_FOUND).entity(sb.toString()).build();
+    }
+
+    private Response respond(List<ResourceDescription> descriptions) {
+        if (headers.getAcceptableMediaTypes().contains(MediaType.APPLICATION_JSON_TYPE)) {
+            ErrorMessage errorMessage = new ErrorMessage();
+            errorMessage.errorMessage = "Resource Not Found";
+            errorMessage.existingResourcesDetails = descriptions;
+            return Response.status(Status.NOT_FOUND).entity(errorMessage).type(MediaType.APPLICATION_JSON_TYPE).build();
+        }
+
+        TemplateHtmlBuilder sb = new TemplateHtmlBuilder();
         sb.header("Resource Not Found", "REST interface overview");
-
         for (ResourceDescription resource : descriptions) {
             sb.resourcePath(resource.basePath);
             for (MethodDescription method : resource.calls) {
                 sb.method(method.method, method.fullPath);
-
                 if (method.consumes != null) {
                     sb.consumes(method.consumes);
                 }
-
                 if (method.produces != null) {
                     sb.produces(method.produces);
                 }
-
                 sb.methodEnd();
             }
-
             sb.resourceEnd();
         }
-
         return Response.status(Status.NOT_FOUND).entity(sb.toString()).build();
+    }
+
+    public static class ErrorMessage {
+        public String errorMessage;
+        public List<ResourceDescription> existingResourcesDetails;
     }
 
 }

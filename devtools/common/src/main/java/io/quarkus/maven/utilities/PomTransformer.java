@@ -30,7 +30,6 @@ import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.w3c.dom.Text;
 
 /**
  * A utility to transform {@code pom.xml} files on the DOM level while keeping the original comments and formatting also
@@ -105,7 +104,7 @@ public class PomTransformer {
         }
 
         final XPath xPath = XPathFactory.newInstance().newXPath();
-        final TransformationContext context = new TransformationContext(path, detectIndentation(document, xPath),
+        final TransformationContext context = new TransformationContext(path, document, detectIndentation(document, xPath),
                 xPath);
         for (Transformation edit : edits) {
             edit.perform(document, context);
@@ -186,12 +185,14 @@ public class PomTransformer {
      */
     public static class TransformationContext {
         private final Path pomXmlPath;
+        private final Document document;
         private final XPath xPath;
         private final String indentationString;
 
-        public TransformationContext(Path pomXmlPath, String indentationString, XPath xPath) {
+        public TransformationContext(Path pomXmlPath, Document document, String indentationString, XPath xPath) {
             super();
             this.pomXmlPath = pomXmlPath;
+            this.document = document;
             this.indentationString = indentationString;
             this.xPath = xPath;
         }
@@ -219,6 +220,26 @@ public class PomTransformer {
             return indentationString;
         }
 
+        /**
+         * @param indentCount
+         * @return a new indentation node containing a newline and {@code indentCount} times concatenated
+         *         {@link #indentationString}
+         */
+        public Node indent(int indentCount) {
+            final StringBuilder sb = new StringBuilder(1 + indentCount * indentationString.length());
+            sb.append('\n');
+            for (int i = 0; i < indentCount; i++) {
+                sb.append(indentationString);
+            }
+            return document.createTextNode(sb.toString());
+        }
+
+        public Node textElement(String elementName, String value) {
+            final Node result = document.createElement(elementName);
+            result.appendChild(document.createTextNode(value));
+            return result;
+        }
+
     }
 
     /**
@@ -231,18 +252,17 @@ public class PomTransformer {
                 try {
                     Node modules = (Node) context.getXPath().evaluate(anyNs("project", "modules"), document,
                             XPathConstants.NODE);
-                    final String indent1 = "\n" + context.getIndentationString();
                     if (modules == null) {
-                        final Node modulesIndent = document.createTextNode(indent1);
+                        final Node modulesIndent = context.indent(1);
                         modules = document.createElement("modules");
-                        modules.appendChild(document.createTextNode(indent1));
+                        modules.appendChild(context.indent(1));
 
                         final Node build = (Node) context.getXPath().evaluate(anyNs("project", "build"), document,
                                 XPathConstants.NODE);
                         if (build != null) {
                             Node ws = build.getPreviousSibling();
                             if (ws == null || ws.getNodeType() != Node.TEXT_NODE) {
-                                ws = document.createTextNode(indent1);
+                                ws = context.indent(1);
                                 build.getParentNode().insertBefore(ws, build);
                             }
                             build.getParentNode().insertBefore(modulesIndent, ws);
@@ -266,7 +286,6 @@ public class PomTransformer {
                         }
                     }
 
-                    final Text indent = document.createTextNode(indent1 + context.getIndentationString());
                     final Node moduleNode = document.createElement("module");
                     moduleNode.appendChild(document.createTextNode(module));
 
@@ -274,11 +293,48 @@ public class PomTransformer {
                     final int len = modulesChildren.getLength();
                     Node ws;
                     if (len == 0 || (ws = modulesChildren.item(len - 1)).getNodeType() != Node.TEXT_NODE) {
-                        ws = document.createTextNode(indent1);
+                        ws = context.indent(1);
                         modules.appendChild(ws);
                     }
-                    modules.insertBefore(indent, ws);
+                    modules.insertBefore(context.indent(2), ws);
                     modules.insertBefore(moduleNode, ws);
+                } catch (XPathExpressionException | DOMException e) {
+                    throw new RuntimeException(e);
+                }
+            };
+        }
+
+        public static Transformation addManagedDependency(String groupId, String artifactId, String version) {
+            return (Document document, TransformationContext context) -> {
+                try {
+                    Node dependencyManagementDeps = (Node) context.getXPath().evaluate(
+                            anyNs("project", "dependencyManagement", "dependencies"), document,
+                            XPathConstants.NODE);
+                    if (dependencyManagementDeps == null) {
+                        throw new IllegalStateException(
+                                String.format("//project/dependencyManagement/dependencies not found in [%s]",
+                                        context.getPomXmlPath()));
+                    }
+                    final NodeList dependencyManagementDepsChildren = dependencyManagementDeps.getChildNodes();
+                    Node ws = null;
+                    if (dependencyManagementDepsChildren.getLength() > 0) {
+                        ws = dependencyManagementDepsChildren.item(dependencyManagementDepsChildren.getLength() - 1);
+                    }
+                    if (ws == null || ws.getNodeType() != Node.TEXT_NODE) {
+                        ws = context.indent(3);
+                        dependencyManagementDeps.appendChild(ws);
+                    }
+
+                    dependencyManagementDeps.insertBefore(context.indent(3), ws);
+                    final Node dep = document.createElement("dependency");
+                    dep.appendChild(context.indent(4));
+                    dep.appendChild(context.textElement("groupId", groupId));
+                    dep.appendChild(context.indent(4));
+                    dep.appendChild(context.textElement("artifactId", artifactId));
+                    dep.appendChild(context.indent(4));
+                    dep.appendChild(context.textElement("version", version));
+                    dep.appendChild(context.indent(3));
+                    dependencyManagementDeps.insertBefore(dep, ws);
                 } catch (XPathExpressionException | DOMException e) {
                     throw new RuntimeException(e);
                 }

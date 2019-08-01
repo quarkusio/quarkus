@@ -64,6 +64,9 @@ public class CreateExtensionMojoTest {
         mojo.grandParentArtifactId = "build-bom";
         mojo.grandParentRelativePath = "../../build-bom/pom.xml";
         mojo.templatesUriBase = "file:templates";
+
+        mojo.runtimeBomPath = Paths.get("boms/runtime/pom.xml");
+        mojo.deploymentBomPath = Paths.get("boms/deployment/pom.xml");
         mojo.execute();
 
         assertTreesMatch(

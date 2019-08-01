@@ -24,9 +24,11 @@ import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
+import javax.enterprise.event.Event;
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
@@ -107,6 +109,9 @@ class ArcContainerImpl implements ArcContainer {
                 transitiveInterceptorBindings.put(entry.getKey(), entry.getValue());
             }
         }
+        // register built-in beans
+        addBuiltInBeans();
+
         Collections.sort(interceptors, (i1, i2) -> Integer.compare(i2.getPriority(), i1.getPriority()));
 
         resolved = new ComputingCache<>(this::resolve);
@@ -116,6 +121,13 @@ class ArcContainerImpl implements ArcContainer {
         for (ResourceReferenceProvider resourceProvider : ServiceLoader.load(ResourceReferenceProvider.class)) {
             resourceProviders.add(resourceProvider);
         }
+    }
+
+    private void addBuiltInBeans() {
+        // BeanManager, Event<?>, Instance<?>
+        beans.add(new BeanManagerBean());
+        beans.add(new EventBean());
+        beans.add(new InstanceBean());
     }
 
     void init() {
@@ -575,13 +587,24 @@ class ArcContainerImpl implements ArcContainer {
 
     private static final class Resolvable {
 
+        private static final Set<Type> BUILT_IN_TYPES = new HashSet<>(Arrays.asList(Event.class, Instance.class));
+        private static final Annotation[] ANY_QUALIFIER = new Annotation[] { Any.Literal.INSTANCE };
+
         final Type requiredType;
 
         final Annotation[] qualifiers;
 
         Resolvable(Type requiredType, Annotation[] qualifiers) {
-            this.requiredType = requiredType;
-            this.qualifiers = qualifiers;
+            // if the type is any of BUILT_IN_TYPES, the resolution simplifies type to raw type and ignores qualifiers
+            // this is so that every injection point matches the bean we provide for that type
+            Type rawType = Reflections.getRawType(requiredType);
+            if (BUILT_IN_TYPES.contains(rawType)) {
+                this.requiredType = rawType;
+                this.qualifiers = ANY_QUALIFIER;
+            } else {
+                this.requiredType = requiredType;
+                this.qualifiers = qualifiers;
+            }
         }
 
         @Override

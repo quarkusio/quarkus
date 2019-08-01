@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.cli.commands.writer.ZipProjectWriter;
+import io.quarkus.generators.BuildTool;
 import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.templates.BuildTool;
 
 public class CreateProjectTest {
     @Test

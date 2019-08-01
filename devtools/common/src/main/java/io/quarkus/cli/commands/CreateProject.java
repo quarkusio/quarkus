@@ -1,5 +1,13 @@
 package io.quarkus.cli.commands;
 
+import static io.quarkus.generators.ProjectGenerator.ADDITIONAL_GITIGNORE_ENTRIES;
+import static io.quarkus.generators.ProjectGenerator.CLASS_NAME;
+import static io.quarkus.generators.ProjectGenerator.PACKAGE_NAME;
+import static io.quarkus.generators.ProjectGenerator.PROJECT_ARTIFACT_ID;
+import static io.quarkus.generators.ProjectGenerator.PROJECT_GROUP_ID;
+import static io.quarkus.generators.ProjectGenerator.PROJECT_VERSION;
+import static io.quarkus.generators.ProjectGenerator.QUARKUS_VERSION;
+import static io.quarkus.generators.ProjectGenerator.SOURCE_TYPE;
 import static io.quarkus.maven.utilities.MojoUtils.QUARKUS_VERSION_PROPERTY;
 import static io.quarkus.maven.utilities.MojoUtils.configuration;
 import static io.quarkus.maven.utilities.MojoUtils.getBomArtifactId;
@@ -7,14 +15,6 @@ import static io.quarkus.maven.utilities.MojoUtils.getPluginArtifactId;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginGroupId;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
 import static io.quarkus.maven.utilities.MojoUtils.plugin;
-import static io.quarkus.templates.QuarkusTemplate.ADDITIONAL_GITIGNORE_ENTRIES;
-import static io.quarkus.templates.QuarkusTemplate.CLASS_NAME;
-import static io.quarkus.templates.QuarkusTemplate.PACKAGE_NAME;
-import static io.quarkus.templates.QuarkusTemplate.PROJECT_ARTIFACT_ID;
-import static io.quarkus.templates.QuarkusTemplate.PROJECT_GROUP_ID;
-import static io.quarkus.templates.QuarkusTemplate.PROJECT_VERSION;
-import static io.quarkus.templates.QuarkusTemplate.QUARKUS_VERSION;
-import static io.quarkus.templates.QuarkusTemplate.SOURCE_TYPE;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -38,12 +38,12 @@ import org.apache.maven.model.PluginManagement;
 import org.apache.maven.model.Profile;
 
 import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.generators.BuildTool;
+import io.quarkus.generators.ProjectGeneratorRegistry;
+import io.quarkus.generators.SourceType;
+import io.quarkus.generators.rest.BasicRestProjectGenerator;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.MojoUtils.Element;
-import io.quarkus.templates.BuildTool;
-import io.quarkus.templates.SourceType;
-import io.quarkus.templates.TemplateRegistry;
-import io.quarkus.templates.rest.BasicRest;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -124,7 +124,7 @@ public class CreateProject {
             context.put(CLASS_NAME, className);
         }
 
-        TemplateRegistry.createTemplateWith(BasicRest.TEMPLATE_NAME).generate(writer, context);
+        ProjectGeneratorRegistry.get(BasicRestProjectGenerator.NAME).generate(writer, context);
 
         final byte[] pom = writer.getContent(POM_PATH);
         model = MojoUtils.readPom(new ByteArrayInputStream(pom));

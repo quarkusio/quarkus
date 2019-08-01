@@ -1,4 +1,4 @@
-package io.quarkus.templates.rest;
+package io.quarkus.generators.rest;
 
 import static java.lang.String.format;
 
@@ -15,13 +15,13 @@ import java.util.stream.Collectors;
 import org.apache.maven.model.Model;
 
 import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.generators.ProjectGenerator;
+import io.quarkus.generators.SourceType;
 import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.templates.QuarkusTemplate;
-import io.quarkus.templates.SourceType;
 
-public class BasicRest implements QuarkusTemplate {
+public class BasicRestProjectGenerator implements ProjectGenerator {
 
-    public static final String TEMPLATE_NAME = "basic-rest";
+    public static final String NAME = "basic-rest";
 
     private Map<String, Object> context;
     private String path = "/hello";
@@ -30,12 +30,12 @@ public class BasicRest implements QuarkusTemplate {
     private String testMainPath;
     private SourceType type;
 
-    public BasicRest() {
+    public BasicRestProjectGenerator() {
     }
 
     @Override
     public String getName() {
-        return TEMPLATE_NAME;
+        return NAME;
     }
 
     @Override

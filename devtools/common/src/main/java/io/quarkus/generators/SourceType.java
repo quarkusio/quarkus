@@ -1,4 +1,4 @@
-package io.quarkus.templates;
+package io.quarkus.generators;
 
 import io.quarkus.maven.utilities.MojoUtils;
 

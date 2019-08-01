@@ -34,7 +34,7 @@ public class PomTransformerTest {
                 + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "</project>\n";
-        assertAddModule(source, Collections.emptyList(), expected);
+        asserTransformation(source, Collections.emptyList(), expected);
     }
 
     @Test
@@ -59,7 +59,7 @@ public class PomTransformerTest {
                 + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "</project>\n";
-        assertAddModule(source, Collections.emptyList(), expected);
+        asserTransformation(source, Collections.emptyList(), expected);
     }
 
     @Test
@@ -74,7 +74,7 @@ public class PomTransformerTest {
                 + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\r\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\r\n" //
                 + "</project>";
-        assertAddModule(source, Collections.emptyList(), expected);
+        asserTransformation(source, Collections.emptyList(), expected);
     }
 
     @Test
@@ -100,7 +100,7 @@ public class PomTransformerTest {
                 + "        <module>new-module</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertAddModule(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        asserTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
     }
 
     @Test
@@ -125,7 +125,7 @@ public class PomTransformerTest {
                 + "        <module>new-module</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertAddModule(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        asserTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
     }
 
     @Test
@@ -158,7 +158,7 @@ public class PomTransformerTest {
                 + "        <module>new-module</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertAddModule(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        asserTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
     }
 
     @Test
@@ -190,7 +190,7 @@ public class PomTransformerTest {
                 + "        <module>new-module</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertAddModule(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        asserTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
     }
 
     @Test
@@ -222,7 +222,7 @@ public class PomTransformerTest {
                 + "    <build>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        assertAddModule(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        asserTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
     }
 
     @Test
@@ -251,12 +251,208 @@ public class PomTransformerTest {
                 + "    <build>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        assertAddModule(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        asserTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
     }
 
-    static void assertAddModule(String src, Collection<Transformation> transformations, String expected) {
+    static void asserTransformation(String src, Collection<Transformation> transformations, String expected) {
         PomTransformer.transform(transformations, Paths.get("pom.xml"),
                 () -> src, xml -> Assertions.assertEquals(expected, xml));
+    }
+
+    @Test
+    void addDependencyManagementDependencies() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <dependencyManagement>\n" //
+                + "    </dependencyManagement>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <dependencyManagement>\n" //
+                + "        <dependencies>\n" //
+                + "        </dependencies>\n" //
+                + "    </dependencyManagement>\n" //
+                + "</project>\n";
+        asserTransformation(source,
+                Collections.singletonList(Transformation.addDependencyManagementIfNeeded()),
+                expected);
+    }
+
+    @Test
+    void addDependencyManagement() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <dependencyManagement>\n" //
+                + "        <dependencies>\n" //
+                + "        </dependencies>\n" //
+                + "    </dependencyManagement>\n" //
+                + "</project>\n";
+        asserTransformation(source,
+                Collections.singletonList(Transformation.addDependencyManagementIfNeeded()),
+                expected);
+    }
+
+    @Test
+    void addDependencyManagementBeforeDependencies() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <dependencies>\n" //
+                + "    </dependencies>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <dependencyManagement>\n" //
+                + "        <dependencies>\n" //
+                + "        </dependencies>\n" //
+                + "    </dependencyManagement>\n" //
+                + "    <dependencies>\n" //
+                + "    </dependencies>\n" //
+                + "</project>\n";
+        asserTransformation(source,
+                Collections.singletonList(Transformation.addDependencyManagementIfNeeded()),
+                expected);
+    }
+
+    @Test
+    void addDependencyManagementBeforeBuild() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <build>\n" //
+                + "    </build>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <dependencyManagement>\n" //
+                + "        <dependencies>\n" //
+                + "        </dependencies>\n" //
+                + "    </dependencyManagement>\n" //
+                + "    <build>\n" //
+                + "    </build>\n" //
+                + "</project>\n";
+        asserTransformation(source,
+                Collections.singletonList(Transformation.addDependencyManagementIfNeeded()),
+                expected);
+    }
+
+    @Test
+    void addManagedDependency() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <dependencyManagement>\n" //
+                + "        <dependencies>\n" //
+                + "            <dependency>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>my-ext</artifactId>\n" //
+                + "                <version>${project.version}</version>\n" //
+                + "            </dependency>\n" //
+                + "        </dependencies>\n" //
+                + "    </dependencyManagement>\n" //
+                + "</project>\n";
+        asserTransformation(source,
+                Collections.singletonList(Transformation.addManagedDependency("org.acme", "my-ext", "${project.version}")),
+                expected);
+    }
+
+    @Test
+    void importBom() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <dependencyManagement>\n" //
+                + "        <dependencies>\n" //
+                + "            <dependency>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>bom</artifactId>\n" //
+                + "                <version>${bom.version}</version>\n" //
+                + "                <type>pom</type>\n" //
+                + "                <scope>import</scope>\n" //
+                + "            </dependency>\n" //
+                + "        </dependencies>\n" //
+                + "    </dependencyManagement>\n" //
+                + "</project>\n";
+        asserTransformation(source,
+                Collections.singletonList(Transformation.importBom("org.acme", "bom", "${bom.version}")),
+                expected);
     }
 
     @Test

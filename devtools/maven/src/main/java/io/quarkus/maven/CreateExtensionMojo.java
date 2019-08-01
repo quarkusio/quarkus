@@ -67,7 +67,7 @@ public class CreateExtensionMojo extends AbstractMojo {
 
     /**
      * Directory where the changes should be performed. Default is the current directory of the current Java process.
-     * 
+     *
      * @since 0.20.0
      */
     @Parameter(property = "quarkus.basedir")
@@ -296,6 +296,28 @@ public class CreateExtensionMojo extends AbstractMojo {
     @Parameter(defaultValue = DEFAULT_ENCODING, required = true, property = "quarkus.encoding")
     String encoding;
 
+    /**
+     * Path relative to {@link #basedir} pointing at a {@code pom.xml} file containing the BOM (Bill of Materials) that
+     * manages runtime extension artifacts. If set, the newly created Runtime module will be added to
+     * {@code <deploymentManagement>} section of this bom; otherwise the newly created Runtime module will not be added
+     * to any BOM.
+     *
+     * @since 0.21.0
+     */
+    @Parameter(property = "quarkus.runtimeBomPath")
+    Path runtimeBomPath;
+
+    /**
+     * Path relative to {@link #basedir} pointing at a {@code pom.xml} file containing the BOM (Bill of Materials) that
+     * manages deployment time extension artifacts. If set, the newly created Deployment module will be added to
+     * {@code <deploymentManagement>} section of this bom; otherwise the newly created Deployment module will not be
+     * added to any BOM.
+     *
+     * @since 0.21.0
+     */
+    @Parameter(property = "quarkus.deploymentBomPath")
+    Path deploymentBomPath;
+
     @Parameter(defaultValue = "${project}", readonly = true)
     MavenProject project;
 
@@ -336,6 +358,19 @@ public class CreateExtensionMojo extends AbstractMojo {
                 name = namePrefix + nameBase;
             } else {
                 throw new MojoFailureException("Either name or both namePrefix and nameBase must be specified");
+            }
+        }
+
+        if (runtimeBomPath != null) {
+            runtimeBomPath = basedir.resolve(runtimeBomPath);
+            if (!Files.exists(runtimeBomPath)) {
+                throw new MojoFailureException("runtimeBomPath does not exist: " + runtimeBomPath);
+            }
+        }
+        if (deploymentBomPath != null) {
+            deploymentBomPath = basedir.resolve(deploymentBomPath);
+            if (!Files.exists(deploymentBomPath)) {
+                throw new MojoFailureException("deploymentBomPath does not exist: " + deploymentBomPath);
             }
         }
 
@@ -410,7 +445,19 @@ public class CreateExtensionMojo extends AbstractMojo {
         evalTemplate(cfg, "Processor.java", processorPath, charset, model);
 
         if (!basePom.getModules().contains(model.artifactIdBase)) {
+            getLog().info(String.format("Adding module [%s] to [%s]", model.artifactIdBase, basePomXml));
             new PomTransformer(basePomXml, charset).transform(Transformation.addModule(model.artifactIdBase));
+        }
+        if (runtimeBomPath != null) {
+            getLog().info(String.format("Adding [%s] to dependencyManagement in [%s]", model.artifactId, runtimeBomPath));
+            new PomTransformer(runtimeBomPath, charset)
+                    .transform(Transformation.addManagedDependency(model.groupId, model.artifactId, "${project.version}"));
+        }
+        if (deploymentBomPath != null) {
+            final String aId = model.artifactId + "-deployment";
+            getLog().info(String.format("Adding [%s] to dependencyManagement in [%s]", aId, deploymentBomPath));
+            new PomTransformer(deploymentBomPath, charset).transform(
+                    Transformation.addManagedDependency(model.groupId, aId, "${project.version}"));
         }
 
     }
@@ -543,6 +590,14 @@ public class CreateExtensionMojo extends AbstractMojo {
         } else {
             return artifactId;
         }
+    }
+
+    public void setRuntimeBomPath(String runtimeBomPath) {
+        this.runtimeBomPath = Paths.get(runtimeBomPath);
+    }
+
+    public void setDeploymentBomPath(String deploymentBomPath) {
+        this.deploymentBomPath = Paths.get(deploymentBomPath);
     }
 
     public static class TemplateParams {

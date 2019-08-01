@@ -131,7 +131,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
     private void createIndexPage() throws IOException {
         // Generate index page
         String resources = "src/main/resources/META-INF/resources";
-        String index = writer.mkdirs(resources) + "index.html";
+        String index = writer.mkdirs(resources) + "/index.html";
         if (!writer.exists(index)) {
             generate("templates/index.ftl", context, index, "welcome page");
         }
@@ -141,9 +141,9 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
     private void createDockerFiles() throws IOException {
         String dockerRoot = "src/main/docker";
         String dockerRootDir = writer.mkdirs(dockerRoot);
-        generate("templates/dockerfile-native.ftl", context, dockerRootDir + "Dockerfile.native",
+        generate("templates/dockerfile-native.ftl", context, dockerRootDir + "/Dockerfile.native",
                 "native docker file");
-        generate("templates/dockerfile-jvm.ftl", context, dockerRootDir + "Dockerfile.jvm", "jvm docker file");
+        generate("templates/dockerfile-jvm.ftl", context, dockerRootDir + "/Dockerfile.jvm", "jvm docker file");
     }
 
     private void createDockerIgnore() throws IOException {
@@ -158,7 +158,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
 
     private void createApplicationConfig() throws IOException {
         String meta = "src/main/resources";
-        String file = writer.mkdirs(meta) + "application.properties";
+        String file = writer.mkdirs(meta) + "/application.properties";
         if (!writer.exists(file)) {
             writer.write(file, "# Configuration file" + System.lineSeparator() + "# key = value");
             System.out.println("Configuration file created in " + file);

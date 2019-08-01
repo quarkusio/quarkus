@@ -1,9 +1,6 @@
 package io.quarkus.cli.commands;
 
-import static io.quarkus.maven.utilities.MojoUtils.QUARKUS_VERSION_PROPERTY;
-import static io.quarkus.maven.utilities.MojoUtils.getBomArtifactId;
-import static io.quarkus.maven.utilities.MojoUtils.getPluginArtifactId;
-import static io.quarkus.maven.utilities.MojoUtils.getPluginGroupId;
+import static io.quarkus.maven.utilities.MojoUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.contentOf;
 
@@ -16,7 +13,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -24,7 +28,9 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.maven.model.Model;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.cli.commands.writer.ZipProjectWriter;
@@ -178,6 +184,33 @@ public class CreateProjectTest {
         assertThat(contentOf(new File(testDir, "pom.xml"), "UTF-8"))
                 .containsIgnoringCase(MojoUtils.QUARKUS_VERSION_PROPERTY);
 
+    }
+
+    @Test
+    @Timeout(1)
+    @DisplayName("Should create correctly multiple times in parallel with multiple threads")
+    void createMultipleTimes() throws InterruptedException {
+        final ExecutorService executorService = Executors.newFixedThreadPool(10);
+        final CountDownLatch latch = new CountDownLatch(20);
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("extensions", "commons-io:commons-io:2.5");
+
+        List<Callable<Void>> collect = IntStream.range(0, 20).boxed().map(i -> (Callable<Void>) () -> {
+            File tempDir = Files.createTempDirectory("test").toFile();
+            FileProjectWriter write = new FileProjectWriter(tempDir);
+            new CreateProject(write)
+                    .groupId("org.acme")
+                    .artifactId("acme")
+                    .version("1.0.0-SNAPSHOT")
+                    .className("org.acme.MyResource")
+                    .doCreateProject(properties);
+            latch.countDown();
+            write.close();
+            tempDir.delete();
+            return null;
+        }).collect(Collectors.toList());
+        executorService.invokeAll(collect);
+        latch.await();
     }
 
     public static void delete(final File file) throws IOException {

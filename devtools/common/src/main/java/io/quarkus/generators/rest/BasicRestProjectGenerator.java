@@ -7,7 +7,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -23,13 +22,6 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
 
     public static final String NAME = "basic-rest";
 
-    private Map<String, Object> context;
-    private String path = "/hello";
-    private ProjectWriter writer;
-    private String srcMainPath;
-    private String testMainPath;
-    private SourceType type;
-
     public BasicRestProjectGenerator() {
     }
 
@@ -40,128 +32,140 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
 
     @Override
     public void generate(final ProjectWriter writer, Map<String, Object> parameters) throws IOException {
-        this.writer = writer;
-        this.context = parameters == null ? Collections.emptyMap() : parameters;
-        this.type = (SourceType) context.get(SOURCE_TYPE);
+        final BasicRestProject project = new BasicRestProject(writer, parameters);
 
-        initProject();
-        setupContext();
+        project.initProject();
+        project.setupContext();
 
-        createClasses();
+        project.createClasses();
 
-        createIndexPage();
-        createDockerFiles();
-        createDockerIgnore();
-        createApplicationConfig();
+        project.createIndexPage();
+        project.createDockerFiles();
+        project.createDockerIgnore();
+        project.createApplicationConfig();
 
-        createGitIgnore();
+        project.createGitIgnore();
     }
 
-    private void setupContext() throws IOException {
-        if (context.get(CLASS_NAME) != null) {
-            String packageName = (String) context.get(PACKAGE_NAME);
+    private class BasicRestProject {
+        private Map<String, Object> context;
+        private String path = "/hello";
+        private ProjectWriter writer;
+        private String srcMainPath;
+        private String testMainPath;
+        private SourceType type;
 
-            if (packageName != null) {
-                String packageDir = srcMainPath + '/' + packageName.replace('.', '/');
-                String testPackageDir = testMainPath + '/' + packageName.replace('.', '/');
-                srcMainPath = writer.mkdirs(packageDir);
-                testMainPath = writer.mkdirs(testPackageDir);
+        private BasicRestProject(final ProjectWriter writer, final Map<String, Object> parameters) {
+            this.writer = writer;
+            this.context = parameters;
+            this.type = (SourceType) context.get(SOURCE_TYPE);
+        }
+
+        @SuppressWarnings("unchecked")
+        private <T> T get(final String key, final String defaultValue) {
+            return (T) context.getOrDefault(key, defaultValue);
+        }
+
+        private boolean initProject() throws IOException {
+            boolean newProject = !writer.exists("pom.xml");
+            if (newProject) {
+                generate(type.getPomResourceTemplate(getName()), context, "pom.xml", "pom.xml");
             } else {
-                throw new NullPointerException("Need a non-null package name");
+                final Model model = MojoUtils.readPom(new ByteArrayInputStream(writer.getContent("pom.xml")));
+                context.put(PROJECT_GROUP_ID, model.getGroupId());
+                context.put(PROJECT_ARTIFACT_ID, model.getArtifactId());
             }
-        }
-    }
 
-    private void createClasses() throws IOException {
-        Object className = context.get(CLASS_NAME);
-        // If className is null we disable the generation of the JAX-RS resource.
-        if (className != null) {
-            String extension = type.getExtension();
-            String classFile = srcMainPath + '/' + className + extension;
-            String testClassFile = testMainPath + '/' + className + "Test" + extension;
-            String itTestClassFile = testMainPath + '/' + "Native" + className + "IT" + extension;
-            String name = getName();
-            generate(type.getSrcResourceTemplate(name), context, classFile, "resource code");
-            generate(type.getTestResourceTemplate(name), context, testClassFile, "test code");
-            generate(type.getNativeTestResourceTemplate(name), context, itTestClassFile, "IT code");
-        }
-    }
+            path = get(RESOURCE_PATH, path);
 
-    @SuppressWarnings("unchecked")
-    private <T> T get(final String key, final String defaultValue) {
-        return (T) context.getOrDefault(key, defaultValue);
-    }
+            srcMainPath = writer.mkdirs(type.getSrcDir());
+            testMainPath = writer.mkdirs(type.getTestSrcDir());
 
-    private boolean initProject() throws IOException {
-        boolean newProject = !writer.exists("pom.xml");
-        if (newProject) {
-            generate(type.getPomResourceTemplate(getName()), context, "pom.xml", "pom.xml");
-        } else {
-            final Model model = MojoUtils.readPom(new ByteArrayInputStream(writer.getContent("pom.xml")));
-            context.put(PROJECT_GROUP_ID, model.getGroupId());
-            context.put(PROJECT_ARTIFACT_ID, model.getArtifactId());
+            return newProject;
         }
 
-        path = get(RESOURCE_PATH, path);
-
-        srcMainPath = writer.mkdirs(type.getSrcDir());
-        testMainPath = writer.mkdirs(type.getTestSrcDir());
-
-        return newProject;
-    }
-
-    private void generate(final String templateName, final Map<String, Object> context, final String outputFilePath,
-            final String resourceType)
-            throws IOException {
-        if (!writer.exists(outputFilePath)) {
-            String path = templateName.startsWith("/") ? templateName : "/" + templateName;
-            try (final BufferedReader stream = new BufferedReader(
-                    new InputStreamReader(getClass().getResourceAsStream(path), StandardCharsets.UTF_8))) {
-                String template = stream.lines().collect(Collectors.joining("\n"));
-                for (Entry<String, Object> e : context.entrySet()) {
-                    if (e.getValue() != null) { // Exclude null values (classname and path can be null)
-                        template = template.replace(format("${%s}", e.getKey()), e.getValue().toString());
+        private void generate(final String templateName, final Map<String, Object> context, final String outputFilePath,
+                final String resourceType)
+                throws IOException {
+            if (!writer.exists(outputFilePath)) {
+                String path = templateName.startsWith("/") ? templateName : "/" + templateName;
+                try (final BufferedReader stream = new BufferedReader(
+                        new InputStreamReader(getClass().getResourceAsStream(path), StandardCharsets.UTF_8))) {
+                    String template = stream.lines().collect(Collectors.joining("\n"));
+                    for (Entry<String, Object> e : context.entrySet()) {
+                        if (e.getValue() != null) { // Exclude null values (classname and path can be null)
+                            template = template.replace(format("${%s}", e.getKey()), e.getValue().toString());
+                        }
                     }
+                    writer.write(outputFilePath, template);
                 }
-                writer.write(outputFilePath, template);
             }
         }
-    }
 
-    private void createIndexPage() throws IOException {
-        // Generate index page
-        String resources = "src/main/resources/META-INF/resources";
-        String index = writer.mkdirs(resources) + "/index.html";
-        if (!writer.exists(index)) {
-            generate("templates/index.ftl", context, index, "welcome page");
+        private void createIndexPage() throws IOException {
+            // Generate index page
+            String resources = "src/main/resources/META-INF/resources";
+            String index = writer.mkdirs(resources) + "/index.html";
+            if (!writer.exists(index)) {
+                generate("templates/index.ftl", context, index, "welcome page");
+            }
+
         }
 
-    }
+        private void createDockerFiles() throws IOException {
+            String dockerRoot = "src/main/docker";
+            String dockerRootDir = writer.mkdirs(dockerRoot);
+            generate("templates/dockerfile-native.ftl", context, dockerRootDir + "/Dockerfile.native",
+                    "native docker file");
+            generate("templates/dockerfile-jvm.ftl", context, dockerRootDir + "/Dockerfile.jvm", "jvm docker file");
+        }
 
-    private void createDockerFiles() throws IOException {
-        String dockerRoot = "src/main/docker";
-        String dockerRootDir = writer.mkdirs(dockerRoot);
-        generate("templates/dockerfile-native.ftl", context, dockerRootDir + "/Dockerfile.native",
-                "native docker file");
-        generate("templates/dockerfile-jvm.ftl", context, dockerRootDir + "/Dockerfile.jvm", "jvm docker file");
-    }
+        private void createDockerIgnore() throws IOException {
+            String docker = writer.mkdirs("") + ".dockerignore";
+            generate("templates/dockerignore.ftl", context, docker, "docker ignore");
+        }
 
-    private void createDockerIgnore() throws IOException {
-        String docker = writer.mkdirs("") + ".dockerignore";
-        generate("templates/dockerignore.ftl", context, docker, "docker ignore");
-    }
+        private void createGitIgnore() throws IOException {
+            String gitignore = writer.mkdirs("") + ".gitignore";
+            generate("templates/gitignore.ftl", context, gitignore, "git ignore");
+        }
 
-    private void createGitIgnore() throws IOException {
-        String gitignore = writer.mkdirs("") + ".gitignore";
-        generate("templates/gitignore.ftl", context, gitignore, "git ignore");
-    }
+        private void createApplicationConfig() throws IOException {
+            String meta = "src/main/resources";
+            String file = writer.mkdirs(meta) + "/application.properties";
+            if (!writer.exists(file)) {
+                writer.write(file, "# Configuration file" + System.lineSeparator() + "# key = value");
+            }
+        }
 
-    private void createApplicationConfig() throws IOException {
-        String meta = "src/main/resources";
-        String file = writer.mkdirs(meta) + "/application.properties";
-        if (!writer.exists(file)) {
-            writer.write(file, "# Configuration file" + System.lineSeparator() + "# key = value");
-            System.out.println("Configuration file created in " + file);
+        private void setupContext() throws IOException {
+            if (context.get(CLASS_NAME) != null) {
+                String packageName = (String) context.get(PACKAGE_NAME);
+
+                if (packageName != null) {
+                    String packageDir = srcMainPath + '/' + packageName.replace('.', '/');
+                    String testPackageDir = testMainPath + '/' + packageName.replace('.', '/');
+                    srcMainPath = writer.mkdirs(packageDir);
+                    testMainPath = writer.mkdirs(testPackageDir);
+                } else {
+                    throw new NullPointerException("Need a non-null package name");
+                }
+            }
+        }
+
+        private void createClasses() throws IOException {
+            Object className = context.get(CLASS_NAME);
+            // If className is null we disable the generation of the JAX-RS resource.
+            if (className != null) {
+                String extension = type.getExtension();
+                String classFile = srcMainPath + '/' + className + extension;
+                String testClassFile = testMainPath + '/' + className + "Test" + extension;
+                String itTestClassFile = testMainPath + '/' + "Native" + className + "IT" + extension;
+                String name = getName();
+                generate(type.getSrcResourceTemplate(name), context, classFile, "resource code");
+                generate(type.getTestResourceTemplate(name), context, testClassFile, "test code");
+                generate(type.getNativeTestResourceTemplate(name), context, itTestClassFile, "IT code");
+            }
         }
     }
 }

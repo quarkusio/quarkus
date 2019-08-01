@@ -4,13 +4,24 @@ import static io.quarkus.generators.ProjectGenerator.*;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
 import static org.mockito.Mockito.*;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import com.google.common.collect.ImmutableMap;
 
+import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.SourceType;
@@ -28,6 +39,25 @@ class BasicRestProjectGeneratorTest {
             .put(CLASS_NAME, "ExampleResource")
             .put("path", "/hello")
             .build();
+
+    @Test
+    @Timeout(1)
+    @DisplayName("Should generate correctly multiple times in parallel with multiple threads")
+    void generateMultipleTimes() throws InterruptedException {
+        final ExecutorService executorService = Executors.newFixedThreadPool(10);
+        final CountDownLatch latch = new CountDownLatch(20);
+        final BasicRestProjectGenerator basicRestProjectGenerator = new BasicRestProjectGenerator();
+        List<Callable<Void>> collect = IntStream.range(0, 20).boxed().map(i -> (Callable<Void>) () -> {
+            File file = Files.createTempDirectory("test").toFile();
+            FileProjectWriter writer = new FileProjectWriter(file);
+            basicRestProjectGenerator.generate(writer, BASIC_PROJECT_CONTEXT);
+            latch.countDown();
+            file.delete();
+            return null;
+        }).collect(Collectors.toList());
+        executorService.invokeAll(collect);
+        latch.await();
+    }
 
     @Test
     @DisplayName("Should generate project files with basic context")

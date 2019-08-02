@@ -4,6 +4,7 @@
 package io.quarkus.cli.commands.writer;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,12 +41,12 @@ public class ZipProjectWriter implements ProjectWriter {
         zos.putNextEntry(ze);
         zos.closeEntry();
         dirs.add(dirPath);
-        return dirPath;
+        return path;
     }
 
     @Override
     public void write(String path, String content) throws IOException {
-        byte[] contentBytes = content.getBytes("UTF-8");
+        byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         contentByPath.put(path, contentBytes);
     }
 

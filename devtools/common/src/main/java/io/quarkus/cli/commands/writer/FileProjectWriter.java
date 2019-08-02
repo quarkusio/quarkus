@@ -44,12 +44,9 @@ public class FileProjectWriter implements ProjectWriter {
             dirToCreate.mkdirs();
         }
         if (path.isEmpty()) {
-            if (root.getPath().isEmpty()) {
-                return "";
-            }
-            return "/";
+            return "";
         }
-        return dirToCreate.getPath().substring(root.getPath().length() + 1) + "/";
+        return dirToCreate.getPath().substring(root.getPath().length() + 1);
     }
 
     @Override

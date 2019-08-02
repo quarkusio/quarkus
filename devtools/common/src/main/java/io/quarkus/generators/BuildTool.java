@@ -1,4 +1,4 @@
-package io.quarkus.templates;
+package io.quarkus.generators;
 
 /**
  * An enum of build tools, such as Maven and Gradle.

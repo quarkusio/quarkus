@@ -1,11 +1,11 @@
-package io.quarkus.templates;
+package io.quarkus.generators;
 
 import java.io.IOException;
 import java.util.Map;
 
 import io.quarkus.cli.commands.writer.ProjectWriter;
 
-public interface QuarkusTemplate {
+public interface ProjectGenerator {
     String PROJECT_GROUP_ID = "project_groupId";
     String PROJECT_ARTIFACT_ID = "project_artifactId";
     String PROJECT_VERSION = "project_version";

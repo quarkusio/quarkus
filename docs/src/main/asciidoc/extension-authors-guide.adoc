@@ -250,6 +250,8 @@ Your extension project should be setup as a multi-module project with two submod
 
 2. A runtime submodule that contains the runtime behavior that will provide the extension behavior in the native executable or runtime JVM.
 
+TIP: You may want to use the `create-extension` mojo of `io.quarkus:quarkus-maven-plugin` to create these Maven modules - see the next section.
+
 Your runtime artifact should depend on `io.quarkus:quarkus-core`, and possibly the runtime artifacts of other Quarkus
 modules if you want to use functionality provided by them.
 You will also need to include the `io.quarkus:quarkus-bootstrap-maven-plugin` to generate the Quarkus extension descriptor included into the runtime artifact, if you are using the Quarkus parent pom it will automatically inherit the correct configuration.
@@ -339,6 +341,62 @@ You will also need to configure the `maven-compiler-plugin` to detect the `quark
     </plugins>
 </build>
 ----
+
+==== Create new extension modules using Maven
+
+The `create-extension` mojo of `io.quarkus:quarkus-maven-plugin` can be used to generate stubs of Maven modules needed for implementing a new Quarkus extension.
+
+WARNING: This mojo can be currently used only for adding extensions to an established source tree, such as https://github.com/quarkusio/quarkus[Quarkus] or https://github.com/quarkusio/quarkus[Camel Quarkus]. Creating extension projects from scratch is not supported yet.
+
+As and example, let's add a new extension called `my-ext` to the Quarkus source tree:
+
+[source, shell, subs=attributes+]
+----
+git clone https://github.com/quarkusio/quarkus.git
+cd quarkus
+cd extensions
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
+    -Dquarkus.artifactIdBase=my-ext \
+    -Dquarkus.nameBase="My Extension"
+----
+
+The above sequence of commands will create three new Maven modules:
+
+* `quarkus-my-ext-parent` in the `my-ext` directory; this module is also added to `<modules>` of `quarkus-extensions-parent`
+* `quarkus-my-ext` in the `my-ext/runtime` directory
+* `quarkus-my-ext-deployment` in the `my-ext/deployment` directory; a basic `MyExtProcessor` class is generated in this module.
+
+The newly added modules are not suitable for building immediatelly.
+You will need to perform some adjustments manually (some of them are specific to the Quarkus source tree):
+
+* Add `quarkus-my-ext` to the `dependencyManagement` in `bom/runtime/pom.xml`
+* Add `quarkus-my-ext-deployment` to the `dependencyManagement` in `bom/deployment/pom.xml`
+* Add the new extension coordinates to `devtools/common/src/main/filtered/extensions.json`
+
+Note that the parameters of the mojo that will be constant for all the extensions added to this source tree are configured in `extensions/pom.xml` so that they do not need to be passed on the command line each time a new extension is added.
+
+[source,xml]
+----
+<plugin>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-maven-plugin</artifactId>
+    <version>${quarkus.version}</version>
+    <inherited>false</inherited>
+    <!-- Settings for stubbing new extensions via
+           mvn quarkus:create-extension -N -Dquarkus.artifactIdBase=my-ext -Dquarkus.nameBase="My Extension"
+    -->
+    <configuration>
+        <artifactIdPrefix>quarkus-</artifactIdPrefix>
+        <namePrefix xml:space="preserve">Quarkus - </namePrefix>
+    </configuration>
+</plugin>
+----
+
+TIP: The `nameBase` parameter of the mojo is optional.
+If you do not specify it on the command line, the plugin will derive it from `artifactIdBase` by replacing dashes with spaces and uppercasing each token. So you may consider omitting explicit `nameBase` in some cases.
+
+// This should point to the mojo page once https://github.com/quarkusio/quarkusio.github.io/issues/265 is fixed
+Please refer to https://github.com/quarkusio/quarkus/blob/{quarkus-version}/devtools/maven/src/main/java/io/quarkus/maven/CreateExtensionMojo.java[CreateExtensionMojo JavaDoc] for all the available options of the mojo.
 
 === Build Step Processors
 

@@ -108,4 +108,23 @@
         <module>kogito</module>
     </modules>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+                <version>${project.version}</version>
+                <inherited>false</inherited>
+                <!-- Settings for stubbing new extensions via
+                       mvn quarkus:create-extension -N -Dquarkus.artifactIdBase=my-new-extension
+                 -->
+                <configuration>
+                    <artifactIdPrefix>quarkus-</artifactIdPrefix>
+                    <namePrefix xml:space="preserve">Quarkus - </namePrefix>
+                    <quarkusVersion>@{project.version}</quarkusVersion>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

@@ -23,7 +23,7 @@
         </dependency>
         <dependency>
             <groupId>[=groupId]</groupId>
-            <artifactId>[=artifactId]-runtime</artifactId>
+            <artifactId>[=artifactId]</artifactId>
 [#if !assumeManaged ]            <version>[=r"$"]{project.version}</version>
 [/#if]
         </dependency>

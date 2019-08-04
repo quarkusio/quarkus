@@ -137,6 +137,7 @@ The storage engine to use when the dialect supports multiple storage engines.
 `quarkus.hibernate-orm.sql-load-script`::
 (defaults to `/import.sql`) Name of the file containing the SQL statements to execute when Hibernate ORM starts.
 By default, simply add `import.sql` in the root of your resources directory and it will be picked up without having to set this property.
+Pass `no-file` to force Hibernate ORM to ignore the SQL import file.
 If you need different SQL statements between dev mode, test (`@QuarkusTest`) and in production, use Quarkus https://quarkus.io/guides/application-configuration-guide#configuration-profiles[configuration profiles facility].
 
 [source,property]
@@ -144,12 +145,13 @@ If you need different SQL statements between dev mode, test (`@QuarkusTest`) and
 --
 %dev.quarkus.hibernate-orm.sql-load-script = import-dev.sql
 %test.quarkus.hibernate-orm.sql-load-script = import-test.sql
-%prod.quarkus.hibernate-orm.sql-load-script = import-prod.sql
+%prod.quarkus.hibernate-orm.sql-load-script = no-file
 --
 
 [NOTE]
 ====
-Quarkus supports `.sql` file with sql statements or comments spread over multiple lines. Each SQL statement must be terminated by a semicolon.
+Quarkus supports `.sql` file with SQL statements or comments spread over multiple lines.
+Each SQL statement must be terminated by a semicolon.
 ====
 
 `quarkus.hibernate-orm.batch-fetch-size`:: (defaults to `-1` i.e. batch fetching is disabled).
@@ -284,31 +286,41 @@ This will allow Quarkus to index and enhance your entities as if they were insid
 == Hibernate ORM in development mode
 
 Quarkus development mode is really useful for applications that mix front end or services and database access.
-There are a few common approaches.
+There are a few common approaches to make the best of it.
 
 The first choice is to use `quarkus.hibernate-orm.database.generation=drop-and-create` in conjunction with `import.sql`.
 That way for every change to your app and in particular to your entities, the database schema will be properly recreated
 and your data fixture (stored in `import.sql`) will be used to repopulate it from scratch.
-This is best to perfectly control your environment.
+This is best to perfectly control your environment and works magic with Quarkus live reload mode:
+your entity changes or any change to your `import.sql` is immediately picked up and the schema updated without restarting the application!
+
+[NOTE]
+--
+By default, Hibernate ORM, upon boot, will read and execute the SQL statements in the `/import.sql` file (if present).
+You can change the file name by changing the property `quarkus.hibernate-orm.sql-load-script` in `application.properties`.
+--
 
 The second approach is to use `quarkus.hibernate-orm.database.generation=update`.
 This approach is best when you do many entity changes but
 still need to work on a copy of the production data
-or if you want to reproduce a bug that is based on a specific database entries.
+or if you want to reproduce a bug that is based on specific database entries.
 `update` is a best effort from Hibernate ORM and will fail in specific situations
 including altering your database structure which could lead to data loss.
 For example if you change structures related to the foreign key, Hibernate ORM might have to bail out.
+But for development, these limitations are acceptable.
 
 The third approach is to use `quarkus.hibernate-orm.database.generation=none`.
 This approach is best when you are working on a copy of the production data but want to fully control the schema evolution.
 Or if you use a database schema migration tool like https://quarkus.io/guides/flyway-guide[Flyway].
-When you make a change to an entity, make sure to manually adapt the database schema accordingly.
+When you make a change to an entity, make sure to adapt the database schema accordingly.
 
-WARNING: Do not use `quarkus.hibernate-orm.database.generation` `drop-and-create` and `update` in your production environment.
+WARNING: Do not use `quarkus.hibernate-orm.database.generation` `drop-and-create` and `update` in your production environment. You have been warned :)
 
 
-Don't forget that you can define different https://quarkus.io/guides/application-configuration-guide#configuration-profiles[configuration profiles]
+It becomes really powerful when combined with Quarkus configuration profiles.
+You can define different https://quarkus.io/guides/application-configuration-guide#configuration-profiles[configuration profiles]
 to select different behaviors depending on your environment.
+This is great because you can define different combinations of Hibernate ORM properties matching the development style you currently need.
 
 [source]
 .application.properties
@@ -317,10 +329,10 @@ to select different behaviors depending on your environment.
 %dev.quarkus.hibernate-orm.sql-load-script = import-dev.sql
 
 %dev-with-data.quarkus.hibernate-orm.database.generation = update
-%dev-with-data.quarkus.hibernate-orm.sql-load-script =
+%dev-with-data.quarkus.hibernate-orm.sql-load-script = no-file
 
 %prod.quarkus.hibernate-orm.database.generation = none
-%prod.quarkus.hibernate-orm.sql-load-script =
+%prod.quarkus.hibernate-orm.sql-load-script = no-file
 --
 
 [source,bash]

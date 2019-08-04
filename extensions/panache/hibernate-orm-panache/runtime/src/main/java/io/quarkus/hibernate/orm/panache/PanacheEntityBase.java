@@ -373,6 +373,8 @@ public abstract class PanacheEntityBase {
     /**
      * Find entities matching a query, with optional indexed parameters.
      * This method is a shortcut for <code>find(query, params).stream()</code>.
+     * It requires a transaction to work.
+     * Without a transaction, the underlying cursor can be closed before the end of the stream.
      *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params optional sequence of indexed parameters
@@ -391,6 +393,8 @@ public abstract class PanacheEntityBase {
     /**
      * Find entities matching a query and the given sort options, with optional indexed parameters.
      * This method is a shortcut for <code>find(query, sort, params).stream()</code>.
+     * It requires a transaction to work.
+     * Without a transaction, the underlying cursor can be closed before the end of the stream.
      *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param sort the sort strategy to use
@@ -410,6 +414,8 @@ public abstract class PanacheEntityBase {
     /**
      * Find entities matching a query, with named parameters.
      * This method is a shortcut for <code>find(query, params).stream()</code>.
+     * It requires a transaction to work.
+     * Without a transaction, the underlying cursor can be closed before the end of the stream.
      *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Map} of named parameters
@@ -428,6 +434,8 @@ public abstract class PanacheEntityBase {
     /**
      * Find entities matching a query and the given sort options, with named parameters.
      * This method is a shortcut for <code>find(query, sort, params).stream()</code>.
+     * It requires a transaction to work.
+     * Without a transaction, the underlying cursor can be closed before the end of the stream.
      *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param sort the sort strategy to use
@@ -447,6 +455,8 @@ public abstract class PanacheEntityBase {
     /**
      * Find entities matching a query, with named parameters.
      * This method is a shortcut for <code>find(query, params).stream()</code>.
+     * It requires a transaction to work.
+     * Without a transaction, the underlying cursor can be closed before the end of the stream.
      *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Parameters} of named parameters
@@ -465,6 +475,8 @@ public abstract class PanacheEntityBase {
     /**
      * Find entities matching a query and the given sort options, with named parameters.
      * This method is a shortcut for <code>find(query, sort, params).stream()</code>.
+     * It requires a transaction to work.
+     * Without a transaction, the underlying cursor can be closed before the end of the stream.
      *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param sort the sort strategy to use
@@ -484,6 +496,8 @@ public abstract class PanacheEntityBase {
     /**
      * Find all entities of this type.
      * This method is a shortcut for <code>findAll().stream()</code>.
+     * It requires a transaction to work.
+     * Without a transaction, the underlying cursor can be closed before the end of the stream.
      *
      * @return a {@link Stream} containing all results, without paging
      * @see #streamAll(Sort)
@@ -498,6 +512,8 @@ public abstract class PanacheEntityBase {
     /**
      * Find all entities of this type, in the given order.
      * This method is a shortcut for <code>findAll(sort).stream()</code>.
+     * It requires a transaction to work.
+     * Without a transaction, the underlying cursor can be closed before the end of the stream.
      *
      * @param sort the sort order to use
      * @return a {@link Stream} containing all results, without paging

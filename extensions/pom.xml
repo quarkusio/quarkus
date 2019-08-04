@@ -19,6 +19,7 @@
         <module>scheduler</module>
 
         <!-- Formats -->
+        <module>jackson</module>
         <module>jaxb</module>
         <module>jsonp</module>
         <module>jsonb</module>
@@ -39,6 +40,7 @@
         <module>resteasy-server-common</module>
         <module>resteasy</module>
         <module>resteasy-jsonb</module>
+        <module>resteasy-jackson</module>
         <module>rest-client</module>
         <module>smallrye-openapi-common</module>
         <module>smallrye-openapi</module>
@@ -77,6 +79,7 @@
 
         <!-- Security -->
         <module>elytron-security</module>
+        <module>elytron-security-oauth2</module>
         <module>smallrye-jwt</module>
         <module>keycloak</module>
 
@@ -104,5 +107,24 @@
         <!-- kogito -->
         <module>kogito</module>
     </modules>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+                <version>${project.version}</version>
+                <inherited>false</inherited>
+                <!-- Settings for stubbing new extensions via
+                       mvn quarkus:create-extension -N -Dquarkus.artifactIdBase=my-new-extension
+                 -->
+                <configuration>
+                    <artifactIdPrefix>quarkus-</artifactIdPrefix>
+                    <namePrefix xml:space="preserve">Quarkus - </namePrefix>
+                    <quarkusVersion>@{project.version}</quarkusVersion>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

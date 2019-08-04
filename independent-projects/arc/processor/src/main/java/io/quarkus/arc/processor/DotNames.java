@@ -10,6 +10,7 @@ import javax.enterprise.context.control.ActivateRequestContext;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
 import javax.enterprise.event.ObservesAsync;
+import javax.enterprise.event.TransactionPhase;
 import javax.enterprise.inject.Alternative;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
@@ -77,6 +78,7 @@ public final class DotNames {
     public static final DotName OPTIONAL = create(Optional.class);
     public static final DotName NAMED = create(Named.class);
     public static final DotName ACTIVATE_REQUEST_CONTEXT = create(ActivateRequestContext.class);
+    public static final DotName TRANSACTION_PHASE = create(TransactionPhase.class);
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);

@@ -170,6 +170,15 @@
     "artifactId": "quarkus-jdbc-postgresql"
   },
   {
+    "name": "Jackson",
+    "labels": [
+      "jackson",
+      "json"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jackson"
+  },
+  {
     "name": "JSON-B",
     "labels": [
       "jsonb",
@@ -328,6 +337,20 @@
     "guide": "https://quarkus.io/guides/rest-json-guide"
   },
   {
+    "name": "RESTEasy - Jackson",
+    "labels": [
+      "resteasy-jackson",
+      "jaxrs-json",
+      "resteasy-json",
+      "resteasy",
+      "jaxrs",
+      "json",
+      "jackson"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-resteasy-jackson"
+  },
+  {
     "name": "Scheduler",
     "labels": [
       "scheduler",
@@ -346,6 +369,15 @@
     "groupId": "io.quarkus",
     "artifactId": "quarkus-elytron-security",
     "guide": "https://quarkus.io/guides/security-guide"
+  },
+  {
+    "name": "Security OAuth2",
+    "labels": [
+      "security",
+      "oauth2"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-elytron-security-oauth2"
   },
   {
     "name": "SmallRye Context Propagation",

@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>org.acme</groupId>
-            <artifactId>myproject-with-grand-parent-runtime</artifactId>
+            <artifactId>myproject-with-grand-parent</artifactId>
         </dependency>
     </dependencies>
 

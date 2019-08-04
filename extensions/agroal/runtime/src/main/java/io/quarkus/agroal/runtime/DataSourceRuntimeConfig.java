@@ -3,6 +3,7 @@ package io.quarkus.agroal.runtime;
 import java.time.Duration;
 import java.util.Optional;
 
+import io.agroal.api.configuration.AgroalConnectionFactoryConfiguration;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -79,7 +80,7 @@ public class DataSourceRuntimeConfig {
      * The transaction isolation level.
      */
     @ConfigItem
-    public Optional<TransactionIsolationLevel> transactionIsolationLevel;
+    public Optional<AgroalConnectionFactoryConfiguration.TransactionIsolation> transactionIsolationLevel;
 
     /**
      * Enable datasource metrics collection.

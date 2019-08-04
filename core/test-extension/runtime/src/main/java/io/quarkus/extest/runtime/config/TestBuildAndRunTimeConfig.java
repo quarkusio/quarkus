@@ -1,8 +1,12 @@
 package io.quarkus.extest.runtime.config;
 
+import java.util.List;
+import java.util.Map;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConvertWith;
 
 /**
  * This is a duplicate of {@linkplain TestBuildTimeConfig} with a {@linkplain ConfigPhase#BUILD_AND_RUN_TIME_FIXED}
@@ -24,6 +28,24 @@ public class TestBuildAndRunTimeConfig {
     /** A nested config group with all supported value types */
     @ConfigItem
     public AllValuesConfig allValues;
+
+    /**
+     * Map of Integer conversion with {@link ConvertWith}
+     */
+    @ConfigItem
+    @ConvertWith(WholeNumberConverter.class)
+    public Map<String, Integer> mapOfNumbers;
+
+    /**
+     * Enum object
+     */
+    @ConfigItem
+    public MyEnum myEnum;
+    /**
+     * Enum list of objects
+     */
+    @ConfigItem
+    public List<MyEnum> myEnums;
 
     public TestBuildAndRunTimeConfig() {
 

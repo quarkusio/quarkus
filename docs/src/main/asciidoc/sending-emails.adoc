@@ -75,7 +75,7 @@ The following table lists the properties that can be configured:
 | port | Integer | the SMTP server port | `25`
 | username | String | the username |
 | password | String | the password |
-| ssl | Boolean | Enables or disables SSL. If enabled, you must also link:native-and-ssl-guide.html[set `quarkus.ssl.native` to true] when building a native image. | `false`
+| ssl | Boolean | Enables or disables SSL | `false`
 | trust-all | Boolean | Set whether to trust all certificates | `false`
 | max-pool-size | Integer | Configures the maximum number of open connections to the mail server | `10`
 | own-host-name | String | The hostname to be used for `HELO/EHLO` and the `Message-ID` |
@@ -250,7 +250,7 @@ class MailTest {
 
 If you want to use the Gmail SMTP server, first create a dedicated password in `Google Account > Security > App passwords` or go to https://myaccount.google.com/apppasswords.
 
-When done, you can configure your Quarkus application by adding the following properties to your `application.properties`: 
+When done, you can configure your Quarkus application by adding the following properties to your `application.properties`:
 
 With TLS:
 

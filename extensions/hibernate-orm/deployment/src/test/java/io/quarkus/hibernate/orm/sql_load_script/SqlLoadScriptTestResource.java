@@ -22,6 +22,6 @@ public class SqlLoadScriptTestResource {
             return entity.getName();
         }
 
-        return null;
+        return "no entity";
     }
 }

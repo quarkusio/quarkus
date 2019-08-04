@@ -1,28 +1,31 @@
 package io.quarkus.deployment.configuration;
 
+import static io.quarkus.deployment.steps.ConfigurationSetup.ECS_EXPAND_VALUE;
+
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Optional;
 
+import org.eclipse.microprofile.config.spi.Converter;
 import org.wildfly.common.Assert;
 
 import io.quarkus.deployment.AccessorFinder;
-import io.quarkus.deployment.steps.ConfigurationSetup;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
 
 /**
  */
-public class OptionalObjectConfigType extends ObjectConfigType {
+public class OptionalObjectConfigType<T> extends ObjectConfigType<T> {
 
     public OptionalObjectConfigType(final String containingName, final CompoundConfigType container,
-            final boolean consumeSegment, final String defaultValue, final Class<?> expectedType, String javadocKey,
-            String configKey) {
-        super(containingName, container, consumeSegment, defaultValue, expectedType, javadocKey, configKey);
+            final boolean consumeSegment, final String defaultValue, final Class<T> expectedType, String javadocKey,
+            String configKey, Class<? extends Converter<T>> converterClass) {
+        super(containingName, container, consumeSegment, defaultValue, expectedType, javadocKey, configKey, converterClass);
     }
 
     public void acceptConfigurationValue(final NameIterator name, final ExpandingConfigSource.Cache cache,
@@ -51,9 +54,9 @@ public class OptionalObjectConfigType extends ObjectConfigType {
             if (defaultValue.isEmpty()) {
                 field.set(enclosing, Optional.empty());
             } else {
-                field.set(enclosing, Optional.ofNullable(config.convert(
-                        ExpandingConfigSource.expandValue(defaultValue, cache),
-                        expectedType)));
+                String value = ExpandingConfigSource.expandValue(defaultValue, cache);
+                field.set(enclosing,
+                        Optional.ofNullable(ConfigUtils.convert(config, value, expectedType, converterClass)));
             }
         } catch (IllegalAccessException e) {
             throw toError(e);
@@ -62,12 +65,12 @@ public class OptionalObjectConfigType extends ObjectConfigType {
 
     void generateGetDefaultValueIntoEnclosingGroup(final BytecodeCreator body, final ResultHandle enclosing,
             final MethodDescriptor setter, final ResultHandle cache, final ResultHandle config) {
-        ResultHandle optValue;
+        final ResultHandle optValue;
         if (defaultValue.isEmpty()) {
             optValue = body.invokeStaticMethod(OPT_EMPTY_METHOD);
         } else {
-            optValue = body.invokeStaticMethod(OPT_OF_NULLABLE_METHOD, body.invokeVirtualMethod(SRC_CONVERT_METHOD, config,
-                    body.load(defaultValue), body.loadClass(expectedType)));
+            optValue = body.invokeStaticMethod(OPT_OF_NULLABLE_METHOD, body.invokeStaticMethod(CU_CONVERT, config,
+                    body.load(defaultValue), body.loadClass(expectedType), loadConverterClass(body)));
         }
         body.invokeStaticMethod(setter, enclosing, optValue);
     }
@@ -75,7 +78,7 @@ public class OptionalObjectConfigType extends ObjectConfigType {
     public void acceptConfigurationValueIntoGroup(final Object enclosing, final Field field, final NameIterator name,
             final SmallRyeConfig config) {
         try {
-            field.set(enclosing, config.getOptionalValue(name.toString(), expectedType));
+            field.set(enclosing, ConfigUtils.getOptionalValue(config, name.toString(), expectedType, converterClass));
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -83,13 +86,9 @@ public class OptionalObjectConfigType extends ObjectConfigType {
 
     public void generateAcceptConfigurationValueIntoGroup(final BytecodeCreator body, final ResultHandle enclosing,
             final MethodDescriptor setter, final ResultHandle name, final ResultHandle config) {
-        final ResultHandle optionalValue = body.invokeVirtualMethod(
-                SRC_GET_OPT_METHOD,
-                config,
-                body.invokeVirtualMethod(
-                        OBJ_TO_STRING_METHOD,
-                        name),
-                body.loadClass(expectedType));
+        ResultHandle propertyName = body.invokeVirtualMethod(OBJ_TO_STRING_METHOD, name);
+        final ResultHandle optionalValue = body.invokeStaticMethod(CU_GET_OPT_VALUE, config, propertyName,
+                body.loadClass(expectedType), loadConverterClass(body));
         body.invokeStaticMethod(setter, enclosing, optionalValue);
     }
 
@@ -108,13 +107,14 @@ public class OptionalObjectConfigType extends ObjectConfigType {
         if (defaultValue.isEmpty()) {
             return body.invokeStaticMethod(OPT_EMPTY_METHOD);
         } else {
-            return body.invokeStaticMethod(OPT_OF_NULLABLE_METHOD, body.invokeVirtualMethod(SRC_CONVERT_METHOD, config,
-                    cache == null ? body.load(defaultValue)
-                            : body.invokeStaticMethod(
-                                    ConfigurationSetup.ECS_EXPAND_VALUE,
-                                    body.load(defaultValue),
-                                    cache),
-                    body.loadClass(expectedType)));
+            ResultHandle classResultHandle = body.loadClass(expectedType);
+            ResultHandle cacheResultHandle = cache == null ? body.load(defaultValue)
+                    : body.invokeStaticMethod(ECS_EXPAND_VALUE,
+                            body.load(defaultValue),
+                            cache);
+            ResultHandle resultHandle = body.invokeStaticMethod(CU_CONVERT, config, cacheResultHandle, classResultHandle,
+                    loadConverterClass(body));
+            return body.invokeStaticMethod(OPT_OF_NULLABLE_METHOD, resultHandle);
         }
     }
 }

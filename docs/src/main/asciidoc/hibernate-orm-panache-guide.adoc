@@ -188,6 +188,9 @@ List<String> namesButEmmanuels = persons
     .collect(Collectors.toList());
 --
 
+NOTE: The `stream` methods require a transaction to work.
+
+
 == Paging
 
 You should only use `list` and `stream` methods if your table contains small enough data sets. For larger data

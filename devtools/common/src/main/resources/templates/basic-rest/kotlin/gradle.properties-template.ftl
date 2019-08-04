@@ -1,0 +1,1 @@
+quarkusVersion = ${quarkus_version}

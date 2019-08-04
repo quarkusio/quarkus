@@ -1,5 +1,6 @@
 package io.quarkus.maven.utilities;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -210,6 +211,11 @@ public class MojoUtils {
         }
     }
 
+    public static String[] readGavFromPom(final InputStream resourceAsStream) throws IOException {
+        Model model = readPom(resourceAsStream);
+        return new String[] { model.getGroupId(), model.getArtifactId(), model.getVersion() };
+    }
+
     public static void write(Model model, File outputFile) throws IOException {
         FileOutputStream fileOutputStream = new FileOutputStream(outputFile);
         write(model, fileOutputStream);
@@ -327,6 +333,23 @@ public class MojoUtils {
             this.name = name;
             this.value = value;
         }
+    }
+
+    public static String[] readGavFromSettingsGradle(ByteArrayInputStream buildFileInputStream, String[] gavIn) {
+        String[] gavOut = Arrays.copyOf(gavIn, gavIn.length);
+        try (Scanner scanner = new Scanner(buildFileInputStream)) {
+            while (scanner.hasNextLine()) {
+                String currentLine = scanner.nextLine();
+                if (currentLine.startsWith("group")) {
+                    gavOut[0] = currentLine.substring(currentLine.indexOf('\'') + 1, currentLine.lastIndexOf('\''));
+                } else if (currentLine.startsWith("rootProject.name")) {
+                    gavOut[1] = currentLine.substring(currentLine.indexOf('\'') + 1, currentLine.lastIndexOf('\''));
+                } else if (currentLine.startsWith("version")) {
+                    gavOut[2] = currentLine.substring(currentLine.indexOf('\'') + 1, currentLine.lastIndexOf('\''));
+                }
+            }
+        }
+        return gavOut;
     }
 
 }

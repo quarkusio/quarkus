@@ -6,15 +6,19 @@ package io.quarkus.generators;
 public enum BuildTool {
 
     /** Maven build tool */
-    MAVEN("\n# Maven\ntarget/\npom.xml.tag\npom.xml.releaseBackup\npom.xml.versionsBackup\nrelease.properties"),
+    MAVEN("\n# Maven\ntarget/\npom.xml.tag\npom.xml.releaseBackup\npom.xml.versionsBackup\nrelease.properties",
+            new String[] { "pom.xml" }),
 
     /** Gradle build tool */
-    GRADLE("\n# Gradle\n.gradle/\nbuild/");
+    GRADLE("\n# Gradle\n.gradle/\nbuild/", new String[] { "build.gradle", "settings.gradle", "gradle.properties" });
 
     private final String gitIgnoreEntries;
 
-    private BuildTool(String gitIgnoreEntries) {
+    private final String[] buildFiles;
+
+    private BuildTool(String gitIgnoreEntries, String[] buildFiles) {
         this.gitIgnoreEntries = gitIgnoreEntries;
+        this.buildFiles = buildFiles;
     }
 
     /**
@@ -23,4 +27,13 @@ public enum BuildTool {
     public String getGitIgnoreEntries() {
         return gitIgnoreEntries;
     }
+
+    public String[] getBuildFiles() {
+        return buildFiles;
+    }
+
+    public String getDependenciesFile() {
+        return buildFiles[0];
+    }
+
 }

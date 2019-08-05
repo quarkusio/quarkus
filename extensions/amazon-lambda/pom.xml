@@ -8,7 +8,7 @@
         <artifactId>quarkus-build-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../../build-parent/pom.xml</relativePath>
+        <relativePath>../../parents/build-parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>quarkus-amazon-lambda-parent</artifactId>

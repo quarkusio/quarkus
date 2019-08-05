@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>quarkus-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>quarkus-external-parent</artifactId>
+    <name>Quarkus - External Parent</name>
+    <description>A parent POM for third party extension projects</description>
+    <packaging>pom</packaging>
+
+    <properties>
+
+        <!-- Must be literal to work when inherited, keep in sync with project.version -->
+        <quarkus.version>999-SNAPSHOT</quarkus.version>
+
+        <!-- Supported Maven versions, interpreted as a version range -->
+        <supported-maven-versions>[3.5.3,)</supported-maven-versions>
+
+    </properties>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <systemProperties>
+                            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        </systemProperties>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-maven-plugin</artifactId>
+                    <version>${quarkus.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                    <version>${quarkus.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>extension-descriptor</goal>
+                            </goals>
+                            <phase>compile</phase>
+                            <configuration>
+                                <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}
+                                </deployment>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>enforce</id>
+                            <configuration>
+                                <rules>
+                                    <dependencyConvergence/>
+                                    <requireMavenVersion>
+                                        <version>${supported-maven-versions}</version>
+                                    </requireMavenVersion>
+                                    <bannedDependencies>
+                                        <excludes>
+                                            <!-- Use javax.annotation-api -->
+                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec
+                                            </exclude>
+                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec
+                                            </exclude>
+                                            <!-- use our jboss-logmanager -->
+                                            <exclude>org.jboss.logging:jboss-logmanager</exclude>
+                                            <!-- We don't want all the API's in one jar-->
+                                            <exclude>javax:javaee-api</exclude>
+                                            <!-- Prevent incompatible config from coming in -->
+                                            <exclude>org.wildfly.client:wildfly-client-config</exclude>
+                                            <!-- Use Jakarta Activation -->
+                                            <exclude>javax.activation:javax-activation-api</exclude>
+                                            <exclude>javax.activation:activation</exclude>
+                                            <exclude>org.jboss.marshalling:jboss-marshalling-osgi</exclude>
+                                            <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</exclude>
+                                            <!-- The API is packaged by the implementation-->
+                                            <exclude>javax.json:javax.json-api</exclude>
+                                            <!-- Do not use Jakarta APIs for JSON -->
+                                            <exclude>org.glassfish:jakarta.json</exclude>
+                                            <exclude>jakarta.json.bind:jakarta.json.bind-api</exclude>
+                                            <exclude>jakarta.json:jakarta.json-api</exclude>
+                                        </excludes>
+                                    </bannedDependencies>
+                                </rules>
+                            </configuration>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.jboss.jandex</groupId>
+                    <artifactId>jandex-maven-plugin</artifactId>
+                    <version>1.0.6</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>jdk-8-classpath</id>
+            <activation>
+                <jdk>[9,</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <release>8</release>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

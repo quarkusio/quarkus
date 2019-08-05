@@ -41,7 +41,8 @@
     <modules>
         <module>bom/runtime</module>
         <module>bom/deployment</module>
-        <module>build-parent</module>
+        <module>parents/external-parent</module>
+        <module>parents/build-parent</module>
 
         <!-- Core components -->
         <module>core</module>

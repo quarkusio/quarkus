@@ -4,21 +4,40 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.acme</groupId>
-        <artifactId>myproject-with-grand-parent-parent</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <groupId>io.quarkus.example</groupId>
+        <artifactId>single-ext-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>myproject-with-grand-parent</artifactId>
-    <name>With Grand Parent - Runtime</name>
+    <artifactId>single-ext-deployment</artifactId>
+    <name>Single Ext - Deployment</name>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom-deployment</artifactId>
+                <version>@@${quarkus.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus.example</groupId>
+            <artifactId>single-ext</artifactId>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -34,4 +53,5 @@
             </plugin>
         </plugins>
     </build>
+
 </project>

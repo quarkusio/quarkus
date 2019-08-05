@@ -16,7 +16,7 @@
             <dependency>
                 <groupId>org.acme</groupId>
                 <artifactId>myproject-with-grand-parent</artifactId>
-                <version>${project.version}</version>
+                <version>@@${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

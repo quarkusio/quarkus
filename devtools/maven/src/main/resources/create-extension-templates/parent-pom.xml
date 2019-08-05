@@ -7,7 +7,8 @@
         <groupId>[=grandParentGroupId]</groupId>
         <artifactId>[=grandParentArtifactId]</artifactId>
         <version>[=grandParentVersion]</version>
-        <relativePath>[=grandParentRelativePath]</relativePath>
+[#if grandParentRelativePath?? ]        <relativePath>[=grandParentRelativePath]</relativePath>
+[/#if]
     </parent>
 [/#if]
 
@@ -20,6 +21,23 @@
 [/#if]
 
     <packaging>pom</packaging>
+[#if !multipleExtensions ]
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>[=groupId]</groupId>
+                <artifactId>[=artifactId]</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>[=groupId]</groupId>
+                <artifactId>[=artifactId]-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+[/#if]
     <modules>
         <module>deployment</module>
         <module>runtime</module>

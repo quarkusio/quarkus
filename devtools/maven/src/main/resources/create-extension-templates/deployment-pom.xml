@@ -13,6 +13,20 @@
     <artifactId>[=artifactId]-deployment</artifactId>
 [#if nameBase?? ]    <name>[=namePrefix][=nameBase][=nameSegmentDelimiter]Deployment</name>
 [/#if]
+[#if !multipleExtensions ]
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom-deployment</artifactId>
+                <version>[=quarkusVersion]</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+[/#if]
 
     <dependencies>
         <dependency>
@@ -24,7 +38,7 @@
         <dependency>
             <groupId>[=groupId]</groupId>
             <artifactId>[=artifactId]</artifactId>
-[#if !assumeManaged ]            <version>[=r"$"]{project.version}</version>
+[#if !assumeManaged ]            <version>${project.version}</version>
 [/#if]
         </dependency>
     </dependencies>

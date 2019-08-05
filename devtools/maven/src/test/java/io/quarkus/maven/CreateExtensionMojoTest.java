@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 public class CreateExtensionMojoTest {
 
-    static CreateExtensionMojo createMojo(String testProjectName) throws IllegalArgumentException,
+    static CreateExtensionMojo copyTestTree(String testProjectName, String testName) throws IllegalArgumentException,
             IllegalAccessException, IOException, NoSuchFieldException, SecurityException {
         final Path srcDir = Paths.get("src/test/resources/projects/" + testProjectName);
         /*
@@ -24,7 +24,7 @@ public class CreateExtensionMojoTest {
          * suffix
          */
         final Path copyDir = Paths
-                .get("target/test-classes/projects/" + testProjectName + "-" + ((int) (Math.random() * 1000)));
+                .get("target/test-classes/projects/" + testProjectName + "-" + testName);
         Files.walk(srcDir).forEach(source -> {
             try {
                 final Path dest = copyDir.resolve(srcDir.relativize(source));
@@ -34,8 +34,12 @@ public class CreateExtensionMojoTest {
             }
         });
 
+        return defaultMojo(copyDir);
+    }
+
+    public static CreateExtensionMojo defaultMojo(Path basedir) {
         final CreateExtensionMojo mojo = new CreateExtensionMojo();
-        mojo.basedir = copyDir;
+        mojo.basedir = basedir;
         mojo.encoding = CreateExtensionMojo.DEFAULT_ENCODING;
         mojo.templatesUriBase = CreateExtensionMojo.DEFAULT_TEMPLATES_URI_BASE;
         mojo.quarkusVersion = CreateExtensionMojo.DEFAULT_QUARKUS_VERSION;
@@ -45,21 +49,35 @@ public class CreateExtensionMojoTest {
     }
 
     @Test
+    void singleExtensionFromScratch() throws IOException, MojoExecutionException, MojoFailureException {
+        final Path basedir = Paths
+                .get("target/test-classes/projects/single-from-scratch");
+        Files.createDirectories(basedir);
+        final CreateExtensionMojo mojo = defaultMojo(basedir);
+        mojo.groupId = "io.quarkus.example";
+        mojo.artifactId = "single-ext";
+        mojo.execute();
+
+        assertTreesMatch(Paths.get("target/test-classes/expected/single-from-scratch"),
+                mojo.basedir);
+    }
+
+    @Test
     void createExtensionUnderExistingPomMinimal() throws MojoExecutionException, MojoFailureException,
             IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, IOException {
-        final CreateExtensionMojo mojo = createMojo("create-extension-pom");
+        final CreateExtensionMojo mojo = copyTestTree("create-extension-pom", "minimal");
         mojo.artifactId = "my-project-(minimal-extension)";
         mojo.assumeManaged = false;
         mojo.execute();
 
-        assertTreesMatch(Paths.get("src/test/resources/expected/create-extension-pom-minimal"),
+        assertTreesMatch(Paths.get("target/test-classes/expected/create-extension-pom-minimal"),
                 mojo.basedir);
     }
 
     @Test
     void createExtensionUnderExistingPomCustomGrandParent() throws MojoExecutionException, MojoFailureException,
             IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, IOException {
-        final CreateExtensionMojo mojo = createMojo("create-extension-pom");
+        final CreateExtensionMojo mojo = copyTestTree("create-extension-pom", "grand-parent");
         mojo.artifactId = "myproject-(with-grand-parent)";
         mojo.grandParentArtifactId = "build-bom";
         mojo.grandParentRelativePath = "../../build-bom/pom.xml";
@@ -70,7 +88,7 @@ public class CreateExtensionMojoTest {
         mojo.execute();
 
         assertTreesMatch(
-                Paths.get("src/test/resources/expected/create-extension-pom-with-grand-parent"),
+                Paths.get("target/test-classes/expected/create-extension-pom-with-grand-parent"),
                 mojo.basedir);
     }
 

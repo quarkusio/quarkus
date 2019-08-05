@@ -27,7 +27,7 @@
                         </goals>
                         <phase>compile</phase>
                         <configuration>
-                            <deployment>[=r"$"]{project.groupId}:[=r"$"]{project.artifactId}-deployment:[=r"$"]{project.version}
+                            <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}
                             </deployment>
                         </configuration>
                     </execution>

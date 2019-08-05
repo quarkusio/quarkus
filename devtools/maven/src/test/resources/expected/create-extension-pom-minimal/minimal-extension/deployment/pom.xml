@@ -17,12 +17,12 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
-            <version>${quarkus.version}</version>
+            <version>@@${quarkus.version}</version>
         </dependency>
         <dependency>
             <groupId>org.acme</groupId>
             <artifactId>my-project-minimal-extension</artifactId>
-            <version>${project.version}</version>
+            <version>@@${project.version}</version>
         </dependency>
     </dependencies>
 
@@ -36,7 +36,7 @@
                         <path>
                             <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${quarkus.version}</version>
+                            <version>@@${quarkus.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>

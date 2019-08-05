@@ -41,7 +41,7 @@
             <dependency>
                 <groupId>org.jboss.arquillian</groupId>
                 <artifactId>arquillian-bom</artifactId>
-                <version>1.4.1.Final</version>
+                <version>${arquillian.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

@@ -5,7 +5,7 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.artemis.core.deployment.ArtemisJmsBuildItem;
 import io.quarkus.artemis.core.runtime.ArtemisRuntimeConfig;
 import io.quarkus.artemis.jms.runtime.ArtemisJmsProducer;
-import io.quarkus.artemis.jms.runtime.ArtemisJmsTemplate;
+import io.quarkus.artemis.jms.runtime.ArtemisJmsRecorder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -25,9 +25,9 @@ public class ArtemisJmsProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void configure(ArtemisJmsTemplate template, ArtemisRuntimeConfig runtimeConfig,
+    void configure(ArtemisJmsRecorder recorder, ArtemisRuntimeConfig runtimeConfig,
             BeanContainerBuildItem beanContainer) {
 
-        template.setConfig(runtimeConfig, beanContainer.getValue());
+        recorder.setConfig(runtimeConfig, beanContainer.getValue());
     }
 }

@@ -19,7 +19,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.artemis.core.runtime.ArtemisCoreProducer;
-import io.quarkus.artemis.core.runtime.ArtemisCoreTemplate;
+import io.quarkus.artemis.core.runtime.ArtemisCoreRecorder;
 import io.quarkus.artemis.core.runtime.ArtemisRuntimeConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -89,12 +89,12 @@ public class ArtemisCoreProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void configure(ArtemisCoreTemplate template, ArtemisRuntimeConfig runtimeConfig,
+    void configure(ArtemisCoreRecorder recorder, ArtemisRuntimeConfig runtimeConfig,
             BeanContainerBuildItem beanContainer, Optional<ArtemisJmsBuildItem> artemisJms) {
 
         if (artemisJms.isPresent()) {
             return;
         }
-        template.setConfig(runtimeConfig, beanContainer.getValue());
+        recorder.setConfig(runtimeConfig, beanContainer.getValue());
     }
 }

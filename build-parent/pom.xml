@@ -19,9 +19,6 @@
         <elasticsearch-maven-plugin.version>6.13</elasticsearch-maven-plugin.version>
         <elasticsearch-server.version>7.1.1</elasticsearch-server.version>
 
-        <!-- These properties are not in the bom as we don't want to enforce the version -->
-        <spring.version>5.1.4.RELEASE</spring.version>
-
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <kotlin.version>1.3.21</kotlin.version>
 

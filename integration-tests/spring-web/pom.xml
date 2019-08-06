@@ -11,27 +11,17 @@
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>quarkus-integration-test-spring-di</artifactId>
-    <name>Quarkus - Integration Tests - Spring DI</name>
+    <artifactId>quarkus-integration-test-spring-web</artifactId>
+    <name>Quarkus - Integration Tests - Spring Web</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
+            <artifactId>quarkus-spring-web</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-spring-di</artifactId>
-        </dependency>
-
-        <!-- only needed because of @RequestScope is utilized in the tests -->
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
         </dependency>
 
         <dependency>

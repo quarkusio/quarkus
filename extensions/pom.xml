@@ -76,6 +76,7 @@
 
         <!-- Spring -->
         <module>spring-di</module>
+        <module>spring-web</module>
 
         <!-- Security -->
         <module>elytron-security</module>

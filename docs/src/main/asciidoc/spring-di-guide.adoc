@@ -3,15 +3,13 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Using our Spring compatibility layer
+= Quarkus - Using our Spring Dependency Injection compatibility layer
 
 include::./attributes.adoc[]
 
-While you are encouraged to use CDI annotations for injection and JAX-RS annotation for defining REST endpoints,
-Quarkus provides a compatibility layer for Spring dependency injection in the form of the `spring-di` extension and for Spring Web in the form of the `spring-web` extension.
+While you are encouraged to use CDI annotations for injection, Quarkus provides a compatibility layer for Spring dependency injection in the form of the `spring-di` extension.
 
-This guide explains how your Quarkus application can leverage the well known Dependency Injection annotations included in the Spring Framework and the
-equally well known Spring Web annotation to define RESTful services.
+This guide explains how your Quarkus application can leverage the well known Dependency Injection annotations included in the Spring Framework.
 
 == Prerequisites
 
@@ -23,8 +21,6 @@ To complete this guide, you need:
 * Apache Maven 3.5.3+
 
 
-
-
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.
@@ -32,7 +28,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `using-spring` directory.
+The solution is located in the `using-spring-di` directory.
 
 == Creating the Maven project
 
@@ -42,14 +38,13 @@ First, we need a new project. Create a new project with the following command:
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=using-spring \
-    -DclassName="org.acme.spring.GreeterResource" \
+    -DprojectArtifactId=using-spring-di \
+    -DclassName="org.acme.spring.di.GreeterResource" \
     -Dpath="/greeting" \
-    -Dextensions="spring-web"
+    -Dextensions="spring-di"
 ----
 
 This command generates a Maven project with a REST endpoint and imports the `spring-di` extension.
-
 
 == Add beans using Spring annotations
 
@@ -60,7 +55,7 @@ Create a `src/main/java/org/acme/spring/di/StringFunction.java` file and set the
 
 [source,java]
 ----
-package org.acme.spring;
+package org.acme.spring.di;
 
 import java.util.function.Function;
 
@@ -75,7 +70,7 @@ Create a `src/main/java/org/acme/spring/di/AppConfiguration.java` file with the 
 
 [source,java]
 ----
-package org.acme.spring;
+package org.acme.spring.di;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -96,7 +91,7 @@ Create a `src/main/java/org/acme/spring/di/NoOpSingleStringFunction.java` file a
 
 [source,java]
 ----
-package org.acme.spring;
+package org.acme.spring.di;
 
 import org.springframework.stereotype.Component;
 
@@ -124,7 +119,7 @@ Next create a new Spring bean in `src/main/java/org/acme/spring/di/MessageProduc
 
 [source,java]
 ----
-package org.acme.spring;
+package org.acme.spring.di;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -146,7 +141,7 @@ Create a `src/main/java/org/acme/spring/di/GreeterBean.java` file and copy the f
 
 [source,java]
 ----
-package org.acme.spring;
+package org.acme.spring.di;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -184,33 +179,31 @@ In the code above, we see that both field injection and constructor injection ar
 Furthermore, the `@Value` annotation on `suffix` has also a default value defined, which in this case will be used since we have not defined `greeting.suffix` in `application.properties`.
 
 
-=== Writing the GreetingController
+=== Update the JAX-RS resource
 
-The Quarkus maven plugin automatically generated a `src/main/java/org/acme/spring/di/GreeterResource.java` file.
-However since we are going to be using Spring Web annotations to define our REST endpoint, go ahead and delete that file.
-Then create a new `src/main/java/org/acme/spring/di/GreeterResource.java` file and add the following content:
+Open the `src/main/java/org/acme/spring/di/GreeterResource.java` file and update it with the following content:
 
 [source,java]
 ----
-package org.acme.spring;
+package org.acme.spring.di;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Autowired;
 
-@RestController
-@RequestMapping("/greeting")
-public class GreeterController {
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
-    private final GreeterBean greeterBean;
+@Path("/greeting")
+public class GreeterResource {
 
-    public GreeterController(GreeterBean greeterBean) {
-        this.greeterBean = greeterBean;
-    }
+    @Autowired
+    GreeterBean greeterBean;
 
-    @GetMapping
-    public Greeting hello() {
-        return new Greeting(greeterBean.greet("world"));
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return greeterBean.greet("world");
     }
 }
 ----
@@ -218,14 +211,11 @@ public class GreeterController {
 == Update the test
 
 We also need to update the functional test to reflect the changes made to the endpoint.
-First rename the `src/test/java/org/acme/spring/di/GreetingResourceTest.java` file to `src/test/java/org/acme/spring/di/GreetingControllerTest.java`
-and change its content to:
+Edit the `src/test/java/org/acme/spring/di/GreetingResourceTest.java` file and change the content of the `testHelloEndpoint` method to:
 
 
 [source, java]
 ----
-package org.acme.spring;
-
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
@@ -233,15 +223,15 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
-public class GreetingControllerTest {
+public class GreetingResourceTest {
 
     @Test
-    public void testGreeting() {
+    public void testHelloEndpoint() {
         given()
             .when().get("/greeting")
             .then()
                 .statusCode(200)
-                .body("message", is("HELLO WORLD!"));
+                .body(is("HELLO WORLD!"));
     }
 
 }
@@ -252,74 +242,11 @@ public class GreetingControllerTest {
 Run the application with: `./mvnw compile quarkus:dev`.
 Open your browser to http://localhost:8080/greeting.
 
-The result should be: `{"message": "HELLO WORLD!"}`.
+The result should be: `HELLO WORLD!`.
 
 == Run the application as a native
 
 You can of course create a native image using instructions similar to link:building-native-image-guide.html[this] guide.
-
-== Supported Spring Web functionality
-
-Quarkus currently supports a subset of the functionality that Spring Web provides. More specifically Quarkus supports the REST related features of Spring Web
-(in a high level, think of `@RestController` instead of `@Controller`).
-
-=== Annotations
-
-The table below summarizes the supported annotations:
-
-.Supported Spring Web annotation
-|===
-|Name|Comments
-
-|@RestController
-|
-
-|@RequestMapping
-|
-|@GetMapping
-|
-|@PostMapping
-|
-|@PutMapping
-|
-|@DeleteMapping
-|
-|@PatchMapping
-|
-|@RequestParam
-|
-|@RequestHeader
-|
-|@MatrixVariable
-|
-|@PathVariable
-|
-|@CookieValue
-|
-|@RequestBody
-|
-|@ResponseStatus
-|
-|@ExceptionHandler
-|Can only be used in a @RestControllerAdvice class, not on a per-controller basis
-|@RestControllerAdvice
-|Only the @ExceptionHandler capability is supported
-|===
-
-=== Controller method return types
-
-The following method return types are supported:
-
-* Primitive types
-* String (which will be used as a literal, no Spring MVC view support is provided)
-* POJO classes which will be serialized via JSON
-* `org.springframework.http.ResponseEntity`
-
-=== Controller method return types
-
-In addition to the method parameters that can be annotated with the appropriate Spring Web annotation from the previous table,
-`javax.servlet.http.HttpServletRequest` and `javax.servlet.http.HttpServletResponse` are also supported.
-
 
 == Important Technical Note
 
@@ -327,4 +254,3 @@ Please note that the Spring support in Quarkus does not start a Spring Applicati
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
 What that means for end users, is that adding arbitrary Spring to the classpath will not be used at all. Moreover Spring infrastructure
 things like `org.springframework.beans.factory.config.BeanPostProcessor` will not be run.
-

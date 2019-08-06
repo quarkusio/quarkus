@@ -12,7 +12,13 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot
 public class HibernateOrmConfig {
     /**
-     * The hibernate ORM dialect class name
+     * The hibernate ORM dialect class name.
+     * If not present, guessed from the JDBC driver.
+     *
+     * The complete list of bundled dialects is available in the
+     * <a target="_top" href=
+     * "https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/dialect/package-summary.html">Hibernate ORM
+     * JavaDoc</a>.
      */
     // TODO should it be dialects
     //TODO should it be shortcuts like "postgresql" "h2" etc
@@ -20,7 +26,8 @@ public class HibernateOrmConfig {
     public Optional<String> dialect;
 
     /**
-     * The storage engine used by the dialect if it supports several storage engines.
+     * The storage engine used by the dialect if it supports several storage engines
+     * (e.g. MyISAM or InnoDB).
      * <p>
      * This is the case of MariaDB.
      */
@@ -28,9 +35,27 @@ public class HibernateOrmConfig {
     public Optional<String> dialectStorageEngine;
 
     /**
-     * To populate the database tables with data before the application loads,
-     * specify the location of a load script.
-     * The location specified in this property is relative to the root of the persistence unit.
+     * (defaults to {@code /import.sql}). Name of the file containing the SQL statements to execute when Hibernate ORM starts.
+     * <p>
+     * By default, simply add {@code import.sql} in the root of your resources directory
+     * and it will be picked up without having to set this property.
+     * Pass {@code no-file} to force Hibernate ORM to ignore the SQL import file.
+     * If you need different SQL statements between dev mode, test ({@code @QuarkusTest}) and in production,
+     * use Quarkus
+     * <a target="_top" href="https://quarkus.io/guides/application-configuration-guide#configuration-profiles">configuration
+     * profiles facility</a>.
+     *
+     * <pre>
+     * {@code
+     * # application.properties
+     * %dev.quarkus.hibernate-orm.sql-load-script = import-dev.sql
+     * %test.quarkus.hibernate-orm.sql-load-script = import-test.sql
+     * %prod.quarkus.hibernate-orm.sql-load-script = no-file
+     * }
+     * </pre>
+     * <p>
+     * Quarkus supports {@code .sql} file with SQL statements or comments spread over multiple lines.
+     * Each SQL statement must be terminated by a semicolon.
      */
     @ConfigItem
     public Optional<String> sqlLoadScript;
@@ -38,7 +63,7 @@ public class HibernateOrmConfig {
     /**
      * The size of a batch when using batch loading to load entities and collections.
      * <p>
-     * -1 means batch loading is disabled.
+     * {@code -1} means batch loading is disabled.
      */
     @ConfigItem(defaultValue = "-1")
     public int batchFetchSize;
@@ -73,7 +98,7 @@ public class HibernateOrmConfig {
     public Map<String, HibernateOrmConfigCache> cache;
 
     /**
-     * Statistics configuration.
+     * (defaults to {@code false}). Whether statistics collection is enabled.
      */
     @ConfigItem(defaultValue = "false")
     public boolean statistics;
@@ -95,15 +120,16 @@ public class HibernateOrmConfig {
     public static class HibernateOrmConfigQuery {
 
         /**
-         * The max size of the query plan cache.
+         * The maximum size of the query plan cache.
          */
         @ConfigItem
         public Optional<String> queryPlanCacheMaxSize;
 
         /**
+         * Defaults to {@code none}.
          * The default ordering of nulls specific in the ORDER BY clause.
          * <p>
-         * Valid values are: none, first, last.
+         * Valid values are: {@code none, first, last}.
          */
         @ConfigItem
         public Optional<String> defaultNullOrdering;
@@ -117,7 +143,10 @@ public class HibernateOrmConfig {
     public static class HibernateOrmConfigDatabase {
 
         /**
-         * Control how schema generation is happening in Hibernate ORM.
+         * Select whether the database schema is generated or not.
+         * Options are {@code none, create, drop-and-create, drop, update}.
+         * The default is {@code none}.
+         * {@code drop-and-create} which is awesome in development mode.
          * <p>
          * Same as JPA's javax.persistence.schema-generation.database.action.
          */
@@ -184,9 +213,9 @@ public class HibernateOrmConfig {
     public static class HibernateOrmConfigLog {
 
         /**
-         * Whether we log all the SQL queries executed.
+         * Show SQL logs and format them nicely.
          * <p>
-         * Setting it to true is obviously not recommended in production.
+         * Setting it to true is not recommended in production.
          */
         @ConfigItem(defaultValue = "false")
         public boolean sql;
@@ -223,6 +252,17 @@ public class HibernateOrmConfig {
     public static class HibernateOrmConfigCacheExpiration {
         /**
          * The maximum time before an object is considered expired.
+         * <p>
+         * To set the maximum idle time, provide the duration (see note on duration’s format below) via the
+         * {@code quarkus.hibernate-orm.cache."<region_name>".expiration.max-idle} (quotes mandatory).
+         * <p>
+         * The format for durations uses the standard {@code java.time.Duration} format.
+         * You can learn more about it in the <a target="_top" href=
+         * "https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-">Duration#parse()</a>
+         * javadoc.
+         * You can also provide duration values starting with a number.
+         * In this case, if the value consists only of a number, the converter treats the value as seconds.
+         * Otherwise, {@code PT} is implicitly appended to the value to obtain a standard {@code java.time.Duration} format.
          */
         @ConfigItem
         public Optional<Duration> maxIdle;
@@ -232,6 +272,8 @@ public class HibernateOrmConfig {
     public static class HibernateOrmConfigCacheMemory {
         /**
          * The maximum number of objects kept in memory.
+         * <p>
+         * {@code quarkus.hibernate-orm.cache."<region_name>".object-count} (quotes mandatory).
          */
         @ConfigItem
         public OptionalLong objectCount;

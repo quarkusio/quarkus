@@ -16,7 +16,7 @@ public class JWTAuthContextInfoGroup {
     public String authMechanism;
 
     /**
-     * The authentication mechanism
+     * The authentication mechanism name
      */
     @ConfigItem(defaultValue = "Quarkus-JWT")
     public String realmName;
@@ -28,7 +28,7 @@ public class JWTAuthContextInfoGroup {
     public boolean enabled = true;
 
     /**
-     * The name of the {@linkplain java.security.Provider} that supports SHA256withRSA signatures
+     * The name of the `java.security.Provider` that supports `SHA256withRSA` signatures
      */
     @ConfigItem(defaultValue = "SunRsaSign")
     public String rsaSigProvider;

@@ -11,37 +11,37 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class EventBusConfiguration {
 
     /**
-     * The key configuration for the PEM format.
+     * The key configuration for the `PEM` format.
      */
     @ConfigItem
     public PemKeyCertConfiguration keyCertificatePem;
 
     /**
-     * The key configuration for the JKS format.
+     * The key configuration for the `JKS` format.
      */
     @ConfigItem
     public JksConfiguration keyCertificateJks;
 
     /**
-     * The key configuration for the PFX format.
+     * The key configuration for the `PFX` format.
      */
     @ConfigItem
     public PfxConfiguration keyCertificatePfx;
 
     /**
-     * The trust key configuration for the PEM format.
+     * The trust key configuration for the `PEM` format.
      */
     @ConfigItem
     public PemTrustCertConfiguration trustCertificatePem;
 
     /**
-     * The trust key configuration for the JKS format.
+     * The trust key configuration for the `JKS` format.
      */
     @ConfigItem
     public JksConfiguration trustCertificateJks;
 
     /**
-     * The trust key configuration for the PFX format.
+     * The trust key configuration for the `PFX` format.
      */
     @ConfigItem
     public PfxConfiguration trustCertificatePfx;

@@ -16,7 +16,7 @@ public class AgroalRuntimeConfig {
     public DataSourceRuntimeConfig defaultDataSource;
 
     /**
-     * Additional datasources.
+     * Additional named datasources.
      */
     @ConfigItem(name = ConfigItem.PARENT)
     public Map<String, DataSourceRuntimeConfig> namedDataSources;

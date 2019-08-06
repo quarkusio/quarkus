@@ -16,7 +16,7 @@ public class ConsoleConfig {
     boolean enable;
 
     /**
-     * The log format
+     * The format pattern to use for logging to the console; see <<format_string>>
      */
     @ConfigItem(defaultValue = "%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n")
     String format;
@@ -29,7 +29,7 @@ public class ConsoleConfig {
     Level level;
 
     /**
-     * If the console logging should be in color
+     * If the console logging should be in color, if it is supported by the terminal
      */
     @ConfigItem(defaultValue = "true")
     boolean color;

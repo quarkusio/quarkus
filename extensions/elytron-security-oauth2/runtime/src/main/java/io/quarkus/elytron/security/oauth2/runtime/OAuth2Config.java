@@ -12,7 +12,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(name = "oauth2", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class OAuth2Config {
     /**
-     * If the OAuth2 extension is enabled.
+     * Enable the OAuth2 extension.
      */
     @ConfigItem(defaultValue = "true")
     public boolean enabled;

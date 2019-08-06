@@ -15,7 +15,7 @@ public class Neo4jConfiguration {
     static final String DEFAULT_PASSWORD = "neo4j";
 
     /**
-     * The uri this driver should connect to. The driver supports bolt, bolt+routing or neo4j as schemes.
+     * The uri this driver should connect to. The driver supports `bolt`, `bolt+routing` or `neo4j` as schemes.
      */
     @ConfigItem(defaultValue = DEFAULT_SERVER_URI)
     public String uri;
@@ -51,7 +51,7 @@ public class Neo4jConfiguration {
          * Set this to true to disable authentication.
          */
         @ConfigItem(defaultValue = "false")
-        public boolean disabled = false;
+        public boolean disabled;
     }
 
     @ConfigGroup
@@ -77,9 +77,8 @@ public class Neo4jConfiguration {
 
         /**
          * Pooled connections that have been idle in the pool for longer than this timeout will be tested before they are used
-         * again. The value {@literal 0} means connections will always be tested for validity and negative values mean
-         * connections
-         * will never be tested.
+         * again. The value `0` means connections will always be tested for validity and negative values mean
+         * connections will never be tested.
          */
         @ConfigItem(defaultValue = "-0.001S")
         public Duration idleTimeBeforeConnectionTest;

@@ -10,8 +10,8 @@ public class KubernetesConfig {
     /**
      * The group of the application.
      * This value will be use as:
-     * - docker image repo
-     * - labeling resources
+     * * docker image repo
+     * * labeling resources
      */
     @ConfigItem
     public String group;

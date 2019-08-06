@@ -38,8 +38,8 @@ public class ThreadPoolConfig {
      * The executor growth resistance.
      *
      * A resistance factor applied after the core pool is full; values applied here will cause that fraction
-     * of submissions to create new threads when no idle thread is available. A value of {@code 0.0f} implies that
-     * threads beyond the core size should be created as aggressively as threads within it; a value of {@code 1.0f}
+     * of submissions to create new threads when no idle thread is available. A value of `0.0f` implies that
+     * threads beyond the core size should be created as aggressively as threads within it; a value of `1.0f`
      * implies that threads beyond the core size should never be created.
      */
     @ConfigItem(defaultValue = "0")
@@ -55,7 +55,7 @@ public class ThreadPoolConfig {
 
     /**
      * The amount of time to wait for thread pool shutdown before tasks should be interrupted. If this value is
-     * greater than or equal to the value for {@link #shutdownTimeout}, then tasks will not be interrupted before
+     * greater than or equal to the value for `shutdown-timeout`, then tasks will not be interrupted before
      * the shutdown timeout occurs.
      */
     @ConfigItem(defaultValue = "10")

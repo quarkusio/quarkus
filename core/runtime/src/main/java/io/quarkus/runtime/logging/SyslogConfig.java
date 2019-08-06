@@ -27,7 +27,7 @@ public class SyslogConfig {
     InetSocketAddress endpoint;
 
     /**
-     * The app name used when formatting the message in RFC5424 format
+     * The app name used when formatting the message in `RFC5424` format
      */
     @ConfigItem
     Optional<String> appName;
@@ -39,13 +39,13 @@ public class SyslogConfig {
     Optional<String> hostname;
 
     /**
-     * Sets the facility used when calculating the priority of the message as defined by RFC-5424 and RFC-3164
+     * Sets the facility used when calculating the priority of the message as defined by `RFC-5424` and `RFC-3164`
      */
     @ConfigItem(defaultValue = "USER_LEVEL")
     Facility facility;
 
     /**
-     * Set the {@link SyslogType syslog type} this handler should use to format the message sent
+     * Set the `SyslogType` syslog type this handler should use to format the message sent
      */
     @ConfigItem(defaultValue = "RFC5424")
     SyslogType syslogType;
@@ -57,21 +57,20 @@ public class SyslogConfig {
     Protocol protocol;
 
     /**
-     * Set to {@code true} if the message being sent should be prefixed with the size of the message
+     * Set to `true` if the message being sent should be prefixed with the size of the message
      */
     @ConfigItem
     public boolean useCountingFraming;
 
     /**
-     * Set to {@code true} if the message should be truncated
+     * Set to `true` if the message should be truncated
      */
     @ConfigItem(defaultValue = "true")
     public boolean truncate;
 
     /**
-     * Enables or disables blocking when attempting to reconnect a
-     * {@link org.jboss.logmanager.handlers.SyslogHandler.Protocol#TCP
-     * TCP} or {@link org.jboss.logmanager.handlers.SyslogHandler.Protocol#SSL_TCP SSL TCP} protocol
+     * Enables or disables blocking when attempting to reconnect
+     * `org.jboss.logmanager.handlers.SyslogHandler.Protocol` `TCP` or `SSL_TCP` protocols.
      */
     @ConfigItem
     boolean blockOnReconnect;

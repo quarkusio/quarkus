@@ -38,6 +38,7 @@ public class HttpConfig {
      */
     @ConfigItem(defaultValue = "8444")
     public int testSslPort;
+
     /**
      * The HTTP host
      */

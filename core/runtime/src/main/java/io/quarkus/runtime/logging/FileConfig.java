@@ -24,13 +24,13 @@ public class FileConfig {
     boolean enable;
 
     /**
-     * The log format
+     * The format pattern to use for logging to a file. see <<format_string>>
      */
     @ConfigItem(defaultValue = "%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{3.}] (%t) %s%e%n")
     String format;
 
     /**
-     * The level of logs to be written into the file.
+     * The minimum log level to be written into the file.
      */
     @DefaultConverter
     @ConfigItem(defaultValue = "ALL")
@@ -67,9 +67,8 @@ public class FileConfig {
         int maxBackupIndex;
 
         /**
-         * File handler rotation file suffix.
-         *
-         * Example fileSuffix: .yyyy-MM-dd
+         * Rotating log file suffix. The format of suffix value has to be understood by `java.text.SimpleDateFormat`.
+         * Example fileSuffix: `.yyyy-MM-dd`
          */
         @ConfigItem
         Optional<String> fileSuffix;

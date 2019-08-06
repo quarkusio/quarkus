@@ -16,7 +16,7 @@ public class AgroalBuildTimeConfig {
     public DataSourceBuildTimeConfig defaultDataSource;
 
     /**
-     * Additional datasources.
+     * Additional named datasources.
      */
     @ConfigItem(name = ConfigItem.PARENT)
     public Map<String, DataSourceBuildTimeConfig> namedDataSources;

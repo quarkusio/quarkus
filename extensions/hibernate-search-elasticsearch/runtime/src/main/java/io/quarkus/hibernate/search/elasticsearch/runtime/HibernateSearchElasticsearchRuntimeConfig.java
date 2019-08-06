@@ -132,18 +132,18 @@ public class HibernateSearchElasticsearchRuntimeConfig {
 
         /**
          * The synchronization strategy to use when indexing automatically.
-         * <p>
+         *
          * Defines the status for which you wait before considering the operation completed by Hibernate Search.
-         * <p>
-         * Can be either one of "queued", "committed" or "searchable".
-         * <p>
-         * Using "searchable" is recommend in unit tests.
+         *
+         * Can be either one of `queued`, `committed` or `searchable`.
+         *
+         * Using `searchable` is recommended in unit tests.
          */
         Optional<HibernateOrmAutomaticIndexingSynchronizationStrategyName> synchronizationStrategy;
 
         /**
          * Whether to check if dirty properties are relevant to indexing before actually reindexing an entity.
-         * <p>
+         *
          * When enabled, re-indexing of an entity is skipped if the only changes are on properties that are not used when
          * indexing.
          */
@@ -155,16 +155,16 @@ public class HibernateSearchElasticsearchRuntimeConfig {
 
         /**
          * The strategy used for index lifecycle.
-         * <p>
-         * Must be one of: none, validate, update, create, drop-and-create or drop-and-create-and-drop.
+         *
+         * Must be one of: `none`, `validate`, `update`, `create`, `drop-and-create` or `drop-and-create-and-drop`.
          */
         @ConfigItem
         Optional<ElasticsearchIndexLifecycleStrategyName> strategy;
 
         /**
          * The minimal cluster status required.
-         * <p>
-         * Must be one of: green, yellow, red.
+         *
+         * Must be one of: `green`, `yellow`, `red`.
          */
         @ConfigItem
         Optional<ElasticsearchIndexStatus> requiredStatus;

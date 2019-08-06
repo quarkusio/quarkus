@@ -21,7 +21,7 @@ public final class TransactionManagerConfiguration {
     /**
      * The XA node name used by the transaction manager
      */
-    @ConfigItem()
+    @ConfigItem
     public Optional<String> xaNodeName;
 
     /**

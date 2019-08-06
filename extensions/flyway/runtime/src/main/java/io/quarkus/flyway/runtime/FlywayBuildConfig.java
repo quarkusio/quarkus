@@ -15,6 +15,6 @@ public final class FlywayBuildConfig {
      * Locations starting with filesystem: point to a directory on the filesystem, may only contain SQL migrations and are only
      * scanned recursively down non-hidden directories.
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "db/migration")
     public List<String> locations;
 }

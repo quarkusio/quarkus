@@ -18,31 +18,33 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class PropertiesRealmConfig {
 
     /**
-     * The authentication mechanism
+     * Name of authentication mechanism to use
      */
     @ConfigItem(defaultValue = "BASIC")
     public String authMechanism;
 
     /**
-     * The authentication mechanism
+     * Name to assign the security realm
      */
     @ConfigItem(defaultValue = "Quarkus")
     public String realmName;
 
     /**
-     * If the properties store is enabled.
+     * Determine whether security via the file realm is enabled.
      */
     @ConfigItem
     public boolean enabled;
 
     /**
-     * The location of the users property resource
+     * The location of the users property resource.
+     * This is a classpath resource name of properties file containing user to password mappings; see <<Users.properties>>
      */
     @ConfigItem(defaultValue = "users.properties")
     public String users;
 
     /**
-     * The location of the roles property file
+     * The location of the roles property file.
+     * This is a classpath resource name of properties file containing user to role mappings; see <<Roles.properties>>
      */
     @ConfigItem(defaultValue = "roles.properties")
     public String roles;
@@ -94,7 +96,7 @@ public class PropertiesRealmConfig {
     /**
      * Used to access what should be a parent class, but parsing of the MP config properties is not working
      * from parent to child
-     * 
+     *
      * @return AuthConfig information
      */
     public AuthConfig getAuthConfig() {

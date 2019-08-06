@@ -52,15 +52,16 @@ public class ResteasyCommonProcessor {
     @ConfigGroup
     public static final class ResteasyCommonConfigGzip {
         /**
-         * If gzip is enabled
+         * If gzip decompression is enabled
          */
         @ConfigItem
         public boolean enabled;
+
         /**
          * Maximum deflated file bytes size
-         * <p>
+         *
          * If the limit is exceeded, Resteasy will return Response
-         * with status 413("Request Entity Too Large")
+         * with status `413` ("Request Entity Too Large")
          */
         @ConfigItem
         public OptionalInt maxInput;

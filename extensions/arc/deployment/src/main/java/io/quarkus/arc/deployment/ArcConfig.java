@@ -18,32 +18,33 @@ public class ArcConfig {
 
     /**
      * If set to all (or true) the container will attempt to remove all unused beans.
-     * <p>
+     * Example `all`, `true`, `none`, `false`, `fwk`, `framework`
+     *
      * An unused bean:
-     * <ul>
-     * <li>is not a built-in bean or interceptor,</li>
-     * <li>is not eligible for injection to any injection point,</li>
-     * <li>is not excluded by any extension,</li>
-     * <li>does not have a name,</li>
-     * <li>does not declare an observer,</li>
-     * <li>does not declare any producer which is eligible for injection to any injection point,</li>
-     * <li>is not directly eligible for injection into any {@link javax.enterprise.inject.Instance} injection point</li>
-     * </ul>
+     *
+     * * is not a built-in bean or interceptor
+     * * is not eligible for injection to any injection point
+     * * is not excluded by any extension
+     * * does not have a name
+     * * does not declare an observer
+     * * does not declare any producer which is eligible for injection to any injection point
+     * * is not directly eligible for injection into any `javax.enterprise.inject.Instance` injection point
+     *
      *
      * If set to none (or false) no beans will ever be removed even if they are unused (according to the criteria
      * set out above)
      *
      * If set to fwk, then all unused beans will be removed, except the unused beans whose classes are declared
      * in the application code
-     * 
+     *
      * @see UnremovableBeanBuildItem
      */
     @ConfigItem(defaultValue = "all")
     public String removeUnusedBeans;
 
     /**
-     * If set to true {@code @Inject} is automatically added to all non-static fields that are annotated with
-     * one of the annotations defined by {@link AutoInjectAnnotationBuildItem}.
+     * If set to true `@Inject` is automatically added to all non-static fields that are annotated with
+     * one of the annotations defined by `AutoInjectAnnotationBuildItem`.
      */
     @ConfigItem(defaultValue = "true")
     public boolean autoInjectFields;

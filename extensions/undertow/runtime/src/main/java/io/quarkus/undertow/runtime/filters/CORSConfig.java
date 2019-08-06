@@ -11,7 +11,7 @@ public class CORSConfig {
     /**
      * Origins allowed for CORS
      *
-     * Comma separated list of valid URLs. ex: http://www.quarkus.io,http://localhost:3000
+     * Comma separated list of valid URLs. e.g: `http://www.quarkus.io,http://localhost:3000`
      * The filter allows any origin if this is not set.
      *
      * default: returns any requested origin as valid
@@ -21,7 +21,7 @@ public class CORSConfig {
     /**
      * HTTP methods allowed for CORS
      *
-     * Comma separated list of valid methods. ex: GET,PUT,POST
+     * Comma separated list of valid methods. e.g: `GET`,`PUT`,`POST`
      * The filter allows any method if this is not set.
      *
      * default: returns any requested method as valid
@@ -31,7 +31,7 @@ public class CORSConfig {
     /**
      * HTTP headers allowed for CORS
      *
-     * Comma separated list of valid headers. ex: X-Custom,Content-Disposition
+     * Comma separated list of valid headers. e.g: `X-Custom,Content-Disposition`
      * The filter allows any header if this is not set.
      *
      * default: returns any requested header as valid
@@ -41,9 +41,8 @@ public class CORSConfig {
     /**
      * HTTP headers exposed in CORS
      *
-     * Comma separated list of valid headers. ex: X-Custom,Content-Disposition
-     * 
-     * default: <empty>
+     * Comma separated list of valid headers. e.g: `X-Custom,Content-Disposition`
+     *
      */
     @ConfigItem
     public Optional<String> exposedHeaders;

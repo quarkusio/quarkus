@@ -20,8 +20,8 @@ public class MailConfig {
     /**
      * Enables the mock mode, not sending emails.
      * The content of the emails is printed on the console.
-     * <p>
-     * Disabled by default on PROD, enabled by default on DEV and TEST modes.
+     *
+     * Disabled by default on `PROD`, enabled by default on `DEV` and `TEST` modes.
      */
     @ConfigItem
     public Optional<Boolean> mock;
@@ -58,58 +58,58 @@ public class MailConfig {
 
     /**
      * Enables or disables the SSL on connect.
-     * {@code false} by default.
+     * `false` by default.
      */
     @ConfigItem
     public boolean ssl;
 
     /**
      * Set whether to trust all certificates on ssl connect the option is also
-     * applied to {@code STARTTLS} operation. {@code false} by default.
+     * applied to `STARTTLS` operation. `false` by default.
      */
     @ConfigItem
     public boolean trustAll;
 
     /**
      * Configures the maximum allowed number of open connections to the mail server
-     * If not set the default is {@code 10}.
+     * If not set the default is `10`.
      */
     @ConfigItem
     public OptionalInt maxPoolSize;
 
     /**
-     * The hostname to be used for HELO/EHLO and the Message-ID
+     * The hostname to be used for `HELO`/`EHLO` and the Message-ID
      */
     @ConfigItem
     public Optional<String> ownHostName;
 
     /**
-     * Set if connection pool is enabled, {@code true} by default.
-     * <p>
+     * Set if connection pool is enabled, `true` by default.
+     *
      * If the connection pooling is disabled, the max number of sockets is enforced nevertheless.
-     * <p>
+     *
      */
     @ConfigItem(defaultValue = "true")
     public boolean keepAlive;
 
     /**
-     * Disable ESMTP. {@code false} by default.
-     * The RFC-1869 states that clients should always attempt {@code EHLO} as first command to determine if ESMTP
-     * is supported, if this returns an error code, {@code HELO} is tried to use the <em>regular</em> SMTP command.
+     * Disable `ESMTP`. `false` by default.
+     * The `RFC-1869` states that clients should always attempt `EHLO` as first command to determine if `ESMTP`
+     * is supported, if this returns an error code, `HELO` is tried to use the _regular_ `SMTP` command.
      */
     @ConfigItem
     public boolean disableEsmtp;
 
     /**
      * Set the TLS security mode for the connection.
-     * Either {@code NONE}, {@code OPTIONAL} or {@code REQUIRED}.
+     * Either `NONE`, `OPTIONAL` or `REQUIRED`.
      */
     @ConfigItem
     public Optional<String> startTLS;
 
     /**
      * Set the login mode for the connection.
-     * Either {@code DISABLED}, @{code OPTIONAL} or {@code REQUIRED}
+     * Either `DISABLED`, `OPTIONAL` or `REQUIRED`
      */
     @ConfigItem
     public Optional<String> login;

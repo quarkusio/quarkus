@@ -13,6 +13,7 @@ public class AsyncConfig {
      */
     @ConfigItem(name = ConfigItem.PARENT)
     boolean enable;
+
     /**
      * The queue length to use before flushing writing
      */

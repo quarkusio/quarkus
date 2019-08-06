@@ -12,7 +12,15 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot
 public class HibernateOrmConfig {
     /**
-     * The hibernate ORM dialect class name
+     * The hibernate ORM dialect class name e.g `org.hibernate.dialect.PostgreSQL95Dialect`.
+     * The complete list of bundled dialects is available in the
+     * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/dialect/package-summary.html[Hibernate ORM JavaDoc].
+     *
+     * [NOTE]
+     * ====
+     * Not all the dialects are supported in GraalVM native executables: we currently provide driver extensions for PostgreSQL,
+     * MariaDB, Microsoft SQL Server and H2.
+     *
      */
     // TODO should it be dialects
     //TODO should it be shortcuts like "postgresql" "h2" etc
@@ -20,8 +28,7 @@ public class HibernateOrmConfig {
     public Optional<String> dialect;
 
     /**
-     * The storage engine used by the dialect if it supports several storage engines.
-     * <p>
+     * The storage engine e.g `MyISAM` or `InnoDB` used by the dialect if it supports several storage engines.
      * This is the case of MariaDB.
      */
     @ConfigItem(name = "dialect.storage-engine")
@@ -37,8 +44,7 @@ public class HibernateOrmConfig {
 
     /**
      * The size of a batch when using batch loading to load entities and collections.
-     * <p>
-     * -1 means batch loading is disabled.
+     * `-1` means batch loading is disabled.
      */
     @ConfigItem(defaultValue = "-1")
     public int batchFetchSize;
@@ -102,7 +108,6 @@ public class HibernateOrmConfig {
 
         /**
          * The default ordering of nulls specific in the ORDER BY clause.
-         * <p>
          * Valid values are: none, first, last.
          */
         @ConfigItem
@@ -118,7 +123,7 @@ public class HibernateOrmConfig {
 
         /**
          * Control how schema generation is happening in Hibernate ORM.
-         * <p>
+         *
          * Same as JPA's javax.persistence.schema-generation.database.action.
          */
         @ConfigItem
@@ -185,7 +190,6 @@ public class HibernateOrmConfig {
 
         /**
          * Whether we log all the SQL queries executed.
-         * <p>
          * Setting it to true is obviously not recommended in production.
          */
         @ConfigItem(defaultValue = "false")
@@ -193,7 +197,6 @@ public class HibernateOrmConfig {
 
         /**
          * Whether JDBC warnings should be collected and logged.
-         * <p>
          * Default value depends on the dialect.
          */
         @ConfigItem

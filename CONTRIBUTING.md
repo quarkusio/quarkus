@@ -118,3 +118,15 @@ not being invalidated correctly in some cases. To run a build with a new instanc
 ## The small print
 
 This project is an open source project, please act responsibly, be nice, polite and enjoy!
+
+## Frequently Asked Questions
+
+* IntelliJ fails to import Quarkus Maven project with `java.lang.OutOfMemoryError: GC overhead limit exceeded` 
+
+In IntelliJ IDEA (version older than `2019.2`) if you see problems in the Maven view claiming `java.lang.OutOfMemoryError: GC overhead limit exceeded` that means the project import failed.
+  
+To fix the issue, you need to update the Maven importing settings:  
+`Build, Execution, Deployment` > `Build Tools`> `Maven` > `Importing` > `VM options for importer`
+To import Quarkus you need to define the JVM Max Heap Size (E.g. `-Xmx1g`)
+
+**Note*:* As for now, we can't provide a unique Max Heap Size value. We have been reported to require from 768M to more than 3G to import Quarkus properly.

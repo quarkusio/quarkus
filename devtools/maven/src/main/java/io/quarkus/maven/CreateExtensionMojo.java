@@ -67,6 +67,8 @@ public class CreateExtensionMojo extends AbstractMojo {
 
     /**
      * Directory where the changes should be performed. Default is the current directory of the current Java process.
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.basedir")
     Path basedir;
@@ -74,6 +76,8 @@ public class CreateExtensionMojo extends AbstractMojo {
     /**
      * The {@code groupId} for the newly created Maven modules. If {@code groupId} is left unset, the {@code groupId}
      * from the {@code pom.xml} in the current directory will be used. Otherwise, an exception is thrown.
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.groupId")
     String groupId;
@@ -89,6 +93,8 @@ public class CreateExtensionMojo extends AbstractMojo {
      * and {@link #artifactIdBase} separately. If no round brackets are present in {@link #artifactId},
      * {@link #artifactIdBase} will be equal to {@link #artifactId} and {@link #artifactIdPrefix} will be an empty
      * string.
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.artifactId")
     String artifactId;
@@ -96,6 +102,8 @@ public class CreateExtensionMojo extends AbstractMojo {
     /**
      * A prefix common to all extension artifactIds in the current source tree. If you set {@link #artifactIdPrefix},
      * set also {@link #artifactIdBase}, but do not set {@link #artifactId}.
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.artifactIdPrefix")
     String artifactIdPrefix;
@@ -103,6 +111,8 @@ public class CreateExtensionMojo extends AbstractMojo {
     /**
      * The unique part of the {@link #artifactId}. If you set {@link #artifactIdBase}, set also
      * {@link #artifactIdPrefix}, but do not set {@link #artifactId}.
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.artifactIdBase")
     String artifactIdBase;
@@ -110,6 +120,8 @@ public class CreateExtensionMojo extends AbstractMojo {
     /**
      * The {@code version} for the newly created Maven modules. If {@code version} is left unset, the {@code version}
      * from the {@code pom.xml} in the current directory will be used. Otherwise, an exception is thrown.
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.artifactVersion")
     String version;
@@ -123,6 +135,8 @@ public class CreateExtensionMojo extends AbstractMojo {
      * {@code My Project - } is {@link #namePrefix}. This is a way to avoid defining of {@link #namePrefix} and
      * {@link #nameBase} separately. If no round brackets are present in {@link #name}, the {@link #nameBase} will be
      * equal to {@link #name} and {@link #namePrefix} will be an empty string.
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.name")
     String name;
@@ -130,6 +144,8 @@ public class CreateExtensionMojo extends AbstractMojo {
     /**
      * A prefix common to all extension names in the current source tree. If you set {@link #namePrefix}, set also
      * {@link #nameBase}, but do not set {@link #name}.
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.namePrefix")
     String namePrefix;
@@ -140,6 +156,8 @@ public class CreateExtensionMojo extends AbstractMojo {
      * <p>
      * If neither {@link #name} nor @{link #nameBase} is set, @{link #nameBase} will be derived from
      * {@link #artifactIdBase}.
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.nameBase")
     String nameBase;
@@ -147,6 +165,8 @@ public class CreateExtensionMojo extends AbstractMojo {
     /**
      * A string that will delimit {@link #name} from {@code Parent}, {@code Runtime} and {@code Deployment} tokens in
      * the respective modules.
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.nameSegmentDelimiter", defaultValue = DEFAULT_NAME_SEGMENT_DELIMITER)
     String nameSegmentDelimiter;
@@ -154,6 +174,8 @@ public class CreateExtensionMojo extends AbstractMojo {
     /**
      * Base Java package under which Java classes should be created in Runtime and Deployment modules. If not set, the
      * Java package will be auto-generated out of {@link #groupId}, {@link #javaPackageInfix} and {@link #artifactId}
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.javaPackageBase")
     String javaPackageBase;
@@ -170,6 +192,8 @@ public class CreateExtensionMojo extends AbstractMojo {
      * </ul>
      * Then the auto-generated {@link #javaPackageBase} will be
      * {@code org.example.quarkus.extensions.foo.bar.cool.extension}
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.javaPackageInfix")
     String javaPackageInfix;
@@ -178,6 +202,8 @@ public class CreateExtensionMojo extends AbstractMojo {
      * This mojo creates a triple of Maven modules (Parent, Runtime and Deployment). "Grand parent" is the parent of the
      * Parent module. If {@code grandParentArtifactId} is left unset, the {@code artifactId} from the {@code pom.xml} in
      * the current directory will be used. Otherwise, an exception is thrown.
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.grandParentArtifactId")
     String grandParentArtifactId;
@@ -186,6 +212,8 @@ public class CreateExtensionMojo extends AbstractMojo {
      * This mojo creates a triple of Maven modules (Parent, Runtime and Deployment). "Grand parent" is the parent of the
      * Parent module. If {@code grandParentGroupId} is left unset, the {@code groupId} from the {@code pom.xml} in the
      * current directory will be used. Otherwise, an exception is thrown.
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.grandParentGroupId")
     String grandParentGroupId;
@@ -194,6 +222,8 @@ public class CreateExtensionMojo extends AbstractMojo {
      * This mojo creates a triple of Maven modules (Parent, Runtime and Deployment). "Grand parent" is the parent of the
      * Parent module. If {@code grandParentRelativePath} is left unset, the default {@code relativePath}
      * {@code "../pom.xml"} is used.
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.grandParentRelativePath")
     String grandParentRelativePath;
@@ -202,6 +232,8 @@ public class CreateExtensionMojo extends AbstractMojo {
      * This mojo creates a triple of Maven modules (Parent, Runtime and Deployment). "Grand parent" is the parent of the
      * Parent module. If {@code grandParentVersion} is left unset, the {@code version} from the {@code pom.xml} in the
      * current directory will be used. Otherwise, an exception is thrown.
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.grandParentVersion")
     String grandParentVersion;
@@ -210,6 +242,8 @@ public class CreateExtensionMojo extends AbstractMojo {
      * Quarkus version the newly created extension should depend on. If you want to pass a property placeholder, use
      * {@code @} instead if {@code $} so that the property is not evaluated by the current mojo - e.g.
      * <code>@{quarkus.version}</code>
+     *
+     * @since 0.20.0
      */
     @Parameter(defaultValue = DEFAULT_QUARKUS_VERSION, required = true, property = "quarkus.quarkusVersion")
     String quarkusVersion;
@@ -222,6 +256,8 @@ public class CreateExtensionMojo extends AbstractMojo {
      * {@code null} the mojo attempts to autodetect the value inspecting the POM hierarchy of the current project: The
      * value is {@code true} if {@code quarkus-bootstrap-maven-plugin} is defined in the {@code pluginManagement}
      * section of the effective model of the current Maven module; otherwise the value is {@code false}.
+     *
+     * @since 0.20.0
      */
     @Parameter(property = "quarkus.assumeManaged")
     Boolean assumeManaged;
@@ -246,15 +282,43 @@ public class CreateExtensionMojo extends AbstractMojo {
      * will be looked up in the default URI base {@value #DEFAULT_TEMPLATES_URI_BASE}. The default templates are
      * maintained <a href=
      * "https://github.com/quarkusio/quarkus/tree/master/devtools/maven/src/main/resources/create-extension-templates">here</a>.
+     *
+     * @since 0.20.0
      */
     @Parameter(defaultValue = DEFAULT_TEMPLATES_URI_BASE, required = true, property = "quarkus.templatesUriBase")
     String templatesUriBase;
 
-    /** Encoding to read and write files in the current source tree */
+    /**
+     * Encoding to read and write files in the current source tree
+     *
+     * @since 0.20.0
+     */
     @Parameter(defaultValue = DEFAULT_ENCODING, required = true, property = "quarkus.encoding")
     String encoding;
 
-    @Parameter(defaultValue = "${project}")
+    /**
+     * Path relative to {@link #basedir} pointing at a {@code pom.xml} file containing the BOM (Bill of Materials) that
+     * manages runtime extension artifacts. If set, the newly created Runtime module will be added to
+     * {@code <deploymentManagement>} section of this bom; otherwise the newly created Runtime module will not be added
+     * to any BOM.
+     *
+     * @since 0.21.0
+     */
+    @Parameter(property = "quarkus.runtimeBomPath")
+    Path runtimeBomPath;
+
+    /**
+     * Path relative to {@link #basedir} pointing at a {@code pom.xml} file containing the BOM (Bill of Materials) that
+     * manages deployment time extension artifacts. If set, the newly created Deployment module will be added to
+     * {@code <deploymentManagement>} section of this bom; otherwise the newly created Deployment module will not be
+     * added to any BOM.
+     *
+     * @since 0.21.0
+     */
+    @Parameter(property = "quarkus.deploymentBomPath")
+    Path deploymentBomPath;
+
+    @Parameter(defaultValue = "${project}", readonly = true)
     MavenProject project;
 
     @Override
@@ -294,6 +358,19 @@ public class CreateExtensionMojo extends AbstractMojo {
                 name = namePrefix + nameBase;
             } else {
                 throw new MojoFailureException("Either name or both namePrefix and nameBase must be specified");
+            }
+        }
+
+        if (runtimeBomPath != null) {
+            runtimeBomPath = basedir.resolve(runtimeBomPath);
+            if (!Files.exists(runtimeBomPath)) {
+                throw new MojoFailureException("runtimeBomPath does not exist: " + runtimeBomPath);
+            }
+        }
+        if (deploymentBomPath != null) {
+            deploymentBomPath = basedir.resolve(deploymentBomPath);
+            if (!Files.exists(deploymentBomPath)) {
+                throw new MojoFailureException("deploymentBomPath does not exist: " + deploymentBomPath);
             }
         }
 
@@ -368,7 +445,19 @@ public class CreateExtensionMojo extends AbstractMojo {
         evalTemplate(cfg, "Processor.java", processorPath, charset, model);
 
         if (!basePom.getModules().contains(model.artifactIdBase)) {
+            getLog().info(String.format("Adding module [%s] to [%s]", model.artifactIdBase, basePomXml));
             new PomTransformer(basePomXml, charset).transform(Transformation.addModule(model.artifactIdBase));
+        }
+        if (runtimeBomPath != null) {
+            getLog().info(String.format("Adding [%s] to dependencyManagement in [%s]", model.artifactId, runtimeBomPath));
+            new PomTransformer(runtimeBomPath, charset)
+                    .transform(Transformation.addManagedDependency(model.groupId, model.artifactId, "${project.version}"));
+        }
+        if (deploymentBomPath != null) {
+            final String aId = model.artifactId + "-deployment";
+            getLog().info(String.format("Adding [%s] to dependencyManagement in [%s]", aId, deploymentBomPath));
+            new PomTransformer(deploymentBomPath, charset).transform(
+                    Transformation.addManagedDependency(model.groupId, aId, "${project.version}"));
         }
 
     }
@@ -501,6 +590,14 @@ public class CreateExtensionMojo extends AbstractMojo {
         } else {
             return artifactId;
         }
+    }
+
+    public void setRuntimeBomPath(String runtimeBomPath) {
+        this.runtimeBomPath = Paths.get(runtimeBomPath);
+    }
+
+    public void setDeploymentBomPath(String deploymentBomPath) {
+        this.deploymentBomPath = Paths.get(deploymentBomPath);
     }
 
     public static class TemplateParams {

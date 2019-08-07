@@ -346,7 +346,7 @@ You will also need to configure the `maven-compiler-plugin` to detect the `quark
 
 The `create-extension` mojo of `io.quarkus:quarkus-maven-plugin` can be used to generate stubs of Maven modules needed for implementing a new Quarkus extension.
 
-WARNING: This mojo can be currently used only for adding extensions to an established source tree, such as https://github.com/quarkusio/quarkus[Quarkus] or https://github.com/quarkusio/quarkus[Camel Quarkus]. Creating extension projects from scratch is not supported yet.
+WARNING: This mojo can be currently used only for adding extensions to an established source tree hosting multiple extensions in one subdirectory, such as https://github.com/quarkusio/quarkus[Quarkus] or https://github.com/apache/camel-quarkus[Camel Quarkus]. Creating extension projects from scratch is not supported yet.
 
 As and example, let's add a new extension called `my-ext` to the Quarkus source tree:
 
@@ -360,20 +360,23 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
     -Dquarkus.nameBase="My Extension"
 ----
 
-The above sequence of commands will create three new Maven modules:
+The above sequence of commands does the following:
 
-* `quarkus-my-ext-parent` in the `my-ext` directory; this module is also added to `<modules>` of `quarkus-extensions-parent`
-* `quarkus-my-ext` in the `my-ext/runtime` directory
-* `quarkus-my-ext-deployment` in the `my-ext/deployment` directory; a basic `MyExtProcessor` class is generated in this module.
+* Creates three new Maven modules:
+** `quarkus-my-ext-parent` in the `my-ext` directory
+** `quarkus-my-ext` in the `my-ext/runtime` directory
+** `quarkus-my-ext-deployment` in the `my-ext/deployment` directory; a basic `MyExtProcessor` class is generated in this module.
+* Links these three modules where necessary:
+** `quarkus-my-ext-parent` is added to the `<modules>` of `quarkus-extensions-parent`
+** `quarkus-my-ext` is added to the `<dependencyManagement>` of the runtime BOM (Bill of Materials) `bom/runtime/pom.xml`
+** `quarkus-my-ext-deployment` is added to the `<dependencyManagement>` of the deployment BOM (Bill of Materials) `bom/deployment/pom.xml`
 
-The newly added modules are not suitable for building immediatelly.
-You will need to perform some adjustments manually (some of them are specific to the Quarkus source tree):
+A Maven build performed immediately after generating the modules should pass flawlessly.
 
-* Add `quarkus-my-ext` to the `dependencyManagement` in `bom/runtime/pom.xml`
-* Add `quarkus-my-ext-deployment` to the `dependencyManagement` in `bom/deployment/pom.xml`
-* Add the new extension coordinates to `devtools/common/src/main/filtered/extensions.json`
+There is one step (specific to the Quarkus source tree) that you should do manually when creating a new extension:
+Add the extension coordinates to `devtools/common/src/main/filtered/extensions.json`.
 
-Note that the parameters of the mojo that will be constant for all the extensions added to this source tree are configured in `extensions/pom.xml` so that they do not need to be passed on the command line each time a new extension is added.
+Note that the parameters of the mojo that will be constant for all the extensions added to this source tree are configured in `extensions/pom.xml` so that they do not need to be passed on the command line each time a new extension is added:
 
 [source,xml]
 ----
@@ -388,14 +391,17 @@ Note that the parameters of the mojo that will be constant for all the extension
     <configuration>
         <artifactIdPrefix>quarkus-</artifactIdPrefix>
         <namePrefix xml:space="preserve">Quarkus - </namePrefix>
+        <runtimeBomPath>../bom/runtime/pom.xml</runtimeBomPath>
+        <deploymentBomPath>../bom/deployment/pom.xml</deploymentBomPath>
     </configuration>
 </plugin>
 ----
 
 TIP: The `nameBase` parameter of the mojo is optional.
-If you do not specify it on the command line, the plugin will derive it from `artifactIdBase` by replacing dashes with spaces and uppercasing each token. So you may consider omitting explicit `nameBase` in some cases.
+If you do not specify it on the command line, the plugin will derive it from `artifactIdBase` by replacing dashes with spaces and uppercasing each token.
+So you may consider omitting explicit `nameBase` in some cases.
 
-// This should point to the mojo page once https://github.com/quarkusio/quarkusio.github.io/issues/265 is fixed
+// The following link should point to the mojo page once https://github.com/quarkusio/quarkusio.github.io/issues/265 is fixed
 Please refer to https://github.com/quarkusio/quarkus/blob/{quarkus-version}/devtools/maven/src/main/java/io/quarkus/maven/CreateExtensionMojo.java[CreateExtensionMojo JavaDoc] for all the available options of the mojo.
 
 === Build Step Processors

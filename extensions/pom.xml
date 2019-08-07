@@ -117,12 +117,14 @@
                 <version>${project.version}</version>
                 <inherited>false</inherited>
                 <!-- Settings for stubbing new extensions via
-                       mvn quarkus:create-extension -N -Dquarkus.artifactIdBase=my-new-extension
-                 -->
+                     mvn quarkus:create-extension -N -Dquarkus.artifactIdBase=my-ext -Dquarkus.nameBase="My Extension"
+                -->
                 <configuration>
                     <artifactIdPrefix>quarkus-</artifactIdPrefix>
                     <namePrefix xml:space="preserve">Quarkus - </namePrefix>
                     <quarkusVersion>@{project.version}</quarkusVersion>
+                    <runtimeBomPath>../bom/runtime/pom.xml</runtimeBomPath>
+                    <deploymentBomPath>../bom/deployment/pom.xml</deploymentBomPath>
                 </configuration>
             </plugin>
         </plugins>

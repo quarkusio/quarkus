@@ -254,3 +254,10 @@ Please note that the Spring support in Quarkus does not start a Spring Applicati
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
 What that means for end users, is that adding arbitrary Spring to the classpath will not be used at all. Moreover Spring infrastructure
 things like `org.springframework.beans.factory.config.BeanPostProcessor` will not be run.
+
+== More Spring guides
+
+Quarkus supports additional Spring compatibility features. See the following guides for more details:
+
+* link:spring-web-guide.adoc[Spring Web]
+* link:spring-data-jpa-guide.adoc[Spring Data JPA]

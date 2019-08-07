@@ -202,6 +202,13 @@ Executing [/data/home/gsmet/git/quarkus-quickstarts/getting-started/target/getti
 ...
 ----
 
+[TIP]
+====
+By default, Quarkus waits for 60 seconds for the native image to start before automatically failing the native tests. This
+duration can be changed using the `quarkus.test.native-image-wait-time` system property. For example, to increase the duration
+to 300 seconds, use: `./mvnw verify -Pnative -Dquarkus.test.native-image-wait-time=300`.
+====
+
 === Excluding tests when running as a native executable
 
 When running tests this way, the only things that actually run natively are you application endpoints, which

@@ -129,4 +129,15 @@ To fix the issue, you need to update the Maven importing settings:
 `Build, Execution, Deployment` > `Build Tools`> `Maven` > `Importing` > `VM options for importer`
 To import Quarkus you need to define the JVM Max Heap Size (E.g. `-Xmx1g`)
 
-**Note*:* As for now, we can't provide a unique Max Heap Size value. We have been reported to require from 768M to more than 3G to import Quarkus properly.
+**Note** As for now, we can't provide a unique Max Heap Size value. We have been reported to require from 768M to more than 3G to import Quarkus properly.
+
+* Build hangs with DevMojoIT running infinitely 
+```
+./mvnw clean install
+# Wait...
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.192 s - in io.quarkus.maven.it.GenerateConfigIT
+[INFO] Running io.quarkus.maven.it.DevMojoIT
+
+```
+DevMojoIT require a few minutes to run but anything more than that is not expected. Make sure that nothing is running on 8080.
+

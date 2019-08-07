@@ -18,6 +18,12 @@ public interface HotReplacementContext {
     Throwable getDeploymentProblem();
 
     /**
+     * If this is true then this is a dev mode test case, rather than a user actually using Quarkus.
+     *
+     */
+    boolean isTest();
+
+    /**
      * 
      * @return {@code true} if a restart was performed, {@code false} otherwise
      * @throws Exception

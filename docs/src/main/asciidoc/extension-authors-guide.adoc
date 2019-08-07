@@ -983,6 +983,109 @@ public class PersistenceAndQuarkusConfigTest {
 <1> This tells JUnit that the Quarkus deployment should fail with a specific exception
 
 
+=== Testing hot reload
+
+It is also possible to write tests that verify an extension works correctly in development mode and can correctly
+handle updates.
+
+For most extensions this will just work 'out of the box', however it is still a good idea to have a smoke test to
+verify that this functionality is working as expected. To test this we use `QuarkusDevModeTest`:
+
+
+[source,java]
+----
+public class ServletChangeTestCase {
+
+    @RegisterExtension
+    final static QuarkusDevModeTest test = new QuarkusDevModeTest()
+            .setArchiveProducer(new Supplier<JavaArchive>() {
+                @Override
+                public JavaArchive get() {
+                    return ShrinkWrap.create(JavaArchive.class)   <1>
+                            .addClass(DevServlet.class)
+                            .addAsManifestResource(new StringAsset("Hello Resource"), "resources/file.txt");
+                }
+            });
+
+    @Test
+    public void testServletChange() throws InterruptedException {
+        RestAssured.when().get("/dev").then()
+                .statusCode(200)
+                .body(is("Hello World"));
+
+        test.modifySourceFile("DevServlet.java", new Function<String, String>() {  <2>
+
+            @Override
+            public String apply(String s) {
+                return s.replace("Hello World", "Hello Quarkus");
+            }
+        });
+
+        RestAssured.when().get("/dev").then()
+                .statusCode(200)
+                .body(is("Hello Quarkus"));
+    }
+
+    @Test
+    public void testAddServlet() throws InterruptedException {
+        RestAssured.when().get("/new").then()
+                .statusCode(404);
+
+        test.addSourceFile(NewServlet.class);                                       <3>
+
+        RestAssured.when().get("/new").then()
+                .statusCode(200)
+                .body(is("A new Servlet"));
+    }
+
+    @Test
+    public void testResourceChange() throws InterruptedException {
+        RestAssured.when().get("/file.txt").then()
+                .statusCode(200)
+                .body(is("Hello Resource"));
+
+        test.modifyResourceFile("META-INF/resources/file.txt", new Function<String, String>() { <4>
+
+            @Override
+            public String apply(String s) {
+                return "A new resource";
+            }
+        });
+
+        RestAssured.when().get("file.txt").then()
+                .statusCode(200)
+                .body(is("A new resource"));
+    }
+
+    @Test
+    public void testAddResource() throws InterruptedException {
+
+        RestAssured.when().get("/new.txt").then()
+                .statusCode(404);
+
+        test.addResourceFile("META-INF/resources/new.txt", "New File");  <5>
+
+        RestAssured.when().get("/new.txt").then()
+                .statusCode(200)
+                .body(is("New File"));
+
+    }
+}
+----
+
+<1> This starts the deployment, your test can modify it as part of the test suite. Quarkus will be restarted between
+each test method so every method starts with a clean deployment.
+
+<2> This method allows you to modify the source of a class file. The old source is passed into the function, and the updated
+source is returned.
+
+<3> This method adds a new class file to the deployment. The source that is used will be the original source that is part
+of the current project.
+
+<4> This method modifies a static resource
+
+<5> This method adds a new static resource
+
 === Native Executable Support
 
 There Quarkus provides a lot of build items that control aspects of the native executable build. This allows for extensions

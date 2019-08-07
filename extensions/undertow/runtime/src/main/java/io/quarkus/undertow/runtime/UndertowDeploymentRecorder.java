@@ -1,5 +1,6 @@
 package io.quarkus.undertow.runtime;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -119,6 +120,16 @@ public class UndertowDeploymentRecorder {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static void stopDevMode() {
+        //TODO: we need a cleaner abstraction for all this
+        if (undertow != null) {
+            undertow.stop();
+            undertow = null;
+        }
+        hotDeploymentResourcePaths = null;
+        hotDeploymentWrappers.clear();
     }
 
     public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
@@ -278,6 +289,19 @@ public class UndertowDeploymentRecorder {
 
     public void addServletInitParameter(RuntimeValue<DeploymentInfo> info, String name, String value) {
         info.getValue().addInitParameter(name, value);
+    }
+
+    public Closeable undertowDevModeCloseTask() {
+        //task that is
+        return new Closeable() {
+            @Override
+            public void close() throws IOException {
+                if (undertow != null) {
+                    undertow.stop();
+                    undertow = null;
+                }
+            }
+        };
     }
 
     public RuntimeValue<Undertow> startUndertow(ShutdownContext shutdown, ExecutorService executorService,

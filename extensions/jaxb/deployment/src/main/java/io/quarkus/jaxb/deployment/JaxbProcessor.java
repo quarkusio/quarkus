@@ -45,7 +45,9 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -98,7 +100,14 @@ class JaxbProcessor {
             "text",
             "xml",
             "unknown");
-    private static final DotName XML_ROOT = DotName.createSimple("javax.xml.bind.annotation.XmlRootElement");
+
+    private static final DotName XML_ROOT_ELEMENT = DotName.createSimple(XmlRootElement.class.getName());
+    private static final DotName XML_TYPE = DotName.createSimple(XmlType.class.getName());
+    private static final DotName XML_REGISTRY = DotName.createSimple(XmlRegistry.class.getName());
+    private static final DotName XML_SCHEMA = DotName.createSimple(XmlSchema.class.getName());
+    private static final DotName XML_JAVA_TYPE_ADAPTER = DotName.createSimple(XmlJavaTypeAdapter.class.getName());
+
+    private static final List<DotName> REGISTER_TYPE_FOR_REFLECTION_ANNOTATIONS = Arrays.asList(XML_TYPE, XML_REGISTRY);
 
     @Inject
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
@@ -122,16 +131,44 @@ class JaxbProcessor {
             return;
         }
 
-        Collection<AnnotationInstance> xmlRoot = combinedIndexBuildItem.getIndex().getAnnotations(XML_ROOT);
-        for (AnnotationInstance i : xmlRoot) {
-            addReflectiveClass(false, true, i.target().asClass().name().toString());
+        IndexView index = combinedIndexBuildItem.getIndex();
+
+        Collection<AnnotationInstance> xmlRootElementInstances = index.getAnnotations(XML_ROOT_ELEMENT);
+        for (AnnotationInstance xmlRootElementInstance : xmlRootElementInstances) {
+            addReflectiveClass(true, true, xmlRootElementInstance.target().asClass().name().toString());
         }
-        if (xmlRoot.isEmpty() &&
+        if (xmlRootElementInstances.isEmpty() &&
                 fileRoots.isEmpty()) {
             return;
         }
 
+        // Register classes for reflection based on JAXB annotations
+        for (DotName registerTypeAnnotation : REGISTER_TYPE_FOR_REFLECTION_ANNOTATIONS) {
+            for (AnnotationInstance registerTypeForReflectionAnnotationInstance : index
+                    .getAnnotations(registerTypeAnnotation)) {
+                if (registerTypeForReflectionAnnotationInstance.target().kind() == Kind.CLASS) {
+                    addReflectiveClass(true, true,
+                            registerTypeForReflectionAnnotationInstance.target().asClass().name().toString());
+                }
+            }
+        }
+
+        // Register package-infos for reflection
+        for (AnnotationInstance xmlSchemaInstance : index.getAnnotations(XML_SCHEMA)) {
+            if (xmlSchemaInstance.target().kind() == Kind.CLASS) {
+                reflectiveClass.produce(
+                        new ReflectiveClassBuildItem(false, false, xmlSchemaInstance.target().asClass().name().toString()));
+            }
+        }
+
+        // Register XML Java type adapters for reflection
+        for (AnnotationInstance xmlJavaTypeAdapterInstance : index.getAnnotations(XML_JAVA_TYPE_ADAPTER)) {
+            reflectiveClass.produce(
+                    new ReflectiveClassBuildItem(true, true, xmlJavaTypeAdapterInstance.value().asClass().name().toString()));
+        }
+
         addReflectiveClass(false, false, "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl");
+        addReflectiveClass(false, false, "com.sun.org.apache.xerces.internal.jaxp.datatype.DatatypeFactoryImpl");
         addReflectiveClass(false, false, "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl");
         addReflectiveClass(false, false, "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl");
         addReflectiveClass(true, false, "com.sun.xml.bind.v2.ContextFactory");

@@ -29,7 +29,7 @@ public class OAuth2IdentityManager implements IdentityManager {
 
     @Override
     public Account verify(String id, Credential credential) {
-        return verify(null, credential);
+        return null;
     }
 
     @Override

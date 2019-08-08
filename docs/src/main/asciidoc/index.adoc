@@ -44,6 +44,7 @@ include::quarkus-intro.adoc[tag=intro]
 * link:cdi-reference.html[Contexts and Dependency Injection] _(advanced)_
 * link:keycloak-guide.html[Using Keycloak]
 * link:kogito-guide.html[Using Kogito (business automation with processes and rules)]
+* link:oauth2-guide.html[Using OAuth2 RBAC]
 
 * link:faq.html[FAQs]
 

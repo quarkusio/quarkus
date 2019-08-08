@@ -21,21 +21,27 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 public class NativeImageLauncher implements Closeable {
 
-    private static final long IMAGE_WAIT_TIME = 60000;
+    private static final int DEFAULT_PORT = 8081;
+    private static final long DEFAULT_IMAGE_WAIT_TIME = 60;
 
     private final Class<?> testClass;
     private Process quarkusProcess;
     private final int port;
+    private final long imageWaitTime;
     private final Map<String, String> systemProps = new HashMap<>();
     private List<NativeImageStartedNotifier> startedNotifiers;
 
     public NativeImageLauncher(Class<?> testClass) {
-        this(testClass, ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-port", Integer.class).orElse(8081));
+        this(testClass,
+                ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-port", Integer.class).orElse(DEFAULT_PORT),
+                ConfigProvider.getConfig().getOptionalValue("quarkus.test.native-image-wait-time", Long.class)
+                        .orElse(DEFAULT_IMAGE_WAIT_TIME));
     }
 
-    public NativeImageLauncher(Class<?> testClass, int port) {
+    public NativeImageLauncher(Class<?> testClass, int port, long imageWaitTime) {
         this.testClass = testClass;
         this.port = port;
+        this.imageWaitTime = imageWaitTime;
         List<NativeImageStartedNotifier> startedNotifiers = new ArrayList<>();
         for (NativeImageStartedNotifier i : ServiceLoader.load(NativeImageStartedNotifier.class)) {
             startedNotifiers.add(i);
@@ -115,7 +121,7 @@ public class NativeImageLauncher implements Closeable {
     }
 
     private void waitForQuarkus() {
-        long bailout = System.currentTimeMillis() + IMAGE_WAIT_TIME;
+        long bailout = System.currentTimeMillis() + imageWaitTime * 1000;
 
         while (System.currentTimeMillis() < bailout) {
             try {
@@ -133,7 +139,7 @@ public class NativeImageLauncher implements Closeable {
             }
         }
 
-        throw new RuntimeException("Unable to start native image in " + IMAGE_WAIT_TIME + "ms");
+        throw new RuntimeException("Unable to start native image in " + imageWaitTime + "s");
     }
 
     public void addSystemProperties(Map<String, String> systemProps) {

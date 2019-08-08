@@ -8,6 +8,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.elytron.security.deployment.AuthConfigBuildItem;
@@ -55,6 +56,11 @@ class OAuth2DeploymentProcessor {
     @BuildStep(providesCapabilities = "io.quarkus.elytron.security.oauth2")
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.SECURITY_OAUTH2);
+    }
+
+    @BuildStep
+    ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
+        return new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.SECURITY_OAUTH2);
     }
 
     /**

@@ -36,7 +36,8 @@ public class OAuth2Config {
     public String introspectionUrl;
 
     /**
-     * The path to a ca custom cert file
+     * The path to a custom cert file
+     * This is not supported in native mode
      */
     @ConfigItem
     public Optional<String> caCertFile;

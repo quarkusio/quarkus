@@ -21,8 +21,6 @@ To complete this guide, you need:
 * Apache Maven 3.5.3+
 
 
-
-
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.
@@ -47,24 +45,6 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 ----
 
 This command generates a Maven project with a REST endpoint and imports the `spring-di` extension.
-
-=== Examine the pom.xml file
-
-In the `pom.xml` file, we see that the `quarkus-spring-di` dependency has been added.
-We also need to add a dependency on the `spring-context` artifact, which we can do by adding:
-
-
-[source, xml]
-----
-<dependency>
-    <groupId>org.springframework</groupId>
-    <artifactId>spring-context</artifactId>
-    <version>${spring.version}</version>
-</dependency>
-----
-
-where `spring.version` can be any version higher than `3.2.0.RELEASE`.
-
 
 == Add beans using Spring annotations
 
@@ -263,3 +243,14 @@ Run the application with: `./mvnw compile quarkus:dev`.
 Open your browser to http://localhost:8080/greeting.
 
 The result should be: `HELLO WORLD!`.
+
+== Run the application as a native
+
+You can of course create a native image using instructions similar to link:building-native-image-guide.html[this] guide.
+
+== Important Technical Note
+
+Please note that the Spring support in Quarkus does not start a Spring Application Context nor are any Spring infrastructure classes run.
+Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
+What that means for end users, is that adding arbitrary Spring to the classpath will not be used at all. Moreover Spring infrastructure
+things like `org.springframework.beans.factory.config.BeanPostProcessor` will not be run.

@@ -4,7 +4,6 @@
 package io.quarkus.resteasy.runtime;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -88,8 +87,12 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             Map<String, ResourceDescription> descriptions = new HashMap<>();
 
             for (Map.Entry<String, List<ResourceInvoker>> entry : bound) {
-                Method aMethod = ((ResourceMethodInvoker) entry.getValue().get(0)).getMethod();
-                String basePath = aMethod.getDeclaringClass().getAnnotation(Path.class).value();
+                Class<?> resourceClass = ((ResourceMethodInvoker) entry.getValue().get(0)).getResourceClass();
+                Path path = resourceClass.getAnnotation(Path.class);
+                if (path == null) {
+                    continue;
+                }
+                String basePath = path.value();
 
                 if (!descriptions.containsKey(basePath)) {
                     descriptions.put(basePath, new ResourceDescription(basePath));

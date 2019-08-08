@@ -52,6 +52,10 @@
             <groupId>javax.enterprise</groupId>
             <artifactId>cdi-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-development-mode</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

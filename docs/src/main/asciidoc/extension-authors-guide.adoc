@@ -346,7 +346,7 @@ You will also need to configure the `maven-compiler-plugin` to detect the `quark
 
 The `create-extension` mojo of `io.quarkus:quarkus-maven-plugin` can be used to generate stubs of Maven modules needed for implementing a new Quarkus extension.
 
-WARNING: This mojo can be currently used only for adding extensions to an established source tree, such as https://github.com/quarkusio/quarkus[Quarkus] or https://github.com/quarkusio/quarkus[Camel Quarkus]. Creating extension projects from scratch is not supported yet.
+WARNING: This mojo can be currently used only for adding extensions to an established source tree hosting multiple extensions in one subdirectory, such as https://github.com/quarkusio/quarkus[Quarkus] or https://github.com/apache/camel-quarkus[Camel Quarkus]. Creating extension projects from scratch is not supported yet.
 
 As and example, let's add a new extension called `my-ext` to the Quarkus source tree:
 
@@ -360,20 +360,23 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
     -Dquarkus.nameBase="My Extension"
 ----
 
-The above sequence of commands will create three new Maven modules:
+The above sequence of commands does the following:
 
-* `quarkus-my-ext-parent` in the `my-ext` directory; this module is also added to `<modules>` of `quarkus-extensions-parent`
-* `quarkus-my-ext` in the `my-ext/runtime` directory
-* `quarkus-my-ext-deployment` in the `my-ext/deployment` directory; a basic `MyExtProcessor` class is generated in this module.
+* Creates three new Maven modules:
+** `quarkus-my-ext-parent` in the `my-ext` directory
+** `quarkus-my-ext` in the `my-ext/runtime` directory
+** `quarkus-my-ext-deployment` in the `my-ext/deployment` directory; a basic `MyExtProcessor` class is generated in this module.
+* Links these three modules where necessary:
+** `quarkus-my-ext-parent` is added to the `<modules>` of `quarkus-extensions-parent`
+** `quarkus-my-ext` is added to the `<dependencyManagement>` of the runtime BOM (Bill of Materials) `bom/runtime/pom.xml`
+** `quarkus-my-ext-deployment` is added to the `<dependencyManagement>` of the deployment BOM (Bill of Materials) `bom/deployment/pom.xml`
 
-The newly added modules are not suitable for building immediatelly.
-You will need to perform some adjustments manually (some of them are specific to the Quarkus source tree):
+A Maven build performed immediately after generating the modules should pass flawlessly.
 
-* Add `quarkus-my-ext` to the `dependencyManagement` in `bom/runtime/pom.xml`
-* Add `quarkus-my-ext-deployment` to the `dependencyManagement` in `bom/deployment/pom.xml`
-* Add the new extension coordinates to `devtools/common/src/main/filtered/extensions.json`
+There is one step (specific to the Quarkus source tree) that you should do manually when creating a new extension:
+Add the extension coordinates to `devtools/common/src/main/filtered/extensions.json`.
 
-Note that the parameters of the mojo that will be constant for all the extensions added to this source tree are configured in `extensions/pom.xml` so that they do not need to be passed on the command line each time a new extension is added.
+Note that the parameters of the mojo that will be constant for all the extensions added to this source tree are configured in `extensions/pom.xml` so that they do not need to be passed on the command line each time a new extension is added:
 
 [source,xml]
 ----
@@ -388,14 +391,17 @@ Note that the parameters of the mojo that will be constant for all the extension
     <configuration>
         <artifactIdPrefix>quarkus-</artifactIdPrefix>
         <namePrefix xml:space="preserve">Quarkus - </namePrefix>
+        <runtimeBomPath>../bom/runtime/pom.xml</runtimeBomPath>
+        <deploymentBomPath>../bom/deployment/pom.xml</deploymentBomPath>
     </configuration>
 </plugin>
 ----
 
 TIP: The `nameBase` parameter of the mojo is optional.
-If you do not specify it on the command line, the plugin will derive it from `artifactIdBase` by replacing dashes with spaces and uppercasing each token. So you may consider omitting explicit `nameBase` in some cases.
+If you do not specify it on the command line, the plugin will derive it from `artifactIdBase` by replacing dashes with spaces and uppercasing each token.
+So you may consider omitting explicit `nameBase` in some cases.
 
-// This should point to the mojo page once https://github.com/quarkusio/quarkusio.github.io/issues/265 is fixed
+// The following link should point to the mojo page once https://github.com/quarkusio/quarkusio.github.io/issues/265 is fixed
 Please refer to https://github.com/quarkusio/quarkus/blob/{quarkus-version}/devtools/maven/src/main/java/io/quarkus/maven/CreateExtensionMojo.java[CreateExtensionMojo JavaDoc] for all the available options of the mojo.
 
 === Build Step Processors
@@ -982,6 +988,109 @@ public class PersistenceAndQuarkusConfigTest {
 
 <1> This tells JUnit that the Quarkus deployment should fail with a specific exception
 
+
+=== Testing hot reload
+
+It is also possible to write tests that verify an extension works correctly in development mode and can correctly
+handle updates.
+
+For most extensions this will just work 'out of the box', however it is still a good idea to have a smoke test to
+verify that this functionality is working as expected. To test this we use `QuarkusDevModeTest`:
+
+
+[source,java]
+----
+public class ServletChangeTestCase {
+
+    @RegisterExtension
+    final static QuarkusDevModeTest test = new QuarkusDevModeTest()
+            .setArchiveProducer(new Supplier<JavaArchive>() {
+                @Override
+                public JavaArchive get() {
+                    return ShrinkWrap.create(JavaArchive.class)   <1>
+                            .addClass(DevServlet.class)
+                            .addAsManifestResource(new StringAsset("Hello Resource"), "resources/file.txt");
+                }
+            });
+
+    @Test
+    public void testServletChange() throws InterruptedException {
+        RestAssured.when().get("/dev").then()
+                .statusCode(200)
+                .body(is("Hello World"));
+
+        test.modifySourceFile("DevServlet.java", new Function<String, String>() {  <2>
+
+            @Override
+            public String apply(String s) {
+                return s.replace("Hello World", "Hello Quarkus");
+            }
+        });
+
+        RestAssured.when().get("/dev").then()
+                .statusCode(200)
+                .body(is("Hello Quarkus"));
+    }
+
+    @Test
+    public void testAddServlet() throws InterruptedException {
+        RestAssured.when().get("/new").then()
+                .statusCode(404);
+
+        test.addSourceFile(NewServlet.class);                                       <3>
+
+        RestAssured.when().get("/new").then()
+                .statusCode(200)
+                .body(is("A new Servlet"));
+    }
+
+    @Test
+    public void testResourceChange() throws InterruptedException {
+        RestAssured.when().get("/file.txt").then()
+                .statusCode(200)
+                .body(is("Hello Resource"));
+
+        test.modifyResourceFile("META-INF/resources/file.txt", new Function<String, String>() { <4>
+
+            @Override
+            public String apply(String s) {
+                return "A new resource";
+            }
+        });
+
+        RestAssured.when().get("file.txt").then()
+                .statusCode(200)
+                .body(is("A new resource"));
+    }
+
+    @Test
+    public void testAddResource() throws InterruptedException {
+
+        RestAssured.when().get("/new.txt").then()
+                .statusCode(404);
+
+        test.addResourceFile("META-INF/resources/new.txt", "New File");  <5>
+
+        RestAssured.when().get("/new.txt").then()
+                .statusCode(200)
+                .body(is("New File"));
+
+    }
+}
+----
+
+<1> This starts the deployment, your test can modify it as part of the test suite. Quarkus will be restarted between
+each test method so every method starts with a clean deployment.
+
+<2> This method allows you to modify the source of a class file. The old source is passed into the function, and the updated
+source is returned.
+
+<3> This method adds a new class file to the deployment. The source that is used will be the original source that is part
+of the current project.
+
+<4> This method modifies a static resource
+
+<5> This method adds a new static resource
 
 === Native Executable Support
 

@@ -129,7 +129,7 @@ public class ResteasyCommonProcessor {
         return new JaxrsProvidersToRegisterBuildItem(providersToRegister, contributedProviders, useBuiltinProviders);
     }
 
-    private static void categorizeProviders(Set<String> availableProviders, MediaTypeMap<String> categorizedReaders,
+    public static void categorizeProviders(Set<String> availableProviders, MediaTypeMap<String> categorizedReaders,
             MediaTypeMap<String> categorizedWriters, MediaTypeMap<String> categorizedContextResolvers,
             Set<String> otherProviders) {
         for (String availableProvider : availableProviders) {

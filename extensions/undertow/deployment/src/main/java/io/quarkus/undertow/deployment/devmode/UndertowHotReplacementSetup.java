@@ -42,6 +42,11 @@ public class UndertowHotReplacementSetup implements HotReplacementSetup {
         UndertowDeploymentRecorder.startServerAfterFailedStart();
     }
 
+    @Override
+    public void close() {
+        UndertowDeploymentRecorder.stopDevMode();
+    }
+
     private HandlerWrapper createHandlerWrapper() {
         return new HandlerWrapper() {
             @Override
@@ -69,6 +74,9 @@ public class UndertowHotReplacementSetup implements HotReplacementSetup {
                     nextUpdate = System.currentTimeMillis() + TWO_SECONDS;
                 }
             }
+        } else if (context.isTest()) {
+            //always scan if this is a test
+            context.doScan(true);
         }
         if (context.getDeploymentProblem() != null) {
             handleDeploymentProblem(exchange, context.getDeploymentProblem());

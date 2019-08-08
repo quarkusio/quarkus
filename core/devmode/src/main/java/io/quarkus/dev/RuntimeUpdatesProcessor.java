@@ -44,10 +44,12 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     private final List<Runnable> preScanSteps = new CopyOnWriteArrayList<>();
     private final List<Consumer<Set<String>>> noRestartChangesConsumers = new CopyOnWriteArrayList<>();
     private final List<HotReplacementSetup> hotReplacementSetup = new ArrayList<>();
+    private final DevModeMain devModeMain;
 
-    public RuntimeUpdatesProcessor(DevModeContext context, ClassLoaderCompiler compiler) {
+    public RuntimeUpdatesProcessor(DevModeContext context, ClassLoaderCompiler compiler, DevModeMain devModeMain) {
         this.context = context;
         this.compiler = compiler;
+        this.devModeMain = devModeMain;
     }
 
     @Override
@@ -83,6 +85,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     }
 
     @Override
+    public boolean isTest() {
+        return context.isTest();
+    }
+
+    @Override
     public boolean doScan(boolean userInitiated) throws IOException {
         final long startNanoseconds = System.nanoTime();
         for (Runnable step : preScanSteps) {
@@ -106,7 +113,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
             restartNeeded = filesChanged.stream().map(watchedFilePaths::get).anyMatch(Boolean.TRUE::equals);
         }
         if (restartNeeded) {
-            DevModeMain.restartApp(filesChanged);
+            devModeMain.restartApp(filesChanged);
             log.infof("Hot replace total time: %ss ", Timing.convertToBigDecimalSeconds(System.nanoTime() - startNanoseconds));
             return true;
         } else if (!filesChanged.isEmpty()) {
@@ -211,15 +218,12 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                             if (classFileModificationTime > lastChange) {
                                 // At least one class was recently modified. Restart.
                                 hasChanges = true;
-                            } else {
-                                final long sourceFileModificationTime = Files.getLastModifiedTime(sourceFilePath).toMillis();
-                                if (sourceFileModificationTime > classFileModificationTime) {
-                                    // Source file has been modified with the deletion of the inner class represented
-                                    // by the given class file path. Delete class file path and restart.
-                                    Files.deleteIfExists(classFilePath);
-                                    classFilePathToSourceFilePath.remove(classFilePath);
-                                    hasChanges = true;
-                                }
+                            } else if (moduleChangedSourceFiles.contains(sourceFilePath)) {
+                                // Source file has been modified, we delete the .class files as they are going to
+                                //be recompiled anyway, this allows for simple cleanup of inner classes
+                                Files.deleteIfExists(classFilePath);
+                                classFilePathToSourceFilePath.remove(classFilePath);
+                                hasChanges = true;
                             }
                         }
                     }

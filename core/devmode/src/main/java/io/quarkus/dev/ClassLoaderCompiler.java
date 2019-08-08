@@ -9,9 +9,9 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -45,13 +45,25 @@ public class ClassLoaderCompiler {
             throws IOException {
         this.compilationProviders = compilationProviders;
 
-        List<URL> urls = new ArrayList<>();
+        Set<URL> urls = new HashSet<>();
         ClassLoader c = classLoader;
         while (c != null) {
             if (c instanceof URLClassLoader) {
                 urls.addAll(Arrays.asList(((URLClassLoader) c).getURLs()));
             }
             c = c.getParent();
+        }
+        //this is pretty yuck, but under JDK11 the URLClassLoader trick does not work
+        Enumeration<URL> manifests = classLoader.getResources("META-INF/MANIFEST.MF");
+        while (manifests.hasMoreElements()) {
+            URL url = manifests.nextElement();
+            if (url.getProtocol().equals("jar")) {
+                String path = url.getPath();
+                if (path.startsWith("file:")) {
+                    path = path.substring(5, path.lastIndexOf('!'));
+                    urls.add(new File(URLDecoder.decode(path, StandardCharsets.UTF_8.name())).toURL());
+                }
+            }
         }
 
         urls.addAll(context.getClassPath());

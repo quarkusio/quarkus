@@ -270,6 +270,15 @@ public class QuarkusDev extends QuarkusTask {
                     res);
             context.getModules().add(moduleInfo);
 
+            final String outputClassDirectory = extension.outputDirectory().getAbsolutePath();
+            final String outputResourcesDirectory = extension.outputConfigDirectory().getAbsolutePath();
+            context.getClassesRoots().add(extension.outputDirectory().getAbsoluteFile());
+            if (!outputClassDirectory.equals(outputResourcesDirectory)) {
+                context.getClassesRoots().add(extension.outputConfigDirectory().getAbsoluteFile());
+            }
+            context.setFrameworkClassesDir(wiringClassesDirectory.getAbsoluteFile());
+            context.setCacheDir(new File(getBuildDir(), "transformer-cache").getAbsoluteFile());
+
             try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(tempFile))) {
                 out.putNextEntry(new ZipEntry("META-INF/"));
                 Manifest manifest = new Manifest();
@@ -291,17 +300,6 @@ public class QuarkusDev extends QuarkusTask {
 
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
-            final String outputClassDirectory = extension.outputDirectory().getAbsolutePath();
-            final String outputResourcesDirectory = extension.outputConfigDirectory().getAbsolutePath();
-            if (outputClassDirectory.equals(outputResourcesDirectory)) {
-                args.add(outputClassDirectory);
-            } else {
-                // we pass both the output class directory and the output config directory (which differ by default)
-                // so both can be added as classloader roots
-                args.add(outputClassDirectory + "," + outputResourcesDirectory);
-            }
-            args.add(wiringClassesDirectory.getAbsolutePath());
-            args.add(new File(getBuildDir(), "transformer-cache").getAbsolutePath());
             ProcessBuilder pb = new ProcessBuilder(args.toArray(new String[0]));
             pb.redirectErrorStream(true);
             pb.redirectInput(ProcessBuilder.Redirect.INHERIT);

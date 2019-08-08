@@ -19,9 +19,6 @@
         <elasticsearch-maven-plugin.version>6.13</elasticsearch-maven-plugin.version>
         <elasticsearch-server.version>7.1.1</elasticsearch-server.version>
 
-        <!-- These properties are not in the bom as we don't want to enforce the version -->
-        <spring.version>5.1.4.RELEASE</spring.version>
-
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <kotlin.version>1.3.21</kotlin.version>
 
@@ -35,6 +32,9 @@
 
         <!-- Dev tools -->
         <freemarker.version>2.3.28</freemarker.version>
+
+        <!-- Arquillian BOM -->
+        <arquillian.version>1.4.1.Final</arquillian.version>
 
         <!-- Enable APT by default for Eclipse -->
         <m2e.apt.activation>jdt_apt</m2e.apt.activation>

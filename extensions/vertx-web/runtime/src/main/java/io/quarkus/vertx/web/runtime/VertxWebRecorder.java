@@ -43,6 +43,15 @@ public class VertxWebRecorder {
     private static volatile Router router;
     private static volatile HttpServer server;
 
+    public static void shutDownDevMode() {
+        if (server != null) {
+            server.close();
+            server = null;
+        }
+        router = null;
+        hotReplacementHandler = null;
+    }
+
     public void configureRouter(RuntimeValue<Vertx> vertx, BeanContainer container, Map<String, List<Route>> routeHandlers,
             VertxHttpConfiguration vertxHttpConfiguration, LaunchMode launchMode, ShutdownContext shutdown) {
 

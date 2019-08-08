@@ -14,4 +14,6 @@ public interface HotReplacementSetup {
     default void handleFailedInitialStart() {
     };
 
+    default void close() {
+    };
 }

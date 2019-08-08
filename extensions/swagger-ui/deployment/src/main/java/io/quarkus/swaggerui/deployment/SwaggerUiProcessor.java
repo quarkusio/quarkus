@@ -94,7 +94,7 @@ public class SwaggerUiProcessor {
                 }
                 try {
                     ResolvedArtifact artifact = getSwaggerUiArtifact();
-                    Path tempDir = Files.createTempDirectory(TEMP_DIR_PREFIX);
+                    Path tempDir = Files.createTempDirectory(TEMP_DIR_PREFIX).toRealPath();
                     extractSwaggerUi(artifact, tempDir);
                     updateApiUrl(tempDir.resolve("index.html"));
                     cached.cachedDirectory = tempDir.toAbsolutePath().toString();

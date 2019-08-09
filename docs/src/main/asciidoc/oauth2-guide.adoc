@@ -24,6 +24,7 @@ If your OAuth2 Authentication server provides JWT tokens, you should use link:jw
 |quarkus.oauth2.client-id||The OAuth2 client id used to validate the token.
 |quarkus.oauth2.client-secret||The OAuth2 client secret used to validate the token.
 |quarkus.oauth2.introspection-url||The OAuth2 introspection endpoint URL used to validate the token and gather the authentication claims.
+|quarkus.oauth2.ca-cert-file||The OAuth2 server certificate file. **Warning**: this is not supported in native mode where the certificate must be included in the truststore used during the native image generation, see link:native-and-ssl-guide.html[Using SSL With Native Executables].
 |quarkus.oauth2.role-claim|scope|The claim that is used in the introspection endpoint response to load the roles
 |===
 

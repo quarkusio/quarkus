@@ -167,12 +167,16 @@ public class SmallRyeMetricsProcessor {
                 switch (metricAnnotationTarget.kind()) {
                     case METHOD: {
                         MethodInfo method = metricAnnotationTarget.asMethod();
-                        collectedMetricsMethods.add(method);
+                        if (!method.declaringClass().name().toString().startsWith("io.smallrye.metrics")) {
+                            collectedMetricsMethods.add(method);
+                        }
                         break;
                     }
                     case CLASS: {
                         ClassInfo clazz = metricAnnotationTarget.asClass();
-                        collectMetricsClassAndSubClasses(index, collectedMetricsClasses, clazz);
+                        if (!clazz.name().toString().startsWith("io.smallrye.metrics")) {
+                            collectMetricsClassAndSubClasses(index, collectedMetricsClasses, clazz);
+                        }
                         break;
                     }
                 }

@@ -10,7 +10,7 @@ public enum SourceType {
     private static final String srcDirPrefix = "src/main/";
     private static final String testSrcDirPrefix = "src/test/";
 
-    private static final String POM_RESOURCE_TEMPLATE = "templates/%s/%s/pom-template.ftl";
+    private static final String BUILD_FILE_RESOURCE_TEMPLATE = "templates/%s/%s/%s-template.ftl";
     private static final String RESOURCE_TEMPLATE = "templates/%s/%s/resource-template.ftl";
     private static final String TEST_RESOURCE_TEMPLATE = "templates/%s/%s/test-resource-template.ftl";
     private static final String NATIVE_TEST_RESOURCE_TEMPLATE = "templates/%s/%s/native-test-resource-template.ftl";
@@ -33,8 +33,8 @@ public enum SourceType {
         return testSrcDirPrefix + getPathDiscriminator();
     }
 
-    public String getPomResourceTemplate(String templateName) {
-        return computeTemplateFile(POM_RESOURCE_TEMPLATE, templateName);
+    public String getBuildFileResourceTemplate(String templateName, String buildFile) {
+        return computeTemplateFile(BUILD_FILE_RESOURCE_TEMPLATE, templateName, buildFile);
     }
 
     public String getSrcResourceTemplate(String templateName) {
@@ -62,6 +62,10 @@ public enum SourceType {
     }
 
     private String computeTemplateFile(String genericTemplate, String templateName) {
-        return String.format(genericTemplate, templateName, getPathDiscriminator());
+        return computeTemplateFile(genericTemplate, templateName, null);
+    }
+
+    private String computeTemplateFile(String genericTemplate, String templateName, String fileName) {
+        return String.format(genericTemplate, templateName, getPathDiscriminator(), fileName);
     }
 }

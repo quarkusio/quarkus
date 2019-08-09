@@ -14,6 +14,7 @@ import static org.twdata.maven.mojoexecutor.MojoExecutor.version;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -39,6 +40,7 @@ import io.quarkus.cli.commands.AddExtensionResult;
 import io.quarkus.cli.commands.AddExtensions;
 import io.quarkus.cli.commands.CreateProject;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.SourceType;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
@@ -71,6 +73,9 @@ public class CreateProjectMojo extends AbstractMojo {
 
     @Parameter(property = "className")
     private String className;
+
+    @Parameter(property = "buildTool", defaultValue = "MAVEN")
+    private String buildTool;
 
     @Parameter(property = "extensions")
     private Set<String> extensions;
@@ -133,25 +138,39 @@ public class CreateProjectMojo extends AbstractMojo {
             final Map<String, Object> context = new HashMap<>();
             context.put("path", path);
 
+            BuildTool buildToolEnum;
+            try {
+                buildToolEnum = BuildTool.valueOf(buildTool.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                String validBuildTools = String.join(",",
+                        Arrays.asList(BuildTool.values()).stream().map(BuildTool::toString).collect(Collectors.toList()));
+                throw new IllegalArgumentException("Choose a valid build tool. Accepted values are: " + validBuildTools);
+            }
+
             success = new CreateProject(new FileProjectWriter(projectRoot))
                     .groupId(projectGroupId)
                     .artifactId(projectArtifactId)
                     .version(projectVersion)
                     .sourceType(sourceType)
                     .className(className)
+                    .buildTool(buildToolEnum)
                     .doCreateProject(context);
 
-            File createdPomFile = new File(projectRoot, "pom.xml");
+            File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
+            File buildFile = new File(createdDependenciesBuildFile.getAbsolutePath());
             if (success) {
-                File pomFile = new File(createdPomFile.getAbsolutePath());
-                AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
-                        .addExtensions(extensions);
+                AddExtensionResult result = new AddExtensions(new FileProjectWriter(buildFile.getParentFile()),
+                        buildFile.getName(), buildToolEnum)
+                                .addExtensions(extensions);
                 if (!result.succeeded()) {
                     success = false;
                 }
             }
-
-            createMavenWrapper(createdPomFile);
+            if (BuildTool.MAVEN.equals(buildToolEnum)) {
+                createMavenWrapper(createdDependenciesBuildFile);
+            } else if (BuildTool.GRADLE.equals(buildToolEnum)) {
+                createGradleWrapper(buildFile.getParentFile());
+            }
         } catch (IOException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
@@ -160,6 +179,18 @@ public class CreateProjectMojo extends AbstractMojo {
         } else {
             throw new MojoExecutionException("the project was created but it was unable to add the extensions");
         }
+    }
+
+    private void createGradleWrapper(File projectDirectory) {
+        try {
+            Runtime.getRuntime().exec("gradle wrapper", new String[0], projectDirectory);
+        } catch (IOException e) {
+            // no reason to fail if the wrapper could not be created
+            getLog().error(
+                    "Unable to install the Gradle wrapper (./gradlew) in the project. You need to have gradle installed to generate the wrapper files.",
+                    e);
+        }
+
     }
 
     private void createMavenWrapper(File createdPomFile) {

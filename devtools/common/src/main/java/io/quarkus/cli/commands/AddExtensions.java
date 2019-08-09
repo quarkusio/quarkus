@@ -1,10 +1,7 @@
 package io.quarkus.cli.commands;
 
-import static io.quarkus.maven.utilities.MojoUtils.getBomArtifactId;
 import static io.quarkus.maven.utilities.MojoUtils.readPom;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -13,25 +10,33 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Model;
 
+import io.quarkus.cli.commands.file.BuildFile;
+import io.quarkus.cli.commands.file.GradleBuildFile;
+import io.quarkus.cli.commands.file.MavenBuildFile;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.dependencies.Extension;
+import io.quarkus.generators.BuildTool;
 import io.quarkus.maven.utilities.MojoUtils;
 
 public class AddExtensions {
-    private static final String OK = "\u2705";
-    private static final String NOK = "\u274c";
-    private static final String NOOP = "\uD83D\uDC4D";
 
-    private Model model;
-    private String pom;
-    private ProjectWriter writer;
+    private BuildFile buildFile;
+    private final static Printer PRINTER = new Printer();
 
-    public AddExtensions(final ProjectWriter writer, final String pom) throws IOException {
-        this.model = MojoUtils.readPom(new ByteArrayInputStream(writer.getContent(pom)));
-        this.writer = writer;
-        this.pom = pom;
+    public AddExtensions(final ProjectWriter writer, final String buildFile) throws IOException {
+        this(writer, buildFile, BuildTool.MAVEN);
+    }
+
+    public AddExtensions(final ProjectWriter writer, final String buildFile, final BuildTool buildTool) throws IOException {
+        switch (buildTool) {
+            case GRADLE:
+                this.buildFile = new GradleBuildFile(writer);
+                break;
+            case MAVEN:
+            default:
+                this.buildFile = new MavenBuildFile(writer);
+        }
     }
 
     /**
@@ -112,7 +117,7 @@ public class AddExtensions {
 
             if (query.contains(":")) {
                 // GAV case.
-                updated = addExtensionAsGAV(query) || updated;
+                updated = buildFile.addExtensionAsGAV(query) || updated;
             } else {
                 SelectionResult result = select(query, registry, false);
                 if (!result.matches()) {
@@ -122,64 +127,31 @@ public class AddExtensions {
                     Set<Extension> candidates = result.getExtensions();
                     if (candidates.isEmpty()) {
                         // No matches at all.
-                        print(NOK + " Cannot find a dependency matching '" + query + "', maybe a typo?");
+                        PRINTER.nok(" Cannot find a dependency matching '" + query + "', maybe a typo?");
                         success = false;
                     } else {
-                        sb.append(NOK).append(" Multiple extensions matching '").append(query).append("'");
+                        sb.append(Printer.NOK).append(" Multiple extensions matching '").append(query).append("'");
                         result.getExtensions()
                                 .forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
                                         .append(extension.managementKey()));
                         sb.append(System.lineSeparator())
                                 .append("     Be more specific e.g using the exact name or the full GAV.");
-                        print(sb.toString());
+                        PRINTER.print(sb.toString());
                         success = false;
                     }
                 } else { // Matches.
                     final Extension extension = result.getMatch();
                     // Don't set success to false even if the dependency is not added; as it's should be idempotent.
-                    updated = addDependency(dependenciesFromBom, extension) || updated;
+                    updated = buildFile.addDependency(dependenciesFromBom, extension) || updated;
                 }
             }
         }
 
         if (updated) {
-            ByteArrayOutputStream pomOutputStream = new ByteArrayOutputStream();
-            MojoUtils.write(model, pomOutputStream);
-            writer.write(pom, pomOutputStream.toString("UTF-8"));
+            buildFile.write();
         }
 
         return new AddExtensionResult(updated, success);
-    }
-
-    private boolean addDependency(List<Dependency> dependenciesFromBom, Extension extension) {
-        if (!MojoUtils.hasDependency(model, extension.getGroupId(), extension.getArtifactId())) {
-            print(OK + " Adding extension " + extension.managementKey());
-            model.addDependency(extension
-                    .toDependency(containsBOM(model) &&
-                            isDefinedInBom(dependenciesFromBom, extension)));
-            return true;
-        } else {
-            print(NOOP + " Skipping extension " + extension.managementKey() + ": already present");
-            return false;
-        }
-    }
-
-    private boolean addExtensionAsGAV(String query) {
-        Dependency parsed = MojoUtils.parse(query.trim().toLowerCase());
-        boolean alreadyThere = model.getDependencies().stream()
-                .anyMatch(d -> d.getManagementKey().equalsIgnoreCase(parsed.getManagementKey()));
-        if (!alreadyThere) {
-            print(OK + " Adding dependency " + parsed.getManagementKey());
-            model.addDependency(parsed);
-            return true;
-        } else {
-            print(NOOP + " Dependency " + parsed.getManagementKey() + " already in the pom.xml file - skipping");
-            return false;
-        }
-    }
-
-    private void print(String message) {
-        System.out.println(message);
     }
 
     private List<Dependency> getDependenciesFromBom() {
@@ -192,21 +164,4 @@ public class AddExtensions {
         }
     }
 
-    private boolean containsBOM(Model model) {
-        if (model.getDependencyManagement() == null) {
-            return false;
-        }
-        List<Dependency> dependencies = model.getDependencyManagement().getDependencies();
-        return dependencies.stream()
-                // Find bom
-                .filter(dependency -> "import".equalsIgnoreCase(dependency.getScope()))
-                .filter(dependency -> "pom".equalsIgnoreCase(dependency.getType()))
-                // Does it matches the bom artifact name
-                .anyMatch(dependency -> dependency.getArtifactId().equalsIgnoreCase(getBomArtifactId()));
-    }
-
-    private boolean isDefinedInBom(List<Dependency> dependencies, Extension extension) {
-        return dependencies.stream().anyMatch(dependency -> dependency.getGroupId().equalsIgnoreCase(extension.getGroupId())
-                && dependency.getArtifactId().equalsIgnoreCase(extension.getArtifactId()));
-    }
 }

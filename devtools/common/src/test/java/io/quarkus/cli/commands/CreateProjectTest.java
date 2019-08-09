@@ -74,6 +74,38 @@ public class CreateProjectTest {
     }
 
     @Test
+    public void createGradleOnExisting() throws IOException {
+        final File testDir = new File("target/existing");
+        delete(testDir);
+        testDir.mkdirs();
+
+        final File buildGradle = new File(testDir, "build.gradle");
+        buildGradle.createNewFile();
+        final File settingsGradle = new File(testDir, "settings.gradle");
+        settingsGradle.createNewFile();
+
+        final CreateProject createProject = new CreateProject(new FileProjectWriter(testDir)).groupId("io.quarkus")
+                .artifactId("basic-rest")
+                .version("1.0.0-SNAPSHOT")
+                .buildTool(BuildTool.GRADLE);
+
+        Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
+
+        final File gitignore = new File(testDir, ".gitignore");
+        Assertions.assertTrue(gitignore.exists());
+        final String gitignoreContent = new String(Files.readAllBytes(gitignore.toPath()), StandardCharsets.UTF_8);
+        Assertions.assertFalse(gitignoreContent.contains("\ntarget/\n"));
+        Assertions.assertTrue(gitignoreContent.contains("\nbuild/"));
+        Assertions.assertTrue(gitignoreContent.contains("\n.gradle/\n"));
+
+        assertThat(contentOf(new File(testDir, "settings.gradle"), "UTF-8"))
+                .containsIgnoringCase("io.quarkus:quarkus-gradle-plugin");
+
+        assertThat(contentOf(new File(testDir, "build.gradle"), "UTF-8"))
+                .containsIgnoringCase(getBomArtifactId());
+    }
+
+    @Test
     public void createOnTopPomWithoutResource() throws IOException {
         final File testDir = new File("target/existing");
         delete(testDir);

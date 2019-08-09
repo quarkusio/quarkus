@@ -9,8 +9,10 @@ import java.util.List;
 import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.panache.common.Sort;
@@ -54,9 +56,11 @@ public class MethodNameParser {
     private static final Set<String> BOOLEAN_OPERATIONS = new HashSet<>(Arrays.asList("True", "False"));
 
     private final ClassInfo entityClass;
+    private final IndexView indexView;
 
-    public MethodNameParser(ClassInfo entityClass) {
+    public MethodNameParser(ClassInfo entityClass, IndexView indexView) {
         this.entityClass = entityClass;
+        this.indexView = indexView;
     }
 
     public enum QueryType {
@@ -183,17 +187,59 @@ public class MethodNameParser {
             }
             FieldInfo fieldInfo = entityClass.field(fieldName);
             if (fieldInfo == null) {
-                throw new UnableToParseMethodException(
-                        "Entity " + entityClass + " does not contain a field named: " + part + ". " +
-                                "Offending method is " + methodName);
+                String parsingExceptionMethod = "Entity " + entityClass + " does not contain a field named: " + part + ". " +
+                        "Offending method is " + methodName;
+
+                // determine if we are trying to use a field of one of the associated entities
+
+                int fieldEndIndex = -1;
+                for (int i = 1; i < fieldName.length() - 1; i++) {
+                    char c = fieldName.charAt(i);
+                    if ((c >= 'A' && c <= 'Z') || c == '_') {
+                        fieldEndIndex = i;
+                        break;
+                    }
+                }
+
+                if (fieldEndIndex == -1) {
+                    throw new UnableToParseMethodException(parsingExceptionMethod);
+                }
+
+                int associatedEntityFieldStartIndex = fieldName.charAt(fieldEndIndex) == '_' ? fieldEndIndex + 1
+                        : fieldEndIndex;
+                if (associatedEntityFieldStartIndex >= fieldName.length() - 1) {
+                    throw new UnableToParseMethodException(parsingExceptionMethod);
+                }
+
+                String simpleFieldName = fieldName.substring(0, fieldEndIndex);
+                String associatedEntityFieldName = lowerFirstLetter(fieldName.substring(associatedEntityFieldStartIndex));
+                fieldInfo = entityClass.field(simpleFieldName);
+                if ((fieldInfo == null) || !(fieldInfo.type() instanceof ClassType)) {
+                    throw new UnableToParseMethodException(parsingExceptionMethod);
+                }
+
+                ClassInfo associatedEntityClassInfo = indexView.getClassByName(fieldInfo.type().name());
+                if (associatedEntityClassInfo == null) {
+                    throw new IllegalStateException(
+                            "Entity class " + fieldInfo.type().name() + " was not part of the Quarkus index");
+                }
+                FieldInfo associatedEntityClassField = associatedEntityClassInfo.field(associatedEntityFieldName);
+                if (associatedEntityClassField == null) {
+                    throw new UnableToParseMethodException(parsingExceptionMethod);
+                }
+
+                validateFieldWithOperation(operation, associatedEntityClassField, methodName);
+
+                // set the fieldName to the proper JPQL expression
+                fieldName = simpleFieldName + "." + associatedEntityFieldName;
+            } else {
+                validateFieldWithOperation(operation, fieldInfo, methodName);
             }
             if ((ignoreCase || allIgnoreCase) && !DotNames.STRING.equals(fieldInfo.type().name())) {
                 throw new UnableToParseMethodException(
                         "IgnoreCase cannot be specified for field" + fieldInfo.name() + " of method "
                                 + methodName + " because it is not a String type");
             }
-
-            validateFieldWithOperation(operation, fieldInfo, methodName);
 
             if (where.length() > 0) {
                 where.append(containsAnd ? " AND " : " OR ");

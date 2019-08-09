@@ -7,6 +7,7 @@ import javax.transaction.Transactional;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
@@ -24,9 +25,15 @@ import io.quarkus.spring.data.runtime.TypesConverter;
 
 public class DerivedMethodsAdder extends AbstractMethodsAdder {
 
+    private final IndexView index;
+
+    public DerivedMethodsAdder(IndexView index) {
+        this.index = index;
+    }
+
     public void add(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
             String generatedClassName, ClassInfo repositoryClassInfo, ClassInfo entityClassInfo) {
-        MethodNameParser methodNameParser = new MethodNameParser(entityClassInfo);
+        MethodNameParser methodNameParser = new MethodNameParser(entityClassInfo, index);
         for (MethodInfo method : repositoryClassInfo.methods()) {
             if (method.annotation(DotNames.SPRING_DATA_QUERY) != null) { // handled by CustomQueryMethodsAdder
                 continue;

@@ -193,6 +193,13 @@ public class PersonResource {
         return personRepository.findTop3ByActive(true, Sort.by(new Sort.Order(Sort.Direction.DESC, "age")));
     }
 
+    @GET
+    @Path("/addressZipCode/{zipCode}")
+    @Produces("application/json")
+    public List<Person> findPeopleByAddressZipCode(@PathParam("zipCode") String zipCode) {
+        return personRepository.findPeopleByAddressZipCode(zipCode);
+    }
+
     private Date changeNow(LocalDate now, BiFunction<LocalDate, Long, LocalDate> function, long diff) {
         return Date.from(function.apply(now, diff).atStartOfDay()
                 .atZone(ZoneId.systemDefault())

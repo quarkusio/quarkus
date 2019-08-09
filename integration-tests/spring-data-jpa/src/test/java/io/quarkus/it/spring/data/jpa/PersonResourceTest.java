@@ -201,6 +201,19 @@ public class PersonResourceTest {
     }
 
     @Test
+    void testFindPeopleByAddressZipCode() {
+        when().get("/person/addressZipCode/00000").then()
+                .statusCode(200)
+                .body("size()", is(0));
+
+        when().get("/person/addressZipCode/123456").then()
+                .statusCode(200)
+                .body("size()", is(2))
+                .body(containsString("Bob"))
+                .body(containsString("DeMar"));
+    }
+
+    @Test
     void testNewPerson() {
         Person person = when().get("/person/new/user").then()
                 .statusCode(200)

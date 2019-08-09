@@ -24,12 +24,15 @@ INSERT INTO movie(id, title, rating, duration) VALUES(6, 'The Departed', 'R', 15
 INSERT INTO movie(id, title, rating, duration) VALUES(7, 'Dunkirk', null, 146);
 INSERT INTO movie(id, title, rating, duration) VALUES(8, 'Toy Story 4', 'G', 100);
 
-INSERT INTO person(id, name, age, joined, active) VALUES (1, 'Bob', 43, '2018-01-01', true);
-INSERT INTO person(id, name, age, joined, active) VALUES (2, 'Florence', 41, '2018-02-02', true);
-INSERT INTO person(id, name, age, joined, active) VALUES (3, 'DeMar', 28, '2017-03-03', false);
-INSERT INTO person(id, name, age, joined, active) VALUES (4, 'DeMar', 55, '2010-04-04', false);
-INSERT INTO person(id, name, age, joined, active) VALUES (5, 'DeMar', 20, '2019-05-05', true);
-INSERT INTO person(id, name, age, joined, active) VALUES (6, null , 22, '2019-06-06', true);
+INSERT INTO address(id, street_name, street_number, zip_code) VALUES (1, 'Easy Street', '10000', '123456');
+INSERT INTO address(id, street_name, street_number, zip_code) VALUES (2, 'Blockbuster Avenue', '1', '654321');
+
+INSERT INTO person(id, name, age, joined, active, address_id) VALUES (1, 'Bob', 43, '2018-01-01', true, 1);
+INSERT INTO person(id, name, age, joined, active, address_id) VALUES (2, 'Florence', 41, '2018-02-02', true, 2);
+INSERT INTO person(id, name, age, joined, active, address_id) VALUES (3, 'DeMar', 28, '2017-03-03', false, 1);
+INSERT INTO person(id, name, age, joined, active, address_id) VALUES (4, 'DeMar', 55, '2010-04-04', false, NULL);
+INSERT INTO person(id, name, age, joined, active, address_id) VALUES (5, 'DeMar', 20, '2019-05-05', true, NULL);
+INSERT INTO person(id, name, age, joined, active, address_id) VALUES (6, null , 22, '2019-06-06', true, NULL);
 
 INSERT INTO post(id, title, bypass) VALUES (1, 'Quarkus first public release!', false);
 INSERT INTO post(id, title, bypass) VALUES (2, 'Quarkus 0.12.0 released', false);

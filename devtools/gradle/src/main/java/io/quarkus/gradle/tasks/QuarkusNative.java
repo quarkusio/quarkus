@@ -217,9 +217,6 @@ public class QuarkusNative extends QuarkusTask {
     @Optional
     @Input
     public String getGraalvmHome() {
-        if (graalvmHome == null || graalvmHome.length() < 1)
-            throw new GradleException(
-                    "The GRAALVM_HOME environment variable need to be set to your GraalVM root directory to use native mode");
         return graalvmHome;
     }
 

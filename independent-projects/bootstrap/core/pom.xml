@@ -32,13 +32,17 @@
         </dependency>
         <dependency>
             <groupId>org.apache.maven.resolver</groupId>
-            <artifactId>maven-resolver-transport-file</artifactId>
+            <artifactId>maven-resolver-transport-wagon</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.maven.resolver</groupId>
-            <artifactId>maven-resolver-transport-http</artifactId>
+            <groupId>org.apache.maven.wagon</groupId>
+            <artifactId>wagon-http</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.maven.wagon</groupId>
+            <artifactId>wagon-file</artifactId>
+        </dependency>
+         <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging</artifactId>
         </dependency>

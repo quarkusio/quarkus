@@ -1,11 +1,16 @@
 package io.quarkus.maven;
 
+import java.io.IOException;
+
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
 import io.quarkus.cli.commands.ListExtensions;
+import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.generators.BuildTool;
 
 /**
  * List the available extensions.
@@ -41,7 +46,16 @@ public class ListExtensionsMojo extends AbstractMojo {
     protected String searchPattern;
 
     @Override
-    public void execute() {
-        new ListExtensions(project.getModel()).listExtensions(all, format, searchPattern);
+    public void execute() throws MojoExecutionException {
+        try {
+            FileProjectWriter writer = null;
+            if (project != null) {
+                writer = new FileProjectWriter(project.getBasedir());
+            }
+            new ListExtensions(writer, BuildTool.MAVEN).listExtensions(all, format,
+                    searchPattern);
+        } catch (IOException e) {
+            throw new MojoExecutionException("Unable to list extensions", e);
+        }
     }
 }

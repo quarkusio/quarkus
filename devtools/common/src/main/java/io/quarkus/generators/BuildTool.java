@@ -1,5 +1,12 @@
 package io.quarkus.generators;
 
+import java.io.IOException;
+
+import io.quarkus.cli.commands.file.BuildFile;
+import io.quarkus.cli.commands.file.GradleBuildFile;
+import io.quarkus.cli.commands.file.MavenBuildFile;
+import io.quarkus.cli.commands.writer.ProjectWriter;
+
 /**
  * An enum of build tools, such as Maven and Gradle.
  */
@@ -34,6 +41,16 @@ public enum BuildTool {
 
     public String getDependenciesFile() {
         return buildFiles[0];
+    }
+
+    public BuildFile getBuildFile(final ProjectWriter writer) throws IOException {
+        switch (this) {
+            case GRADLE:
+                return new GradleBuildFile(writer);
+            case MAVEN:
+            default:
+                return new MavenBuildFile(writer);
+        }
     }
 
 }

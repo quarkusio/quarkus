@@ -12,6 +12,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
@@ -59,7 +60,7 @@ public class MavenBuildFile extends BuildFile {
     }
 
     @Override
-    protected List<Dependency> getDependencies() {
+    public List<Dependency> getDependencies() {
         return model.getDependencies();
     }
 
@@ -203,6 +204,18 @@ public class MavenBuildFile extends BuildFile {
 
     private boolean isParentPom() {
         return "pom".equals(model.getPackaging());
+    }
+
+    @Override
+    protected List<Dependency> getManagedDependencies() {
+        final DependencyManagement managed = model.getDependencyManagement();
+        return managed != null ? managed.getDependencies()
+                : Collections.emptyList();
+    }
+
+    @Override
+    public String getProperty(String propertyName) {
+        return model.getProperties().getProperty(propertyName);
     }
 
 }

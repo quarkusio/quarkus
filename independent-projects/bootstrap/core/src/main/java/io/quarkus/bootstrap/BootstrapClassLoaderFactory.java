@@ -35,8 +35,9 @@ public class BootstrapClassLoaderFactory {
     private static final String DEPLOYMENT_CP = "deployment.cp";
 
     public static final String PROP_CP_CACHE = "quarkus-classpath-cache";
-    public static final String PROP_WS_DISCOVERY = "quarkus-workspace-discovery";
+    public static final String PROP_DEPLOYMENT_CP = "quarkus-deployment-cp";
     public static final String PROP_OFFLINE = "quarkus-bootstrap-offline";
+    public static final String PROP_WS_DISCOVERY = "quarkus-workspace-discovery";
 
     private static final int CP_CACHE_FORMAT_ID = 1;
 

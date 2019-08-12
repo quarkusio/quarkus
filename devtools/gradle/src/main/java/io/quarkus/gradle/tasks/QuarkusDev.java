@@ -30,12 +30,14 @@ import java.util.zip.ZipOutputStream;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.plugins.Convention;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
@@ -43,6 +45,7 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.bootstrap.model.AppArtifact;
@@ -140,6 +143,7 @@ public class QuarkusDev extends QuarkusTask {
                     "Does the project have any source files?");
         }
         DevModeContext context = new DevModeContext();
+        context.setSourceEncoding(getSourceEncoding());
         try {
             List<String> args = new ArrayList<>();
             args.add(JavaBinFinder.findBin());
@@ -329,6 +333,14 @@ public class QuarkusDev extends QuarkusTask {
         } catch (Exception e) {
             throw new GradleException("Failed to run", e);
         }
+    }
+
+    private String getSourceEncoding() {
+        Task javaCompile = getProject().getTasks().getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME);
+        if (javaCompile != null) {
+            return ((JavaCompile) javaCompile).getOptions().getEncoding();
+        }
+        return null;
     }
 
     private void copyOutputToConsole(InputStream is) {

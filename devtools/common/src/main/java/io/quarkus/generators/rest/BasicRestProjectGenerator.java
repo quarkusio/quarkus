@@ -5,7 +5,9 @@ import static java.lang.String.format;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -111,9 +113,15 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
                 throws IOException {
             if (!writer.exists(outputFilePath)) {
                 String path = templateName.startsWith("/") ? templateName : "/" + templateName;
-                try (final BufferedReader stream = new BufferedReader(
-                        new InputStreamReader(getClass().getResourceAsStream(path), StandardCharsets.UTF_8))) {
-                    String template = stream.lines().collect(Collectors.joining("\n"));
+                URL resource = getClass().getResource(path);
+                if (resource == null) {
+                    throw new IOException("Template resource is missing: " + path);
+                }
+                try (
+                        InputStream resourceStream = resource.openStream();
+                        InputStreamReader streamReader = new InputStreamReader(resourceStream, StandardCharsets.UTF_8);
+                        BufferedReader bufferedReader = new BufferedReader(streamReader)) {
+                    String template = bufferedReader.lines().collect(Collectors.joining("\n"));
                     for (Entry<String, Object> e : context.entrySet()) {
                         if (e.getValue() != null) { // Exclude null values (classname and path can be null)
                             template = template.replace(format("${%s}", e.getKey()), e.getValue().toString());

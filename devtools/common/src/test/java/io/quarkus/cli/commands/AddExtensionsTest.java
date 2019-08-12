@@ -31,7 +31,7 @@ class AddExtensionsTest {
                 .doCreateProject(new HashMap<>());
 
         File pomFile = new File(pom.getAbsolutePath());
-        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(asList("jdbc-postgre", "agroal", "quarkus-arc", " hibernate-validator",
                         "commons-io:commons-io:2.6")));
 
@@ -55,7 +55,7 @@ class AddExtensionsTest {
                 .doCreateProject(new HashMap<>());
 
         File pomFile = new File(pom.getAbsolutePath());
-        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(asList("orm-pana", "jdbc-postgre", "arc")));
 
         Model model = MojoUtils.readPom(pom);
@@ -76,7 +76,7 @@ class AddExtensionsTest {
                 .doCreateProject(new HashMap<>());
 
         File pomFile = new File(pom.getAbsolutePath());
-        AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(Collections.singletonList("missing")));
 
         Model model = MojoUtils.readPom(pom);
@@ -97,7 +97,7 @@ class AddExtensionsTest {
                 .doCreateProject(new HashMap<>());
 
         File pomFile = new File(pom.getAbsolutePath());
-        AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(asList("agroal", "agroal")));
 
         Model model = MojoUtils.readPom(pom);
@@ -120,7 +120,7 @@ class AddExtensionsTest {
                 .doCreateProject(new HashMap<>());
 
         File pomFile = new File(pom.getAbsolutePath());
-        AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(Collections.singletonList("agroal")));
 
         Model model = MojoUtils.readPom(pom);
@@ -130,7 +130,7 @@ class AddExtensionsTest {
         Assertions.assertTrue(result.isUpdated());
         Assertions.assertTrue(result.succeeded());
 
-        AddExtensionResult result2 = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        AddExtensionResult result2 = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(Collections.singletonList("agroal")));
         model = MojoUtils.readPom(pom);
         hasDependency(model, "quarkus-agroal");
@@ -156,7 +156,7 @@ class AddExtensionsTest {
                 .doCreateProject(new HashMap<>());
 
         File pomFile = new File(pom.getAbsolutePath());
-        AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(Collections.singletonList("arc")));
 
         Assertions.assertTrue(result.isUpdated());
@@ -164,7 +164,7 @@ class AddExtensionsTest {
         Model model = MojoUtils.readPom(pom);
         hasDependency(model, "quarkus-arc");
 
-        result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(Collections.singletonList("elasticsearch")));
 
         Assertions.assertTrue(result.isUpdated());
@@ -185,7 +185,7 @@ class AddExtensionsTest {
                 .doCreateProject(new HashMap<>());
 
         File pomFile = new File(pom.getAbsolutePath());
-        AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(asList("missing", "agroal")));
 
         Model model = MojoUtils.readPom(pom);
@@ -313,7 +313,7 @@ class AddExtensionsTest {
                 .doCreateProject(new HashMap<>());
 
         File pomFile = new File(pom.getAbsolutePath());
-        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(asList("agroal", "jdbc", "non-exist-ent")));
 
         Model model = MojoUtils.readPom(pom);
@@ -334,7 +334,7 @@ class AddExtensionsTest {
                 .doCreateProject(new HashMap<>());
 
         File pomFile = new File(pom.getAbsolutePath());
-        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(asList("org.acme:acme:1", "org.acme:acme:1")));
 
         Model model = MojoUtils.readPom(pom);
@@ -356,7 +356,7 @@ class AddExtensionsTest {
                 .doCreateProject(new HashMap<>());
 
         File pomFile = new File(pom.getAbsolutePath());
-        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(Collections.singletonList("vertx")));
 
         Model model = MojoUtils.readPom(pom);
@@ -371,7 +371,7 @@ class AddExtensionsTest {
                 .doCreateProject(new HashMap<>());
 
         pomFile = new File(pom.getAbsolutePath());
-        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(Collections.singletonList("vert.x")));
 
         model = MojoUtils.readPom(pom);

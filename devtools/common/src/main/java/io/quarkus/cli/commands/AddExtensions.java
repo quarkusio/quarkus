@@ -24,11 +24,11 @@ public class AddExtensions {
     private BuildFile buildFile;
     private final static Printer PRINTER = new Printer();
 
-    public AddExtensions(final ProjectWriter writer, final String buildFile) throws IOException {
-        this(writer, buildFile, BuildTool.MAVEN);
+    public AddExtensions(final ProjectWriter writer) throws IOException {
+        this(writer, BuildTool.MAVEN);
     }
 
-    public AddExtensions(final ProjectWriter writer, final String buildFile, final BuildTool buildTool) throws IOException {
+    public AddExtensions(final ProjectWriter writer, final BuildTool buildTool) throws IOException {
         switch (buildTool) {
             case GRADLE:
                 this.buildFile = new GradleBuildFile(writer);

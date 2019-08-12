@@ -39,7 +39,7 @@ public class ListExtensionsTest {
                 .doCreateProject(context);
 
         File pomFile = new File(pom.getAbsolutePath());
-        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(asList("commons-io:commons-io:2.5", "Agroal")));
 
         Model model = readPom(pom);
@@ -71,7 +71,7 @@ public class ListExtensionsTest {
                 .doCreateProject(context);
 
         File pomFile = new File(pom.getAbsolutePath());
-        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(asList("resteasy", " hibernate-validator ")));
 
         Model model = readPom(pom);
@@ -107,7 +107,7 @@ public class ListExtensionsTest {
         MojoUtils.write(model, pom);
 
         File pomFile = new File(pom.getAbsolutePath());
-        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(asList("commons-io:commons-io:2.5", "Agroal")));
 
         model = readPom(pom);
@@ -166,7 +166,7 @@ public class ListExtensionsTest {
                 .doCreateProject(context);
 
         File pomFile = new File(pom.getAbsolutePath());
-        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(asList("commons-io:commons-io:2.5", "Agroal")));
 
         Model model = readPom(pom);
@@ -199,7 +199,7 @@ public class ListExtensionsTest {
                 .doCreateProject(context);
 
         File pomFile = new File(pom.getAbsolutePath());
-        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+        new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(asList("commons-io:commons-io:2.5", "Agroal")));
 
         Model model = readPom(pom);

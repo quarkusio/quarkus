@@ -65,7 +65,7 @@ public class AddExtensionMojo extends AbstractMojo {
         try {
             Model model = project.getOriginalModel().clone();
             File pomFile = new File(model.getPomFile().getAbsolutePath());
-            AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), pomFile.getName())
+            AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                     .addExtensions(ext.stream().map(String::trim).collect(Collectors.toSet()));
             if (!result.succeeded()) {
                 throw new MojoExecutionException("Unable to add extensions");

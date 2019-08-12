@@ -143,8 +143,12 @@ public class GradleBuildFile extends BuildFile {
                     newBuildContent.append("    implementation '")
                             .append(dependency.getGroupId())
                             .append(":")
-                            .append(dependency.getArtifactId())
-                            .append("'")
+                            .append(dependency.getArtifactId());
+                    if (dependency.getVersion() != null && !dependency.getVersion().isEmpty()) {
+                        newBuildContent.append(":")
+                                .append(dependency.getVersion());
+                    }
+                    newBuildContent.append("'")
                             .append(System.lineSeparator());
                 }
             }

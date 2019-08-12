@@ -225,7 +225,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         else {
             //if we use gradle we copy the configDir contents to appClassesDir
             try {
-                if (!Files.isSameFile(configDir, appClassesDir)) {
+                if (Files.exists(configDir) && !Files.isSameFile(configDir, appClassesDir)) {
                     Files.walkFileTree(configDir,
                             new CopyDirVisitor(configDir, appClassesDir, StandardCopyOption.REPLACE_EXISTING));
                 }

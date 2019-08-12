@@ -20,6 +20,7 @@ import io.dekorate.kubernetes.annotation.KubernetesApplication;
 import io.dekorate.kubernetes.generator.DefaultKubernetesApplicationGenerator;
 import io.dekorate.processor.SimpleFileWriter;
 import io.dekorate.project.Project;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
@@ -37,7 +38,7 @@ class KubernetesProcessor {
     @Inject
     BuildProducer<FeatureBuildItem> featureProducer;
 
-    @BuildStep
+    @BuildStep(onlyIf = IsNormal.class)
     public void build(ApplicationInfoBuildItem applicationInfo,
             KubernetesConfig kubernetesConfig,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,

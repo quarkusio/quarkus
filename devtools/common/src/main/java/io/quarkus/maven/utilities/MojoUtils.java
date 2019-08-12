@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import org.apache.maven.model.Dependency;
@@ -337,7 +338,7 @@ public class MojoUtils {
 
     public static String[] readGavFromSettingsGradle(ByteArrayInputStream buildFileInputStream, String[] gavIn) {
         String[] gavOut = Arrays.copyOf(gavIn, gavIn.length);
-        try (Scanner scanner = new Scanner(buildFileInputStream)) {
+        try (Scanner scanner = new Scanner(buildFileInputStream, StandardCharsets.UTF_8.name())) {
             while (scanner.hasNextLine()) {
                 String currentLine = scanner.nextLine();
                 if (currentLine.startsWith("group")) {

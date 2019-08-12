@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -174,6 +175,50 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/main/java/org/foo/MyResource.java")).isFile();
+        assertThat(contentOf(new File(testDir, "src/main/java/org/foo/MyResource.java"), "UTF-8"))
+                .contains("@Path", "@GET", "@Produces");
+        assertThat(new File(testDir, "src/test/java")).isDirectory();
+        assertThat(new File(testDir, "src/test/java/org/foo/MyResourceTest.java")).isFile();
+        assertThat(new File(testDir, "src/test/java/org/foo/NativeMyResourceIT.java")).isFile();
+
+        assertThat(contentOf(new File(testDir, "pom.xml"))).contains(getBomArtifactId());
+
+    }
+
+    @Test
+    public void createOnTopPomWithSpringController() throws IOException {
+        final File testDir = new File("target/existing");
+        delete(testDir);
+        testDir.mkdirs();
+
+        Model model = new Model();
+        model.setModelVersion("4.0.0");
+        model.setGroupId("org.acme");
+        model.setArtifactId("foobar");
+        model.setVersion("10.1.2");
+        final File pom = new File(testDir, "pom.xml");
+        MojoUtils.write(model, pom);
+        HashSet<String> extensions = new HashSet<>();
+        extensions.add("spring-web");
+        final CreateProject createProject = new CreateProject(new FileProjectWriter(testDir)).groupId("something.is")
+                .artifactId("wrong")
+                .className("org.foo.MyResource")
+                .version("1.0.0-SNAPSHOT")
+                .extensions(extensions);
+
+        Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
+
+        assertThat(contentOf(pom, "UTF-8"))
+                .contains(getPluginArtifactId(), QUARKUS_VERSION_PROPERTY, getPluginGroupId());
+        assertThat(new File(testDir, "src/main/java")).isDirectory();
+        assertThat(new File(testDir, "src/test/java")).isDirectory();
+
+        assertThat(new File(testDir, "src/main/resources/application.properties")).exists();
+        assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
+        assertThat(new File(testDir, "src/main/java")).isDirectory();
+        assertThat(new File(testDir, "src/main/java/org/foo/MyResource.java")).isFile();
+        assertThat(contentOf(new File(testDir, "src/main/java/org/foo/MyResource.java"), "UTF-8"))
+                .contains("@RestController", "@RequestMapping", "@GetMapping");
         assertThat(new File(testDir, "src/test/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java/org/foo/MyResourceTest.java")).isFile();
         assertThat(new File(testDir, "src/test/java/org/foo/NativeMyResourceIT.java")).isFile();

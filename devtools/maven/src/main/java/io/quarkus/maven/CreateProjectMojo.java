@@ -154,6 +154,7 @@ public class CreateProjectMojo extends AbstractMojo {
                     .sourceType(sourceType)
                     .className(className)
                     .buildTool(buildToolEnum)
+                    .extensions(extensions)
                     .doCreateProject(context);
 
             File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());

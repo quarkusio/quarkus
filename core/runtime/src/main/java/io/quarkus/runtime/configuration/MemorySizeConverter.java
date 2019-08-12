@@ -39,7 +39,7 @@ public class MemorySizeConverter implements Converter<MemorySize> {
      * If the value contain no suffix, the size is treated as bytes.
      * 
      * @param value - value to convert.
-     * @return {@link MemorySize} - a memory size representing by the given value
+     * @return {@link MemorySize} - a memory size represented by the given value
      */
     public MemorySize convert(String value) {
         Matcher matcher = MEMORY_SIZE_PATTERN.matcher(value);

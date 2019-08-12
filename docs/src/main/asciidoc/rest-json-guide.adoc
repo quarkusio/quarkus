@@ -257,7 +257,7 @@ Another common pattern in the JAX-RS world is to use the `Response` object.
 
  * you can return different entity types depending on what happens in your method (a `Legume` or an `Error` for instance);
  * you can set the attributes of the `Response` (the status comes to mind in the case of an error).
- 
+
 Your REST method then looks like this:
 
 [source,JAVA]
@@ -483,6 +483,21 @@ how to use it.
 If you want to use the `keycloak` Quarkus extension in your project, you should configure CORS using the `keycloak` extension
 configuration. See link:keycloak-guide#configuring-cors[the Keycloak guide] for more details.
 ====
+
+== GZip Support
+
+Quarkus comes with GZip support (even though it is not enabled by default). The following configuration knobs allow to configure GZip support.
+
+[source, properties]
+----
+quarkus.resteasy.gzip.enabled=true // <1>
+quarkus.resteasy.gzip.max-input=10M // <2>
+----
+
+<1> Enable Gzip support.
+<2> Configure the upper limit on deflated request body. This is useful to mitigate potential attacks by limiting their reach. The default value is `10M`.
+This configuration option would recognize strings in this format (shown as a regular expression): `[0-9]+[KkMmGgTtPpEeZzYy]?`. If no suffix is given, assume bytes.
+
 
 == Conclusion
 

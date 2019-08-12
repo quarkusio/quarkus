@@ -253,9 +253,9 @@ public class ResteasyServerCommonProcessor {
         }
         resteasyInitParameters.put("resteasy.injector.factory", QuarkusInjectorFactory.class.getName());
 
-        if (commonConfig.gzip.enabled && commonConfig.gzip.maxInput.isPresent()) {
+        if (commonConfig.gzip.enabled) {
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_GZIP_MAX_INPUT,
-                    Integer.toString(commonConfig.gzip.maxInput.getAsInt()));
+                    Long.toString(commonConfig.gzip.maxInput.asLongValue()));
         }
 
         resteasyServerConfig.produce(new ResteasyServerConfigBuildItem(path, resteasyInitParameters));

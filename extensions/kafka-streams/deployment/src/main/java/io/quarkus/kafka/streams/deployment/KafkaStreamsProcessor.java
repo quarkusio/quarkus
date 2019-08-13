@@ -3,6 +3,7 @@ package io.quarkus.kafka.streams.deployment;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Serdes.ByteArraySerde;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.DefaultProductionExceptionHandler;
@@ -22,13 +23,16 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.JniBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.kafka.streams.runtime.HotReplacementInterceptor;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsTopologyManager;
+import io.quarkus.runtime.LaunchMode;
 
 class KafkaStreamsProcessor {
 
@@ -41,19 +45,21 @@ class KafkaStreamsProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized,
             BuildProducer<SubstrateResourceBuildItem> nativeLibs,
-            BuildProducer<JniBuildItem> jni) throws IOException {
+            BuildProducer<JniBuildItem> jni,
+            LaunchModeBuildItem launchMode) throws IOException {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.KAFKA_STREAMS));
 
-        registerClassesThatAreLoadedThroughReflection(reflectiveClasses);
+        registerClassesThatAreLoadedThroughReflection(reflectiveClasses, launchMode);
         addSupportForRocksDbLib(nativeLibs);
         enableLoadOfNativeLibs(reinitialized);
         enableJniForNativeBuild(jni);
     }
 
-    private void registerClassesThatAreLoadedThroughReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+    private void registerClassesThatAreLoadedThroughReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            LaunchModeBuildItem launchMode) {
         registerCompulsoryClasses(reflectiveClasses);
-        registerClassesThatClientMaySpecify(reflectiveClasses);
+        registerClassesThatClientMaySpecify(reflectiveClasses, launchMode);
     }
 
     private void registerCompulsoryClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
@@ -63,14 +69,16 @@ class KafkaStreamsProcessor {
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, FailOnInvalidTimestamp.class));
     }
 
-    private void registerClassesThatClientMaySpecify(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
-        registerExceptionHandler(reflectiveClasses);
-        registerDefaultSerdes(reflectiveClasses);
+    private void registerClassesThatClientMaySpecify(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            LaunchModeBuildItem launchMode) {
+        Properties properties = buildKafkaStreamsProperties(launchMode.getLaunchMode());
+        registerExceptionHandler(reflectiveClasses, properties);
+        registerDefaultSerdes(reflectiveClasses, properties);
     }
 
-    private void registerExceptionHandler(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
-        Properties properties = buildKafkaStreamsProperties();
-        String exceptionHandlerClassName = properties
+    private void registerExceptionHandler(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            Properties kafkaStreamsProperties) {
+        String exceptionHandlerClassName = kafkaStreamsProperties
                 .getProperty(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG);
 
         if (exceptionHandlerClassName == null) {
@@ -84,10 +92,10 @@ class KafkaStreamsProcessor {
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, LogAndFailExceptionHandler.class));
     }
 
-    private void registerDefaultSerdes(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
-        Properties properties = buildKafkaStreamsProperties();
-        String defaultKeySerdeClass = properties.getProperty(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG);
-        String defaultValueSerdeClass = properties.getProperty(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG);
+    private void registerDefaultSerdes(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            Properties kafkaStreamsProperties) {
+        String defaultKeySerdeClass = kafkaStreamsProperties.getProperty(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG);
+        String defaultValueSerdeClass = kafkaStreamsProperties.getProperty(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG);
 
         if (defaultKeySerdeClass != null) {
             registerClassName(reflectiveClasses, defaultKeySerdeClass);
@@ -133,12 +141,12 @@ class KafkaStreamsProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    BeanContainerListenerBuildItem processBuildTimeConfig(KafkaStreamsRecorder recorder) {
-        Properties kafkaStreamsProperties = buildKafkaStreamsProperties();
+    BeanContainerListenerBuildItem processBuildTimeConfig(KafkaStreamsRecorder recorder, LaunchModeBuildItem launchMode) {
+        Properties kafkaStreamsProperties = buildKafkaStreamsProperties(launchMode.getLaunchMode());
         return new BeanContainerListenerBuildItem(recorder.configure(kafkaStreamsProperties));
     }
 
-    private Properties buildKafkaStreamsProperties() {
+    private Properties buildKafkaStreamsProperties(LaunchMode launchMode) {
         Config config = ConfigProvider.getConfig();
         Properties kafkaStreamsProperties = new Properties();
         for (String property : config.getPropertyNames()) {
@@ -146,7 +154,24 @@ class KafkaStreamsProcessor {
                 includeKafkaStreamsProperty(config, kafkaStreamsProperties, property);
             }
         }
+
+        if (launchMode == LaunchMode.DEVELOPMENT) {
+            addHotReplacementInterceptor(kafkaStreamsProperties);
+        }
+
         return kafkaStreamsProperties;
+    }
+
+    private void addHotReplacementInterceptor(Properties kafkaStreamsProperties) {
+        String interceptorConfig = HotReplacementInterceptor.class.getName();
+        Object originalInterceptorConfig = kafkaStreamsProperties
+                .get(StreamsConfig.consumerPrefix(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG));
+
+        if (originalInterceptorConfig != null) {
+            interceptorConfig = interceptorConfig + "," + originalInterceptorConfig;
+        }
+
+        kafkaStreamsProperties.put(StreamsConfig.consumerPrefix(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG), interceptorConfig);
     }
 
     private boolean isKafkaStreamsProperty(String property) {

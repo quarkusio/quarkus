@@ -54,6 +54,7 @@
         <!-- MicroProfile TCK versions -->
         <microprofile-health-api.version>2.0.1</microprofile-health-api.version>
         <microprofile-config-api.version>1.3</microprofile-config-api.version>
+        <microprofile-metrics-api.version>2.0.1</microprofile-metrics-api.version>
         <microprofile-rest-client-api.version>1.2.1</microprofile-rest-client-api.version>
     </properties>
 

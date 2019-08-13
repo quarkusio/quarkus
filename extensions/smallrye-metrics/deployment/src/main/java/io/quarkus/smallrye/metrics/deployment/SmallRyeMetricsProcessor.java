@@ -1,4 +1,3 @@
-
 package io.quarkus.smallrye.metrics.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
@@ -11,8 +10,11 @@ import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.enterprise.context.Dependent;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -22,12 +24,15 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -54,6 +59,8 @@ import io.smallrye.metrics.interceptors.MetricsInterceptor;
 import io.smallrye.metrics.interceptors.TimedInterceptor;
 
 public class SmallRyeMetricsProcessor {
+    private static final Logger LOGGER = Logger.getLogger("io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsProcessor");
+
     @ConfigRoot(name = "smallrye-metrics")
     static final class SmallRyeMetricsConfig {
 
@@ -86,6 +93,36 @@ public class SmallRyeMetricsProcessor {
                 TimedInterceptor.class,
                 MetricsRequestHandler.class,
                 SmallRyeMetricsServlet.class));
+    }
+
+    @BuildStep
+    AnnotationsTransformerBuildItem transformBeanScope() {
+        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                if (ctx.isClass()) {
+                    if (BuiltinScope.isDeclaredOn(ctx.getTarget().asClass())) {
+                        return;
+                    }
+
+                    Map<DotName, List<AnnotationInstance>> annotations = ctx.getTarget().asClass().annotations();
+                    if (annotations.containsKey(GAUGE) || annotations.containsKey(SmallRyeMetricsDotNames.CONCURRENT_GAUGE)
+                            || annotations.containsKey(SmallRyeMetricsDotNames.COUNTED)
+                            || annotations.containsKey(SmallRyeMetricsDotNames.METERED)
+                            || annotations.containsKey(SmallRyeMetricsDotNames.TIMED)
+                            || annotations.containsKey(SmallRyeMetricsDotNames.METRIC)) {
+                        LOGGER.debugf("Found metrics business methods on a class %s with no scope defined - adding @Dependent",
+                                ctx.getTarget());
+                        ctx.transform().add(Dependent.class).done();
+                    }
+                }
+            }
+        });
     }
 
     @BuildStep
@@ -122,9 +159,7 @@ public class SmallRyeMetricsProcessor {
     @Record(STATIC_INIT)
     public void build(BeanContainerBuildItem beanContainerBuildItem,
             SmallRyeMetricsRecorder metrics,
-            ShutdownContextBuildItem shutdown,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-            BeanArchiveIndexBuildItem beanArchiveIndex,
             BuildProducer<FeatureBuildItem> feature) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_METRICS));
@@ -220,12 +255,6 @@ public class SmallRyeMetricsProcessor {
         for (ClassInfo subClass : index.getAllKnownSubclasses(clazz.name())) {
             collectedMetricsClasses.put(subClass.name(), subClass);
         }
-    }
-
-    //    @BuildStep
-    //    @Record(STATIC_INIT)
-    void registerMetricsFromProducerFieldsAndMethods(BeanArchiveIndexBuildItem beanArchiveIndex) {
-        // TODO: Is this possible at all? to register such metric we need to actually instantiate the object produced by the field/method, which we can't do in STATIC_INIT?!
     }
 
 }

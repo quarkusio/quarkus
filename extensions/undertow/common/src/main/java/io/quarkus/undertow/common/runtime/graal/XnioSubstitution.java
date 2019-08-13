@@ -1,4 +1,4 @@
-package io.quarkus.undertow.runtime.graal;
+package io.quarkus.undertow.common.runtime.graal;
 
 import java.io.Closeable;
 

@@ -9,18 +9,13 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-undertow</artifactId>
-    <name>Quarkus - Undertow - Runtime</name>
+    <artifactId>quarkus-undertow-common-substitutions</artifactId>
+    <name>Quarkus - Undertow - Common</name>
+    <description>
+        Some common Undertow 2 substitutions that can be shared with Camel.
+    </description>
 
     <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow-common-substitutions</artifactId>
-        </dependency>
         <dependency>
             <groupId>com.oracle.substratevm</groupId>
             <artifactId>svm</artifactId>
@@ -40,10 +35,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.microprofile.context-propagation</groupId>
-            <artifactId>microprofile-context-propagation-api</artifactId>
         </dependency>
     </dependencies>
 

@@ -1,7 +1,5 @@
 package io.quarkus.arc.processor;
 
-import static io.quarkus.arc.processor.MethodUtils.isOverriden;
-
 import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
 import io.quarkus.arc.processor.BeanProcessor.BuildContextImpl;
 import io.quarkus.arc.processor.BeanRegistrar.RegistrationContext;
@@ -596,6 +594,9 @@ public class BeanDeployment {
 
             // non-inherited stuff:
             for (MethodInfo method : beanClass.methods()) {
+                if (Methods.isSynthetic(method)) {
+                    continue;
+                }
                 if (annotationStore.getAnnotations(method).isEmpty()) {
                     continue;
                 }
@@ -622,7 +623,7 @@ public class BeanDeployment {
                     continue;
                 }
                 for (MethodInfo method : aClass.methods()) {
-                    if (isOverriden(method, methods)) {
+                    if (Methods.isSynthetic(method) || Methods.isOverriden(method, methods)) {
                         continue;
                     }
                     methods.add(method);

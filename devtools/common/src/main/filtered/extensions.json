@@ -351,6 +351,14 @@
     "artifactId": "quarkus-resteasy-jackson"
   },
   {
+    "name": "Scala",
+    "labels": [
+      "scala"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-scala"
+  },
+  {
     "name": "Scheduler",
     "labels": [
       "scheduler",

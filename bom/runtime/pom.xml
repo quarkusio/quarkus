@@ -129,7 +129,7 @@
         <kafka2.version>2.2.1</kafka2.version>
         <debezium.version>0.9.5.Final</debezium.version>
         <zookeeper.version>3.4.14</zookeeper.version>
-        <scala.version>2.12.2</scala.version>
+        <scala.version>2.12.8</scala.version>
         <tika.version>1.21</tika.version>
         <aws-lambda-java.version>1.1.0</aws-lambda-java.version>
         <aws-lambda-java-events.version>2.2.5</aws-lambda-java-events.version>
@@ -551,6 +551,11 @@
                 <artifactId>quarkus-neo4j</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-scala</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Quarkus test dependencies -->
 
@@ -824,6 +829,11 @@
             <dependency>
                 <groupId>org.scala-lang</groupId>
                 <artifactId>scala-library</artifactId>
+                <version>${scala.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>scala-compiler</artifactId>
                 <version>${scala.version}</version>
             </dependency>
             <dependency>

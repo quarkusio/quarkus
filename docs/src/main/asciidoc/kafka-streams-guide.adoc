@@ -211,7 +211,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     && cd ..
 ----
 
-This creates the `aggregator, project with the Quarkus extension for Kafka Streams and with RESTEasy support for JSON-B.
+This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with RESTEasy support for JSON-B.
 
 === The Pipeline Implementation
 
@@ -301,109 +301,63 @@ public class Aggregation {
 }
 ----
 
-Next, let's create the actual streaming query implementation itself in the `aggregator/src/main/java/org/acme/quarkus/sample/kafkastreams/streams/KafkaStreamsPipeline.java` file:
+Next, let's create the actual streaming query implementation itself in the `aggregator/src/main/java/org/acme/quarkus/sample/kafkastreams/streams/TopologyProducer.java` file.
+All we need to do for that is to declare a CDI producer method which returns the Kafka Streams `Topology`;
+the Quarkus extension will take care of configuring, starting and stopping the actual Kafka Streams engine.
 
 [source, java]
 ----
 package org.acme.quarkus.sample.kafkastreams.streams;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Produces;
 
 import org.acme.quarkus.sample.kafkastreams.model.Aggregation;
 import org.acme.quarkus.sample.kafkastreams.model.TemperatureMeasurement;
 import org.acme.quarkus.sample.kafkastreams.model.WeatherStation;
-import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.ListTopicsResult;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.StreamsConfig;
-import org.apache.kafka.streams.errors.InvalidStateStoreException;
+import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.GlobalKTable;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.state.KeyValueBytesStoreSupplier;
-import org.apache.kafka.streams.state.QueryableStoreTypes;
-import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.apache.kafka.streams.state.Stores;
-import org.apache.kafka.streams.state.StreamsMetadata;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import io.quarkus.runtime.ShutdownEvent;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.kafka.client.serialization.JsonbSerde;
 
 @ApplicationScoped
-public class KafkaStreamsPipeline {
+public class TopologyProducer {
 
-    private static final String WEATHER_STATIONS_STORE = "weather-stations-store";
+    static final String WEATHER_STATIONS_STORE = "weather-stations-store";
 
     private static final String WEATHER_STATIONS_TOPIC = "weather-stations";
     private static final String TEMPERATURE_VALUES_TOPIC = "temperature-values";
     private static final String TEMPERATURES_AGGREGATED_TOPIC = "temperatures-aggregated";
 
-    private static final Logger LOG = LoggerFactory.getLogger(KafkaStreamsPipeline.class);
-
-    @ConfigProperty(
-        name="org.acme.quarkus.sample.kafkastreams.bootstrap.servers",
-        defaultValue="localhost:9092"
-    )
-    String bootstrapServers;
-
-    @ConfigProperty(name="HOSTNAME")                            // <1>
-    String host;
-
-    @ConfigProperty(name = "quarkus.http.port")                 // <1>
-    int port;
-
-    private KafkaStreams streams;
-
-    private ExecutorService executor;
-
-    void onStart(@Observes StartupEvent ev) {
-        Properties props = new Properties();
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "temperature-aggregator");
-        props.put(StreamsConfig.APPLICATION_SERVER_CONFIG, host + ":" + port); // <1>
-        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 10 * 1024);
-        props.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 1000);
-        props.put(CommonClientConfigs.METADATA_MAX_AGE_CONFIG, 500);
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    @Produces
+    public Topology buildTopology() {
         StreamsBuilder builder = new StreamsBuilder();
 
         JsonbSerde<WeatherStation> weatherStationSerde = new JsonbSerde<>(
                 WeatherStation.class);
         JsonbSerde<Aggregation> aggregationSerde = new JsonbSerde<>(Aggregation.class);
 
-        KeyValueBytesStoreSupplier storeSupplier = Stores.inMemoryKeyValueStore(
+        KeyValueBytesStoreSupplier storeSupplier = Stores.persistentKeyValueStore(
                 WEATHER_STATIONS_STORE);
 
-        GlobalKTable<Integer, WeatherStation> stations = builder.globalTable( // <2>
+        GlobalKTable<Integer, WeatherStation> stations = builder.globalTable( // <1>
                 WEATHER_STATIONS_TOPIC,
                 Consumed.with(Serdes.Integer(), weatherStationSerde));
 
-        builder.stream(                                                       // <3>
+        builder.stream(                                                       // <2>
                         TEMPERATURE_VALUES_TOPIC,
                         Consumed.with(Serdes.Integer(), Serdes.String())
                 )
-                .join(                                                        // <4>
+                .join(                                                        // <3>
                         stations,
                         (stationId, timestampAndValue) -> stationId,
                         (timestampAndValue, station) -> {
@@ -412,8 +366,8 @@ public class KafkaStreamsPipeline {
                                     Instant.parse(parts[0]), Double.valueOf(parts[1]));
                         }
                 )
-                .groupByKey()                                                 // <5>
-                .aggregate(                                                   // <6>
+                .groupByKey()                                                 // <4>
+                .aggregate(                                                   // <5>
                         Aggregation::new,
                         (stationId, value, aggregation) -> aggregation.updateFrom(value),
                         Materialized.<Integer, Aggregation> as(storeSupplier)
@@ -421,60 +375,48 @@ public class KafkaStreamsPipeline {
                             .withValueSerde(aggregationSerde)
                 )
                 .toStream()
-                .to(                                                          // <7>
+                .to(                                                          // <6>
                         TEMPERATURES_AGGREGATED_TOPIC,
                         Produced.with(Serdes.Integer(), aggregationSerde)
                 );
 
-        streams = new KafkaStreams(builder.build(), props);
-
-        executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
-            waitForTopicsToBeCreated(bootstrapServers);                       // <8>
-            streams.start();
-        });
-    }
-
-    void onStop(@Observes ShutdownEvent ev) {
-        streams.close();
-        executor.shutdown();
-    }
-
-    private void waitForTopicsToBeCreated(String bootstrapServers) {
-        Map<String, Object> config = new HashMap<>();
-        config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-
-        try (AdminClient adminClient = AdminClient.create(config)) {
-            while (true) {
-                ListTopicsResult topics = adminClient.listTopics();
-                Set<String> topicNames = topics.names().get(60, TimeUnit.SECONDS);
-
-                if (topicNames.contains(WEATHER_STATIONS_TOPIC) &&
-                        topicNames.contains(TEMPERATURE_VALUES_TOPIC)) {
-                    return;
-                }
-
-                LOG.info(
-                    "Waiting for topics {} and {} to be created",
-                    WEATHER_STATIONS_TOPIC,
-                    TEMPERATURE_VALUES_TOPIC
-                );
-                Thread.sleep(1_000);
-            }
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new RuntimeException(e);
-        }
+        return builder.build();
     }
 }
 ----
-<1> Host and port of the application are injected and passed to the Kafka Streams configuration as this application node's identity; this will be used later on when running the interactive query in a distributed way
-<2> The `weather-stations` table is read into a `GlobalKTable`, representing the current state of each weather station
-<3> The `temperature-values` topic is read into a `KStream`; whenever a new message arrives to this topic, the pipeline will be processed for this measurement
-<4> The message from the `temperature-values` topic is joined with the corresponding weather station, using the topic's key (weather station id); the join result contains the data from the measurement and associated weather station message
-<5> The values are grouped by message key (the weather station id)
-<6> Within each group, all the measurements of that station are aggregated, by keeping track of minimum and maxium values and calculating the average value of all measurements of that station (see the `Aggregation` type)
-<7> The results of the pipeline are written out to the `temperatures-aggregated` topic
-<8> The Quarkus `StartupEvent` and `ShutdownEvent` lifecycle events are used for starting and stopping the pipeline; as it may only be started once the topics exist, the Kafka admin client is used to check for their existence continuously, until they have been set up
+<1> The `weather-stations` table is read into a `GlobalKTable`, representing the current state of each weather station
+<2> The `temperature-values` topic is read into a `KStream`; whenever a new message arrives to this topic, the pipeline will be processed for this measurement
+<3> The message from the `temperature-values` topic is joined with the corresponding weather station, using the topic's key (weather station id); the join result contains the data from the measurement and associated weather station message
+<4> The values are grouped by message key (the weather station id)
+<5> Within each group, all the measurements of that station are aggregated, by keeping track of minimum and maxium values and calculating the average value of all measurements of that station (see the `Aggregation` type)
+<6> The results of the pipeline are written out to the `temperatures-aggregated` topic
+
+The Kafka Streams extension is configured via the Quarkus configuration file `application.properties`.
+Create the file `aggregator/src/main/resources/application.properties` with the following contents:
+
+[source]
+----
+quarkus.kafka-streams.bootstrap-servers=localhost:9092
+quarkus.kafka-streams.application-id=temperature-aggregator
+quarkus.kafka-streams.application-server=${hostname}:8080
+quarkus.kafka-streams.topics=weather-stations,temperature-values
+
+# pass-through options
+kafka-streams.cache.max.bytes.buffering=10240
+kafka-streams.commit.interval.ms=1000
+kafka-streams.metadata.max.age.ms=500
+kafka-streams.auto.offset.reset=earliest
+kafka-streams.metrics.recording.level=DEBUG
+----
+
+The options with the `quarkus.kafka-streams` prefix can be changed dynamically at application start-up,
+e.g. via environment variables or system properties.
+`bootstrap-servers`, `application-id` and `application-server` are mapped to the Kafka Streams properties `bootstrap.servers`, `application.id` and `application.server`, respectively.
+`topics` is specific to Quarkus: the application will wait for all the given topics to exist before launching the Kafka Streams engine.
+This is to done to gracefully awati the creation of topics that don't yet exist at application start-up time.
+
+All the properties within the `kafka-streams` namespace are passed through as-is to the Kafka Streams engine.
+Changing their values requires a rebuild of the application.
 
 == Building and Running the Applications
 
@@ -547,7 +489,7 @@ services:
       context: aggregator
       dockerfile: src/main/docker/Dockerfile.${QUARKUS_MODE:-jvm}
     environment:
-      ORG_ACME_QUARKUS_SAMPLE_KAFKASTREAMS_BOOTSTRAP_SERVERS: kafka:9092
+      QUARKUS_KAFKA_STREAMS_BOOTSTRAP_SERVERS: kafka:9092
     networks:
       - kafkastreams-network
 
@@ -601,28 +543,48 @@ they let you directly query the underlying state store of the pipeline for the v
 By exposing a simple REST endpoint which queries the state store,
 the latest aggregation result can be retrieved without having to subscribe to any Kafka topic.
 
-Let's begin by adding one more method to the `KafkaStreamsPipeline` class which obtains the current state for a given key:
+Let's begin by creating a new class `InteractiveQueries` in the file `aggregator/src/main/java/org/acme/quarkus/sample/kafkastreams/streams/InteractiveQueries.java`:
+
+one more method to the `KafkaStreamsPipeline` class which obtains the current state for a given key:
 
 [source, java]
 ----
-public GetWeatherStationDataResult getWeatherStationData(int id) {
-    Aggregation result = getWeatherStationStore().get(id);
+package org.acme.quarkus.sample.kafkastreams.streams;
 
-    if (result != null) {
-        return GetWeatherStationDataResult.found(WeatherStationData.from(result)); // <1>
-    }
-    else {
-        return GetWeatherStationDataResult.notFound();                             // <2>
-    }
-}
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 
-private ReadOnlyKeyValueStore<Integer, Aggregation> getWeatherStationStore() {
-    while (true) {
-        try {
-            return streams.store(WEATHER_STATIONS_STORE,
-                    QueryableStoreTypes.keyValueStore());
-        } catch (InvalidStateStoreException e) {
-            // ignore, store not ready yet
+import org.acme.quarkus.sample.kafkastreams.model.Aggregation;
+import org.acme.quarkus.sample.kafkastreams.model.WeatherStationData;
+import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.errors.InvalidStateStoreException;
+import org.apache.kafka.streams.state.QueryableStoreTypes;
+import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
+
+@ApplicationScoped
+public class InteractiveQueries {
+
+    @Inject
+    KafkaStreams streams;
+
+    public GetWeatherStationDataResult getWeatherStationData(int id) {
+        Aggregation result = getWeatherStationStore().get(id);
+
+        if (result != null) {
+            return GetWeatherStationDataResult.found(WeatherStationData.from(result)); // <1>
+        }
+        else {
+            return GetWeatherStationDataResult.notFound();                             // <2>
+        }
+    }
+
+    private ReadOnlyKeyValueStore<Integer, Aggregation> getWeatherStationStore() {
+        while (true) {
+            try {
+                return streams.store(TopologyProducer.WEATHER_STATIONS_STORE, QueryableStoreTypes.keyValueStore());
+            } catch (InvalidStateStoreException e) {
+                // ignore, store not ready yet
+            }
         }
     }
 }
@@ -734,14 +696,14 @@ import org.acme.quarkus.sample.kafkastreams.streams.KafkaStreamsPipeline;
 public class WeatherStationEndpoint {
 
     @Inject
-    KafkaStreamsPipeline pipeline;
+    InteractiveQueries interactiveQueries;
 
     @GET
     @Path("/data/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response getWeatherStationData(@PathParam("id") int id) {
-        GetWeatherStationDataResult result = pipeline.getWeatherStationData(id);
+        GetWeatherStationDataResult result = interactiveQueries.getWeatherStationData(id);
 
         if (result.getResult().isPresent()) {  // <1>
             return Response.ok(result.getResult().get()).build();
@@ -800,13 +762,13 @@ Launching multiple instances of the `aggregator` application will make look the 
 
 image::kafka-streams-guide-architecture-distributed.png[alt=Architecture with multiple aggregator nodes]
 
-The `KafkaStreamsPipeline` class must be adjusted slightly for this distributed architecture:
+The `InteractiveQueries` class must be adjusted slightly for this distributed architecture:
 
 [source, java]
 ----
 public GetWeatherStationDataResult getWeatherStationData(int id) {
     StreamsMetadata metadata = streams.metadataForKey(                  // <1>
-            WEATHER_STATIONS_STORE,
+            TopologyProducer.WEATHER_STATIONS_STORE,
             id,
             Serdes.Integer().serializer()
     );
@@ -838,7 +800,7 @@ public GetWeatherStationDataResult getWeatherStationData(int id) {
 }
 
 public List<PipelineMetadata> getMetaData() {                           // <4>
-    return streams.allMetadataForStore(WEATHER_STATIONS_STORE)
+    return streams.allMetadataForStore(TopologyProducer.WEATHER_STATIONS_STORE)
             .stream()
             .map(m -> new PipelineMetadata(
                     m.hostInfo().host() + ":" + m.hostInfo().port(),
@@ -909,7 +871,7 @@ public class GetWeatherStationDataResult {
 ----
 
 Also the return type for `getMetaData()` must be defined
-(`aggregator/src/main/java/org/acme/quarkus/sample/kafkastreams/streams/PipelineMetadata.java`)
+(`aggregator/src/main/java/org/acme/quarkus/sample/kafkastreams/streams/PipelineMetadata.java`):
 
 [source, java]
 ----
@@ -959,14 +921,14 @@ import org.acme.quarkus.sample.kafkastreams.streams.PipelineMetadata;
 public class WeatherStationEndpoint {
 
     @Inject
-    KafkaStreamsPipeline pipeline;
+    InteractiveQueries interactiveQueries;
 
     @GET
     @Path("/data/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response getWeatherStationData(@PathParam("id") int id) {
-        GetWeatherStationDataResult result = pipeline.getWeatherStationData(id);
+        GetWeatherStationDataResult result = interactiveQueries.getWeatherStationData(id);
 
         if (result.getResult().isPresent()) {                     // <1>
             return Response.ok(result.getResult().get()).build();
@@ -986,7 +948,7 @@ public class WeatherStationEndpoint {
     @Path("/meta-data")
     @Produces(MediaType.APPLICATION_JSON)
     public List<PipelineMetadata> getMetaData() {                 // <4>
-        return pipeline.getMetaData();
+        return interactiveQueries.getMetaData();
     }
 
     private URI getOtherUri(String host, int port, int id) {
@@ -1097,7 +1059,7 @@ You can also have _httpie_ automatically follow the redirect by passing the `--f
 http --follow 2af13fe516a9:8080/weather-stations/data/1
 ```
 
-== Running Native
+== Running Natively
 
 The Quarkus extension for Kafka Streams enables the execution of stream processing applications
 natively via GraalVM without further configuration.

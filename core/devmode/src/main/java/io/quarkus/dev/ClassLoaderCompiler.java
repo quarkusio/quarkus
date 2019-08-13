@@ -133,7 +133,8 @@ public class ClassLoaderCompiler {
                                     classPathElements,
                                     new File(i.getProjectDirectory()),
                                     new File(sourcePath),
-                                    new File(i.getClassesPath())));
+                                    new File(i.getClassesPath()),
+                                    context.getSourceEncoding()));
                 });
             }
         }

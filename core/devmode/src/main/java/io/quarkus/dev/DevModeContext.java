@@ -22,6 +22,7 @@ public class DevModeContext implements Serializable {
     private final List<ModuleInfo> modules = new ArrayList<>();
     private final Map<String, String> systemProperties = new HashMap<>();
     private final Map<String, String> buildSystemProperties = new HashMap<>();
+    private String sourceEncoding;
 
     private final List<File> classesRoots = new ArrayList<>();
     private File frameworkClassesDir;
@@ -43,6 +44,14 @@ public class DevModeContext implements Serializable {
 
     public Map<String, String> getBuildSystemProperties() {
         return buildSystemProperties;
+    }
+
+    public String getSourceEncoding() {
+        return sourceEncoding;
+    }
+
+    public void setSourceEncoding(String sourceEncoding) {
+        this.sourceEncoding = sourceEncoding;
     }
 
     public List<File> getClassesRoots() {

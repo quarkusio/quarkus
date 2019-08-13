@@ -225,6 +225,7 @@ public class DevMojo extends AbstractMojo {
                 devModeContext.getSystemProperties().put(e.getKey().toString(), (String) e.getValue());
             }
             devModeContext.getBuildSystemProperties().putAll((Map) project.getProperties());
+            devModeContext.setSourceEncoding(getSourceEncoding());
 
             final AppModel appModel;
             try {
@@ -366,6 +367,14 @@ public class DevMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }
+    }
+
+    private String getSourceEncoding() {
+        Object sourceEncodingProperty = project.getProperties().get("project.build.sourceEncoding");
+        if (sourceEncodingProperty != null) {
+            return (String) sourceEncodingProperty;
+        }
+        return null;
     }
 
     private void addProject(DevModeContext devModeContext, LocalProject localProject) {

@@ -635,6 +635,9 @@ which represents the actual aggregation result for a weather station:
 ----
 package org.acme.quarkus.sample.kafkastreams.model;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+@RegisterForReflection
 public class WeatherStationData {
 
     public int stationId;

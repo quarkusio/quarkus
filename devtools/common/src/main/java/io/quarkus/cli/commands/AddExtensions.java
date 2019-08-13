@@ -12,8 +12,6 @@ import java.util.stream.Collectors;
 import org.apache.maven.model.Dependency;
 
 import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.file.GradleBuildFile;
-import io.quarkus.cli.commands.file.MavenBuildFile;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.generators.BuildTool;
@@ -29,14 +27,7 @@ public class AddExtensions {
     }
 
     public AddExtensions(final ProjectWriter writer, final BuildTool buildTool) throws IOException {
-        switch (buildTool) {
-            case GRADLE:
-                this.buildFile = new GradleBuildFile(writer);
-                break;
-            case MAVEN:
-            default:
-                this.buildFile = new MavenBuildFile(writer);
-        }
+        this.buildFile = buildTool.getBuildFile(writer);
     }
 
     /**

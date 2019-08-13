@@ -1,7 +1,13 @@
 package io.quarkus.cli.commands.file;
 
+import static io.quarkus.maven.utilities.MojoUtils.credentials;
+import static java.util.stream.Collectors.toList;
+
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.apache.maven.model.Dependency;
 
@@ -9,6 +15,7 @@ import io.quarkus.cli.commands.Printer;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 
 public abstract class BuildFile {
 
@@ -21,7 +28,7 @@ public abstract class BuildFile {
     }
 
     protected void write(String fileName, String content) throws IOException {
-        getWriter().write(fileName, content);
+        writer.write(fileName, content);
     }
 
     public abstract void write() throws IOException;
@@ -34,7 +41,7 @@ public abstract class BuildFile {
                             isDefinedInBom(dependenciesFromBom, extension)));
             return true;
         } else {
-            PRINTER.noop(" Skipping extension " + extension.managementKey() + ": already present");
+            PRINTER.noop(" Skipping already present extension " + extension.managementKey());
             return false;
         }
     }
@@ -52,7 +59,7 @@ public abstract class BuildFile {
             addDependencyInBuildFile(parsed);
             return true;
         } else {
-            PRINTER.noop(" Dependency " + parsed.getManagementKey() + " already in the pom.xml file - skipping");
+            PRINTER.noop(" Skipping already present dependency " + parsed.getManagementKey());
             return false;
         }
     }
@@ -62,12 +69,48 @@ public abstract class BuildFile {
                 && dependency.getArtifactId().equalsIgnoreCase(extension.getArtifactId()));
     }
 
-    public ProjectWriter getWriter() {
-        return writer;
-    }
-
     protected abstract boolean containsBOM();
 
-    protected abstract List<Dependency> getDependencies();
+    public abstract List<Dependency> getDependencies();
+
+    public Map<String, Dependency> findInstalled() {
+        return mapDependencies(getDependencies(), loadManaged());
+    }
+
+    private Map<String, Dependency> loadManaged() {
+        final List<Dependency> managedDependencies = getManagedDependencies();
+        return managedDependencies.isEmpty() ? Collections.emptyMap()
+                : mapDependencies(managedDependencies, Collections.emptyMap());
+    }
+
+    protected Map<String, Dependency> mapDependencies(final List<Dependency> dependencies,
+            final Map<String, Dependency> managed) {
+        final Map<String, Dependency> map = new TreeMap<>();
+
+        if (dependencies != null) {
+            final List<Dependency> listed = dependencies.stream()
+                    .filter(new QuarkusDependencyPredicate())
+                    .collect(toList());
+
+            listed.forEach(d -> {
+                if (d.getVersion() == null) {
+                    final Dependency managedDep = managed.get(credentials(d));
+                    if (managedDep != null) {
+                        final String version = managedDep.getVersion();
+                        if (version != null) {
+                            d.setVersion(version);
+                        }
+                    }
+                }
+
+                map.put(credentials(d), d);
+            });
+        }
+        return map;
+    }
+
+    public abstract String getProperty(String propertyName);
+
+    protected abstract List<Dependency> getManagedDependencies();
 
 }

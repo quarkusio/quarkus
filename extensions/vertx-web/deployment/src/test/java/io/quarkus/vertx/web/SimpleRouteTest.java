@@ -38,7 +38,7 @@ public class SimpleRouteTest {
         RestAssured.when().get("/hello-event-bus?name=ping").then().statusCode(200).body(is("Hello PING!"));
         RestAssured.when().get("/foo?name=foo").then().statusCode(200).body(is("Hello foo!"));
         RestAssured.when().get("/bar").then().statusCode(200).body(is("Hello bar!"));
-        RestAssured.when().get("/delete").then().statusCode(404);
+        RestAssured.when().get("/delete").then().statusCode(405);
         RestAssured.when().delete("/delete").then().statusCode(200).body(is("deleted"));
         RestAssured.when().get("/routes").then().statusCode(200)
                 .body(Matchers.containsString("/hello-event-bus"));

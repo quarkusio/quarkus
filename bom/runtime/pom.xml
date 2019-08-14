@@ -142,6 +142,7 @@
         <awaitility.version>3.1.6</awaitility.version>
         <jprocesses.version>1.6.5</jprocesses.version>
         <jboss-logmanager.version>1.0.3</jboss-logmanager.version>
+        <jgit.version>5.4.0.201906121030-r</jgit.version>
         <jetty.version>9.4.19.v20190610</jetty.version>
         <flyway.version>5.2.4</flyway.version>
         <yasson.version>1.0.4</yasson.version>
@@ -569,6 +570,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-scala</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jgit</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -1208,6 +1214,11 @@
                 <groupId>org.codehaus.plexus</groupId>
                 <artifactId>plexus-component-annotations</artifactId>
                 <version>${plexus-component-annotations.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jgit</groupId>
+                <artifactId>org.eclipse.jgit</artifactId>
+                <version>${jgit.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.microprofile.config</groupId>

@@ -179,6 +179,14 @@
     "artifactId": "quarkus-jackson"
   },
   {
+    "name": "JGit",
+    "labels": [
+      "git"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jgit"
+  },
+  {
     "name": "JSON-B",
     "labels": [
       "jsonb",

@@ -15,6 +15,10 @@ public class QuarkusClassWriter extends ClassWriter {
         super(classReader, flags);
     }
 
+    public QuarkusClassWriter(final int flags) {
+        super(flags);
+    }
+
     @Override
     protected String getCommonSuperClass(String type1, String type2) {
         ClassLoader cl = getClassLoader();

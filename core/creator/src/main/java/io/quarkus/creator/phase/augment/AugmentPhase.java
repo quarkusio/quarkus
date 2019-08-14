@@ -394,7 +394,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                                         for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
                                             visitor = i.apply(className, visitor);
                                         }
-                                        cr.accept(visitor, 0);
+                                        cr.accept(writer, 0);
                                         return new FutureEntry(writer.toByteArray(), classFileName);
                                     } finally {
                                         Thread.currentThread().setContextClassLoader(old);

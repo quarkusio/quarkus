@@ -2,20 +2,20 @@ package io.quarkus.it.tika;
 
 import java.io.InputStream;
 
-import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.tika.parser.AutoDetectParser;
+
 import io.quarkus.tika.TikaParser;
 
 @Path("/parse")
 public class TikaParserResource {
-
-    @Inject
-    TikaParser parser;
+    // Avoiding the injection, otherwise the recorded tika-config.xml intended for TikaPdfInvoiceTest is used
+    TikaParser parser = new TikaParser(new AutoDetectParser(), true);
 
     @POST
     @Path("/text")

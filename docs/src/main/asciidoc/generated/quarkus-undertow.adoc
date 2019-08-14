@@ -1,4 +1,10 @@
 
+`quarkus.servlet.context-path`:: The context path to serve all Servlet context from. This will also affect any resources
+that run as a Servlet, e.g. JAX-RS
+
+type: `java.lang.String`; The configuration is visible at build time only. 
+
+
 `quarkus.http.cors`:: Enable the CORS filter.
 
 type: `boolean`; The configuration is visible at build and runtime time, read only at runtime. 

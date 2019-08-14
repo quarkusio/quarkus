@@ -1,5 +1,6 @@
 
-`quarkus.oauth2.ca-cert-file`:: The path to a ca custom cert file
+`quarkus.oauth2.ca-cert-file`:: The path to a custom cert file
+This is not supported in native mode
 
 type: `java.lang.String`; The configuration is visible at build and runtime time, read only at runtime. 
 

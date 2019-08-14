@@ -225,5 +225,5 @@ AgroalDataSource dataSource2;
 
 == Agroal Configuration Reference
 
-include::generated/agroal-datasource.adoc[]
+include::generated/quarkus-agroal.adoc[]
 

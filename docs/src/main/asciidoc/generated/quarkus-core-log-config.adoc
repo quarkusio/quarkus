@@ -193,12 +193,12 @@ type: `org.jboss.logmanager.handlers.SyslogHandler.Protocol`; default value: `TC
 type: `org.jboss.logmanager.handlers.SyslogHandler.SyslogType`; default value: `RFC5424`. The configuration is overridable at runtime. 
 
 
-`quarkus.log.syslog.truncate`:: Set to 'true' if the message should be truncated
+`quarkus.log.syslog.truncate`:: Set to `true` if the message should be truncated
 
 type: `boolean`; default value: `true`. The configuration is overridable at runtime. 
 
 
-`quarkus.log.syslog.use-counting-framing`:: Set to 'true' if the message being sent should be prefixed with the size of the message
+`quarkus.log.syslog.use-counting-framing`:: Set to `true` if the message being sent should be prefixed with the size of the message
 
 type: `boolean`; The configuration is overridable at runtime. 
 

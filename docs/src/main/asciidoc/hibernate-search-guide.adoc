@@ -545,7 +545,7 @@ This is for testing purposes with the Elasticsearch Docker container.
 It should not be used in production.
 
 == Hibernate Search Configuration
-include::generated/quarkus-hibernate-search.adoc[]
+include::generated/quarkus-hibernate-search-elasticsearch.adoc[]
 
 == Creating a frontend
 

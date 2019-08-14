@@ -1,4 +1,28 @@
 
+`quarkus.datasource."<named-data-sources>".driver`:: The datasource driver class name
+
+type: `java.lang.String`; The configuration is visible at build and runtime time, read only at runtime. 
+
+
+`quarkus.datasource."<named-data-sources>".xa`:: Whether we want to use XA.
+
+If used, the driver has to support it.
+
+type: `boolean`; default value: `false`. The configuration is visible at build and runtime time, read only at runtime. 
+
+
+`quarkus.datasource.driver`:: The datasource driver class name
+
+type: `java.lang.String`; The configuration is visible at build and runtime time, read only at runtime. 
+
+
+`quarkus.datasource.xa`:: Whether we want to use XA.
+
+If used, the driver has to support it.
+
+type: `boolean`; default value: `false`. The configuration is visible at build and runtime time, read only at runtime. 
+
+
 `quarkus.datasource."<named-data-sources>".acquisition-timeout`:: The timeout before cancelling the acquisition of a new connection
 
 type: `java.time.Duration`. _See duration note below_; default value: `5`. The configuration is overridable at runtime. 
@@ -7,11 +31,6 @@ type: `java.time.Duration`. _See duration note below_; default value: `5`. The c
 `quarkus.datasource."<named-data-sources>".background-validation-interval`:: The interval at which we validate idle connections in the background
 
 type: `java.time.Duration`. _See duration note below_; default value: `2M`. The configuration is overridable at runtime. 
-
-
-`quarkus.datasource."<named-data-sources>".driver`:: The datasource driver class name
-
-type: `java.lang.String`; The configuration is visible at build and runtime time, read only at runtime. 
 
 
 `quarkus.datasource."<named-data-sources>".enable-metrics`:: Enable datasource metrics collection.
@@ -69,13 +88,6 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 type: `java.lang.String`; The configuration is overridable at runtime. 
 
 
-`quarkus.datasource."<named-data-sources>".xa`:: Whether we want to use XA.
-
-If used, the driver has to support it.
-
-type: `boolean`; default value: `false`. The configuration is visible at build and runtime time, read only at runtime. 
-
-
 `quarkus.datasource.acquisition-timeout`:: The timeout before cancelling the acquisition of a new connection
 
 type: `java.time.Duration`. _See duration note below_; default value: `5`. The configuration is overridable at runtime. 
@@ -84,11 +96,6 @@ type: `java.time.Duration`. _See duration note below_; default value: `5`. The c
 `quarkus.datasource.background-validation-interval`:: The interval at which we validate idle connections in the background
 
 type: `java.time.Duration`. _See duration note below_; default value: `2M`. The configuration is overridable at runtime. 
-
-
-`quarkus.datasource.driver`:: The datasource driver class name
-
-type: `java.lang.String`; The configuration is visible at build and runtime time, read only at runtime. 
 
 
 `quarkus.datasource.enable-metrics`:: Enable datasource metrics collection.
@@ -144,13 +151,6 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 `quarkus.datasource.username`:: The datasource username
 
 type: `java.lang.String`; The configuration is overridable at runtime. 
-
-
-`quarkus.datasource.xa`:: Whether we want to use XA.
-
-If used, the driver has to support it.
-
-type: `boolean`; default value: `false`. The configuration is visible at build and runtime time, read only at runtime. 
 
 
 [NOTE]

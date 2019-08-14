@@ -1,11 +1,5 @@
 package io.quarkus.annotation.processor.generate_doc;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,7 +9,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
-import java.util.stream.Collectors;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -32,7 +25,6 @@ import io.quarkus.annotation.processor.StringUtil;
 public class GenerateExtensionConfigurationDoc {
     private final Set<ConfigRootInfo> configRoots = new HashSet<>();
     private final Map<String, TypeElement> configGroups = new HashMap<>();
-    private final static Properties SYM_PROPERTIES = System.getProperties();
 
     public void addConfigRoot(final PackageElement pkg, TypeElement clazz) {
         final Matcher pkgMatcher = Constants.PKG_PATTERN.matcher(pkg.toString());
@@ -77,43 +69,27 @@ public class GenerateExtensionConfigurationDoc {
         configGroups.put(configGroup.getQualifiedName().toString(), configGroup);
     }
 
-    public void generateConfigDocs(Properties javaDocProperties) throws IOException {
-        final Path generatedDocsPath = Paths
-                .get(SYM_PROPERTIES.getProperty(Constants.MAVEN_MULTI_MODULE_PROJECT_DIRECTORY)
-                        + Constants.DOCS_SRC_MAIN_ASCIIDOC_GENERATED);
-        final File generatedDocsDir = generatedDocsPath.toFile();
+    public Map<String, String> generateInMemoryConfigDocs(Properties javaDocProperties) {
+        Map<String, String> configOutput = new HashMap<>();
 
-        if (!generatedDocsDir.exists()) {
-            generatedDocsDir.mkdirs();
-        }
-
-        Map<String, List<ConfigRootInfo>> extensionConfigRoutes = configRoots
-                .stream()
-                .collect(Collectors.groupingBy(ConfigRootInfo::getConfigRootId));
-
-        for (Map.Entry<String, List<ConfigRootInfo>> entry : extensionConfigRoutes.entrySet()) {
+        for (ConfigRootInfo configRootInfo : configRoots) {
             final Set<ConfigItem> configItems = new TreeSet<>();
 
-            for (ConfigRootInfo configRootInfo : entry.getValue()) {
-                TypeElement element = configRootInfo.getClazz();
-                recordConfigItems(configItems, element, configRootInfo.getName(), configRootInfo.getVisibility());
-            }
+            TypeElement element = configRootInfo.getClazz();
+            recordConfigItems(configItems, element, configRootInfo.getName(), configRootInfo.getVisibility());
 
             String configurationDoc = generateConfigsInDescriptorListFormat(configItems, javaDocProperties);
 
             if (!configurationDoc.isEmpty()) {
-                try (FileOutputStream out = new FileOutputStream(
-                        generatedDocsPath.resolve(entry.getKey() + ".adoc").toFile())) {
-                    out.write(configurationDoc.getBytes(StandardCharsets.UTF_8));
-                }
+                configOutput.put(configRootInfo.getClazz().getQualifiedName().toString(), configurationDoc);
             }
         }
+
+        return configOutput;
     }
 
     private String generateConfigsInDescriptorListFormat(Set<ConfigItem> configItems, Properties javaDocProperties) {
         StringBuilder sb = new StringBuilder();
-        boolean hasDurationType = false;
-        boolean hasMemorySizeType = false;
 
         for (ConfigItem configItem : configItems) {
             sb.append("\n`");
@@ -127,11 +103,9 @@ public class GenerateExtensionConfigurationDoc {
             sb.append('`');
 
             if (configItem.getType().equals(Duration.class.getName())) {
-                sb.append(". _See duration note below_");
-                hasDurationType = true;
+                sb.append(Constants.SEE_DURATION_NOTE_BELOW);
             } else if (configItem.getType().equals(Constants.MEMORY_SIZE_TYPE)) {
-                sb.append(". _See memory size note below_");
-                hasMemorySizeType = true;
+                sb.append(Constants.SEE_MEMORY_SIZE_NOTE_BELOW);
             }
 
             sb.append("; ");
@@ -147,14 +121,6 @@ public class GenerateExtensionConfigurationDoc {
             sb.append(". ");
 
             sb.append("\n\n");
-        }
-
-        if (hasDurationType) {
-            sb.append(Constants.DURATION_FORMAT_NOTE);
-        }
-
-        if (hasMemorySizeType) {
-            sb.append(Constants.MEMORY_SIZE_FORMAT_NOTE);
         }
 
         return sb.toString();
@@ -331,11 +297,11 @@ public class GenerateExtensionConfigurationDoc {
 
         String ret = builder.toString();
         //replace @code
-        ret = Constants.JAVA_DOC_CODE_PATTERN.matcher(ret).replaceAll("'$1'");
+        ret = Constants.JAVA_DOC_CODE_PATTERN.matcher(ret).replaceAll("`$1`");
         //replace @link with a reference to the field name
         Matcher matcher = Constants.JAVA_DOC_LINK_PATTERN.matcher(ret);
         while (matcher.find()) {
-            ret = ret.replace(matcher.group(0), "" + configify(matcher.group(1)) + "`");
+            ret = ret.replace(matcher.group(0), "`" + configify(matcher.group(1)) + "`");
         }
 
         return ret;

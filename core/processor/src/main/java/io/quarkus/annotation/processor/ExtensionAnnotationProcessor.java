@@ -8,6 +8,8 @@ import static javax.lang.model.util.ElementFilter.typesIn;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -22,17 +24,18 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.stream.Collectors;
 
-import javax.annotation.processing.AbstractProcessor;
-import javax.annotation.processing.Completion;
-import javax.annotation.processing.Filer;
-import javax.annotation.processing.RoundEnvironment;
+import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -66,9 +69,23 @@ import org.jboss.jdeparser.JTypes;
 import io.quarkus.annotation.processor.generate_doc.GenerateExtensionConfigurationDoc;
 
 public class ExtensionAnnotationProcessor extends AbstractProcessor {
+    public static final String RUNTIME = "runtime";
+    public static final String DEPLOYMENT = "deployment";
+    public static final String COMMON = "common";
     private final Set<String> generatedAccessors = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
     private final Set<String> generatedJavaDocs = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
     private final GenerateExtensionConfigurationDoc generateExtensionConfigurationDoc = new GenerateExtensionConfigurationDoc();
+    private static final Path GENERATED_DOCS_PATH = Paths
+            .get(System.getProperties().getProperty(Constants.MAVEN_MULTI_MODULE_PROJECT_DIRECTORY)
+                    + Constants.DOCS_SRC_MAIN_ASCIIDOC_GENERATED);
+    private static final File GENERATED_DOCS_DIR = GENERATED_DOCS_PATH.toFile();
+    private final Set<String> processorMembers = new HashSet<>();
+
+    static {
+        if (!GENERATED_DOCS_DIR.exists()) {
+            GENERATED_DOCS_DIR.mkdirs();
+        }
+    }
 
     public ExtensionAnnotationProcessor() {
     }
@@ -196,7 +213,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write build steps listing: " + e);
                 return;
             }
-        if (!crListClasses.isEmpty())
+        if (!crListClasses.isEmpty()) {
             try {
                 final FileObject listResource = filer.createResource(StandardLocation.CLASS_OUTPUT, "",
                         "META-INF/quarkus-config-roots.list");
@@ -205,8 +222,10 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write config roots listing: " + e);
                 return;
             }
+        }
 
         try {
+
             final FileObject listResource = filer.createResource(StandardLocation.CLASS_OUTPUT, "",
                     "META-INF/quarkus-javadoc.properties");
             try (OutputStream os = listResource.openOutputStream()) {
@@ -219,11 +238,98 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 }
             }
 
-            generateExtensionConfigurationDoc.generateConfigDocs(javaDocProperties);
+            Map<String, List<Map.Entry<String, String>>> extensionsConfigurations = findExtensionsConfiguration(
+                    javaDocProperties);
+            writeExtensionConfiguration(extensionsConfigurations);
 
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write javadoc properties: " + e);
             return;
+        }
+    }
+
+    private Map<String, List<Map.Entry<String, String>>> findExtensionsConfiguration(Properties javaDocProperties)
+            throws IOException {
+        Map<String, String> usedConfigurationRootWithGeneratedDoc = new HashMap<>();
+        Map<String, String> inMemoryOutput = generateExtensionConfigurationDoc
+                .generateInMemoryConfigDocs(javaDocProperties);
+
+        for (Map.Entry<String, String> entry : inMemoryOutput.entrySet()) {
+            if (processorMembers.contains(entry.getKey())) {
+                usedConfigurationRootWithGeneratedDoc.put(entry.getKey(), entry.getValue());
+            } else {
+                try (FileOutputStream out = new FileOutputStream(
+                        GENERATED_DOCS_PATH.resolve(entry.getKey() + ".adoc").toFile())) {
+                    out.write(entry.getValue().getBytes(StandardCharsets.UTF_8));
+                }
+            }
+        }
+
+        for (String member : processorMembers) {
+            Path generatedDocPath = GENERATED_DOCS_PATH.resolve(member + ".adoc");
+            if (Files.notExists(generatedDocPath)) {
+                continue;
+            }
+
+            String cachedGeneratedDoc = new String(Files.readAllBytes(generatedDocPath));
+            usedConfigurationRootWithGeneratedDoc.put(member, cachedGeneratedDoc);
+        }
+
+        return usedConfigurationRootWithGeneratedDoc
+                .entrySet()
+                .stream()
+                .collect(Collectors.groupingBy(entry -> {
+                    Matcher matcher = Constants.PKG_PATTERN.matcher(entry.getKey());
+                    if (matcher.find()) {
+                        String extensionName = matcher.group(1);
+                        String subgroup = matcher.group(2);
+                        StringBuilder key = new StringBuilder("quarkus-");
+
+                        if (DEPLOYMENT.equals(extensionName) || RUNTIME.equals(extensionName)) {
+                            String configClass = entry.getKey().substring(entry.getKey().lastIndexOf('.') + 1);
+                            extensionName = StringUtil.hyphenate(configClass);
+                            key.append("core-");
+                            key.append(extensionName);
+                        } else if (subgroup != null && !DEPLOYMENT.equals(subgroup) && !RUNTIME.equals(subgroup) &&
+                                !COMMON.equals(subgroup) && subgroup.matches("^[a-z0-9]+$")) {
+                            key.append(extensionName);
+                            key.append("-");
+                            key.append(subgroup);
+
+                            String qualifier = matcher.group(3);
+                            if (qualifier != null && !DEPLOYMENT.equals(qualifier) && !RUNTIME.equals(qualifier)
+                                    && !COMMON.equals(qualifier) && qualifier.matches("^[a-z0-9]+$")) {
+                                key.append("-");
+                                key.append(qualifier);
+                            }
+                        } else {
+                            key.append(extensionName);
+                        }
+
+                        key.append(".adoc");
+                        return key.toString();
+                    }
+
+                    return entry.getKey();
+                }));
+    }
+
+    private void writeExtensionConfiguration(Map<String, List<Map.Entry<String, String>>> extensionsConfigurations)
+            throws IOException {
+        for (Map.Entry<String, List<Map.Entry<String, String>>> entry : extensionsConfigurations.entrySet()) {
+            String generatedConfig = entry.getValue().stream().map(Map.Entry::getValue).collect(Collectors.joining());
+
+            if (generatedConfig.contains(Constants.SEE_DURATION_NOTE_BELOW)) {
+                generatedConfig += Constants.DURATION_FORMAT_NOTE;
+            }
+
+            if (generatedConfig.contains(Constants.SEE_MEMORY_SIZE_NOTE_BELOW)) {
+                generatedConfig += Constants.MEMORY_SIZE_FORMAT_NOTE;
+            }
+
+            try (FileOutputStream out = new FileOutputStream(GENERATED_DOCS_PATH.resolve(entry.getKey()).toFile())) {
+                out.write(generatedConfig.getBytes(StandardCharsets.UTF_8));
+            }
         }
     }
 
@@ -266,6 +372,10 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 continue;
             }
 
+            for (VariableElement variableElement : i.getParameters()) {
+                processorMembers.add(variableElement.asType().toString());
+            }
+
             final PackageElement pkg = processingEnv.getElementUtils().getPackageOf(clazz);
             if (pkg == null) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
@@ -276,6 +386,11 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             final String binaryName = processingEnv.getElementUtils().getBinaryName(clazz).toString();
             if (processorClassNames.add(binaryName)) {
                 // new class
+                for (Element element : clazz.getEnclosedElements()) {
+                    if (element.getKind().isField()) {
+                        processorMembers.add(element.asType().toString());
+                    }
+                }
                 recordConfigJavadoc(clazz);
                 generateAccessor(clazz);
                 final StringBuilder rbn = getRelativeBinaryName(clazz, new StringBuilder());

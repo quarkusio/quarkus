@@ -7,8 +7,8 @@ type: `int`; default value: `1`. The configuration is overridable at runtime.
 `quarkus.thread-pool.growth-resistance`:: The executor growth resistance.
 
 A resistance factor applied after the core pool is full; values applied here will cause that fraction
-of submissions to create new threads when no idle thread is available. A value of '0.0f' implies that
-threads beyond the core size should be created as aggressively as threads within it; a value of '1.0f'
+of submissions to create new threads when no idle thread is available. A value of `0.0f` implies that
+threads beyond the core size should be created as aggressively as threads within it; a value of `1.0f`
 implies that threads beyond the core size should never be created.
 
 type: `float`; default value: `0`. The configuration is overridable at runtime. 
@@ -38,7 +38,7 @@ type: `java.time.Duration`. _See duration note below_; default value: `5`. The c
 
 
 `quarkus.thread-pool.shutdown-interrupt`:: The amount of time to wait for thread pool shutdown before tasks should be interrupted. If this value is
-greater than or equal to the value for shutdown-timeout`, then tasks will not be interrupted before
+greater than or equal to the value for `shutdown-timeout`, then tasks will not be interrupted before
 the shutdown timeout occurs.
 
 type: `java.time.Duration`. _See duration note below_; default value: `10`. The configuration is overridable at runtime. 

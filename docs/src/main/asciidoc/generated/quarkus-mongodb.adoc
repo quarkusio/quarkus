@@ -11,43 +11,43 @@ type: `java.time.Duration`. _See duration note below_; The configuration is over
 
 `quarkus.mongodb.connection-string`:: Configures the connection string.
 The format is:
-' mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database.collection][?options]]'
+` mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database.collection][?options]]`
 
-'mongodb://' is a required prefix to identify that this is a string in the standard connection format.
+`mongodb://` is a required prefix to identify that this is a string in the standard connection format.
 
-'username:password@' are optional. If given, the driver will attempt to login to a database after
+`username:password@` are optional. If given, the driver will attempt to login to a database after
 connecting to a database server. For some authentication mechanisms, only the username is specified and the
 password is not, in which case the ":" after the username is left off as well.
 
-'host1' is the only required part of the connection string. It identifies a server address to connect to.
+`host1` is the only required part of the connection string. It identifies a server address to connect to.
 
-':portX' is optional and defaults to :27017 if not provided.
+`:portX` is optional and defaults to :27017 if not provided.
 
-'/database' is the name of the database to login to and thus is only relevant if the
-'username:password@' syntax is used. If not specified the 'admin' database will be used by default.
+`/database` is the name of the database to login to and thus is only relevant if the
+`username:password@` syntax is used. If not specified the `admin` database will be used by default.
 
-'?options' are connection options. Note that if 'database' is absent there is still a '/'
-required between the last host and the '?' introducing the options. Options are name=value pairs and the
+`?options` are connection options. Note that if `database` is absent there is still a `/`
+required between the last host and the `?` introducing the options. Options are name=value pairs and the
 pairs are separated by "&amp;".
 
-An alternative format, using the 'mongodb+srv' protocol, is:
+An alternative format, using the `mongodb+srv` protocol, is:
 
 <pre>
 mongodb+srv://[username:password@]host[/[database][?options]]
 </pre>
 
- - 'mongodb+srv://' is a required prefix for this format.
- - 'username:password@' are optional. If given, the driver will attempt to login to a database after
+ - `mongodb+srv://` is a required prefix for this format.
+ - `username:password@` are optional. If given, the driver will attempt to login to a database after
 connecting to a database server. For some authentication mechanisms, only the username is specified and the
 password is not, in which case the ":" after the username is left off as well
- - 'host' is the only required part of the URI. It identifies a single host name for which SRV records
-are looked up from a Domain Name Server after prefixing the host name with '"_mongodb._tcp"'. The
+ - `host` is the only required part of the URI. It identifies a single host name for which SRV records
+are looked up from a Domain Name Server after prefixing the host name with `"_mongodb._tcp"`. The
 host/port for each SRV record becomes the seed list used to connect, as if each one were provided as host/port
 pair in a URI using the normal mongodb protocol.
- - '/database' is the name of the database to login to and thus is only relevant if the
-'username:password@' syntax is used. If not specified the "admin" database will be used by default.
- - '?options' are connection options. Note that if 'database' is absent there is still a '/'
-required between the last host and the '?' introducing the options. Options are name=value pairs and the
+ - `/database` is the name of the database to login to and thus is only relevant if the
+`username:password@` syntax is used. If not specified the "admin" database will be used by default.
+ - `?options` are connection options. Note that if `database` is absent there is still a `/`
+required between the last host and the `?` introducing the options. Options are name=value pairs and the
 pairs are separated by "&amp;". Additionally with the mongodb+srv protocol, TXT records are looked up from a
 Domain Name Server for the given host, and the text value of each one is prepended to any options on the URI
 itself. Because the last specified value for any option wins, that means that options provided on the URI will
@@ -60,7 +60,7 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 `quarkus.mongodb.credentials.auth-mechanism`:: Configures the authentication mechanism to use if a credential was supplied.
 The default is unspecified, in which case the client will pick the most secure mechanism available based on the
 sever version. For the GSSAPI and MONGODB-X509 mechanisms, no password is accepted, only the username.
-Supported values: 'MONGO-CR|GSSAPI|PLAIN|MONGODB-X509'
+Supported values: `MONGO-CR|GSSAPI|PLAIN|MONGODB-X509`
 
 type: `java.lang.String`; The configuration is overridable at runtime. 
 
@@ -73,7 +73,7 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 `quarkus.mongodb.credentials.auth-source`:: Configures the source of the authentication credentials.
 This is typically the database that the credentials have been created. The value defaults to the database
 specified in the path portion of the connection string or in the 'database' configuration property..
-If the database is specified in neither place, the default value is 'admin'. This option is only
+If the database is specified in neither place, the default value is `admin`. This option is only
 respected when using the MONGO-CR mechanism (the default).
 
 type: `java.lang.String`; The configuration is overridable at runtime. 
@@ -100,7 +100,7 @@ type: `java.time.Duration`. _See duration note below_; The configuration is over
 
 
 `quarkus.mongodb.hosts`:: Configures the Mongo server addressed (one if single mode).
-The addressed are passed as 'host:port'.
+The addressed are passed as `host:port`.
 
 type: `java.lang.String`; The configuration is overridable at runtime. 
 
@@ -148,7 +148,7 @@ type: `java.lang.Integer`; The configuration is overridable at runtime.
 
 
 `quarkus.mongodb.read-preference`:: Configures the read preferences.
-Supported values are: 'primary|primaryPreferred|secondary|secondaryPreferred|nearest'
+Supported values are: `primary|primaryPreferred|secondary|secondaryPreferred|nearest`
 
 type: `java.lang.String`; The configuration is overridable at runtime. 
 
@@ -178,7 +178,7 @@ type: `boolean`; default value: `false`. The configuration is overridable at run
 type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
-`quarkus.mongodb.wait-queue-multiple`:: This multiplier, multiplied with the 'maxPoolSize' setting, gives the maximum number of
+`quarkus.mongodb.wait-queue-multiple`:: This multiplier, multiplied with the `maxPoolSize` setting, gives the maximum number of
 threads that may be waiting for a connection to become available from the pool. All further threads will get an
 exception right away.
 
@@ -191,34 +191,34 @@ type: `java.time.Duration`. _See duration note below_; The configuration is over
 
 
 `quarkus.mongodb.write-concern.journal`:: Configures the journal writing aspect.
-If set to 'true': the driver waits for the server to group commit to the journal file on disk.
-If set to 'false': the driver does not wait for the server to group commit to the journal file on disk.
+If set to `true`: the driver waits for the server to group commit to the journal file on disk.
+If set to `false`: the driver does not wait for the server to group commit to the journal file on disk.
 
 type: `boolean`; default value: `true`. The configuration is overridable at runtime. 
 
 
-`quarkus.mongodb.write-concern.retry-writes`:: If set to 'true', the driver will retry supported write operations if they fail due to a network error.
+`quarkus.mongodb.write-concern.retry-writes`:: If set to `true`, the driver will retry supported write operations if they fail due to a network error.
 
 type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.mongodb.write-concern.safe`:: Configures the safety.
-If set to 'true': the driver ensures that all writes are acknowledged by the MongoDB server, or else
-throws an exception. (see also 'w' and 'wtimeoutMS').
+If set to `true`: the driver ensures that all writes are acknowledged by the MongoDB server, or else
+throws an exception. (see also `w` and `wtimeoutMS`).
 If set fo
- - 'false': the driver does not ensure that all writes are acknowledged by the MongoDB server.
+ - `false`: the driver does not ensure that all writes are acknowledged by the MongoDB server.
 
 type: `boolean`; default value: `true`. The configuration is overridable at runtime. 
 
 
-`quarkus.mongodb.write-concern.w`:: When set, the driver adds 'w: wValue' to all write commands. It requires 'safe' to be 'true'.
-The value is typically a number, but can also be the 'majority' string.
+`quarkus.mongodb.write-concern.w`:: When set, the driver adds `w: wValue` to all write commands. It requires `safe` to be `true`.
+The value is typically a number, but can also be the `majority` string.
 
 type: `java.lang.String`; The configuration is overridable at runtime. 
 
 
-`quarkus.mongodb.write-concern.w-timeout`:: When set, the driver adds 'wtimeout : ms ' to all write commands. It requires 'safe' to be
-'true'.
+`quarkus.mongodb.write-concern.w-timeout`:: When set, the driver adds `wtimeout : ms ` to all write commands. It requires `safe` to be
+`true`.
 
 type: `java.time.Duration`. _See duration note below_; The configuration is overridable at runtime. 
 

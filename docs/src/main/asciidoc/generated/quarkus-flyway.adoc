@@ -1,4 +1,13 @@
 
+`quarkus.flyway.locations`:: Comma-separated list of locations to scan recursively for migrations. The location type is determined by its prefix.
+Unprefixed locations or locations starting with classpath: point to a package on the classpath and may contain both SQL
+and Java-based migrations.
+Locations starting with filesystem: point to a directory on the filesystem, may only contain SQL migrations and are only
+scanned recursively down non-hidden directories.
+
+type: `java.lang.String`; The configuration is visible at build and runtime time, read only at runtime. 
+
+
 `quarkus.flyway.baseline-description`:: The description to tag an existing schema with when executing baseline.
 
 type: `java.lang.String`; The configuration is overridable at runtime. 
@@ -18,15 +27,6 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 second before attempting to connect again, up to the maximum number of times specified by connectRetries.
 
 type: `java.lang.Integer`; The configuration is overridable at runtime. 
-
-
-`quarkus.flyway.locations`:: Comma-separated list of locations to scan recursively for migrations. The location type is determined by its prefix.
-Unprefixed locations or locations starting with classpath: point to a package on the classpath and may contain both SQL
-and Java-based migrations.
-Locations starting with filesystem: point to a directory on the filesystem, may only contain SQL migrations and are only
-scanned recursively down non-hidden directories.
-
-type: `java.lang.String`; The configuration is visible at build and runtime time, read only at runtime. 
 
 
 `quarkus.flyway.migrate-at-start`:: 

@@ -4,7 +4,7 @@
 type: `java.lang.String`; The configuration is visible at build time only. 
 
 
-`quarkus.arc.auto-inject-fields`:: If set to true '@Inject' is automatically added to all non-static fields that are annotated with
+`quarkus.arc.auto-inject-fields`:: If set to true `@Inject` is automatically added to all non-static fields that are annotated with
 one of the annotations defined by {@link AutoInjectAnnotationBuildItem}.
 
 type: `boolean`; default value: `true`. The configuration is visible at build time only. 

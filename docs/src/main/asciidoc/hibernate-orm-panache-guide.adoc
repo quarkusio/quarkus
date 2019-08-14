@@ -320,7 +320,7 @@ Or using the convenience class `Parameters` to either build a `Map` or just use 
 
 [source,java]
 --
-// generate_doc a Map
+// generate a Map
 Person.find("name = :name and status = :status",
          Parameters.with("name", "stef").and("status", Status.Alive).map());
 

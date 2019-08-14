@@ -9,6 +9,39 @@ type: `java.lang.String`; The configuration is visible at build and runtime time
 type: `java.lang.Class<?>`; The configuration is visible at build and runtime time, read only at runtime. 
 
 
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".analysis-configurer`:: The class or the name of the bean used to configure full text analysis (e.g. analyzers, normalizers).
+
+type: `java.lang.Class<?>`; The configuration is visible at build and runtime time, read only at runtime. 
+
+
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".version`:: The version of Elasticsearch used in the cluster.
+
+As the schema is generated without a connection to the server, this item is mandatory.
+
+It doesn't have to be the exact version (it can be 7 or 7.1 for instance) but it has to be sufficiently precise to
+choose a model dialect (the one used to generate the schema) compatible with the protocol dialect (the one used to
+communicate with Elasticsearch).
+
+There's no rule of thumb here as it depends on the schema incompatibilities introduced by Elasticsearch versions. In
+any case, if there is a problem, you will have an error when Hibernate Search tries to connect to the cluster.
+
+type: `org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchVersion`; The configuration is visible at build and runtime time, read only at runtime. 
+
+
+`quarkus.hibernate-search.elasticsearch.version`:: The version of Elasticsearch used in the cluster.
+
+As the schema is generated without a connection to the server, this item is mandatory.
+
+It doesn't have to be the exact version (it can be 7 or 7.1 for instance) but it has to be sufficiently precise to
+choose a model dialect (the one used to generate the schema) compatible with the protocol dialect (the one used to
+communicate with Elasticsearch).
+
+There's no rule of thumb here as it depends on the schema incompatibilities introduced by Elasticsearch versions. In
+any case, if there is a problem, you will have an error when Hibernate Search tries to connect to the cluster.
+
+type: `org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchVersion`; The configuration is visible at build and runtime time, read only at runtime. 
+
+
 `quarkus.hibernate-search.elasticsearch.automatic-indexing.enable-dirty-check`:: 
 
 type: `java.lang.Boolean`; The configuration is overridable at runtime. 
@@ -17,11 +50,6 @@ type: `java.lang.Boolean`; The configuration is overridable at runtime.
 `quarkus.hibernate-search.elasticsearch.automatic-indexing.synchronization-strategy`:: 
 
 type: `org.hibernate.search.mapper.orm.cfg.HibernateOrmAutomaticIndexingSynchronizationStrategyName`; The configuration is overridable at runtime. 
-
-
-`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".analysis-configurer`:: The class or the name of the bean used to configure full text analysis (e.g. analyzers, normalizers).
-
-type: `java.lang.Class<?>`; The configuration is visible at build and runtime time, read only at runtime. 
 
 
 `quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".automatic-indexing.enable-dirty-check`:: 
@@ -127,20 +155,6 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 type: `java.lang.String`; The configuration is overridable at runtime. 
 
 
-`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".version`:: The version of Elasticsearch used in the cluster.
-
-As the schema is generated without a connection to the server, this item is mandatory.
-
-It doesn't have to be the exact version (it can be 7 or 7.1 for instance) but it has to be sufficiently precise to
-choose a model dialect (the one used to generate the schema) compatible with the protocol dialect (the one used to
-communicate with Elasticsearch).
-
-There's no rule of thumb here as it depends on the schema incompatibilities introduced by Elasticsearch versions. In
-any case, if there is a problem, you will have an error when Hibernate Search tries to connect to the cluster.
-
-type: `org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchVersion`; The configuration is visible at build and runtime time, read only at runtime. 
-
-
 `quarkus.hibernate-search.elasticsearch.connection-timeout`:: The connection timeout.
 
 type: `java.time.Duration`. _See duration note below_; The configuration is overridable at runtime. 
@@ -232,20 +246,6 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 `quarkus.hibernate-search.elasticsearch.username`:: The username used for authentication.
 
 type: `java.lang.String`; The configuration is overridable at runtime. 
-
-
-`quarkus.hibernate-search.elasticsearch.version`:: The version of Elasticsearch used in the cluster.
-
-As the schema is generated without a connection to the server, this item is mandatory.
-
-It doesn't have to be the exact version (it can be 7 or 7.1 for instance) but it has to be sufficiently precise to
-choose a model dialect (the one used to generate the schema) compatible with the protocol dialect (the one used to
-communicate with Elasticsearch).
-
-There's no rule of thumb here as it depends on the schema incompatibilities introduced by Elasticsearch versions. In
-any case, if there is a problem, you will have an error when Hibernate Search tries to connect to the cluster.
-
-type: `org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchVersion`; The configuration is visible at build and runtime time, read only at runtime. 
 
 
 [NOTE]

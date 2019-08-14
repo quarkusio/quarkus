@@ -17,7 +17,7 @@ public class Constants {
     public static final Pattern JAVA_DOC_CODE_PATTERN = Pattern.compile("\\{@code (.*?)\\}");
     public static final Pattern JAVA_DOC_LINK_PATTERN = Pattern.compile("\\{@link #(.*?)\\}");
     public static final Pattern CONFIG_ROOT_PATTERN = Pattern.compile("^(\\w+)Config(uration)?");
-    public static final Pattern PKG_PATTERN = Pattern.compile("^io\\.quarkus\\.(\\w+)\\.?(\\w+)?(\\.)?");
+    public static final Pattern PKG_PATTERN = Pattern.compile("^io\\.quarkus\\.(\\w+)\\.?(\\w+)?\\.?(\\w+)?");
 
     public static final String MEMORY_SIZE_TYPE = "io.quarkus.runtime.configuration.MemorySize";
     public static final String ANNOTATION_BUILD_STEP = "io.quarkus.deployment.annotations.BuildStep";
@@ -33,6 +33,8 @@ public class Constants {
     public static final Map<String, String> OPTIONAL_NUMBER_TYPES = new HashMap<>();
     public static final String DOCS_SRC_MAIN_ASCIIDOC_GENERATED = "/docs/src/main/asciidoc/generated/";
     public static final String MAVEN_MULTI_MODULE_PROJECT_DIRECTORY = "maven.multiModuleProjectDirectory";
+    public static final String SEE_DURATION_NOTE_BELOW = ". _See duration note below_";
+    public static final String SEE_MEMORY_SIZE_NOTE_BELOW = ". _See memory size note below_";
 
     public static final String DURATION_FORMAT_NOTE = "\n[NOTE]\n" +
             "====\n" +

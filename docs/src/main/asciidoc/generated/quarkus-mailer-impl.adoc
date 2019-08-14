@@ -10,9 +10,9 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 type: `java.lang.String`; The configuration is overridable at runtime. 
 
 
-`quarkus.mailer.disable-esmtp`:: Disable ESMTP. 'false' by default.
-The RFC-1869 states that clients should always attempt 'EHLO' as first command to determine if ESMTP
-is supported, if this returns an error code, 'HELO' is tried to use the <em>regular</em> SMTP command.
+`quarkus.mailer.disable-esmtp`:: Disable ESMTP. `false` by default.
+The RFC-1869 states that clients should always attempt `EHLO` as first command to determine if ESMTP
+is supported, if this returns an error code, `HELO` is tried to use the <em>regular</em> SMTP command.
 
 type: `boolean`; The configuration is overridable at runtime. 
 
@@ -28,7 +28,7 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 type: `java.lang.String`; default value: `localhost`. The configuration is overridable at runtime. 
 
 
-`quarkus.mailer.keep-alive`:: Set if connection pool is enabled, 'true' by default.
+`quarkus.mailer.keep-alive`:: Set if connection pool is enabled, `true` by default.
 
 If the connection pooling is disabled, the max number of sockets is enforced nevertheless.
 
@@ -47,13 +47,13 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 
 
 `quarkus.mailer.login`:: Set the login mode for the connection.
-Either 'DISABLED', @{code OPTIONAL} or 'REQUIRED'
+Either `DISABLED`, @{code OPTIONAL} or `REQUIRED`
 
 type: `java.lang.String`; The configuration is overridable at runtime. 
 
 
 `quarkus.mailer.max-pool-size`:: Configures the maximum allowed number of open connections to the mail server
-If not set the default is '10'.
+If not set the default is `10`.
 
 type: `java.lang.Integer`; The configuration is overridable at runtime. 
 
@@ -82,19 +82,19 @@ type: `java.lang.Integer`; The configuration is overridable at runtime.
 
 
 `quarkus.mailer.ssl`:: Enables or disables the SSL on connect.
-'false' by default.
+`false` by default.
 
 type: `boolean`; The configuration is overridable at runtime. 
 
 
 `quarkus.mailer.start-tls`:: Set the TLS security mode for the connection.
-Either 'NONE', 'OPTIONAL' or 'REQUIRED'.
+Either `NONE`, `OPTIONAL` or `REQUIRED`.
 
 type: `java.lang.String`; The configuration is overridable at runtime. 
 
 
 `quarkus.mailer.trust-all`:: Set whether to trust all certificates on ssl connect the option is also
-applied to 'STARTTLS' operation. 'false' by default.
+applied to `STARTTLS` operation. `false` by default.
 
 type: `boolean`; The configuration is overridable at runtime. 
 

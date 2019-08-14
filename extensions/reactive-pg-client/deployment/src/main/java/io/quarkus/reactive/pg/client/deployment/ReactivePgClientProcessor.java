@@ -16,7 +16,7 @@ import io.quarkus.reactive.pg.client.runtime.PgPoolProducer;
 import io.quarkus.reactive.pg.client.runtime.PgPoolRecorder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.deployment.VertxBuildItem;
-import io.reactiverse.pgclient.PgPool;
+import io.vertx.pgclient.PgPool;
 
 class ReactivePgClientProcessor {
 

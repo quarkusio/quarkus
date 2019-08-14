@@ -31,7 +31,7 @@ public class KafkaStreamsRuntimeConfig {
 
     /**
      * A comma-separated list of topic names processed by this stream processing application.
-     * The pipeline will only be started once all thes topics are present in the Kafka cluster.
+     * The pipeline will only be started once all these topics are present in the Kafka cluster.
      */
     @ConfigItem
     public Optional<String> topics;

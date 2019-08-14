@@ -388,7 +388,7 @@ public class TopologyProducer {
 <2> The `temperature-values` topic is read into a `KStream`; whenever a new message arrives to this topic, the pipeline will be processed for this measurement
 <3> The message from the `temperature-values` topic is joined with the corresponding weather station, using the topic's key (weather station id); the join result contains the data from the measurement and associated weather station message
 <4> The values are grouped by message key (the weather station id)
-<5> Within each group, all the measurements of that station are aggregated, by keeping track of minimum and maxium values and calculating the average value of all measurements of that station (see the `Aggregation` type)
+<5> Within each group, all the measurements of that station are aggregated, by keeping track of minimum and maximum values and calculating the average value of all measurements of that station (see the `Aggregation` type)
 <6> The results of the pipeline are written out to the `temperatures-aggregated` topic
 
 The Kafka Streams extension is configured via the Quarkus configuration file `application.properties`.
@@ -409,11 +409,11 @@ kafka-streams.auto.offset.reset=earliest
 kafka-streams.metrics.recording.level=DEBUG
 ----
 
-The options with the `quarkus.kafka-streams` prefix can be changed dynamically at application start-up,
+The options with the `quarkus.kafka-streams` prefix can be changed dynamically at application startup,
 e.g. via environment variables or system properties.
 `bootstrap-servers`, `application-id` and `application-server` are mapped to the Kafka Streams properties `bootstrap.servers`, `application.id` and `application.server`, respectively.
 `topics` is specific to Quarkus: the application will wait for all the given topics to exist before launching the Kafka Streams engine.
-This is to done to gracefully awati the creation of topics that don't yet exist at application start-up time.
+This is to done to gracefully await the creation of topics that don't yet exist at application startup time.
 
 All the properties within the `kafka-streams` namespace are passed through as-is to the Kafka Streams engine.
 Changing their values requires a rebuild of the application.

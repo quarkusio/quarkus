@@ -87,6 +87,14 @@ public class KubernetesClientProcessor {
                 .toArray(String[]::new);
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, deserializerClasses));
 
+        final String[] serializerClasses = combinedIndexBuildItem.getIndex()
+                .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonSerializer"))
+                .stream()
+                .map(c -> c.name().toString())
+                .filter(s -> s.startsWith("io.fabric8.kubernetes"))
+                .toArray(String[]::new);
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, serializerClasses));
+
         reflectiveClasses
                 .produce(new ReflectiveClassBuildItem(true, false, "io.fabric8.kubernetes.api.model.IntOrString"));
         reflectiveClasses

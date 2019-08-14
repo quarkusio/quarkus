@@ -21,7 +21,7 @@ secured access to the JAX-RS endpoints.
 |quarkus.smallrye-jwt.realm-name|Quarkus-JWT|Name to use for security realm.
 |quarkus.smallrye-jwt.auth-mechanism|MP-JWT|Name to use for authentication mechanism
 |mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in section <<Supported Public Key Formats>>.
-|mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL.
+|mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL. If the value points to an HTTPS based JWK set then, for it to work in native mode, the `quarkus.ssl.native` property must also be set to `true`, see link:native-and-ssl-guide.html[Using SSL With Native Executables] for more details.
 |mp.jwt.verify.issuer|none|Config property specifies the value of the `iss` (issuer)
                            claim of the JWT that the server will accept as valid.
 |===

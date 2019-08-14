@@ -7,9 +7,9 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-While you are encouraged to use JAX-RS annotation for defining REST endpoints, Quarkus provides a compatibility layer for Spring for Spring Web in the form of the `spring-web` extension.
+While you are encouraged to use JAX-RS annotation for defining REST endpoints, Quarkus provides a compatibility layer for Spring Web in the form of the `spring-web` extension.
 
-This guide explains how your Quarkus application can leverage the well known Spring Web annotation to define RESTful services.
+This guide explains how your Quarkus application can leverage the well known Spring Web annotations to define RESTful services.
 
 == Prerequisites
 
@@ -86,7 +86,7 @@ public class GreetingBean {
 }
 ----
 
-The Quarkus maven plugin automatically generated a `src/main/java/org/acme/spring/web/GreetingController.java` file.
+The Quarkus Maven plugin automatically generated a `src/main/java/org/acme/spring/web/GreetingController.java` file.
 However since we are going to be using Spring Web annotations to define our REST endpoint (instead of the JAX-RS ones used by default), we need to change
 the `GreetingController` to have the following content:
 
@@ -153,14 +153,14 @@ Open your browser to http://localhost:8080/greeting/world.
 
 The result should be: `{"message": "HELLO WORLD!"}`.
 
-== Run the application as a native
+== Run the application as a native executable
 
-You can of course create a native image using instructions similar to link:building-native-image-guide.html[this] guide.
+You can of course create a native image using the instructions of the link:building-native-image-guide.html[Building a native executable guide].
 
-== Supported Spring Web functionality
+== Supported Spring Web functionalities
 
-Quarkus currently supports a subset of the functionality that Spring Web provides. More specifically Quarkus supports the REST related features of Spring Web
-(in a high level, think of `@RestController` instead of `@Controller`).
+Quarkus currently supports a subset of the functionalities that Spring Web provides. More specifically Quarkus supports the REST related features of Spring Web
+(think of `@RestController` instead of `@Controller`).
 
 === Annotations
 
@@ -216,7 +216,7 @@ The following method return types are supported:
 
 === Controller method return types
 
-In addition to the method parameters that can be annotated with the appropriate Spring Web annotation from the previous table,
+In addition to the method parameters that can be annotated with the appropriate Spring Web annotations from the previous table,
 `javax.servlet.http.HttpServletRequest` and `javax.servlet.http.HttpServletResponse` are also supported.
 
 
@@ -224,6 +224,6 @@ In addition to the method parameters that can be annotated with the appropriate 
 
 Please note that the Spring support in Quarkus does not start a Spring Application Context nor are any Spring infrastructure classes run.
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
-What that means for end users, is that adding arbitrary Spring to the classpath will not be used at all. Moreover Spring infrastructure
-things like `org.springframework.beans.factory.config.BeanPostProcessor` will not be run.
+What that means for end users, is that adding arbitrary Spring libraries to the classpath will not be taken into account. Moreover Spring infrastructure
+things like `org.springframework.beans.factory.config.BeanPostProcessor` will not be executed.
 

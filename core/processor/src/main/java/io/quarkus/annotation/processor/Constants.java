@@ -14,6 +14,7 @@ public class Constants {
     public static final String NO_DEFAULT = "<<no default>>";
     public static final String HYPHENATED_ELEMENT_NAME = "<<hyphenated element name>>";
 
+    public static final Pattern JAVA_DOC_SEE_PATTERN = Pattern.compile("@see\\s+(.+)\\s*");
     public static final Pattern JAVA_DOC_CODE_PATTERN = Pattern.compile("\\{@code (.*?)\\}");
     public static final Pattern JAVA_DOC_LINK_PATTERN = Pattern.compile("\\{@link #(.*?)\\}");
     public static final Pattern CONFIG_ROOT_PATTERN = Pattern.compile("^(\\w+)Config(uration)?");

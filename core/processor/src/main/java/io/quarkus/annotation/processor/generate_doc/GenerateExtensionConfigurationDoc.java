@@ -10,12 +10,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 
-import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.AnnotationValue;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.PackageElement;
-import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.*;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 
@@ -23,6 +18,7 @@ import io.quarkus.annotation.processor.Constants;
 import io.quarkus.annotation.processor.StringUtil;
 
 public class GenerateExtensionConfigurationDoc {
+    public static final String STATIC_MODIFIER = "static";
     private final Set<ConfigRootInfo> configRoots = new HashSet<>();
     private final Map<String, TypeElement> configGroups = new HashMap<>();
 
@@ -95,7 +91,7 @@ public class GenerateExtensionConfigurationDoc {
             sb.append("\n`");
             sb.append(configItem.getPropertyName());
             sb.append("`:: ");
-            sb.append(formatDocs(javaDocProperties.getProperty(configItem.getJavaDocKey())));
+            sb.append(javaDocProperties.getProperty(configItem.getJavaDocKey()));
             sb.append("\n\n");
 
             sb.append("type: `");
@@ -136,7 +132,7 @@ public class GenerateExtensionConfigurationDoc {
             sb.append("\n|");
             sb.append(configItem.getPropertyName());
             sb.append("\n|");
-            sb.append(formatDocs(javaDocProperties.getProperty(configItem.getJavaDocKey())));
+            sb.append(javaDocProperties.getProperty(configItem.getJavaDocKey()));
             if (configItem.getType().equals(Duration.class.getName())) {
                 sb.append("\n_See duration note below_");
                 hasDurationType = true;
@@ -176,10 +172,23 @@ public class GenerateExtensionConfigurationDoc {
                 continue;
             }
 
-            final List<? extends AnnotationMirror> annotationMirrors = enclosedElement.getAnnotationMirrors();
-            String fieldName = enclosedElement.getSimpleName().toString();
+            boolean isStaticField = enclosedElement
+                    .getModifiers()
+                    .stream()
+                    .anyMatch(Modifier.STATIC::equals);
+
+            if (isStaticField) {
+                continue;
+            }
+
             String name = "";
             String defaultValue = Constants.NO_DEFAULT;
+            TypeMirror typeMirror = enclosedElement.asType();
+            String type = typeMirror.toString();
+            Element configGroup = configGroups.get(type);
+            boolean isConfigGroup = configGroup != null;
+            String fieldName = enclosedElement.getSimpleName().toString();
+            final List<? extends AnnotationMirror> annotationMirrors = enclosedElement.getAnnotationMirrors();
 
             for (AnnotationMirror annotationMirror : annotationMirrors) {
                 String annotationName = annotationMirror.getAnnotationType().toString();
@@ -217,11 +226,7 @@ public class GenerateExtensionConfigurationDoc {
                 defaultValue = "";
             }
 
-            TypeMirror typeMirror = enclosedElement.asType();
-            String type = typeMirror.toString();
-
-            Element configGroup = configGroups.get(type);
-            if (configGroup != null) {
+            if (isConfigGroup) {
                 recordConfigItems(configItems, configGroup, name, visibility);
             } else {
                 TypeElement clazz = (TypeElement) element;
@@ -257,69 +262,6 @@ public class GenerateExtensionConfigurationDoc {
 
     private String getKnownGenericType(DeclaredType declaredType) {
         return Constants.OPTIONAL_NUMBER_TYPES.get(declaredType.toString());
-    }
-
-    private String formatDocs(String docs) {
-        if (docs == null) {
-            return "";
-        }
-
-        StringBuilder builder = new StringBuilder();
-
-        boolean lastEmpty = false;
-        boolean first = true;
-
-        for (String line : docs.replace("<p>", "\n").split("\n")) {
-            //process line by line
-            String trimmed = line.trim();
-            //if the lines are empty we only include a single empty line at most, and add a # character
-            if (trimmed.isEmpty()) {
-                if (!lastEmpty && !first) {
-                    lastEmpty = true;
-                    builder.append("\n");
-                }
-                continue;
-            }
-            //add the newlines
-            lastEmpty = false;
-            if (first) {
-                first = false;
-            } else {
-                builder.append("\n");
-            }
-            //replace some special characters, others are taken care of by regex below
-            builder.append(trimmed.replace("\n", "\n")
-                    .replace("<ul>", "")
-                    .replace("</ul>", "")
-                    .replace("<li>", " - ")
-                    .replace("</li>", ""));
-        }
-
-        String ret = builder.toString();
-        //replace @code
-        ret = Constants.JAVA_DOC_CODE_PATTERN.matcher(ret).replaceAll("`$1`");
-        //replace @link with a reference to the field name
-        Matcher matcher = Constants.JAVA_DOC_LINK_PATTERN.matcher(ret);
-        while (matcher.find()) {
-            ret = ret.replace(matcher.group(0), "`" + configify(matcher.group(1)) + "`");
-        }
-
-        return ret;
-    }
-
-    private String configify(String group) {
-        //replace uppercase characters with a - followed by lowercase
-        StringBuilder ret = new StringBuilder();
-        for (int i = 0; i < group.length(); ++i) {
-            char c = group.charAt(i);
-            if (Character.isUpperCase(c)) {
-                ret.append("-");
-                ret.append(Character.toLowerCase(c));
-            } else {
-                ret.append(c);
-            }
-        }
-        return ret.toString();
     }
 
     @Override

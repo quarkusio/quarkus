@@ -6,7 +6,7 @@ type: `java.lang.String`; default value: `BASIC`. The configuration is visible a
 
 `quarkus.security.embedded.enabled`:: If the embedded store is enabled.
 
-type: `boolean`; The configuration is visible at build and runtime time, read only at runtime. 
+type: `boolean`; default value: `false`. The configuration is visible at build and runtime time, read only at runtime. 
 
 
 `quarkus.security.embedded.realm-name`:: The authentication mechanism
@@ -31,7 +31,7 @@ type: `java.lang.String`; default value: `BASIC`. The configuration is visible a
 
 `quarkus.security.file.enabled`:: If the properties store is enabled.
 
-type: `boolean`; The configuration is visible at build and runtime time, read only at runtime. 
+type: `boolean`; default value: `false`. The configuration is visible at build and runtime time, read only at runtime. 
 
 
 `quarkus.security.file.realm-name`:: The authentication mechanism

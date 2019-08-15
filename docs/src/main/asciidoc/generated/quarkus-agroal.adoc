@@ -35,7 +35,7 @@ type: `java.time.Duration`. _See duration note below_; default value: `2M`. The 
 
 `quarkus.datasource."<named-data-sources>".enable-metrics`:: Enable datasource metrics collection.
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.datasource."<named-data-sources>".idle-removal-interval`:: The interval at which we try to remove idle connections.
@@ -100,7 +100,7 @@ type: `java.time.Duration`. _See duration note below_; default value: `2M`. The 
 
 `quarkus.datasource.enable-metrics`:: Enable datasource metrics collection.
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.datasource.idle-removal-interval`:: The interval at which we try to remove idle connections.

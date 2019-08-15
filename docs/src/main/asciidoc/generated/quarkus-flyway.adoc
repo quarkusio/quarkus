@@ -15,7 +15,7 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 
 `quarkus.flyway.baseline-on-migrate`:: Enable the creation of the history table if it does not exist already.
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.flyway.baseline-version`:: The initial baseline version.
@@ -27,11 +27,6 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 second before attempting to connect again, up to the maximum number of times specified by connectRetries.
 
 type: `java.lang.Integer`; The configuration is overridable at runtime. 
-
-
-`quarkus.flyway.migrate-at-start`:: 
-
-type: `boolean`; The configuration is overridable at runtime. 
 
 
 `quarkus.flyway.repeatable-sql-migration-prefix`:: The file name prefix for repeatable SQL migrations.

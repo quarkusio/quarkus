@@ -11,7 +11,7 @@ type: `boolean`; default value: `true`. The configuration is overridable at runt
 
 `quarkus.vertx.cluster.clustered`:: Enables or disables the clustering.
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.vertx.cluster.host`:: The host name.
@@ -106,7 +106,7 @@ type: `java.lang.Integer`; The configuration is overridable at runtime.
 
 `quarkus.vertx.eventbus.reconnect-attempts`:: The number of reconnection attempts.
 
-type: `int`; The configuration is overridable at runtime. 
+type: `int`; default value: `0`. The configuration is overridable at runtime. 
 
 
 `quarkus.vertx.eventbus.reconnect-interval`:: The reconnection interval in milliseconds.
@@ -121,7 +121,7 @@ type: `boolean`; default value: `true`. The configuration is overridable at runt
 
 `quarkus.vertx.eventbus.reuse-port`:: Whether or not to reuse the port.
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.vertx.eventbus.send-buffer-size`:: The send buffer size.
@@ -136,12 +136,12 @@ type: `java.lang.Integer`; The configuration is overridable at runtime.
 
 `quarkus.vertx.eventbus.ssl`:: Enables or Disabled SSL.
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.vertx.eventbus.tcp-keep-alive`:: Whether or not to keep the TCP connection opened (keep-alive).
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.vertx.eventbus.tcp-no-delay`:: Configure the TCP no delay.
@@ -156,7 +156,7 @@ type: `java.lang.Integer`; The configuration is overridable at runtime.
 
 `quarkus.vertx.eventbus.trust-all`:: Enables or disables the trust all parameter.
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.vertx.eventbus.trust-certificate-jks.password`:: Password of the key file.
@@ -201,7 +201,7 @@ type: `java.time.Duration`. _See duration note below_; default value: `60`. The 
 
 `quarkus.vertx.use-async-dns`:: Enables the async DNS resolver.
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.vertx.warning-exception-time`:: The amount of time before a warning is displayed if the event loop is blocked.

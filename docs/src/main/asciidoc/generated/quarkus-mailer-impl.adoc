@@ -14,7 +14,7 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 The RFC-1869 states that clients should always attempt `EHLO` as first command to determine if ESMTP
 is supported, if this returns an error code, `HELO` is tried to use the <em>regular</em> SMTP command.
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.mailer.from`:: Configure the default `from` attribute.
@@ -84,7 +84,7 @@ type: `java.lang.Integer`; The configuration is overridable at runtime.
 `quarkus.mailer.ssl`:: Enables or disables the SSL on connect.
 `false` by default.
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.mailer.start-tls`:: Set the TLS security mode for the connection.
@@ -96,7 +96,7 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 `quarkus.mailer.trust-all`:: Set whether to trust all certificates on ssl connect the option is also
 applied to `STARTTLS` operation. `false` by default.
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.mailer.username`:: The username.

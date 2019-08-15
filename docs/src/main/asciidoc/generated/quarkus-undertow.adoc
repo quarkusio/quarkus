@@ -7,7 +7,7 @@ type: `java.lang.String`; The configuration is visible at build time only.
 
 `quarkus.http.cors`:: Enable the CORS filter.
 
-type: `boolean`; The configuration is visible at build and runtime time, read only at runtime. 
+type: `boolean`; default value: `false`. The configuration is visible at build and runtime time, read only at runtime. 
 
 
 `quarkus.http.cors.exposed-headers`:: HTTP headers exposed in CORS

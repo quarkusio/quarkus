@@ -13,8 +13,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
@@ -167,7 +165,7 @@ public class GenerateConfigPhase implements AppCreationPhase<GenerateConfigPhase
                     }
 
                     sb.append("\n#\n");
-                    sb.append(formatDocs(i.getDocs()));
+                    sb.append(i.getDocs());
                     sb.append("\n#\n#");
                     sb.append(i.getPropertyName() + "=" + i.getDefaultValue());
                     sb.append("\n");
@@ -191,69 +189,6 @@ public class GenerateConfigPhase implements AppCreationPhase<GenerateConfigPhase
                 }
             }
         }
-    }
-
-    private String formatDocs(String docs) {
-
-        if (docs == null) {
-            return "";
-        }
-        StringBuilder builder = new StringBuilder();
-
-        boolean lastEmpty = false;
-        boolean first = true;
-
-        for (String line : docs.replace("<p>", "\n").split("\n")) {
-            //process line by line
-            String trimmed = line.trim();
-            //if the lines are empty we only include a single empty line at most, and add a # character
-            if (trimmed.isEmpty()) {
-                if (!lastEmpty && !first) {
-                    lastEmpty = true;
-                    builder.append("\n#");
-                }
-                continue;
-            }
-            //add the newlines
-            lastEmpty = false;
-            if (first) {
-                first = false;
-            } else {
-                builder.append("\n");
-            }
-            //replace some special characters, others are taken care of by regex below
-            builder.append("# " + trimmed.replace("\n", "\n#")
-                    .replace("<ul>", "")
-                    .replace("</ul>", "")
-                    .replace("<li>", " - ")
-                    .replace("</li>", ""));
-        }
-
-        String ret = builder.toString();
-        //replace @code
-        ret = Pattern.compile("\\{@code (.*?)\\}").matcher(ret).replaceAll("'$1'");
-        //replace @link with a reference to the field name
-        Matcher matcher = Pattern.compile("\\{@link #(.*?)\\}").matcher(ret);
-        while (matcher.find()) {
-            ret = ret.replace(matcher.group(0), "'" + configify(matcher.group(1)) + "'");
-        }
-
-        return ret;
-    }
-
-    private String configify(String group) {
-        //replace uppercase characters with a - followed by lowercase
-        StringBuilder ret = new StringBuilder();
-        for (int i = 0; i < group.length(); ++i) {
-            char c = group.charAt(i);
-            if (Character.isUpperCase(c)) {
-                ret.append("-");
-                ret.append(Character.toLowerCase(c));
-            } else {
-                ret.append(c);
-            }
-        }
-        return ret.toString();
     }
 
     @Override

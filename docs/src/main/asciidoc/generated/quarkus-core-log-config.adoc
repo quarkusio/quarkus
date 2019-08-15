@@ -11,7 +11,7 @@ type: `java.lang.String`; default value: `inherit`. The configuration is overrid
 
 `quarkus.log.console.async`:: Indicates whether to log asynchronously
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.log.console.async.overflow`:: Determine whether to block the publisher (rather than drop the message) when the queue is full
@@ -51,7 +51,7 @@ type: `java.util.logging.Level`; default value: `ALL`. The configuration is over
 
 `quarkus.log.file.async`:: Indicates whether to log asynchronously
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.log.file.async.overflow`:: Determine whether to block the publisher (rather than drop the message) when the queue is full
@@ -64,14 +64,9 @@ type: `org.jboss.logmanager.handlers.AsyncHandler.OverflowAction`; default value
 type: `int`; default value: `512`. The configuration is overridable at runtime. 
 
 
-`quarkus.log.file.default_log_file_name`:: 
-
-type: `java.lang.String`; The configuration is overridable at runtime. 
-
-
 `quarkus.log.file.enable`:: If file logging should be enabled
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.log.file.format`:: The log format
@@ -133,7 +128,7 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 
 `quarkus.log.syslog.async`:: Indicates whether to log asynchronously
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.log.syslog.async.overflow`:: Determine whether to block the publisher (rather than drop the message) when the queue is full
@@ -150,12 +145,12 @@ type: `int`; default value: `512`. The configuration is overridable at runtime.
 {@link org.jboss.logmanager.handlers.SyslogHandler.Protocol#TCP
 TCP} or {@link org.jboss.logmanager.handlers.SyslogHandler.Protocol#SSL_TCP SSL TCP} protocol
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.log.syslog.enable`:: If syslog logging should be enabled
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 `quarkus.log.syslog.endpoint`:: The IP address and port of the syslog server
@@ -200,7 +195,7 @@ type: `boolean`; default value: `true`. The configuration is overridable at runt
 
 `quarkus.log.syslog.use-counting-framing`:: Set to `true` if the message being sent should be prefixed with the size of the message
 
-type: `boolean`; The configuration is overridable at runtime. 
+type: `boolean`; default value: `false`. The configuration is overridable at runtime. 
 
 
 [NOTE]

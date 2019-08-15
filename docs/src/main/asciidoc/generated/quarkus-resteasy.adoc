@@ -1,7 +1,7 @@
 
 `quarkus.resteasy.gzip.enabled`:: If gzip is enabled
 
-type: `boolean`; The configuration is visible at build time only. 
+type: `boolean`; default value: `false`. The configuration is visible at build time only. 
 
 
 `quarkus.resteasy.gzip.max-input`:: Maximum deflated file bytes size

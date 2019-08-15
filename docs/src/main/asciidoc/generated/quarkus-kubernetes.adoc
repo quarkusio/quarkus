@@ -1,9 +1,4 @@
 
-`quarkus.kubernetes.docker.registry`:: 
-
-type: `java.lang.String`; The configuration is visible at build time only. 
-
-
 `quarkus.kubernetes.group`:: The group of the application.
 This value will be use as:
 - docker image repo

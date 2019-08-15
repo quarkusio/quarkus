@@ -1,10 +1,10 @@
 
-`quarkus.hot-reload.password`:: 
+`quarkus.hot-reload.password`:: null
 
 type: `java.lang.String`; The configuration is visible at build time only. 
 
 
-`quarkus.hot-reload.url`:: 
+`quarkus.hot-reload.url`:: null
 
 type: `java.lang.String`; The configuration is visible at build time only. 
 

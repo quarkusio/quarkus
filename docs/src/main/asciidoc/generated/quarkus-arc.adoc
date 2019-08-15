@@ -1,9 +1,4 @@
 
-`quarkus.arc.allowed_remove_unused_beans_values`:: 
-
-type: `java.lang.String`; The configuration is visible at build time only. 
-
-
 `quarkus.arc.auto-inject-fields`:: If set to true `@Inject` is automatically added to all non-static fields that are annotated with
 one of the annotations defined by {@link AutoInjectAnnotationBuildItem}.
 
@@ -29,7 +24,7 @@ set out above)
 If set to fwk, then all unused beans will be removed, except the unused beans whose classes are declared
 in the application code
 
-@see UnremovableBeanBuildItem
+see `UnremovableBeanBuildItem`
 
 type: `java.lang.String`; default value: `all`. The configuration is visible at build time only. 
 

@@ -1,9 +1,4 @@
 
-`quarkus.hibernate-search.default-backend`:: 
-
-type: `java.lang.String`; The configuration is visible at build and runtime time, read only at runtime. 
-
-
 `quarkus.hibernate-search.elasticsearch.analysis-configurer`:: The class or the name of the bean used to configure full text analysis (e.g. analyzers, normalizers).
 
 type: `java.lang.Class<?>`; The configuration is visible at build and runtime time, read only at runtime. 
@@ -42,44 +37,14 @@ any case, if there is a problem, you will have an error when Hibernate Search tr
 type: `org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchVersion`; The configuration is visible at build and runtime time, read only at runtime. 
 
 
-`quarkus.hibernate-search.elasticsearch.automatic-indexing.enable-dirty-check`:: 
-
-type: `java.lang.Boolean`; The configuration is overridable at runtime. 
-
-
-`quarkus.hibernate-search.elasticsearch.automatic-indexing.synchronization-strategy`:: 
-
-type: `org.hibernate.search.mapper.orm.cfg.HibernateOrmAutomaticIndexingSynchronizationStrategyName`; The configuration is overridable at runtime. 
-
-
-`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".automatic-indexing.enable-dirty-check`:: 
-
-type: `java.lang.Boolean`; The configuration is overridable at runtime. 
-
-
-`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".automatic-indexing.synchronization-strategy`:: 
-
-type: `org.hibernate.search.mapper.orm.cfg.HibernateOrmAutomaticIndexingSynchronizationStrategyName`; The configuration is overridable at runtime. 
-
-
 `quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".connection-timeout`:: The connection timeout.
 
 type: `java.time.Duration`. _See duration note below_; The configuration is overridable at runtime. 
 
 
-`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".discovery.default-scheme`:: 
-
-type: `java.lang.String`; The configuration is overridable at runtime. 
-
-
 `quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".discovery.enabled`:: Defines if automatic discovery is enabled.
 
 type: `java.lang.Boolean`; The configuration is overridable at runtime. 
-
-
-`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".discovery.refresh-interval`:: 
-
-type: `java.time.Duration`. _See duration note below_; The configuration is overridable at runtime. 
 
 
 `quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".hosts`:: The list of hosts of the Elasticsearch servers.
@@ -160,19 +125,9 @@ type: `java.lang.String`; The configuration is overridable at runtime.
 type: `java.time.Duration`. _See duration note below_; The configuration is overridable at runtime. 
 
 
-`quarkus.hibernate-search.elasticsearch.discovery.default-scheme`:: 
-
-type: `java.lang.String`; The configuration is overridable at runtime. 
-
-
 `quarkus.hibernate-search.elasticsearch.discovery.enabled`:: Defines if automatic discovery is enabled.
 
 type: `java.lang.Boolean`; The configuration is overridable at runtime. 
-
-
-`quarkus.hibernate-search.elasticsearch.discovery.refresh-interval`:: 
-
-type: `java.time.Duration`. _See duration note below_; The configuration is overridable at runtime. 
 
 
 `quarkus.hibernate-search.elasticsearch.hosts`:: The list of hosts of the Elasticsearch servers.

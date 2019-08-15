@@ -1,8 +1,20 @@
 package io.quarkus.annotation.processor.generate_doc;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class ConfigItem implements Comparable<ConfigItem> {
+    private static final Map<String, String> PRIMITIVE_DEFAULT_VALUES = new HashMap<>();
+
+    static {
+        PRIMITIVE_DEFAULT_VALUES.put("int", "0");
+        PRIMITIVE_DEFAULT_VALUES.put("long", "0l");
+        PRIMITIVE_DEFAULT_VALUES.put("float", "0f");
+        PRIMITIVE_DEFAULT_VALUES.put("double", "0d");
+        PRIMITIVE_DEFAULT_VALUES.put("boolean", "false");
+    }
+
     private final String type;
     private final String javaDocKey;
     private final String propertyName;
@@ -66,7 +78,11 @@ public class ConfigItem implements Comparable<ConfigItem> {
     }
 
     public String getDefaultValue() {
-        return defaultValue;
+        if (!defaultValue.isEmpty()) {
+            return defaultValue;
+        }
+
+        return PRIMITIVE_DEFAULT_VALUES.containsKey(type) ? PRIMITIVE_DEFAULT_VALUES.get(type) : "";
     }
 
     public ConfigVisibility getVisibility() {

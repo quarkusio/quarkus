@@ -52,6 +52,7 @@
         <module>neo4j</module>
         <module>mongodb-client</module>
         <module>resteasy-jackson</module>
+        <module>resteasy</module>
     </modules>
 
     <build>

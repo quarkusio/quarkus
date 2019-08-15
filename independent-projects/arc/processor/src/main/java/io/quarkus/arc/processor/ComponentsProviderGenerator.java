@@ -66,8 +66,8 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         MethodCreator getComponents = componentsProvider.getMethodCreator("getComponents", Components.class)
                 .setModifiers(ACC_PUBLIC);
 
-        // List<InjectableBean<?>> beans = new ArrayList<>();
-        ResultHandle beansHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+        // Map<String, Supplier<InjectableBean<?>>>> beanIdToBeanSupplier = new HashMap<>();
+        ResultHandle beanIdToBeanSupplierHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
 
         // Bar -> Foo, Baz
         // Foo -> Baz
@@ -129,7 +129,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 BeanInfo bean = entry.getKey();
                 boolean beanHasNormalScope = bean.getScope().isNormal();
                 if (!isDependency(bean, beanToInjections) || beanHasNormalScope) {
-                    addBean(getComponents, beansHandle, bean, beanToGeneratedName, beanToResultSupplierHandle);
+                    addBean(getComponents, beanIdToBeanSupplierHandle, bean, beanToGeneratedName, beanToResultSupplierHandle);
                     iterator.remove();
                     processed.add(bean);
                     stuck = false;
@@ -139,12 +139,13 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         // Finally process beans and interceptors that are not dependencies
         for (BeanInfo bean : beanDeployment.getBeans()) {
             if (!processed.contains(bean)) {
-                addBean(getComponents, beansHandle, bean, beanToGeneratedName, beanToResultSupplierHandle);
+                addBean(getComponents, beanIdToBeanSupplierHandle, bean, beanToGeneratedName, beanToResultSupplierHandle);
             }
         }
         for (BeanInfo interceptor : beanDeployment.getInterceptors()) {
             if (!processed.contains(interceptor)) {
-                addBean(getComponents, beansHandle, interceptor, beanToGeneratedName, beanToResultSupplierHandle);
+                addBean(getComponents, beanIdToBeanSupplierHandle, interceptor, beanToGeneratedName,
+                        beanToResultSupplierHandle);
             }
         }
 
@@ -193,6 +194,11 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                     getComponents.loadClass(entry.getKey().toString()), bindingsHandle);
         }
 
+        // final Collection beans = beanIdToBeanSupplier.values();
+        ResultHandle beansHandle = getComponents.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(Map.class, "values", Collection.class),
+                beanIdToBeanSupplierHandle);
+
         ResultHandle componentsHandle = getComponents.newInstance(
                 MethodDescriptor.ofConstructor(Components.class, Collection.class, Collection.class, Collection.class,
                         Map.class),
@@ -212,7 +218,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         return resources;
     }
 
-    private void addBean(MethodCreator getComponents, ResultHandle beansResultHandle, BeanInfo bean,
+    private void addBean(MethodCreator getComponents, ResultHandle beanIdToBeanSupplierHandle, BeanInfo bean,
             Map<BeanInfo, String> beanToGeneratedName,
             Map<BeanInfo, ResultHandle> beanToResultSupplierHandle) {
 
@@ -229,28 +235,18 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             paramTypes.add(Type.getDescriptor(Supplier.class));
         }
         for (InjectionPointInfo injectionPoint : injectionPoints) {
-            if (injectionPoint.getResolvedBean().equals(bean)) {
-                // The later-to-be-created instance of the resolved bean will be added to the ArrayList.
-                // The current size of the ArrayList will be the index where we can retrieve it later.
 
-                // int indexInBeansList = beans.size(); // this happens in the getComponents() method.
-                ResultHandle indexInBeansList = getComponents.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(List.class, "size", int.class),
-                        beansResultHandle);
+            // beanIdToBeanSupplier.get(....);
+            FunctionCreator supplierInstance = getComponents.createFunction(Supplier.class);
+            ResultHandle beanIdHandle = supplierInstance.getBytecode().load(injectionPoint.getResolvedBean().getIdentifier());
+            ResultHandle beanSupplier = supplierInstance.getBytecode().invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class),
+                    beanIdToBeanSupplierHandle,
+                    beanIdHandle);
 
-                // beans.get(indexInBeansList); // this happens in the Supplier instance.
-                FunctionCreator supplierInstance = getComponents.createFunction(Supplier.class);
-                ResultHandle thingWeWantToReturn = supplierInstance.getBytecode().invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(List.class, "get", Object.class, int.class),
-                        beansResultHandle,
-                        indexInBeansList);
+            supplierInstance.getBytecode().returnValue(beanSupplier);
+            params.add(supplierInstance.getInstance());
 
-                supplierInstance.getBytecode().returnValue(thingWeWantToReturn);
-                params.add(supplierInstance.getInstance());
-            } else {
-                ResultHandle resultSupplierHandle = beanToResultSupplierHandle.get(injectionPoint.getResolvedBean());
-                params.add(resultSupplierHandle);
-            }
             paramTypes.add(Type.getDescriptor(Supplier.class));
         }
         if (bean.getDisposer() != null) {
@@ -270,8 +266,10 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         ResultHandle beanInstance = getComponents.newInstance(
                 MethodDescriptor.ofConstructor(beanType, paramTypes.toArray(new String[0])),
                 params.toArray(new ResultHandle[0]));
-        // beans.add(bean2)
-        getComponents.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, beansResultHandle, beanInstance);
+        // beans.put(..., bean2)
+        final ResultHandle beanInfoHandle = getComponents.load(bean.getIdentifier());
+        getComponents.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, beanIdToBeanSupplierHandle, beanInfoHandle,
+                beanInstance);
 
         // Create a Supplier that will return the bean instance at runtime.
         FunctionCreator beanInstanceSupplier = getComponents.createFunction(Supplier.class);

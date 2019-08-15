@@ -362,7 +362,7 @@ public CompletionStage<Response> delete(@PathParam("id") Long id) {
     AsyncSession session = driver.asyncSession();
     return session
         .writeTransactionAsync(tx ->
-            tx.runAsync("MATCH (a:Fruit) WHERE id(a) = $id DETACH DELETE a", Values.parameters("id", id))
+            tx.runAsync("MATCH (f:Fruit) WHERE id(f) = $id DELETE f", Values.parameters("id", id))
         )
         .thenCompose(fn -> fn.consumeAsync()) // <1>
         .thenCompose(response -> session.closeAsync())

@@ -13,12 +13,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
@@ -27,7 +29,7 @@ import org.jboss.jandex.Indexer;
 
 public class TestResourceManager {
 
-    private final Set<QuarkusTestResourceLifecycleManager> testResources;
+    private final List<QuarkusTestResourceLifecycleManager> testResources;
     private Map<String, String> oldSystemProps;
 
     public TestResourceManager(Class<?> testClass) {
@@ -79,7 +81,7 @@ public class TestResourceManager {
     }
 
     @SuppressWarnings("unchecked")
-    private Set<QuarkusTestResourceLifecycleManager> getTestResources(Class<?> testClass) {
+    private List<QuarkusTestResourceLifecycleManager> getTestResources(Class<?> testClass) {
         IndexView index = indexTestClasses(testClass);
 
         Set<Class<? extends QuarkusTestResourceLifecycleManager>> testResourceRunnerClasses = new LinkedHashSet<>();
@@ -93,8 +95,7 @@ public class TestResourceManager {
             }
         }
 
-        Set<QuarkusTestResourceLifecycleManager> testResourceRunners = new TreeSet<>(
-                new QuarkusTestResourceLifecycleManagerComparator());
+        List<QuarkusTestResourceLifecycleManager> testResourceRunners = new ArrayList<>();
 
         for (Class<? extends QuarkusTestResourceLifecycleManager> testResourceRunnerClass : testResourceRunnerClasses) {
             try {
@@ -105,9 +106,12 @@ public class TestResourceManager {
             }
         }
 
-        for (QuarkusTestResourceLifecycleManager i : ServiceLoader.load(QuarkusTestResourceLifecycleManager.class)) {
-            testResourceRunners.add(i);
+        for (QuarkusTestResourceLifecycleManager quarkusTestResourceLifecycleManager : ServiceLoader
+                .load(QuarkusTestResourceLifecycleManager.class)) {
+            testResourceRunners.add(quarkusTestResourceLifecycleManager);
         }
+
+        Collections.sort(testResourceRunners, new QuarkusTestResourceLifecycleManagerComparator());
 
         return testResourceRunners;
     }

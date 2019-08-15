@@ -20,12 +20,19 @@ import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.WildcardType;
 import org.jboss.logging.Logger;
 
+/**
+ * 
+ * @author Martin Kouba
+ * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
+ */
 final class Methods {
     private static final Logger LOGGER = Logger.getLogger(Methods.class);
     // constructor
     public static final String INIT = "<init>";
     // static initializer
     public static final String CLINIT = "<clinit>";
+    // copied from java.lang.reflect.Modifier.SYNTHETIC
+    static final int SYNTHETIC = 0x00001000;
 
     private static final List<String> IGNORED_METHODS = initIgnoredMethods();
 
@@ -37,6 +44,10 @@ final class Methods {
     }
 
     private Methods() {
+    }
+
+    static boolean isSynthetic(MethodInfo method) {
+        return (method.flags() & SYNTHETIC) != 0;
     }
 
     static void addDelegatingMethods(IndexView index, ClassInfo classInfo, Map<Methods.MethodKey, MethodInfo> methods) {
@@ -227,6 +238,60 @@ final class Methods {
             return true;
         }
 
+    }
+
+    static boolean isOverriden(MethodInfo method, Collection<MethodInfo> previousMethods) {
+        for (MethodInfo other : previousMethods) {
+            if (Methods.matchesSignature(method, other)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean matchesSignature(MethodInfo method, MethodInfo subclassMethod) {
+        if (!method.name().equals(subclassMethod.name())) {
+            return false;
+        }
+        List<Type> parameters = method.parameters();
+        List<Type> subParameters = subclassMethod.parameters();
+
+        int paramCount = parameters.size();
+        if (paramCount != subParameters.size()) {
+            return false;
+        }
+
+        if (paramCount == 0) {
+            return true;
+        }
+
+        for (int i = 0; i < paramCount; i++) {
+            if (!Methods.isTypeEqual(parameters.get(i), subParameters.get(i))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    static boolean isTypeEqual(Type a, Type b) {
+        return Methods.toRawType(a).equals(Methods.toRawType(b));
+    }
+
+    static DotName toRawType(Type a) {
+        switch (a.kind()) {
+            case CLASS:
+            case PRIMITIVE:
+            case ARRAY:
+                return a.name();
+            case PARAMETERIZED_TYPE:
+                return a.asParameterizedType().name();
+            case TYPE_VARIABLE:
+            case UNRESOLVED_TYPE_VARIABLE:
+            case WILDCARD_TYPE:
+            default:
+                return DotNames.OBJECT;
+        }
     }
 
 }

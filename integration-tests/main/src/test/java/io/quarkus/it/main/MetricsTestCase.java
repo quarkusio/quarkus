@@ -2,6 +2,7 @@ package io.quarkus.it.main;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 import java.util.concurrent.TimeUnit;
 
@@ -147,6 +148,16 @@ public class MetricsTestCase {
     public void testEndpointWithMetricsThrowingException() {
         RestAssured.when().get("/metricsresource/counter-throwing-not-found-exception").then()
                 .statusCode(404);
+    }
+
+    /**
+     * Verify that no metrics are created from SmallRye internal classes (for example the
+     * io.smallrye.metrics.interceptors package)
+     */
+    @Test
+    public void testNoMetricsFromSmallRyeInternalClasses() {
+        RestAssured.when().get("/metrics/application").then()
+                .body(not(containsString("io_smallrye_metrics")));
     }
 
     private void assertMetricExactValue(String name, String val) {

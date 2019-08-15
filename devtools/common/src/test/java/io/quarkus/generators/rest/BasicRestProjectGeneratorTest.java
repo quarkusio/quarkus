@@ -34,7 +34,7 @@ class BasicRestProjectGeneratorTest {
             .put(PROJECT_VERSION, "0.0.1-SNAPSHOT")
             .put(QUARKUS_VERSION, getPluginVersion())
             .put(SOURCE_TYPE, SourceType.JAVA)
-            .put(ADDITIONAL_GITIGNORE_ENTRIES, BuildTool.MAVEN.getGitIgnoreEntries())
+            .put(BUILD_TOOL, BuildTool.MAVEN)
             .put(PACKAGE_NAME, "org.example")
             .put(CLASS_NAME, "ExampleResource")
             .put("path", "/hello")

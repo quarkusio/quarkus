@@ -1144,6 +1144,16 @@ memory in a runtime class loader. To have these classes written out to disk for 
 ./mvnw clean install -Dquarkus.debug.generated-classes-dir=./target/app-generated-classes
 ----
 
+==== Multi-module Maven Projects and the Development Mode
+
+It's not uncommon to develop an extension in a multi-module Maven project that also contains an "example" module.
+However, if you want to run the example in the development mode then the `-DnoDeps` system property must be used in order to exclude the local project dependencies.
+Otherwise, Quarkus attempts to monitor the extension classes and this may result in weird class loading issues.
+
+[source,shell]
+----
+./mvnw compile quarkus:dev -DnoDeps
+----
 
 === Sample Test Extension
 We have an extension that is used to test for regressions in the extension processing. It is located in {quarkus-tree-url}/core/test-extension directory. In this section we touch on some of the tasks an extension
@@ -1605,19 +1615,18 @@ An extension registers this substitution by producing an `ObjectSubstitutionBuil
 The Graal SDK supports substitutions of classes in the native image. An example of how one could replace the `XmlConfig/XmlData` classes with versions that have no JAXB annotation dependencies is shown in these example classes:
 
 .Substitution of XmlConfig/XmlData Classes Example
-[source,bash]
+[source,java]
 ----
 package io.quarkus.extest.runtime.graal;
-
 import java.util.Date;
-
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-
 import io.quarkus.extest.runtime.config.XmlData;
+
 @TargetClass(XmlConfig.class)
 @Substitute
-final public class Target_XmlConfig {
+public final class Target_XmlConfig {
+
     @Substitute
     private String address;
     @Substitute
@@ -1653,7 +1662,8 @@ final public class Target_XmlConfig {
 
 @TargetClass(XmlData.class)
 @Substitute
-final public class Target_XmlData {
+public final class Target_XmlData {
+
     @Substitute
     private String name;
     @Substitute
@@ -1685,6 +1695,5 @@ final public class Target_XmlData {
                 ", date='" + date + '\'' +
                 '}';
     }
-
 }
 ----

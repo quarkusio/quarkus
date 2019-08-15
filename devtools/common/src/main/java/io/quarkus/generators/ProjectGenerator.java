@@ -12,9 +12,10 @@ public interface ProjectGenerator {
     String QUARKUS_VERSION = "quarkus_version";
     String PACKAGE_NAME = "package_name";
     String SOURCE_TYPE = "source_type";
+    String BUILD_TOOL = "build_tool";
+    String ADDITIONAL_GITIGNORE_ENTRIES = "additional_gitignore_entries";
     String CLASS_NAME = "class_name";
     String RESOURCE_PATH = "path";
-    String ADDITIONAL_GITIGNORE_ENTRIES = "additional_gitignore_entries";
 
     String getName();
 

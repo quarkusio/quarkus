@@ -8,8 +8,8 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.elytron.security.deployment.AuthConfigBuildItem;
 import io.quarkus.elytron.security.deployment.IdentityManagerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityDomainBuildItem;
@@ -35,26 +35,14 @@ class OAuth2DeploymentProcessor {
 
     OAuth2Config oauth2;
 
-    /**
-     * If the configuration specified a deployment local key resource, register it with substrate
-     *
-     * @return SubstrateResourceBuildItem
-     */
-    @BuildStep
-    SubstrateResourceBuildItem registerSubstrateResources() {
-        if (oauth2.caCertFile.isPresent()) {
-            String publicKeyLocation = oauth2.caCertFile.get();
-            if (publicKeyLocation.indexOf(':') < 0 || publicKeyLocation.startsWith("classpath:")) {
-                log.infof("Adding %s to native image", publicKeyLocation);
-                return new SubstrateResourceBuildItem(publicKeyLocation);
-            }
-        }
-        return null;
-    }
-
     @BuildStep(providesCapabilities = "io.quarkus.elytron.security.oauth2")
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.SECURITY_OAUTH2);
+    }
+
+    @BuildStep
+    ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
+        return new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.SECURITY_OAUTH2);
     }
 
     /**

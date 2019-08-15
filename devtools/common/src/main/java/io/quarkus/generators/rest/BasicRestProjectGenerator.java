@@ -5,15 +5,17 @@ import static java.lang.String.format;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-import org.apache.maven.model.Model;
-
 import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.ProjectGenerator;
 import io.quarkus.generators.SourceType;
 import io.quarkus.maven.utilities.MojoUtils;
@@ -57,24 +59,17 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
 
         private BasicRestProject(final ProjectWriter writer, final Map<String, Object> parameters) {
             this.writer = writer;
-            this.context = parameters;
+            this.context = new HashMap<>(parameters);
             this.type = (SourceType) context.get(SOURCE_TYPE);
         }
 
         @SuppressWarnings("unchecked")
-        private <T> T get(final String key, final String defaultValue) {
+        private <T> T get(final String key, final T defaultValue) {
             return (T) context.getOrDefault(key, defaultValue);
         }
 
         private boolean initProject() throws IOException {
-            boolean newProject = !writer.exists("pom.xml");
-            if (newProject) {
-                generate(type.getPomResourceTemplate(getName()), context, "pom.xml", "pom.xml");
-            } else {
-                final Model model = MojoUtils.readPom(new ByteArrayInputStream(writer.getContent("pom.xml")));
-                context.put(PROJECT_GROUP_ID, model.getGroupId());
-                context.put(PROJECT_ARTIFACT_ID, model.getArtifactId());
-            }
+            boolean newProject = initBuildTool();
 
             path = get(RESOURCE_PATH, path);
 
@@ -84,14 +79,49 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
             return newProject;
         }
 
+        private boolean initBuildTool() throws IOException {
+            BuildTool buildTool = get(BUILD_TOOL, BuildTool.MAVEN);
+            context.putIfAbsent(ADDITIONAL_GITIGNORE_ENTRIES, buildTool.getGitIgnoreEntries());
+            boolean newProject = !writer.exists(buildTool.getDependenciesFile());
+            if (newProject) {
+                for (String buildFile : buildTool.getBuildFiles()) {
+                    generate(type.getBuildFileResourceTemplate(getName(), buildFile), context, buildFile, buildFile);
+                }
+            } else {
+                String[] gav;
+                if (BuildTool.MAVEN.equals(buildTool)) {
+                    ByteArrayInputStream buildFileInputStream = new ByteArrayInputStream(
+                            writer.getContent(buildTool.getDependenciesFile()));
+                    gav = MojoUtils.readGavFromPom(buildFileInputStream);
+                } else {
+                    gav = new String[3];
+                    for (String buildFile : buildTool.getBuildFiles()) {
+                        if (writer.exists(buildFile)) {
+                            ByteArrayInputStream buildFileInputStream = new ByteArrayInputStream(writer.getContent(buildFile));
+                            gav = MojoUtils.readGavFromSettingsGradle(buildFileInputStream, gav);
+                        }
+                    }
+                }
+                context.put(PROJECT_GROUP_ID, gav[0]);
+                context.put(PROJECT_ARTIFACT_ID, gav[1]);
+            }
+            return newProject;
+        }
+
         private void generate(final String templateName, final Map<String, Object> context, final String outputFilePath,
                 final String resourceType)
                 throws IOException {
             if (!writer.exists(outputFilePath)) {
                 String path = templateName.startsWith("/") ? templateName : "/" + templateName;
-                try (final BufferedReader stream = new BufferedReader(
-                        new InputStreamReader(getClass().getResourceAsStream(path), StandardCharsets.UTF_8))) {
-                    String template = stream.lines().collect(Collectors.joining("\n"));
+                URL resource = getClass().getResource(path);
+                if (resource == null) {
+                    throw new IOException("Template resource is missing: " + path);
+                }
+                try (
+                        InputStream resourceStream = resource.openStream();
+                        InputStreamReader streamReader = new InputStreamReader(resourceStream, StandardCharsets.UTF_8);
+                        BufferedReader bufferedReader = new BufferedReader(streamReader)) {
+                    String template = bufferedReader.lines().collect(Collectors.joining("\n"));
                     for (Entry<String, Object> e : context.entrySet()) {
                         if (e.getValue() != null) { // Exclude null values (classname and path can be null)
                             template = template.replace(format("${%s}", e.getKey()), e.getValue().toString());

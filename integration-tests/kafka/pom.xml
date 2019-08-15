@@ -27,10 +27,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-integration-test-shared-library</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
-        </dependency>
 
         <!-- JAX-RS -->
         <dependency>

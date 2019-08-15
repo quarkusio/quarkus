@@ -42,7 +42,8 @@ public class JavaCompilationProvider implements CompilationProvider {
             throw new RuntimeException("No system java compiler provided");
         }
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-        try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null);) {
+        try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null,
+                context.getSourceEncoding())) {
 
             fileManager.setLocation(StandardLocation.CLASS_PATH, context.getClasspath());
             fileManager.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singleton(context.getOutputDirectory()));

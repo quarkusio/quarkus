@@ -7,9 +7,9 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-While you are encouraged to use JAX-RS annotation for defining REST endpoints, Quarkus provides a compatibility layer for Spring for Spring Web in the form of the `spring-web` extension.
+While you are encouraged to use JAX-RS annotation for defining REST endpoints, Quarkus provides a compatibility layer for Spring Web in the form of the `spring-web` extension.
 
-This guide explains how your Quarkus application can leverage the well known Spring Web annotation to define RESTful services.
+This guide explains how your Quarkus application can leverage the well known Spring Web annotations to define RESTful services.
 
 == Prerequisites
 
@@ -39,7 +39,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=using-spring-web \
-    -DclassName="org.acme.spring.web.GreeterController" \
+    -DclassName="org.acme.spring.web.GreetingController" \
     -Dpath="/greeting" \
     -Dextensions="spring-web"
 ----
@@ -49,7 +49,44 @@ This command generates a Maven project with a REST endpoint and imports the `spr
 
 == Writing the GreetingController
 
-The Quarkus maven plugin automatically generated a `src/main/java/org/acme/spring/web/GreeterController.java` file.
+Before writing the `GreetingController`, let's first create a `Greeting` class that will be used as a response from the controller.
+Furthermore let's create a Spring bean called `GreetingBean` that will be used by the controller.
+
+[source,java]
+----
+package org.acme.spring.web;
+
+public class Greeting {
+
+    private final String message;
+
+    public Greeting(String message) {
+        this.message = message;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+}
+----
+
+
+[source,java]
+----
+package org.acme.spring.web;
+
+import org.springframework.stereotype.Service;
+
+@Service
+public class GreetingBean {
+
+    public String greet(String input) {
+        return "HELLO " + input.toUpperCase() + "!";
+    }
+}
+----
+
+The Quarkus Maven plugin automatically generated a `src/main/java/org/acme/spring/web/GreetingController.java` file.
 However since we are going to be using Spring Web annotations to define our REST endpoint (instead of the JAX-RS ones used by default), we need to change
 the `GreetingController` to have the following content:
 
@@ -64,45 +101,24 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
 @RequestMapping("/greeting")
-public class GreeterController {
+public class GreetingController {
 
-    private final GreeterBean greeterBean;
+    private final GreetingBean greetingBean;
 
-    public GreeterController(GreeterBean greeterBean) {
-        this.greeterBean = greeterBean;
+    public GreetingController(GreetingBean greetingBean) {
+        this.greetingBean = greetingBean;
     }
 
     @GetMapping("/{name}")
     public Greeting hello(@PathVariable(name = "name") String name) {
-        return new Greeting(greeterBean.greet(name));
-    }
-}
-----
-
-== Add Spring Bean
-
-Now create a class named `org.acme.spring.GreeterBean` that looks like this
-
-[source,java]
-----
-package org.acme.spring.web;
-
-import org.springframework.stereotype.Service;
-
-@Service
-public class GreeterBean {
-
-    public String greet(String input) {
-        return "HELLO " + input.toUpperCase() + "!";
+        return new Greeting(greetingBean.greet(name));
     }
 }
 ----
 
 == Update the test
 
-We also need to update the functional test to reflect the changes made to the endpoint.
-First rename the `src/test/java/org/acme/spring/di/GreetingResourceTest.java` file to `src/test/java/org/acme/spring/di/GreetingControllerTest.java`
-and change its content to:
+We also need to update the functional test to reflect the changes made to the endpoint. Change its content to:
 
 
 [source, java]
@@ -133,18 +149,18 @@ public class GreetingControllerTest {
 == Package and run the application
 
 Run the application with: `./mvnw compile quarkus:dev`.
-Open your browser to http://localhost:8080/greeting.
+Open your browser to http://localhost:8080/greeting/world.
 
 The result should be: `{"message": "HELLO WORLD!"}`.
 
-== Run the application as a native
+== Run the application as a native executable
 
-You can of course create a native image using instructions similar to link:building-native-image-guide.html[this] guide.
+You can of course create a native image using the instructions of the link:building-native-image-guide.html[Building a native executable guide].
 
-== Supported Spring Web functionality
+== Supported Spring Web functionalities
 
-Quarkus currently supports a subset of the functionality that Spring Web provides. More specifically Quarkus supports the REST related features of Spring Web
-(in a high level, think of `@RestController` instead of `@Controller`).
+Quarkus currently supports a subset of the functionalities that Spring Web provides. More specifically Quarkus supports the REST related features of Spring Web
+(think of `@RestController` instead of `@Controller`).
 
 === Annotations
 
@@ -200,7 +216,7 @@ The following method return types are supported:
 
 === Controller method return types
 
-In addition to the method parameters that can be annotated with the appropriate Spring Web annotation from the previous table,
+In addition to the method parameters that can be annotated with the appropriate Spring Web annotations from the previous table,
 `javax.servlet.http.HttpServletRequest` and `javax.servlet.http.HttpServletResponse` are also supported.
 
 
@@ -208,6 +224,6 @@ In addition to the method parameters that can be annotated with the appropriate 
 
 Please note that the Spring support in Quarkus does not start a Spring Application Context nor are any Spring infrastructure classes run.
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
-What that means for end users, is that adding arbitrary Spring to the classpath will not be used at all. Moreover Spring infrastructure
-things like `org.springframework.beans.factory.config.BeanPostProcessor` will not be run.
+What that means for end users, is that adding arbitrary Spring libraries to the classpath will not be taken into account. Moreover Spring infrastructure
+things like `org.springframework.beans.factory.config.BeanPostProcessor` will not be executed.
 

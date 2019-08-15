@@ -208,10 +208,19 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         }
         if (!Files.exists(appClassesDir)) {
             final Path appJar = appState.getAppArtifact().getPath();
-            try {
-                ZipUtils.unzip(appJar, appClassesDir);
-            } catch (IOException e) {
-                throw new AppCreatorException("Failed to unzip " + appJar, e);
+            //manage project without src directory
+            if (appJar == null) {
+                try {
+                    Files.createDirectory(appClassesDir);
+                } catch (IOException e) {
+                    throw new AppCreatorException("Failed to create classes directory " + appClassesDir, e);
+                }
+            } else {
+                try {
+                    ZipUtils.unzip(appJar, appClassesDir);
+                } catch (IOException e) {
+                    throw new AppCreatorException("Failed to unzip " + appJar, e);
+                }
             }
             final Path metaInf = appClassesDir.resolve(META_INF);
             IoUtils.recursiveDelete(metaInf.resolve("maven"));
@@ -225,7 +234,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         else {
             //if we use gradle we copy the configDir contents to appClassesDir
             try {
-                if (!Files.isSameFile(configDir, appClassesDir)) {
+                if (Files.exists(configDir) && !Files.isSameFile(configDir, appClassesDir)) {
                     Files.walkFileTree(configDir,
                             new CopyDirVisitor(configDir, appClassesDir, StandardCopyOption.REPLACE_EXISTING));
                 }

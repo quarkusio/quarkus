@@ -3,7 +3,6 @@ package io.quarkus.resteasy.common.deployment;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.OptionalInt;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -26,6 +25,7 @@ import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.configuration.MemorySize;
 
 public class ResteasyCommonProcessor {
 
@@ -62,8 +62,8 @@ public class ResteasyCommonProcessor {
          * If the limit is exceeded, Resteasy will return Response
          * with status 413("Request Entity Too Large")
          */
-        @ConfigItem
-        public OptionalInt maxInput;
+        @ConfigItem(defaultValue = "10M")
+        public MemorySize maxInput;
     }
 
     @BuildStep

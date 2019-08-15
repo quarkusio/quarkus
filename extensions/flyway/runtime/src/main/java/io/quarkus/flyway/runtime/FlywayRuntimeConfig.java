@@ -32,6 +32,7 @@ public final class FlywayRuntimeConfig {
      */
     @ConfigItem
     public Optional<String> table;
+
     /**
      * The file name prefix for versioned SQL migrations.
      *
@@ -40,6 +41,7 @@ public final class FlywayRuntimeConfig {
      */
     @ConfigItem
     public Optional<String> sqlMigrationPrefix;
+
     /**
      * The file name prefix for repeatable SQL migrations.
      *
@@ -48,21 +50,26 @@ public final class FlywayRuntimeConfig {
      */
     @ConfigItem
     public Optional<String> repeatableSqlMigrationPrefix;
+
     /**
      * true to execute Flyway automatically when the application starts, false otherwise.
      *
      */
-    public boolean migrateAtStart = false;
+    @ConfigItem
+    public boolean migrateAtStart;
+
     /**
      * Enable the creation of the history table if it does not exist already.
      */
     @ConfigItem
-    public boolean baselineOnMigrate = false;
+    public boolean baselineOnMigrate;
+
     /**
      * The initial baseline version.
      */
     @ConfigItem
     public Optional<String> baselineVersion;
+
     /**
      * The description to tag an existing schema with when executing baseline.
      */

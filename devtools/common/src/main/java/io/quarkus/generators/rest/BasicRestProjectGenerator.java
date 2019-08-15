@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.ProjectGenerator;
@@ -80,7 +81,8 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
         }
 
         private boolean initBuildTool() throws IOException {
-            BuildTool buildTool = get(BUILD_TOOL, BuildTool.MAVEN);
+            BuildFile buildFileManager = get(BUILD_FILE, null);
+            BuildTool buildTool = buildFileManager == null ? BuildTool.MAVEN : buildFileManager.getBuildTool();
             context.putIfAbsent(ADDITIONAL_GITIGNORE_ENTRIES, buildTool.getGitIgnoreEntries());
             boolean newProject = !writer.exists(buildTool.getDependenciesFile());
             if (newProject) {

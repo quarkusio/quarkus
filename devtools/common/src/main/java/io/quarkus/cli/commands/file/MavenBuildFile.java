@@ -39,37 +39,45 @@ public class MavenBuildFile extends BuildFile {
     private Model model;
 
     public MavenBuildFile(ProjectWriter writer) throws IOException {
-        super(writer);
-        byte[] content = writer.getContent(BuildTool.MAVEN.getDependenciesFile());
-        this.model = MojoUtils.readPom(new ByteArrayInputStream(content));
+        super(writer, BuildTool.MAVEN);
+        initModel();
+    }
+
+    private void initModel() throws IOException {
+        if (getWriter().exists(BuildTool.MAVEN.getDependenciesFile())) {
+            byte[] content = getWriter().getContent(BuildTool.MAVEN.getDependenciesFile());
+            this.model = MojoUtils.readPom(new ByteArrayInputStream(content));
+        }
     }
 
     @Override
-    public void write() throws IOException {
+    public void close() throws IOException {
         ByteArrayOutputStream pomOutputStream = new ByteArrayOutputStream();
-        MojoUtils.write(model, pomOutputStream);
+        MojoUtils.write(getModel(), pomOutputStream);
         write(BuildTool.MAVEN.getDependenciesFile(), pomOutputStream.toString("UTF-8"));
     }
 
-    protected void addDependencyInBuildFile(Dependency dependency) {
-        model.addDependency(dependency);
-    }
-
-    protected boolean hasDependency(Extension extension) {
-        return MojoUtils.hasDependency(model, extension.getGroupId(), extension.getArtifactId());
+    @Override
+    protected void addDependencyInBuildFile(Dependency dependency) throws IOException {
+        getModel().addDependency(dependency);
     }
 
     @Override
-    public List<Dependency> getDependencies() {
-        return model.getDependencies();
+    protected boolean hasDependency(Extension extension) throws IOException {
+        return MojoUtils.hasDependency(getModel(), extension.getGroupId(), extension.getArtifactId());
     }
 
     @Override
-    protected boolean containsBOM() {
-        if (model.getDependencyManagement() == null) {
+    public List<Dependency> getDependencies() throws IOException {
+        return getModel().getDependencies();
+    }
+
+    @Override
+    protected boolean containsBOM() throws IOException {
+        if (getModel().getDependencyManagement() == null) {
             return false;
         }
-        List<Dependency> dependencies = model.getDependencyManagement().getDependencies();
+        List<Dependency> dependencies = getModel().getDependencyManagement().getDependencies();
         return dependencies.stream()
                 // Find bom
                 .filter(dependency -> "import".equalsIgnoreCase(dependency.getScope()))
@@ -78,20 +86,20 @@ public class MavenBuildFile extends BuildFile {
                 .anyMatch(dependency -> dependency.getArtifactId().equalsIgnoreCase(getBomArtifactId()));
     }
 
-    public void completeFile() throws IOException {
+    @Override
+    public void completeFile(String groupId, String artifactId, String version) throws IOException {
         addVersionProperty();
         addBom();
         addMainPluginConfig();
         addNativeProfile();
-        write();
     }
 
-    private void addBom() {
+    private void addBom() throws IOException {
         boolean hasBom = false;
-        DependencyManagement dm = model.getDependencyManagement();
+        DependencyManagement dm = getModel().getDependencyManagement();
         if (dm == null) {
             dm = new DependencyManagement();
-            model.setDependencyManagement(dm);
+            getModel().setDependencyManagement(dm);
         } else {
             hasBom = dm.getDependencies().stream()
                     .anyMatch(d -> d.getGroupId().equals(getPluginGroupId()) &&
@@ -110,8 +118,8 @@ public class MavenBuildFile extends BuildFile {
         }
     }
 
-    private void addNativeProfile() {
-        final boolean match = model.getProfiles().stream().anyMatch(p -> p.getId().equals("native"));
+    private void addNativeProfile() throws IOException {
+        final boolean match = getModel().getProfiles().stream().anyMatch(p -> p.getId().equals("native"));
         if (!match) {
             PluginExecution exec = new PluginExecution();
             exec.addGoal("native-image");
@@ -133,11 +141,11 @@ public class MavenBuildFile extends BuildFile {
 
             activation.setProperty(property);
             profile.setActivation(activation);
-            model.addProfile(profile);
+            getModel().addProfile(profile);
         }
     }
 
-    private void addMainPluginConfig() {
+    private void addMainPluginConfig() throws IOException {
         if (!hasPlugin()) {
             Build build = createBuildSectionIfRequired();
             Plugin plugin = plugin(getPluginGroupId(), getPluginArtifactId(), QUARKUS_VERSION_PROPERTY);
@@ -153,9 +161,9 @@ public class MavenBuildFile extends BuildFile {
         }
     }
 
-    private boolean hasPlugin() {
+    private boolean hasPlugin() throws IOException {
         List<Plugin> plugins = null;
-        final Build build = model.getBuild();
+        final Build build = getModel().getBuild();
         if (build != null) {
             if (isParentPom()) {
                 final PluginManagement management = build.getPluginManagement();
@@ -172,20 +180,20 @@ public class MavenBuildFile extends BuildFile {
                         p.getArtifactId().equalsIgnoreCase(getPluginArtifactId()));
     }
 
-    private void addPluginManagementSection(Plugin plugin) {
-        if (model.getBuild() != null && model.getBuild().getPluginManagement() != null) {
-            if (model.getBuild().getPluginManagement().getPlugins() == null) {
-                model.getBuild().getPluginManagement().setPlugins(new ArrayList<>());
+    private void addPluginManagementSection(Plugin plugin) throws IOException {
+        if (getModel().getBuild() != null && getModel().getBuild().getPluginManagement() != null) {
+            if (getModel().getBuild().getPluginManagement().getPlugins() == null) {
+                getModel().getBuild().getPluginManagement().setPlugins(new ArrayList<>());
             }
-            model.getBuild().getPluginManagement().getPlugins().add(plugin);
+            getModel().getBuild().getPluginManagement().getPlugins().add(plugin);
         }
     }
 
-    private Build createBuildSectionIfRequired() {
-        Build build = model.getBuild();
+    private Build createBuildSectionIfRequired() throws IOException {
+        Build build = getModel().getBuild();
         if (build == null) {
             build = new Build();
-            model.setBuild(build);
+            getModel().setBuild(build);
         }
         if (build.getPlugins() == null) {
             build.setPlugins(new ArrayList<>());
@@ -193,29 +201,36 @@ public class MavenBuildFile extends BuildFile {
         return build;
     }
 
-    private void addVersionProperty() {
-        Properties properties = model.getProperties();
+    private void addVersionProperty() throws IOException {
+        Properties properties = getModel().getProperties();
         if (properties == null) {
             properties = new Properties();
-            model.setProperties(properties);
+            getModel().setProperties(properties);
         }
         properties.putIfAbsent("quarkus.version", getPluginVersion());
     }
 
-    private boolean isParentPom() {
-        return "pom".equals(model.getPackaging());
+    private boolean isParentPom() throws IOException {
+        return "pom".equals(getModel().getPackaging());
     }
 
     @Override
-    protected List<Dependency> getManagedDependencies() {
-        final DependencyManagement managed = model.getDependencyManagement();
+    protected List<Dependency> getManagedDependencies() throws IOException {
+        final DependencyManagement managed = getModel().getDependencyManagement();
         return managed != null ? managed.getDependencies()
                 : Collections.emptyList();
     }
 
     @Override
-    public String getProperty(String propertyName) {
-        return model.getProperties().getProperty(propertyName);
+    public String getProperty(String propertyName) throws IOException {
+        return getModel().getProperties().getProperty(propertyName);
+    }
+
+    private Model getModel() throws IOException {
+        if (model == null) {
+            initModel();
+        }
+        return model;
     }
 
 }

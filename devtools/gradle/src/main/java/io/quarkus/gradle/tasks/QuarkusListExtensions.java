@@ -11,7 +11,7 @@ import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.cli.commands.ListExtensions;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.generators.BuildTool;
+import io.quarkus.gradle.GradleBuildFileFromConnector;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -64,7 +64,8 @@ public class QuarkusListExtensions extends QuarkusTask {
     @TaskAction
     public void listExtensions() {
         try {
-            new ListExtensions(new FileProjectWriter(new File(getPath())), BuildTool.GRADLE).listExtensions(isAll(),
+            new ListExtensions(new GradleBuildFileFromConnector(new FileProjectWriter(new File(getPath())))).listExtensions(
+                    isAll(),
                     getFormat(), getSearchPattern());
         } catch (IOException e) {
             throw new GradleException("Unable to list extensions", e);

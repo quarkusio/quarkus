@@ -70,4 +70,14 @@ public class FileProjectWriter implements ProjectWriter {
         //do nothing
     }
 
+    @Override
+    public File getProjectFolder() {
+        return root;
+    }
+
+    @Override
+    public boolean hasFile() {
+        return true;
+    }
+
 }

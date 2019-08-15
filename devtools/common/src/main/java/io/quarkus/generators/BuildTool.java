@@ -43,7 +43,7 @@ public enum BuildTool {
         return buildFiles[0];
     }
 
-    public BuildFile getBuildFile(final ProjectWriter writer) throws IOException {
+    public BuildFile createBuildFile(final ProjectWriter writer) throws IOException {
         switch (this) {
             case GRADLE:
                 return new GradleBuildFile(writer);
@@ -52,5 +52,4 @@ public enum BuildTool {
                 return new MavenBuildFile(writer);
         }
     }
-
 }

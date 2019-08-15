@@ -8,8 +8,6 @@ import static javax.lang.model.util.ElementFilter.typesIn;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -24,18 +22,17 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.stream.Collectors;
 
-import javax.annotation.processing.*;
+import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.Completion;
+import javax.annotation.processing.Filer;
+import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -69,23 +66,10 @@ import org.jboss.jdeparser.JTypes;
 import io.quarkus.annotation.processor.generate_doc.GenerateExtensionConfigurationDoc;
 
 public class ExtensionAnnotationProcessor extends AbstractProcessor {
-    public static final String RUNTIME = "runtime";
-    public static final String DEPLOYMENT = "deployment";
-    public static final String COMMON = "common";
+    private final JavaDocParser javaDocParser = new JavaDocParser();
     private final Set<String> generatedAccessors = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
     private final Set<String> generatedJavaDocs = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
     private final GenerateExtensionConfigurationDoc generateExtensionConfigurationDoc = new GenerateExtensionConfigurationDoc();
-    private static final Path GENERATED_DOCS_PATH = Paths
-            .get(System.getProperties().getProperty(Constants.MAVEN_MULTI_MODULE_PROJECT_DIRECTORY)
-                    + Constants.DOCS_SRC_MAIN_ASCIIDOC_GENERATED);
-    private static final File GENERATED_DOCS_DIR = GENERATED_DOCS_PATH.toFile();
-    private final Set<String> processorMembers = new HashSet<>();
-
-    static {
-        if (!GENERATED_DOCS_DIR.exists()) {
-            GENERATED_DOCS_DIR.mkdirs();
-        }
-    }
 
     public ExtensionAnnotationProcessor() {
     }
@@ -97,7 +81,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        return Constants.SUPPOERTED_ANNOTATIONS_TYPES;
+        return Constants.SUPPORTED_ANNOTATIONS_TYPES;
     }
 
     @Override
@@ -144,7 +128,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         final Filer filer = processingEnv.getFiler();
         final FileObject tempResource;
         try {
-            tempResource = filer.createResource(StandardLocation.SOURCE_OUTPUT, "", "ignore.tmp");
+            tempResource = filer.createResource(StandardLocation.SOURCE_OUTPUT, Constants.EMPTY, "ignore.tmp");
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Unable to create temp output file: " + e);
             return;
@@ -232,104 +216,22 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
                     try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {
                         try (BufferedWriter bw = new BufferedWriter(osw)) {
-                            javaDocProperties.store(bw, "");
+                            javaDocProperties.store(bw, Constants.EMPTY);
                         }
                     }
                 }
             }
-
-            Map<String, List<Map.Entry<String, String>>> extensionsConfigurations = findExtensionsConfiguration(
-                    javaDocProperties);
-            writeExtensionConfiguration(extensionsConfigurations);
 
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write javadoc properties: " + e);
             return;
         }
-    }
 
-    private Map<String, List<Map.Entry<String, String>>> findExtensionsConfiguration(Properties javaDocProperties)
-            throws IOException {
-        Map<String, String> usedConfigurationRootWithGeneratedDoc = new HashMap<>();
-        Map<String, String> inMemoryOutput = generateExtensionConfigurationDoc
-                .generateInMemoryConfigDocs(javaDocProperties);
-
-        for (Map.Entry<String, String> entry : inMemoryOutput.entrySet()) {
-            if (processorMembers.contains(entry.getKey())) {
-                usedConfigurationRootWithGeneratedDoc.put(entry.getKey(), entry.getValue());
-            } else {
-                try (FileOutputStream out = new FileOutputStream(
-                        GENERATED_DOCS_PATH.resolve(entry.getKey() + ".adoc").toFile())) {
-                    out.write(entry.getValue().getBytes(StandardCharsets.UTF_8));
-                }
-            }
-        }
-
-        for (String member : processorMembers) {
-            Path generatedDocPath = GENERATED_DOCS_PATH.resolve(member + ".adoc");
-            if (Files.notExists(generatedDocPath)) {
-                continue;
-            }
-
-            String cachedGeneratedDoc = new String(Files.readAllBytes(generatedDocPath));
-            usedConfigurationRootWithGeneratedDoc.put(member, cachedGeneratedDoc);
-        }
-
-        return usedConfigurationRootWithGeneratedDoc
-                .entrySet()
-                .stream()
-                .collect(Collectors.groupingBy(entry -> {
-                    Matcher matcher = Constants.PKG_PATTERN.matcher(entry.getKey());
-                    if (matcher.find()) {
-                        String extensionName = matcher.group(1);
-                        String subgroup = matcher.group(2);
-                        StringBuilder key = new StringBuilder("quarkus-");
-
-                        if (DEPLOYMENT.equals(extensionName) || RUNTIME.equals(extensionName)) {
-                            String configClass = entry.getKey().substring(entry.getKey().lastIndexOf('.') + 1);
-                            extensionName = StringUtil.hyphenate(configClass);
-                            key.append("core-");
-                            key.append(extensionName);
-                        } else if (subgroup != null && !DEPLOYMENT.equals(subgroup) && !RUNTIME.equals(subgroup) &&
-                                !COMMON.equals(subgroup) && subgroup.matches("^[a-z0-9]+$")) {
-                            key.append(extensionName);
-                            key.append("-");
-                            key.append(subgroup);
-
-                            String qualifier = matcher.group(3);
-                            if (qualifier != null && !DEPLOYMENT.equals(qualifier) && !RUNTIME.equals(qualifier)
-                                    && !COMMON.equals(qualifier) && qualifier.matches("^[a-z0-9]+$")) {
-                                key.append("-");
-                                key.append(qualifier);
-                            }
-                        } else {
-                            key.append(extensionName);
-                        }
-
-                        key.append(".adoc");
-                        return key.toString();
-                    }
-
-                    return entry.getKey();
-                }));
-    }
-
-    private void writeExtensionConfiguration(Map<String, List<Map.Entry<String, String>>> extensionsConfigurations)
-            throws IOException {
-        for (Map.Entry<String, List<Map.Entry<String, String>>> entry : extensionsConfigurations.entrySet()) {
-            String generatedConfig = entry.getValue().stream().map(Map.Entry::getValue).collect(Collectors.joining());
-
-            if (generatedConfig.contains(Constants.SEE_DURATION_NOTE_BELOW)) {
-                generatedConfig += Constants.DURATION_FORMAT_NOTE;
-            }
-
-            if (generatedConfig.contains(Constants.SEE_MEMORY_SIZE_NOTE_BELOW)) {
-                generatedConfig += Constants.MEMORY_SIZE_FORMAT_NOTE;
-            }
-
-            try (FileOutputStream out = new FileOutputStream(GENERATED_DOCS_PATH.resolve(entry.getKey()).toFile())) {
-                out.write(generatedConfig.getBytes(StandardCharsets.UTF_8));
-            }
+        try {
+            generateExtensionConfigurationDoc.writeExtensionConfiguration(javaDocProperties);
+        } catch (IOException e) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate extension doc: " + e);
+            return;
         }
     }
 
@@ -373,7 +275,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             }
 
             for (VariableElement variableElement : i.getParameters()) {
-                processorMembers.add(variableElement.asType().toString());
+                generateExtensionConfigurationDoc.addProcessorClassMember(variableElement.asType().toString());
             }
 
             final PackageElement pkg = processingEnv.getElementUtils().getPackageOf(clazz);
@@ -388,7 +290,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 // new class
                 for (Element element : clazz.getEnclosedElements()) {
                     if (element.getKind().isField()) {
-                        processorMembers.add(element.asType().toString());
+                        generateExtensionConfigurationDoc.addProcessorClassMember(element.asType().toString());
                     }
                 }
                 recordConfigJavadoc(clazz);
@@ -472,7 +374,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                     rbn,
                     clazz);
             try (Writer writer = file.openWriter()) {
-                javadocProps.store(writer, "");
+                javadocProps.store(writer, Constants.EMPTY);
             }
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to persist resource " + rbn + ": " + e);
@@ -480,14 +382,14 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     }
 
     private void processFieldConfigItem(VariableElement field, Properties javadocProps, String className) {
-        javadocProps.put(className + "." + field.getSimpleName().toString(), getRequiredJavadoc(field));
+        javadocProps.put(className + Constants.DOT + field.getSimpleName().toString(), getRequiredJavadoc(field));
     }
 
     private void processCtorConfigItem(ExecutableElement ctor, Properties javadocProps, String className) {
         final String docComment = getRequiredJavadoc(ctor);
         final StringBuilder buf = new StringBuilder();
         appendParamTypes(ctor, buf);
-        javadocProps.put(className + "." + buf.toString(), docComment);
+        javadocProps.put(className + Constants.DOT + buf.toString(), docComment);
     }
 
     private void processMethodConfigItem(ExecutableElement method, Properties javadocProps, String className) {
@@ -495,7 +397,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         final StringBuilder buf = new StringBuilder();
         buf.append(method.getSimpleName().toString());
         appendParamTypes(method, buf);
-        javadocProps.put(className + "." + buf.toString(), docComment);
+        javadocProps.put(className + Constants.DOT + buf.toString(), docComment);
     }
 
     private void processConfigGroup(RoundEnvironment roundEnv, TypeElement annotation) {
@@ -504,7 +406,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             if (groupClassNames.add(i.getQualifiedName().toString())) {
                 generateAccessor(i);
                 recordConfigJavadoc(i);
-                generateExtensionConfigurationDoc.putConfigGroups(i);
+                generateExtensionConfigurationDoc.addConfigGroups(i);
             }
         }
     }
@@ -686,74 +588,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             return "";
         }
 
-        return formatDocs(docComment.trim());
-    }
-
-    /**
-     * TODO - properly parse JavaDoc
-     */
-    private String formatDocs(String docs) {
-        if (docs == null) {
-            return "";
-        }
-
-        StringBuilder builder = new StringBuilder();
-        boolean lastEmpty = false;
-        boolean first = true;
-        for (String line : docs.replace("<p>", "\n").split("\n")) {
-            //process line by line
-            String trimmed = line.trim();
-            //if the lines are empty we only include a single empty line at most, and add a # character
-            if (trimmed.isEmpty()) {
-                if (!lastEmpty && !first) {
-                    lastEmpty = true;
-                    builder.append("\n");
-                }
-                continue;
-            }
-            //add the newlines
-            lastEmpty = false;
-            if (first) {
-                first = false;
-            } else {
-                builder.append("\n");
-            }
-            //replace some special characters, others are taken care of by regex below
-            builder.append(trimmed.replace("\n", "\n")
-                    .replace("<ul>", "")
-                    .replace("</ul>", "")
-                    .replace("<li>", " - ")
-                    .replace("</li>", ""));
-        }
-
-        String ret = builder.toString();
-        //replace @code
-        ret = Constants.JAVA_DOC_CODE_PATTERN.matcher(ret).replaceAll("`$1`");
-
-        //replace @see
-        ret = Constants.JAVA_DOC_SEE_PATTERN.matcher(ret).replaceAll("see `$1`");
-
-        //replace @link with a reference to the field name
-        Matcher matcher = Constants.JAVA_DOC_LINK_PATTERN.matcher(ret);
-        while (matcher.find()) {
-            ret = ret.replace(matcher.group(0), "`" + configify(matcher.group(1)) + "`");
-        }
-        return ret;
-    }
-
-    private String configify(String group) {
-        //replace uppercase characters with a - followed by lowercase
-        StringBuilder ret = new StringBuilder();
-        for (int i = 0; i < group.length(); ++i) {
-            char c = group.charAt(i);
-            if (Character.isUpperCase(c)) {
-                ret.append("-");
-                ret.append(Character.toLowerCase(c));
-            } else {
-                ret.append(c);
-            }
-        }
-        return ret.toString();
+        return javaDocParser.parse(docComment);
     }
 
     private static boolean hasParameterAnnotated(ExecutableElement ex, String annotationName) {

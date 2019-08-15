@@ -31,4 +31,5 @@ docker/distroless/bazel-*
 /.apt_generated_tests/
 quarkus.log
 replay_*.log
-docs/src/main/asciidoc/generated/io.quarkus*.adoc
+docs/src/main/asciidoc/generated
+

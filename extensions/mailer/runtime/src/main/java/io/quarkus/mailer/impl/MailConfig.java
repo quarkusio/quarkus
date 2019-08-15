@@ -109,7 +109,7 @@ public class MailConfig {
 
     /**
      * Set the login mode for the connection.
-     * Either {@code DISABLED}, @{code OPTIONAL} or {@code REQUIRED}
+     * Either {@code DISABLED}, {@code OPTIONAL} or {@code REQUIRED}
      */
     @ConfigItem
     public Optional<String> login;

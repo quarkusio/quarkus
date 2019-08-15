@@ -49,7 +49,7 @@ public class CORSConfig {
      *
      * Comma separated list of valid headers. ex: X-Custom,Content-Disposition
      *
-     * default: <empty>
+     * default: empty
      */
     @ConfigItem
     public List<String> exposedHeaders;

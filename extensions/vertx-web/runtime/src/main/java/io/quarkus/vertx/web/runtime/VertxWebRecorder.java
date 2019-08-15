@@ -34,7 +34,6 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.Timing;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
-import io.quarkus.runtime.configuration.ssl.ServerSslConfig;
 import io.quarkus.vertx.runtime.VertxConfiguration;
 import io.quarkus.vertx.runtime.VertxRecorder;
 import io.quarkus.vertx.web.Route;

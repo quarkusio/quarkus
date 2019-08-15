@@ -1,5 +1,8 @@
 package io.quarkus.annotation.processor;
 
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -10,13 +13,21 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 public class Constants {
+    public static final char DOT = '.';
+    public static final String EMPTY = "";
+    public static final String DASH = "-";
+    public static final String CORE = "core-";
+    public static final String ADOC_EXTENSION = ".adoc";
+    public static final String DIGIT_OR_LOWERCASE = "^[a-z0-9]+$";
+
     public static final String PARENT = "<<parent>>";
     public static final String NO_DEFAULT = "<<no default>>";
     public static final String HYPHENATED_ELEMENT_NAME = "<<hyphenated element name>>";
 
-    public static final Pattern JAVA_DOC_SEE_PATTERN = Pattern.compile("@see\\s+(.+)\\s*");
-    public static final Pattern JAVA_DOC_CODE_PATTERN = Pattern.compile("\\{@code (.*?)\\}");
-    public static final Pattern JAVA_DOC_LINK_PATTERN = Pattern.compile("\\{@link #(.*?)\\}");
+    public static final String COMMON = "common";
+    public static final String RUNTIME = "runtime";
+    public static final String DEPLOYMENT = "deployment";
+
     public static final Pattern CONFIG_ROOT_PATTERN = Pattern.compile("^(\\w+)Config(uration)?");
     public static final Pattern PKG_PATTERN = Pattern.compile("^io\\.quarkus\\.(\\w+)\\.?(\\w+)?\\.?(\\w+)?");
 
@@ -28,12 +39,18 @@ public class Constants {
     public static final String ANNOTATION_TEMPLATE = "io.quarkus.runtime.annotations.Template";
     public static final String ANNOTATION_RECORDER = "io.quarkus.runtime.annotations.Recorder";
     public static final String INSTANCE_SYM = "__instance";
-    public static final String QUARKUS = "quarkus.";
+    public static final String QUARKUS = "quarkus";
 
-    public static final Set<String> SUPPOERTED_ANNOTATIONS_TYPES = new HashSet<>();
+    public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES = new HashSet<>();
     public static final Map<String, String> OPTIONAL_NUMBER_TYPES = new HashMap<>();
     public static final String DOCS_SRC_MAIN_ASCIIDOC_GENERATED = "/docs/src/main/asciidoc/generated/";
-    public static final String MAVEN_MULTI_MODULE_PROJECT_DIRECTORY = "maven.multiModuleProjectDirectory";
+    public static final Path GENERATED_DOCS_PATH = Paths
+            .get(System.getProperties().getProperty("maven.multiModuleProjectDirectory")
+                    + Constants.DOCS_SRC_MAIN_ASCIIDOC_GENERATED);
+    public static final File GENERATED_DOCS_DIR = GENERATED_DOCS_PATH.toFile();
+    public static final File ALL_CR_GENERATED_DOC = GENERATED_DOCS_PATH
+            .resolve("all-configuration-roots-generated-doc.properties").toFile();
+
     public static final String SEE_DURATION_NOTE_BELOW = ". _See duration note below_";
     public static final String SEE_MEMORY_SIZE_NOTE_BELOW = ". _See memory size note below_";
 
@@ -59,11 +76,11 @@ public class Constants {
         OPTIONAL_NUMBER_TYPES.put(OptionalLong.class.getName(), Long.class.getName());
         OPTIONAL_NUMBER_TYPES.put(OptionalInt.class.getName(), Integer.class.getName());
         OPTIONAL_NUMBER_TYPES.put(OptionalDouble.class.getName(), Double.class.getName());
-        SUPPOERTED_ANNOTATIONS_TYPES.add(ANNOTATION_BUILD_STEP);
-        SUPPOERTED_ANNOTATIONS_TYPES.add(ANNOTATION_CONFIG_GROUP);
-        SUPPOERTED_ANNOTATIONS_TYPES.add(ANNOTATION_CONFIG_ROOT);
-        SUPPOERTED_ANNOTATIONS_TYPES.add(ANNOTATION_TEMPLATE);
-        SUPPOERTED_ANNOTATIONS_TYPES.add(ANNOTATION_RECORDER);
+        SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_BUILD_STEP);
+        SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_CONFIG_GROUP);
+        SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_CONFIG_ROOT);
+        SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_TEMPLATE);
+        SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_RECORDER);
     }
 
 }

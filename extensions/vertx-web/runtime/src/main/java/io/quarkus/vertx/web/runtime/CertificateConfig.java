@@ -1,4 +1,4 @@
-package io.quarkus.undertow.runtime;
+package io.quarkus.vertx.web.runtime;
 
 import java.nio.file.Path;
 import java.util.Optional;

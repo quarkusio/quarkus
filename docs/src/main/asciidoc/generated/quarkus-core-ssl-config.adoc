@@ -1,5 +1,0 @@
-
-`quarkus.ssl.native`:: Enable native SSL support.
-
-type: `java.lang.Boolean`; The configuration is visible at build time only. 
-

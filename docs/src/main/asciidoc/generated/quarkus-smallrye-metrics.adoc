@@ -1,5 +1,0 @@
-
-`quarkus.smallrye-metrics.path`:: The path to the metrics Servlet.
-
-type: `java.lang.String`; default value: `/metrics`. The configuration is visible at build time only. 
-

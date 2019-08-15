@@ -3,6 +3,7 @@ package io.quarkus.cli.commands.file;
 import static io.quarkus.maven.utilities.MojoUtils.credentials;
 import static java.util.stream.Collectors.toList;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -14,26 +15,28 @@ import org.apache.maven.model.Dependency;
 import io.quarkus.cli.commands.Printer;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.dependencies.Extension;
+import io.quarkus.generators.BuildTool;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 
-public abstract class BuildFile {
+public abstract class BuildFile implements Closeable {
 
     protected final static Printer PRINTER = new Printer();
 
     private final ProjectWriter writer;
 
-    public BuildFile(final ProjectWriter writer) {
+    private final BuildTool buildTool;
+
+    public BuildFile(final ProjectWriter writer, BuildTool buildTool) {
         this.writer = writer;
+        this.buildTool = buildTool;
     }
 
     protected void write(String fileName, String content) throws IOException {
         writer.write(fileName, content);
     }
 
-    public abstract void write() throws IOException;
-
-    public boolean addDependency(List<Dependency> dependenciesFromBom, Extension extension) {
+    public boolean addDependency(List<Dependency> dependenciesFromBom, Extension extension) throws IOException {
         if (!hasDependency(extension)) {
             PRINTER.ok(" Adding extension " + extension.managementKey());
             addDependencyInBuildFile(extension
@@ -46,11 +49,11 @@ public abstract class BuildFile {
         }
     }
 
-    protected abstract void addDependencyInBuildFile(Dependency dependency);
+    protected abstract void addDependencyInBuildFile(Dependency dependency) throws IOException;
 
-    protected abstract boolean hasDependency(Extension extension);
+    protected abstract boolean hasDependency(Extension extension) throws IOException;
 
-    public boolean addExtensionAsGAV(String query) {
+    public boolean addExtensionAsGAV(String query) throws IOException {
         Dependency parsed = MojoUtils.parse(query.trim().toLowerCase());
         boolean alreadyThere = getDependencies().stream()
                 .anyMatch(d -> d.getManagementKey().equalsIgnoreCase(parsed.getManagementKey()));
@@ -69,15 +72,15 @@ public abstract class BuildFile {
                 && dependency.getArtifactId().equalsIgnoreCase(extension.getArtifactId()));
     }
 
-    protected abstract boolean containsBOM();
+    protected abstract boolean containsBOM() throws IOException;
 
-    public abstract List<Dependency> getDependencies();
+    public abstract List<Dependency> getDependencies() throws IOException;
 
-    public Map<String, Dependency> findInstalled() {
+    public Map<String, Dependency> findInstalled() throws IOException {
         return mapDependencies(getDependencies(), loadManaged());
     }
 
-    private Map<String, Dependency> loadManaged() {
+    private Map<String, Dependency> loadManaged() throws IOException {
         final List<Dependency> managedDependencies = getManagedDependencies();
         return managedDependencies.isEmpty() ? Collections.emptyMap()
                 : mapDependencies(managedDependencies, Collections.emptyMap());
@@ -109,8 +112,18 @@ public abstract class BuildFile {
         return map;
     }
 
-    public abstract String getProperty(String propertyName);
+    public abstract String getProperty(String propertyName) throws IOException;
 
-    protected abstract List<Dependency> getManagedDependencies();
+    protected abstract List<Dependency> getManagedDependencies() throws IOException;
+
+    public abstract void completeFile(String groupId, String artifactId, String version) throws IOException;
+
+    public BuildTool getBuildTool() {
+        return buildTool;
+    }
+
+    protected ProjectWriter getWriter() {
+        return writer;
+    }
 
 }

@@ -1,8 +1,21 @@
 package io.quarkus.generators.rest;
 
-import static io.quarkus.generators.ProjectGenerator.*;
+import static io.quarkus.generators.ProjectGenerator.CLASS_NAME;
+import static io.quarkus.generators.ProjectGenerator.IS_SPRING;
+import static io.quarkus.generators.ProjectGenerator.PACKAGE_NAME;
+import static io.quarkus.generators.ProjectGenerator.PROJECT_ARTIFACT_ID;
+import static io.quarkus.generators.ProjectGenerator.PROJECT_GROUP_ID;
+import static io.quarkus.generators.ProjectGenerator.PROJECT_VERSION;
+import static io.quarkus.generators.ProjectGenerator.QUARKUS_VERSION;
+import static io.quarkus.generators.ProjectGenerator.SOURCE_TYPE;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -24,7 +37,6 @@ import com.google.common.collect.ImmutableMap;
 
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.cli.commands.writer.ProjectWriter;
-import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.SourceType;
 
 class BasicRestProjectGeneratorTest {
@@ -35,7 +47,6 @@ class BasicRestProjectGeneratorTest {
             .put(PROJECT_VERSION, "0.0.1-SNAPSHOT")
             .put(QUARKUS_VERSION, getPluginVersion())
             .put(SOURCE_TYPE, SourceType.JAVA)
-            .put(BUILD_TOOL, BuildTool.MAVEN)
             .put(PACKAGE_NAME, "org.example")
             .put(CLASS_NAME, "ExampleResource")
             .put("path", "/hello")

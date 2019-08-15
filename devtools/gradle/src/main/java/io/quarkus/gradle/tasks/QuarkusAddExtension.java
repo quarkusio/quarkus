@@ -11,8 +11,8 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.cli.commands.AddExtensions;
+import io.quarkus.cli.commands.file.GradleBuildFile;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.generators.BuildTool;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -39,7 +39,7 @@ public class QuarkusAddExtension extends QuarkusTask {
     public void addExtension() {
         Set<String> extensionsSet = new HashSet<>(getExtensionsToAdd());
         try {
-            new AddExtensions(new FileProjectWriter(getProject().getProjectDir()), BuildTool.GRADLE)
+            new AddExtensions(new GradleBuildFile(new FileProjectWriter(getProject().getProjectDir())))
                     .addExtensions(extensionsSet);
         } catch (IOException e) {
             throw new GradleException("Failed to add extensions " + getExtensionsToAdd(), e);

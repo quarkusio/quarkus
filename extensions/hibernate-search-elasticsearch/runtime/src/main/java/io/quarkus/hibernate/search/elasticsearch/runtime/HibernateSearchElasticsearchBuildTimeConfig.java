@@ -22,6 +22,7 @@ public class HibernateSearchElasticsearchBuildTimeConfig {
      * If not using the default backend configuration, the name of the default backend that is part of the
      * {@link #additionalBackends}.
      */
+    @ConfigItem
     public Optional<String> defaultBackend;
 
     /**

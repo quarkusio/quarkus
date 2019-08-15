@@ -119,11 +119,13 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         /**
          * Refresh interval of the node list.
          */
+        @ConfigItem
         Optional<Duration> refreshInterval;
 
         /**
          * The scheme that should be used for the new nodes discovered.
          */
+        @ConfigItem
         Optional<String> defaultScheme;
     }
 
@@ -139,6 +141,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * <p>
          * Using "searchable" is recommend in unit tests.
          */
+        @ConfigItem
         Optional<HibernateOrmAutomaticIndexingSynchronizationStrategyName> synchronizationStrategy;
 
         /**
@@ -147,6 +150,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * When enabled, re-indexing of an entity is skipped if the only changes are on properties that are not used when
          * indexing.
          */
+        @ConfigItem
         Optional<Boolean> enableDirtyCheck;
     }
 

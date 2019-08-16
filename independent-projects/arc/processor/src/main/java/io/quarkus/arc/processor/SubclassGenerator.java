@@ -138,9 +138,35 @@ public class SubclassGenerator extends AbstractGenerator {
                         parameterTypes.subList(0, superParamsSize).toArray(new String[0])),
                 constructor.getThis(), superParams);
 
+        // we build a map for each interceptor instance created, so that they are shared
+        // Map<String, Object> where InjectableInterceptor.getIdentifier() is key and Object is instance of the interceptor for this bean
+        FieldCreator interceptorInstanceMap = subclass.getFieldCreator("interceptorInstanceMap", Map.class.getName())
+                .setModifiers(ACC_PRIVATE | ACC_FINAL);
+        // interceptorInstanceMap = new HashMap<>()
+        constructor.writeInstanceField(interceptorInstanceMap.getFieldDescriptor(), constructor.getThis(),
+                constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class)));
+        // create ResultHandleFor this Map
+        ResultHandle interceptorInstanceMapHandle = constructor.readInstanceField(interceptorInstanceMap.getFieldDescriptor(),
+                constructor.getThis());
+        // build a map that links InterceptorInfo to ResultHandle
         Map<InterceptorInfo, ResultHandle> interceptorToResultHandle = new HashMap<>();
         for (int j = 0; j < boundInterceptors.size(); j++) {
-            interceptorToResultHandle.put(boundInterceptors.get(j), constructor.getMethodParam(j + superParamsSize + 1));
+            ResultHandle constructorMethodParam = constructor.getMethodParam(j + superParamsSize + 1);
+            interceptorToResultHandle.put(boundInterceptors.get(j), constructorMethodParam);
+
+            // create instance of each interceptor -> InjectableInterceptor.get()
+            ResultHandle creationalContext = constructor.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD,
+                    creationalContextHandle);
+            ResultHandle interceptorInstance = constructor.invokeInterfaceMethod(
+                    MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, constructorMethodParam, creationalContext);
+
+            // get ID -> InjectableInterceptor.getIdentifier()
+            ResultHandle idResultHandle = constructor.invokeInterfaceMethod(MethodDescriptors.GET_IDENTIFIER,
+                    constructorMethodParam);
+            // then store it in the map -> Map.put(id, instance)
+            constructor.invokeInterfaceMethod(MethodDescriptors.MAP_PUT,
+                    constructor.readInstanceField(interceptorInstanceMap.getFieldDescriptor(), constructor.getThis()),
+                    idResultHandle, interceptorInstance);
         }
 
         // PreDestroy interceptors
@@ -154,12 +180,10 @@ public class SubclassGenerator extends AbstractGenerator {
             constructor.writeInstanceField(preDestroysField.getFieldDescriptor(), constructor.getThis(),
                     constructor.newInstance(MethodDescriptor.ofConstructor(ArrayList.class)));
             for (InterceptorInfo interceptor : preDestroys.interceptors) {
-                // preDestroys.add(InvocationContextImpl.InterceptorInvocation.preDestroy(provider1,provider1.get(CreationalContextImpl.child(ctx))))
-                ResultHandle creationalContext = constructor.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD,
-                        creationalContextHandle);
-                ResultHandle interceptorInstance = constructor.invokeInterfaceMethod(
-                        MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
-                        interceptorToResultHandle.get(interceptor), creationalContext);
+                // preDestroys.add(InvocationContextImpl.InterceptorInvocation.preDestroy(provider1,interceptorInstanceMap.get(InjectableInterceptor.getIdentifier())))
+                ResultHandle interceptorInstance = constructor.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
+                        interceptorInstanceMapHandle, constructor.invokeInterfaceMethod(MethodDescriptors.GET_IDENTIFIER,
+                                interceptorToResultHandle.get(interceptor)));
                 ResultHandle interceptionInvocation = constructor.invokeStaticMethod(
                         MethodDescriptor.ofMethod(InterceptorInvocation.class, "preDestroy",
                                 InterceptorInvocation.class, InjectableInterceptor.class, Object.class),
@@ -198,12 +222,10 @@ public class SubclassGenerator extends AbstractGenerator {
             ResultHandle chainHandle = constructor.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
             InterceptionInfo interceptedMethod = entry.getValue();
             for (InterceptorInfo interceptor : interceptedMethod.interceptors) {
-                // m1Chain.add(InvocationContextImpl.InterceptorInvocation.aroundInvoke(p3,p3.get(CreationalContextImpl.child(ctx))))
-                ResultHandle creationalContext = constructor.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD,
-                        creationalContextHandle);
-                ResultHandle interceptorInstance = constructor.invokeInterfaceMethod(
-                        MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
-                        interceptorToResultHandle.get(interceptor), creationalContext);
+                // m1Chain.add(InvocationContextImpl.InterceptorInvocation.aroundInvoke(p3,interceptorInstanceMap.get(InjectableInterceptor.getIdentifier())))
+                ResultHandle interceptorInstance = constructor.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
+                        interceptorInstanceMapHandle, constructor.invokeInterfaceMethod(MethodDescriptors.GET_IDENTIFIER,
+                                interceptorToResultHandle.get(interceptor)));
                 ResultHandle interceptionInvocation = constructor.invokeStaticMethod(
                         MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
                         interceptorToResultHandle.get(interceptor), interceptorInstance);

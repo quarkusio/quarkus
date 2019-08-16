@@ -155,7 +155,7 @@
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kogito.version>0.2.0</kogito.version>
-        <kubernetes-client.version>4.3.1</kubernetes-client.version>
+        <kubernetes-client.version>4.4.1</kubernetes-client.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <wiremock.version>2.23.2</wiremock.version>
@@ -201,6 +201,15 @@
                 <version>${junit.jupiter.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
+            </dependency>
+
+            <!-- Kubernetes-client dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-client-bom</artifactId>
+                <version>${kubernetes-client.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <!-- Quarkus core -->
@@ -2104,16 +2113,6 @@
                 <groupId>org.kie.kogito</groupId>
                 <artifactId>jbpm-bpmn2</artifactId>
                 <version>${kogito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.fabric8</groupId>
-                <artifactId>kubernetes-client</artifactId>
-                <version>${kubernetes-client.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.fabric8</groupId>
-                <artifactId>kubernetes-server-mock</artifactId>
-                <version>${kubernetes-client.version}</version>
             </dependency>
 
             <!-- Spring -->

@@ -352,41 +352,8 @@ The first step is to configure the `hotrod-client.properties` file to point to y
 and/or keystore. This is further detailed at
 https://infinispan.org/docs/dev/user_guide/user_guide.html#hr_encryption.
 
-The reason that Quarkus is different is that SubstrateVM does not come with security
-services enabled. This is mentioned at
-https://github.com/oracle/graal/blob/master/substratevm/JCA-SECURITY-SERVICES.md. To
-do this you will need to set the `<enableAllSecurityServices>true</enableAllSecurityServices>` value
-in the `quarkus-maven-plugin` configuration values.
-
-An example is as shown here, with a comment highlighting them:
-
-[source,xml]
-----
-<plugin>
-   <groupId>${project.groupId}</groupId>
-   <artifactId>quarkus-maven-plugin</artifactId>
-   <executions>
-       <execution>
-           <id>native-image</id>
-           <goals>
-               <goal>native-image</goal>
-           </goals>
-           <configuration>
-               <enableHttpUrlHandler>true</enableHttpUrlHandler>
-               <!-- next two are to enable security - If not needed it is recommended not to enable these-->
-               <enableJni>true</enableJni>
-               <enableAllSecurityServices>true</enableAllSecurityServices>
-           </configuration>
-       </execution>
-   </executions>
-</plugin>
-----
-
-If you notice the example XML above also enabled JNI. This is currently needed depending on the
-configured security provider. If JNI is required then you must locate the shared library used. In
-testing it was utilizing the `sunec` library. This shared library
-should be at `<JAVA_HOME>/jre/lib/<platform>/libsunec.so` and must be added to `java.library.path`
-for encryption to work properly.
+The Infinispan Client extension enables SSL by default. You can read more about this
+at link:native-and-ssl-guide.html[Using SSL With Native Executables].
 
 == Authentication
 
@@ -395,27 +362,22 @@ the Quarkus Infinispan Client extension.
 
 .Mechanisms
 |===
-| Name | Verified | Notes
+| Name | Verified
 
 | DIGEST-MD5
 | [green]*Y*
-| Requires steps from Encryption section above
 
 | PLAIN
 | [green]*Y*
-| Requires steps from Encryption section above
 
 | EXTERNAL
 | [green]*Y*
-| Requires steps from Encryption section above
 
 | GSSAPI
 | [red]*N*
-| Not tested
 
 | Custom
 | [red]*N*
-| Not tested
 
 |===
 

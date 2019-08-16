@@ -51,13 +51,13 @@ public class KeycloakAdapterProcessor {
         AdapterConfig config = new AdapterConfig();
 
         config.setRealm(keycloakConfig.realm);
-        config.setRealmKey(keycloakConfig.realmKey.orElse(null));
+        config.setRealmKey(keycloakConfig.realmPublicKey.orElse(null));
         config.setAuthServerUrl(keycloakConfig.authServerUrl);
         config.setSslRequired(keycloakConfig.sslRequired);
         config.setConfidentialPort(keycloakConfig.confidentialPort);
         config.setResource(keycloakConfig.resource.get());
         config.setUseResourceRoleMappings(keycloakConfig.useResourceRoleMappings);
-        config.setCors(keycloakConfig.cors);
+        config.setCors(keycloakConfig.enableCors);
         config.setCorsMaxAge(keycloakConfig.corsMaxAge);
         config.setCorsAllowedHeaders(keycloakConfig.corsAllowedHeaders.orElse(null));
         config.setCorsAllowedMethods(keycloakConfig.corsAllowedMethods.orElse(null));
@@ -97,7 +97,7 @@ public class KeycloakAdapterProcessor {
         config.setRegisterNodeAtStartup(keycloakConfig.registerNodeAtStartup);
         config.setRegisterNodePeriod(keycloakConfig.registerNodePeriod);
         config.setTokenStore(keycloakConfig.tokenStore.orElse(null));
-        config.setTokenCookiePath(keycloakConfig.tokenCookiePath.orElse(null));
+        config.setTokenCookiePath(keycloakConfig.adapterStateCookiePath.orElse(null));
         config.setPrincipalAttribute(keycloakConfig.principalAttribute);
         config.setTurnOffChangeSessionIdOnLogin(keycloakConfig.turnOffChangeSessionIdOnLogin);
         config.setTokenMinimumTimeToLive(keycloakConfig.tokenMinimumTimeToLive);
@@ -118,8 +118,8 @@ public class KeycloakAdapterProcessor {
 
             PolicyEnforcerConfig.PathCacheConfig pathCacheConfig = new PolicyEnforcerConfig.PathCacheConfig();
 
-            pathCacheConfig.setLifespan(keycloakConfig.policyEnforcer.pathCacheConfig.lifespan);
-            pathCacheConfig.setMaxEntries(keycloakConfig.policyEnforcer.pathCacheConfig.maxEntries);
+            pathCacheConfig.setLifespan(keycloakConfig.policyEnforcer.pathCache.lifespan);
+            pathCacheConfig.setMaxEntries(keycloakConfig.policyEnforcer.pathCache.maxEntries);
 
             enforcerConfig.setPathCacheConfig(pathCacheConfig);
 
@@ -128,7 +128,7 @@ public class KeycloakAdapterProcessor {
             }
 
             enforcerConfig.setClaimInformationPointConfig(
-                    getClaimInformationPointConfig(keycloakConfig.policyEnforcer.claimInformationPointConfig));
+                    getClaimInformationPointConfig(keycloakConfig.policyEnforcer.claimInformationPoint));
             enforcerConfig.setPaths(keycloakConfig.policyEnforcer.paths.values().stream().map(
                     pathConfig -> {
                         PolicyEnforcerConfig.PathConfig config1 = new PolicyEnforcerConfig.PathConfig();
@@ -147,7 +147,7 @@ public class KeycloakAdapterProcessor {
                                     return mConfig;
                                 }).collect(Collectors.toList()));
                         config1.setClaimInformationPointConfig(
-                                getClaimInformationPointConfig(pathConfig.claimInformationPointConfig));
+                                getClaimInformationPointConfig(pathConfig.claimInformationPoint));
 
                         return config1;
                     }).collect(Collectors.toList()));

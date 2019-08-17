@@ -1,4 +1,4 @@
-package io.quarkus.undertow.runtime;
+package io.quarkus.vertx.web.runtime;
 
 import java.util.OptionalInt;
 
@@ -7,13 +7,16 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.ssl.ServerSslConfig;
-import io.quarkus.undertow.runtime.filters.CORSConfig;
+import io.quarkus.vertx.web.runtime.cors.CORSConfig;
 
-/**
- * Configuration which applies to the HTTP server.
- */
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public class HttpConfig {
+public class HttpConfiguration {
+
+    /**
+     * Enable the CORS filter.
+     */
+    @ConfigItem(name = "cors", defaultValue = "false")
+    public boolean corsEnabled;
 
     /**
      * The HTTP port
@@ -22,22 +25,11 @@ public class HttpConfig {
     public int port;
 
     /**
-     * The HTTPS port
-     */
-    @ConfigItem(defaultValue = "8443")
-    public int sslPort;
-
-    /**
      * The HTTP port used to run tests
      */
     @ConfigItem(defaultValue = "8081")
     public int testPort;
 
-    /**
-     * The HTTPS port used to run tests
-     */
-    @ConfigItem(defaultValue = "8444")
-    public int testSslPort;
     /**
      * The HTTP host
      */
@@ -45,11 +37,21 @@ public class HttpConfig {
     public String host;
 
     /**
-     * The number if IO threads used to perform IO. This will be automatically set to a reasonable value based on
-     * the number of CPU cores if it is not provided
+     * The HTTPS port
      */
-    @ConfigItem
-    public OptionalInt ioThreads;
+    @ConfigItem(defaultValue = "8443")
+    public int sslPort;
+
+    /**
+     * The HTTPS port used to run tests
+     */
+    @ConfigItem(defaultValue = "8444")
+    public int testSslPort;
+
+    /**
+     * The CORS config
+     */
+    public CORSConfig cors;
 
     /**
      * The SSL config
@@ -57,9 +59,11 @@ public class HttpConfig {
     public ServerSslConfig ssl;
 
     /**
-     * The CORS config
+     * The number if IO threads used to perform IO. This will be automatically set to a reasonable value based on
+     * the number of CPU cores if it is not provided
      */
-    public CORSConfig cors;
+    @ConfigItem
+    public OptionalInt ioThreads;
 
     public int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort : port;

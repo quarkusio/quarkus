@@ -1,9 +1,8 @@
 package io.quarkus.elytron.security.oauth2.runtime.auth;
 
-import static io.undertow.util.Headers.WWW_AUTHENTICATE;
-import static io.undertow.util.StatusCodes.UNAUTHORIZED;
-
 import io.undertow.UndertowLogger;
+import io.undertow.httpcore.HttpHeaderNames;
+import io.undertow.httpcore.StatusCodes;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
@@ -32,7 +31,7 @@ public class OAuth2AuthMechanism implements AuthenticationMechanism {
      */
     @Override
     public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
-        String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+        String authHeader = exchange.getRequestHeader("Authorization");
         String bearerToken = authHeader != null ? authHeader.substring(7) : null;
         if (bearerToken != null) {
             try {
@@ -63,8 +62,8 @@ public class OAuth2AuthMechanism implements AuthenticationMechanism {
 
     @Override
     public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
-        exchange.getResponseHeaders().add(WWW_AUTHENTICATE, "Bearer {token}");
+        exchange.addResponseHeader(HttpHeaderNames.WWW_AUTHENTICATE, "Bearer {token}");
         UndertowLogger.SECURITY_LOGGER.debugf("Sending Bearer {token} challenge for %s", exchange);
-        return new ChallengeResult(true, UNAUTHORIZED);
+        return new ChallengeResult(true, StatusCodes.UNAUTHORIZED);
     }
 }

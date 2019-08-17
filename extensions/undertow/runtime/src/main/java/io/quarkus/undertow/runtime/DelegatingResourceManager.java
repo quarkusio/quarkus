@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import io.undertow.server.handlers.resource.Resource;
-import io.undertow.server.handlers.resource.ResourceChangeListener;
 import io.undertow.server.handlers.resource.ResourceManager;
 
 public class DelegatingResourceManager implements ResourceManager {
@@ -25,21 +24,6 @@ public class DelegatingResourceManager implements ResourceManager {
             }
         }
         return null;
-    }
-
-    @Override
-    public boolean isResourceChangeListenerSupported() {
-        return false;
-    }
-
-    @Override
-    public void registerResourceChangeListener(ResourceChangeListener listener) {
-
-    }
-
-    @Override
-    public void removeResourceChangeListener(ResourceChangeListener listener) {
-
     }
 
     @Override

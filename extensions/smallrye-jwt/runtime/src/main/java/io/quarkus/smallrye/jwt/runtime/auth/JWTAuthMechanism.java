@@ -1,7 +1,7 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
-import static io.undertow.util.Headers.WWW_AUTHENTICATE;
-import static io.undertow.util.StatusCodes.UNAUTHORIZED;
+import static io.undertow.httpcore.HttpHeaderNames.WWW_AUTHENTICATE;
+import static io.undertow.httpcore.StatusCodes.UNAUTHORIZED;
 
 import javax.enterprise.inject.spi.CDI;
 
@@ -78,7 +78,7 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
 
     @Override
     public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
-        exchange.getResponseHeaders().add(WWW_AUTHENTICATE, "Bearer {token}");
+        exchange.addResponseHeader(WWW_AUTHENTICATE, "Bearer {token}");
         UndertowLogger.SECURITY_LOGGER.debugf("Sending Bearer {token} challenge for %s", exchange);
         return new ChallengeResult(true, UNAUTHORIZED);
     }
@@ -93,7 +93,7 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
 
         @Override
         protected String getHeaderValue(String headerName) {
-            return httpExchange.getRequestHeaders().getFirst(headerName);
+            return httpExchange.getRequestHeader(headerName);
         }
 
         @Override

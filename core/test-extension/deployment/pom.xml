@@ -14,8 +14,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.undertow</groupId>
-            <artifactId>undertow-servlet</artifactId>
+            <groupId>io.quarkus.http</groupId>
+            <artifactId>quarkus-http-servlet</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

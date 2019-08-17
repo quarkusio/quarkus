@@ -3,7 +3,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-undertow-parent</artifactId>
+        <artifactId>quarkus-http-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
     </parent>
@@ -14,8 +14,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.undertow</groupId>
-            <artifactId>undertow-servlet</artifactId>
+            <groupId>io.quarkus.http</groupId>
+            <artifactId>quarkus-http-servlet</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -28,6 +28,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-undertow</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-web-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

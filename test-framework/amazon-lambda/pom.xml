@@ -24,8 +24,12 @@
             <artifactId>quarkus-test-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.undertow</groupId>
-            <artifactId>undertow-core</artifactId>
+            <groupId>io.quarkus.http</groupId>
+            <artifactId>quarkus-http-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus.http</groupId>
+            <artifactId>quarkus-http-vertx-backend</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

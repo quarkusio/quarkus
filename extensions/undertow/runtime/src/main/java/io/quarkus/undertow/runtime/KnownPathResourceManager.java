@@ -2,6 +2,7 @@ package io.quarkus.undertow.runtime;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -13,11 +14,9 @@ import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
 
-import io.undertow.io.IoCallback;
-import io.undertow.io.Sender;
+import io.undertow.httpcore.OutputChannel;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.resource.Resource;
-import io.undertow.server.handlers.resource.ResourceChangeListener;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.util.ETag;
 import io.undertow.util.MimeMappings;
@@ -67,21 +66,6 @@ public class KnownPathResourceManager implements ResourceManager {
             return new DirectoryResource(path);
         }
         return underlying.getResource(path);
-    }
-
-    @Override
-    public boolean isResourceChangeListenerSupported() {
-        return underlying.isResourceChangeListenerSupported();
-    }
-
-    @Override
-    public void registerResourceChangeListener(ResourceChangeListener listener) {
-        underlying.registerResourceChangeListener(listener);
-    }
-
-    @Override
-    public void removeResourceChangeListener(ResourceChangeListener listener) {
-        underlying.removeResourceChangeListener(listener);
     }
 
     @Override
@@ -155,8 +139,14 @@ public class KnownPathResourceManager implements ResourceManager {
         }
 
         @Override
-        public void serve(Sender sender, HttpServerExchange exchange, IoCallback completionCallback) {
-            completionCallback.onException(exchange, sender, new IOException("Cannot serve directory"));
+        public void serveBlocking(OutputStream outputStream, HttpServerExchange exchange) throws IOException {
+            throw new IOException("Cannot serve directory");
+        }
+
+        @Override
+        public void serveAsync(OutputChannel stream, HttpServerExchange exchange) {
+            exchange.setStatusCode(500);
+            exchange.endExchange();
         }
 
         @Override

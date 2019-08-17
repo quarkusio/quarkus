@@ -27,8 +27,8 @@
             <artifactId>quarkus-undertow</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.undertow</groupId>
-            <artifactId>undertow-websockets-jsr</artifactId>
+            <groupId>io.quarkus.http</groupId>
+            <artifactId>quarkus-http-websockets-jsr</artifactId>
         </dependency>
     </dependencies>
 

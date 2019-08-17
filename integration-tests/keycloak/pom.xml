@@ -90,12 +90,18 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <systemPropertyVariables>
+                                <keycloak.url>${keycloak.url}</keycloak.url>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <systemPropertyVariables>
+                                <keycloak.url>${keycloak.url}</keycloak.url>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                     <plugin>
@@ -205,13 +211,10 @@
                                         </log>
                                         <wait>
                                             <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
-                                            <tcp>
-                                                <mode>direct</mode>
-                                                <ports>
-                                                    <port>8080</port>
-                                                </ports>
-                                            </tcp>
-                                            <time>10000</time>
+                                            <http>
+                                                <url>http://localhost:8180</url>
+                                            </http>
+                                            <time>100000</time>
                                         </wait>
                                     </run>
                                 </image>

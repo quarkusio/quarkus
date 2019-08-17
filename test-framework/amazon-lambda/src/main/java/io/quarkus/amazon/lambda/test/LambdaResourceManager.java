@@ -1,6 +1,8 @@
 package io.quarkus.amazon.lambda.test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -12,12 +14,10 @@ import io.quarkus.amazon.lambda.runtime.AmazonLambdaApi;
 import io.quarkus.amazon.lambda.runtime.FunctionError;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.undertow.Undertow;
-import io.undertow.io.Receiver;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import io.undertow.server.handlers.BlockingHandler;
-import io.undertow.util.HttpString;
 
 public class LambdaResourceManager implements QuarkusTestResourceLifecycleManager {
 
@@ -40,8 +40,8 @@ public class LambdaResourceManager implements QuarkusTestResourceLifecycleManage
                         return;
                     }
                 }
-                exchange.getResponseHeaders().put(new HttpString(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID), req.id);
-                exchange.getResponseSender().send(req.json);
+                exchange.addResponseHeader(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID, req.id);
+                exchange.writeAsync(req.json);
             }
         });
         routingHandler.add("POST", AmazonLambdaApi.API_PATH_INVOCATION + "{req}" + AmazonLambdaApi.API_PATH_RESPONSE,
@@ -49,12 +49,13 @@ public class LambdaResourceManager implements QuarkusTestResourceLifecycleManage
                     @Override
                     public void handleRequest(HttpServerExchange exchange) throws Exception {
                         String id = exchange.getQueryParameters().get("req").getFirst();
-                        exchange.getRequestReceiver().receiveFullString(new Receiver.FullStringCallback() {
-                            @Override
-                            public void handle(HttpServerExchange exchange, String message) {
-                                LambdaClient.REQUESTS.get(id).complete(message);
-                            }
-                        });
+                        byte[] data = new byte[1024];
+                        int r;
+                        ByteArrayOutputStream bao = new ByteArrayOutputStream();
+                        while ((r = exchange.getInputStream().read(data)) > 0) {
+                            bao.write(data, 0, r);
+                        }
+                        LambdaClient.REQUESTS.get(id).complete(new String(bao.toByteArray(), StandardCharsets.UTF_8));
                     }
                 });
 
@@ -63,41 +64,47 @@ public class LambdaResourceManager implements QuarkusTestResourceLifecycleManage
                     @Override
                     public void handleRequest(HttpServerExchange exchange) throws Exception {
                         String id = exchange.getQueryParameters().get("req").getFirst();
-                        exchange.getRequestReceiver().receiveFullString(new Receiver.FullStringCallback() {
-                            @Override
-                            public void handle(HttpServerExchange exchange, String message) {
-                                ObjectMapper mapper = new ObjectMapper();
-                                try {
-                                    FunctionError result = mapper.readerFor(FunctionError.class).readValue(message);
-
-                                    LambdaClient.REQUESTS.get(id).completeExceptionally(
-                                            new LambdaException(result.getErrorType(), result.getErrorMessage()));
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            }
-                        });
-                    }
-                });
-        routingHandler.add("POST", AmazonLambdaApi.API_PATH_INIT_ERROR, new HttpHandler() {
-            @Override
-            public void handleRequest(HttpServerExchange exchange) throws Exception {
-                exchange.getRequestReceiver().receiveFullString(new Receiver.FullStringCallback() {
-                    @Override
-                    public void handle(HttpServerExchange exchange, String message) {
+                        byte[] data = new byte[1024];
+                        int r;
+                        ByteArrayOutputStream bao = new ByteArrayOutputStream();
+                        while ((r = exchange.getInputStream().read(data)) > 0) {
+                            bao.write(data, 0, r);
+                        }
+                        String body = new String(bao.toByteArray(), StandardCharsets.UTF_8);
                         ObjectMapper mapper = new ObjectMapper();
                         try {
-                            FunctionError result = mapper.readerFor(FunctionError.class).readValue(message);
-                            LambdaClient.problem = new LambdaException(result.getErrorType(), result.getErrorMessage());
-                            LambdaStartedNotifier.started = true;
-                            for (Map.Entry<String, CompletableFuture<String>> e : LambdaClient.REQUESTS.entrySet()) {
-                                e.getValue().completeExceptionally(LambdaClient.problem);
-                            }
+                            FunctionError result = mapper.readerFor(FunctionError.class).readValue(body);
+
+                            LambdaClient.REQUESTS.get(id).completeExceptionally(
+                                    new LambdaException(result.getErrorType(), result.getErrorMessage()));
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
                     }
                 });
+        routingHandler.add("POST", AmazonLambdaApi.API_PATH_INIT_ERROR, new HttpHandler() {
+            @Override
+            public void handleRequest(HttpServerExchange exchange) throws Exception {
+
+                byte[] data = new byte[1024];
+                int r;
+                ByteArrayOutputStream bao = new ByteArrayOutputStream();
+                while ((r = exchange.getInputStream().read(data)) > 0) {
+                    bao.write(data, 0, r);
+                }
+                String body = new String(bao.toByteArray(), StandardCharsets.UTF_8);
+
+                ObjectMapper mapper = new ObjectMapper();
+                try {
+                    FunctionError result = mapper.readerFor(FunctionError.class).readValue(body);
+                    LambdaClient.problem = new LambdaException(result.getErrorType(), result.getErrorMessage());
+                    LambdaStartedNotifier.started = true;
+                    for (Map.Entry<String, CompletableFuture<String>> e : LambdaClient.REQUESTS.entrySet()) {
+                        e.getValue().completeExceptionally(LambdaClient.problem);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
         });
         undertow = Undertow.builder().addHttpListener(PORT, "localhost")

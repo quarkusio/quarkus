@@ -1,5 +1,6 @@
 package io.quarkus.it.main;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
 
@@ -183,5 +184,11 @@ public class JaxRSTestCase {
                 .post("/test/gzip")
                 .then().statusCode(413);
         obj.close();
+    }
+
+    @Test
+    public void testReturnTypeWithGenericArgument() {
+        RestAssured.when().get("/envelope/payload").then()
+                .body(containsString("content"), containsString("hello"));
     }
 }

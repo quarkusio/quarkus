@@ -1,6 +1,7 @@
 package io.quarkus.vertx.deployment;
 
 import java.lang.annotation.Annotation;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,10 +12,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
@@ -23,6 +28,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
@@ -46,6 +52,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
+import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -60,6 +67,7 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.runtime.EventConsumerInvoker;
+import io.quarkus.vertx.runtime.GenericMessageCodec;
 import io.quarkus.vertx.runtime.VertxConfiguration;
 import io.quarkus.vertx.runtime.VertxProducer;
 import io.quarkus.vertx.runtime.VertxRecorder;
@@ -77,6 +85,8 @@ class VertxProcessor {
     private static final DotName RX_MESSAGE = DotName.createSimple(io.vertx.reactivex.core.eventbus.Message.class.getName());
     private static final DotName AXLE_MESSAGE = DotName.createSimple(io.vertx.axle.core.eventbus.Message.class.getName());
     private static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
+    private static final DotName GENERIC_MESSAGE_CODEC = DotName.createSimple(GenericMessageCodec.class.getName());
+
     private static final String INVOKER_SUFFIX = "_VertxInvoker";
 
     private static final MethodDescriptor ARC_CONTAINER = MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class);
@@ -127,7 +137,8 @@ class VertxProcessor {
             List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
-            VertxConfiguration config, BuildProducer<ServiceStartBuildItem> serviceStart) {
+            VertxConfiguration config, BuildProducer<ServiceStartBuildItem> serviceStart,
+            List<MessageCodecBuildItem> messageCodecs, RecorderContext recorderContext) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX));
         Map<String, ConsumeEvent> messageConsumerConfigurations = new HashMap<>();
         ClassOutput classOutput = new ClassOutput() {
@@ -144,9 +155,16 @@ class VertxProcessor {
                             .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString()).build(classOutput));
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, invokerClass));
         }
+
+        Map<Class<?>, Class<?>> codecByClass = new HashMap<>();
+        for (MessageCodecBuildItem messageCodecItem : messageCodecs) {
+            codecByClass.put(recorderContext.classProxy(messageCodecItem.getType()),
+                    recorderContext.classProxy(messageCodecItem.getCodec()));
+        }
+
         RuntimeValue<Vertx> vertx = recorder.configureVertx(beanContainer.getValue(), config, messageConsumerConfigurations,
                 launchMode.getLaunchMode(),
-                shutdown);
+                shutdown, codecByClass);
         serviceStart.produce(new ServiceStartBuildItem("vertx"));
         return new VertxBuildItem(vertx);
     }
@@ -327,6 +345,60 @@ class VertxProcessor {
         if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
             invoke.invokeInterfaceMethod(INSTANCE_HANDLE_DESTROY, instanceHandle);
         }
+    }
+
+    @BuildStep
+    public void registerCodecs(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            BuildProducer<MessageCodecBuildItem> messageCodecs) {
+        final IndexView index = beanArchiveIndexBuildItem.getIndex();
+        Collection<AnnotationInstance> consumeEventAnnotationInstances = index.getAnnotations(CONSUME_EVENT);
+        Map<Type, DotName> codecByTypes = new HashMap<>();
+        for (AnnotationInstance consumeEventAnnotationInstance : consumeEventAnnotationInstances) {
+            AnnotationTarget typeTarget = consumeEventAnnotationInstance.target();
+            if (typeTarget.kind() != AnnotationTarget.Kind.METHOD) {
+                continue;
+            }
+
+            Type returnType = typeTarget.asMethod().returnType();
+            Type typeToAdd = null;
+            if (returnType.kind() == Kind.CLASS) {
+                typeToAdd = returnType;
+            } else if (returnType.kind() == Kind.PARAMETERIZED_TYPE) {
+                ParameterizedType returnedParamType = returnType.asParameterizedType();
+
+                if (returnedParamType.name().equals(MESSAGE)) {
+                    typeToAdd = returnedParamType.arguments().get(0);
+                } else if (returnedParamType.name().equals(RX_MESSAGE)) {
+                    typeToAdd = returnedParamType.arguments().get(0);
+                } else if (returnedParamType.name().equals(AXLE_MESSAGE)) {
+                    typeToAdd = returnedParamType.arguments().get(0);
+                } else if (returnedParamType.name().equals(COMPLETION_STAGE)) {
+                    typeToAdd = returnedParamType.arguments().get(0);
+                } else {
+                    typeToAdd = returnedParamType;
+                }
+            }
+            if (typeToAdd == null) {
+                LOGGER.warnf(
+                        "Cannot load return type of the consumer event annoted method %s",
+                        typeTarget);
+                continue;
+            }
+            AnnotationValue codec = consumeEventAnnotationInstance.value("codec");
+            if (codec != null && codec.asClass().kind() == Kind.CLASS) {
+                codecByTypes.put(typeToAdd, codec.asClass().asClassType().name());
+                continue;
+            }
+
+            if (!codecByTypes.containsKey(typeToAdd)) {
+                codecByTypes.put(typeToAdd, GENERIC_MESSAGE_CODEC);
+            }
+        }
+        Map<Class<?>, Class<?>> codecByClass = new HashMap<>();
+        for (Map.Entry<Type, DotName> entry : codecByTypes.entrySet()) {
+            messageCodecs.produce(new MessageCodecBuildItem(entry.getKey().toString(), entry.getValue().toString()));
+        }
+
     }
 
 }

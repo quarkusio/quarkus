@@ -1,6 +1,8 @@
 package io.quarkus.deployment.recording;
 
 import java.io.IOException;
+import java.net.URL;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -8,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -17,6 +20,7 @@ import org.junit.Test;
 
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.gizmo.TestClassLoader;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
@@ -192,6 +196,35 @@ public class BytecodeRecorderTestCase {
         TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
         Assert.assertNotNull(recorder.toString());
         Assert.assertTrue(recorder.toString().contains("$$RecordingProxyProxy"));
+    }
+
+    @Test
+    public void testObjects() throws Exception {
+        Optional<String> quarkusOptional = Optional.of("quarkus");
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.object(quarkusOptional);
+        }, quarkusOptional);
+        Optional<?> emptyOptional = Optional.empty();
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.object(emptyOptional);
+        }, emptyOptional);
+        URL url = new URL("https://quarkus.io");
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.object(url);
+        }, url);
+        LaunchMode launchMode = LaunchMode.TEST;
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.object(launchMode);
+        }, launchMode);
+        Duration duration = Duration.ofSeconds(30);
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.object(duration);
+        }, duration);
     }
 
     void runTest(Consumer<BytecodeRecorderImpl> generator, Object... expected) throws Exception {

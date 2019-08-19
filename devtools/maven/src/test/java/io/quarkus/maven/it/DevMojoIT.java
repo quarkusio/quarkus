@@ -190,6 +190,34 @@ public class DevMojoIT extends MojoTestBase {
     }
 
     @Test
+    public void testThatTheApplicationIsReloadedOnScalaChange() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic-scala", "projects/project-classic-run-scala-change");
+        runAndCheck();
+
+        // Edit the "Hello" message.
+        File source = new File(testDir, "src/main/scala/org/acme/HelloResource.scala");
+        String uuid = UUID.randomUUID().toString();
+        filter(source, ImmutableMap.of("= \"hello\"", "= \"" + uuid + "\""));
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains(uuid));
+
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+
+        filter(source, ImmutableMap.of(uuid, "carambar"));
+
+        // Wait until we get "carambar"
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("carambar"));
+    }
+
+    @Test
     public void testThatTheApplicationIsReloadedOnNewResource() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-new-resource");
         runAndCheck();

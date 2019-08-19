@@ -32,8 +32,13 @@ import io.quarkus.dependencies.Extension;
  */
 public class MojoUtils {
 
-    public static final String JAVA_EXTENSION = ".java";
-    public static final String KOTLIN_EXTENSION = ".kt";
+    public static final String JAVA_FILE_EXTENSION = ".java";
+    public static final String KOTLIN_FILE_EXTENSION = ".kt";
+    public static final String SCALA_FILE_EXTENSION = ".scala";
+
+    public static final String JAVA_EXTENSION_NAME = "java";
+    public static final String KOTLIN_EXTENSION_NAME = "kotlin";
+    public static final String SCALA_EXTENSION_NAME = "scala";
 
     private static final String PLUGIN_VERSION_PROPERTY_NAME = "quarkus.version";
     public static final String QUARKUS_VERSION_PROPERTY = "${" + PLUGIN_VERSION_PROPERTY_NAME + "}";

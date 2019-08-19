@@ -97,6 +97,7 @@
 
         <!-- Additional languages -->
         <module>kotlin</module>
+        <module>scala</module>
 
         <!-- Kubernetes -->
         <module>kubernetes</module>

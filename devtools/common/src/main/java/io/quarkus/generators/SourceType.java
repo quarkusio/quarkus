@@ -1,11 +1,16 @@
 package io.quarkus.generators;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 import io.quarkus.maven.utilities.MojoUtils;
 
 public enum SourceType {
-    JAVA(MojoUtils.JAVA_EXTENSION),
+    JAVA(MojoUtils.JAVA_FILE_EXTENSION, MojoUtils.JAVA_EXTENSION_NAME),
 
-    KOTLIN(MojoUtils.KOTLIN_EXTENSION);
+    KOTLIN(MojoUtils.KOTLIN_FILE_EXTENSION, MojoUtils.KOTLIN_EXTENSION_NAME),
+
+    SCALA(MojoUtils.SCALA_FILE_EXTENSION, MojoUtils.SCALA_EXTENSION_NAME);
 
     private static final String srcDirPrefix = "src/main/";
     private static final String testSrcDirPrefix = "src/test/";
@@ -16,9 +21,11 @@ public enum SourceType {
     private static final String NATIVE_TEST_RESOURCE_TEMPLATE = "templates/%s/%s/native-test-resource-template.ftl";
 
     private final String extension;
+    private final String name;
 
-    SourceType(String extension) {
+    SourceType(String extension, String name) {
         this.extension = extension;
+        this.name = name;
     }
 
     public String getSrcDir() {
@@ -26,7 +33,7 @@ public enum SourceType {
     }
 
     private String getPathDiscriminator() {
-        return name().toLowerCase();
+        return this.name;
     }
 
     public String getTestSrcDir() {
@@ -53,6 +60,10 @@ public enum SourceType {
         return extension;
     }
 
+    public String getName() {
+        return name;
+    }
+
     public String stripExtensionFrom(String className) {
         if (className != null && className.endsWith(extension)) {
             return className.substring(0, className.length() - extension.length());
@@ -67,5 +78,9 @@ public enum SourceType {
 
     private String computeTemplateFile(String genericTemplate, String templateName, String fileName) {
         return String.format(genericTemplate, templateName, getPathDiscriminator(), fileName);
+    }
+
+    public static Optional<SourceType> parse(String extension) {
+        return Arrays.stream(values()).filter(e -> extension.contains(e.name)).findAny();
     }
 }

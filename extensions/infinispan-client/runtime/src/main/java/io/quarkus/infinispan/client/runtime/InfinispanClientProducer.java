@@ -214,8 +214,7 @@ public class InfinispanClientProducer {
 
     @Remote
     @Produces
-    public <K, V> RemoteCache<K, V> getRemoteCache(InjectionPoint injectionPoint) {
-        final RemoteCacheManager cacheManager = remoteCacheManager();
+    public <K, V> RemoteCache<K, V> getRemoteCache(InjectionPoint injectionPoint, RemoteCacheManager cacheManager) {
         Set<Annotation> annotationSet = injectionPoint.getQualifiers();
         final Remote remote = getRemoteAnnotation(annotationSet);
 

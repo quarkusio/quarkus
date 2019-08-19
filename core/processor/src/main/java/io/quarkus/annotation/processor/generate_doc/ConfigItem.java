@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class ConfigItem implements Comparable<ConfigItem> {
+final public class ConfigItem {
     private static final Map<String, String> PRIMITIVE_DEFAULT_VALUES = new HashMap<>();
 
     static {
@@ -17,17 +17,17 @@ public class ConfigItem implements Comparable<ConfigItem> {
 
     private final String type;
     private final String javaDocKey;
-    private final String propertyName;
+    private final String key;
     private final String defaultValue;
-    private final ConfigVisibility visibility;
+    private final ConfigPhase configPhase;
 
-    public ConfigItem(String propertyName, String javaDocKey, String type, String defaultValue,
-            ConfigVisibility visibility) {
+    public ConfigItem(String key, String javaDocKey, String type, String defaultValue,
+            ConfigPhase configPhase) {
         this.type = type;
         this.javaDocKey = javaDocKey;
-        this.propertyName = propertyName;
+        this.key = key;
         this.defaultValue = defaultValue;
-        this.visibility = visibility;
+        this.configPhase = configPhase;
     }
 
     @Override
@@ -39,30 +39,25 @@ public class ConfigItem implements Comparable<ConfigItem> {
         ConfigItem that = (ConfigItem) o;
         return Objects.equals(type, that.type) &&
                 Objects.equals(javaDocKey, that.javaDocKey) &&
-                Objects.equals(propertyName, that.propertyName) &&
+                Objects.equals(key, that.key) &&
                 Objects.equals(defaultValue, that.defaultValue) &&
-                Objects.equals(visibility, that.visibility);
+                Objects.equals(configPhase, that.configPhase);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, javaDocKey, propertyName, defaultValue, visibility);
+        return Objects.hash(type, javaDocKey, key, defaultValue, configPhase);
     }
 
     @Override
     public String toString() {
         return "ConfigItem{" +
                 "type='" + type + '\'' +
+                ", key='" + key + '\'' +
                 ", javaDocKey='" + javaDocKey + '\'' +
-                ", propertyName='" + propertyName + '\'' +
                 ", defaultValue='" + defaultValue + '\'' +
-                ", visibility='" + visibility + '\'' +
+                ", configPhase='" + configPhase + '\'' +
                 '}';
-    }
-
-    @Override
-    public int compareTo(ConfigItem o) {
-        return propertyName.compareTo(o.propertyName);
     }
 
     public String getType() {
@@ -74,7 +69,7 @@ public class ConfigItem implements Comparable<ConfigItem> {
     }
 
     public String getPropertyName() {
-        return propertyName;
+        return key;
     }
 
     public String getDefaultValue() {
@@ -85,7 +80,7 @@ public class ConfigItem implements Comparable<ConfigItem> {
         return PRIMITIVE_DEFAULT_VALUES.containsKey(type) ? PRIMITIVE_DEFAULT_VALUES.get(type) : "";
     }
 
-    public ConfigVisibility getVisibility() {
-        return visibility;
+    public ConfigPhase getConfigPhase() {
+        return configPhase;
     }
 }

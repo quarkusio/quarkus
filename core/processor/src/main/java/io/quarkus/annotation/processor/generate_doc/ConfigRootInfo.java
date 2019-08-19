@@ -4,18 +4,16 @@ import java.util.Objects;
 
 import javax.lang.model.element.TypeElement;
 
-import io.quarkus.annotation.processor.Constants;
-
-public class ConfigRootInfo {
+final public class ConfigRootInfo {
     private final String name;
     private final TypeElement clazz;
-    private final ConfigVisibility visibility;
+    private final ConfigPhase configPhase;
     private final String extensionName;
 
-    public ConfigRootInfo(String name, TypeElement clazz, String extensionName, ConfigVisibility visibility) {
+    public ConfigRootInfo(String name, TypeElement clazz, String extensionName, ConfigPhase visibility) {
         this.name = name;
         this.clazz = clazz;
-        this.visibility = visibility;
+        this.configPhase = visibility;
         this.extensionName = extensionName;
     }
 
@@ -28,13 +26,13 @@ public class ConfigRootInfo {
         ConfigRootInfo that = (ConfigRootInfo) o;
         return Objects.equals(name, that.name) &&
                 Objects.equals(clazz, that.clazz) &&
-                Objects.equals(visibility, that.visibility) &&
+                Objects.equals(configPhase, that.configPhase) &&
                 Objects.equals(extensionName, that.extensionName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, clazz, visibility, extensionName);
+        return Objects.hash(name, clazz, configPhase, extensionName);
     }
 
     @Override
@@ -42,17 +40,9 @@ public class ConfigRootInfo {
         return "ConfigRootInfo{" +
                 "name='" + name + '\'' +
                 ", clazz=" + clazz +
-                ", visibility='" + visibility + '\'' +
+                ", configPhase='" + configPhase + '\'' +
                 ", extensionName='" + extensionName + '\'' +
                 '}';
-    }
-
-    public String getConfigRootId() {
-        if (name.contains(".datasource")) {
-            return String.format("%s-%s", extensionName, name.replaceAll(Constants.QUARKUS, "")).replaceAll("\\.", "-");
-        }
-
-        return name.replaceAll("\\.", "-");
     }
 
     public String getName() {
@@ -63,7 +53,7 @@ public class ConfigRootInfo {
         return clazz;
     }
 
-    public ConfigVisibility getVisibility() {
-        return visibility;
+    public ConfigPhase getConfigPhase() {
+        return configPhase;
     }
 }

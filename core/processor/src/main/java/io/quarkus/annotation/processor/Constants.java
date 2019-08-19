@@ -12,7 +12,7 @@ import java.util.OptionalLong;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-public class Constants {
+final public class Constants {
     public static final char DOT = '.';
     public static final String EMPTY = "";
     public static final String DASH = "-";
@@ -51,10 +51,16 @@ public class Constants {
     public static final File ALL_CR_GENERATED_DOC = GENERATED_DOCS_PATH
             .resolve("all-configuration-roots-generated-doc.properties").toFile();
 
-    public static final String SEE_DURATION_NOTE_BELOW = ". _See duration note below_";
-    public static final String SEE_MEMORY_SIZE_NOTE_BELOW = ". _See memory size note below_";
+    public static final String SEE_NOTE_BELOW = " - _see note below_";
+
+    public static final String CONFIG_PHASE_RUNTIME_ILLUSTRATION = "⚙️";
+    public static final String CONFIG_PHASE_BUILD_TIME_ILLUSTRATION = "\uD83D\uDCE6";
+    public static final String CONFIG_PHASE_LEGEND = String.format(
+            "\n %s Configuration property fixed at build time - %s️ Configuration property overridable at runtime \n\n",
+            CONFIG_PHASE_BUILD_TIME_ILLUSTRATION, CONFIG_PHASE_RUNTIME_ILLUSTRATION);
 
     public static final String DURATION_FORMAT_NOTE = "\n[NOTE]\n" +
+            ".About the Duration format\n" +
             "====\n" +
             "The format for durations uses the standard `java.time.Duration` format.\n" +
             "You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].\n"
@@ -66,6 +72,7 @@ public class Constants {
             "====\n";
 
     public static final String MEMORY_SIZE_FORMAT_NOTE = "\n[NOTE]\n" +
+            ".About the MemorySize format\n" +
             "====\n" +
             "A size configuration option recognises string in this format (shown as a regular expression): `[0-9]+[KkMmGgTtPpEeZzYy]?`.\n"
             +

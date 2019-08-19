@@ -1,4 +1,4 @@
-package io.quarkus.annotation.processor;
+package io.quarkus.annotation.processor.generate_doc;
 
 import java.util.stream.Collectors;
 
@@ -10,7 +10,10 @@ import org.jsoup.nodes.TextNode;
 import com.github.javaparser.javadoc.description.JavadocDescription;
 import com.github.javaparser.javadoc.description.JavadocInlineTag;
 
-public class JavaDocParser {
+import io.quarkus.annotation.processor.Constants;
+import io.quarkus.annotation.processor.StringUtil;
+
+final public class JavaDocParser {
     private static final String HASH = "#";
     private static final String STAR = "*";
 
@@ -58,7 +61,12 @@ public class JavaDocParser {
         final StringBuilder docBuilder = new StringBuilder();
         parseJavaDoc(document.body(), docBuilder);
 
-        return docBuilder.toString().trim();
+        final String doc = docBuilder.toString();
+        if (doc.trim().isEmpty()) {
+            return Constants.EMPTY;
+        }
+
+        return doc;
     }
 
     private void parseJavaDoc(Node root, StringBuilder docBuilder) {

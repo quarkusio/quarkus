@@ -1,4 +1,4 @@
-package io.quarkus.annotation.processor;
+package io.quarkus.annotation.processor.generate_doc;
 
 import static org.junit.Assert.assertEquals;
 
@@ -125,7 +125,7 @@ public class JavaDocParserTest {
                 "<li>2</li>\n" +
                 "</ul>" +
                 "";
-        String expectedOutput = "List: \n - 1 \n - 2";
+        String expectedOutput = "List: \n - 1 \n - 2 ";
         String parsed = parser.parse(javaDoc);
 
         assertEquals(expectedOutput, parsed);
@@ -139,7 +139,7 @@ public class JavaDocParserTest {
                 "<li>2</li>\n" +
                 "</ol>" +
                 "";
-        String expectedOutput = "List: \n . 1 \n . 2";
+        String expectedOutput = "List: \n . 1 \n . 2 ";
         String parsed = parser.parse(javaDoc);
 
         assertEquals(expectedOutput, parsed);

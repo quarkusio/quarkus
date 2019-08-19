@@ -66,7 +66,6 @@ import org.jboss.jdeparser.JTypes;
 import io.quarkus.annotation.processor.generate_doc.GenerateExtensionConfigurationDoc;
 
 public class ExtensionAnnotationProcessor extends AbstractProcessor {
-    private final JavaDocParser javaDocParser = new JavaDocParser();
     private final Set<String> generatedAccessors = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
     private final Set<String> generatedJavaDocs = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
     private final GenerateExtensionConfigurationDoc generateExtensionConfigurationDoc = new GenerateExtensionConfigurationDoc();
@@ -541,7 +540,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         try {
             sources.writeSources();
         } catch (IOException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate_doc source file: " + e, clazz);
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate source file: " + e, clazz);
         }
     }
 
@@ -588,7 +587,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             return "";
         }
 
-        return javaDocParser.parse(docComment);
+        return docComment.trim();
     }
 
     private static boolean hasParameterAnnotated(ExecutableElement ex, String annotationName) {

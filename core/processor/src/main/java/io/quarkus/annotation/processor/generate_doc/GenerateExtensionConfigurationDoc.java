@@ -7,13 +7,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.regex.Matcher;
 
 import javax.lang.model.element.AnnotationMirror;
@@ -29,10 +29,10 @@ import javax.lang.model.type.TypeMirror;
 import io.quarkus.annotation.processor.Constants;
 import io.quarkus.annotation.processor.StringUtil;
 
-public class GenerateExtensionConfigurationDoc {
+final public class GenerateExtensionConfigurationDoc {
     private static final String NAMED_MAP_CONFIG_ITEM_FORMAT = ".\"<%s>\"";
-    private static final String WILDCARD_MAP_CONFIG_ITEM_FORMAT = ".{*}";
 
+    private final JavaDocParser javaDocParser = new JavaDocParser();
     private final Set<ConfigRootInfo> configRoots = new HashSet<>();
     private final Set<String> processorClassMembers = new HashSet<>();
     private final Map<String, TypeElement> configGroups = new HashMap<>();
@@ -51,7 +51,7 @@ public class GenerateExtensionConfigurationDoc {
             return;
         }
 
-        ConfigVisibility visibility = ConfigVisibility.BUILD_TIME;
+        ConfigPhase configPhase = ConfigPhase.BUILD_TIME;
 
         for (AnnotationMirror annotationMirror : clazz.getAnnotationMirrors()) {
             String annotationName = annotationMirror.getAnnotationType().toString();
@@ -65,7 +65,7 @@ public class GenerateExtensionConfigurationDoc {
                     if ("name()".equals(key)) {
                         name = Constants.QUARKUS + Constants.DOT + value;
                     } else if ("phase()".equals(key)) {
-                        visibility = ConfigVisibility.valueOf(value);
+                        configPhase = ConfigPhase.valueOf(value);
                     }
                 }
 
@@ -77,7 +77,7 @@ public class GenerateExtensionConfigurationDoc {
                 }
 
                 final String extensionName = pkgMatcher.group(1);
-                ConfigRootInfo configRootInfo = new ConfigRootInfo(name, clazz, extensionName, visibility);
+                ConfigRootInfo configRootInfo = new ConfigRootInfo(name, clazz, extensionName, configPhase);
                 configRoots.add(configRootInfo);
                 break;
             }
@@ -89,11 +89,13 @@ public class GenerateExtensionConfigurationDoc {
         for (Map.Entry<String, String> entry : extensionsConfigurations.entrySet()) {
             final StringBuilder doc = new StringBuilder(entry.getValue());
 
-            if (entry.getValue().contains(Constants.SEE_DURATION_NOTE_BELOW)) {
+            doc.append(Constants.CONFIG_PHASE_LEGEND);
+
+            if (entry.getValue().contains(Constants.SEE_NOTE_BELOW) && entry.getValue().contains(Duration.class.getName())) {
                 doc.append(Constants.DURATION_FORMAT_NOTE);
             }
 
-            if (entry.getValue().contains(Constants.SEE_MEMORY_SIZE_NOTE_BELOW)) {
+            if (entry.getValue().contains(Constants.SEE_NOTE_BELOW) && entry.getValue().contains(Constants.MEMORY_SIZE_TYPE)) {
                 doc.append(Constants.MEMORY_SIZE_FORMAT_NOTE);
             }
 
@@ -158,12 +160,12 @@ public class GenerateExtensionConfigurationDoc {
         Map<String, String> configOutput = new HashMap<>();
 
         for (ConfigRootInfo configRootInfo : configRoots) {
-            final Set<ConfigItem> configItems = new TreeSet<>();
+            final List<ConfigItem> configItems = new ArrayList<>();
 
             TypeElement element = configRootInfo.getClazz();
-            recordConfigItems(configItems, element, configRootInfo.getName(), configRootInfo.getVisibility());
+            recordConfigItems(configItems, element, configRootInfo.getName(), configRootInfo.getConfigPhase());
 
-            String configurationDoc = generateConfigsInDescriptorListFormat(configItems, javaDocProperties);
+            String configurationDoc = generateConfigs(configItems, javaDocProperties);
 
             if (!configurationDoc.isEmpty()) {
                 configOutput.put(configRootInfo.getClazz().getQualifiedName().toString(), configurationDoc);
@@ -211,89 +213,33 @@ public class GenerateExtensionConfigurationDoc {
         return key.toString();
     }
 
-    private String generateConfigsInDescriptorListFormat(Set<ConfigItem> configItems, Properties javaDocProperties) {
-        StringBuilder sb = new StringBuilder();
+    private String generateConfigs(List<ConfigItem> configItems, Properties javaDocProperties) {
+        String doc = "";
 
         for (ConfigItem configItem : configItems) {
-            sb.append("\n`");
-            sb.append(configItem.getPropertyName());
-            sb.append("`:: ");
-            sb.append(javaDocProperties.getProperty(configItem.getJavaDocKey()));
-            sb.append("\n\n");
+            doc += String.format("\n`%s`%s:: ", configItem.getPropertyName(), configItem.getConfigPhase().getIllustration());
+            final String rawJavaDoc = javaDocProperties.getProperty(configItem.getJavaDocKey());
+            doc += javaDocParser.parse(rawJavaDoc) + "\n+\nType: `";
+            doc += configItem.getType() + '`';
 
-            sb.append("type: `");
-            sb.append(configItem.getType());
-            sb.append('`');
-
-            if (configItem.getType().equals(Duration.class.getName())) {
-                sb.append(Constants.SEE_DURATION_NOTE_BELOW);
-            } else if (configItem.getType().equals(Constants.MEMORY_SIZE_TYPE)) {
-                sb.append(Constants.SEE_MEMORY_SIZE_NOTE_BELOW);
+            if (configItem.getType().equals(Duration.class.getName())
+                    || configItem.getType().equals(Constants.MEMORY_SIZE_TYPE)) {
+                doc += Constants.SEE_NOTE_BELOW;
             }
 
-            sb.append("; ");
-
+            doc += " +\n";
             if (!configItem.getDefaultValue().isEmpty()) {
-                sb.append("default value: `");
-                sb.append(configItem.getDefaultValue());
-                sb.append("`. ");
+                doc += String.format("Defaults to: `%s` +\n", configItem.getDefaultValue());
             }
 
-            sb.append("The configuration is ");
-            sb.append(configItem.getVisibility());
-            sb.append(". ");
-
-            sb.append("\n\n");
+            doc += "\n\n";
         }
 
-        return sb.toString();
+        return doc;
     }
 
-    @SuppressWarnings("unused")
-    private String generateConfigsInTableFormat(Set<ConfigItem> configItems, Properties javaDocProperties) {
-        StringBuilder sb = new StringBuilder("|===\n|Configuration | Description | Visibility | Java Type | Default \n");
-        boolean hasDurationType = false;
-        boolean hasMemorySizeType = false;
-
-        for (ConfigItem configItem : configItems) {
-            sb.append("\n|");
-            sb.append(configItem.getPropertyName());
-            sb.append("\n|");
-            sb.append(javaDocProperties.getProperty(configItem.getJavaDocKey()));
-            if (configItem.getType().equals(Duration.class.getName())) {
-                sb.append("\n_See duration note below_");
-                hasDurationType = true;
-            } else if (configItem.getType().equals(Constants.MEMORY_SIZE_TYPE)) {
-                sb.append("\n_See memory size note below_");
-                hasMemorySizeType = true;
-            }
-            sb.append("\n|");
-            sb.append(configItem.getVisibility());
-            sb.append("\n|");
-            sb.append(configItem.getType());
-            sb.append("\n|");
-            if (!configItem.getDefaultValue().isEmpty()) {
-                sb.append("`");
-                sb.append(configItem.getDefaultValue());
-                sb.append("`");
-            }
-        }
-
-        sb.append("\n|===");
-
-        if (hasDurationType) {
-            sb.append(Constants.DURATION_FORMAT_NOTE);
-        }
-
-        if (hasMemorySizeType) {
-            sb.append(Constants.MEMORY_SIZE_FORMAT_NOTE);
-        }
-
-        return sb.toString();
-    }
-
-    private void recordConfigItems(Set<ConfigItem> configItems, Element element, String parentName,
-            ConfigVisibility visibility) {
+    private void recordConfigItems(List<ConfigItem> configItems, Element element, String parentName,
+            ConfigPhase configPhase) {
         for (Element enclosedElement : element.getEnclosedElements()) {
             if (!enclosedElement.getKind().isField()) {
                 continue;
@@ -354,7 +300,7 @@ public class GenerateExtensionConfigurationDoc {
             }
 
             if (isConfigGroup) {
-                recordConfigItems(configItems, configGroup, name, visibility);
+                recordConfigItems(configItems, configGroup, name, configPhase);
             } else {
                 TypeElement clazz = (TypeElement) element;
                 String javaDocKey = clazz.getQualifiedName().toString() + Constants.DOT + fieldName;
@@ -369,10 +315,10 @@ public class GenerateExtensionConfigurationDoc {
                             configGroup = configGroups.get(type);
 
                             if (configGroup != null) {
-                                recordConfigItems(configItems, configGroup, name + mapKey, visibility);
+                                recordConfigItems(configItems, configGroup, name + mapKey, configPhase);
                                 continue;
                             } else {
-                                name += mapKey + WILDCARD_MAP_CONFIG_ITEM_FORMAT;
+                                name += mapKey;
                             }
                         } else {
                             type = typeArguments.get(0).toString();
@@ -382,7 +328,7 @@ public class GenerateExtensionConfigurationDoc {
                     }
                 }
 
-                configItems.add(new ConfigItem(name, javaDocKey, type, defaultValue, visibility));
+                configItems.add(new ConfigItem(name, javaDocKey, type, defaultValue, configPhase));
             }
         }
     }

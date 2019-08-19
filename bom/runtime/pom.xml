@@ -864,12 +864,6 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus.http</groupId>
-                <artifactId>quarkus-http-core</artifactId>
-                <version>${quarkus-http.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.quarkus.http</groupId>
                 <artifactId>quarkus-http-vertx-backend</artifactId>
                 <version>${quarkus-http.version}</version>
                 <exclusions>

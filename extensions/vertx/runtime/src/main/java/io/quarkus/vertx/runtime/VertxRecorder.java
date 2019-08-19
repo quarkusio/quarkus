@@ -64,7 +64,11 @@ public class VertxRecorder {
         return new RuntimeValue<Vertx>(vertx);
     }
 
-    void initialize(VertxConfiguration conf) {
+    public static Vertx getVertx() {
+        return vertx;
+    }
+
+    public static void initialize(VertxConfiguration conf) {
         if (vertx != null) {
             return;
         }
@@ -106,7 +110,7 @@ public class VertxRecorder {
         messageConsumers = new ArrayList<>();
     }
 
-    private VertxOptions convertToVertxOptions(VertxConfiguration conf) {
+    private static VertxOptions convertToVertxOptions(VertxConfiguration conf) {
         VertxOptions options = new VertxOptions();
         // Order matters, as the cluster options modifies the event bus options.
         setEventBusOptions(conf, options);
@@ -157,7 +161,7 @@ public class VertxRecorder {
         }
     }
 
-    private void initializeClusterOptions(VertxConfiguration conf, VertxOptions options) {
+    private static void initializeClusterOptions(VertxConfiguration conf, VertxOptions options) {
         ClusterConfiguration cluster = conf.cluster;
         options.getEventBusOptions().setClustered(cluster.clustered);
         options.getEventBusOptions().setClusterPingReplyInterval(cluster.pingReplyInterval.toMillis());
@@ -174,7 +178,7 @@ public class VertxRecorder {
         }
     }
 
-    private void setEventBusOptions(VertxConfiguration conf, VertxOptions options) {
+    private static void setEventBusOptions(VertxConfiguration conf, VertxOptions options) {
         EventBusConfiguration eb = conf.eventbus;
         EventBusOptions opts = new EventBusOptions();
         opts.setAcceptBacklog(eb.acceptBacklog.orElse(-1));

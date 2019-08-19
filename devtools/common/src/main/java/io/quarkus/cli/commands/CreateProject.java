@@ -12,6 +12,7 @@ import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.maven.model.Model;
@@ -115,8 +116,11 @@ public class CreateProject {
     }
 
     public static SourceType determineSourceType(Set<String> extensions) {
-        return extensions.stream().anyMatch(e -> e.toLowerCase().contains("kotlin"))
-                ? SourceType.KOTLIN
-                : SourceType.JAVA;
+        Optional<SourceType> sourceType = extensions.stream()
+                .map(SourceType::parse)
+                .filter(Optional::isPresent)
+                .map(e -> e.orElse(SourceType.JAVA))
+                .findAny();
+        return sourceType.orElse(SourceType.JAVA);
     }
 }

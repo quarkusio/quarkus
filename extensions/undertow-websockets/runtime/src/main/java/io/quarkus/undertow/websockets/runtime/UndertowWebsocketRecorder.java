@@ -2,6 +2,7 @@ package io.quarkus.undertow.websockets.runtime;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Executor;
 
 import javax.websocket.Endpoint;
 import javax.websocket.server.ServerApplicationConfig;
@@ -9,9 +10,7 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
-import io.undertow.Undertow;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 
 @Recorder
@@ -19,15 +18,15 @@ public class UndertowWebsocketRecorder {
 
     private static final Logger log = Logger.getLogger(UndertowWebsocketRecorder.class);
 
-    public void setupWorker(RuntimeValue<Undertow> undertow) {
-        WorkerSupplier.worker = undertow.getValue().getWorker();
+    public void setupWorker(Executor executor) {
+        ExecutorSupplier.executor = executor;
     }
 
     @SuppressWarnings("unchecked")
     public WebSocketDeploymentInfo createDeploymentInfo(Set<String> annotatedEndpoints, Set<String> endpoints,
             Set<String> serverApplicationConfigClasses) {
         WebSocketDeploymentInfo container = new WebSocketDeploymentInfo();
-        container.setWorker(new WorkerSupplier());
+        container.setExecutor(new ExecutorSupplier());
         Set<Class<? extends Endpoint>> allScannedEndpointImplementations = new HashSet<>();
         for (String i : endpoints) {
             try {

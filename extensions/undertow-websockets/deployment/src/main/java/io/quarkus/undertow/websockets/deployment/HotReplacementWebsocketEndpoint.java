@@ -26,9 +26,9 @@ import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.jboss.logging.Logger;
-import org.xnio.IoUtils;
 
 import io.quarkus.deployment.devmode.HotReplacementContext;
+import io.undertow.util.IoUtils;
 
 @ServerEndpoint(value = HotReplacementWebsocketEndpoint.QUARKUS_HOT_RELOAD, configurator = HotReplacementWebsocketEndpoint.ServerConfigurator.class)
 public class HotReplacementWebsocketEndpoint {

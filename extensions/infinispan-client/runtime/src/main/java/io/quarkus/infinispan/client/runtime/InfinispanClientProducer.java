@@ -1,6 +1,5 @@
 package io.quarkus.infinispan.client.runtime;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.util.Map;
@@ -185,21 +184,16 @@ public class InfinispanClientProducer {
             }
         }
 
-        try {
-            if (fileDescriptorSource != null) {
-                serializationContext.registerProtoFiles(fileDescriptorSource);
-            }
+        if (fileDescriptorSource != null) {
+            serializationContext.registerProtoFiles(fileDescriptorSource);
+        }
 
-            Set<Bean<FileDescriptorSource>> protoFileBeans = (Set) beanManager.getBeans(FileDescriptorSource.class);
-            for (Bean<FileDescriptorSource> bean : protoFileBeans) {
-                CreationalContext<FileDescriptorSource> ctx = beanManager.createCreationalContext(bean);
-                FileDescriptorSource fds = (FileDescriptorSource) beanManager.getReference(bean, FileDescriptorSource.class,
-                        ctx);
-                serializationContext.registerProtoFiles(fds);
-            }
-        } catch (IOException e) {
-            // TODO: pick a better exception
-            throw new RuntimeException(e);
+        Set<Bean<FileDescriptorSource>> protoFileBeans = (Set) beanManager.getBeans(FileDescriptorSource.class);
+        for (Bean<FileDescriptorSource> bean : protoFileBeans) {
+            CreationalContext<FileDescriptorSource> ctx = beanManager.createCreationalContext(bean);
+            FileDescriptorSource fds = (FileDescriptorSource) beanManager.getReference(bean, FileDescriptorSource.class,
+                    ctx);
+            serializationContext.registerProtoFiles(fds);
         }
 
         Set<Bean<BaseMarshaller>> beans = (Set) beanManager.getBeans(BaseMarshaller.class);

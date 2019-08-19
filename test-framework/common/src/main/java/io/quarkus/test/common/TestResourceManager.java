@@ -48,7 +48,11 @@ public class TestResourceManager {
         oldSystemProps = new HashMap<>();
         for (Map.Entry<String, String> i : ret.entrySet()) {
             oldSystemProps.put(i.getKey(), System.getProperty(i.getKey()));
-            System.setProperty(i.getKey(), i.getValue());
+            if (i.getValue() == null) {
+                System.clearProperty(i.getKey());
+            } else {
+                System.setProperty(i.getKey(), i.getValue());
+            }
         }
         return ret;
     }

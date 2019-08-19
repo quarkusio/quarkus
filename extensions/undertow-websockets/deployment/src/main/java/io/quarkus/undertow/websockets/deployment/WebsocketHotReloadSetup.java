@@ -15,7 +15,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.deployment.devmode.HotReplacementContext;
 import io.quarkus.deployment.devmode.HotReplacementSetup;
 import io.quarkus.undertow.runtime.UndertowDeploymentRecorder;
-import io.quarkus.undertow.websockets.runtime.WorkerSupplier;
 import io.undertow.Handlers;
 import io.undertow.predicate.Predicates;
 import io.undertow.server.HandlerWrapper;
@@ -71,7 +70,6 @@ public class WebsocketHotReloadSetup implements HotReplacementSetup {
             //this will likely change
             //but we create a servlet deployment that lasts for the life of the server
             WebSocketDeploymentInfo info = new WebSocketDeploymentInfo();
-            info.setWorker(new WorkerSupplier());
             info.addEndpoint(HotReplacementWebsocketEndpoint.class);
 
             DeploymentInfo d = new DeploymentInfo();

@@ -30,7 +30,7 @@ public class VertxProducerTest {
 
     @Test
     public void shouldNotFailWithoutConfig() {
-        recorder.initialize(null);
+        VertxRecorder.initialize(null);
         producer.initialize(VertxRecorder.vertx);
         verifyProducer();
     }
@@ -55,7 +55,7 @@ public class VertxProducerTest {
         configuration.workerPoolSize = 10;
         configuration.warningExceptionTime = Duration.ofSeconds(1);
         configuration.internalBlockingPoolSize = 5;
-        recorder.initialize(configuration);
+        VertxRecorder.initialize(configuration);
         producer.initialize(VertxRecorder.vertx);
         verifyProducer();
     }
@@ -76,7 +76,7 @@ public class VertxProducerTest {
         configuration.cluster = cc;
 
         try {
-            recorder.initialize(configuration);
+            VertxRecorder.initialize(configuration);
             fail("It should not have a cluster manager on the classpath, and so fail the creation");
         } catch (IllegalStateException e) {
             assertTrue(e.getMessage().contains("No ClusterManagerFactory"));

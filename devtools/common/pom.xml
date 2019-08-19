@@ -68,8 +68,8 @@
             <artifactId>maven-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.undertow</groupId>
-            <artifactId>undertow-websockets-jsr</artifactId>
+            <groupId>io.quarkus.http</groupId>
+            <artifactId>quarkus-http-websockets-jsr</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

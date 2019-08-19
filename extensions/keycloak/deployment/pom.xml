@@ -39,8 +39,8 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-undertow-adapter</artifactId>
+            <groupId>io.quarkus.keycloak</groupId>
+            <artifactId>quarkus-keycloak-adapter</artifactId>
         </dependency>
     </dependencies>
 

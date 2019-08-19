@@ -45,15 +45,18 @@ public class JarRunnerIT extends MojoTestBase {
         processBuilder.redirectOutput(output);
         processBuilder.redirectError(output);
         Process process = processBuilder.start();
-        // Wait until server up
-        await()
-                .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello/package", 200));
+        try {
+            // Wait until server up
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello/package", 200));
 
-        String logs = FileUtils.readFileToString(output, "UTF-8");
+            String logs = FileUtils.readFileToString(output, "UTF-8");
 
-        assertThatOutputWorksCorrectly(logs);
+            assertThatOutputWorksCorrectly(logs);
+        } finally {
+            process.destroy();
+        }
 
-        process.destroy();
     }
 }

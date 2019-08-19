@@ -23,8 +23,7 @@
         <opentracing-tracerresolver.version>0.1.5</opentracing-tracerresolver.version>
         <opentracing-concurrent.version>0.2.0</opentracing-concurrent.version>
         <jaeger.version>0.34.0</jaeger.version>
-        <undertow.version>2.0.23.Final</undertow.version>
-        <xnio.version>3.7.2.Final</xnio.version>
+        <quarkus-http.version>3.0.0.Alpha2</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <microprofile-config-api.version>1.3</microprofile-config-api.version>
         <microprofile-context-propagation.version>1.0-RC1</microprofile-context-propagation.version>
@@ -117,7 +116,7 @@
         <junit.jupiter.version>5.5.0</junit.jupiter.version>
         <assertj.version>3.12.2</assertj.version>
         <json-smart.version>2.3</json-smart.version>
-        <infinispan.version>10.0.0.Beta3</infinispan.version>
+        <infinispan.version>10.0.0.Beta5</infinispan.version>
         <caffeine.version>2.6.2</caffeine.version>
         <netty.version>4.1.34.Final</netty.version>
         <reactive-streams.version>1.0.2</reactive-streams.version>
@@ -129,7 +128,7 @@
         <kafka2.version>2.2.1</kafka2.version>
         <debezium.version>0.9.5.Final</debezium.version>
         <zookeeper.version>3.4.14</zookeeper.version>
-        <scala.version>2.12.2</scala.version>
+        <scala.version>2.12.8</scala.version>
         <tika.version>1.21</tika.version>
         <aws-lambda-java.version>1.1.0</aws-lambda-java.version>
         <aws-lambda-java-events.version>2.2.5</aws-lambda-java-events.version>
@@ -152,14 +151,16 @@
         <!-- Used for integration tests, to make sure webjars work-->
         <bootstrap.version>3.1.0</bootstrap.version>
         <keycloak.version>6.0.1</keycloak.version>
+        <quarkus-keycloak.version>1.0.0.Alpha1</quarkus-keycloak.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kogito.version>0.2.0</kogito.version>
-        <kubernetes-client.version>4.3.1</kubernetes-client.version>
+        <kubernetes-client.version>4.4.1</kubernetes-client.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <wiremock.version>2.23.2</wiremock.version>
         <spring.version>5.1.8.RELEASE</spring.version>
+        <mvel2.version>2.4.4.Final</mvel2.version>
     </properties>
 
     <dependencyManagement>
@@ -201,6 +202,15 @@
                 <version>${junit.jupiter.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
+            </dependency>
+
+            <!-- Kubernetes-client dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-client-bom</artifactId>
+                <version>${kubernetes-client.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <!-- Quarkus core -->
@@ -556,6 +566,11 @@
                 <artifactId>quarkus-neo4j</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-scala</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Quarkus test dependencies -->
 
@@ -832,6 +847,11 @@
                 <version>${scala.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>scala-compiler</artifactId>
+                <version>${scala.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.tika</groupId>
                 <artifactId>tika-parsers</artifactId>
                 <exclusions>
@@ -843,14 +863,31 @@
                 <version>${tika.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.undertow</groupId>
-                <artifactId>undertow-core</artifactId>
-                <version>${undertow.version}</version>
+                <groupId>io.quarkus.http</groupId>
+                <artifactId>quarkus-http-core</artifactId>
+                <version>${quarkus-http.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.quarkus.http</groupId>
+                <artifactId>quarkus-http-vertx-backend</artifactId>
+                <version>${quarkus-http.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-all</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
-                <groupId>io.undertow</groupId>
-                <artifactId>undertow-servlet</artifactId>
-                <version>${undertow.version}</version>
+                <groupId>io.quarkus.http</groupId>
+                <artifactId>quarkus-http-core</artifactId>
+                <version>${quarkus-http.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus.http</groupId>
+                <artifactId>quarkus-http-servlet</artifactId>
+                <version>${quarkus-http.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.jboss.spec.javax.annotation</groupId>
@@ -859,9 +896,9 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>io.undertow</groupId>
-                <artifactId>undertow-websockets-jsr</artifactId>
-                <version>${undertow.version}</version>
+                <groupId>io.quarkus.http</groupId>
+                <artifactId>quarkus-http-websockets-jsr</artifactId>
+                <version>${quarkus-http.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.jboss.spec.javax.annotation</groupId>
@@ -1474,23 +1511,6 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.jboss.xnio</groupId>
-                <artifactId>xnio-api</artifactId>
-                <version>${xnio.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.wildfly.client</groupId>
-                        <artifactId>wildfly-client-config</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.xnio</groupId>
-                <artifactId>xnio-nio</artifactId>
-                <version>${xnio.version}</version>
-            </dependency>
-
-            <dependency>
                 <groupId>org.wildfly.common</groupId>
                 <artifactId>wildfly-common</artifactId>
                 <version>${wildfly-common.version}</version>
@@ -2042,9 +2062,9 @@
                 <version>${keycloak.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.keycloak</groupId>
-                <artifactId>keycloak-undertow-adapter</artifactId>
-                <version>${keycloak.version}</version>
+                <groupId>io.quarkus.keycloak</groupId>
+                <artifactId>quarkus-keycloak-adapter</artifactId>
+                <version>${quarkus-keycloak.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.keycloak</groupId>
@@ -2101,19 +2121,14 @@
                 <version>${kogito.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.mvel</groupId>
+                <artifactId>mvel2</artifactId>
+                <version>${mvel2.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.kie.kogito</groupId>
                 <artifactId>jbpm-bpmn2</artifactId>
                 <version>${kogito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.fabric8</groupId>
-                <artifactId>kubernetes-client</artifactId>
-                <version>${kubernetes-client.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.fabric8</groupId>
-                <artifactId>kubernetes-server-mock</artifactId>
-                <version>${kubernetes-client.version}</version>
             </dependency>
 
             <!-- Spring -->

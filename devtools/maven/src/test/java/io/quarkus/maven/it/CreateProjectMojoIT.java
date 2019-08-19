@@ -88,6 +88,49 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(model.getProfiles().get(0).getId()).isEqualTo("native");
     }
 
+    @Test
+    public void testProjectGenerationFromScratchForScala() throws MavenInvocationException, IOException {
+        testDir = initEmptyProject("projects/project-generation-scala");
+        assertThat(testDir).isDirectory();
+        init(testDir);
+        Properties properties = new Properties();
+        properties.put("projectGroupId", "org.acme");
+        properties.put("projectArtifactId", "acme");
+        properties.put("projectVersion", "1.0-SNAPSHOT");
+        properties.put("extensions", "scala,resteasy-jsonb");
+        setup(properties);
+
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "acme");
+
+        assertThat(new File(testDir, "pom.xml")).isFile();
+        assertThat(new File(testDir, "src/main/scala")).isDirectory();
+        assertThat(new File(testDir, "src/main/resources/application.properties")).isFile();
+
+        String config = Files
+                .asCharSource(new File(testDir, "src/main/resources/application.properties"), Charsets.UTF_8)
+                .read();
+        assertThat(config).contains("key = value");
+
+        assertThat(new File(testDir, "src/main/docker/Dockerfile.native")).isFile();
+        assertThat(new File(testDir, "src/main/docker/Dockerfile.jvm")).isFile();
+
+        Model model = load(testDir);
+        final DependencyManagement dependencyManagement = model.getDependencyManagement();
+        final List<Dependency> dependencies = dependencyManagement.getDependencies();
+        assertThat(dependencies.stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
+                && d.getVersion().equalsIgnoreCase("${quarkus.version}")
+                && d.getScope().equalsIgnoreCase("import")
+                && d.getType().equalsIgnoreCase("pom"))).isTrue();
+
+        assertThat(
+                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
+                        && d.getVersion() == null)).isTrue();
+
+        assertThat(model.getProfiles()).hasSize(1);
+        assertThat(model.getProfiles().get(0).getId()).isEqualTo("native");
+    }
+
     private Model load(File directory) {
         File pom = new File(directory, "pom.xml");
         assertThat(pom).isFile();

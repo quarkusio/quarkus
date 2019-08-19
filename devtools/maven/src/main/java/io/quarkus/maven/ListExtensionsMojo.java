@@ -49,7 +49,7 @@ public class ListExtensionsMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException {
         try {
             FileProjectWriter writer = null;
-            if (project != null) {
+            if (project != null && project.getBasedir() != null) {
                 writer = new FileProjectWriter(project.getBasedir());
             }
             new ListExtensions(writer, BuildTool.MAVEN).listExtensions(all, format,

@@ -50,6 +50,15 @@ public class ListExtensionsTest {
 
         Assertions.assertNotNull(installed.get(getPluginGroupId() + ":quarkus-agroal"));
     }
+    
+    @Test
+    public void listWithoutPom() throws IOException {
+        final ListExtensions listExtensions = new ListExtensions(null, BuildTool.MAVEN);
+
+        final Map<String, Dependency> installed = listExtensions.findInstalled();
+
+        Assertions.assertTrue(installed.isEmpty());
+    }
 
     /**
      * When creating a project with Maven, you could have -Dextensions="resteasy, hibernate-validator".

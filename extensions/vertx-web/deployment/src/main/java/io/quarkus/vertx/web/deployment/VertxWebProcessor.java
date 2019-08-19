@@ -52,6 +52,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RoutingExchange;
@@ -149,6 +150,7 @@ class VertxWebProcessor {
             ShutdownContextBuildItem shutdown,
             VertxBuildItem vertx,
             Optional<DefaultRouteBuildItem> defaultRoute,
+            Optional<RequireVirtualHttpBuildItem> requireVirtual,
             List<FilterBuildItem> filters) throws IOException {
 
         ClassOutput classOutput = new ClassOutput() {
@@ -166,10 +168,14 @@ class VertxWebProcessor {
             routeConfigs.put(handlerClass, routes);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
         }
+        boolean startVirtual = requireVirtual.isPresent() || httpConfiguration.virtual;
+        // start http socket in dev/test mode even if virtual http is required
+        boolean startSocket = !startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL;
         recorder.configureRouter(vertx.getVertx(), beanContainer.getValue(), routeConfigs,
                 filters.stream().map(FilterBuildItem::getHandler).collect(Collectors.toList()), httpConfiguration,
                 launchMode.getLaunchMode(),
-                shutdown, defaultRoute.map(DefaultRouteBuildItem::getHandler).orElse(null));
+                shutdown, defaultRoute.map(DefaultRouteBuildItem::getHandler).orElse(null),
+                startVirtual, startSocket);
         return new ServiceStartBuildItem("vertx-web");
     }
 

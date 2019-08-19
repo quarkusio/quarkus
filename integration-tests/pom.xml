@@ -53,6 +53,7 @@
         <module>mongodb-client</module>
         <module>resteasy-jackson</module>
         <module>jgit</module>
+        <module>virtual-http</module>
     </modules>
 
     <build>

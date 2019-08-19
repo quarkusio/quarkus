@@ -3,6 +3,7 @@ package io.quarkus.infinispan.client.deployment;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,8 +28,10 @@ import org.infinispan.protostream.EnumMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.MessageMarshaller;
 import org.infinispan.protostream.RawProtobufMarshaller;
+import org.infinispan.protostream.SerializationContextInitializer;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Type;
@@ -110,6 +113,8 @@ class InfinispanClientProcessor {
 
         InfinispanClientProducer.replaceProperties(properties);
 
+        Index index = applicationIndexBuildItem.getIndex();
+
         // This is always non null
         Object marshaller = properties.get(ConfigurationProperties.MARSHALLER);
 
@@ -139,10 +144,28 @@ class InfinispanClientProcessor {
             }
 
             InfinispanClientProducer.handleProtoStreamRequirements(properties);
+
+            Set<ClassInfo> initializerClasses = index.getAllKnownImplementors(DotName.createSimple(
+                    SerializationContextInitializer.class.getName()));
+            Set<SerializationContextInitializer> initializers = new HashSet<>(initializerClasses.size());
+            for (ClassInfo ci : initializerClasses) {
+                Class<?> initializerClass = Class.forName(ci.toString());
+                try {
+                    SerializationContextInitializer sci = (SerializationContextInitializer) initializerClass
+                            .getDeclaredConstructor().newInstance();
+                    initializers.add(sci);
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException
+                        | NoSuchMethodException e) {
+                    // This shouldn't ever be possible as annotation processor should generate empty constructor
+                    throw new RuntimeException(e);
+                }
+            }
+            if (!initializers.isEmpty()) {
+                properties.put(InfinispanClientProducer.PROTOBUF_INITIALIZERS, initializers);
+            }
         }
 
         // Add any user project listeners to allow reflection in native code
-        Index index = applicationIndexBuildItem.getIndex();
         List<AnnotationInstance> listenerInstances = index.getAnnotations(
                 DotName.createSimple(ClientListener.class.getName()));
         for (AnnotationInstance instance : listenerInstances) {

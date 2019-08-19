@@ -11,7 +11,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -47,8 +46,7 @@ import org.infinispan.query.dsl.QueryFactory;
 import io.quarkus.infinispan.client.runtime.Remote;
 import io.quarkus.runtime.StartupEvent;
 
-@Path("/")
-@ApplicationScoped
+@Path("/test")
 public class TestServlet {
     private static final Log log = LogFactory.getLog(TestServlet.class);
 
@@ -101,9 +99,9 @@ public class TestServlet {
         log.info("Added continuous query listener");
 
         cache.put("book1", new Book("Game of Thrones", "Lots of people perish", 2010,
-                Collections.singleton(new Author("George", "Martin")), Book.Type.FANTASY));
+                Collections.singleton(new Author("George", "Martin")), Type.FANTASY));
         cache.put("book2", new Book("Game of Thrones Path 2", "They win?", 2023,
-                Collections.singleton(new Author("Son", "Martin")), Book.Type.FANTASY));
+                Collections.singleton(new Author("Son", "Martin")), Type.FANTASY));
 
         log.info("Inserted values");
 
@@ -157,7 +155,7 @@ public class TestServlet {
     public String getCachedValue(@PathParam("id") String id) {
         ensureStart();
         Book book = cache.get(id);
-        return book.getTitle();
+        return book != null ? book.getTitle() : "NULL";
     }
 
     @Path("query/{id}")
@@ -237,7 +235,7 @@ public class TestServlet {
         long nearCacheInvalidations = stats.getNearCacheInvalidations();
 
         Book nearCacheBook = new Book("Near Cache Book", "Just here to test", 2010,
-                Collections.emptySet(), Book.Type.PROGRAMMING);
+                Collections.emptySet(), Type.PROGRAMMING);
 
         String id = "nearcache";
         cache.put(id, nearCacheBook);
@@ -271,7 +269,7 @@ public class TestServlet {
             return "second retrieved book doesn't match";
         }
 
-        nearCacheBook = new Book("Near Cache Book", "Just here to test", 2011, Collections.emptySet(), Book.Type.PROGRAMMING);
+        nearCacheBook = new Book("Near Cache Book", "Just here to test", 2011, Collections.emptySet(), Type.PROGRAMMING);
 
         cache.put(id, nearCacheBook);
 
@@ -300,7 +298,7 @@ public class TestServlet {
     @Consumes(MediaType.TEXT_PLAIN)
     public Response createItem(String value, @PathParam("id") String id) {
         ensureStart();
-        Book book = new Book(id, value, 2019, Collections.emptySet(), Book.Type.PROGRAMMING);
+        Book book = new Book(id, value, 2019, Collections.emptySet(), Type.PROGRAMMING);
         Book previous = cache.putIfAbsent(id, book);
         if (previous == null) {
             //status code 201

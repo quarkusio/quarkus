@@ -77,6 +77,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             "META-INF/README.md",
             "META-INF/DEPENDENCIES",
             "META-INF/beans.xml",
+            "META-INF/io.netty.versions.properties",
             "META-INF/quarkus-config-roots.list",
             "META-INF/quarkus-javadoc.properties",
             "META-INF/quarkus-extension.properties",

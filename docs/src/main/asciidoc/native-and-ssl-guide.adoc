@@ -75,7 +75,8 @@ As SSL is ipso facto the standard nowadays, we decided to enable its support aut
  * the MongoDB extension (`quarkus-mongodb-client`),
  * the Neo4j extension (`quarkus-neo4j`),
  * the REST client extension (`quarkus-rest-client`),
- * The OAuth2 extension (`quarkus-elytron-security-oauth2`).
+ * the OAuth2 extension (`quarkus-elytron-security-oauth2`).
+ * the Infinispan Client extension (`infinispan-client`).
 
 
 As long as you have one of those extensions in your project, the SSL support will be enabled by default.

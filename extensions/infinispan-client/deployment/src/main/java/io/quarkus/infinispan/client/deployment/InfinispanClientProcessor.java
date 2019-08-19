@@ -43,6 +43,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -71,12 +72,16 @@ class InfinispanClientProcessor {
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             ApplicationIndexBuildItem applicationIndexBuildItem) throws ClassNotFoundException, IOException {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.INFINISPAN_CLIENT));
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(InfinispanClientProducer.class));
         systemProperties.produce(new SystemPropertyBuildItem("io.netty.noUnsafe", "true"));
         hotDeployment.produce(new HotDeploymentWatchedFileBuildItem(HOTROD_CLIENT_PROPERTIES));
+
+        // Enable SSL support by default
+        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.INFINISPAN_CLIENT));
 
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         InputStream stream = cl.getResourceAsStream(HOTROD_CLIENT_PROPERTIES);

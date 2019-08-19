@@ -123,16 +123,32 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                         .collect(Collectors.joining("\n")));
             }
             stuck = true;
+            // First attempt: try to resolve beans without looking at their scope.
             for (Iterator<Entry<BeanInfo, List<BeanInfo>>> iterator = beanToInjections.entrySet().iterator(); iterator
                     .hasNext();) {
                 Entry<BeanInfo, List<BeanInfo>> entry = iterator.next();
                 BeanInfo bean = entry.getKey();
-                boolean beanHasNormalScope = bean.getScope().isNormal();
-                if (!isDependency(bean, beanToInjections) || beanHasNormalScope) {
+                if (!isDependency(bean, beanToInjections)) {
                     addBean(getComponents, beanIdToBeanSupplierHandle, bean, beanToGeneratedName, beanToResultSupplierHandle);
                     iterator.remove();
                     processed.add(bean);
                     stuck = false;
+                }
+            }
+            if (stuck) {
+                // Second attempt: look at bean scope - a normal bean scope can prevent a circular dependency.
+                for (Iterator<Entry<BeanInfo, List<BeanInfo>>> iterator = beanToInjections.entrySet().iterator(); iterator
+                        .hasNext();) {
+                    Entry<BeanInfo, List<BeanInfo>> entry = iterator.next();
+                    BeanInfo bean = entry.getKey();
+                    boolean beanHasNormalScope = bean.getScope().isNormal();
+                    if (!isDependency(bean, beanToInjections) || beanHasNormalScope) {
+                        addBean(getComponents, beanIdToBeanSupplierHandle, bean, beanToGeneratedName,
+                                beanToResultSupplierHandle);
+                        iterator.remove();
+                        processed.add(bean);
+                        stuck = false;
+                    }
                 }
             }
         }

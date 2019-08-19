@@ -21,6 +21,7 @@ import com.netflix.hystrix.HystrixCircuitBreaker;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -52,9 +53,6 @@ public class SmallRyeFaultToleranceProcessor {
     BuildProducer<SubstrateSystemPropertyBuildItem> nativeImageSystemProperty;
 
     @Inject
-    BuildProducer<AdditionalBeanBuildItem> additionalBean;
-
-    @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
 
     SubstrateSystemPropertyBuildItem disableJmx() {
@@ -63,7 +61,7 @@ public class SmallRyeFaultToleranceProcessor {
 
     @BuildStep
     public void build(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
-            BuildProducer<FeatureBuildItem> feature) throws Exception {
+            BuildProducer<FeatureBuildItem> feature, BuildProducer<AdditionalBeanBuildItem> additionalBean) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_FAULT_TOLERANCE));
 
@@ -150,7 +148,10 @@ public class SmallRyeFaultToleranceProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    public void clearStatic(SmallryeFaultToleranceRecorder recorder, ShutdownContextBuildItem context) {
+    public void clearStatic(SmallryeFaultToleranceRecorder recorder, ShutdownContextBuildItem context,
+            BeanContainerBuildItem beanContainer) {
+        // impl note - we depend on BeanContainerBuildItem to make sure Arc registers before SR FT
+        // this is needed so that shutdown context of FT is executed before Arc container shuts down
         recorder.resetCommandContextOnUndeploy(context);
     }
 }

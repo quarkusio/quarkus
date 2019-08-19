@@ -5,10 +5,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import io.quarkus.arc.test.ArcTestContainer;
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;

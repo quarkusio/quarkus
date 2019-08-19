@@ -49,7 +49,9 @@ public class ListExtensionsMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException {
         try {
             FileProjectWriter writer = null;
-            if (project != null) {
+            // Even when we have no pom, the project is not null, but it's set to `org.apache.maven:standalone-pom:1`
+            // So we need to also check for the project's file (the pom.xml file).
+            if (project != null && project.getFile() != null) {
                 writer = new FileProjectWriter(project.getBasedir());
             }
             new ListExtensions(writer, BuildTool.MAVEN).listExtensions(all, format,

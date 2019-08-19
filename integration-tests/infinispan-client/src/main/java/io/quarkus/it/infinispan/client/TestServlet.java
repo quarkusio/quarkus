@@ -1,5 +1,7 @@
 package io.quarkus.it.infinispan.client;
 
+import java.time.YearMonth;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +57,10 @@ public class TestServlet {
     RemoteCache<String, Book> cache;
 
     @Inject
+    @Remote("magazine")
+    RemoteCache<String, Magazine> magazineCache;
+
+    @Inject
     CounterManager counterManager;
 
     CountDownLatch waitUntilStarted = new CountDownLatch(1);
@@ -102,6 +108,14 @@ public class TestServlet {
                 Collections.singleton(new Author("George", "Martin")), Type.FANTASY));
         cache.put("book2", new Book("Game of Thrones Path 2", "They win?", 2023,
                 Collections.singleton(new Author("Son", "Martin")), Type.FANTASY));
+
+        magazineCache.put("first-mad", new Magazine("MAD", YearMonth.of(1952, 10),
+                Collections.singletonList("Blob named Melvin")));
+        magazineCache.put("first-time", new Magazine("TIME", YearMonth.of(1923, 3),
+                Arrays.asList("First helicopter", "Change in divorce law", "Adam's Rib movie released",
+                        "German Reparation Payments")));
+        magazineCache.put("popular-time", new Magazine("TIME", YearMonth.of(1997, 4),
+                Arrays.asList("Yep, I'm gay", "Backlash against HMOS", "False Hope on Breast Cancer?")));
 
         log.info("Inserted values");
 
@@ -309,5 +323,20 @@ public class TestServlet {
             return Response.noContent()
                     .build();
         }
+    }
+
+    @Path("magazinequery/{id}")
+    @GET
+    public String magazineQuery(@PathParam("id") String name) {
+        ensureStart();
+        QueryFactory queryFactory = Search.getQueryFactory(magazineCache);
+        Query query = queryFactory.create("from magazine_sample.Magazine m where m.name like '%" + name + "%'");
+        List<Magazine> list = query.list();
+        if (list.isEmpty()) {
+            return "No one found for " + name;
+        }
+        return list.stream()
+                .map(m -> m.getName() + ":" + m.getPublicationYearMonth())
+                .collect(Collectors.joining(",", "[", "]"));
     }
 }

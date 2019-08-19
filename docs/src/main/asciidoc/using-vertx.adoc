@@ -354,21 +354,18 @@ Depending on the API model you want to use you need to add the right dependency 
 <dependency>
   <groupId>io.vertx</groupId>
   <artifactId>vertx-web-client</artifactId>
-  <version>{vertx-version}</version>
 </dependency>
 
 <!-- Axle API -->
 <dependency>
   <groupId>io.smallrye.reactive</groupId>
   <artifactId>smallrye-axle-web-client</artifactId>
-  <version>{axle-version}</version>
 </dependency>
 
 <!-- RX Java 2 API -->
 <dependency>
   <groupId>io.vertx</groupId>
   <artifactId>vertx-rx-java2</artifactId>
-  <version>{vertx-version}</version>
 </dependency>
 ----
 
@@ -381,7 +378,6 @@ In this guide, we are going to use the Axle API, so:
 <dependency>
   <groupId>io.smallrye.reactive</groupId>
   <artifactId>smallrye-axle-web-client</artifactId>
-  <version>{axle-version}</version>
 </dependency>
 ----
 

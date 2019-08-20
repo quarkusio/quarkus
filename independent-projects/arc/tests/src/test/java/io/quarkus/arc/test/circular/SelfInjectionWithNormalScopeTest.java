@@ -11,7 +11,7 @@ import javax.inject.Inject;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class CircularDependenciesTest {
+public class SelfInjectionWithNormalScopeTest {
     @Rule
     public ArcTestContainer container = new ArcTestContainer(
             AbstractServiceImpl.class,

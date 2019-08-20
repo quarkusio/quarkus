@@ -1,7 +1,5 @@
 package io.quarkus.arc.test.injection.erroneous;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import io.quarkus.arc.test.ArcTestContainer;
@@ -28,7 +26,6 @@ public class CircularInjectionNotSupportedTest {
                         fail("Expected an IllegalStateException to be thrown, but it wasn't");
                     } catch (IllegalStateException e) {
                         // expected failure on ISE due to circular dependency
-                        assertThat(e.getMessage(), containsString("Circular dependencies not supported"));
                     }
                 }
             };

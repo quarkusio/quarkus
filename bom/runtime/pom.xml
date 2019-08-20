@@ -113,14 +113,14 @@
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>3.3.0</rest-assured.version>
         <junit4.version>4.12</junit4.version>
-        <junit.jupiter.version>5.5.0</junit.jupiter.version>
-        <assertj.version>3.12.2</assertj.version>
+        <junit.jupiter.version>5.5.1</junit.jupiter.version>
+        <assertj.version>3.13.2</assertj.version>
         <json-smart.version>2.3</json-smart.version>
         <infinispan.version>10.0.0.Beta5</infinispan.version>
         <caffeine.version>2.6.2</caffeine.version>
         <netty.version>4.1.34.Final</netty.version>
         <reactive-streams.version>1.0.2</reactive-streams.version>
-        <test-containers.version>1.11.3</test-containers.version>
+        <test-containers.version>1.12.0</test-containers.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
         <axle-client.version>0.0.7</axle-client.version>
         <reactive-pg-client.version>0.11.4</reactive-pg-client.version>
@@ -159,7 +159,7 @@
         <kubernetes-client.version>4.4.1</kubernetes-client.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
-        <wiremock.version>2.23.2</wiremock.version>
+        <wiremock.version>2.24.1</wiremock.version>
         <spring.version>5.1.8.RELEASE</spring.version>
         <mvel2.version>2.4.4.Final</mvel2.version>
     </properties>

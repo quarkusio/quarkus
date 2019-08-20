@@ -52,7 +52,9 @@ public class RunningInvoker extends MavenProcessInvoker {
         List<ProcessInfo> list = JProcesses.getProcessList().stream().filter(pi ->
         // Kill all process using the live reload and the live reload process.
         // This might be too much
-        pi.getCommand().contains("quarkus:dev") || pi.getCommand().contains(getWorkingDirectory().getAbsolutePath()))
+        pi.getCommand().contains("quarkus:dev")
+                || pi.getCommand().contains("quarkus:remote-dev")
+                || pi.getCommand().contains(getWorkingDirectory().getAbsolutePath()))
                 .collect(Collectors.toList());
 
         list.stream()

@@ -65,6 +65,13 @@ public class HttpConfiguration {
     @ConfigItem
     public OptionalInt ioThreads;
 
+    /**
+     * If this is true then only a virtual channel will be set up for vertx web.
+     * We have this switch for testing purposes.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean virtual;
+
     public int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort : port;
     }

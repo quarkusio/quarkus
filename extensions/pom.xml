@@ -95,6 +95,7 @@
         <module>amazon-lambda</module>
         <module>amazon-lambda-resteasy</module>
         <module>amazon-dynamodb</module>
+        <module>azure-functions-http</module>
 
         <!-- Additional languages -->
         <module>kotlin</module>

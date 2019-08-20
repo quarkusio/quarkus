@@ -219,10 +219,10 @@ public class CreateProjectTest {
     }
 
     @Test
-    @Timeout(1)
+    @Timeout(2)
     @DisplayName("Should create correctly multiple times in parallel with multiple threads")
     void createMultipleTimes() throws InterruptedException {
-        final ExecutorService executorService = Executors.newFixedThreadPool(10);
+        final ExecutorService executorService = Executors.newFixedThreadPool(4);
         final CountDownLatch latch = new CountDownLatch(20);
         Map<String, Object> properties = new HashMap<>();
         properties.put("extensions", "commons-io:commons-io:2.5");

@@ -41,10 +41,10 @@ class BasicRestProjectGeneratorTest {
             .build();
 
     @Test
-    @Timeout(1)
+    @Timeout(2)
     @DisplayName("Should generate correctly multiple times in parallel with multiple threads")
     void generateMultipleTimes() throws InterruptedException {
-        final ExecutorService executorService = Executors.newFixedThreadPool(10);
+        final ExecutorService executorService = Executors.newFixedThreadPool(4);
         final CountDownLatch latch = new CountDownLatch(20);
         final BasicRestProjectGenerator basicRestProjectGenerator = new BasicRestProjectGenerator();
         List<Callable<Void>> collect = IntStream.range(0, 20).boxed().map(i -> (Callable<Void>) () -> {

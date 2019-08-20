@@ -4,6 +4,7 @@ import static io.quarkus.maven.utilities.MojoUtils.getPluginGroupId;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
 import static io.quarkus.maven.utilities.MojoUtils.readPom;
 import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -220,5 +221,11 @@ public class ListExtensionsTest {
             ++nbLine;
         }
         Assertions.assertTrue(nbLine > 7, "search to unexpected extension must return a message");
+    }
+
+    @Test
+    void testListExtensionsWithoutAPomFile() throws IOException {
+        ListExtensions listExtensions = new ListExtensions(null, BuildTool.MAVEN);
+        assertThat(listExtensions.findInstalled()).isEmpty();
     }
 }

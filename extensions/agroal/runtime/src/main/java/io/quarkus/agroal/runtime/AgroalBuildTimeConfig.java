@@ -20,4 +20,10 @@ public class AgroalBuildTimeConfig {
      */
     @ConfigItem(name = ConfigItem.PARENT)
     public Map<String, DataSourceBuildTimeConfig> namedDataSources;
+
+    /**
+     * Whether or not an healtcheck is published in case the smallrye-health extionsion is present (default to true).
+     */
+    @ConfigItem(name = "health.enabled", defaultValue = "true")
+    public boolean healthEnabled;
 }

@@ -103,7 +103,7 @@ public class BaseFunction {
             try {
                 if (msg == null)
                     continue;
-                log.info("Got message: " + msg.getClass().getName());
+                //log.info("Got message: " + msg.getClass().getName());
 
                 if (msg instanceof HttpResponse) {
                     HttpResponse res = (HttpResponse) msg;

@@ -51,7 +51,6 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.Http1xServerConnection;
-import io.vertx.core.http.impl.HttpHandlers;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.json.JsonObject;
@@ -489,12 +488,6 @@ public class VertxWebRecorder {
             return;
         VertxInternal vertx = (VertxInternal) vertxRuntime;
         virtualBootstrap = new ServerBootstrap();
-        HttpHandlers handlers = new HttpHandlers(
-                null,
-                router,
-                null,
-                null,
-                null);
 
         virtualBootstrap.group(vertx.getEventLoopGroup())
                 .channel(VirtualServerChannel.class)
@@ -517,10 +510,11 @@ public class VertxWebRecorder {
                                     chctx,
                                     context,
                                     "localhost",
-                                    handlers,
                                     null);
+                            conn.handler(router);
                             return conn;
                         });
+
                         ch.pipeline().addLast("handler", handler);
                     }
                 });

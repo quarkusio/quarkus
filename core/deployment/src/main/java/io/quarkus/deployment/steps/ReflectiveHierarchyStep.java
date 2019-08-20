@@ -1,6 +1,7 @@
 package io.quarkus.deployment.steps;
 
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -32,6 +33,9 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 public class ReflectiveHierarchyStep {
 
     private static final Logger log = Logger.getLogger(ReflectiveHierarchyStep.class);
+
+    private static final Set<String> IGNORED_PARAMETERIZED_TYPE_PACKAGE_NAMES = new HashSet<>(
+            Arrays.asList("java.util", "io.reactivex"));
 
     @Inject
     List<ReflectiveHierarchyBuildItem> hierarchy;
@@ -83,7 +87,9 @@ public class ReflectiveHierarchyStep {
             addReflectiveHierarchy(i, type.asArrayType().component(), processedReflectiveHierarchies, unindexedClasses);
         } else if (type instanceof ParameterizedType) {
             ParameterizedType p = (ParameterizedType) type;
-            addReflectiveHierarchy(i, p.owner(), processedReflectiveHierarchies, unindexedClasses);
+            if (!IGNORED_PARAMETERIZED_TYPE_PACKAGE_NAMES.contains(p.name().toString())) {
+                addClassTypeHierarchy(i, p.name(), processedReflectiveHierarchies, unindexedClasses);
+            }
             for (Type arg : p.arguments()) {
                 addReflectiveHierarchy(i, arg, processedReflectiveHierarchies, unindexedClasses);
             }

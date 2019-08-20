@@ -444,6 +444,12 @@ public class CreateExtensionMojo extends AbstractMojo {
                         + "/deployment/" + model.artifactIdBaseCamelCase + "Processor.java");
         evalTemplate(cfg, "Processor.java", processorPath, charset, model);
 
+        final Path processorTestPath = basedir
+                .resolve(model.artifactIdBase + "/deployment/src/test/java/" + model.javaPackageBase.replace('.', '/')
+                        + "/deployment/" + model.artifactIdBaseCamelCase + "ProcessorTest.java");
+
+        evalTemplate(cfg, "ProcessorTest.java", processorTestPath, charset, model);
+
         if (!basePom.getModules().contains(model.artifactIdBase)) {
             getLog().info(String.format("Adding module [%s] to [%s]", model.artifactIdBase, basePomXml));
             new PomTransformer(basePomXml, charset).transform(Transformation.addModule(model.artifactIdBase));

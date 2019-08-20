@@ -156,6 +156,9 @@ final class MethodDescriptors {
     static final MethodDescriptor CONTEXT_GET_IF_PRESENT = MethodDescriptor.ofMethod(Context.class, "get", Object.class,
             Contextual.class);
 
+    static final MethodDescriptor GET_IDENTIFIER = MethodDescriptor.ofMethod(InjectableBean.class, "getIdentifier",
+            String.class);
+
     private MethodDescriptors() {
     }
 

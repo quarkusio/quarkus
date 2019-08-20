@@ -27,7 +27,7 @@ Such resources that are meant to be part of the native executable need to be spe
 
 Quarkus automatically includes the resources present in `META-INF/resources` (the web resources) but, outside of this directory, you are on your own.
 
-To include more resources in the native executable, create a `resources-config.json` JSON file at the root of your project defining which resources should be included:
+To include more resources in the native executable, create a `resources-config.json` JSON file defining which resources should be included:
 
 [source,json]
 ----
@@ -42,6 +42,9 @@ To include more resources in the native executable, create a `resources-config.j
   ]
 }
 ----
+
+When using Maven, you can put this file at the root of your project.
+If Gradle is used, we need to put this file in a folder that will be deployed in the build folder (for example `src/main/resources`) because the build folder is used as the project folder when creating the native image.
 
 The patterns are valid Java regexps.
 Here we include all the XML files and JSON files into the native executable.
@@ -68,6 +71,17 @@ Now, let's tell the `native-image` executable about this configuration file by t
         </execution>
     </executions>
 </plugin>
+----
+
+When using Gradle, we need to configure the additional build arguments in the plugin configuration:
+
+[source,groovy]
+----
+buildNative {
+    additionalBuildArgs = [
+            '-H:DynamicProxyConfigurationFiles=resources/main/resources-config.json'
+    ]
+}
 ----
 
 Your resources will now be included in your native executable.
@@ -132,7 +146,7 @@ If we were to use the code above, we would get an exception like the following w
 
 [source]
 ----
- Exception handling request to /person: org.jboss.resteasy.spi.UnhandledException: javax.json.bind.JsonbException: Can't create instance of a class: class org.acme.jsonb.Person, No default constructor found
+Exception handling request to /person: org.jboss.resteasy.spi.UnhandledException: javax.json.bind.JsonbException: Can't create instance of a class: class org.acme.jsonb.Person, No default constructor found
 ----
 
 An even nastier possible outcome could be for no exception to be thrown, but instead the JSON result would be completely empty.
@@ -156,7 +170,7 @@ Obviously, adding `@RegisterForReflection` is not possible if the class is in a 
 
 In this case, you can use a configuration file to register classes for reflection.
 
-Let's create the `reflection-config.json` file at the root of the project:
+Let's create the `reflection-config.json` file:
 
 [source,json]
 ----
@@ -172,6 +186,9 @@ Let's create the `reflection-config.json` file at the root of the project:
   }
 ]
 ----
+
+When using Maven, you can put this file at the root of your project.
+If Gradle is used, we need to put this file in a folder that will be deployed in the build folder (for example `src/main/resources`) because the build folder is used as the project folder when creating the native image.
 
 [NOTE]
 ====
@@ -200,6 +217,17 @@ Now, let's tell the `native-image` executable about this configuration file by t
         </execution>
     </executions>
 </plugin>
+----
+
+When using Gradle, we need to configure the additional build arguments in the plugin configuration:
+
+[source,groovy]
+----
+buildNative {
+    additionalBuildArgs = [
+            '-H:ReflectionConfigurationFiles=resources/main/reflection-config.json'
+    ]
+}
 ----
 
 `com.acme.MyClass` will now be registered for reflection and included in the native executable.

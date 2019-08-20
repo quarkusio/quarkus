@@ -1,9 +1,12 @@
 package io.quarkus.vertx.web.runtime.cors;
 
+import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.vertx.core.http.HttpMethod;
 
 @ConfigGroup
 public class CORSConfig {
@@ -17,7 +20,8 @@ public class CORSConfig {
      * default: returns any requested origin as valid
      */
     @ConfigItem
-    public Optional<String> origins;
+    public List<String> origins;
+
     /**
      * HTTP methods allowed for CORS
      *
@@ -27,7 +31,8 @@ public class CORSConfig {
      * default: returns any requested method as valid
      */
     @ConfigItem
-    public Optional<String> methods;
+    public List<HttpMethod> methods;
+
     /**
      * HTTP headers allowed for CORS
      *
@@ -37,19 +42,33 @@ public class CORSConfig {
      * default: returns any requested header as valid
      */
     @ConfigItem
-    public Optional<String> headers;
+    public List<String> headers;
+
     /**
      * HTTP headers exposed in CORS
      *
      * Comma separated list of valid headers. ex: X-Custom,Content-Disposition
-     * 
+     *
      * default: <empty>
      */
     @ConfigItem
-    public Optional<String> exposedHeaders;
+    public List<String> exposedHeaders;
+
+    /**
+     * The `Access-Control-Max-Age` response header value indicating
+     * how long the results of a pre-flight request can be cached.
+     */
+    @ConfigItem
+    public Optional<Duration> accessControlMaxAge;
 
     @Override
     public String toString() {
-        return origins.orElse("<>") + methods.orElse("<>") + headers.orElse("<>");
+        return "CORSConfig{" +
+                "origins=" + origins +
+                ", methods=" + methods +
+                ", headers=" + headers +
+                ", exposedHeaders=" + exposedHeaders +
+                ", accessControlMaxAge=" + accessControlMaxAge +
+                '}';
     }
 }

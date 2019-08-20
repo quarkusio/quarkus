@@ -68,6 +68,7 @@
         <module>panache</module>
         <module>hibernate-search-elasticsearch</module>
         <module>elasticsearch-rest-client</module>
+        <module>jgit</module>
         <module>kafka-client</module>
         <module>kafka-streams</module>
         <module>tika</module>

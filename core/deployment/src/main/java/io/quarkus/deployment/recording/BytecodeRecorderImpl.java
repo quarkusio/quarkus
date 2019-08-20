@@ -13,6 +13,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -581,6 +582,14 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
                     return method.invokeVirtualMethod(ofMethod(StartupContext.class, "getValue", Object.class, String.class),
                             method.getMethodParam(0), method.load(proxyId));
+                }
+            };
+        } else if (param instanceof Duration) {
+            return new DeferredParameter() {
+                @Override
+                ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
+                    return method.invokeStaticMethod(ofMethod(Duration.class, "parse", Duration.class, CharSequence.class),
+                            method.load(param.toString()));
                 }
             };
         } else if (param instanceof Class<?>) {

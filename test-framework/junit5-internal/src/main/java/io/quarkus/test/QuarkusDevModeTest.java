@@ -337,7 +337,7 @@ public class QuarkusDevModeTest
             //this sucks, but some file systems only resolve last modified times to the second granularity
             //we need to sleep here before modification to make sure the detector actually picks up the change
             //we sleep to the nearest whole second plus two ms
-            Thread.sleep(1002 - (System.currentTimeMillis() % 1000));
+            Thread.sleep(2002 - (System.currentTimeMillis() % 2000));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

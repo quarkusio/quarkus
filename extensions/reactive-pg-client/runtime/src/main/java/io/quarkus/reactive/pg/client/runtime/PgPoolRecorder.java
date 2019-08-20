@@ -4,10 +4,10 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.reactiverse.pgclient.PgClient;
-import io.reactiverse.pgclient.PgPool;
-import io.reactiverse.pgclient.PgPoolOptions;
 import io.vertx.core.Vertx;
+import io.vertx.pgclient.PgConnectOptions;
+import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.PoolOptions;
 
 @Recorder
 public class PgPoolRecorder {
@@ -25,33 +25,42 @@ public class PgPoolRecorder {
     }
 
     private PgPool initialize(Vertx vertx, DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig) {
-        PgPoolOptions pgPoolOptions = toPgPoolOptions(dataSourceConfig, pgPoolConfig);
-        return PgClient.pool(vertx, pgPoolOptions);
+        PoolOptions poolOptions = toPoolOptions(dataSourceConfig, pgPoolConfig);
+        PgConnectOptions pgConnectOptions = toPgConnectOptions(dataSourceConfig, pgPoolConfig);
+        return PgPool.pool(vertx, pgConnectOptions, poolOptions);
     }
 
-    private PgPoolOptions toPgPoolOptions(DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig) {
-        PgPoolOptions pgPoolOptions;
+    private PoolOptions toPoolOptions(DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig) {
+        PoolOptions poolOptions;
+        poolOptions = new PoolOptions();
         if (dataSourceConfig != null) {
+            dataSourceConfig.maxSize.ifPresent(value -> poolOptions.setMaxSize(value));
+        }
 
-            pgPoolOptions = dataSourceConfig.url
+        return poolOptions;
+    }
+
+    private PgConnectOptions toPgConnectOptions(DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig) {
+        PgConnectOptions pgConnectOptions;
+        if (dataSourceConfig != null) {
+            pgConnectOptions = dataSourceConfig.url
                     .filter(s -> s.matches("^vertx-reactive:postgre(?:s|sql)://.*$"))
                     .map(s -> s.substring("vertx-reactive:".length()))
-                    .map(PgPoolOptions::fromUri)
-                    .orElse(new PgPoolOptions());
+                    .map(PgConnectOptions::fromUri)
+                    .orElse(new PgConnectOptions());
 
-            dataSourceConfig.username.ifPresent(value -> pgPoolOptions.setUser(value));
-            dataSourceConfig.password.ifPresent(value -> pgPoolOptions.setPassword(value));
-            dataSourceConfig.maxSize.ifPresent(value -> pgPoolOptions.setMaxSize(value));
+            dataSourceConfig.username.ifPresent(value -> pgConnectOptions.setUser(value));
+            dataSourceConfig.password.ifPresent(value -> pgConnectOptions.setPassword(value));
 
         } else {
-            pgPoolOptions = new PgPoolOptions();
+            pgConnectOptions = new PgConnectOptions();
         }
 
         if (pgPoolConfig != null) {
-            pgPoolConfig.cachePreparedStatements.ifPresent(value -> pgPoolOptions.setCachePreparedStatements(value));
-            pgPoolConfig.pipeliningLimit.ifPresent(value -> pgPoolOptions.setPipeliningLimit(value));
+            pgPoolConfig.cachePreparedStatements.ifPresent(value -> pgConnectOptions.setCachePreparedStatements(value));
+            pgPoolConfig.pipeliningLimit.ifPresent(value -> pgConnectOptions.setPipeliningLimit(value));
         }
 
-        return pgPoolOptions;
+        return pgConnectOptions;
     }
 }

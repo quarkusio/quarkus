@@ -2,7 +2,7 @@ package io.quarkus.reactive.pg.client.deployment;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.runtime.RuntimeValue;
-import io.reactiverse.pgclient.PgPool;
+import io.vertx.pgclient.PgPool;
 
 public final class PgPoolBuildItem extends SimpleBuildItem {
 

@@ -56,7 +56,7 @@ public class QuarkusNative extends QuarkusTask {
 
     private String nativeImageXmx;
 
-    private String containerRuntime = "docker";
+    private String containerRuntime;
 
     private String containerRuntimeOptions;
 

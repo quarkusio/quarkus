@@ -107,8 +107,8 @@
         <quartz.version>2.3.1</quartz.version>
         <jakarta-activation.version>1.2.1</jakarta-activation.version>
         <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
-        <postgresql-jdbc.version>42.2.5</postgresql-jdbc.version>
-        <mariadb-jdbc.version>2.4.1</mariadb-jdbc.version>
+        <postgresql-jdbc.version>42.2.6</postgresql-jdbc.version>
+        <mariadb-jdbc.version>2.4.3</mariadb-jdbc.version>
         <mssql-jdbc.version>7.2.1.jre8</mssql-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>3.3.0</rest-assured.version>

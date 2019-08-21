@@ -27,7 +27,7 @@ public final class VirtualAddress extends SocketAddress implements Comparable<Vi
 
     private static final long serialVersionUID = 4644331421130916435L;
 
-    public static final io.netty.channel.local.LocalAddress ANY = new io.netty.channel.local.LocalAddress("ANY");
+    public static final VirtualAddress ANY = new VirtualAddress("ANY");
 
     private final String id;
     private final String strVal;
@@ -75,7 +75,7 @@ public final class VirtualAddress extends SocketAddress implements Comparable<Vi
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof io.netty.channel.local.LocalAddress)) {
+        if (!(o instanceof VirtualAddress)) {
             return false;
         }
 

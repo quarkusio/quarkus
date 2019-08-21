@@ -1,25 +1,20 @@
 package io.quarkus.resteasy.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-
 import java.util.Map.Entry;
 import java.util.Optional;
 
 import javax.servlet.DispatcherType;
 import javax.ws.rs.core.Application;
 
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
-import io.quarkus.resteasy.runtime.NotFoundExceptionMapper;
 import io.quarkus.resteasy.runtime.ResteasyFilter;
-import io.quarkus.resteasy.runtime.RolesFilterRegistrar;
 import io.quarkus.resteasy.server.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.resteasy.server.common.deployment.ResteasyServerConfigBuildItem;
 import io.quarkus.undertow.deployment.FilterBuildItem;
@@ -29,7 +24,8 @@ import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
 /**
  * Processor that finds JAX-RS classes in the deployment
  */
-public class ResteasyProcessor {
+public class ResteasyServletProcessor {
+    private static final Logger log = Logger.getLogger("io.quarkus.resteasy");
 
     private static final String JAVAX_WS_RS_APPLICATION = Application.class.getName();
     private static final String JAX_RS_FILTER_NAME = JAVAX_WS_RS_APPLICATION;
@@ -45,6 +41,7 @@ public class ResteasyProcessor {
 
     @BuildStep
     public void build(
+            Capabilities capabilities,
             Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<FilterBuildItem> filter,
@@ -52,6 +49,11 @@ public class ResteasyProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ServletInitParamBuildItem> servletInitParameters,
             ResteasyInjectionReadyBuildItem resteasyInjectionReady) throws Exception {
+        if (!capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
+            log.info(
+                    "Resteasy running without servlet container.  Add quarkus-undertow if you want Restasy to run within a servlet container");
+            return;
+        }
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY));
 
         if (resteasyServerConfig.isPresent()) {
@@ -74,20 +76,6 @@ public class ResteasyProcessor {
                 servletInitParameters.produce(new ServletInitParamBuildItem(initParameter.getKey(), initParameter.getValue()));
             }
         }
-    }
-
-    /**
-     * Install the JAX-RS security provider.
-     */
-    @BuildStep
-    void setupFilter(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
-        providers.produce(new ResteasyJaxrsProviderBuildItem(RolesFilterRegistrar.class.getName()));
-    }
-
-    @BuildStep(onlyIf = IsDevelopment.class)
-    @Record(RUNTIME_INIT)
-    void setupExceptionMapper(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
-        providers.produce(new ResteasyJaxrsProviderBuildItem(NotFoundExceptionMapper.class.getName()));
     }
 
     private String getMappingPath(String path) {

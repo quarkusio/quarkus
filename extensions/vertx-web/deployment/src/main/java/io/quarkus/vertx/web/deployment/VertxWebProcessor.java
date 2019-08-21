@@ -34,6 +34,7 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -149,9 +150,9 @@ class VertxWebProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             ShutdownContextBuildItem shutdown,
             VertxBuildItem vertx,
-            Optional<DefaultRouteBuildItem> defaultRoute,
+            List<DefaultRouteBuildItem> defaultRoutes,
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
-            List<FilterBuildItem> filters) throws IOException {
+            List<FilterBuildItem> filters) throws IOException, BuildException {
 
         ClassOutput classOutput = new ClassOutput() {
             @Override
@@ -160,6 +161,17 @@ class VertxWebProcessor {
             }
         };
         Map<String, List<Route>> routeConfigs = new HashMap<>();
+        Optional<DefaultRouteBuildItem> defaultRoute;
+        if (defaultRoutes == null || defaultRoutes.isEmpty()) {
+            defaultRoute = Optional.empty();
+        } else {
+            if (defaultRoutes.size() > 1) {
+                // this should never happen
+                throw new BuildException("Too many default routes.", Collections.emptyList());
+            } else {
+                defaultRoute = Optional.of(defaultRoutes.get(0));
+            }
+        }
         for (RouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
             String handlerClass = generateHandler(businessMethod.getBean(), businessMethod.getMethod(), classOutput);
             List<Route> routes = businessMethod.getRoutes().stream()

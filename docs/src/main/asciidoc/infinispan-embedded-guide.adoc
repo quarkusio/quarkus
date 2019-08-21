@@ -1,0 +1,101 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Infinispan Embedded
+
+include::./attributes.adoc[]
+
+Infinispan is an in memory data grid that allows running an in memory cache, which can be possibly
+clustered, in your application directly.
+
+More information can be found about Infinispan at https://infinispan.org and the embedded at
+https://infinispan.org/docs/dev/user_guide/user_guide.html#cache_manager.
+
+== Adding the extension
+
+Once you have your Quarkus project configured you can add the `infinispan-embedded` extension
+to your project by running the following from the command line in your project base directory.
+
+[source]
+mvn quarkus:add-extension -Dextensions="infinispan-embedded"
+
+This will add the following to your pom.xml
+
+[source,xml]
+----
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-infinispan-embedded</artifactId>
+    </dependency>
+----
+
+== Feature Support
+
+You can now use an Infinispan cache just as normal; This includes using clustered caches,
+off-heap memory, persistence and transactions. Note that this extension only includes
+the core module of Infinispan currently.
+That means indexing is not yet supported with this extension.
+
+=== Transactions
+
+A Infinispan cache can be configured to be transactional. Quarkus has a different
+extension link:transaction-guide.html[Transaction Guide] that provides a way
+to have your operations operate in a transaction. Infinispan also supports this
+by ensuring that you have configiured your cache to use a specific
+`TransactionManagerLookup`. An example of the xml configuration for this is
+as the following:
+
+[source,xml]
+----
+<local-cache name="quarkus-transaction">
+   <transaction transaction-manager-lookup="org.infinispan.transaction.lookup.JBossStandaloneJTAManagerLookup"/>
+</local-cache>
+----
+
+=== Native Limitations
+
+However there are some known limitations when running in native mode.
+
+* JMX is not supported
++ GraalVM does not allow this
+* UDP/Multicast is not supported
++ You must use TCP transport and a non UDP based membership protocol with JGroups
+
+== Injection (CDI)
+
+You can configure and start your caches yourself or this extension provides some
+limited injection capabilities so that you don't have to setup everything.
+
+NOTE: Additional injection functionality will be added to future versions and this extension is mostly to allow Infinispan embedded to work in a native environment
+
+The currently injectable instances are:
+
+* EmbeddedCacheManager (manager that holds the various caches)
+
+This allows the user to get an application wide `EmbeddedCacheManager` that can be configured
+with the following properties.
+
+The Infinispan embedded caches are configurable in the `application.properties` file that can be
+provided in the `src/main/resources` directory. The properties are the following:
+
+[cols=3*,options="header"]
+|===
+| Property
+| Default Value
+| Description
+| Runtime/Buildtime
+
+| `quarkus.infinispan-embedded.xml-config`
+| <empty>
+| Defines the xml file that has the Infinispan configuration in it. This file can either be absolute or relative to the
+working directory
+| Runtime overridable
+
+|===
+
+The contents of the `xml-config` must be a valid Infinispan xml file. If the xml file contains elements for JMX they will
+be disabled during native runtime allowing for the same configuration file to be used between JVM and native modes.
+
+

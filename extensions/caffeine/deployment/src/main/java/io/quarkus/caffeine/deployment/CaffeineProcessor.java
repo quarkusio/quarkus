@@ -15,6 +15,9 @@ public class CaffeineProcessor {
                 "com.github.benmanes.caffeine.cache.SILMS",
                 "com.github.benmanes.caffeine.cache.PSMS",
                 "com.github.benmanes.caffeine.cache.PDMS",
-                "com.github.benmanes.caffeine.cache.SILMS");
+                "com.github.benmanes.caffeine.cache.SILMS",
+                "com.github.benmanes.caffeine.cache.SSMS",
+                "com.github.benmanes.caffeine.cache.SSLA",
+                "com.github.benmanes.caffeine.cache.PSA");
     }
 }

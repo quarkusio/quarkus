@@ -1,0 +1,26 @@
+<infinispan
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="urn:infinispan:config:10.0 http://www.infinispan.org/schemas/infinispan-config-10.0.xsd
+                          urn:org:jgroups http://www.jgroups.org/schema/jgroups-4.0.xsd"
+      xmlns="urn:infinispan:config:10.0"
+      xmlns:ispn="urn:infinispan:config:10.0">
+    <!-- This is a sample way of setting up a distributed cache in a cluster with native. Note that UDP is not yet
+         supported, so we have to use something like TCPPING for discovery -->
+   <jgroups>
+       <stack name="tcpping" extends="tcp">
+           <MPING ispn:stack.combine="REMOVE" xmlns="urn:org:jgroups"/>
+           <TCPPING async_discovery="true"
+                    initial_hosts="${initial_hosts:192.168.1.20[7800],192.168.1.20[7801]}"
+                    port_range="0" ispn:stack.combine="INSERT_AFTER" ispn:stack.position="TCP" xmlns="urn:org:jgroups"/>
+       </stack>
+   </jgroups>
+
+   <cache-container name="test" default-cache="dist">
+       <transport cluster="test" stack="tcpping"/>
+      <distributed-cache name="dist">
+         <memory>
+            <object size="21000"/>
+         </memory>
+      </distributed-cache>
+   </cache-container>
+</infinispan>

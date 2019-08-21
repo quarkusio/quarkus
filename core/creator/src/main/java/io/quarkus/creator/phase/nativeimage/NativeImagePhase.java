@@ -335,12 +335,16 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm quarkus/graalvm-native-image"
             nativeImage = new ArrayList<>();
             Collections.addAll(nativeImage, containerRuntime, "run", "-v", outputDir.toAbsolutePath() + ":/project:z", "--rm");
-
-            if (IS_LINUX & "docker".equals(containerRuntime)) {
-                String uid = getLinuxID("-ur");
-                String gid = getLinuxID("-gr");
-                if (uid != null & gid != null & !"".equals(uid) & !"".equals(gid)) {
-                    Collections.addAll(nativeImage, "--user", uid.concat(":").concat(gid));
+            if (IS_LINUX) {
+                if ("docker".equals(containerRuntime)) {
+                    String uid = getLinuxID("-ur");
+                    String gid = getLinuxID("-gr");
+                    if (uid != null & gid != null & !"".equals(uid) & !"".equals(gid)) {
+                        Collections.addAll(nativeImage, "--user", uid + ":" + gid);
+                    }
+                } else if ("podman".equals(containerRuntime)) {
+                    // Needed to avoid AccessDeniedExceptions
+                    nativeImage.add("--userns=keep-id");
                 }
             }
             nativeImage.addAll(containerRuntimeOptions);

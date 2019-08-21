@@ -202,12 +202,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                 for (Path classFilePath : classFilePaths) {
                     final Path sourceFilePath = retrieveSourceFilePathForClassFile(classFilePath, moduleChangedSourceFiles,
                             module);
-                    if (sourceFilePath == null) {
-                        Files.deleteIfExists(classFilePath);
-                        classFilePathToSourceFilePath.remove(classFilePath);
-                        hasChanges = true;
-                    } else {
-                        final long classFileModificationTime = Files.getLastModifiedTime(classFilePath).toMillis();
+                    final long classFileModificationTime = Files.getLastModifiedTime(classFilePath).toMillis();
+                    if (sourceFilePath != null) {
                         if (Files.notExists(sourceFilePath)) {
                             // Source file has been deleted. Delete class and restart
                             Files.deleteIfExists(classFilePath);
@@ -226,6 +222,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                                 hasChanges = true;
                             }
                         }
+                    } else if (classFileModificationTime > lastChange) {
+                        hasChanges = true;
                     }
                 }
             }

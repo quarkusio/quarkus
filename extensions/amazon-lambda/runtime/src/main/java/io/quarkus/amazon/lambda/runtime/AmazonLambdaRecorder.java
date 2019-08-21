@@ -12,6 +12,7 @@ import com.amazonaws.services.lambda.runtime.ClientContext;
 import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
@@ -34,7 +35,9 @@ public class AmazonLambdaRecorder {
 
         RequestHandler handler = beanContainer.instance(handlerClass);
 
-        final ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        final ObjectMapper mapper = new ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
         AtomicBoolean running = new AtomicBoolean(true);
         ObjectReader objectReader = mapper.readerFor(handlerType.getValue());
         ObjectReader cognitoIdReader = mapper.readerFor(CognitoIdentity.class);

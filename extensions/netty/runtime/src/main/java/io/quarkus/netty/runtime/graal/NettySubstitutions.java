@@ -3,6 +3,7 @@ package io.quarkus.netty.runtime.graal;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.cert.X509Certificate;
+import java.util.function.BooleanSupplier;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
@@ -194,14 +195,21 @@ final class Target_io_netty_handler_ssl_SslContext {
 
 }
 
-@TargetClass(className = "io.netty.handler.ssl.JdkDefaultApplicationProtocolNegotiator")
+final class ReplaceJdkSslContext implements BooleanSupplier {
+    public boolean getAsBoolean() {
+        final String enabled = System.getProperty("substratevm.replacement.jdksslcontext", "true");
+        return Boolean.valueOf(enabled);
+    }
+}
+
+@TargetClass(className = "io.netty.handler.ssl.JdkDefaultApplicationProtocolNegotiator", onlyWith = ReplaceJdkSslContext.class)
 final class Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator {
 
     @Alias
     public static Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator INSTANCE;
 }
 
-@TargetClass(className = "io.netty.handler.ssl.JdkSslContext")
+@TargetClass(className = "io.netty.handler.ssl.JdkSslContext", onlyWith = ReplaceJdkSslContext.class)
 final class Target_io_netty_handler_ssl_JdkSslContext {
 
     @Substitute

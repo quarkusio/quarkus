@@ -8,6 +8,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,6 +17,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -31,6 +35,26 @@ import io.quarkus.annotation.processor.StringUtil;
 
 final public class GenerateExtensionConfigurationDoc {
     private static final String NAMED_MAP_CONFIG_ITEM_FORMAT = ".\"<%s>\"";
+    private static final Pattern MAP_CONFIG_KEY_PATTERN = Pattern.compile("^(.)+\\.(\"<[\\w\\d-]+>\")(.)*$");
+    public static final Comparator<String> CONFIG_KEYS_COMPARATOR = new Comparator<String>() {
+        @Override
+        public int compare(String a, String b) {
+            final boolean firstKeyIsMapConfig = MAP_CONFIG_KEY_PATTERN.matcher(a.split("::")[0]).find();
+            final boolean secondKeyIsMapConfig = MAP_CONFIG_KEY_PATTERN.matcher(b.split("::")[0]).find();
+            System.out.println(firstKeyIsMapConfig);
+            System.out.println(secondKeyIsMapConfig);
+            if (firstKeyIsMapConfig) {
+                if (secondKeyIsMapConfig) {
+                    return 0;
+                }
+                return 1;
+            } else if (secondKeyIsMapConfig) {
+                return -1;
+            }
+
+            return 0;
+        }
+    };
 
     private final JavaDocParser javaDocParser = new JavaDocParser();
     private final Set<ConfigRootInfo> configRoots = new HashSet<>();
@@ -85,9 +109,17 @@ final public class GenerateExtensionConfigurationDoc {
     }
 
     public void writeExtensionConfiguration(Properties javaDocProperties) throws IOException {
-        Map<String, String> extensionsConfigurations = findExtensionsConfiguration(javaDocProperties);
+        final String NEW_CONFIG_KEY_ENTRY = "\n`quarkus.";
+        final Map<String, String> extensionsConfigurations = findExtensionsConfiguration(javaDocProperties);
         for (Map.Entry<String, String> entry : extensionsConfigurations.entrySet()) {
-            final StringBuilder doc = new StringBuilder(entry.getValue());
+            /**
+             * Sort docs keys with map config keys as last elements of the generated docs.
+             */
+            String docsWithSortedKeys = Arrays.stream(entry.getValue().split(NEW_CONFIG_KEY_ENTRY))
+                    .sorted(CONFIG_KEYS_COMPARATOR)
+                    .collect(Collectors.joining(NEW_CONFIG_KEY_ENTRY));
+
+            final StringBuilder doc = new StringBuilder(docsWithSortedKeys);
 
             doc.append(Constants.CONFIG_PHASE_LEGEND);
 
@@ -238,8 +270,7 @@ final public class GenerateExtensionConfigurationDoc {
         return doc;
     }
 
-    private void recordConfigItems(List<ConfigItem> configItems, Element element, String parentName,
-            ConfigPhase configPhase) {
+    private void recordConfigItems(List<ConfigItem> configItems, Element element, String parentName, ConfigPhase configPhase) {
         for (Element enclosedElement : element.getEnclosedElements()) {
             if (!enclosedElement.getKind().isField()) {
                 continue;

@@ -111,7 +111,14 @@ class BeanResolver {
                     throw new IllegalArgumentException("Invalid argument combination " + requiredType + "; " + beanType);
                 }
                 for (int i = 0; i < requiredTypeArguments.size(); i++) {
-                    if (!parametersMatch(requiredTypeArguments.get(i), beanTypeArguments.get(i))) {
+                    Type requiredTypeArg = requiredTypeArguments.get(i);
+                    Type beanTypeArg = beanTypeArguments.get(i);
+                    if (isActualType(requiredTypeArg) && isActualType(beanTypeArg)
+                            && beanTypeArg.name().equals(DotNames.OBJECT)) {
+                        // required type = FooTyped<Long> and bean type is FooTyped<Object>, that is a match
+                        return true;
+                    }
+                    if (!parametersMatch(requiredTypeArg, beanTypeArg)) {
                         return false;
                     }
                 }

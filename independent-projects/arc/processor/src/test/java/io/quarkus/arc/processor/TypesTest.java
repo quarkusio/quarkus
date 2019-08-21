@@ -26,7 +26,7 @@ public class TypesTest {
         DotName fooName = DotName.createSimple(Foo.class.getName());
         ClassInfo fooClass = index.getClassByName(fooName);
         Map<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariables = new HashMap<>();
-        Set<Type> types = Types.getTypeClosure(index.getClassByName(bazName),
+        Set<Type> types = Types.getTypeClosure(index.getClassByName(bazName), false,
                 Collections.emptyMap(),
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
                         Collections.emptyList(), null,

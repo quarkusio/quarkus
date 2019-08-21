@@ -145,9 +145,9 @@ final class Types {
                         "Producer method return type not found in index: " + producerMethod.returnType().name());
             }
             if (Kind.CLASS.equals(returnType.kind())) {
-                types = getTypeClosure(returnTypeClassInfo, Collections.emptyMap(), beanDeployment, null);
+                types = getTypeClosure(returnTypeClassInfo, true, Collections.emptyMap(), beanDeployment, null);
             } else if (Kind.PARAMETERIZED_TYPE.equals(returnType.kind())) {
-                types = getTypeClosure(returnTypeClassInfo,
+                types = getTypeClosure(returnTypeClassInfo, false,
                         buildResolvedMap(returnType.asParameterizedType().arguments(), returnTypeClassInfo.typeParameters(),
                                 Collections.emptyMap()),
                         beanDeployment, null);
@@ -171,9 +171,9 @@ final class Types {
                 throw new IllegalArgumentException("Producer field type not found in index: " + producerField.type().name());
             }
             if (Kind.CLASS.equals(fieldType.kind())) {
-                types = getTypeClosure(fieldClassInfo, Collections.emptyMap(), beanDeployment, null);
+                types = getTypeClosure(fieldClassInfo, true, Collections.emptyMap(), beanDeployment, null);
             } else if (Kind.PARAMETERIZED_TYPE.equals(fieldType.kind())) {
-                types = getTypeClosure(fieldClassInfo,
+                types = getTypeClosure(fieldClassInfo, false,
                         buildResolvedMap(fieldType.asParameterizedType().arguments(), fieldClassInfo.typeParameters(),
                                 Collections.emptyMap()),
                         beanDeployment, null);
@@ -186,15 +186,16 @@ final class Types {
 
     static Set<Type> getClassBeanTypeClosure(ClassInfo classInfo, Map<TypeVariable, Type> resolvedTypeParameters,
             BeanDeployment beanDeployment) {
-        return restrictBeanTypes(getTypeClosure(classInfo, resolvedTypeParameters, beanDeployment, null),
+        return restrictBeanTypes(getTypeClosure(classInfo, false, resolvedTypeParameters, beanDeployment, null),
                 beanDeployment.getAnnotations(classInfo));
     }
 
-    static Set<Type> getTypeClosure(ClassInfo classInfo, Map<TypeVariable, Type> resolvedTypeParameters,
+    static Set<Type> getTypeClosure(ClassInfo classInfo, boolean possibleRawType,
+            Map<TypeVariable, Type> resolvedTypeParameters,
             BeanDeployment beanDeployment, BiConsumer<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariablesConsumer) {
         Set<Type> types = new HashSet<>();
         List<TypeVariable> typeParameters = classInfo.typeParameters();
-        if (!typeParameters.isEmpty()) {
+        if (!typeParameters.isEmpty() && !possibleRawType) {
             // Canonical ParameterizedType with unresolved type variables
             Type[] typeParams = new Type[typeParameters.size()];
             for (int i = 0; i < typeParameters.size(); i++) {
@@ -225,7 +226,8 @@ final class Types {
                     resolved = buildResolvedMap(interfaceType.asParameterizedType().arguments(),
                             interfaceClassInfo.typeParameters(), resolvedTypeParameters);
                 }
-                types.addAll(getTypeClosure(interfaceClassInfo, resolved, beanDeployment, resolvedTypeVariablesConsumer));
+                types.addAll(
+                        getTypeClosure(interfaceClassInfo, false, resolved, beanDeployment, resolvedTypeVariablesConsumer));
             }
         }
         // Superclass
@@ -238,7 +240,7 @@ final class Types {
                             superClassInfo.typeParameters(),
                             resolvedTypeParameters);
                 }
-                types.addAll(getTypeClosure(superClassInfo, resolved, beanDeployment, resolvedTypeVariablesConsumer));
+                types.addAll(getTypeClosure(superClassInfo, false, resolved, beanDeployment, resolvedTypeVariablesConsumer));
             }
         }
         return types;
@@ -247,7 +249,7 @@ final class Types {
     static Map<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariables(ClassInfo classInfo,
             BeanDeployment beanDeployment) {
         Map<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariables = new HashMap<>();
-        getTypeClosure(classInfo, Collections.emptyMap(), beanDeployment, resolvedTypeVariables::put);
+        getTypeClosure(classInfo, false, Collections.emptyMap(), beanDeployment, resolvedTypeVariables::put);
         return resolvedTypeVariables;
     }
 

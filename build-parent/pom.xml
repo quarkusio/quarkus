@@ -175,6 +175,8 @@
                                             <exclude>org.glassfish:jakarta.json</exclude>
                                             <exclude>jakarta.json.bind:jakarta.json.bind-api</exclude>
                                             <exclude>jakarta.json:jakarta.json-api</exclude>
+                                            <!-- Ensure none of the deps use netty-all. This forces deps to use more fine grained netty artifacts -->
+                                            <exclude>io.netty:netty-all</exclude>
                                         </excludes>
                                     </bannedDependencies>
                                 </rules>

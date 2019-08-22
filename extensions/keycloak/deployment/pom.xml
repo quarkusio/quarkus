@@ -35,8 +35,8 @@
             <artifactId>quarkus-elytron-security-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus.keycloak</groupId>

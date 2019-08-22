@@ -31,6 +31,7 @@
         <rest-assured.version>3.3.0</rest-assured.version>
         <axle-client.version>0.0.7</axle-client.version>
         <vertx.version>3.7.1</vertx.version>
+        <artemis.version>2.9.0</artemis.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.28</freemarker.version>

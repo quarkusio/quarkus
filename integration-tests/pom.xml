@@ -54,6 +54,8 @@
         <module>resteasy-jackson</module>
         <module>jgit</module>
         <module>virtual-http</module>
+        <module>artemis-core</module>
+        <module>artemis-jms</module>
     </modules>
 
     <build>

@@ -3,11 +3,11 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Using our Spring Data JPA compatibility layer
+= Quarkus - Extension for Spring Data API
 
 include::./attributes.adoc[]
 
-While you are encouraged to use Hibernate ORM with Panache for Relational Database access, Quarkus provides a compatibility layer for
+While users are encouraged to use Hibernate ORM with Panache for Relational Database access, Quarkus provides a compatibility layer for
 Spring Data JPA repositories in the form of the `spring-data-jpa` extension.
 
 == Prerequisites
@@ -46,7 +46,7 @@ This command generates a Maven project with a REST endpoint and imports the `spr
 
 == Define the Entity
 
-Throughout the course of this guide, we will be using the following JPA Entity:
+Throughout the course of this guide, the following JPA Entity will be used:
 
 [source,java]
 ----
@@ -105,7 +105,7 @@ public class Fruit {
 
 == Configure database access properties
 
-Add the following properties to `application.properties` to configure access to a local PostgreSQL.
+Add the following properties to `application.properties` to configure access to a local PostgreSQL instance.
 
 [source,properties]
 ----
@@ -120,18 +120,18 @@ quarkus.hibernate-orm.database.generation=drop-and-create
 
 This configuration assumes that PostgreSQL will be running locally.
 
-A very easy way to accomplish that is by using the following docker command:
+A very easy way to accomplish that is by using the following Docker command:
 
 ```
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:10.5
+docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:11.5
 ```
 
 If you plan on using a different setup, please change your `application.properties` accordingly.
 
 == Prepare the data
 
-To make it easier to showcase some capabilities of Spring Data JPA on Quarkus, we will ensure that the database contains some test data.
-That is done by adding the following content to a new file named `src/main/resources/import.sql`:
+To make it easier to showcase some capabilities of Spring Data JPA on Quarkus, some test data should be inserted into the database
+by adding the following content to a new file named `src/main/resources/import.sql`:
 
 [source,sql]
 ----
@@ -145,7 +145,7 @@ Hibernate ORM will execute these queries on application startup.
 
 == Define the repository
 
-It is now time to define the repository we will use to access `Fruit`.
+It is now time to define the repository that will be used to access `Fruit`.
 In a typical Spring Data fashion create a repository like so:
 
 [source,java]
@@ -164,11 +164,11 @@ public interface FruitRepository extends CrudRepository<Fruit, Long> {
 
 The `FruitRepository` above extends Spring Data's `org.springframework.data.repository.CrudRepository` which means that all of the latter's methods are
 available to `FruitRepository`.
-Additionally we define `findByColor` whose purpose is to return all Fruit entities that match the specified color.
+Additionally `findByColor` is defined whose purpose is to return all Fruit entities that match the specified color.
 
 == Update the JAX-RS resource
 
-With the repository in place, the next order of business is to update our JAX-RS resource that will use the `FruitRepository`. Open `FruitResource` and change its contents to:
+With the repository in place, the next order of business is to update the JAX-RS resource that will use the `FruitRepository`. Open `FruitResource` and change its contents to:
 
 [source,java]
 ----
@@ -230,7 +230,7 @@ public class FruitResource {
     @GET
     @Path("/color/{color}")
     @Produces("application/json")
-    public List<Fruit> all(@PathParam("color") String color) {
+    public List<Fruit> findByColor(@PathParam("color") String color) {
         return fruitRepository.findByColor(color);
     }
 }
@@ -246,7 +246,7 @@ See the link:spring-web-guide.html[Spring Web guide] for more details.
 
 == Update the test
 
-To test the capabilities of `FruitRepository`, go ahead and update the content of `FruitResourceTest` to:
+To test the capabilities of `FruitRepository` proceed to update the content of `FruitResourceTest` to:
 
 [source,java]
 ----
@@ -369,7 +369,7 @@ The test can be easily run by issuing: `./mvnw test`
 
 == Package and run the application
 
-Quarkus dev mode works with the defined repositories just like any other Quarkus extension, greatly enhancing your productivity during the dev cycle.
+Quarkus dev mode works with the defined repositories just like with any other Quarkus extension, greatly enhancing your productivity during the dev cycle.
 The application can be started in dev mode as usual using:
 
 [source, bash]
@@ -379,11 +379,11 @@ The application can be started in dev mode as usual using:
 
 == Run the application as a native binary
 
-You can of course create a native image using instructions similar to link:building-native-image-guide.html[this] guide.
+You can of course create a native executable following the instructions of the link:building-native-image-guide.html[this] guide.
 
-== Supported Spring Data JPA functionality
+== Supported Spring Data JPA functionalities
 
-Quarkus currently supports a subset of Spring Data JPA's features that we feel are the most useful and most commonly used.
+Quarkus currently supports a subset of Spring Data JPA's features, namely the most useful and most commonly used features.
 
 An important part of this support is that all repository generation is done at build time thus ensuring that all supported features work correctly in native mode.
 Moreover, developers know at build time whether or not their repository method names can be converted to proper JPQL queries.
@@ -411,8 +411,8 @@ Furthermore the methods that update the database are automatically annotated wit
 This allows user defined repository interfaces to cherry-pick methods from any of the supported Spring Data repository interfaces without having to extend those interfaces.
 This is particularly useful when for example a repository needs to use some methods from `CrudRepository` but it's undesirable to expose the full list of methods of said interface.
 
-Assume for example we have a `PersonRepository` that shouldn't extend `CrudRepository` but would like to use `save` and `findById` methods which are defined in said interface.
-In such a case we would simply create `PersonRepository` like so:
+Assume for example that a `PersonRepository` that shouldn't extend `CrudRepository` but would like to use `save` and `findById` methods which are defined in said interface.
+In such a case, `PersonRepository` would look like so:
 
 [source,java]
 ----
@@ -569,7 +569,7 @@ All methods that are annotated with `@Modifying` will automatically be annotated
 
 ==== More examples
 
-An extensive list of examples can be seen in the `integration-tests/spring-data` directory which is located inside the Quarkus source code.
+An extensive list of examples can be seen in the https://github.com/quarkusio/quarkus/tree/master/integration-tests/spring-data-jpa[integration tests] directory which is located inside the Quarkus source code.
 
 === What is currently unsupported
 
@@ -578,13 +578,12 @@ An extensive list of examples can be seen in the `integration-tests/spring-data`
 * Customizing the base repository for all repository interfaces in the code base.
 
 In Spring Data JPA this is done by registering a class that extends `org.springframework.data.jpa.repository.support.SimpleJpaRepository` however in Quarkus this class
-is not used at all (since all the necessary plumbing is done at build time).
-We are exploring ways to provide similar functionality in the Quarkus support of Spring Data JPA.
+is not used at all (since all the necessary plumbing is done at build time). Similar support might be added to Quarkus in the future.
 
 * Using `java.util.concurrent.Future` and classes that extend it as return types of repository methods.
 * Native and named queries when using `@Query`
 
-Quarkus is exploring various alternatives to bridging the gap between the JPA and Reactive worlds.
+The Quarkus team is exploring various alternatives to bridging the gap between the JPA and Reactive worlds.
 
 == Important Technical Note
 
@@ -595,5 +594,5 @@ Spring classes and annotations are only used for reading metadata and / or are u
 
 Quarkus support has more Spring compatibility features. See the following guides for more details:
 
-* link:spring-di-guide.adoc[Spring DI]
-* link:spring-web-guide.adoc[Spring Web]
+* link:spring-di-guide.adoc[Quarkus - Extension for Spring DI]
+* link:spring-web-guide.adoc[Quarkus - Extension for Spring Web]

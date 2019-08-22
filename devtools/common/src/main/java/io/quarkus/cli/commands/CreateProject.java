@@ -2,6 +2,7 @@ package io.quarkus.cli.commands;
 
 import static io.quarkus.generators.ProjectGenerator.BUILD_TOOL;
 import static io.quarkus.generators.ProjectGenerator.CLASS_NAME;
+import static io.quarkus.generators.ProjectGenerator.IS_SPRING;
 import static io.quarkus.generators.ProjectGenerator.PACKAGE_NAME;
 import static io.quarkus.generators.ProjectGenerator.PROJECT_ARTIFACT_ID;
 import static io.quarkus.generators.ProjectGenerator.PROJECT_GROUP_ID;
@@ -38,6 +39,7 @@ public class CreateProject {
     private SourceType sourceType = SourceType.JAVA;
     private BuildTool buildTool = BuildTool.MAVEN;
     private String className;
+    private Set<String> extensions;
 
     private Model model;
 
@@ -70,6 +72,11 @@ public class CreateProject {
         return this;
     }
 
+    public CreateProject extensions(Set<String> extensions) {
+        this.extensions = extensions;
+        return this;
+    }
+
     public CreateProject buildTool(BuildTool buildTool) {
         this.buildTool = buildTool;
         return this;
@@ -92,6 +99,10 @@ public class CreateProject {
         context.put(QUARKUS_VERSION, getPluginVersion());
         context.put(SOURCE_TYPE, sourceType);
         context.put(BUILD_TOOL, buildTool);
+
+        if (extensions != null && extensions.stream().anyMatch(e -> e.toLowerCase().contains("spring-web"))) {
+            context.put(IS_SPRING, Boolean.TRUE);
+        }
 
         if (className != null) {
             className = sourceType.stripExtensionFrom(className);

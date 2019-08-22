@@ -18,5 +18,9 @@
             <groupId>@project.groupId@</groupId>
             <artifactId>quarkus-resteasy</artifactId>
         </dependency>
+        <dependency>
+            <groupId>@project.groupId@</groupId>
+            <artifactId>quarkus-undertow</artifactId>
+        </dependency>
     </dependencies>
 </project>

@@ -60,13 +60,21 @@ public class ResteasyStandaloneRecorder {
         }
     };
 
+    private static Handler<HttpServerRequest> ROOT_HANDLER = new Handler<HttpServerRequest>() {
+        @Override
+        public void handle(HttpServerRequest httpServerRequest) {
+            currentRoot.handle(httpServerRequest);
+        }
+    };
+
+    private static VertxRequestHandler currentRoot = null;
+
     public Handler<HttpServerRequest> startResteasy(RuntimeValue<Vertx> vertxValue,
             String contextPath,
             ResteasyDeployment deployment,
             ShutdownContext shutdown,
             BeanContainer beanContainer,
             boolean isVirtual) throws Exception {
-
         shutdown.addShutdownTask(new Runnable() {
             @Override
             public void run() {
@@ -77,7 +85,8 @@ public class ResteasyStandaloneRecorder {
         deployment.start();
         useDirect = !isVirtual;
 
-        return new VertxRequestHandler(vertx, beanContainer, deployment, contextPath, ALLOCATOR, null);
+        currentRoot = new VertxRequestHandler(vertx, beanContainer, deployment, contextPath, ALLOCATOR);
+        return ROOT_HANDLER;
     }
 
 }

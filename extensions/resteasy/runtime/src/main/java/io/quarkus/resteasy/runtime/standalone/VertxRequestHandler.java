@@ -7,7 +7,6 @@ import javax.ws.rs.core.HttpHeaders;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.SynchronousDispatcher;
-import org.jboss.resteasy.plugins.server.embedded.SecurityDomain;
 import org.jboss.resteasy.specimpl.ResteasyHttpHeaders;
 import org.jboss.resteasy.specimpl.ResteasyUriInfo;
 import org.jboss.resteasy.spi.Failure;
@@ -38,12 +37,11 @@ public class VertxRequestHandler implements Handler<HttpServerRequest> {
             BeanContainer beanContainer,
             ResteasyDeployment deployment,
             String servletMappingPrefix,
-            BufferAllocator allocator,
-            SecurityDomain domain) {
+            BufferAllocator allocator) {
         this.vertx = vertx;
         this.beanContainer = beanContainer;
         this.dispatcher = new RequestDispatcher((SynchronousDispatcher) deployment.getDispatcher(),
-                deployment.getProviderFactory(), domain);
+                deployment.getProviderFactory(), null);
         this.servletMappingPrefix = servletMappingPrefix;
         this.allocator = allocator;
     }

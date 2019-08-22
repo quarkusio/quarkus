@@ -130,7 +130,6 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
         assertThat(new File(testDir, "src/main/resources/application.properties")).exists();
-        assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).isFile();
         assertThat(new File(testDir, "src/main/java")).isDirectory().matches(f -> {
             String[] list = f.list();
             return list != null && list.length == 0;
@@ -171,7 +170,6 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
         assertThat(new File(testDir, "src/main/resources/application.properties")).exists();
-        assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/main/java/org/foo/MyResource.java")).isFile();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
@@ -211,7 +209,6 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
         assertThat(new File(testDir, "src/main/resources/application.properties")).exists();
-        assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
 
         assertThat(contentOf(new File(testDir, "pom.xml"), "UTF-8"))
                 .containsIgnoringCase(MojoUtils.QUARKUS_VERSION_PROPERTY);

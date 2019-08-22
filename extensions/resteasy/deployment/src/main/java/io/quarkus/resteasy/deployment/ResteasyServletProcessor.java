@@ -50,8 +50,9 @@ public class ResteasyServletProcessor {
             BuildProducer<ServletInitParamBuildItem> servletInitParameters,
             ResteasyInjectionReadyBuildItem resteasyInjectionReady) throws Exception {
         if (!capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
-            log.info(
-                    "Resteasy running without servlet container.  Add quarkus-undertow if you want Restasy to run within a servlet container");
+            // todo remove this after this is in the wild a few releases
+            log.info("Resteasy running without servlet container.");
+            log.info("- Add quarkus-undertow for Resteasy to run within a servlet container");
             return;
         }
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY));

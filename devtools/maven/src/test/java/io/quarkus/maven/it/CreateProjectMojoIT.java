@@ -203,7 +203,6 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(new File(testDir, "src/main/java")).isDirectory();
 
         assertThat(new File(testDir, "src/main/resources/application.properties")).exists();
-        assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
                 .containsIgnoringCase(MojoUtils.getBomArtifactId());
@@ -408,11 +407,6 @@ public class CreateProjectMojoIT extends MojoTestBase {
         testDir = new File(testDir, "acme");
         running = new RunningInvoker(testDir, false);
         running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
-
-        String resp = getHttpResponse();
-
-        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
-                .containsIgnoringCase("1.0-SNAPSHOT");
 
         String greeting = getHttpResponse("/hello");
         assertThat(greeting).containsIgnoringCase("hello");

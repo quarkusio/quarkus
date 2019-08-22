@@ -35,6 +35,10 @@ You can make use of the Undertow predicate language using an `undertow-handlers.
 in the `META-INF` directory of your application jar. This file contains handlers defined using the
 link:http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#predicates-attributes-and-handlers[Undertow predicate language].
 
+== web.xml
+
+If you are using a `web.xml` file as your configuration file, you can place it in the `src/main/resources/META-INF` directory.
+
 == Supporting secure connections with SSL
 
 In order to have Undertow support secure connections, you must either provide a certificate and associated key file, or supply a keystore.

@@ -23,11 +23,11 @@ public class ListExtensionsCommand implements Command<CommandInvocation> {
     @Option(shortName = 'h', hasValue = false)
     private boolean help;
 
-    @Option(shortName = 'a', hasValue = false, description = "Display name, group-id, artifact-id and version (default behaviour)")
+    @Option(shortName = 'a', hasValue = false, description = "Display all extensions or just the installable.")
     private boolean all = false;
 
-    @Option(shortName = 'f', hasValue = true, description = "Display in simplified format, only display the extension names or full format")
-    private String format = "simple";
+    @Option(shortName = 'f', hasValue = true, description = "Select the output format among 'name' (display the name only), 'concise' (display name and description) and 'full' (concise format and version related columns).")
+    private String format = "concise";
 
     @Option(shortName = 's', hasValue = true, description = "Search filter on extension list. The format is based on Java Pattern.")
     private String searchPattern;

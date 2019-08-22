@@ -3,13 +3,13 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Using our Spring Web compatibility layer
+= Quarkus - Quarkus Extension for Spring Web API
 
 include::./attributes.adoc[]
 
-While you are encouraged to use JAX-RS annotation for defining REST endpoints, Quarkus provides a compatibility layer for Spring Web in the form of the `spring-web` extension.
+While users are encouraged to use JAX-RS annotation for defining REST endpoints, Quarkus provides a compatibility layer for Spring Web in the form of the `spring-web` extension.
 
-This guide explains how your Quarkus application can leverage the well known Spring Web annotations to define RESTful services.
+This guide explains how a Quarkus application can leverage the well known Spring Web annotations to define RESTful services.
 
 == Prerequisites
 
@@ -224,6 +224,14 @@ In addition to the method parameters that can be annotated with the appropriate 
 
 Please note that the Spring support in Quarkus does not start a Spring Application Context nor are any Spring infrastructure classes run.
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
-What that means for end users, is that adding arbitrary Spring libraries to the classpath will not be taken into account. Moreover Spring infrastructure
-things like `org.springframework.beans.factory.config.BeanPostProcessor` will not be executed.
+What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
+classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for example) will not be executed.
+
+== More Spring guides
+
+Quarkus support has more Spring compatibility features. See the following guides for more details:
+
+* link:spring-di-guide.adoc[Quarkus - Extension for Spring DI]
+* link:spring-data-jpa-guide.adoc[Quarkus - Extension for Spring Data JPA]
+
 

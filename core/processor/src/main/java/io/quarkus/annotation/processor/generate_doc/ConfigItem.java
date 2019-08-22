@@ -1,33 +1,33 @@
 package io.quarkus.annotation.processor.generate_doc;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
 
-final public class ConfigItem {
-    private static final Map<String, String> PRIMITIVE_DEFAULT_VALUES = new HashMap<>();
+import io.quarkus.annotation.processor.Constants;
 
-    static {
-        PRIMITIVE_DEFAULT_VALUES.put("int", "0");
-        PRIMITIVE_DEFAULT_VALUES.put("long", "0l");
-        PRIMITIVE_DEFAULT_VALUES.put("float", "0f");
-        PRIMITIVE_DEFAULT_VALUES.put("double", "0d");
-        PRIMITIVE_DEFAULT_VALUES.put("boolean", "false");
+final public class ConfigItem implements Comparable<ConfigItem> {
+    private String type;
+    private String key;
+    private String configDoc;
+    private boolean withinAMap;
+    private String defaultValue;
+    private ConfigPhase configPhase;
+    private String javaDocSiteLink;
+
+    public ConfigItem() {
     }
 
-    private final String type;
-    private final String javaDocKey;
-    private final String key;
-    private final String defaultValue;
-    private final ConfigPhase configPhase;
-
-    public ConfigItem(String key, String javaDocKey, String type, String defaultValue,
-            ConfigPhase configPhase) {
-        this.type = type;
-        this.javaDocKey = javaDocKey;
-        this.key = key;
-        this.defaultValue = defaultValue;
-        this.configPhase = configPhase;
+    @Override
+    public String toString() {
+        return "ConfigItem{" +
+                "type='" + type + '\'' +
+                ", key='" + key + '\'' +
+                ", configDoc='" + configDoc + '\'' +
+                ", withinAMap=" + withinAMap +
+                ", defaultValue='" + defaultValue + '\'' +
+                ", configPhase=" + configPhase +
+                ", javaDocSiteLink='" + javaDocSiteLink + '\'' +
+                '}';
     }
 
     @Override
@@ -37,39 +37,55 @@ final public class ConfigItem {
         if (o == null || getClass() != o.getClass())
             return false;
         ConfigItem that = (ConfigItem) o;
-        return Objects.equals(type, that.type) &&
-                Objects.equals(javaDocKey, that.javaDocKey) &&
+        return withinAMap == that.withinAMap &&
+                Objects.equals(type, that.type) &&
                 Objects.equals(key, that.key) &&
+                Objects.equals(configDoc, that.configDoc) &&
                 Objects.equals(defaultValue, that.defaultValue) &&
-                Objects.equals(configPhase, that.configPhase);
+                configPhase == that.configPhase &&
+                Objects.equals(javaDocSiteLink, that.javaDocSiteLink);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, javaDocKey, key, defaultValue, configPhase);
-    }
 
-    @Override
-    public String toString() {
-        return "ConfigItem{" +
-                "type='" + type + '\'' +
-                ", key='" + key + '\'' +
-                ", javaDocKey='" + javaDocKey + '\'' +
-                ", defaultValue='" + defaultValue + '\'' +
-                ", configPhase='" + configPhase + '\'' +
-                '}';
+        return Objects.hash(type, key, configDoc, withinAMap, defaultValue, configPhase, javaDocSiteLink);
     }
 
     public String getType() {
         return type;
     }
 
-    public String getJavaDocKey() {
-        return javaDocKey;
+    public void setType(String type) {
+        this.type = type;
     }
 
-    public String getPropertyName() {
+    public String getKey() {
         return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public String getConfigDoc() {
+        return configDoc;
+    }
+
+    public void setConfigDoc(String configDoc) {
+        this.configDoc = configDoc;
+    }
+
+    public String getJavaDocSiteLink() {
+        if (javaDocSiteLink == null) {
+            return Constants.EMPTY;
+        }
+
+        return javaDocSiteLink;
+    }
+
+    public void setJavaDocSiteLink(String javaDocSiteLink) {
+        this.javaDocSiteLink = javaDocSiteLink;
     }
 
     public String getDefaultValue() {
@@ -77,10 +93,67 @@ final public class ConfigItem {
             return defaultValue;
         }
 
-        return PRIMITIVE_DEFAULT_VALUES.containsKey(type) ? PRIMITIVE_DEFAULT_VALUES.get(type) : "";
+        final String defaultValue = DocGeneratorUtil.getPrimitiveDefaultValue(type);
+
+        if (defaultValue == null) {
+            return Constants.EMPTY;
+        }
+
+        return defaultValue;
+    }
+
+    public void setDefaultValue(String defaultValue) {
+        this.defaultValue = defaultValue;
     }
 
     public ConfigPhase getConfigPhase() {
         return configPhase;
+    }
+
+    public void setConfigPhase(ConfigPhase configPhase) {
+        this.configPhase = configPhase;
+    }
+
+    public void setWithinAMap(boolean withinAMap) {
+        this.withinAMap = withinAMap;
+    }
+
+    @SuppressWarnings("unused")
+    public boolean isWithinAMap() {
+        return withinAMap;
+    }
+
+    String computeTypeSimpleName() {
+        Matcher matcher = Constants.CLASS_NAME_PATTERN.matcher(type);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+
+        return type;
+    }
+
+    /**
+     *
+     * Map config will be at the end of generated doc.
+     * Order build time config first
+     * Otherwise maintain source code order.
+     */
+    @Override
+    public int compareTo(ConfigItem item) {
+        if (withinAMap) {
+            if (item.withinAMap) {
+                return 0;
+            }
+            return 1;
+        } else if (item.withinAMap) {
+            return -1;
+        }
+
+        int phaseComparison = ConfigPhase.COMPARATOR.compare(this.configPhase, item.configPhase);
+        if (phaseComparison == 0) {
+            return 0;
+        }
+
+        return phaseComparison;
     }
 }

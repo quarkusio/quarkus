@@ -40,7 +40,7 @@ final public class ConfigRootInfo {
         return "ConfigRootInfo{" +
                 "name='" + name + '\'' +
                 ", clazz=" + clazz +
-                ", configPhase='" + configPhase + '\'' +
+                ", configPhase=" + configPhase +
                 ", extensionName='" + extensionName + '\'' +
                 '}';
     }

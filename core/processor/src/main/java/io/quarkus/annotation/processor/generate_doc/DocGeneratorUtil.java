@@ -1,14 +1,100 @@
-package io.quarkus.annotation.processor;
+package io.quarkus.annotation.processor.generate_doc;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public final class StringUtil {
-    private StringUtil() {
+import javax.lang.model.type.DeclaredType;
+
+import io.quarkus.annotation.processor.Constants;
+
+class DocGeneratorUtil {
+    static final String VERTX_JAVA_DOC_SITE = "https://vertx.io/docs/apidocs/";
+    static final String OFFICIAL_JAVA_DOC_BASE_LINK = "https://docs.oracle.com/javase/8/docs/api/";
+    static final String AGROAL_API_JAVA_DOC_SITE = "https://jar-download.com/javaDoc/io.agroal/agroal-api/1.5/index.html?";
+
+    private static final Map<String, String> PRIMITIVE_DEFAULT_VALUES = new HashMap<>();
+    private static final Map<String, String> EXTENSION_JAVA_DOC_LINK = new HashMap<>();
+    private static Pattern PACKAGE_PATTERN = Pattern.compile("^(\\w+)\\.(\\w+)\\..*$");
+
+    static {
+        PRIMITIVE_DEFAULT_VALUES.put("int", "0");
+        PRIMITIVE_DEFAULT_VALUES.put("byte", "0");
+        PRIMITIVE_DEFAULT_VALUES.put("char", "");
+        PRIMITIVE_DEFAULT_VALUES.put("short", "0");
+        PRIMITIVE_DEFAULT_VALUES.put("long", "0l");
+        PRIMITIVE_DEFAULT_VALUES.put("float", "0f");
+        PRIMITIVE_DEFAULT_VALUES.put("double", "0d");
+        PRIMITIVE_DEFAULT_VALUES.put("boolean", "false");
+
+        EXTENSION_JAVA_DOC_LINK.put("io.vertx.", VERTX_JAVA_DOC_SITE);
+        EXTENSION_JAVA_DOC_LINK.put("io.agroal.", AGROAL_API_JAVA_DOC_SITE);
     }
 
-    public static Iterator<String> camelHumpsIterator(String str) {
+    /**
+     * Retrieve a default value of a primitive type.
+     * If type is not a primitive, returns false
+     *
+     * @param primitiveType
+     * @return
+     */
+    static String getPrimitiveDefaultValue(String primitiveType) {
+        return PRIMITIVE_DEFAULT_VALUES.get(primitiveType);
+    }
+
+    /**
+     * Get javadoc link of a given type value
+     */
+    static String getJavaDocSiteLink(String type) {
+        Matcher packageMatcher = PACKAGE_PATTERN.matcher(type);
+
+        if (!packageMatcher.find()) {
+            return Constants.EMPTY;
+        }
+
+        if ("java".equals(packageMatcher.group(1))) {
+            return OFFICIAL_JAVA_DOC_BASE_LINK + getJavaDocLinkForType(type);
+        }
+
+        String basePkgName = packageMatcher.group(1) + "." + packageMatcher.group(2) + ".";
+        String javaDocBaseUrl = EXTENSION_JAVA_DOC_LINK.get(basePkgName);
+
+        if (javaDocBaseUrl != null) {
+            return javaDocBaseUrl + getJavaDocLinkForType(type);
+        }
+
+        return Constants.EMPTY;
+    }
+
+    private static String getJavaDocLinkForType(String type) {
+        int indexOfFirstUpperCase = 0;
+
+        for (int index = 0; index < type.length(); index++) {
+            char charAt = type.charAt(index);
+            if (charAt >= 'A' && charAt <= 'Z') {
+                indexOfFirstUpperCase = index;
+                break;
+            }
+        }
+
+        final String base = type.substring(0, indexOfFirstUpperCase).replace('.', '/');
+        final String html = type.substring(indexOfFirstUpperCase).replace('$', '.') + ".html";
+
+        return base + html;
+    }
+
+    /**
+     * Retrieve enclosed type from known optional types
+     */
+    static String getKnownGenericType(DeclaredType declaredType) {
+        return Constants.OPTIONAL_NUMBER_TYPES.get(declaredType.toString());
+    }
+
+    static Iterator<String> camelHumpsIterator(String str) {
         return new Iterator<String>() {
             int idx;
 
@@ -82,7 +168,7 @@ public final class StringUtil {
         };
     }
 
-    public static Iterator<String> lowerCase(Iterator<String> orig) {
+    static Iterator<String> lowerCase(Iterator<String> orig) {
         return new Iterator<String>() {
             public boolean hasNext() {
                 return orig.hasNext();
@@ -94,7 +180,7 @@ public final class StringUtil {
         };
     }
 
-    public static String join(String delim, Iterator<String> it) {
+    static String join(String delim, Iterator<String> it) {
         final StringBuilder b = new StringBuilder();
         if (it.hasNext()) {
             b.append(it.next());
@@ -106,7 +192,7 @@ public final class StringUtil {
         return b.toString();
     }
 
-    public static String hyphenate(String orig) {
+    static String hyphenate(String orig) {
         return join("-", lowerCase(camelHumpsIterator(orig)));
     }
 }

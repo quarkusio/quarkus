@@ -1,5 +1,7 @@
 package io.quarkus.annotation.processor.generate_doc;
 
+import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.hyphenate;
+
 import java.util.stream.Collectors;
 
 import org.jsoup.Jsoup;
@@ -11,12 +13,10 @@ import com.github.javaparser.javadoc.description.JavadocDescription;
 import com.github.javaparser.javadoc.description.JavadocInlineTag;
 
 import io.quarkus.annotation.processor.Constants;
-import io.quarkus.annotation.processor.StringUtil;
 
-final public class JavaDocParser {
+final class JavaDocParser {
     private static final String HASH = "#";
     private static final String STAR = "*";
-
     private static final String S_NODE = "s";
     private static final String UNDERSCORE = "_";
     private static final String NEW_LINE = "\n";
@@ -175,7 +175,7 @@ final public class JavaDocParser {
                             case LINK:
                             case LINKPLAIN:
                                 if (content.startsWith(HASH)) {
-                                    content = StringUtil.hyphenate(content.substring(1));
+                                    content = hyphenate(content.substring(1));
                                 }
                                 return String.format(INLINE_JAVA_DOC_TAG_FORMAT, content);
                             default:

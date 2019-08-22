@@ -165,6 +165,7 @@
         <wiremock.version>2.24.1</wiremock.version>
         <spring.version>5.1.8.RELEASE</spring.version>
         <mvel2.version>2.4.4.Final</mvel2.version>
+        <mockito.version>3.0.0</mockito.version>
     </properties>
 
     <dependencyManagement>
@@ -1711,6 +1712,11 @@
                 <groupId>org.neo4j.driver</groupId>
                 <artifactId>neo4j-java-driver</artifactId>
                 <version>${neo4j-java-driver.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>

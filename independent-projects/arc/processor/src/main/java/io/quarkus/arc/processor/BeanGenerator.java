@@ -823,6 +823,11 @@ public class BeanGenerator extends AbstractGenerator {
                 Set<InterceptorInfo> wraps = new HashSet<>();
                 wraps.addAll(aroundConstructs.interceptors);
                 wraps.addAll(postConstructs.interceptors);
+
+                // instances of around/post construct interceptors also need to be shared
+                // build a map that links InterceptorInfo to ResultHandle and reuse that when creating wrappers
+                Map<InterceptorInfo, ResultHandle> interceptorToResultHandle = new HashMap<>();
+
                 for (InterceptorInfo interceptor : wraps) {
                     ResultHandle interceptorProvider = create.readInstanceField(
                             FieldDescriptor.of(beanCreator.getClassName(), interceptorToProviderField.get(interceptor),
@@ -831,6 +836,7 @@ public class BeanGenerator extends AbstractGenerator {
                     ResultHandle interceptorInstanceHandle = create.invokeInterfaceMethod(
                             MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, interceptorProvider,
                             create.getMethodParam(0));
+                    interceptorToResultHandle.put(interceptor, interceptorInstanceHandle);
                     ResultHandle wrapHandle = create.invokeStaticMethod(
                             MethodDescriptor.ofMethod(InitializedInterceptor.class, "of",
                                     InitializedInterceptor.class, Object.class, InjectableInterceptor.class),
@@ -845,15 +851,10 @@ public class BeanGenerator extends AbstractGenerator {
                         ResultHandle interceptorHandle = create.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
                                 interceptorToProviderField.get(interceptor), InjectableInterceptor.class.getName()),
                                 create.getThis());
-                        ResultHandle childCtxHandle = create.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD,
-                                create.getMethodParam(0));
-                        ResultHandle interceptorInstanceHandle = create.invokeInterfaceMethod(
-                                MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, interceptorHandle,
-                                childCtxHandle);
 
                         ResultHandle interceptorInvocationHandle = create.invokeStaticMethod(
                                 MethodDescriptors.INTERCEPTOR_INVOCATION_POST_CONSTRUCT,
-                                interceptorHandle, interceptorInstanceHandle);
+                                interceptorHandle, interceptorToResultHandle.get(interceptor));
 
                         // postConstructs.add(InterceptorInvocation.postConstruct(interceptor,interceptor.get(CreationalContextImpl.child(ctx))))
                         create.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, postConstructsHandle,
@@ -867,15 +868,10 @@ public class BeanGenerator extends AbstractGenerator {
                         ResultHandle interceptorHandle = create.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
                                 interceptorToProviderField.get(interceptor), InjectableInterceptor.class.getName()),
                                 create.getThis());
-                        ResultHandle childCtxHandle = create.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD,
-                                create.getMethodParam(0));
-                        ResultHandle interceptorInstanceHandle = create.invokeInterfaceMethod(
-                                MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, interceptorHandle,
-                                childCtxHandle);
 
                         ResultHandle interceptorInvocationHandle = create.invokeStaticMethod(
                                 MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_CONSTRUCT,
-                                interceptorHandle, interceptorInstanceHandle);
+                                interceptorHandle, interceptorToResultHandle.get(interceptor));
 
                         // aroundConstructs.add(InterceptorInvocation.aroundConstruct(interceptor,interceptor.get(CreationalContextImpl.child(ctx))))
                         create.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, aroundConstructsHandle,

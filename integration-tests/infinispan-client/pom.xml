@@ -52,9 +52,7 @@
         <dependency>
             <groupId>org.infinispan</groupId>
             <artifactId>infinispan-remote-query-server</artifactId>
-            <!-- Below should work, but there is something confusing the graal compiler requiring this
             <scope>test</scope>
-            -->
         </dependency>
         <dependency>
             <groupId>org.infinispan</groupId>

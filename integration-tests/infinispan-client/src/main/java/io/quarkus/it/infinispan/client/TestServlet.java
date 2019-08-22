@@ -1,5 +1,7 @@
 package io.quarkus.it.infinispan.client;
 
+import java.time.YearMonth;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +13,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -47,14 +48,17 @@ import org.infinispan.query.dsl.QueryFactory;
 import io.quarkus.infinispan.client.runtime.Remote;
 import io.quarkus.runtime.StartupEvent;
 
-@Path("/")
-@ApplicationScoped
+@Path("/test")
 public class TestServlet {
     private static final Log log = LogFactory.getLog(TestServlet.class);
 
     @Inject
     @Remote("default")
     RemoteCache<String, Book> cache;
+
+    @Inject
+    @Remote("magazine")
+    RemoteCache<String, Magazine> magazineCache;
 
     @Inject
     CounterManager counterManager;
@@ -101,9 +105,17 @@ public class TestServlet {
         log.info("Added continuous query listener");
 
         cache.put("book1", new Book("Game of Thrones", "Lots of people perish", 2010,
-                Collections.singleton(new Author("George", "Martin")), Book.Type.FANTASY));
+                Collections.singleton(new Author("George", "Martin")), Type.FANTASY));
         cache.put("book2", new Book("Game of Thrones Path 2", "They win?", 2023,
-                Collections.singleton(new Author("Son", "Martin")), Book.Type.FANTASY));
+                Collections.singleton(new Author("Son", "Martin")), Type.FANTASY));
+
+        magazineCache.put("first-mad", new Magazine("MAD", YearMonth.of(1952, 10),
+                Collections.singletonList("Blob named Melvin")));
+        magazineCache.put("first-time", new Magazine("TIME", YearMonth.of(1923, 3),
+                Arrays.asList("First helicopter", "Change in divorce law", "Adam's Rib movie released",
+                        "German Reparation Payments")));
+        magazineCache.put("popular-time", new Magazine("TIME", YearMonth.of(1997, 4),
+                Arrays.asList("Yep, I'm gay", "Backlash against HMOS", "False Hope on Breast Cancer?")));
 
         log.info("Inserted values");
 
@@ -157,7 +169,7 @@ public class TestServlet {
     public String getCachedValue(@PathParam("id") String id) {
         ensureStart();
         Book book = cache.get(id);
-        return book.getTitle();
+        return book != null ? book.getTitle() : "NULL";
     }
 
     @Path("query/{id}")
@@ -237,7 +249,7 @@ public class TestServlet {
         long nearCacheInvalidations = stats.getNearCacheInvalidations();
 
         Book nearCacheBook = new Book("Near Cache Book", "Just here to test", 2010,
-                Collections.emptySet(), Book.Type.PROGRAMMING);
+                Collections.emptySet(), Type.PROGRAMMING);
 
         String id = "nearcache";
         cache.put(id, nearCacheBook);
@@ -271,7 +283,7 @@ public class TestServlet {
             return "second retrieved book doesn't match";
         }
 
-        nearCacheBook = new Book("Near Cache Book", "Just here to test", 2011, Collections.emptySet(), Book.Type.PROGRAMMING);
+        nearCacheBook = new Book("Near Cache Book", "Just here to test", 2011, Collections.emptySet(), Type.PROGRAMMING);
 
         cache.put(id, nearCacheBook);
 
@@ -300,7 +312,7 @@ public class TestServlet {
     @Consumes(MediaType.TEXT_PLAIN)
     public Response createItem(String value, @PathParam("id") String id) {
         ensureStart();
-        Book book = new Book(id, value, 2019, Collections.emptySet(), Book.Type.PROGRAMMING);
+        Book book = new Book(id, value, 2019, Collections.emptySet(), Type.PROGRAMMING);
         Book previous = cache.putIfAbsent(id, book);
         if (previous == null) {
             //status code 201
@@ -311,5 +323,20 @@ public class TestServlet {
             return Response.noContent()
                     .build();
         }
+    }
+
+    @Path("magazinequery/{id}")
+    @GET
+    public String magazineQuery(@PathParam("id") String name) {
+        ensureStart();
+        QueryFactory queryFactory = Search.getQueryFactory(magazineCache);
+        Query query = queryFactory.create("from magazine_sample.Magazine m where m.name like '%" + name + "%'");
+        List<Magazine> list = query.list();
+        if (list.isEmpty()) {
+            return "No one found for " + name;
+        }
+        return list.stream()
+                .map(m -> m.getName() + ":" + m.getPublicationYearMonth())
+                .collect(Collectors.joining(",", "[", "]"));
     }
 }

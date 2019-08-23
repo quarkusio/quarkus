@@ -12,7 +12,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
@@ -27,12 +26,10 @@ import io.quarkus.agroal.runtime.AgroalRecorder;
 import io.quarkus.agroal.runtime.AgroalRuntimeConfig;
 import io.quarkus.agroal.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.agroal.runtime.health.DataSourceHealthCheck;
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -49,6 +46,7 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class AgroalProcessor {
 
@@ -249,25 +247,11 @@ class AgroalProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem addHealthCheck(Capabilities capabilities, AgroalBuildTimeConfig agroalBuildTimeConfig) {
-        Optional<Boolean> healthExtention = ConfigProvider.getConfig()
-                .getOptionalValue("quarkus.health.extensions.enabled", Boolean.class);
-        boolean activateHealthForExtensions = healthExtention.orElse(Boolean.FALSE);
-        if (healthCapability(capabilities) && activateHealthForExtensions && agroalBuildTimeConfig.healthEnabled) {
+    HealthBuildItem addHealthCheck(AgroalBuildTimeConfig agroalBuildTimeConfig) {
+        if (agroalBuildTimeConfig.healthEnabled) {
             //produce the health bean
-            return new AdditionalBeanBuildItem(DataSourceHealthCheck.class);
+            return new HealthBuildItem(DataSourceHealthCheck.class);
         }
         return null;
-    }
-
-    private boolean healthCapability(Capabilities capabilities) {
-        //return capabilities.isCapabilityPresent(FeatureBuildItem.SMALLRYE_HEALTH);//FIXME doesn't work
-        try {
-            // if the health servlet is here it means the extension is here
-            Class.forName("io.quarkus.smallrye.health.runtime.SmallRyeHealthServlet");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
     }
 }

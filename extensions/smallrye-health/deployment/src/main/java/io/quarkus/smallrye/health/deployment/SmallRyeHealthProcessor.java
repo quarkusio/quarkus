@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.health.deployment;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.microprofile.health.Health;
@@ -22,6 +23,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthRecorder;
 import io.quarkus.smallrye.health.runtime.SmallRyeLivenessHandler;
@@ -42,6 +44,8 @@ class SmallRyeHealthProcessor {
      */
     SmallRyeHealthConfig health;
 
+    HealthBuildTimeConfig config;
+
     @ConfigRoot(name = "smallrye-health")
     static final class SmallRyeHealthConfig {
         /**
@@ -61,6 +65,16 @@ class SmallRyeHealthProcessor {
          */
         @ConfigItem(defaultValue = "/ready")
         String readinessPath;
+    }
+
+    @BuildStep
+    public void healthCheck(BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer,
+            List<HealthBuildItem> healthBuildItems) {
+        if (config.extensionsEnabled) {
+            for (HealthBuildItem buildItem : healthBuildItems) {
+                buildItemBuildProducer.produce(new AdditionalBeanBuildItem(buildItem.getHealthCheckClass()));
+            }
+        }
     }
 
     @BuildStep

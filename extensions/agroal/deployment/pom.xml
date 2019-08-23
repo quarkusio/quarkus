@@ -30,12 +30,9 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-narayana-jta-deployment</artifactId>
         </dependency>
-
-        <!-- Add the health extension as optional as we will produce the health check only if it's included -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-health</artifactId>
-            <optional>true</optional>
+            <artifactId>quarkus-smallrye-health-spi</artifactId>
         </dependency>
 
         <!-- test dependencies -->

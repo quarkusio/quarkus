@@ -53,8 +53,7 @@ public class DataSourceHealthCheck implements HealthCheck {
                     builder.down().withData(dsName, data);
                 }
             } catch (SQLException e) {
-                String data = DEFAULT_DS.equals(dataSource.getKey())
-                        ? "Unable to execute the validation check for the default DataSource: "
+                String data = isDefault ? "Unable to execute the validation check for the default DataSource: "
                         : "Unable to execute the validation check for DataSource '" + dataSource.getKey() + "': ";
                 String dsName = isDefault ? "quarkus-default-ds" : dataSource.getKey();
                 builder.down().withData(dsName, data + e.getMessage());

@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.metrics.deployment.jandex;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,11 +31,19 @@ public class JandexBeanInfoAdapter implements BeanInfoAdapter<ClassInfo> {
         }
 
         JandexAnnotationInfoAdapter annotationInfoAdapter = new JandexAnnotationInfoAdapter(indexView);
-        List<AnnotationInfo> annotations = input.classAnnotations()
-                .stream()
-                .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
-                .map(annotationInfoAdapter::convert)
-                .collect(Collectors.toList());
+
+        // add all class-level annotations, including inherited - SmallRye expects them here
+        List<AnnotationInfo> annotations = new ArrayList<>();
+        ClassInfo clazz = input;
+        while (clazz != null && clazz.superName() != null) {
+            List<AnnotationInfo> annotationsSuper = clazz.classAnnotations()
+                    .stream()
+                    .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
+                    .map(annotationInfoAdapter::convert)
+                    .collect(Collectors.toList());
+            annotations.addAll(annotationsSuper);
+            clazz = indexView.getClassByName(clazz.superName());
+        }
 
         return new RawBeanInfo(input.simpleName(),
                 input.name().prefix().toString(),

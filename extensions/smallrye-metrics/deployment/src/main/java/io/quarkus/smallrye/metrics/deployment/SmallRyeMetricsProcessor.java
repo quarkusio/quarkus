@@ -21,6 +21,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -186,10 +187,21 @@ public class SmallRyeMetricsProcessor {
 
         for (ClassInfo clazz : collectedMetricsClasses.values()) {
             BeanInfo beanInfo = beanInfoAdapter.convert(clazz);
-            for (MethodInfo method : clazz.methods()) {
-                if (!Modifier.isPrivate(method.flags())) {
-                    metrics.registerMetrics(beanInfo, memberInfoAdapter.convert(method));
+            ClassInfo superclass = clazz;
+            // register metrics for all inherited methods as well
+            while (superclass != null && superclass.superName() != null) {
+                for (MethodInfo method : superclass.methods()) {
+                    // if we're looking at a superclass, skip methods that are overridden by the subclass
+                    if (superclass != clazz) {
+                        if (clazz.method(method.name(), method.parameters().toArray(new Type[] {})) != null) {
+                            continue;
+                        }
+                    }
+                    if (!Modifier.isPrivate(method.flags())) {
+                        metrics.registerMetrics(beanInfo, memberInfoAdapter.convert(method));
+                    }
                 }
+                superclass = index.getClassByName(superclass.superName());
             }
         }
 

@@ -220,7 +220,7 @@ public class SmallRyeMetricsRecorder {
                 .withDisplayName("Thread Count")
                 .withDescription("Displays the current number of live threads including both daemon and non-daemon threads")
                 .build();
-        registry.register(meta, new LambdaCounter(() -> (long) thread.getThreadCount()));
+        registry.register(meta, new LambdaGauge(() -> (long) thread.getThreadCount()));
         names.add(THREAD_COUNT);
 
         meta = Metadata.builder()
@@ -229,7 +229,7 @@ public class SmallRyeMetricsRecorder {
                 .withDisplayName("Daemon Thread Count")
                 .withDescription("Displays the current number of live daemon threads.")
                 .build();
-        registry.register(meta, new LambdaCounter(() -> (long) thread.getDaemonThreadCount()));
+        registry.register(meta, new LambdaGauge(() -> (long) thread.getDaemonThreadCount()));
         names.add(THREAD_DAEMON_COUNT);
 
         meta = Metadata.builder()
@@ -239,7 +239,7 @@ public class SmallRyeMetricsRecorder {
                 .withDescription("Displays the peak live thread count since the Java virtual machine started or peak was " +
                         "reset. This includes daemon and non-daemon threads.")
                 .build();
-        registry.register(meta, new LambdaCounter(() -> (long) thread.getPeakThreadCount()));
+        registry.register(meta, new LambdaGauge(() -> (long) thread.getPeakThreadCount()));
         names.add(THREAD_MAX_COUNT);
     }
 

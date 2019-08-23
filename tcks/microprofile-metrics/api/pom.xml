@@ -31,6 +31,21 @@
                     <environmentVariables>
                         <MP_METRICS_TAGS>tier=integration</MP_METRICS_TAGS>
                     </environmentVariables>
+                    <excludes>
+                        <!-- GlobalTagsTest registers ConfigSources at runtime which is not supported -->
+                        <exclude>org/eclipse/microprofile/metrics/tck/GlobalTagsTest.java</exclude>
+                        <!-- These depend on metrics from CDI producers -->
+                        <exclude>io.astefanutti.metrics.cdi.se.MetricProducerFieldBeanTest</exclude>
+                        <exclude>io.astefanutti.metrics.cdi.se.MetricProducerMethodBeanTest</exclude>
+                        <!-- These depend on injection of method parameters via @Metric -->
+                        <exclude>io.astefanutti.metrics.cdi.se.ConcurrentGaugedMethodBeanTest</exclude>
+                        <exclude>io.astefanutti.metrics.cdi.se.CountedMethodBeanTest</exclude>
+                        <exclude>io.astefanutti.metrics.cdi.se.CountedMethodTagBeanTest</exclude>
+                        <exclude>io.astefanutti.metrics.cdi.se.GaugeInjectionBeanTest</exclude>
+                        <!-- These depend on injection of MetricRegistry into test method params -->
+                        <exclude>io.astefanutti.metrics.cdi.se.ConcreteExtendedTimedBeanTest</exclude>
+                        <exclude>io.astefanutti.metrics.cdi.se.ConcreteTimedBeanTest</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>

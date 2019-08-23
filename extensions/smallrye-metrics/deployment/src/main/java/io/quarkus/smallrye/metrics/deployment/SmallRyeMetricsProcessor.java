@@ -96,7 +96,7 @@ public class SmallRyeMetricsProcessor {
     }
 
     @BuildStep
-    AnnotationsTransformerBuildItem transformBeanScope() {
+    AnnotationsTransformerBuildItem transformBeanScope(BeanArchiveIndexBuildItem index) {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
             @Override
             public boolean appliesTo(AnnotationTarget.Kind kind) {
@@ -109,16 +109,21 @@ public class SmallRyeMetricsProcessor {
                     if (BuiltinScope.isDeclaredOn(ctx.getTarget().asClass())) {
                         return;
                     }
-
-                    Map<DotName, List<AnnotationInstance>> annotations = ctx.getTarget().asClass().annotations();
-                    if (annotations.containsKey(GAUGE) || annotations.containsKey(SmallRyeMetricsDotNames.CONCURRENT_GAUGE)
-                            || annotations.containsKey(SmallRyeMetricsDotNames.COUNTED)
-                            || annotations.containsKey(SmallRyeMetricsDotNames.METERED)
-                            || annotations.containsKey(SmallRyeMetricsDotNames.TIMED)
-                            || annotations.containsKey(SmallRyeMetricsDotNames.METRIC)) {
-                        LOGGER.debugf("Found metrics business methods on a class %s with no scope defined - adding @Dependent",
-                                ctx.getTarget());
-                        ctx.transform().add(Dependent.class).done();
+                    ClassInfo clazz = ctx.getTarget().asClass();
+                    while (clazz != null && clazz.superName() != null) {
+                        Map<DotName, List<AnnotationInstance>> annotations = clazz.annotations();
+                        if (annotations.containsKey(GAUGE) || annotations.containsKey(SmallRyeMetricsDotNames.CONCURRENT_GAUGE)
+                                || annotations.containsKey(SmallRyeMetricsDotNames.COUNTED)
+                                || annotations.containsKey(SmallRyeMetricsDotNames.METERED)
+                                || annotations.containsKey(SmallRyeMetricsDotNames.TIMED)
+                                || annotations.containsKey(SmallRyeMetricsDotNames.METRIC)) {
+                            LOGGER.debugf(
+                                    "Found metrics business methods on a class %s with no scope defined - adding @Dependent",
+                                    ctx.getTarget());
+                            ctx.transform().add(Dependent.class).done();
+                            break;
+                        }
+                        clazz = index.getIndex().getClassByName(clazz.superName());
                     }
                 }
             }

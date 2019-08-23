@@ -23,11 +23,6 @@ public final class FeatureDetectorSubstitutions {
     }
 
     @Substitute
-    public boolean isSpringJdbcAvailable() {
-        return false;
-    }
-
-    @Substitute
     public boolean isJBossVFSv2Available() {
         return false;
     }

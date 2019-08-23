@@ -124,7 +124,6 @@
         <test-containers.version>1.12.0</test-containers.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
         <axle-client.version>0.0.8</axle-client.version>
-        <reactive-pg-client.version>0.11.4</reactive-pg-client.version>
         <kafka-clients.version>2.2.1</kafka-clients.version>
         <kafka2.version>2.2.1</kafka2.version>
         <debezium.version>0.9.5.Final</debezium.version>

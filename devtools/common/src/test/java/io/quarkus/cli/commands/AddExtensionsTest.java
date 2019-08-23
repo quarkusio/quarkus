@@ -65,6 +65,38 @@ class AddExtensionsTest {
     }
 
     @Test
+    void testRegexpMatches() throws IOException {
+        File pom = new File("target/extensions-test", "pom.xml");
+
+        CreateProjectTest.delete(pom.getParentFile());
+        new CreateProject(new FileProjectWriter(pom.getParentFile()))
+                .groupId("org.acme")
+                .artifactId("add-extension-test")
+                .version("0.0.1-SNAPSHOT")
+                .doCreateProject(new HashMap<>());
+
+        File pomFile = new File(pom.getAbsolutePath());
+        AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
+                .addExtensions(new HashSet<>(asList("Sm??lRye**")));
+
+        result.isUpdated();
+
+        Model model = MojoUtils.readPom(pom);
+        hasDependency(model, "quarkus-smallrye-reactive-messaging");
+        hasDependency(model, "quarkus-smallrye-reactive-streams-operators");
+        hasDependency(model, "quarkus-smallrye-opentracing");
+        hasDependency(model, "quarkus-smallrye-metrics");
+        hasDependency(model, "quarkus-smallrye-reactive-messaging-kafka");
+        hasDependency(model, "quarkus-smallrye-health");
+        hasDependency(model, "quarkus-smallrye-openapi");
+        hasDependency(model, "quarkus-smallrye-jwt");
+        hasDependency(model, "quarkus-smallrye-context-propagation");
+        hasDependency(model, "quarkus-smallrye-reactive-type-converters");
+        hasDependency(model, "quarkus-smallrye-reactive-messaging-amqp");
+        hasDependency(model, "quarkus-smallrye-fault-tolerance");
+    }
+
+    @Test
     void addMissingExtension() throws IOException {
         final File pom = new File("target/extensions-test", "pom.xml");
 
@@ -276,8 +308,9 @@ class AddExtensionsTest {
         SelectionResult matches = AddExtensions.select("foo", extensions, false);
         Assertions.assertTrue(matches.matches());
         Assertions.assertEquals(1, matches.getExtensions().size());
-        Assertions.assertNotNull(matches.getMatch());
-        Assertions.assertTrue(matches.getMatch().getArtifactId().equalsIgnoreCase("some-complex-seo-unaware-artifactid"));
+        Assertions.assertTrue(matches.iterator().hasNext());
+        Assertions
+                .assertTrue(matches.iterator().next().getArtifactId().equalsIgnoreCase("some-complex-seo-unaware-artifactid"));
     }
 
     @Test
@@ -297,8 +330,8 @@ class AddExtensionsTest {
         Collections.shuffle(extensions);
         SelectionResult matches = AddExtensions.select("foo", extensions, false);
         Assertions.assertEquals(1, matches.getExtensions().size());
-        Assertions.assertNotNull(matches.getMatch());
-        Assertions.assertTrue(matches.getMatch().getArtifactId().equalsIgnoreCase("quarkus-foo"));
+        Assertions.assertTrue(matches.iterator().hasNext());
+        Assertions.assertTrue(matches.iterator().next().getArtifactId().equalsIgnoreCase("quarkus-foo"));
     }
 
     @Test

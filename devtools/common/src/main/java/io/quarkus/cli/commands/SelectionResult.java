@@ -1,10 +1,12 @@
 package io.quarkus.cli.commands;
 
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Set;
 
 import io.quarkus.dependencies.Extension;
 
-public class SelectionResult {
+public class SelectionResult implements Iterable<Extension> {
 
     private final Set<Extension> extensions;
     private final boolean matches;
@@ -22,13 +24,11 @@ public class SelectionResult {
         return matches;
     }
 
-    public Extension getMatch() {
+    @Override
+    public Iterator<Extension> iterator() {
         if (matches) {
-            if (extensions.isEmpty() || extensions.size() > 1) {
-                throw new IllegalStateException("Invalid selection result");
-            }
-            return extensions.iterator().next();
+            return extensions.iterator();
         }
-        return null;
+        return Collections.emptyIterator();
     }
 }

@@ -70,7 +70,7 @@
         <graal-sdk.version>19.1.1</graal-sdk.version>
         <gizmo.version>1.0.0.Alpha7</gizmo.version>
         <jackson.version>2.9.9.20190807</jackson.version>
-        <commons-beanutils.version>1.9.3</commons-beanutils.version>
+        <commons-beanutils.version>1.9.4</commons-beanutils.version>
         <commons-logging.version>1.2</commons-logging.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.8.1</commons-lang3.version>

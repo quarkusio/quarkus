@@ -1,6 +1,5 @@
 package io.quarkus.elytron.security.oauth2.deployment;
 
-import org.jboss.logging.Logger;
 import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -29,7 +28,6 @@ import io.undertow.servlet.ServletExtension;
  * {@linkplain org.wildfly.security.auth.realm.token.TokenSecurityRealm} realm implementations.
  */
 class OAuth2DeploymentProcessor {
-    private static final Logger log = Logger.getLogger(OAuth2DeploymentProcessor.class.getName());
     private static final String REALM_NAME = "OAuth2";
     private static final String AUTH_MECHANISM = "BEARER_TOKEN";
 

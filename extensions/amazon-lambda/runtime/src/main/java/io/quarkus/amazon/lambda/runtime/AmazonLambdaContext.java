@@ -106,7 +106,7 @@ public class AmazonLambdaContext implements Context {
 
     @Override
     public int getRemainingTimeInMillis() {
-        return (int) (runtimeDeadlineMs - Math.round(System.nanoTime() / 1_000_000d));
+        return (int) (runtimeDeadlineMs - System.currentTimeMillis());
     }
 
     @Override

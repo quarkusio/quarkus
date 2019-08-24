@@ -1,6 +1,9 @@
 package io.quarkus.vertx.web.runtime.cors;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import io.vertx.core.Handler;
@@ -12,6 +15,8 @@ import io.vertx.ext.web.RoutingContext;
 
 public class CORSFilter implements Handler<RoutingContext> {
 
+    private static final Pattern COMMA_SEPARATED_SPLIT_REGEX = Pattern.compile("\\s*,\\s*");
+
     // This is set in the recorder at runtime.
     // Must be static because the filter is created(deployed) at build time and runtime config is still not available
     final CORSConfig corsConfig;
@@ -20,34 +25,46 @@ public class CORSFilter implements Handler<RoutingContext> {
         this.corsConfig = corsConfig;
     }
 
-    private void processRequestedHeaders(HttpServerResponse response, String requestedHeaders) {
+    private void processRequestedHeaders(HttpServerResponse response, String allowHeadersValue) {
         if (corsConfig.headers.isEmpty()) {
-            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, requestedHeaders);
+            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, allowHeadersValue);
         } else {
-            final String validRequestHeaders = corsConfig.headers
-                    .stream()
-                    .filter(requestedHeaders::contains)
-                    .collect(Collectors.joining(","));
+            List<String> requestedHeaders = new ArrayList<>();
+            for (String requestedHeader : COMMA_SEPARATED_SPLIT_REGEX.split(allowHeadersValue)) {
+                requestedHeaders.add(requestedHeader.toLowerCase());
+            }
 
-            if (!validRequestHeaders.isEmpty()) {
-                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, validRequestHeaders);
+            List<String> validRequestedHeaders = new ArrayList<>();
+            for (String configHeader : corsConfig.headers) {
+                if (requestedHeaders.contains(configHeader.toLowerCase())) {
+                    validRequestedHeaders.add(configHeader);
+                }
+            }
+
+            if (!validRequestedHeaders.isEmpty()) {
+                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, String.join(",", validRequestedHeaders));
             }
         }
     }
 
-    private void processMethods(HttpServerResponse response, String requestedMethods) {
+    private void processMethods(HttpServerResponse response, String allowMethodsValue) {
         if (corsConfig.methods.isEmpty()) {
-            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, requestedMethods);
+            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, allowMethodsValue);
         } else {
+            List<String> requestedMethods = new ArrayList<>();
+            for (String requestedMethod : COMMA_SEPARATED_SPLIT_REGEX.split(allowMethodsValue)) {
+                requestedMethods.add(requestedMethod.toLowerCase());
+            }
 
-            final String validRequestedMethods = corsConfig.methods
-                    .stream()
-                    .filter(method -> requestedMethods.contains(method.name()))
-                    .map(HttpMethod::name)
-                    .collect(Collectors.joining(","));
+            List<String> validRequestedMethods = new ArrayList<>();
+            for (HttpMethod configMethod : corsConfig.methods) {
+                if (requestedMethods.contains(configMethod.name().toLowerCase())) {
+                    validRequestedMethods.add(configMethod.name());
+                }
+            }
 
             if (!validRequestedMethods.isEmpty()) {
-                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, validRequestedMethods);
+                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, String.join(",", validRequestedMethods));
             }
         }
     }

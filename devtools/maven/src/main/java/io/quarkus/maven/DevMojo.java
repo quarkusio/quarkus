@@ -29,6 +29,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -39,6 +40,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.toolchain.ToolchainManager;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -394,6 +396,11 @@ public class DevMojo extends AbstractMojo {
                     .filter(Files::isDirectory)
                     .map(src -> src.toAbsolutePath().toString())
                     .collect(Collectors.toSet());
+            //add generated sources dir to sourcePaths, if exists
+            Path generatedSourcesDir = getGeneratedSourcesFolder(mavenProject);
+            if (Files.isDirectory(generatedSourcesDir)) {
+                sourcePaths.add(generatedSourcesDir.toAbsolutePath().toString());
+            }
         }
 
         Path classesDir = localProject.getClassesDir();
@@ -411,6 +418,18 @@ public class DevMojo extends AbstractMojo {
                 classesPath,
                 resourcePath);
         devModeContext.getModules().add(moduleInfo);
+    }
+
+    private Path getGeneratedSourcesFolder(MavenProject mavenProject) {
+        Plugin plugin = mavenProject.getBuild().getPluginsAsMap().get("org.apache.maven.plugins:maven-compiler-plugin");
+        if (plugin != null && plugin.getConfiguration() != null) {
+            Xpp3Dom configGeneratedSourcesDirectory = ((Xpp3Dom) plugin.getConfiguration())
+                    .getChild("generatedSourcesDirectory");
+            if (configGeneratedSourcesDirectory != null) {
+                return Paths.get(configGeneratedSourcesDirectory.getValue());
+            }
+        }
+        return Paths.get(mavenProject.getBuild().getDirectory(), "/generated-sources/annotations");
     }
 
     private void addToClassPaths(StringBuilder classPathManifest, DevModeContext classPath, File file) {

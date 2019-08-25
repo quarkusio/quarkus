@@ -529,6 +529,20 @@ public class DevMojoIT extends MojoTestBase {
 
     }
 
+    @Test
+    public void testThatClassicAppWithAnnoProcessorCanRun() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic-annotation-processor", "projects/project-classic-anno-processor-run");
+        runAndCheck();
+
+        //make sure that the Class.getPackage() works for app classes
+        String pkg = getHttpResponse("/app/hello/package");
+        assertThat(pkg).isEqualTo("org.acme");
+
+        //make sure webjars work
+        getHttpResponse("webjars/bootstrap/3.1.0/css/bootstrap.min.css");
+        assertThatOutputWorksCorrectly(running.log());
+    }
+
     private void run(String... options) throws FileNotFoundException, MavenInvocationException {
         assertThat(testDir).isDirectory();
         running = new RunningInvoker(testDir, false);

@@ -49,7 +49,6 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
 import io.quarkus.extest.runtime.*;
 import io.quarkus.extest.runtime.beans.CommandServlet;
 import io.quarkus.extest.runtime.beans.PublicKeyProducer;
@@ -75,15 +74,13 @@ public final class TestProcessor {
 
     @Inject
     BuildProducer<SubstrateResourceBuildItem> resource;
-    @Inject
-    BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle;
 
     TestConfigRoot configRoot;
     TestBuildTimeConfig buildTimeConfig;
     TestBuildAndRunTimeConfig buildAndRunTimeConfig;
 
     /**
-     * Register a extension capability and feature
+     * Register an extension capability and feature
      *
      * @return test-extension feature build item
      */
@@ -95,15 +92,15 @@ public final class TestProcessor {
     /**
      * Register a custom bean defining annotation
      *
-     * @return
+     * @return BeanDefiningAnnotationBuildItem
      */
     @BuildStep
-    BeanDefiningAnnotationBuildItem registerBeanDefinningAnnotations() {
+    BeanDefiningAnnotationBuildItem registerBeanDefiningAnnotations() {
         return new BeanDefiningAnnotationBuildItem(TEST_ANNOTATION, TEST_ANNOTATION_SCOPE);
     }
 
     @BuildStep
-    void registerNativeImageReources() {
+    void registerNativeImageResources() {
         resource.produce(new SubstrateResourceBuildItem("/DSAPublicKey.encoded"));
     }
 
@@ -127,7 +124,7 @@ public final class TestProcessor {
      *
      * @param recorder - runtime recorder
      * @return RuntimeServiceBuildItem
-     * @throws JAXBException
+     * @throws JAXBException - on resource unmarshal failure
      */
     @BuildStep
     @Record(STATIC_INIT)
@@ -137,9 +134,9 @@ public final class TestProcessor {
         Unmarshaller unmarshaller = context.createUnmarshaller();
         InputStream is = getClass().getResourceAsStream("/config.xml");
         if (is != null) {
-            log.infof("Have XmlConfig, loading");
+            log.info("Have XmlConfig, loading");
             XmlConfig config = (XmlConfig) unmarshaller.unmarshal(is);
-            log.infof("Loaded XmlConfig, creating service");
+            log.info("Loaded XmlConfig, creating service");
             RuntimeValue<RuntimeXmlConfigService> service = recorder.initRuntimeService(config);
             serviceBuildItem = new RuntimeServiceBuildItem(service);
         }
@@ -152,8 +149,8 @@ public final class TestProcessor {
      * @param recorder - runtime recorder
      * @param shutdownContextBuildItem - ShutdownContext information
      * @param serviceBuildItem - previously created RuntimeXmlConfigService container
-     * @return ServiceStartBuildItem - build item indicating the RuntimeXmlConfigService startuup
-     * @throws IOException - on failure
+     * @return ServiceStartBuildItem - build item indicating the RuntimeXmlConfigService startup
+     * @throws IOException - on resource load failure
      */
     @BuildStep
     @Record(RUNTIME_INIT)
@@ -195,9 +192,9 @@ public final class TestProcessor {
         // Register how to serialize DSAPublicKey
         ObjectSubstitutionBuildItem.Holder<DSAPublicKey, KeyProxy> holder = new ObjectSubstitutionBuildItem.Holder(
                 DSAPublicKey.class, KeyProxy.class, DSAPublicKeyObjectSubstitution.class);
-        ObjectSubstitutionBuildItem keysub = new ObjectSubstitutionBuildItem(holder);
-        substitutions.produce(keysub);
-        log.infof("loadDSAPublicKey run");
+        ObjectSubstitutionBuildItem keySub = new ObjectSubstitutionBuildItem(holder);
+        substitutions.produce(keySub);
+        log.info("loadDSAPublicKey run");
         return new PublicKeyBuildItem(publicKey);
     }
 
@@ -215,16 +212,15 @@ public final class TestProcessor {
     }
 
     /**
-     * Register a servlet used for interacting with native image for testing
+     * Register a servlet used for interacting with the native image for testing
      *
      * @return ServletBuildItem
      */
     @BuildStep
     ServletBuildItem createServlet() {
-        ServletBuildItem servletBuildItem = ServletBuildItem.builder("commands", CommandServlet.class.getName())
+        return ServletBuildItem.builder("commands", CommandServlet.class.getName())
                 .addMapping("/commands/*")
                 .build();
-        return servletBuildItem;
     }
 
     /**
@@ -346,7 +342,7 @@ public final class TestProcessor {
                 if (isConfigConsumer) {
                     Class<IConfigConsumer> beanClass = (Class<IConfigConsumer>) Class.forName(beanClassInfo.name().toString());
                     testBeanProducer.produce(new TestBeanBuildItem(beanClass));
-                    log.infof("Configured bean: %s", beanClass);
+                    log.infof("The configured bean: %s", beanClass);
                 }
             } catch (ClassNotFoundException e) {
                 log.warn("Failed to load bean class", e);

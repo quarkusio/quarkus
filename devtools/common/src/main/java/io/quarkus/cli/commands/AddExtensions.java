@@ -3,10 +3,12 @@ package io.quarkus.cli.commands;
 import static io.quarkus.maven.utilities.MojoUtils.readPom;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 import org.apache.maven.model.Dependency;
@@ -74,7 +76,22 @@ public class AddExtensions {
             matchesLabels = extensions.stream()
                     .filter(extension -> extension.labels().contains(q)).collect(Collectors.toList());
         } else {
-            matchesLabels = new ArrayList<>();
+            matchesLabels = Collections.emptyList();
+        }
+
+        // find by pattern
+        Set<Extension> matchesPatterns;
+        Pattern pattern = toRegex(q);
+        if (pattern != null) {
+            matchesPatterns = extensions.stream()
+                    .filter(extension -> pattern.matcher(extension.getName().toLowerCase()).matches()
+                            || pattern.matcher(extension.getArtifactId().toLowerCase()).matches()
+                            || pattern.matcher(extension.getShortName().toLowerCase()).matches()
+                            || matchLabels(pattern, extension.getLabels()))
+                    .collect(Collectors.toSet());
+            return new SelectionResult(matchesPatterns, true);
+        } else {
+            matchesPatterns = Collections.emptySet();
         }
 
         Set<Extension> candidates = new LinkedHashSet<>();
@@ -82,7 +99,74 @@ public class AddExtensions {
         candidates.addAll(matchesShortName);
         candidates.addAll(partialMatches);
         candidates.addAll(matchesLabels);
+        candidates.addAll(matchesPatterns);
         return new SelectionResult(candidates, false);
+    }
+
+    private static boolean matchLabels(Pattern pattern, String[] labels) {
+        boolean matches = false;
+        // if any label match it's ok
+        for (int i = 0; i < labels.length; i++) {
+            matches = matches | pattern.matcher(labels[i].toLowerCase()).matches();
+        }
+        return matches;
+    }
+
+    private static Pattern toRegex(final String str) {
+        try {
+            String wildcardToRegex = wildcardToRegex(str);
+            if (wildcardToRegex != null && !wildcardToRegex.isEmpty()) {
+                return Pattern.compile(wildcardToRegex);
+            }
+        } catch (PatternSyntaxException e) {
+            //ignore it
+        }
+        return null;
+    }
+
+    public static String wildcardToRegex(String wildcard) {
+        if (wildcard == null || wildcard.isEmpty()) {
+            return null;
+        }
+        // don't try with file match char in pattern
+        if (!(wildcard.contains("*") || wildcard.contains("?"))) {
+            return null;
+        }
+        StringBuffer s = new StringBuffer(wildcard.length());
+        s.append("^.*");
+        for (int i = 0, is = wildcard.length(); i < is; i++) {
+            char c = wildcard.charAt(i);
+            switch (c) {
+                case '*':
+                    s.append(".*");
+                    break;
+                case '?':
+                    s.append(".");
+                    break;
+                case '^': // escape character in cmd.exe
+                    s.append("\\");
+                    break;
+                // escape special regexp-characters
+                case '(':
+                case ')':
+                case '[':
+                case ']':
+                case '$':
+                case '.':
+                case '{':
+                case '}':
+                case '|':
+                case '\\':
+                    s.append("\\");
+                    s.append(c);
+                    break;
+                default:
+                    s.append(c);
+                    break;
+            }
+        }
+        s.append(".*$");
+        return (s.toString());
     }
 
     private static boolean matchesShortName(Extension extension, String q) {
@@ -131,9 +215,10 @@ public class AddExtensions {
                         success = false;
                     }
                 } else { // Matches.
-                    final Extension extension = result.getMatch();
-                    // Don't set success to false even if the dependency is not added; as it's should be idempotent.
-                    updated = buildFile.addDependency(dependenciesFromBom, extension) || updated;
+                    for (Extension extension : result) {
+                        // Don't set success to false even if the dependency is not added; as it's should be idempotent.
+                        updated = buildFile.addDependency(dependenciesFromBom, extension) || updated;
+                    }
                 }
             }
         }

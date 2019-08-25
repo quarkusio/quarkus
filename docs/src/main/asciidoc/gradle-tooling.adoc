@@ -18,8 +18,9 @@ luckily setting up a Quarkus project with Gradle is very simple. You only need t
 ----
 plugins {
     id 'java'
-    id 'io.quarkus' version '{quarkus-version}'
 }
+
+apply plugin: 'io.quarkus'
 ----
 
 or, if you use the Gradle Kotlin DSL:
@@ -28,8 +29,9 @@ or, if you use the Gradle Kotlin DSL:
 ----
 plugins {
     java
-    id("io.quarkus") version "{quarkus-version}"
 }
+
+apply(plugin = "io.quarkus")
 ----
 
 === Gradle configuration for a local SNAPSHOT version of Quarkus
@@ -87,8 +89,8 @@ Here's the same build script, using the Gradle Kotlin DSL:
 ----
 plugins {
     java
-    id("io.quarkus") version "{quarkus-version}"
 }
+apply(plugin = "io.quarkus")
 
 repositories {
     mavenCentral()
@@ -186,7 +188,40 @@ From inside a Quarkus project, you can obtain a list of the available extensions
 ./gradlew listExtensions
 ----
 
-Functionality to automatically add extensions to your Gradle project is not implemented yet (coming soon).
+You can enable an extension using:
+
+[source,shell]
+----
+./gradlew addExtension --extensions="hibernate-validator"
+----
+
+Extensions are passed using a comma-separated list.
+
+The extension name is the GAV name of the extension: e.g. `io.quarkus:quarkus-agroal`.
+But you can pass a partial name and Quarkus will do its best to find the right extension.
+For example, `agroal`, `Agroal` or `agro`  will expand to `io.quarkus:quarkus-agroal`.
+If no extension is found or if more than one extensions match, you will see a red check mark  ❌ in the command result.
+
+[source,shell]
+----
+./gradlew addExtension --extensions="jdbc,agroal,non-exist-ent"
+[...]
+❌ Multiple extensions matching 'jdbc'
+     * io.quarkus:quarkus-jdbc-h2
+     * io.quarkus:quarkus-jdbc-mariadb
+     * io.quarkus:quarkus-jdbc-postgresql
+     Be more specific e.g using the exact name or the full gav.
+✅ Adding extension io.quarkus:quarkus-agroal
+❌ Cannot find a dependency matching 'non-exist-ent', maybe a typo?
+[...]
+----
+
+You can install all extensions wich match a globbing pattern :
+
+[source,shell]
+----
+./gradlew addExtension --extensions="hibernate*"
+----
 
 == Development mode
 

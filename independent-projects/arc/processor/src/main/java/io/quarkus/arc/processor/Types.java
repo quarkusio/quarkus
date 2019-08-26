@@ -184,26 +184,31 @@ final class Types {
         return restrictBeanTypes(types, beanDeployment.getAnnotations(producerField));
     }
 
-    static Set<Type> getClassBeanTypeClosure(ClassInfo classInfo, Map<TypeVariable, Type> resolvedTypeParameters,
-            BeanDeployment beanDeployment) {
-        return restrictBeanTypes(getTypeClosure(classInfo, resolvedTypeParameters, beanDeployment, null),
-                beanDeployment.getAnnotations(classInfo));
+    static Set<Type> getClassBeanTypeClosure(ClassInfo classInfo, BeanDeployment beanDeployment) {
+        Set<Type> types;
+        List<TypeVariable> typeParameters = classInfo.typeParameters();
+        if (typeParameters.isEmpty()) {
+            types = getTypeClosure(classInfo, Collections.emptyMap(), beanDeployment, null);
+        } else {
+            types = getTypeClosure(classInfo, buildResolvedMap(typeParameters, typeParameters,
+                    Collections.emptyMap()), beanDeployment, null);
+        }
+        return restrictBeanTypes(types, beanDeployment.getAnnotations(classInfo));
     }
 
     static Set<Type> getTypeClosure(ClassInfo classInfo, Map<TypeVariable, Type> resolvedTypeParameters,
             BeanDeployment beanDeployment, BiConsumer<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariablesConsumer) {
         Set<Type> types = new HashSet<>();
         List<TypeVariable> typeParameters = classInfo.typeParameters();
-        if (!typeParameters.isEmpty()) {
+
+        if (typeParameters.isEmpty() || !typeParameters.stream().allMatch(resolvedTypeParameters::containsKey)) {
+            // Not a parameterized type or a raw type
+            types.add(Type.create(classInfo.name(), Kind.CLASS));
+        } else {
             // Canonical ParameterizedType with unresolved type variables
             Type[] typeParams = new Type[typeParameters.size()];
             for (int i = 0; i < typeParameters.size(); i++) {
-                TypeVariable paramType = typeParameters.get(i);
-                Type resolvedType = resolvedTypeParameters.get(paramType);
-                if (resolvedType == null) {
-                    resolvedType = paramType.bounds().get(0);
-                }
-                typeParams[i] = resolvedType;
+                typeParams[i] = resolvedTypeParameters.get(typeParameters.get(i));
             }
             if (resolvedTypeVariablesConsumer != null) {
                 Map<TypeVariable, Type> resolved = new HashMap<>();
@@ -213,8 +218,6 @@ final class Types {
                 resolvedTypeVariablesConsumer.accept(classInfo, resolved);
             }
             types.add(ParameterizedType.create(classInfo.name(), typeParams, null));
-        } else {
-            types.add(Type.create(classInfo.name(), Kind.CLASS));
         }
         // Interfaces
         for (Type interfaceType : classInfo.interfaceTypes()) {
@@ -274,7 +277,8 @@ final class Types {
         return types;
     }
 
-    static Map<TypeVariable, Type> buildResolvedMap(List<Type> resolvedTypeVariables, List<TypeVariable> typeVariables,
+    static <T extends Type> Map<TypeVariable, Type> buildResolvedMap(List<T> resolvedTypeVariables,
+            List<TypeVariable> typeVariables,
             Map<TypeVariable, Type> resolvedTypeParameters) {
         Map<TypeVariable, Type> resolvedMap = new HashMap<>();
         for (int i = 0; i < resolvedTypeVariables.size(); i++) {

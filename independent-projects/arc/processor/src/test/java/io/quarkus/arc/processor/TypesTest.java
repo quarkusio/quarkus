@@ -26,21 +26,34 @@ public class TypesTest {
         DotName fooName = DotName.createSimple(Foo.class.getName());
         ClassInfo fooClass = index.getClassByName(fooName);
         Map<ClassInfo, Map<TypeVariable, Type>> resolvedTypeVariables = new HashMap<>();
-        Set<Type> types = Types.getTypeClosure(index.getClassByName(bazName),
+
+        // Baz, Foo<String>
+        Set<Type> bazTypes = Types.getTypeClosure(index.getClassByName(bazName),
                 Collections.emptyMap(),
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
                         Collections.emptyList(), null,
                         false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList()),
                 resolvedTypeVariables::put);
-        assertEquals(2, types.size());
-        assertTrue(types.contains(Type.create(bazName, Kind.CLASS)));
-        assertTrue(types.contains(ParameterizedType.create(fooName,
+        assertEquals(2, bazTypes.size());
+        assertTrue(bazTypes.contains(Type.create(bazName, Kind.CLASS)));
+        assertTrue(bazTypes.contains(ParameterizedType.create(fooName,
                 new Type[] { Type.create(DotName.createSimple(String.class.getName()), Kind.CLASS) },
                 null)));
         assertEquals(resolvedTypeVariables.size(), 1);
         assertTrue(resolvedTypeVariables.containsKey(fooClass));
         assertEquals(resolvedTypeVariables.get(fooClass).get(fooClass.typeParameters().get(0)),
                 Type.create(DotName.createSimple(String.class.getName()), Kind.CLASS));
+
+        resolvedTypeVariables.clear();
+        // Foo<T>
+        Set<Type> fooTypes = Types.getClassBeanTypeClosure(fooClass,
+                new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                        Collections.emptyList(), null,
+                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList()));
+        assertEquals(1, fooTypes.size());
+        ParameterizedType fooType = fooTypes.iterator().next().asParameterizedType();
+        assertEquals("T", fooType.arguments().get(0).asTypeVariable().identifier());
+        assertEquals(DotNames.OBJECT, fooType.arguments().get(0).asTypeVariable().bounds().get(0).name());
     }
 
     static class Foo<T> {

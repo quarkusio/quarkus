@@ -430,7 +430,10 @@ public class DevMojo extends AbstractMojo {
             throw new RuntimeException(e);
         }
         String path = uri.getRawPath();
-        classPathManifest.append(path);
+        if (! uri.getScheme().equals("file")) {
+            throw new IllegalArgumentException("Cannot add non-file URL to class path");
+        }
+        classPathManifest.append(uri.getRawPath());
         if (file.isDirectory() && path.charAt(path.length() - 1) != '/') {
             classPathManifest.append("/");
         }

@@ -372,7 +372,10 @@ public class QuarkusDev extends QuarkusTask {
             getProject().getLogger().info("Adding dependency {}", file);
 
             URI uri = file.toPath().toAbsolutePath().toUri();
-            classPathManifest.append(uri.getPath());
+            if (! uri.getScheme().equals("file")) {
+                throw new IllegalArgumentException("Cannot add non-file URL to class path");
+            }
+            classPathManifest.append(uri.getRawPath());
             context.getClassPath().add(toUrl(uri));
             if (file.isDirectory()) {
                 classPathManifest.append("/");

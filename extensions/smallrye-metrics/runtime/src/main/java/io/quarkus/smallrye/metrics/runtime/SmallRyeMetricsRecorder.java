@@ -354,7 +354,17 @@ public class SmallRyeMetricsRecorder {
                     .build();
             for (MemoryPoolMXBean mp : mps) {
                 if (mp.getCollectionUsage() != null && mp.getPeakUsage() != null) {
+                    // this will be the case for the heap memory pools
                     registry.register(usageMetadata, new LambdaGauge(() -> mp.getCollectionUsage().getUsed()),
+                            new Tag("name", mp.getName()));
+                    names.add(usageMetadata.getName());
+
+                    registry.register(maxMetadata, new LambdaGauge(() -> mp.getPeakUsage().getUsed()),
+                            new Tag("name", mp.getName()));
+                    names.add(maxMetadata.getName());
+                } else if (mp.getUsage() != null && mp.getPeakUsage() != null) {
+                    // this will be the case for the non-heap memory pools
+                    registry.register(usageMetadata, new LambdaGauge(() -> mp.getUsage().getUsed()),
                             new Tag("name", mp.getName()));
                     names.add(usageMetadata.getName());
 

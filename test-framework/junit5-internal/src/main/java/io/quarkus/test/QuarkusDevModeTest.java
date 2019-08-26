@@ -293,6 +293,16 @@ public class QuarkusDevModeTest
     }
 
     /**
+     * Modifies a source file.
+     *
+     * @param sourceFile The Class corresponding to the source file to modify
+     * @param mutator A function that will modify the source code
+     */
+    public void modifySourceFile(Class<?> sourceFile, Function<String, String> mutator) {
+        modifyFile(sourceFile.getSimpleName() + ".java", mutator, deploymentSourcePath);
+    }
+
+    /**
      * Adds the source file that corresponds to the given class to the deployment
      * 
      * @param sourceFile

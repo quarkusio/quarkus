@@ -1,5 +1,6 @@
 package io.quarkus.runtime.configuration;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -11,6 +12,8 @@ import javax.annotation.Priority;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.logging.Logger;
+
+import io.smallrye.config.Converters;
 
 /**
  * This small utility class is a tool which helps populating SmallRye {@link ConfigBuilder} with
@@ -80,7 +83,11 @@ public class ConverterSupport {
     @SuppressWarnings("unchecked")
     private static <T> ConverterItem<?> converterToItem(final Converter<T> converter) {
         final Class<? extends Converter<T>> converterClass = (Class<? extends Converter<T>>) converter.getClass();
-        final Class<T> convertedType = ConverterFactory.getConverterType(converter);
+        final Type genericType = Converters.getConverterType(converterClass);
+        if (!(genericType instanceof Class<?>)) {
+            throw new IllegalArgumentException("General converters may not convert generic types");
+        }
+        final Class<T> convertedType = (Class<T>) genericType;
         final int priority = getConverterPriority(converterClass);
         return new ConverterItem<T>(convertedType, converter, priority);
     }

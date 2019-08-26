@@ -39,6 +39,7 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.BuildTimeRunTimeFixedConfigurationBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
+import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
@@ -67,7 +68,6 @@ import io.quarkus.runtime.configuration.AbstractRawDefaultConfigSource;
 import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSource;
 import io.quarkus.runtime.configuration.BuildTimeConfigFactory;
 import io.quarkus.runtime.configuration.ConfigUtils;
-import io.quarkus.runtime.configuration.ConverterFactory;
 import io.quarkus.runtime.configuration.ConverterSupport;
 import io.quarkus.runtime.configuration.DefaultConfigSource;
 import io.quarkus.runtime.configuration.DeploymentProfileConfigSource;
@@ -76,6 +76,7 @@ import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.configuration.SimpleConfigurationProviderResolver;
+import io.smallrye.config.Converters;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -111,7 +112,7 @@ public class ConfigurationSetup {
     private static final MethodDescriptor NI_NEXT = MethodDescriptor.ofMethod(NameIterator.class, "next", void.class);
     private static final MethodDescriptor ITR_HAS_NEXT = MethodDescriptor.ofMethod(Iterator.class, "hasNext", boolean.class);
     private static final MethodDescriptor ITR_NEXT = MethodDescriptor.ofMethod(Iterator.class, "next", Object.class);
-    private static final MethodDescriptor CF_GET_IMPLICIT_CONVERTER = MethodDescriptor.ofMethod(ConverterFactory.class,
+    private static final MethodDescriptor C_GET_IMPLICIT_CONVERTER = MethodDescriptor.ofMethod(Converters.class,
             "getImplicitConverter", Converter.class, Class.class);
     private static final MethodDescriptor CPR_SET_INSTANCE = MethodDescriptor.ofMethod(ConfigProviderResolver.class,
             "setInstance", void.class, ConfigProviderResolver.class);
@@ -222,7 +223,8 @@ public class ConfigurationSetup {
         try {
             for (String propName : unmatched) {
                 runTimeDefaultConsumer
-                        .accept(new RunTimeConfigurationDefaultBuildItem(propName, src.getValue(propName, String.class)));
+                        .accept(new RunTimeConfigurationDefaultBuildItem(propName,
+                                src.getOptionalValue(propName, String.class).orElse("")));
             }
         } finally {
             ExpandingConfigSource.setExpanding(old);
@@ -315,6 +317,7 @@ public class ConfigurationSetup {
             Consumer<GeneratedClassBuildItem> classConsumer,
             Consumer<RuntimeInitializedClassBuildItem> runTimeInitConsumer,
             Consumer<BytecodeRecorderObjectLoaderBuildItem> objectLoaderConsumer,
+            List<ConfigurationTypeBuildItem> configTypeItems,
             List<RunTimeConfigurationSourceBuildItem> runTimeSources) {
         final ClassOutput classOutput = new ClassOutput() {
             public void write(final String name, final byte[] data) {
@@ -341,11 +344,14 @@ public class ConfigurationSetup {
 
         final HashSet<Class<?>> encountered = new HashSet<>();
         final ArrayList<Class<?>> configTypes = new ArrayList<>();
+        for (ConfigurationTypeBuildItem item : configTypeItems) {
+            configTypes.add(item.getValueType());
+        }
 
         for (LeafConfigType item : runTimePatterns) {
             final Class<?> typeClass = item.getItemClass();
             if (!typeClass.isPrimitive() && encountered.add(typeClass)
-                    && ConverterFactory.getImplicitConverter(typeClass) != null) {
+                    && Converters.getImplicitConverter(typeClass) != null) {
                 configTypes.add(typeClass);
             }
         }
@@ -376,7 +382,7 @@ public class ConfigurationSetup {
                     final ResultHandle array = yes.newArray(Converter.class, yes.load(converterCnt));
                     for (int i = 0; i < converterCnt; i++) {
                         yes.writeArrayValue(array, i,
-                                yes.invokeStaticMethod(CF_GET_IMPLICIT_CONVERTER, yes.loadClass(configTypes.get(i))));
+                                yes.invokeStaticMethod(C_GET_IMPLICIT_CONVERTER, yes.loadClass(configTypes.get(i))));
                     }
                     yes.writeStaticField(CONVERTERS_FIELD, array);
                 }

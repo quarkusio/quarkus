@@ -11,6 +11,6 @@ import javax.interceptor.InterceptorBinding;
 @Target({ TYPE, CONSTRUCTOR })
 @Retention(RUNTIME)
 @InterceptorBinding
-public @interface MyTransactional {
+public @interface MyOtherTransactional {
 
 }

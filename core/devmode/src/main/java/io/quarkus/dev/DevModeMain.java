@@ -255,9 +255,12 @@ public class DevModeMain implements Closeable {
     }
 
     public void close() {
-        stop();
-        for (HotReplacementSetup i : hotReplacement) {
-            i.close();
+        try {
+            stop();
+        } finally {
+            for (HotReplacementSetup i : hotReplacement) {
+                i.close();
+            }
         }
     }
 }

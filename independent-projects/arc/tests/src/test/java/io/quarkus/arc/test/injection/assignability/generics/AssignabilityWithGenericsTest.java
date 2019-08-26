@@ -4,21 +4,25 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Observes;
 import javax.enterprise.event.ObservesAsync;
 import javax.enterprise.inject.Produces;
+import javax.enterprise.util.TypeLiteral;
 import javax.inject.Inject;
+
 import org.junit.Rule;
 import org.junit.Test;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class AssignabilityWithGenericsTest {
 
@@ -26,7 +30,8 @@ public class AssignabilityWithGenericsTest {
     public ArcTestContainer container = new ArcTestContainer(Car.class, Engine.class, PetrolEngine.class, Vehicle.class,
             StringListConsumer.class, ListConsumer.class, ProducerBean.class, DefinitelyNotBar.class,
             Bar.class, GenericInterface.class, AlmostCompleteBean.class, ActualBean.class,
-            BetaFace.class, GammaFace.class, GammaImpl.class, AbstractAlpha.class, AlphaImpl.class);
+            BetaFace.class, GammaFace.class, GammaImpl.class, AbstractAlpha.class, AlphaImpl.class,
+            BeanInjectingActualType.class, FooTyped.class);
 
     @Test
     public void testSelectingInstanceOfCar() {
@@ -57,6 +62,27 @@ public class AssignabilityWithGenericsTest {
         assertTrue(gammaInstance.isAvailable());
         AlphaImpl alpha = alphaInstance.get();
         assertEquals(GammaImpl.class.getSimpleName(), alpha.ping(alpha.getParam()));
+    }
+
+    @SuppressWarnings("serial")
+    @Test
+    public void testRequiredTypeIsActualTypeAndBeanHasObject() {
+        InstanceHandle<FooTyped<Object>> fooTypedInstance = Arc.container().instance(new TypeLiteral<FooTyped<Object>>() {
+        });
+        assertTrue(fooTypedInstance.isAvailable());
+        InstanceHandle<BeanInjectingActualType> beanInjectingActualTypeInstance = Arc.container()
+                .instance(BeanInjectingActualType.class);
+        assertTrue(beanInjectingActualTypeInstance.isAvailable());
+    }
+
+    @ApplicationScoped
+    static class BeanInjectingActualType {
+        @Inject
+        FooTyped<Long> bean;
+    }
+
+    @Dependent
+    static class FooTyped<T> {
     }
 
     interface GenericInterface<T, K> {

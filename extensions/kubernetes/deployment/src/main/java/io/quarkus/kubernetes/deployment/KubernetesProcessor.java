@@ -1,5 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
@@ -12,7 +14,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
+
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
 
 import io.dekorate.Session;
 import io.dekorate.SessionWriter;
@@ -20,23 +27,92 @@ import io.dekorate.kubernetes.annotation.KubernetesApplication;
 import io.dekorate.kubernetes.generator.DefaultKubernetesApplicationGenerator;
 import io.dekorate.processor.SimpleFileWriter;
 import io.dekorate.project.Project;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.gizmo.BranchResult;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.runtime.StartupEvent;
 
 class KubernetesProcessor {
+
+    private static final String QUARKUS_HTTP_PORT_PROP = "quarkus.http.port";
 
     @Inject
     BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer;
 
     @Inject
     BuildProducer<FeatureBuildItem> featureProducer;
+
+    /**
+     * Generate a class that checks whether the build time value of http port is different than the runtime
+     * value and logs a warning message about the Kubernetes resources in case the two values are different
+     */
+    @BuildStep(onlyIf = IsNormal.class)
+    public void runtimePortWarningProducer(BuildProducer<GeneratedBeanBuildItem> producer) {
+
+        Integer buildTimeHttpPort = ConfigProvider.getConfig().getOptionalValue(QUARKUS_HTTP_PORT_PROP, Integer.class)
+                .orElse(8080);
+
+        ClassOutput classOutput = new ClassOutput() {
+            @Override
+            public void write(String name, byte[] data) {
+                producer.produce(new GeneratedBeanBuildItem(name, data));
+            }
+        };
+
+        String generatedClassName = "io.quarkus.kubernetes.runtime.KubernetesPortWarningLogger";
+        try (ClassCreator cc = ClassCreator.builder()
+                .classOutput(classOutput).className(generatedClassName)
+                .build()) {
+
+            try (MethodCreator onStart = cc.getMethodCreator("onStart", void.class, StartupEvent.class)) {
+                onStart.getParameterAnnotations(0).addAnnotation(Observes.class);
+
+                ResultHandle integerClazz = onStart.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(Class.class, "forName", Class.class, String.class),
+                        onStart.load(Integer.class.getName()));
+                ResultHandle quarkusHttpPortConfig = onStart.load(QUARKUS_HTTP_PORT_PROP);
+
+                // read the value of "quarkus.http.port"
+                ResultHandle config = onStart
+                        .invokeStaticMethod(MethodDescriptor.ofMethod(ConfigProvider.class, "getConfig", Config.class));
+                ResultHandle httpPortRuntimeValue = onStart.invokeInterfaceMethod(
+                        ofMethod(Config.class, "getValue", Object.class, String.class, Class.class),
+                        config, quarkusHttpPortConfig, integerClazz);
+
+                ResultHandle compare = onStart.invokeStaticMethod(
+                        ofMethod(Integer.class, "compare", int.class, int.class, int.class),
+                        httpPortRuntimeValue, onStart.load(buildTimeHttpPort));
+
+                // check the value of Integer.compare
+                BranchResult branchResult = onStart.ifNonZero(compare);
+                BytecodeCreator valuesDiffer = branchResult.trueBranch();
+                ResultHandle logger = valuesDiffer.invokeStaticMethod(
+                        ofMethod(Logger.class, "getLogger", Logger.class, String.class),
+                        valuesDiffer.load(generatedClassName));
+                valuesDiffer.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(Logger.class, "warn", void.class, Object.class),
+                        logger,
+                        valuesDiffer.load(
+                                "The value of configuration property 'quarkus.http.port' is different than at build time - the generated Kubernetes resources will not be correct"));
+                valuesDiffer.returnValue(null);
+                branchResult.falseBranch().returnValue(null);
+            }
+        }
+    }
 
     @BuildStep(onlyIf = IsNormal.class)
     public void build(ApplicationInfoBuildItem applicationInfo,

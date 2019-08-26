@@ -36,6 +36,7 @@
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <jacoco.version>0.8.3</jacoco.version>
+        <default-native-image-build>false</default-native-image-build>
     </properties>
 
     <modules>

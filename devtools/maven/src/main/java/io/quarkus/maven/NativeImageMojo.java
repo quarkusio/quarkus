@@ -143,6 +143,8 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "true")
     private boolean reportExceptionStackTraces;
 
+    @Parameter(defaultValue = "false")
+    private boolean skip;
     /**
      * Coordinates of the Maven artifact containing the original Java application to build the native image for.
      * If not provided, the current project is assumed to be the original Java application.
@@ -182,7 +184,10 @@ public class NativeImageMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-
+        if (skip) {
+            getLog().info("Skipping native-image goal as skip was set to true");
+            return;
+        }
         if (project.getPackaging().equals("pom") && appArtifact == null) {
             getLog().info("Type of the artifact is POM and appArtifact parameter has not been set, skipping native-image goal");
             return;

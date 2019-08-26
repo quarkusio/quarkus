@@ -210,7 +210,7 @@
             <id>native-image-it-main</id>
             <activation>
                 <property>
-                    <name>native</name>
+                    <name>native-main</name>
                 </property>
             </activation>
             <build>
@@ -225,6 +225,7 @@
                                     <goal>verify</goal>
                                 </goals>
                                 <configuration>
+                                    <skip>${default-native-image-build}</skip>
                                     <systemProperties>
                                         <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
                                     </systemProperties>
@@ -242,6 +243,7 @@
                                     <goal>native-image</goal>
                                 </goals>
                                 <configuration>
+                                    <skip>${defaultNativeImageBuild}</skip>
                                     <addAllCharsets>true</addAllCharsets>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>

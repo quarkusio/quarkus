@@ -96,6 +96,7 @@
                                     <goal>verify</goal>
                                 </goals>
                                 <configuration>
+                                    <skip>${default-native-image-build}</skip>
                                     <!-- force the locale as we want to explicitly test message interpolation -->
                                     <argLine>-Duser.language=en</argLine>
                                     <systemProperties>
@@ -115,6 +116,7 @@
                                     <goal>native-image</goal>
                                 </goals>
                                 <configuration>
+                                    <skip>${default-native-image-build}</skip>
                                     <reportErrorsAtRuntime>false</reportErrorsAtRuntime>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>

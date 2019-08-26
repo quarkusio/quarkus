@@ -43,7 +43,54 @@ jobs:
     displayName: 'Maven Build'
     inputs:
       goals: 'install'
-      options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-dynamodb -Ddynamodb-local.port=8000 -Dnative-image.xmx=6g  -Dnative -Dno-format'
+      options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-dynamodb -Ddynamodb-local.port=8000 -Dnative-image.xmx=6g  -Dnative -Dno-format -Ddefault-native-image-build'
+
+- job: Build_Native_Linux_Integration_Main
+  timeoutInMinutes: 210
+  pool:
+    vmImage: 'Ubuntu 16.04'
+
+  variables:
+    imageName: 'quarkus:$(build.buildId)'
+
+  steps:
+
+    - script: docker run --rm --publish 5432:5432 --name build-postgres -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -d postgres:10.5
+      displayName: 'start postgres'
+
+    - task: Maven@3
+      displayName: 'Maven Install'
+      inputs:
+        goals: 'install'
+        options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
+
+    - task: Maven@3
+      displayName: 'Maven Build'
+      inputs:
+        goals: 'install'
+        options: '-pl :quarkus-integration-test-main -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dnative-image.xmx=6g  -Dnative -Dno-format'
+
+- job: Build_Native_Linux_Integration_Hibernate_Validator
+  timeoutInMinutes: 210
+  pool:
+    vmImage: 'Ubuntu 16.04'
+
+  variables:
+    imageName: 'quarkus:$(build.buildId)'
+
+  steps:
+    - task: Maven@3
+      displayName: 'Maven Install'
+      inputs:
+        goals: 'install'
+        options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
+
+    - task: Maven@3
+      displayName: 'Maven Build'
+      inputs:
+        goals: 'install'
+        options: '-pl :quarkus-integration-test-hibernate-validator -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dnative-image.xmx=6g  -Dnative -Dno-format'
+
 
 - job: Windows_Build
   timeoutInMinutes: 60

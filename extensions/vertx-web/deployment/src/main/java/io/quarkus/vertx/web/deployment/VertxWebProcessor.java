@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
@@ -91,8 +92,12 @@ class VertxWebProcessor {
     }
 
     @BuildStep
-    public void kubernetes(HttpConfiguration config, BuildProducer<KubernetesPortBuildItem> portProducer) {
-        portProducer.produce(new KubernetesPortBuildItem(config.port, "http"));
+    public void kubernetes(BuildProducer<KubernetesPortBuildItem> portProducer) {
+        // we can't use HttpConfiguration since the port is a runtime configuration value
+        // therefore we just read the value from MP Config - this is fine since the value is only ever used to create
+        // Kubernetes resources at build time
+        portProducer.produce(new KubernetesPortBuildItem(
+                ConfigProvider.getConfig().getOptionalValue("quarkus.http.port", Integer.class).orElse(8080), "http"));
     }
 
     @BuildStep

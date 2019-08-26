@@ -1,4 +1,4 @@
-# Quarkus
+[![Quarkus](https://design.jboss.org/quarkus/logo/final/PNG/quarkus_logo_horizontal_rgb_1280px_default.png)](https://quarkus.io/)
 
 [![Build Status](https://dev.azure.com/quarkus-ci/quarkus/_apis/build/status/quarkusio.quarkus)](https://dev.azure.com/quarkus-ci/quarkus/_build/latest?definitionId=1)
 [![Project Chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://quarkusio.zulipchat.com/)

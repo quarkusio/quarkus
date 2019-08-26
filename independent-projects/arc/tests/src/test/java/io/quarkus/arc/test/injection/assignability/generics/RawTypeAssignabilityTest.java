@@ -1,17 +1,15 @@
 package io.quarkus.arc.test.injection.assignability.generics;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.test.ArcTestContainer;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.Vetoed;
 import javax.inject.Inject;
-
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.test.ArcTestContainer;
 
 public class RawTypeAssignabilityTest {
 

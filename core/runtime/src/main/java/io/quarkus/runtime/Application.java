@@ -4,6 +4,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.graalvm.nativeimage.ImageInfo;
 import org.wildfly.common.Assert;
 import org.wildfly.common.lock.Locks;
@@ -36,6 +37,12 @@ public abstract class Application {
     private int state = ST_INITIAL;
     private volatile boolean shutdownRequested;
     private static volatile Application currentApplication;
+
+    /**
+     * The generated config code will install a new resolver, we save the original one here and make sure
+     * to restore it on shutdown.
+     */
+    private final static ConfigProviderResolver originalResolver = ConfigProviderResolver.instance();
 
     /**
      * Construct a new instance.
@@ -151,6 +158,7 @@ public abstract class Application {
             doStop();
         } finally {
             currentApplication = null;
+            ConfigProviderResolver.setInstance(originalResolver);
             stateLock.lock();
             try {
                 state = ST_STOPPED;

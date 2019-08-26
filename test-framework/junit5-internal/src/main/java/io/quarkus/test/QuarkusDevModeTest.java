@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -298,9 +299,9 @@ public class QuarkusDevModeTest
      * @param sourceFile
      */
     public void addSourceFile(Class<?> sourceFile) {
-        sleepForFileChanges();
-        copySourceFilesForClass(projectSourceRoot, deploymentSourcePath, testLocation,
+        Path path = copySourceFilesForClass(projectSourceRoot, deploymentSourcePath, testLocation,
                 testLocation.resolve(sourceFile.getName().replace(".", "/") + ".class"));
+        sleepForFileChanges(path);
     }
 
     public void modifyFile(String name, Function<String, String> mutator, Path path) {
@@ -316,7 +317,7 @@ public class QuarkusDevModeTest
                         String content = new String(data, StandardCharsets.UTF_8);
                         content = mutator.apply(content);
 
-                        sleepForFileChanges();
+                        sleepForFileChanges(path);
                         try (OutputStream out = Files.newOutputStream(s)) {
                             out.write(content.getBytes(StandardCharsets.UTF_8));
                         }
@@ -332,13 +333,18 @@ public class QuarkusDevModeTest
 
     }
 
-    public void sleepForFileChanges() {
+    public void sleepForFileChanges(Path path) {
+        long currentTime = System.currentTimeMillis();
         try {
-            //this sucks, but some file systems only resolve last modified times to the second granularity
-            //we need to sleep here before modification to make sure the detector actually picks up the change
-            //we sleep to the nearest whole second plus two ms
-            Thread.sleep(1002 - (System.currentTimeMillis() % 1000));
-        } catch (InterruptedException e) {
+            for (;;) {
+                Files.setLastModifiedTime(path, FileTime.fromMillis(System.currentTimeMillis()));
+                long fm = Files.getLastModifiedTime(path).toMillis();
+                if (fm > currentTime) {
+                    return;
+                }
+                Thread.sleep(50);
+            }
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -413,7 +419,7 @@ public class QuarkusDevModeTest
         }
     }
 
-    private void copySourceFilesForClass(Path projectSourcesDir, Path deploymentSourcesDir, Path classesDir, Path classFile) {
+    private Path copySourceFilesForClass(Path projectSourcesDir, Path deploymentSourcesDir, Path classesDir, Path classFile) {
         for (CompilationProvider provider : compilationProviders) {
             Path source = provider.getSourcePath(classFile,
                     Collections.singleton(projectSourcesDir.toAbsolutePath().toString()),
@@ -427,13 +433,13 @@ public class QuarkusDevModeTest
                     try (OutputStream out = Files.newOutputStream(resolved)) {
                         out.write(data);
                     }
-
+                    return resolved;
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-                break;
             }
         }
+        return null;
     }
 
 }

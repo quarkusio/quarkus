@@ -1,21 +1,32 @@
 parameters:
   module: ''
+  name: ''
+  postgres: false
+  dynamodb: false
 
-steps:
-- task: DownloadPipelineArtifact@2
-  inputs:
-    artifact: BuiltMavenRepo
-    path: $(Pipeline.Workspace)/.m2/repository/
+jobs:
+  - job: ${{ parameters.name }}
+    timeoutInMinutes: 20
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    variables:
+      imageName: 'quarkus:$(build.buildId)'
+    steps:
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        artifact: BuiltMavenRepo
+        path: $(Pipeline.Workspace)/.m2/repository/
 
-- script: docker run --rm --publish 5432:5432 --name build-postgres -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -d postgres:10.5
-  displayName: 'start postgres'
+    - ${{ if eq(parameters.postgres, 'true') }}:
+      - script: docker run --rm --publish 5432:5432 --name build-postgres -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -d postgres:10.5
+        displayName: 'start postgres'
+    - ${{ if eq(parameters.dynamodb, 'true') }}:
+      - script: docker run --rm --publish 8000:8000 --name build-dynamodb -d amazon/dynamodb-local:1.11.477
+        displayName: 'start dynamodb'
 
-- script: docker run --rm --publish 8000:8000 --name build-dynamodb -d amazon/dynamodb-local:1.11.477
-  displayName: 'start dynamodb'
-
-- task: Maven@3
-  displayName: 'Maven Build'
-  inputs:
-    goals: 'install'
-    mavenOptions: $(MAVEN_OPTS)
-    options: '-pl integration-tests/${{ parameters.module }} -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-dynamodb -Ddynamodb-local.port=8000 -Dnative-image.xmx=6g -Dnative -Dno-format'
+    - task: Maven@3
+      displayName: 'Maven Build'
+      inputs:
+        goals: 'install'
+        mavenOptions: $(MAVEN_OPTS)
+        options: '-pl integration-tests/${{ parameters.module }} -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-dynamodb -Ddynamodb-local.port=8000 -Dnative-image.xmx=6g -Dnative -Dno-format'

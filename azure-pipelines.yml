@@ -46,7 +46,7 @@ stages:
 
           - task: CacheBeta@0
             inputs:
-              key: maven | **/pom.xml
+              key: maven | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
               path: $(MAVEN_CACHE_FOLDER)
               securityNamespace: cache
             displayName: Cache Maven local repo
@@ -62,13 +62,16 @@ stages:
             artifact: MavenRepo
 
   #This stage builds the Quarkus artifacts needed for native image testing
+  #but also tests JDK8 linux. While it would be more parallel to have a separate JDK8 test run,
+  #and build this run with tests skipped, this means that if there is a problem with the JVM run
+  #we do not waste time on native runs, and also uses less agent time overall
   - stage: build_artifact_for_native_stage
-    displayName: 'Build Artifacts for Pre Built Testing'
+    displayName: 'Build for Native'
     dependsOn: cache_maven_repo_stage
     jobs:
-      - job: Build_Artifacts_For_Pre_Built_Testing
-        displayName: 'Build'
-        timeoutInMinutes: 30
+      - job: Build_JDK8_Linux
+        displayName: 'Build JDK8 Linux'
+        timeoutInMinutes: 60
         pool:
           vmImage: 'Ubuntu 16.04'
 
@@ -76,18 +79,7 @@ stages:
           imageName: 'quarkus:$(build.buildId)'
 
         steps:
-
-          - task: DownloadPipelineArtifact@2
-            inputs:
-              artifact: MavenRepo
-              path: $(MAVEN_CACHE_FOLDER)
-
-          - task: Maven@3
-            displayName: 'Maven Build'
-            inputs:
-              goals: 'install'
-              mavenOptions: $(MAVEN_OPTS)
-              options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format'
+          - template: ci-templates/jvm-build-steps.yaml
 
           - publish: $(MAVEN_CACHE_FOLDER)
             artifact: BuiltMavenRepo
@@ -101,14 +93,11 @@ stages:
         timeoutInMinutes: 60
         pool:
           vmImage: 'vs2017-win2016'
-
         variables:
           imageName: 'quarkus-windows:$(build.buildId)'
           MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
           MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
-
         steps:
-
           - task: DownloadPipelineArtifact@2
             inputs:
               artifact: MavenRepo
@@ -128,16 +117,6 @@ stages:
           vmImage: 'Ubuntu 16.04'
         variables:
           imageName: 'quarkus-jdk11:$(build.buildId)'
-        steps:
-          - template: ci-templates/jvm-build-steps.yaml
-
-      - job: Build_JDK8_Linux
-        timeoutInMinutes: 60
-        displayName: 'Linux JDK8 Build'
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
         steps:
           - template: ci-templates/jvm-build-steps.yaml
 
@@ -170,365 +149,171 @@ stages:
     displayName: 'Native Tests'
     dependsOn: build_artifact_for_native_stage
     jobs:
-      - job: amazon_dynamodb
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: amazon-dynamodb
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: amazon-dynamodb
+          name: amazon_dynamodb
+          dynamodb: true
 
-      - job: amazon_lambda
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: amazon-lambda
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: amazon-lambda
+          name: amazon_lambda
 
-      - job: artemis_core
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: artemis-core
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: artemis-core
+          name: artemis_core
 
-      - job: artemis_jms
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: artemis-jms
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: artemis-jms
+          name: artemis_jms
 
-      - job: elytron_security_oauth2
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: elytron-security-oauth2
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: elytron-security-oauth2
+          name: elytron_security_oauth2
 
-      - job: elytron_security
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: elytron-security
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: elytron-security
+          name: elytron_security
 
-      - job: flyway
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: flyway
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: flyway
+          name: flyway
 
-      - job: hibernate_orm_panache
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: hibernate-orm-panache
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: hibernate-orm-panache
+          name: hibernate_orm_panache
 
-      - job: hibernate_search_elasticsearch
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: hibernate-search-elasticsearch
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: hibernate-search-elasticsearch
+          name: hibernate_search_elasticsearch
 
-      - job: hibernate_validator
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: hibernate-validator
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: hibernate-validator
+          name: hibernate_validator
 
-      - job: infinispan_cache_jpa
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: infinispan-cache-jpa
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: infinispan-cache-jpa
+          name: infinispan_cache_jpa
 
-      - job: infinispan_client
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: infinispan-client
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: infinispan-client
+          name: infinispan_client
 
-      - job: jgit
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: jgit
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: jgit
+          name: jgit
 
-      - job: jpa_h2
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: jpa-h2
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: jpa-h2
+          name: jpa_h2
 
-      - job: jpa_mariadb
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: jpa-mariadb
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: jpa-mariadb
+          name: jpa_mariadb
 
-      - job: jpa_mssql
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: jpa-mssql
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: jpa-mssql
+          name: jpa_mssql
 
-      - job: jpa_postgresql
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: jpa-postgresql
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: jpa-postgresql
+          name: jpa_postgresql
+          postgres: true
 
-      - job: jpa
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: jpa
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: jpa
+          name: jpa
 
-      - job: kafka
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: kafka
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: kafka
+          name: kafka
 
-      - job: keycloak
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: keycloak
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: keycloak
+          name: keycloak
 
-      - job: kogito
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: kogito
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: kogito
+          name: kogito
 
-      - job: kubernetes_client
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: kubernetes-client
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: kubernetes-client
+          name: kubernetes_client
 
-      - job: main
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: main
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: main
+          name: main
+          postgres: true
 
-      - job: mongodb_client
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: mongodb-client
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: mongodb-client
+          name: mongodb_client
 
-      - job: neo4j
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: neo4j
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: neo4j
+          name: neo4j
 
-      - job: reactive_pg_client
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: reactive-pg-client
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: reactive-pg-client
+          name: reactive_pg_client
+          postgres: true
 
-      - job: resteasy_jackson
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: resteasy-jackson
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: resteasy-jackson
+          name: resteasy_jackson
 
-      - job: spring_di
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: spring-di
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: spring-di
+          name: spring_di
 
-      - job: spring_web
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: spring-web
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: spring-web
+          name: spring_web
 
-      - job: test_extension
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: test-extension
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: test-extension
+          name: test_extension
 
-      - job: tika
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: tika
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: tika
+          name: tika
 
-      - job: vertx
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: vertx
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: vertx
+          name: vertx
 
-      - job: virtual_http
-        timeoutInMinutes: 20
-        pool:
-          vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-        steps:
-          - template: ci-templates/native-build-steps.yaml
-            parameters:
-              module: virtual-http
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          module: virtual-http
+          name: virtual_http

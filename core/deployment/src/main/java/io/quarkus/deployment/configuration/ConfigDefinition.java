@@ -490,13 +490,15 @@ public class ConfigDefinition extends CompoundConfigType {
                                 boolean old = ExpandingConfigSource.setExpanding(false);
                                 try {
                                     leafType.acceptConfigurationValue(name, cache, config);
-                                    definition.loadedProperties.put(nameString, config.getValue(nameString, String.class));
+                                    definition.loadedProperties.put(nameString,
+                                            config.getOptionalValue(nameString, String.class).orElse(""));
                                 } finally {
                                     ExpandingConfigSource.setExpanding(old);
                                 }
                             } else {
                                 leafType.acceptConfigurationValue(name, cache, config);
-                                definition.loadedProperties.put(nameString, config.getValue(nameString, String.class));
+                                definition.loadedProperties.put(nameString,
+                                        config.getOptionalValue(nameString, String.class).orElse(""));
                             }
                             continue outer;
                         }

@@ -63,13 +63,11 @@ In the `pom.xml` file you should see 2 test dependencies:
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-junit5</artifactId>
-    <version>${quarkus.version}</version>
     <scope>test</scope>
 </dependency>
 <dependency>
     <groupId>io.rest-assured</groupId>
     <artifactId>rest-assured</artifactId>
-    <version>{restassured-version}</version>
     <scope>test</scope>
 </dependency>
 ----
@@ -226,6 +224,10 @@ public class StaticContentTest {
 
 For now `@TestHTTPResource` allows you to inject `URI`, `URL` and `String` representations of the URL.
 
+[TIP]
+=====
+If `quarkus.servlet.context-path` is configured, make sure to prefix the endpoint with the provided value acting as a base path during injection of a `URI` through `TestHTTPResource` or when calling a rest endpoint with `RestAssured`
+=====
 
 == Injection into tests
 

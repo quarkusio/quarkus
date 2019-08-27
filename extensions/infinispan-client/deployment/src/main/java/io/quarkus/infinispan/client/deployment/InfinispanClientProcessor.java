@@ -3,6 +3,7 @@ package io.quarkus.infinispan.client.deployment;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,8 +28,10 @@ import org.infinispan.protostream.EnumMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.MessageMarshaller;
 import org.infinispan.protostream.RawProtobufMarshaller;
+import org.infinispan.protostream.SerializationContextInitializer;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Type;
@@ -48,6 +51,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanClientProducer;
 import io.quarkus.infinispan.client.runtime.InfinispanClientRuntimeConfig;
@@ -73,6 +77,7 @@ class InfinispanClientProcessor {
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
+            BuildProducer<SubstrateConfigBuildItem> substrateConfig,
             ApplicationIndexBuildItem applicationIndexBuildItem) throws ClassNotFoundException, IOException {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.INFINISPAN_CLIENT));
@@ -110,6 +115,8 @@ class InfinispanClientProcessor {
 
         InfinispanClientProducer.replaceProperties(properties);
 
+        Index index = applicationIndexBuildItem.getIndex();
+
         // This is always non null
         Object marshaller = properties.get(ConfigurationProperties.MARSHALLER);
 
@@ -139,10 +146,28 @@ class InfinispanClientProcessor {
             }
 
             InfinispanClientProducer.handleProtoStreamRequirements(properties);
+
+            Set<ClassInfo> initializerClasses = index.getAllKnownImplementors(DotName.createSimple(
+                    SerializationContextInitializer.class.getName()));
+            Set<SerializationContextInitializer> initializers = new HashSet<>(initializerClasses.size());
+            for (ClassInfo ci : initializerClasses) {
+                Class<?> initializerClass = Class.forName(ci.toString());
+                try {
+                    SerializationContextInitializer sci = (SerializationContextInitializer) initializerClass
+                            .getDeclaredConstructor().newInstance();
+                    initializers.add(sci);
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException
+                        | NoSuchMethodException e) {
+                    // This shouldn't ever be possible as annotation processor should generate empty constructor
+                    throw new RuntimeException(e);
+                }
+            }
+            if (!initializers.isEmpty()) {
+                properties.put(InfinispanClientProducer.PROTOBUF_INITIALIZERS, initializers);
+            }
         }
 
         // Add any user project listeners to allow reflection in native code
-        Index index = applicationIndexBuildItem.getIndex();
         List<AnnotationInstance> listenerInstances = index.getAnnotations(
                 DotName.createSimple(ClientListener.class.getName()));
         for (AnnotationInstance instance : listenerInstances) {
@@ -154,6 +179,9 @@ class InfinispanClientProcessor {
 
         // This is required for netty to work properly
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioSocketChannel"));
+        substrateConfig.produce(SubstrateConfigBuildItem.builder()
+                .addRuntimeInitializedClass("org.infinispan.client.hotrod.impl.transport.netty.TransportHelper")
+                .build());
         // We use reflection to have continuous queries work
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
                 "org.infinispan.client.hotrod.event.impl.ContinuousQueryImpl$ClientEntryListener"));

@@ -21,12 +21,12 @@
             <artifactId>quarkus-vertx</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.reactiverse</groupId>
-            <artifactId>reactive-pg-client</artifactId>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-pg-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-axle-postgres-client</artifactId>
+            <artifactId>smallrye-axle-pg-client</artifactId>
         </dependency>
     </dependencies>
 

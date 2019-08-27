@@ -9,15 +9,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
-import org.jboss.jandex.WildcardType;
 import org.jboss.logging.Logger;
 
 /**
@@ -161,36 +158,6 @@ final class Methods {
         }
         // We intentionally do not skip final methods here - these are handled later
         return false;
-    }
-
-    static Type resolveType(Type type, Map<TypeVariable, Type> resolvedTypeParameters) {
-        switch (type.kind()) {
-            case CLASS:
-            case PRIMITIVE:
-            case VOID:
-                return type;
-            case TYPE_VARIABLE:
-                // TODO bounds
-                return resolvedTypeParameters.getOrDefault(type.asTypeVariable(), type);
-            case PARAMETERIZED_TYPE:
-                ParameterizedType parameterizedType = type.asParameterizedType();
-                Type[] args = new Type[parameterizedType.arguments().size()];
-                for (int i = 0; i < args.length; i++) {
-                    args[i] = resolveType(parameterizedType.arguments().get(i), resolvedTypeParameters);
-                }
-                return ParameterizedType.create(parameterizedType.name(), args, null);
-            case WILDCARD_TYPE:
-                WildcardType wildcardType = type.asWildcardType();
-                return WildcardType.create(
-                        resolveType(wildcardType.superBound() != null ? wildcardType.superBound() : wildcardType.extendsBound(),
-                                resolvedTypeParameters),
-                        wildcardType.superBound() == null);
-            case ARRAY:
-                ArrayType arrayType = type.asArrayType();
-                return ArrayType.create(resolveType(arrayType.component(), resolvedTypeParameters), arrayType.dimensions());
-            default:
-                throw new IllegalArgumentException("Unsupported type to resolve: " + type);
-        }
     }
 
     static class MethodKey {

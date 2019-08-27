@@ -42,6 +42,12 @@ javadoc {
     options.addStringOption('encoding', 'UTF-8')
 }
 
+pluginBundle {
+    website = 'https://quarkus.io/' 
+    vcsUrl = 'https://github.com/quarkusio/quarkus' 
+    tags = ['quarkus', 'quarkusio', 'graalvm'] 
+}
+
 gradlePlugin {
     plugins {
         simplePlugin {

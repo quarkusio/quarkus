@@ -1,10 +1,10 @@
 package io.quarkus.vertx.web.runtime.cors;
 
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -16,33 +16,40 @@ public class CORSFilter implements Handler<RoutingContext> {
     // Must be static because the filter is created(deployed) at build time and runtime config is still not available
     final CORSConfig corsConfig;
 
-    private static final String ACCESS_CONTROL_ALLOW_ORIGIN = "Access-Control-Allow-Origin";
-    private static final String ACCESS_CONTROL_ALLOW_CREDENTIALS = "Access-Control-Allow-Credentials";
-    private static final String ACCESS_CONTROL_ALLOW_METHODS = "Access-Control-Allow-Methods";
-    private static final String ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";
-    private static final String ORIGIN = "Origin";
-    private static final String ACCESS_CONTROL_REQUEST_METHOD = "Access-Control-Request-Method";
-    private static final String ACCESS_CONTROL_EXPOSE_HEADERS = "Access-Control-Expose-Headers";
-    private static final String ACCESS_CONTROL_REQUEST_HEADERS = "Access-Control-Request-Headers";
-
     public CORSFilter(CORSConfig corsConfig) {
         this.corsConfig = corsConfig;
     }
 
-    private void processHeaders(HttpServerResponse response, String requestedHeaders, String allowedHeaders) {
-        String validHeaders = Arrays.stream(requestedHeaders.split(","))
-                .filter(allowedHeaders::contains)
-                .collect(Collectors.joining(","));
-        if (!validHeaders.isEmpty())
-            response.headers().set(ACCESS_CONTROL_ALLOW_HEADERS, validHeaders);
+    private void processRequestedHeaders(HttpServerResponse response, String requestedHeaders) {
+        if (corsConfig.headers.isEmpty()) {
+            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, requestedHeaders);
+        } else {
+            final String validRequestHeaders = corsConfig.headers
+                    .stream()
+                    .filter(requestedHeaders::contains)
+                    .collect(Collectors.joining(","));
+
+            if (!validRequestHeaders.isEmpty()) {
+                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, validRequestHeaders);
+            }
+        }
     }
 
-    private void processMethods(HttpServerResponse response, String requestedMethods, String allowedMethods) {
-        String validMethods = Arrays.stream(requestedMethods.split(","))
-                .filter(allowedMethods::contains)
-                .collect(Collectors.joining(","));
-        if (!validMethods.isEmpty())
-            response.headers().set(ACCESS_CONTROL_ALLOW_METHODS, validMethods);
+    private void processMethods(HttpServerResponse response, String requestedMethods) {
+        if (corsConfig.methods.isEmpty()) {
+            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, requestedMethods);
+        } else {
+
+            final String validRequestedMethods = corsConfig.methods
+                    .stream()
+                    .filter(method -> requestedMethods.contains(method.name()))
+                    .map(HttpMethod::name)
+                    .collect(Collectors.joining(","));
+
+            if (!validRequestedMethods.isEmpty()) {
+                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, validRequestedMethods);
+            }
+        }
     }
 
     @Override
@@ -50,25 +57,41 @@ public class CORSFilter implements Handler<RoutingContext> {
         Objects.requireNonNull(corsConfig, "CORS config is not set");
         HttpServerRequest request = event.request();
         HttpServerResponse response = event.response();
-        String origin = request.getHeader(ORIGIN);
+        String origin = request.getHeader(HttpHeaders.ORIGIN);
         if (origin == null) {
             event.next();
         } else {
-            String requestedMethods = request.getHeader(ACCESS_CONTROL_REQUEST_METHOD);
+            final String requestedMethods = request.getHeader(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD);
+
             if (requestedMethods != null) {
-                processMethods(response, requestedMethods, corsConfig.methods.orElse(requestedMethods));
+                processMethods(response, requestedMethods);
             }
-            String requestedHeaders = request.getHeader(ACCESS_CONTROL_REQUEST_HEADERS);
+
+            final String requestedHeaders = request.getHeader(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS);
+
             if (requestedHeaders != null) {
-                processHeaders(response, requestedHeaders, corsConfig.headers.orElse(requestedHeaders));
+                processRequestedHeaders(response, requestedHeaders);
             }
-            String allowedOrigins = corsConfig.origins.orElse(null);
-            boolean allowsOrigin = allowedOrigins == null || allowedOrigins.contains(origin);
-            if (allowsOrigin)
-                response.headers().set(ACCESS_CONTROL_ALLOW_ORIGIN, origin);
-            response.headers().set(ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
-            corsConfig.exposedHeaders.ifPresent(exposed -> response.headers().set(ACCESS_CONTROL_EXPOSE_HEADERS, exposed));
+
+            boolean allowsOrigin = corsConfig.origins.isEmpty() || corsConfig.origins.contains(origin);
+
+            if (allowsOrigin) {
+                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+            }
+
+            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+
+            final String exposedHeaders = corsConfig.exposedHeaders.stream().collect(Collectors.joining(","));
+
+            if (!exposedHeaders.isEmpty()) {
+                response.headers().set(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, exposedHeaders);
+            }
+
             if (request.method().equals(HttpMethod.OPTIONS)) {
+                if ((requestedHeaders != null || requestedMethods != null) && corsConfig.accessControlMaxAge.isPresent()) {
+                    response.putHeader(HttpHeaders.ACCESS_CONTROL_MAX_AGE,
+                            String.valueOf(corsConfig.accessControlMaxAge.get().getSeconds()));
+                }
                 response.end();
             } else {
                 event.next();

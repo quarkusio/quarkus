@@ -35,6 +35,10 @@ You can make use of the Undertow predicate language using an `undertow-handlers.
 in the `META-INF` directory of your application jar. This file contains handlers defined using the
 link:http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#predicates-attributes-and-handlers[Undertow predicate language].
 
+== web.xml
+
+If you are using a `web.xml` file as your configuration file, you can place it in the `src/main/resources/META-INF` directory.
+
 == Supporting secure connections with SSL
 
 In order to have Undertow support secure connections, you must either provide a certificate and associated key file, or supply a keystore.
@@ -125,7 +129,12 @@ not set.
 |quarkus.http.cors.headers||The comma-separated list of HTTP headers allowed for CORS. The filter allows any header if this is
 not set.
 |quarkus.http.cors.exposed-headers||The comma-separated list of HTTP headers exposed in CORS.
+|quarkus.http.cors.access-control-max-age||The duration (see note below) indicating how long the results of a pre-flight request can be cached.
+This value will be returned in a `Access-Control-Max-Age` response header.
 |===
+
+
+include::duration-format-note.adoc[]
 
 Here's what a full CORS filter configuration could look like:
 
@@ -136,6 +145,7 @@ quarkus.http.cors.origins=http://foo.com,http://www.bar.io
 quarkus.http.cors.methods=GET,PUT,POST
 quarkus.http.cors.headers=X-Custom
 quarkus.http.cors.exposed-headers=Content-Disposition
+quarkus.http.cors.access-control-max-age=24H
 ----
 
 [WARNING]

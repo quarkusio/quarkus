@@ -22,7 +22,7 @@ import io.quarkus.generators.BuildTool;
 
 public class ListExtensions {
     private static final String FULL_FORMAT = "%-8s %-50s %-50s %-25s%n%s";
-    private static final String SIMPLE_FORMAT = "%-50s %-50s";
+    private static final String CONCISE_FORMAT = "%-50s %-50s";
     private static final String NAME_FORMAT = "%-50s";
     private BuildFile buildFile = null;
 
@@ -57,14 +57,14 @@ public class ListExtensions {
                     currentFormatter = this::fullFormatter;
                     currentFormatter.accept(new String[] { "Status", "Extension", "ArtifactId", "Updated Version", "Guide" });
                     break;
-                case "simple":
+                case "concise":
                 default:
-                    currentFormatter = this::simpleFormatter;
+                    currentFormatter = this::conciseFormatter;
             }
 
             loadedExtensions.forEach(extension -> display(extension, installed, all, currentFormatter));
 
-            if ("simple".equalsIgnoreCase(format)) {
+            if ("concise".equalsIgnoreCase(format)) {
                 System.out.println("\nTo get more information, append -Dquarkus.extension.format=full to your command line.");
             }
 
@@ -85,8 +85,8 @@ public class ListExtensions {
         return searchPattern.matcher(e.getName()).matches();
     }
 
-    private void simpleFormatter(String[] cols) {
-        System.out.println(String.format(SIMPLE_FORMAT, cols[1], cols[2], cols[4]));
+    private void conciseFormatter(String[] cols) {
+        System.out.println(String.format(CONCISE_FORMAT, cols[1], cols[2], cols[4]));
     }
 
     private void fullFormatter(String[] cols) {

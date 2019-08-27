@@ -27,10 +27,11 @@
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
-        <graal-sdk.version-for-documentation>19.1.1</graal-sdk.version-for-documentation>
+        <graal-sdk.version-for-documentation>19.2.0</graal-sdk.version-for-documentation>
         <rest-assured.version>3.3.0</rest-assured.version>
         <axle-client.version>0.0.7</axle-client.version>
         <vertx.version>3.7.1</vertx.version>
+        <artemis.version>2.9.0</artemis.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.28</freemarker.version>
@@ -174,6 +175,8 @@
                                             <exclude>org.glassfish:jakarta.json</exclude>
                                             <exclude>jakarta.json.bind:jakarta.json.bind-api</exclude>
                                             <exclude>jakarta.json:jakarta.json-api</exclude>
+                                            <!-- Ensure none of the deps use netty-all. This forces deps to use more fine grained netty artifacts -->
+                                            <exclude>io.netty:netty-all</exclude>
                                         </excludes>
                                     </bannedDependencies>
                                 </rules>

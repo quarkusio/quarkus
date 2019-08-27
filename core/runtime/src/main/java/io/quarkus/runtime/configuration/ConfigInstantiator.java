@@ -2,6 +2,7 @@ package io.quarkus.runtime.configuration;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -41,8 +42,9 @@ public class ConfigInstantiator {
             }
             for (Field field : cls.getDeclaredFields()) {
                 ConfigItem configItem = field.getDeclaredAnnotation(ConfigItem.class);
-                if (configItem == null || field.getType().isAnnotationPresent(ConfigGroup.class)) {
-                    Object newInstance = field.getType().newInstance();
+                final Class<?> fieldClass = field.getType();
+                if (configItem == null || fieldClass.isAnnotationPresent(ConfigGroup.class)) {
+                    Object newInstance = fieldClass.getConstructor().newInstance();
                     field.set(o, newInstance);
                     handleObject(prefix + "." + dashify(field.getName()), newInstance, config);
                 } else {
@@ -55,12 +57,26 @@ public class ConfigInstantiator {
                     if (defaultValue.equals(ConfigItem.NO_DEFAULT)) {
                         defaultValue = null;
                     }
-                    Optional<?> val = config.getOptionalValue(fullName, field.getType());
+                    final Type genericType = field.getGenericType();
+                    Optional<?> val;
+                    final boolean fieldIsOptional = fieldClass.equals(Optional.class);
+                    final boolean fieldIsList = fieldClass.equals(List.class);
+                    if (fieldIsOptional) {
+                        Class<?> actualType = (Class<?>) ((ParameterizedType) genericType)
+                                .getActualTypeArguments()[0];
+                        val = config.getOptionalValue(fullName, actualType);
+                    } else if (fieldIsList) {
+                        Class<?> actualType = (Class<?>) ((ParameterizedType) genericType)
+                                .getActualTypeArguments()[0];
+                        val = config.getOptionalValues(fullName, actualType, ArrayList::new);
+                    } else {
+                        val = config.getOptionalValue(fullName, fieldClass);
+                    }
                     if (val.isPresent()) {
-                        field.set(o, val.get());
+                        field.set(o, fieldIsOptional ? val : val.get());
                     } else if (defaultValue != null) {
-                        if (field.getType().equals(List.class)) {
-                            Class<?> listType = (Class<?>) ((ParameterizedType) field.getGenericType())
+                        if (fieldIsList) {
+                            Class<?> listType = (Class<?>) ((ParameterizedType) genericType)
                                     .getActualTypeArguments()[0];
                             String[] parts = defaultValue.split(",");
                             List<Object> list = new ArrayList<>();
@@ -68,20 +84,20 @@ public class ConfigInstantiator {
                                 list.add(config.convert(i, listType));
                             }
                             field.set(o, list);
-                        } else if (field.getType().equals(Optional.class)) {
-                            Class<?> optionalType = (Class<?>) ((ParameterizedType) field.getGenericType())
+                        } else if (fieldIsOptional) {
+                            Class<?> optionalType = (Class<?>) ((ParameterizedType) genericType)
                                     .getActualTypeArguments()[0];
                             field.set(o, Optional.of(config.convert(defaultValue, optionalType)));
                         } else {
-                            field.set(o, config.convert(defaultValue, field.getType()));
+                            field.set(o, config.convert(defaultValue, fieldClass));
                         }
-                    } else if (field.getType().equals(Optional.class)) {
+                    } else if (fieldIsOptional) {
                         field.set(o, Optional.empty());
-                    } else if (field.getType().equals(OptionalInt.class)) {
+                    } else if (fieldClass.equals(OptionalInt.class)) {
                         field.set(o, OptionalInt.empty());
-                    } else if (field.getType().equals(OptionalDouble.class)) {
+                    } else if (fieldClass.equals(OptionalDouble.class)) {
                         field.set(o, OptionalDouble.empty());
-                    } else if (field.getType().equals(OptionalLong.class)) {
+                    } else if (fieldClass.equals(OptionalLong.class)) {
                         field.set(o, OptionalLong.empty());
                     }
                 }

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.reactiverse.pgclient.PgPool;
+import io.vertx.pgclient.PgPool;
 
 public class PgPoolProducerTest {
 
@@ -60,7 +60,7 @@ public class PgPoolProducerTest {
     static class BeanUsingAxlePgClient {
 
         @Inject
-        io.reactiverse.axle.pgclient.PgPool pgClient;
+        io.vertx.axle.pgclient.PgPool pgClient;
 
         public CompletionStage<Void> verify() {
             return pgClient.query("SELECT 1")
@@ -73,7 +73,7 @@ public class PgPoolProducerTest {
     static class BeanUsingRXPgClient {
 
         @Inject
-        io.reactiverse.reactivex.pgclient.PgPool pgClient;
+        io.vertx.reactivex.pgclient.PgPool pgClient;
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();

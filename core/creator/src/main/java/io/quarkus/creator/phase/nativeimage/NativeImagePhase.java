@@ -103,7 +103,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private String nativeImageXmx;
 
-    private String builderImage = "quay.io/quarkus/ubi-quarkus-native-image:19.1.1";
+    private String builderImage = "quay.io/quarkus/ubi-quarkus-native-image:19.2.0";
 
     private String containerRuntime = "";
 
@@ -335,12 +335,16 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm quarkus/graalvm-native-image"
             nativeImage = new ArrayList<>();
             Collections.addAll(nativeImage, containerRuntime, "run", "-v", outputDir.toAbsolutePath() + ":/project:z", "--rm");
-
-            if (IS_LINUX & "docker".equals(containerRuntime)) {
-                String uid = getLinuxID("-ur");
-                String gid = getLinuxID("-gr");
-                if (uid != null & gid != null & !"".equals(uid) & !"".equals(gid)) {
-                    Collections.addAll(nativeImage, "--user", uid.concat(":").concat(gid));
+            if (IS_LINUX) {
+                if ("docker".equals(containerRuntime)) {
+                    String uid = getLinuxID("-ur");
+                    String gid = getLinuxID("-gr");
+                    if (uid != null & gid != null & !"".equals(uid) & !"".equals(gid)) {
+                        Collections.addAll(nativeImage, "--user", uid + ":" + gid);
+                    }
+                } else if ("podman".equals(containerRuntime)) {
+                    // Needed to avoid AccessDeniedExceptions
+                    nativeImage.add("--userns=keep-id");
                 }
             }
             nativeImage.addAll(containerRuntimeOptions);
@@ -561,15 +565,13 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
         }
     }
 
-    //FIXME remove after transition period
     private boolean isThisGraalVMVersionObsolete() {
         final String vmName = System.getProperty("java.vm.name");
         log.info("Running Quarkus native-image plugin on " + vmName);
-        final List<String> obsoleteGraalVmVersions = Arrays.asList("-rc9", "-rc10", "-rc11", "-rc12", "-rc13", "-rc14",
-                "-rc15", "-rc16", "19.0.", "19.1.0");
+        final List<String> obsoleteGraalVmVersions = Arrays.asList("1.0.0", "19.0.", "19.1.");
         final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(vmName::contains);
         if (vmVersionIsObsolete) {
-            log.error("Out of date build of GraalVM detected! Please upgrade to GraalVM 19.1.1.");
+            log.error("Out of date build of GraalVM detected! Please upgrade to GraalVM 19.2.0.");
             return true;
         }
         return false;

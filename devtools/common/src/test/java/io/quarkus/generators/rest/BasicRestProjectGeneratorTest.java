@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -41,10 +42,10 @@ class BasicRestProjectGeneratorTest {
             .build();
 
     @Test
-    @Timeout(1)
+    @Timeout(2)
     @DisplayName("Should generate correctly multiple times in parallel with multiple threads")
     void generateMultipleTimes() throws InterruptedException {
-        final ExecutorService executorService = Executors.newFixedThreadPool(10);
+        final ExecutorService executorService = Executors.newFixedThreadPool(4);
         final CountDownLatch latch = new CountDownLatch(20);
         final BasicRestProjectGenerator basicRestProjectGenerator = new BasicRestProjectGenerator();
         List<Callable<Void>> collect = IntStream.range(0, 20).boxed().map(i -> (Callable<Void>) () -> {
@@ -61,7 +62,7 @@ class BasicRestProjectGeneratorTest {
 
     @Test
     @DisplayName("Should generate project files with basic context")
-    void generateFiles() throws Exception {
+    void generateFilesWithJaxRsResource() throws Exception {
         final ProjectWriter mockWriter = mock(ProjectWriter.class);
         final BasicRestProjectGenerator basicRestProjectGenerator = new BasicRestProjectGenerator();
 
@@ -94,6 +95,26 @@ class BasicRestProjectGeneratorTest {
         verify(mockWriter, times(1)).write(eq("src/main/docker/Dockerfile.native"), anyString());
         verify(mockWriter, times(1)).write(eq("src/main/docker/Dockerfile.jvm"), anyString());
         verify(mockWriter, times(1)).write(eq(".dockerignore"), anyString());
+    }
+
+    @Test
+    @DisplayName("Should generate project files with basic spring web context")
+    void generateFilesWithSpringControllerResource() throws Exception {
+        final ProjectWriter mockWriter = mock(ProjectWriter.class);
+        final BasicRestProjectGenerator basicRestProjectGenerator = new BasicRestProjectGenerator();
+
+        when(mockWriter.mkdirs(anyString())).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0, String.class));
+
+        Map<String, Object> springContext = new HashMap<>();
+        springContext.putAll(BASIC_PROJECT_CONTEXT);
+        springContext.put(IS_SPRING, Boolean.TRUE);
+        basicRestProjectGenerator.generate(mockWriter, springContext);
+
+        verify(mockWriter, times(1)).write(eq("src/main/java/org/example/ExampleResource.java"),
+                argThat(argument -> argument.contains("@RequestMapping(\"/hello\")")));
+        verify(mockWriter, times(1)).write(eq("src/main/java/org/example/ExampleResource.java"),
+                argThat(argument -> argument.contains("@RestController")));
+
     }
 
 }

@@ -34,6 +34,8 @@ public class KafkaTestResource implements QuarkusTestResourceLifecycleManager {
 
     @Override
     public void stop() {
-        kafka.shutdown();
+        if (kafka != null) {
+            kafka.shutdown();
+        }
     }
 }

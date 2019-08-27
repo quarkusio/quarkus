@@ -3,7 +3,9 @@ package io.quarkus.kafka.streams.deployment;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Serdes.ByteArraySerde;
+import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.DefaultProductionExceptionHandler;
 import org.apache.kafka.streams.errors.LogAndFailExceptionHandler;
 import org.apache.kafka.streams.processor.DefaultPartitionGrouper;
@@ -21,13 +23,16 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.JniBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.kafka.streams.runtime.HotReplacementInterceptor;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsTopologyManager;
+import io.quarkus.runtime.LaunchMode;
 
 class KafkaStreamsProcessor {
 
@@ -40,17 +45,70 @@ class KafkaStreamsProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized,
             BuildProducer<SubstrateResourceBuildItem> nativeLibs,
-            BuildProducer<JniBuildItem> jni) throws IOException {
+            BuildProducer<JniBuildItem> jni,
+            LaunchModeBuildItem launchMode) throws IOException {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.KAFKA_STREAMS));
 
+        registerClassesThatAreLoadedThroughReflection(reflectiveClasses, launchMode);
+        addSupportForRocksDbLib(nativeLibs);
+        enableLoadOfNativeLibs(reinitialized);
+        enableJniForNativeBuild(jni);
+    }
+
+    private void registerClassesThatAreLoadedThroughReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            LaunchModeBuildItem launchMode) {
+        registerCompulsoryClasses(reflectiveClasses);
+        registerClassesThatClientMaySpecify(reflectiveClasses, launchMode);
+    }
+
+    private void registerCompulsoryClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, StreamsPartitionAssignor.class));
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, DefaultPartitionGrouper.class));
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, DefaultProductionExceptionHandler.class));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, LogAndFailExceptionHandler.class));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, ByteArraySerde.class));
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, FailOnInvalidTimestamp.class));
+    }
 
+    private void registerClassesThatClientMaySpecify(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            LaunchModeBuildItem launchMode) {
+        Properties properties = buildKafkaStreamsProperties(launchMode.getLaunchMode());
+        registerExceptionHandler(reflectiveClasses, properties);
+        registerDefaultSerdes(reflectiveClasses, properties);
+    }
+
+    private void registerExceptionHandler(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            Properties kafkaStreamsProperties) {
+        String exceptionHandlerClassName = kafkaStreamsProperties
+                .getProperty(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG);
+
+        if (exceptionHandlerClassName == null) {
+            registerDefaultExceptionHandler(reflectiveClasses);
+        } else {
+            registerClassName(reflectiveClasses, exceptionHandlerClassName);
+        }
+    }
+
+    private void registerDefaultExceptionHandler(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, LogAndFailExceptionHandler.class));
+    }
+
+    private void registerDefaultSerdes(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            Properties kafkaStreamsProperties) {
+        String defaultKeySerdeClass = kafkaStreamsProperties.getProperty(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG);
+        String defaultValueSerdeClass = kafkaStreamsProperties.getProperty(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG);
+
+        if (defaultKeySerdeClass != null) {
+            registerClassName(reflectiveClasses, defaultKeySerdeClass);
+        }
+        if (defaultValueSerdeClass != null) {
+            registerClassName(reflectiveClasses, defaultValueSerdeClass);
+        }
+        if (!allDefaultSerdesAreDefinedInProperties(defaultKeySerdeClass, defaultValueSerdeClass)) {
+            registerDefaultSerde(reflectiveClasses);
+        }
+    }
+
+    private void addSupportForRocksDbLib(BuildProducer<SubstrateResourceBuildItem> nativeLibs) {
         // for RocksDB, either add linux64 native lib when targeting containers
         if (isContainerBuild()) {
             nativeLibs.produce(new SubstrateResourceBuildItem("librocksdbjni-linux64.so"));
@@ -59,27 +117,70 @@ class KafkaStreamsProcessor {
         else {
             nativeLibs.produce(new SubstrateResourceBuildItem(Environment.getJniLibraryFileName("rocksdb")));
         }
+    }
 
-        // re-initializing RocksDB to enable load of native libs
+    private void enableLoadOfNativeLibs(BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized) {
         reinitialized.produce(new RuntimeReinitializedClassBuildItem("org.rocksdb.RocksDB"));
+    }
 
+    private void enableJniForNativeBuild(BuildProducer<JniBuildItem> jni) {
         jni.produce(new JniBuildItem());
+    }
+
+    private void registerClassName(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, String defaultKeySerdeClass) {
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, defaultKeySerdeClass));
+    }
+
+    private boolean allDefaultSerdesAreDefinedInProperties(String defaultKeySerdeClass, String defaultValueSerdeClass) {
+        return defaultKeySerdeClass != null && defaultValueSerdeClass != null;
+    }
+
+    private void registerDefaultSerde(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, ByteArraySerde.class));
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    BeanContainerListenerBuildItem processBuildTimeConfig(KafkaStreamsRecorder recorder) {
-        Config config = ConfigProvider.getConfig();
+    BeanContainerListenerBuildItem processBuildTimeConfig(KafkaStreamsRecorder recorder, LaunchModeBuildItem launchMode) {
+        Properties kafkaStreamsProperties = buildKafkaStreamsProperties(launchMode.getLaunchMode());
+        return new BeanContainerListenerBuildItem(recorder.configure(kafkaStreamsProperties));
+    }
 
-        Properties properties = new Properties();
+    private Properties buildKafkaStreamsProperties(LaunchMode launchMode) {
+        Config config = ConfigProvider.getConfig();
+        Properties kafkaStreamsProperties = new Properties();
         for (String property : config.getPropertyNames()) {
-            if (property.startsWith(STREAMS_OPTION_PREFIX)) {
-                properties.setProperty(property.substring(STREAMS_OPTION_PREFIX.length()),
-                        config.getValue(property, String.class));
+            if (isKafkaStreamsProperty(property)) {
+                includeKafkaStreamsProperty(config, kafkaStreamsProperties, property);
             }
         }
 
-        return new BeanContainerListenerBuildItem(recorder.configure(properties));
+        if (launchMode == LaunchMode.DEVELOPMENT) {
+            addHotReplacementInterceptor(kafkaStreamsProperties);
+        }
+
+        return kafkaStreamsProperties;
+    }
+
+    private void addHotReplacementInterceptor(Properties kafkaStreamsProperties) {
+        String interceptorConfig = HotReplacementInterceptor.class.getName();
+        Object originalInterceptorConfig = kafkaStreamsProperties
+                .get(StreamsConfig.consumerPrefix(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG));
+
+        if (originalInterceptorConfig != null) {
+            interceptorConfig = interceptorConfig + "," + originalInterceptorConfig;
+        }
+
+        kafkaStreamsProperties.put(StreamsConfig.consumerPrefix(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG), interceptorConfig);
+    }
+
+    private boolean isKafkaStreamsProperty(String property) {
+        return property.startsWith(STREAMS_OPTION_PREFIX);
+    }
+
+    private void includeKafkaStreamsProperty(Config config, Properties kafkaStreamsProperties, String property) {
+        kafkaStreamsProperties.setProperty(property.substring(STREAMS_OPTION_PREFIX.length()),
+                config.getValue(property, String.class));
     }
 
     @BuildStep

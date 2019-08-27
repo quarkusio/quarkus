@@ -4,6 +4,7 @@ import static io.quarkus.maven.utilities.MojoUtils.getPluginGroupId;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
 import static io.quarkus.maven.utilities.MojoUtils.readPom;
 import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -138,6 +139,7 @@ public class ListExtensionsTest {
                                 String.format("%-16s", getPluginVersion())),
                         "RESTEasy should list as having an update: " + line);
                 resteasy = true;
+                checkGuideInLineAfter = true;
             } else if (line.contains(" Hibernate Validator  ")) {
                 assertTrue(line.startsWith("   "), "Hibernate Validator should not list as anything: " + line);
                 hibernateValidator = true;
@@ -215,10 +217,12 @@ public class ListExtensionsTest {
             System.setOut(out);
         }
         final String output = baos.toString("UTF-8");
-        int nbLine = 0;
-        for (String line : output.split("\r?\n")) {
-            ++nbLine;
-        }
-        Assertions.assertTrue(nbLine > 7, "search to unexpected extension must return a message");
+        Assertions.assertTrue(output.split("\r?\n").length > 7, "search to unexpected extension must return a message");
+    }
+
+    @Test
+    void testListExtensionsWithoutAPomFile() throws IOException {
+        ListExtensions listExtensions = new ListExtensions(null, BuildTool.MAVEN);
+        assertThat(listExtensions.findInstalled()).isEmpty();
     }
 }

@@ -192,7 +192,12 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
                 String testClassFile = testMainPath + '/' + className + "Test" + extension;
                 String itTestClassFile = testMainPath + '/' + "Native" + className + "IT" + extension;
                 String name = getName();
-                generate(type.getSrcResourceTemplate(name), context, classFile, "resource code");
+                String srcResourceTemplate = type.getSrcResourceTemplate(name);
+                Object isSpring = context.get(IS_SPRING);
+                if (isSpring != null && (Boolean) context.get(IS_SPRING).equals(Boolean.TRUE)) {
+                    srcResourceTemplate = type.getSrcSpringControllerTemplate(name);
+                }
+                generate(srcResourceTemplate, context, classFile, "resource code");
                 generate(type.getTestResourceTemplate(name), context, testClassFile, "test code");
                 generate(type.getNativeTestResourceTemplate(name), context, itTestClassFile, "IT code");
             }

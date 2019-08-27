@@ -185,7 +185,7 @@ The name of the property needs to follow a certain convention which is best disp
 ----
 # Your configuration properties
 org.acme.restclient.CountriesService/mp-rest/url=https://restcountries.eu/rest # // <1>
-org.acme.restclient.CountriesService/mp-rest/scope=java.inject.Singleton # // <2>
+org.acme.restclient.CountriesService/mp-rest/scope=javax.inject.Singleton # // <2>
 ----
 
 <1> Having this configuration means that all requests performed using `org.acme.restclient.CountriesService` will use `https://restcountries.eu/rest` as the base URL.

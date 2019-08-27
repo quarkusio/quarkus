@@ -4,14 +4,14 @@ import static io.vertx.core.file.impl.FileResolver.CACHE_DIR_BASE_PROP_NAME;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.LaunchMode;
@@ -23,6 +23,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.EventBusOptions;
+import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.file.FileSystemOptions;
 import io.vertx.core.http.ClientAuth;
@@ -34,15 +35,18 @@ import io.vertx.core.net.PfxOptions;
 @Recorder
 public class VertxRecorder {
 
+    private static final Logger LOGGER = Logger.getLogger(VertxRecorder.class.getName());
+
     static volatile Vertx vertx;
     static volatile List<MessageConsumer<?>> messageConsumers;
 
     public RuntimeValue<Vertx> configureVertx(BeanContainer container, VertxConfiguration config,
             Map<String, ConsumeEvent> messageConsumerConfigurations,
-            LaunchMode launchMode, ShutdownContext shutdown) {
+            LaunchMode launchMode, ShutdownContext shutdown, Map<Class<?>, Class<?>> codecByClass) {
 
         initialize(config);
         registerMessageConsumers(messageConsumerConfigurations);
+        registerCodecs(codecByClass);
 
         VertxProducer producer = container.instance(VertxProducer.class);
         producer.initialize(vertx);
@@ -323,4 +327,27 @@ public class VertxRecorder {
         }
     }
 
+    private void registerCodecs(Map<Class<?>, Class<?>> codecByClass) {
+        for (Map.Entry<Class<?>, Class<?>> codecEntry : codecByClass.entrySet()) {
+            registerCodec(codecEntry.getKey(), codecEntry.getValue());
+        }
+    }
+
+    private void registerCodec(Class<?> typeToAdd, Class<?> messageCodecClass) {
+        try {
+            if (messageCodecClass.isAssignableFrom(MessageCodec.class)) {
+                MessageCodec messageCodec = (MessageCodec) messageCodecClass.newInstance();
+                registerCodec(typeToAdd, messageCodec);
+            } else {
+                LOGGER.error(String.format("The codec %s does not inherit from MessageCodec ", messageCodecClass.toString()));
+            }
+        } catch (InstantiationException | IllegalAccessException e) {
+            LOGGER.error("Cannot instantiate the MessageCodec " + messageCodecClass.toString(), e);
+        }
+    }
+
+    private void registerCodec(Class<?> typeToAdd, MessageCodec codec) {
+        EventBus eventBus = vertx.eventBus();
+        eventBus.registerDefaultCodec(typeToAdd, codec);
+    }
 }

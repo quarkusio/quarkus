@@ -9,8 +9,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import io.reactiverse.axle.pgclient.PgPool;
-import io.reactiverse.axle.pgclient.Row;
+import io.vertx.axle.pgclient.PgPool;
+import io.vertx.axle.sqlclient.Row;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 

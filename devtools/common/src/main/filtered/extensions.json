@@ -69,6 +69,24 @@
     "artifactId": "quarkus-amazon-lambda"
   },
   {
+    "name": "Artemis Core",
+    "labels": [
+      "artemis-core",
+      "artemis"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-artemis-core"
+  },
+  {
+    "name": "Artemis JMS",
+    "labels": [
+      "artemis-jms",
+      "artemis"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-artemis-jms"
+  },
+  {
     "name": "Flyway",
     "labels": [
       "flyway",
@@ -177,6 +195,14 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-jackson"
+  },
+  {
+    "name": "JGit",
+    "labels": [
+      "git"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jgit"
   },
   {
     "name": "JSON-B",

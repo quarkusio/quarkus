@@ -68,11 +68,14 @@
         <module>panache</module>
         <module>hibernate-search-elasticsearch</module>
         <module>elasticsearch-rest-client</module>
+        <module>jgit</module>
         <module>kafka-client</module>
         <module>kafka-streams</module>
         <module>tika</module>
         <module>neo4j</module>
         <module>mongodb-client</module>
+        <module>artemis-core</module>
+        <module>artemis-jms</module>
 
         <!-- Spring -->
         <module>spring-di</module>
@@ -94,6 +97,7 @@
         <module>amazon-lambda</module>
         <module>amazon-lambda-resteasy</module>
         <module>amazon-dynamodb</module>
+        <module>azure-functions-http</module>
 
         <!-- Additional languages -->
         <module>kotlin</module>

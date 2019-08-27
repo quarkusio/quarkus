@@ -1,7 +1,7 @@
 package io.quarkus.kogito.jbpm;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.core.Is.is;
+import static org.hamcrest.Matchers.hasKey;
 
 import javax.inject.Inject;
 
@@ -37,6 +37,6 @@ public class ProcessEndpointTest {
                 .post("/tests")
                 .then()
                 .statusCode(200)
-                .body("id", is(1));
+                .body("$", hasKey("id"));
     }
 }

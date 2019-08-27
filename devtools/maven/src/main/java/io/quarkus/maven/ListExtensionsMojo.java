@@ -16,7 +16,7 @@ import io.quarkus.generators.BuildTool;
  * List the available extensions.
  * You can add one or several extensions in one go, with the 2 following mojos:
  * {@code add-extensions} and {@code add-extension}.
- * You can list all extension or just installable and choose simple or full format.
+ * You can list all extension or just installable. Choose between 3 output formats: name, concise and full.
  */
 @Mojo(name = "list-extensions", requiresProject = false)
 public class ListExtensionsMojo extends AbstractMojo {
@@ -34,9 +34,10 @@ public class ListExtensionsMojo extends AbstractMojo {
     protected boolean all;
 
     /**
-     * Display in simplified format.
+     * Select the output format among 'name' (display the name only), 'concise' (display name and description) and 'full'
+     * (concise format and version related columns).
      */
-    @Parameter(property = "quarkus.extension.format", alias = "quarkus.extension.format", defaultValue = "simple")
+    @Parameter(property = "quarkus.extension.format", alias = "quarkus.extension.format", defaultValue = "concise")
     protected String format;
 
     /**
@@ -49,7 +50,9 @@ public class ListExtensionsMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException {
         try {
             FileProjectWriter writer = null;
-            if (project != null) {
+            // Even when we have no pom, the project is not null, but it's set to `org.apache.maven:standalone-pom:1`
+            // So we need to also check for the project's file (the pom.xml file).
+            if (project != null && project.getFile() != null) {
                 writer = new FileProjectWriter(project.getBasedir());
             }
             new ListExtensions(writer, BuildTool.MAVEN).listExtensions(all, format,

@@ -41,7 +41,7 @@ final class Beans {
     static BeanInfo createClassBean(ClassInfo beanClass, BeanDeployment beanDeployment, InjectionPointModifier transformer) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         List<ScopeInfo> scopes = new ArrayList<>();
-        Set<Type> types = Types.getClassBeanTypeClosure(beanClass, Collections.emptyMap(), beanDeployment);
+        Set<Type> types = Types.getClassBeanTypeClosure(beanClass, beanDeployment);
         Integer alternativePriority = null;
         boolean isAlternative = false;
         boolean isDefaultBean = false;

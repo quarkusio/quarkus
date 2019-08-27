@@ -49,17 +49,16 @@ stages:
               key: maven | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
               path: $(MAVEN_CACHE_FOLDER)
               securityNamespace: cache
+              cacheHitVar: CACHE_RESTORED
             displayName: Cache Maven local repo
 
           - task: Maven@3
             displayName: 'Maven Build'
+            condition: ne(variables.CACHE_RESTORED, 'true')
             inputs:
               goals: 'package'
               mavenOptions: $(MAVEN_OPTS)
               options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format'
-
-          - publish: $(MAVEN_CACHE_FOLDER)
-            artifact: MavenRepo
 
   #This stage builds the Quarkus artifacts needed for native image testing
   #but also tests JDK8 linux. While it would be more parallel to have a separate JDK8 test run,
@@ -98,10 +97,6 @@ stages:
           MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
           MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
         steps:
-          - task: DownloadPipelineArtifact@2
-            inputs:
-              artifact: MavenRepo
-              path: $(MAVEN_CACHE_FOLDER)
 
           - task: Maven@3
             displayName: 'Maven Build'
@@ -127,10 +122,6 @@ stages:
         variables:
           imageName: 'quarkus:$(build.buildId)'
         steps:
-          - task: DownloadPipelineArtifact@2
-            inputs:
-              artifact: MavenRepo
-              path: $(MAVEN_CACHE_FOLDER)
           - task: Maven@3
             displayName: 'Maven Install'
             inputs:
@@ -151,169 +142,92 @@ stages:
     jobs:
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          module: amazon-dynamodb
-          name: amazon_dynamodb
-          dynamodb: true
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: amazon-lambda
-          name: amazon_lambda
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: artemis-core
-          name: artemis_core
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: artemis-jms
-          name: artemis_jms
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: elytron-security-oauth2
-          name: elytron_security_oauth2
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: elytron-security
-          name: elytron_security
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: flyway
-          name: flyway
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: hibernate-orm-panache
-          name: hibernate_orm_panache
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: hibernate-search-elasticsearch
-          name: hibernate_search_elasticsearch
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: hibernate-validator
-          name: hibernate_validator
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: infinispan-cache-jpa
-          name: infinispan_cache_jpa
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: infinispan-client
-          name: infinispan_client
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: jgit
-          name: jgit
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: jpa-h2
-          name: jpa_h2
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: jpa-mariadb
-          name: jpa_mariadb
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: jpa-mssql
-          name: jpa_mssql
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: jpa-postgresql
-          name: jpa_postgresql
-          postgres: true
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: jpa
-          name: jpa
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: kafka
-          name: kafka
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: keycloak
-          name: keycloak
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: kogito
-          name: kogito
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: kubernetes-client
-          name: kubernetes_client
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: main
+          modules: main
           name: main
           postgres: true
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          module: mongodb-client
-          name: mongodb_client
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: neo4j
-          name: neo4j
-
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          module: reactive-pg-client
-          name: reactive_pg_client
+          modules:
+            - jpa
+            - jpa-h2
+            - jpa-mariadb
+            - jpa-mssql
+            - jpa-postgresql
+          name: jpa
           postgres: true
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          module: resteasy-jackson
-          name: resteasy_jackson
+          modules:
+            - amazon-dynamodb
+            - amazon-lambda
+          name: amazon
+          dynamodb: true
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          module: spring-di
-          name: spring_di
+          modules:
+            - artemis-core
+            - artemis-jms
+            - kafka
+          name: messaging
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          module: spring-web
-          name: spring_web
+          modules:
+            - elytron-security-oauth2
+            - elytron-security
+            - keycloak
+          name: security
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          module: test-extension
-          name: test_extension
+          modules:
+            - flyway
+            - hibernate-orm-panache
+            - reactive-pg-client
+          name: database
+          postgres: true
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          module: tika
-          name: tika
+          modules:
+            - infinispan-cache-jpa
+            - infinispan-client
+            - mongodb-client
+            - neo4j
+          name: data
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          module: vertx
-          name: vertx
+          modules:
+            - resteasy-jackson
+            - vertx
+            - virtual-http
+          name: http
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          module: virtual-http
-          name: virtual_http
+          modules:
+            - jgit
+            - kogito
+            - kubernetes-client
+            - tika
+            - hibernate-validator
+            - test-extension
+          name: misc
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          modules:
+            - spring-di
+            - spring-web
+          name: spring
+
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          modules:
+            - hibernate-search-elasticsearch
+          name: hibernate_search_elasticsearch

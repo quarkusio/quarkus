@@ -146,7 +146,7 @@ public class VertxWebRecorder {
         if (router == null) {
             router = Router.router(vertx);
             if (hotReplacementHandler != null) {
-                router.route().blockingHandler(hotReplacementHandler);
+                router.route().handler(hotReplacementHandler);
             }
         }
         for (Entry<String, List<Route>> entry : routeHandlers.entrySet()) {
@@ -178,7 +178,6 @@ public class VertxWebRecorder {
 
     private static void doServerStart(Vertx vertx, HttpConfiguration httpConfiguration, LaunchMode launchMode)
             throws IOException {
-        CountDownLatch latch = new CountDownLatch(1);
         // Http server configuration
         HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode);
         HttpServerOptions sslConfig = createSslOptions(httpConfiguration, launchMode);
@@ -526,5 +525,9 @@ public class VertxWebRecorder {
             throw new RuntimeException("failed to bind virtual http");
         }
 
+    }
+
+    public static Router getRouter() {
+        return router;
     }
 }

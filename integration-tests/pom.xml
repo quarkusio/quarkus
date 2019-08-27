@@ -44,6 +44,7 @@
         <module>flyway</module>
         <module>keycloak</module>
         <module>reactive-pg-client</module>
+        <module>reactive-mysql-client</module>
         <module>amazon-dynamodb</module>
         <module>test-extension</module>
         <module>amazon-lambda</module>

@@ -11,7 +11,6 @@ import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.shared.invoker.*;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.base.Charsets;
@@ -19,13 +18,11 @@ import com.google.common.io.Files;
 
 import io.quarkus.maven.CreateProjectMojo;
 import io.quarkus.maven.it.MojoTestBase;
-import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.maven.utilities.MojoUtils;
 
 public class KotlinCreateMavenProjectIT extends MojoTestBase {
 
     private Invoker invoker;
-    private RunningInvoker running;
     private File testDir;
 
     @Test
@@ -73,13 +70,6 @@ public class KotlinCreateMavenProjectIT extends MojoTestBase {
 
         assertThat(model.getProfiles()).hasSize(1);
         assertThat(model.getProfiles().get(0).getId()).isEqualTo("native");
-    }
-
-    @AfterEach
-    public void cleanup() {
-        if (running != null) {
-            running.stop();
-        }
     }
 
     private InvocationResult setup(Properties params)

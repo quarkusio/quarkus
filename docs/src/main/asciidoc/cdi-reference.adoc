@@ -26,13 +26,14 @@ NOTE: Most of the existing CDI code should work just fine but there are some sma
 
 Bean discovery in CDI is a complex process which involves legacy deployment structures and accessibility requirements of the underlying module architecture.
 However, Quarkus is using a *simplified bean discovery*.
-There is only one bean archive with https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#default_bean_discovery[`annotated` bean discovery mode, window="_blank"] and no visibility boundaries.
+There is only single bean archive with the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"] and no visibility boundaries.
 
 The bean archive is synthesized from:
 
 * the application classes,
 * dependencies that contain a `beans.xml` descriptor (content is ignored),
-* dependencies that contain a Jandex index (`META-INF/jandex.idx`),
+* dependencies that contain a Jandex index - `META-INF/jandex.idx`,
+* dependencies referenced by `quarkus.index-dependency` in `application.properties`,
 * and Quarkus integration code.
 
 Bean classes that don't have a http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations[bean defining annotation, window="_blank"] are not discovered.

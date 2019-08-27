@@ -1,5 +1,6 @@
 package io.quarkus.netty.deployment;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -16,7 +17,8 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
-import io.quarkus.netty.BossGroup;
+import io.quarkus.netty.BossEventLoopGroup;
+import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.netty.runtime.NettyRecorder;
 
 class NettyProcessor {
@@ -99,19 +101,27 @@ class NettyProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void createExecutors(BuildProducer<RuntimeBeanBuildItem> runtimeBeanBuildItemBuildProducer,
+            Optional<EventLoopSupplierBuildItem> loopSupplierBuildItem,
             NettyRecorder recorder) {
         //TODO: configuration
-        Supplier<Object> boss = recorder.createEventLoop(1);
-        Supplier<Object> worker = recorder.createEventLoop(0);
-
+        Supplier<Object> boss;
+        Supplier<Object> main;
+        if (loopSupplierBuildItem.isPresent()) {
+            boss = (Supplier) loopSupplierBuildItem.get().getBossSupplier();
+            main = (Supplier) loopSupplierBuildItem.get().getMainSupplier();
+        } else {
+            boss = recorder.createEventLoop(1);
+            main = recorder.createEventLoop(0);
+        }
         runtimeBeanBuildItemBuildProducer.produce(RuntimeBeanBuildItem.builder(EventLoopGroup.class)
                 .setSupplier(boss)
                 .setScope(ApplicationScoped.class)
-                .addQualifier(BossGroup.class)
+                .addQualifier(BossEventLoopGroup.class)
                 .build());
         runtimeBeanBuildItemBuildProducer.produce(RuntimeBeanBuildItem.builder(EventLoopGroup.class)
-                .setSupplier(worker)
+                .setSupplier(main)
                 .setScope(ApplicationScoped.class)
+                .addQualifier(MainEventLoopGroup.class)
                 .build());
     }
 

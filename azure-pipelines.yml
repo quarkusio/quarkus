@@ -35,7 +35,7 @@ stages:
     jobs:
       - job: Cache_Maven_Repo
         displayName: 'Deploy'
-        timeoutInMinutes: 210
+        timeoutInMinutes: 30
         pool:
           vmImage: 'Ubuntu 16.04'
 
@@ -68,7 +68,7 @@ stages:
     jobs:
       - job: Build_Artifacts_For_Pre_Built_Testing
         displayName: 'Build'
-        timeoutInMinutes: 210
+        timeoutInMinutes: 30
         pool:
           vmImage: 'Ubuntu 16.04'
 
@@ -132,7 +132,7 @@ stages:
           - template: ci-templates/jvm-build-steps.yaml
 
       - job: Build_JDK8_Linux
-        timeoutInMinutes: 210
+        timeoutInMinutes: 60
         displayName: 'Linux JDK8 Build'
         pool:
           vmImage: 'Ubuntu 16.04'

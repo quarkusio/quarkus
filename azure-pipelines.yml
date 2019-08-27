@@ -269,6 +269,7 @@ stages:
           timeoutInMinutes: 25
           modules:
             - resteasy-jackson
+            - resteasy-jsonb
             - vertx
             - vertx-http
             - virtual-http

@@ -20,7 +20,7 @@ public class QuarkusListExtensions extends QuarkusTask {
 
     private boolean all = true;
 
-    private String format = "simple";
+    private String format = "concise";
 
     private String searchPattern = null;
 
@@ -41,7 +41,7 @@ public class QuarkusListExtensions extends QuarkusTask {
         return format;
     }
 
-    @Option(description = "Display in simplified format.", option = "format")
+    @Option(description = "Select the output format among 'name' (display the name only), 'concise' (display name and description) and 'full' (concise format and version related columns).", option = "format")
     public void setFormat(String format) {
         this.format = format;
     }

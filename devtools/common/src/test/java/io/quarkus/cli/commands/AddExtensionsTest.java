@@ -79,7 +79,7 @@ class AddExtensionsTest {
         AddExtensionResult result = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(asList("Sm??lRye**")));
 
-        result.isUpdated();
+        Assertions.assertTrue(result.isUpdated());
 
         Model model = MojoUtils.readPom(pom);
         hasDependency(model, "quarkus-smallrye-reactive-messaging");

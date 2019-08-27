@@ -23,7 +23,7 @@
         <opentracing-tracerresolver.version>0.1.5</opentracing-tracerresolver.version>
         <opentracing-concurrent.version>0.2.0</opentracing-concurrent.version>
         <jaeger.version>0.34.0</jaeger.version>
-        <quarkus-http.version>3.0.0.Alpha3</quarkus-http.version>
+        <quarkus-http.version>3.0.0.Alpha4</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <microprofile-config-api.version>1.3</microprofile-config-api.version>
         <microprofile-context-propagation.version>1.0-RC1</microprofile-context-propagation.version>

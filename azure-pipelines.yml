@@ -7,7 +7,7 @@ trigger:
   batch: true
   branches:
     include:
-    - master
+      - master
 
 pr:
   branches:
@@ -22,79 +22,513 @@ pr:
       - LICENSE.txt
       - dco.txt
 
-jobs:
-- job: Build_Native_Linux
-  timeoutInMinutes: 210
-  pool:
-    vmImage: 'Ubuntu 16.04'
+variables:
+  MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository/
+  MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+  QUARKUS_LOCAL_REPO: $(MAVEN_CACHE_FOLDER)
 
-  variables:
-    imageName: 'quarkus:$(build.buildId)'
+stages:
+  #This stage uses the azure caching feature to reduce the downloads that are performed from central, which greatly speeds up CI
+  #This is it's own stage to prevent Quarkus artifacts produced by the build from being cached
+  - stage: cache_maven_repo_stage
+    displayName: 'Maven Cache'
+    jobs:
+      - job: Cache_Maven_Repo
+        displayName: 'Deploy'
+        timeoutInMinutes: 210
+        pool:
+          vmImage: 'Ubuntu 16.04'
 
-  steps:
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
 
-  - script: docker run --rm --publish 5432:5432 --name build-postgres -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -d postgres:10.5
-    displayName: 'start postgres'
+        steps:
 
-  - script: docker run --rm --publish 8000:8000 --name build-dynamodb -d amazon/dynamodb-local:1.11.477
-    displayName: 'start dynamodb'
+          - task: CacheBeta@0
+            inputs:
+              key: maven | **/pom.xml
+              path: $(MAVEN_CACHE_FOLDER)
+              securityNamespace: cache
+            displayName: Cache Maven local repo
 
-  - task: Maven@3
-    displayName: 'Maven Build'
-    inputs:
-      goals: 'install'
-      options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-dynamodb -Ddynamodb-local.port=8000 -Dnative-image.xmx=6g  -Dnative -Dno-format'
+          - task: Maven@3
+            displayName: 'Maven Build'
+            inputs:
+              goals: 'package'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format'
 
-- job: Windows_Build
-  timeoutInMinutes: 60
-  pool:
-    vmImage: 'vs2017-win2016'
+          - publish: $(MAVEN_CACHE_FOLDER)
+            artifact: MavenRepo
 
-  variables:
-    imageName: 'quarkus-windows:$(build.buildId)'
+  #This stage builds the Quarkus artifacts needed for native image testing
+  - stage: build_artifact_for_native_stage
+    displayName: 'Build Artifacts for Pre Built Testing'
+    dependsOn: cache_maven_repo_stage
+    jobs:
+      - job: Build_Artifacts_For_Pre_Built_Testing
+        displayName: 'Build'
+        timeoutInMinutes: 210
+        pool:
+          vmImage: 'Ubuntu 16.04'
 
-  steps:
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
 
-  - task: Maven@3
-    displayName: 'Maven Build'
-    inputs:
-      goals: 'install'
-      options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
+        steps:
 
-- job: Build_JDK11_Linux
-  timeoutInMinutes: 60
-  pool:
-    vmImage: 'Ubuntu 16.04'
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifact: MavenRepo
+              path: $(MAVEN_CACHE_FOLDER)
 
-  variables:
-    imageName: 'quarkus-jdk11:$(build.buildId)'
+          - task: Maven@3
+            displayName: 'Maven Build'
+            inputs:
+              goals: 'install'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format'
 
-  steps:
-  - task: Maven@3
-    displayName: 'Maven Build'
-    inputs:
-      jdkVersionOption: '1.11'
-      goals: 'install'
-      options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
+          - publish: $(MAVEN_CACHE_FOLDER)
+            artifact: BuiltMavenRepo
 
-- job: Run_TCKs
-  timeoutInMinutes: 45
-  pool:
-    vmImage: 'Ubuntu 16.04'
+  - stage: run_jvm_tests_stage
+    displayName: 'Run JVM Tests'
+    dependsOn: cache_maven_repo_stage
+    jobs:
+      - job: Windows_Build
+        displayName: 'Windows JVM Build'
+        timeoutInMinutes: 60
+        pool:
+          vmImage: 'vs2017-win2016'
 
-  variables:
-    imageName: 'quarkus:$(build.buildId)'
+        variables:
+          imageName: 'quarkus-windows:$(build.buildId)'
+          MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+          MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
 
-  steps:
+        steps:
 
-  - task: Maven@3
-    displayName: 'Maven Install'
-    inputs:
-      goals: 'install'
-      options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format -DskipTests -Dtcks'
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifact: MavenRepo
+              path: $(MAVEN_CACHE_FOLDER)
 
-  - task: Maven@3
-    displayName: 'Maven Verify'
-    inputs:
-      goals: 'verify'
-      mavenPomFile: 'tcks/pom.xml'
+          - task: Maven@3
+            displayName: 'Maven Build'
+            inputs:
+              goals: 'install'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
+
+      - job: Build_JDK11_Linux
+        timeoutInMinutes: 60
+        displayName: 'Linux JDK11 Build'
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus-jdk11:$(build.buildId)'
+        steps:
+          - template: ci-templates/jvm-build-steps.yaml
+
+      - job: Build_JDK8_Linux
+        timeoutInMinutes: 210
+        displayName: 'Linux JDK8 Build'
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/jvm-build-steps.yaml
+
+      - job: Run_TCKs
+        timeoutInMinutes: 45
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifact: MavenRepo
+              path: $(MAVEN_CACHE_FOLDER)
+          - task: Maven@3
+            displayName: 'Maven Install'
+            inputs:
+              goals: 'install'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format -DskipTests -Dtcks'
+          - task: Maven@3
+            displayName: 'Maven Verify'
+            inputs:
+              goals: 'verify'
+              mavenOptions: $(MAVEN_OPTS)
+              mavenPomFile: 'tcks/pom.xml'
+
+
+  - stage: run_native_tests_stage
+    displayName: 'Native Tests'
+    dependsOn: build_artifact_for_native_stage
+    jobs:
+      - job: amazon_dynamodb
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: amazon-dynamodb
+
+      - job: amazon_lambda
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: amazon-lambda
+
+      - job: artemis_core
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: artemis-core
+
+      - job: artemis_jms
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: artemis-jms
+
+      - job: elytron_security_oauth2
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: elytron-security-oauth2
+
+      - job: elytron_security
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: elytron-security
+
+      - job: flyway
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: flyway
+
+      - job: hibernate_orm_panache
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: hibernate-orm-panache
+
+      - job: hibernate_search_elasticsearch
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: hibernate-search-elasticsearch
+
+      - job: hibernate_validator
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: hibernate-validator
+
+      - job: infinispan_cache_jpa
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: infinispan-cache-jpa
+
+      - job: infinispan_client
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: infinispan-client
+
+      - job: jgit
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: jgit
+
+      - job: jpa_h2
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: jpa-h2
+
+      - job: jpa_mariadb
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: jpa-mariadb
+
+      - job: jpa_mssql
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: jpa-mssql
+
+      - job: jpa_postgresql
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: jpa-postgresql
+
+      - job: jpa
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: jpa
+
+      - job: kafka
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: kafka
+
+      - job: keycloak
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: keycloak
+
+      - job: kogito
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: kogito
+
+      - job: kubernetes_client
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: kubernetes-client
+
+      - job: main
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: main
+
+      - job: mongodb_client
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: mongodb-client
+
+      - job: neo4j
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: neo4j
+
+      - job: reactive_pg_client
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: reactive-pg-client
+
+      - job: resteasy_jackson
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: resteasy-jackson
+
+      - job: spring_di
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: spring-di
+
+      - job: spring_web
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: spring-web
+
+      - job: test_extension
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: test-extension
+
+      - job: tika
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: tika
+
+      - job: vertx
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: vertx
+
+      - job: virtual_http
+        timeoutInMinutes: 20
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - template: ci-templates/native-build-steps.yaml
+            parameters:
+              module: virtual-http

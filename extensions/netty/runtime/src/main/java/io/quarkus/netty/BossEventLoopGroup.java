@@ -7,5 +7,5 @@ import javax.inject.Qualifier;
 
 @Qualifier
 @Retention(RetentionPolicy.RUNTIME)
-public @interface BossGroup {
+public @interface BossEventLoopGroup {
 }

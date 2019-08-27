@@ -8,11 +8,13 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
+import io.netty.channel.EventLoopGroup;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
@@ -27,6 +29,7 @@ import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.file.FileSystemOptions;
 import io.vertx.core.http.ClientAuth;
+import io.vertx.core.impl.VertxImpl;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
@@ -349,5 +352,23 @@ public class VertxRecorder {
     private void registerCodec(Class<?> typeToAdd, MessageCodec codec) {
         EventBus eventBus = vertx.eventBus();
         eventBus.registerDefaultCodec(typeToAdd, codec);
+    }
+
+    public Supplier<EventLoopGroup> bossSupplier() {
+        return new Supplier<EventLoopGroup>() {
+            @Override
+            public EventLoopGroup get() {
+                return ((VertxImpl) vertx).getAcceptorEventLoopGroup();
+            }
+        };
+    }
+
+    public Supplier<EventLoopGroup> mainSupplier() {
+        return new Supplier<EventLoopGroup>() {
+            @Override
+            public EventLoopGroup get() {
+                return vertx.nettyEventLoopGroup();
+            }
+        };
     }
 }

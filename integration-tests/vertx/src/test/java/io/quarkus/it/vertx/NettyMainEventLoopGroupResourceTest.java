@@ -8,7 +8,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-public class NettyEventLoopGroupResourceTest {
+public class NettyMainEventLoopGroupResourceTest {
 
     @Test
     public void testInjection() {

@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
@@ -34,6 +35,7 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -90,9 +92,13 @@ class VertxWebProcessor {
         return new FeatureBuildItem(FeatureBuildItem.VERTX_WEB);
     }
 
-    @BuildStep
-    public void kubernetes(HttpConfiguration config, BuildProducer<KubernetesPortBuildItem> portProducer) {
-        portProducer.produce(new KubernetesPortBuildItem(config.port, "http"));
+    @BuildStep(onlyIf = IsNormal.class)
+    @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
+    public KubernetesPortBuildItem kubernetes(HttpConfiguration config, BuildProducer<KubernetesPortBuildItem> portProducer,
+            VertxWebRecorder recorder) {
+        int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
+        recorder.warnIfPortChanged(config, port);
+        return new KubernetesPortBuildItem(config.port, "http");
     }
 
     @BuildStep

@@ -409,6 +409,14 @@ public class VertxWebRecorder {
         }
     }
 
+    public void warnIfPortChanged(HttpConfiguration config, int port) {
+        if (config.port != port) {
+            LOGGER.errorf(
+                    "quarkus.http.port was specified at build time as %s however run time value is %s, Kubernetes metadata will be incorrect.",
+                    port, config.port);
+        }
+    }
+
     private static class WebDeploymentVerticle implements Verticle {
 
         private final int port;

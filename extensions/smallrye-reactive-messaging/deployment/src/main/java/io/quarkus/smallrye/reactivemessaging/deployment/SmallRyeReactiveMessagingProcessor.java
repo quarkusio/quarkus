@@ -12,6 +12,7 @@ import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
@@ -96,6 +97,12 @@ public class SmallRyeReactiveMessagingProcessor {
                     Optional<AnnotationInstance> maybeOverflow = annotationStore.getAnnotations(injectionPoint.getTarget())
                             .stream()
                             .filter(ai -> ON_OVERFLOW.equals(ai.name()))
+                            .filter(ai -> {
+                                if (ai.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER && injectionPoint.isParam()) {
+                                    return ai.target().asMethodParameter().position() == injectionPoint.getPosition();
+                                }
+                                return true;
+                            })
                             .findAny();
                     LOGGER.debugf("Emitter injection point '%s' detected, stream name: '%s'",
                             injectionPoint.getTargetInfo(), name);
@@ -106,7 +113,7 @@ public class SmallRyeReactiveMessagingProcessor {
                         int bufferSize = maybeBufferSize != null ? maybeBufferSize.asInt() : 0;
                         emitters.produce(
                                 EmitterBuildItem.of(name,
-                                        annotation.value().toString(),
+                                        annotation.value().asString(),
                                         bufferSize));
                     } else {
                         emitters.produce(EmitterBuildItem.of(name));

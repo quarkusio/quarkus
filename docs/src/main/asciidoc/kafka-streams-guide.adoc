@@ -30,7 +30,7 @@ After changing the code of your Kafka Streams topology, the application will aut
 A recommended development set-up is to have some producer which creates test messages on the processed topic(s) in fixed intervals, e.g. every second and observe the streaming application's output topic(s) using a tool such as `kafkacat`.
 Using the dev mode, you'll instantly see messages on the output topic(s) as produced by the latest version of your streaming application when saving.
 
-For the best development experience, we recommend the following configuration settings to your Kafka broker:
+For the best development experience, we recommend applying the following configuration settings to your Kafka broker:
 
 [source, subs=attributes+]
 ----

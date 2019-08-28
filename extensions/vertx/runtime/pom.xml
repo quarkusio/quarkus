@@ -47,6 +47,10 @@
             <groupId>io.vertx</groupId>
             <artifactId>vertx-rx-java2</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.oracle.substratevm</groupId>

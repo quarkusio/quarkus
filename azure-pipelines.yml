@@ -223,6 +223,7 @@ stages:
           modules:
             - spring-di
             - spring-web
+            - spring-data-jpa
           name: spring
 
 

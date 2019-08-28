@@ -80,6 +80,7 @@
         <!-- Spring -->
         <module>spring-di</module>
         <module>spring-web</module>
+        <module>spring-data-jpa</module>
 
         <!-- Security -->
         <module>elytron-security</module>

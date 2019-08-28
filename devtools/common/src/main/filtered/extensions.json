@@ -573,7 +573,7 @@
     "guide": "https://quarkus.io/guides/rest-client-guide"
   },
   {
-    "name": "Spring DI compatibility layer",
+    "name": "Quarkus Extension for Spring DI API",
     "labels": [
       "spring-di"
     ],
@@ -582,13 +582,22 @@
     "guide": "https://quarkus.io/guides/spring-di-guide"
   },
   {
-    "name": "Spring Web compatibility layer",
+    "name": "Quarkus Extension for Spring Web API",
     "labels": [
       "spring-web"
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-spring-web",
     "guide": "https://quarkus.io/guides/spring-web-guide"
+  },
+  {
+    "name": "Quarkus Extension for Spring Data API",
+    "labels": [
+      "spring-data"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-spring-data-jpa",
+    "guide": "https://quarkus.io/guides/spring-data-jpa-guide"
   },
   {
     "name": "Swagger UI",

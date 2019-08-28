@@ -37,6 +37,7 @@
         <module>vertx</module>
         <module>spring-di</module>
         <module>spring-web</module>
+        <module>spring-data-jpa</module>
         <module>infinispan-cache-jpa</module>
         <module>elytron-security</module>
         <module>elytron-security-oauth2</module>

@@ -120,6 +120,7 @@ public final class HibernateOrmProcessor {
     public void build(RecorderContext recorderContext, HibernateOrmRecorder recorder,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             List<NonJpaModelBuildItem> nonJpaModelBuildItems,
+            List<IgnorableNonIndexedClasses> ignorableNonIndexedClassesBuildItems,
             CombinedIndexBuildItem index,
             ApplicationIndexBuildItem applicationIndex,
             ArchiveRootBuildItem archiveRoot,
@@ -150,8 +151,17 @@ public final class HibernateOrmProcessor {
         Set<String> nonJpaModelClasses = nonJpaModelBuildItems.stream()
                 .map(NonJpaModelBuildItem::getClassName)
                 .collect(Collectors.toSet());
+
+        Set<String> ignorableNonIndexedClasses = Collections.emptySet();
+        if (!ignorableNonIndexedClassesBuildItems.isEmpty()) {
+            ignorableNonIndexedClasses = new HashSet<>();
+            for (IgnorableNonIndexedClasses buildItem : ignorableNonIndexedClassesBuildItems) {
+                ignorableNonIndexedClasses.addAll(buildItem.getClasses());
+            }
+        }
+
         JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, explicitDescriptors, compositeIndex,
-                nonJpaModelClasses);
+                nonJpaModelClasses, ignorableNonIndexedClasses);
         final JpaEntitiesBuildItem domainObjects = scavenger.discoverModelAndRegisterForReflection();
 
         // remember how to run the enhancers later

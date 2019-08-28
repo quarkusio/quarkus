@@ -18,11 +18,13 @@ The OpenShift section leverages OpenShift build and route features which are not
 For this guide you need:
 
 - roughly 20 minutes
-- having access to a Kubernetes and/or OpenShift cluster. Minikube and Minishift are valid options.
-- having deployed Knative components on https://github.com/knative/docs/blob/master/install/Knative-with-Minikube.md[Minikube]
-or https://github.com/openshift-cloud-functions/Documentation/blob/master/con_knative-minishift.adoc[Minishift]
-- https://www.docker.com[Docker] installed and running on your local machine,  and a Docker Hub account configured (we'll use it for a container registry).
-- You have installed  https://www.eclipse.org/openj9/[Java SE 8 or later JDK].
+- You have installed  https://openjdk.java.net/install/[Java SE 8 or later JDK], to try the example locally
+- having access to a Kubernetes and/or OpenShift cluster. Minikube and https://try.openshift.com[OpenShift] are valid options
+- having deployed Knative components on https://knative.dev/docs/install/knative-with-minikube/[Minikube]
+or use https://operatorhub.io[OperatorHub] to deploy Knative on OpenShift
+- having https://github.com/tektoncd/pipeline/blob/master/docs/install.md#adding-the-tekton-pipelines[installed] https://tekton.dev/[Tekton] pipelines  or 
+use https://operatorhub.io[OperatorHub] to deploy Tekton on OpenShift
+- https://github.com/tektoncd/cli[Tekton CLI], the cli to manage your in-cluster application builds
 
 == Solution
 
@@ -35,151 +37,65 @@ The solution is located in the `getting-started-knative` directory.
 
 == Deploying the application in Knative
 
-Before we deploy the application to Knative in Minikube or Minishift we need to create the following Kubernetes objects:
+We will be using the minikube or OpenShift's internal container registry to push the built container image. 
 
-- https://github.com/knative/docs/tree/master/serving/samples/build-private-repo-go#creating-a-dockerhub-push-credential[Container registry secrets] :-
-This is required to for the built container image to be pushed to the container registry of your choice
-- https://github.com/knative/docs/tree/master/serving/samples/build-private-repo-go#setting-up-our-build-service-account[Build Service Account] :-
-The Kubernetes Service Account that will have access to Container Registry secret
-
-Run the following commands to kick start https://github.com/knative/build[Knative Build] which will build the Quarkus application container image
-using Dockerfile or https://buildah.io[buiildah].
-
-Since there are some parameters that you need to pass to the builds, which are right now configurable via maven properties,
-you need to run the following maven command to make them passed to the Knative resource yamls.
-
-== Building the quickstart 
-
-We will be using https://hub.docker.com[hub.docker.com] as the container registry, if you dont have an account yet have one created before proceeding further.
-
-=== Using Docker build to deploy the service 
-
-Use Docker to build the sample code into a container. To build and push with
-Docker Hub, run these commands replacing `{username}` with your Docker Hub
-username:
-
-[source, shell, subs="attributes"]
-----
-
-#We will use the docker daemon of the minikube
-eval $(minikube docker-env)
-
-#Build the container on your local machine
-docker build -t {username}/getting-started-knative .
-
-#Push the container to docker registry
-docker push {username}/getting-started-knative 
-
-----
-
-After the build has completed and the container is pushed to docker hub, you
-can deploy the app into your cluster. Ensure that the container image value
-in `service.yaml` matches the container you built in the previous step. Apply
-the configuration using `kubectl`:
-
-[source, shell, subs="attributes"]
-====
- kubectl apply --filename service.yaml
-====
-
-=== Using Knative build to deploy the service 
-
-.Maven Parameters
-|===
-|Name |Use |Example
-
-| container.registry.url
-| the container registry url, NOTE: this should be a v2 container registry
-| 
-
-| container.registry.user
-| The user name to authenticate with the container registry
-|
-
-| container.registry.password
-| The user password to authenticate with the container registry
-|
-
-| git.source.revision
-| The revision of the source to checkout from GitHub
-| master
-
-| git.source.repo.url
-| The GitHub repo url
-| {quickstarts-clone-url}
-
-| app.container.image
-| The fully qualified name of the container image that will be pushed to the container registry after build
-| docker.io/demo/quarkus-knative-quickstart
-
-| app.context.dir
-| The directory within the github source repository from where the build will be started i.e. Docker context
-| getting-started-knative
-
-|===
-
-The following is the example command to generate the need knative resource files
-
-[source, shell, subs="attributes"]
-----
-mvn -Dcontainer.registry.url='https://index.docker.io' \
-    -Dcontainer.registry.user='{username}' \
-    -Dcontainer.registry.password='{password}' \
-    -Dgit.source.revision='master' \
-    -Dgit.source.repo.url='https://github.com/quarkusio/quarkus-quickstarts' \
-    -Dapp.container.image='docker.io/${container.registry.user}/getting-started-knative' \
-    -Dapp.context.dir='getting-started-knative' \
-    clean process-resources
-----
-
-Deploy the created resources 
-
-[source, shell, subs="attributes"]
-----
-# deploy the created resources
-oc apply -f target/knative
-----
-
-.(OR)
-
-[source, shell, subs="attributes"]
-----
-# deploy the created resources
-kubectl apply -f target/knative
-----
+If you are using minikube then please follow the instructions https://github.com/kameshsampath/minikube-helpers/tree/master/registry[Minikube Helpers] to setup and configure the local container registry.
 
 [NOTE]
 ====
-It will take some time for the build
+* The tests were done with minikube version 1.1.1
+* You don't need extra registry setup for OpenShift
 ====
 
-The above command will apply the property values to the Knative resources found in `${project.basedir}/src/main/knative`
-and copy them to `${project.build.directory}/knative`
+== Build and deploy the quickstart 
 
-Run the following command to create the Knative resources:
+=== Using Tekton to build the application container image 
 
-[source,shell]
+[source, bash, subs="attributes+,+macros"]
 ----
-kubectl apply --recursive --filename target/knative
+kubectl create --filename build/resources.yaml --filename build/task.yaml --filename build/task-run.yaml
+----
+
+Build task will take some time to complete as maven dependencies needs to be downloaded, you can watch the status of the build using the command:
+
+[source, bash, subs="attributes+,+macros"]
+----
+tkn taskrun logs -f -a getting-started-knative
+----
+
+=== Deploy Knative service
+
+Once the task is completed successfully, you can run the following command to create the Knative service:
+
+[source, bash, subs="attributes+,+macros"]
+----
+ kubectl apply --filename service.yaml
 ----
 
 == Accessing your application
 
 The application is now exposed as an internal service. If you are using `minikube` or `minishift`, you can access it using:
 
-[source,shell]
+[source,bash]
 ----
 INGRESSGATEWAY=istio-ingressgateway
 IP_ADDRESS="$(minikube ip):$(kubectl get svc $INGRESSGATEWAY --namespace istio-system --output 'jsonpath={.spec.ports[?(@.port==80)].nodePort}')" #<1>
 
-curl -v -H 'Host: getting-started-knative.example.com' $IP_ADDRESS/hello/greeting/redhat
+curl -v -H 'Host: getting-started-knative.default.example.com' $IP_ADDRESS/greeting/redhat
 ----
 
-<1> you can replace `minikube ip` with `minishift ip` if you are using OpenShift
+<1> If you are using OpenShift you can use the url of the service directly. You can get the service URL using the command `oc get -n <your project> rt getting-started-knative`
 
 == Going further
 
 This guide covered the deployment of a Quarkus application as Knative application on Kubernetes
 However, there is much more, and the integration with these environments has been tailored to make Quarkus applications execution very smooth.
-For instance, the health extension can be used for health check; the configuration support allows mounting the application configuration using config map, the metric extension produces data _scrappable_ by Prometheus and so on.
+For instance, the health extension can be used for health check; the configuration support allows mounting the application configuration using config map, the metric extension produces data _scrappable_ by Prometheus and so on. You can also check the end to end https://redhat-developer-demos.github.io/knative-tutorial[Knative Tutorial] which uses Quarkus fore more advanced scenarios.
 
+== Cleanup 
+
+[source, bash, subs="attributes+,+macros"]
+----
+kubectl delete -f build
+kubectl delete -f service.yaml
+----

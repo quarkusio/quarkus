@@ -107,6 +107,10 @@ final class Methods {
         return false;
     }
 
+    static boolean isObjectToString(MethodInfo method) {
+        return method.declaringClass().name().equals(DotNames.OBJECT) && method.name().equals(TO_STRING);
+    }
+
     static void addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
             Map<MethodKey, Set<AnnotationInstance>> candidates,
             List<AnnotationInstance> classLevelBindings) {

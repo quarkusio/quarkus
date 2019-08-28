@@ -134,7 +134,10 @@ public class ClientProxyGenerator extends AbstractGenerator {
              * as it just works, and the reflection case cannot be true since it's not possible to have
              * non-public default interface methods.
              */
-            if (isInterface) {
+            if (Methods.isObjectToString(method)) {
+                // Always use invokevirtual and the original descriptor for java.lang.Object#toString()
+                ret = forward.invokeVirtualMethod(originalMethodDescriptor, delegate, params);
+            } else if (isInterface) {
                 ret = forward.invokeInterfaceMethod(method, delegate, params);
             } else if (isReflectionFallbackNeeded(method, targetPackage)) {
                 // Reflection fallback

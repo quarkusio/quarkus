@@ -19,7 +19,7 @@
             <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
-        <groupId>io.quarkus</groupId>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
         <dependency>
@@ -34,7 +34,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx</artifactId>
         </dependency>
-	    <dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
         </dependency>

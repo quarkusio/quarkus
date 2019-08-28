@@ -1,6 +1,9 @@
 package io.quarkus.builder.diag;
 
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
 
 import org.wildfly.common.Assert;
 
@@ -59,7 +62,9 @@ public final class Diagnostic {
         b.append('[').append(level).append("]: ");
         b.append(String.format(format, args));
         if (thrown != null) {
-            b.append(": ").append(thrown);
+            Writer stacktraceWriter = new StringWriter();
+            thrown.printStackTrace(new PrintWriter(stacktraceWriter));
+            b.append(": ").append(stacktraceWriter.toString());
         }
         return b;
     }

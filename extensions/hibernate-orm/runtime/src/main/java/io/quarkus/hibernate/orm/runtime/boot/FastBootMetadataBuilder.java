@@ -254,6 +254,8 @@ public class FastBootMetadataBuilder {
         if (!mergedSettings.configurationValues.containsKey(AvailableSettings.ORDER_UPDATES)) {
             mergedSettings.configurationValues.put(AvailableSettings.ORDER_UPDATES, Boolean.TRUE.toString());
         }
+        //Agroal already does disable auto-commit, so Hibernate ORM should trust that:
+        mergedSettings.configurationValues.put(AvailableSettings.CONNECTION_PROVIDER_DISABLES_AUTOCOMMIT, Boolean.TRUE.toString());
 
         if (readBooleanConfigurationValue(mergedSettings.configurationValues, WRAP_RESULT_SETS)) {
             LOG.warn("Wrapping result sets is not supported. Setting " + WRAP_RESULT_SETS + " to false.");

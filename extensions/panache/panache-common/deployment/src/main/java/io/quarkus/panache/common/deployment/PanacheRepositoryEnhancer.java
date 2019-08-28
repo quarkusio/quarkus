@@ -14,14 +14,16 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.signature.SignatureReader;
 
 public abstract class PanacheRepositoryEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
+    private static final DotName OBJECT_DOT_NAME = DotName.createSimple(Object.class.getName());
 
     protected final ClassInfo panacheRepositoryBaseClassInfo;
+    protected final IndexView indexView;
 
     public PanacheRepositoryEnhancer(IndexView index, DotName panacheRepositoryBaseName) {
         panacheRepositoryBaseClassInfo = index.getClassByName(panacheRepositoryBaseName);
+        this.indexView = index;
     }
 
     @Override
@@ -34,17 +36,19 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
         protected String entityBinaryType;
         protected String daoBinaryName;
         protected ClassInfo panacheRepositoryBaseClassInfo;
+        protected IndexView indexView;
 
         public PanacheRepositoryClassVisitor(String className, ClassVisitor outputClassVisitor,
-                ClassInfo panacheRepositoryBaseClassInfo) {
+                ClassInfo panacheRepositoryBaseClassInfo, IndexView indexView) {
             super(Opcodes.ASM7, outputClassVisitor);
             daoBinaryName = className.replace('.', '/');
             this.panacheRepositoryBaseClassInfo = panacheRepositoryBaseClassInfo;
+            this.indexView = indexView;
         }
 
-        protected abstract String getPanacheRepositoryBinaryName();
+        protected abstract DotName getPanacheRepositoryDotName();
 
-        protected abstract String getPanacheRepositoryBaseBinaryName();
+        protected abstract DotName getPanacheRepositoryBaseDotName();
 
         protected abstract String getPanacheOperationsBinaryName();
 
@@ -55,16 +59,46 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
         @Override
         public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
             super.visit(version, access, name, signature, superName, interfaces);
-            SignatureReader signatureReader = new SignatureReader(signature);
-            DaoTypeFetcher daoTypeFetcher = new DaoTypeFetcher(getPanacheRepositoryBinaryName());
-            signatureReader.accept(daoTypeFetcher);
-            if (daoTypeFetcher.foundType == null) {
-                daoTypeFetcher = new DaoTypeFetcher(getPanacheRepositoryBaseBinaryName());
-                signatureReader.accept(daoTypeFetcher);
+
+            final String repositoryClassName = name.replace('/', '.');
+
+            String foundEntityType = findEntityBinaryTypeForPanacheRepository(repositoryClassName,
+                    getPanacheRepositoryDotName());
+
+            if (foundEntityType == null) {
+                foundEntityType = findEntityBinaryTypeForPanacheRepository(repositoryClassName,
+                        getPanacheRepositoryBaseDotName());
             }
-            entityBinaryType = daoTypeFetcher.foundType;
+
+            entityBinaryType = foundEntityType;
             entitySignature = "L" + entityBinaryType + ";";
             entityType = Type.getType(entitySignature);
+        }
+
+        private String findEntityBinaryTypeForPanacheRepository(String repositoryClassName, DotName repositoryDotName) {
+            for (ClassInfo classInfo : indexView.getAllKnownImplementors(repositoryDotName)) {
+                if (repositoryClassName.equals(classInfo.name().toString())) {
+                    return recursivelyFindEntityTypeFromClass(classInfo.name(), repositoryDotName);
+                }
+            }
+
+            return null;
+        }
+
+        private String recursivelyFindEntityTypeFromClass(DotName clazz, DotName repositoryDotName) {
+            if (clazz.equals(OBJECT_DOT_NAME)) {
+                return null;
+            }
+
+            final ClassInfo classByName = indexView.getClassByName(clazz);
+            for (org.jboss.jandex.Type type : classByName.interfaceTypes()) {
+                if (type.name().equals(repositoryDotName)) {
+                    org.jboss.jandex.Type entityType = type.asParameterizedType().arguments().get(0);
+                    return entityType.name().toString().replace('.', '/');
+                }
+            }
+
+            return recursivelyFindEntityTypeFromClass(classByName.superName(), repositoryDotName);
         }
 
         @Override

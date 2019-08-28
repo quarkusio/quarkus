@@ -31,13 +31,16 @@ public class MojoLogger implements LoggerProvider {
                     String text;
                     if (parameters == null || parameters.length == 0) {
                         text = String.valueOf(message);
-                    } else
+                    } else {
                         try {
                             text = MessageFormat.format(String.valueOf(message), parameters);
                         } catch (Exception e) {
                             text = invalidFormat(String.valueOf(message), parameters);
                         }
-                    doActualLog(log, level, text, thrown);
+                    }
+                    synchronized (log) {
+                        doActualLog(log, level, text, thrown);
+                    }
                 }
             }
 
@@ -48,20 +51,23 @@ public class MojoLogger implements LoggerProvider {
                 if (logSupplier != null) {
                     Log log = logSupplier.get();
                     String text;
-                    if (parameters == null)
+                    if (parameters == null) {
                         try {
                             //noinspection RedundantStringFormatCall
                             text = String.format(format);
                         } catch (Exception e) {
                             text = invalidFormat(format, NO_PARAMS);
                         }
-                    else
+                    } else {
                         try {
                             text = String.format(format, (Object[]) parameters);
                         } catch (Exception e) {
                             text = invalidFormat(format, parameters);
                         }
-                    doActualLog(log, level, text, thrown);
+                    }
+                    synchronized (log) {
+                        doActualLog(log, level, text, thrown);
+                    }
                 }
             }
 

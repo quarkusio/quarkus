@@ -250,6 +250,10 @@ public class FastBootMetadataBuilder {
         if (!mergedSettings.configurationValues.containsKey(AvailableSettings.ALLOW_ENHANCEMENT_AS_PROXY)) {
             mergedSettings.configurationValues.put(AvailableSettings.ALLOW_ENHANCEMENT_AS_PROXY, Boolean.TRUE.toString());
         }
+        //Always Order batch updates as it prevents contention on the data (unless it was disabled)
+        if (!mergedSettings.configurationValues.containsKey(AvailableSettings.ORDER_UPDATES)) {
+            mergedSettings.configurationValues.put(AvailableSettings.ORDER_UPDATES, Boolean.TRUE.toString());
+        }
 
         if (readBooleanConfigurationValue(mergedSettings.configurationValues, WRAP_RESULT_SETS)) {
             LOG.warn("Wrapping result sets is not supported. Setting " + WRAP_RESULT_SETS + " to false.");

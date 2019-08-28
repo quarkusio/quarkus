@@ -338,7 +338,7 @@ public class VertxRecorder {
 
     private void registerCodec(Class<?> typeToAdd, Class<?> messageCodecClass) {
         try {
-            if (messageCodecClass.isAssignableFrom(MessageCodec.class)) {
+            if (MessageCodec.class.isAssignableFrom(messageCodecClass)) {
                 MessageCodec messageCodec = (MessageCodec) messageCodecClass.newInstance();
                 registerCodec(typeToAdd, messageCodec);
             } else {

@@ -96,12 +96,15 @@ public class SmallRyeReactiveMessagingProcessor {
 
                     LOGGER.debugf("Emitter injection point '%s' detected, stream name: '%s'",
                             injectionPoint.getTargetInfo(), name);
-                    EmitterBuildItem item = new EmitterBuildItem(name);
+
                     if (annotation != null) {
-                        item.setOverflow(annotation.value().toString());
-                        item.setBufferSize(annotation.value("bufferSize").asInt());
+                        emitters.produce(
+                                EmitterBuildItem.of(name,
+                                        annotation.value().toString(),
+                                        annotation.value("bufferSize").asInt()));
+                    } else {
+                        emitters.produce(EmitterBuildItem.of(name));
                     }
-                    emitters.produce(item);
                 }
             }
         }

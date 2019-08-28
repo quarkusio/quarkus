@@ -86,12 +86,18 @@ public class HibernateSearchElasticsearchRecorder {
         public void contributeRuntimeProperties(BiConsumer<String, Object> propertyCollector) {
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.Radicals.AUTOMATIC_INDEXING_SYNCHRONIZATION_STRATEGY,
-                    runtimeConfig.elasticsearch.automaticIndexing.synchronizationStrategy);
+                    runtimeConfig.automaticIndexing.synchronizationStrategy);
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.Radicals.AUTOMATIC_INDEXING_ENABLE_DIRTY_CHECK,
-                    runtimeConfig.elasticsearch.automaticIndexing.enableDirtyCheck);
+                    runtimeConfig.automaticIndexing.enableDirtyCheck);
+            addConfig(propertyCollector,
+                    HibernateOrmMapperSettings.Radicals.QUERY_LOADING_CACHE_LOOKUP_STRATEGY,
+                    runtimeConfig.queryLoading.cacheLookupStrategy);
+            addConfig(propertyCollector,
+                    HibernateOrmMapperSettings.Radicals.QUERY_LOADING_FETCH_SIZE,
+                    runtimeConfig.queryLoading.fetchSize);
 
-            contributeBackendRuntimeProperties(propertyCollector, DEFAULT_BACKEND, runtimeConfig.elasticsearch);
+            contributeBackendRuntimeProperties(propertyCollector, DEFAULT_BACKEND, runtimeConfig.defaultBackend);
 
             for (Entry<String, ElasticsearchBackendRuntimeConfig> backendEntry : runtimeConfig.additionalBackends.entrySet()) {
                 contributeBackendRuntimeProperties(propertyCollector, backendEntry.getKey(), backendEntry.getValue());
@@ -145,7 +151,7 @@ public class HibernateSearchElasticsearchRecorder {
                     elasticsearchBackendConfig.indexDefaults.lifecycle.requiredStatusWaitTimeout, Optional::isPresent,
                     d -> d.get().toMillis());
 
-            for (Entry<String, ElasticsearchIndexConfig> indexConfigEntry : runtimeConfig.elasticsearch.indexes.entrySet()) {
+            for (Entry<String, ElasticsearchIndexConfig> indexConfigEntry : runtimeConfig.defaultBackend.indexes.entrySet()) {
                 String indexName = indexConfigEntry.getKey();
                 ElasticsearchIndexConfig indexConfig = indexConfigEntry.getValue();
 

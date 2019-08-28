@@ -22,11 +22,12 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.elytron.security.runtime.AuthConfig;
-import io.quarkus.elytron.security.runtime.DefaultRoleDecoder;
+import io.quarkus.elytron.security.runtime.ElytronPasswordIdentityProvider;
+import io.quarkus.elytron.security.runtime.ElytronSecurityDomainManager;
+import io.quarkus.elytron.security.runtime.ElytronTokenIdentityProvider;
 import io.quarkus.elytron.security.runtime.MPRealmConfig;
 import io.quarkus.elytron.security.runtime.PropertiesRealmConfig;
 import io.quarkus.elytron.security.runtime.SecurityConfig;
-import io.quarkus.elytron.security.runtime.SecurityContextPrincipal;
 import io.quarkus.elytron.security.runtime.SecurityRecorder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
@@ -68,9 +69,10 @@ class SecurityDeploymentProcessor {
     }
 
     @BuildStep
-    void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> beans) {
-        beans.produce(AdditionalBeanBuildItem.unremovableOf(SecurityContextPrincipal.class));
-        beans.produce(AdditionalBeanBuildItem.unremovableOf(DefaultRoleDecoder.class));
+    void provider(BuildProducer<AdditionalBeanBuildItem> beans) {
+        beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronSecurityDomainManager.class));
+        beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronTokenIdentityProvider.class));
+        beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronPasswordIdentityProvider.class));
     }
 
     /**
@@ -180,23 +182,21 @@ class SecurityDeploymentProcessor {
      * Create the deployment SecurityDomain using the SecurityRealm and AuthConfig build items that have been created.
      *
      * @param recorder - the runtime recorder class used to access runtime behaviors
-     * @param extension - the ServletExtensionBuildItem producer used to add the Undertow identity manager and auth config
      * @param realms - the previously created SecurityRealm runtime values
      * @return the SecurityDomain runtime value build item
      * @throws Exception
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    SecurityDomainBuildItem build(SecurityRecorder recorder, List<SecurityRealmBuildItem> realms,
-            BeanContainerBuildItem beanContainer) throws Exception {
+    SecurityDomainBuildItem build(SecurityRecorder recorder, List<SecurityRealmBuildItem> realms, BeanContainerBuildItem bc)
+            throws Exception {
         log.debugf("build, hasFile=%s, hasMP=%s", security.file.enabled, security.embedded.enabled);
         if (realms.size() > 0) {
             // Configure the SecurityDomain.Builder from the main realm
             SecurityRealmBuildItem realmBuildItem = realms.get(0);
             AuthConfig authConfig = realmBuildItem.getAuthConfig();
-            DefaultRoleDecoder defaultRoleDecoder = recorder.createDefaultRoleDecoder(beanContainer.getValue());
             RuntimeValue<SecurityDomain.Builder> securityDomainBuilder = recorder
-                    .configureDomainBuilder(authConfig.getRealmName(), realmBuildItem.getRealm(), defaultRoleDecoder);
+                    .configureDomainBuilder(authConfig.getRealmName(), realmBuildItem.getRealm());
             // Add any additional SecurityRealms
             for (int n = 1; n < realms.size(); n++) {
                 realmBuildItem = realms.get(n);
@@ -218,17 +218,24 @@ class SecurityDeploymentProcessor {
      * {@linkplain io.quarkus.elytron.security.runtime.ElytronIdentityManager}
      *
      * @param recorder - runtime recorder
-     * @param securityDomain - configured SecurityDomain
      * @param identityManagerProducer - producer factory for IdentityManagerBuildItem
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void configureIdentityManager(SecurityRecorder recorder, SecurityDomainBuildItem securityDomain,
+    void configureIdentityManager(SecurityRecorder recorder,
             BuildProducer<IdentityManagerBuildItem> identityManagerProducer,
             List<PasswordRealmBuildItem> passwordRealm) {
         if (passwordRealm.size() > 0) {
-            IdentityManager identityManager = recorder.createIdentityManager(securityDomain.getSecurityDomain());
+            IdentityManager identityManager = recorder.createIdentityManager();
             identityManagerProducer.produce(new IdentityManagerBuildItem(identityManager));
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void identityManager(SecurityRecorder recorder, SecurityDomainBuildItem securityDomain, BeanContainerBuildItem bc) {
+        if (securityDomain != null) {
+            recorder.setDomainForIdentityProvider(bc.getValue(), securityDomain.getSecurityDomain());
         }
     }
 
@@ -286,9 +293,9 @@ class SecurityDeploymentProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    ServletExtensionBuildItem addSecurityContextPrincipalHandler(SecurityRecorder recorder, BeanContainerBuildItem container) {
+    ServletExtensionBuildItem addSecurityContextPrincipalHandler(SecurityRecorder recorder) {
         log.debugf("addSecurityContextPrincipalHandler");
-        return new ServletExtensionBuildItem(recorder.configureSecurityContextPrincipalHandler(container.getValue()));
+        return new ServletExtensionBuildItem(recorder.configureSecurityContextPrincipalHandler());
     }
 
     /**

@@ -166,6 +166,7 @@
         <mockito.version>3.0.0</mockito.version>
         <jna.version>5.3.1</jna.version>
         <antlr.version>4.7.2</antlr.version>
+        <quarkus-security.version>1.0.0.Alpha1</quarkus-security.version>
     </properties>
 
     <dependencyManagement>
@@ -302,6 +303,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-elasticsearch-rest-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-security</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -970,6 +976,11 @@
                         <artifactId>jboss-annotations-api_1.2_spec</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus.security</groupId>
+                <artifactId>quarkus-security</artifactId>
+                <version>${quarkus-security.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>

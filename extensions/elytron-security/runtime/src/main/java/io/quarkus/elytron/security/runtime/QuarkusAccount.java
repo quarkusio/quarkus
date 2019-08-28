@@ -4,18 +4,17 @@ import java.security.Principal;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.wildfly.security.auth.server.SecurityIdentity;
-
+import io.quarkus.security.identity.SecurityIdentity;
 import io.undertow.security.idm.Account;
 
 /**
  * An Undertow account implementation that maps to the Elytron {@link SecurityIdentity}
  */
-public class ElytronAccount implements Account {
+public class QuarkusAccount implements Account {
 
     private final SecurityIdentity securityIdentity;
 
-    public ElytronAccount(SecurityIdentity securityIdentity) {
+    public QuarkusAccount(SecurityIdentity securityIdentity) {
         this.securityIdentity = securityIdentity;
     }
 
@@ -31,5 +30,9 @@ public class ElytronAccount implements Account {
             roles.add(i);
         }
         return roles;
+    }
+
+    public SecurityIdentity getSecurityIdentity() {
+        return securityIdentity;
     }
 }

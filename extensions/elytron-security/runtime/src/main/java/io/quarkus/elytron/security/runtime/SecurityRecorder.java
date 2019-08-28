@@ -135,6 +135,10 @@ public class SecurityRecorder {
         return new RuntimeValue<>(realm);
     }
 
+    public void setDomainForIdentityProvider(BeanContainer bc, RuntimeValue<SecurityDomain> domain) {
+        bc.instance(ElytronSecurityDomainManager.class).setDomain(domain.getValue());
+    }
+
     /**
      * Create a runtime value for a {@linkplain SimpleMapBackedSecurityRealm}
      *
@@ -160,19 +164,16 @@ public class SecurityRecorder {
      *
      * @param realmName - the default realm name
      * @param realm - the default SecurityRealm
-     * @param roleDecoder - the default role decoder
      * @return a runtime value for the SecurityDomain.Builder
      * @throws Exception on any error
      */
-    public RuntimeValue<SecurityDomain.Builder> configureDomainBuilder(String realmName, RuntimeValue<SecurityRealm> realm,
-            DefaultRoleDecoder roleDecoder)
+    public RuntimeValue<SecurityDomain.Builder> configureDomainBuilder(String realmName, RuntimeValue<SecurityRealm> realm)
             throws Exception {
         log.debugf("buildDomain, realm=%s", realm.getValue());
 
         SecurityDomain.Builder domain = SecurityDomain.builder()
                 .addRealm(realmName, realm.getValue())
-                // Obtain the account roles from the groups attribute
-                .setRoleDecoder(roleDecoder)
+                .setRoleDecoder(new DefaultRoleDecoder())
                 .build()
                 .setDefaultRealmName(realmName)
                 .setPermissionMapper(new PermissionMapper() {
@@ -215,11 +216,10 @@ public class SecurityRecorder {
     /**
      * Create an ElytronIdentityManager for the given SecurityDomain
      *
-     * @param domain - configured SecurityDomain
      * @return runtime value for ElytronIdentityManager
      */
-    public IdentityManager createIdentityManager(RuntimeValue<SecurityDomain> domain) {
-        return new ElytronIdentityManager(domain.getValue());
+    public IdentityManager createIdentityManager() {
+        return new ElytronIdentityManager();
     }
 
     /**
@@ -265,9 +265,8 @@ public class SecurityRecorder {
         };
     }
 
-    public ServletExtension configureSecurityContextPrincipalHandler(BeanContainer container) {
-        SecurityContextPrincipalExtension extension = container.instance(SecurityContextPrincipalExtension.class);
-        return extension;
+    public ServletExtension configureSecurityContextPrincipalHandler() {
+        return new SecurityContextPrincipalExtension();
         /*
          * this ends up putting the SecurityContext class into the RuntimeClassLoader while the SecurityContextPrincipalHandler
          * is loaded by the Launcher$AppClassLoade
@@ -281,7 +280,4 @@ public class SecurityRecorder {
          */
     }
 
-    public DefaultRoleDecoder createDefaultRoleDecoder(BeanContainer container) {
-        return container.instance(DefaultRoleDecoder.class);
-    }
 }

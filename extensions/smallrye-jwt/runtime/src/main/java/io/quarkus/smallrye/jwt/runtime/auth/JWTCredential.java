@@ -5,6 +5,7 @@ import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.jwt.consumer.JwtContext;
 
+import io.quarkus.elytron.security.runtime.UndertowTokenCredential;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.undertow.security.idm.Credential;
 
@@ -12,7 +13,7 @@ import io.undertow.security.idm.Credential;
  * This is an implementation of the undertow Credential that wraps the bearer token and configured JWTAuthContextInfo
  * needed for validation of the token.
  */
-public class JWTCredential implements Credential {
+public class JWTCredential implements UndertowTokenCredential {
     private JWTAuthContextInfo authContextInfo;
 
     private String bearerToken;

@@ -19,9 +19,9 @@ import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.elytron.security.deployment.AuthConfigBuildItem;
 import io.quarkus.elytron.security.deployment.IdentityManagerBuildItem;
 import io.quarkus.elytron.security.deployment.JCAProviderBuildItem;
-import io.quarkus.elytron.security.deployment.SecurityDomainBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.runtime.AuthConfig;
+import io.quarkus.elytron.security.runtime.ElytronIdentityManager;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.jwt.runtime.JWTAuthContextInfoGroup;
 import io.quarkus.smallrye.jwt.runtime.SmallRyeJwtRecorder;
@@ -38,7 +38,6 @@ import io.smallrye.jwt.auth.cdi.JsonValueProducer;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
-import io.undertow.security.idm.IdentityManager;
 import io.undertow.servlet.ServletExtension;
 
 /**
@@ -102,7 +101,6 @@ class SmallRyeJwtProcessor {
      *
      * @param recorder - jwt runtime recorder
      * @param securityRealm - producer used to register the TokenSecurityRealm
-     * @param container - the BeanContainer for creating CDI beans
      * @param reflectiveClasses - producer to register classes for reflection
      * @return auth config item for the MP-JWT auth method and realm
      * @throws Exception
@@ -113,8 +111,8 @@ class SmallRyeJwtProcessor {
     AuthConfigBuildItem configureFileRealmAuthConfig(SmallRyeJwtRecorder recorder,
             BuildProducer<ObjectSubstitutionBuildItem> objectSubstitution,
             BuildProducer<SecurityRealmBuildItem> securityRealm,
-            BeanContainerBuildItem container,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BeanContainerBuildItem bc) throws Exception {
         if (config.enabled) {
             // RSAPublicKey needs to be serialized
             ObjectSubstitutionBuildItem.Holder pkHolder = new ObjectSubstitutionBuildItem.Holder(RSAPublicKey.class,
@@ -122,7 +120,7 @@ class SmallRyeJwtProcessor {
             ObjectSubstitutionBuildItem pkSub = new ObjectSubstitutionBuildItem(pkHolder);
             objectSubstitution.produce(pkSub);
             // Have the runtime recorder create the TokenSecurityRealm and create the build item
-            RuntimeValue<SecurityRealm> realm = recorder.createTokenRealm(container.getValue());
+            RuntimeValue<SecurityRealm> realm = recorder.createTokenRealm(bc.getValue());
             AuthConfig authConfig = new AuthConfig();
             authConfig.setAuthMechanism(config.authMechanism);
             authConfig.setRealmName(config.realmName);
@@ -141,16 +139,14 @@ class SmallRyeJwtProcessor {
      * Create the JwtIdentityManager
      *
      * @param recorder - jwt runtime recorder
-     * @param securityDomain - the previously created TokenSecurityRealm
      * @param identityManagerProducer - producer for the identity manager
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void configureIdentityManager(SmallRyeJwtRecorder recorder, SecurityDomainBuildItem securityDomain,
+    void configureIdentityManager(SmallRyeJwtRecorder recorder,
             BuildProducer<IdentityManagerBuildItem> identityManagerProducer) {
         if (config.enabled) {
-            IdentityManager identityManager = recorder.createIdentityManager(securityDomain.getSecurityDomain());
-            identityManagerProducer.produce(new IdentityManagerBuildItem(identityManager));
+            identityManagerProducer.produce(new IdentityManagerBuildItem(new ElytronIdentityManager()));
         }
     }
 

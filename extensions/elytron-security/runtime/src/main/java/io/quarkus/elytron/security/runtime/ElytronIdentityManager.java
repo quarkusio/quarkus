@@ -1,11 +1,15 @@
 package io.quarkus.elytron.security.runtime;
 
-import org.jboss.logging.Logger;
-import org.wildfly.security.auth.server.RealmUnavailableException;
-import org.wildfly.security.auth.server.SecurityDomain;
-import org.wildfly.security.auth.server.SecurityIdentity;
-import org.wildfly.security.evidence.PasswordGuessEvidence;
+import javax.enterprise.inject.spi.CDI;
 
+import org.jboss.logging.Logger;
+import org.wildfly.security.auth.server.SecurityDomain;
+
+import io.quarkus.security.credential.TokenCredential;
+import io.quarkus.security.identity.IdentityProviderManager;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.TokenAuthenticationRequest;
+import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
@@ -17,11 +21,6 @@ import io.undertow.security.idm.PasswordCredential;
  */
 public class ElytronIdentityManager implements IdentityManager {
     private static Logger log = Logger.getLogger(ElytronIdentityManager.class);
-    private final SecurityDomain domain;
-
-    public ElytronIdentityManager(SecurityDomain domain) {
-        this.domain = domain;
-    }
 
     @Override
     public Account verify(Account account) {
@@ -30,29 +29,32 @@ public class ElytronIdentityManager implements IdentityManager {
 
     @Override
     public Account verify(String id, Credential credential) {
-        log.debugf("verify, id=%s, credential=%s", id, credential);
+
         try {
             if (credential instanceof PasswordCredential) {
-                PasswordCredential passwordCredential = (PasswordCredential) credential;
-                try {
-                    SecurityIdentity result = domain.authenticate(id,
-                            new PasswordGuessEvidence(passwordCredential.getPassword()));
-                    log.debugf("authenticate, id=%s, result=%s", id, result);
-                    if (result != null) {
-                        return new ElytronAccount(result);
-                    }
-                } catch (RealmUnavailableException e) {
-                    log.debugf(e, "failed, id=%s, credential=%s", id, credential);
-                }
+                IdentityProviderManager manager = CDI.current().select(IdentityProviderManager.class).get();
+                SecurityIdentity securityIdentity = manager
+                        .authenticateBlocking(new UsernamePasswordAuthenticationRequest(id,
+                                new io.quarkus.security.credential.PasswordCredential(
+                                        ((PasswordCredential) credential).getPassword())));
+                return new QuarkusAccount(securityIdentity);
             }
         } catch (Exception e) {
-            log.warnf(e, "Failed to verify id=%s", id);
+            log.debugf(e, "Failed to authenticate");
         }
-        return null;
+        return verify(credential);
     }
 
     @Override
     public Account verify(Credential credential) {
+        if (credential instanceof UndertowTokenCredential) {
+
+            IdentityProviderManager manager = CDI.current().select(IdentityProviderManager.class).get();
+            SecurityIdentity securityIdentity = manager
+                    .authenticateBlocking(new TokenAuthenticationRequest(
+                            new TokenCredential(((UndertowTokenCredential) credential).getBearerToken(), "bearer")));
+            return new QuarkusAccount(securityIdentity);
+        }
         return null;
     }
 }

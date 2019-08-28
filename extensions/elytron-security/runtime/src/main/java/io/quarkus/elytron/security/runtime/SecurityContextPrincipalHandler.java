@@ -2,7 +2,7 @@ package io.quarkus.elytron.security.runtime;
 
 import javax.enterprise.inject.spi.CDI;
 
-import io.undertow.security.idm.Account;
+import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
@@ -15,11 +15,11 @@ public class SecurityContextPrincipalHandler implements HttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        Account account = exchange.getSecurityContext().getAuthenticatedAccount();
+        QuarkusAccount account = (QuarkusAccount) exchange.getSecurityContext().getAuthenticatedAccount();
         if (account != null && account.getPrincipal() != null) {
             // Get the SecurityContextPrincipal bean and set the request
-            SecurityContextPrincipal contextPrincipal = CDI.current().select(SecurityContextPrincipal.class).get();
-            contextPrincipal.setContextPrincipal(account.getPrincipal());
+            SecurityIdentityAssociation contextPrincipal = CDI.current().select(SecurityIdentityAssociation.class).get();
+            contextPrincipal.setIdentity(account.getSecurityIdentity());
         }
         next.handleRequest(exchange);
     }

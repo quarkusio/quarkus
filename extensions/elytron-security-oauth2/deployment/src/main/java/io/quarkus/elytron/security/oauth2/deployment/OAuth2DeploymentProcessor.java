@@ -1,8 +1,13 @@
 package io.quarkus.elytron.security.oauth2.deployment;
 
+import java.util.function.Supplier;
+
+import javax.enterprise.context.ApplicationScoped;
+
 import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -11,14 +16,14 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.elytron.security.deployment.AuthConfigBuildItem;
 import io.quarkus.elytron.security.deployment.IdentityManagerBuildItem;
-import io.quarkus.elytron.security.deployment.SecurityDomainBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.oauth2.runtime.OAuth2Config;
 import io.quarkus.elytron.security.oauth2.runtime.OAuth2Recorder;
 import io.quarkus.elytron.security.runtime.AuthConfig;
+import io.quarkus.elytron.security.runtime.ElytronIdentityManager;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
-import io.undertow.security.idm.IdentityManager;
 import io.undertow.servlet.ServletExtension;
 
 /**
@@ -58,7 +63,6 @@ class OAuth2DeploymentProcessor {
             BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
         if (oauth2.enabled) {
             RuntimeValue<SecurityRealm> realm = recorder.createRealm(oauth2);
-
             AuthConfig authConfig = new AuthConfig();
             authConfig.setAuthMechanism(AUTH_MECHANISM);
             authConfig.setRealmName(REALM_NAME);
@@ -72,16 +76,14 @@ class OAuth2DeploymentProcessor {
      * Create the OAuthZIdentityManager
      *
      * @param recorder - runtime recorder
-     * @param securityDomain - configured SecurityDomain
      * @param identityManagerProducer - producer factory for IdentityManagerBuildItem
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void configureIdentityManager(OAuth2Recorder recorder, SecurityDomainBuildItem securityDomain,
+    void configureIdentityManager(OAuth2Recorder recorder,
             BuildProducer<IdentityManagerBuildItem> identityManagerProducer) {
         if (oauth2.enabled) {
-            IdentityManager identityManager = recorder.createIdentityManager(securityDomain.getSecurityDomain(), oauth2);
-            identityManagerProducer.produce(new IdentityManagerBuildItem(identityManager));
+            identityManagerProducer.produce(new IdentityManagerBuildItem(new ElytronIdentityManager()));
         }
     }
 
@@ -99,4 +101,13 @@ class OAuth2DeploymentProcessor {
         return new ServletExtensionBuildItem(authExt);
     }
 
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    RuntimeBeanBuildItem augmentor(OAuth2Recorder recorder) {
+        return RuntimeBeanBuildItem.builder(SecurityIdentityAugmentor.class)
+                .setScope(ApplicationScoped.class)
+                .setSupplier((Supplier) recorder.augmentor(oauth2))
+                .setRemovable(false)
+                .build();
+    }
 }

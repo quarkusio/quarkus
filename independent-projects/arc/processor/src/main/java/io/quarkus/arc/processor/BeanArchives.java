@@ -12,8 +12,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
@@ -30,8 +32,11 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
 public final class BeanArchives {
+
+    private static final Logger LOGGER = Logger.getLogger(BeanArchives.class);
 
     /**
      * 
@@ -67,7 +72,7 @@ public final class BeanArchives {
      */
     static class IndexWrapper implements IndexView {
 
-        private final Map<DotName, ClassInfo> additionalClasses;
+        private final Map<DotName, Optional<ClassInfo>> additionalClasses;
 
         private final IndexView index;
 
@@ -78,20 +83,24 @@ public final class BeanArchives {
 
         @Override
         public Collection<ClassInfo> getKnownClasses() {
-            return index.getKnownClasses();
+            if (additionalClasses.isEmpty()) {
+                return index.getKnownClasses();
+            }
+            Collection<ClassInfo> known = index.getKnownClasses();
+            Collection<ClassInfo> additional = additionalClasses.values().stream().filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .collect(Collectors.toList());
+            List<ClassInfo> all = new ArrayList<>(known.size() + additional.size());
+            all.addAll(known);
+            all.addAll(additional);
+            return all;
         }
 
         @Override
         public ClassInfo getClassByName(DotName className) {
             ClassInfo classInfo = index.getClassByName(className);
             if (classInfo == null) {
-                return additionalClasses.computeIfAbsent(className, name -> {
-                    BeanProcessor.LOGGER.debugf("Index: %s", className);
-                    Indexer indexer = new Indexer();
-                    BeanArchives.index(indexer, className.toString());
-                    Index index = indexer.complete();
-                    return index.getClassByName(name);
-                });
+                classInfo = additionalClasses.computeIfAbsent(className, this::computeAdditional).orElse(null);
             }
             return classInfo;
         }
@@ -102,9 +111,9 @@ public final class BeanArchives {
                 return index.getKnownDirectSubclasses(className);
             }
             Set<ClassInfo> directSubclasses = new HashSet<ClassInfo>(index.getKnownDirectSubclasses(className));
-            for (ClassInfo additional : additionalClasses.values()) {
-                if (className.equals(additional.superName())) {
-                    directSubclasses.add(additional);
+            for (Optional<ClassInfo> additional : additionalClasses.values()) {
+                if (additional.isPresent() && className.equals(additional.get().superName())) {
+                    directSubclasses.add(additional.get());
                 }
             }
             return directSubclasses;
@@ -127,10 +136,13 @@ public final class BeanArchives {
                 return index.getKnownDirectImplementors(className);
             }
             Set<ClassInfo> directImplementors = new HashSet<ClassInfo>(index.getKnownDirectImplementors(className));
-            for (ClassInfo additional : additionalClasses.values()) {
-                for (Type interfaceType : additional.interfaceTypes()) {
+            for (Optional<ClassInfo> additional : additionalClasses.values()) {
+                if (!additional.isPresent()) {
+                    continue;
+                }
+                for (Type interfaceType : additional.get().interfaceTypes()) {
                     if (className.equals(interfaceType.name())) {
-                        directImplementors.add(additional);
+                        directImplementors.add(additional.get());
                         break;
                     }
                 }
@@ -209,14 +221,28 @@ public final class BeanArchives {
             }
         }
 
+        private Optional<ClassInfo> computeAdditional(DotName className) {
+            LOGGER.debugf("Index: %s", className);
+            Indexer indexer = new Indexer();
+            if (BeanArchives.index(indexer, className.toString())) {
+                Index index = indexer.complete();
+                return Optional.of(index.getClassByName(className));
+            } else {
+                // Note that ConcurrentHashMap does not allow null to be used as a value
+                return Optional.empty();
+            }
+        }
+
     }
 
-    static void index(Indexer indexer, String className) {
+    static boolean index(Indexer indexer, String className) {
         try (InputStream stream = BeanProcessor.class.getClassLoader()
                 .getResourceAsStream(className.replace('.', '/') + ".class")) {
             indexer.index(stream);
+            return true;
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to index: " + className, e);
+            LOGGER.warnf("Failed to index %s: %s", className, e.getMessage());
+            return false;
         }
     }
 

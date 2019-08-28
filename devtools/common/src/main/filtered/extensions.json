@@ -539,7 +539,7 @@
     "guide": "https://quarkus.io/guides/rest-client-guide"
   },
   {
-    "name": "Spring DI compatibility layer",
+    "name": "Quarkus Extension for Spring DI API",
     "labels": [
       "spring-di"
     ],
@@ -548,7 +548,7 @@
     "guide": "https://quarkus.io/guides/spring-di-guide"
   },
   {
-    "name": "Spring Web compatibility layer",
+    "name": "Quarkus Extension for Spring Web API",
     "labels": [
       "spring-web"
     ],
@@ -557,7 +557,7 @@
     "guide": "https://quarkus.io/guides/spring-web-guide"
   },
   {
-    "name": "Spring Data JPA compatibility layer",
+    "name": "Quarkus Extension for Spring Data API",
     "labels": [
       "spring-data"
     ],

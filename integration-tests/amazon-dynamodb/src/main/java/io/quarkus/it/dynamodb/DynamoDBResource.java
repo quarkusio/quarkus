@@ -2,22 +2,16 @@ package io.quarkus.it.dynamodb;
 
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 
-import java.net.URI;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
-import javax.enterprise.event.Observes;
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import io.quarkus.runtime.StartupEvent;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
@@ -29,36 +23,11 @@ public class DynamoDBResource {
 
     private static final Logger LOG = Logger.getLogger(DynamoDBResource.class);
 
-    @ConfigProperty(name = "dynamodb.port", defaultValue = "8000")
-    String dynamoDbPort;
+    @Inject
+    DynamoDbClient client;
 
-    @ConfigProperty(name = "dynamodb.aws", defaultValue = "false")
-    Boolean useAwsAccount;
-
-    private DynamoDbAsyncClient asyncClient;
-
-    private DynamoDbClient client;
-
-    void onStart(@Observes StartupEvent ev) {
-        if (useAwsAccount) {
-            asyncClient = DynamoDbAsyncClient.create();
-            client = DynamoDbClient.create();
-        } else {
-            asyncClient = DynamoDbAsyncClient.builder()
-                    .credentialsProvider(
-                            StaticCredentialsProvider.create(AwsBasicCredentials.create("test-key", "test-secret")))
-                    .region(Region.of("localhost"))
-                    .endpointOverride(URI.create("http://localhost:" + dynamoDbPort))
-                    .build();
-
-            client = DynamoDbClient.builder()
-                    .credentialsProvider(
-                            StaticCredentialsProvider.create(AwsBasicCredentials.create("test-key", "test-secret")))
-                    .region(Region.of("localhost"))
-                    .endpointOverride(URI.create("http://localhost:" + dynamoDbPort))
-                    .build();
-        }
-    }
+    @Inject
+    DynamoDbAsyncClient asyncClient;
 
     @GET
     @Path("async")

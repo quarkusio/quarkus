@@ -6,11 +6,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
@@ -91,17 +93,21 @@ public class SmallRyeReactiveMessagingProcessor {
                 if (stream != null) {
                     // Stream.value() is mandatory
                     String name = stream.value().asString();
-                    AnnotationInstance annotation = injectionPoint.getTarget().asField()
-                            .annotation(ON_OVERFLOW);
-
+                    Optional<AnnotationInstance> maybeOverflow = annotationStore.getAnnotations(injectionPoint.getTarget())
+                            .stream()
+                            .filter(ai -> ON_OVERFLOW.equals(ai.name()))
+                            .findAny();
                     LOGGER.debugf("Emitter injection point '%s' detected, stream name: '%s'",
                             injectionPoint.getTargetInfo(), name);
 
-                    if (annotation != null) {
+                    if (maybeOverflow.isPresent()) {
+                        AnnotationInstance annotation = maybeOverflow.get();
+                        AnnotationValue maybeBufferSize = annotation.value("bufferSize");
+                        int bufferSize = maybeBufferSize != null ? maybeBufferSize.asInt() : 0;
                         emitters.produce(
                                 EmitterBuildItem.of(name,
                                         annotation.value().toString(),
-                                        annotation.value("bufferSize").asInt()));
+                                        bufferSize));
                     } else {
                         emitters.produce(EmitterBuildItem.of(name));
                     }

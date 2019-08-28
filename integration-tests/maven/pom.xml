@@ -8,74 +8,62 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <version>999-SNAPSHOT</version>
+        <relativePath>..</relativePath>
     </parent>
 
-    <artifactId>quarkus-integration-test-maven</artifactId>
+    <artifactId>quarkus-integration-tests-maven-parent</artifactId>
+    <name>Quarkus - Integration Tests - Maven - Parent</name>
 
-    <name>Quarkus - Integration Tests - Maven tooling</name>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>core</module>
+        <module>kotlin</module>
+        <module>kogito</module>
+        <module>scala</module>
+    </modules>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-maven</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-invoker-plugin</artifactId>
-                <version>3.1.0</version>
-                <configuration>
-                    <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
-                    <cloneClean>true</cloneClean>
-                    <settingsFile>src/it/settings.xml</settingsFile>
-                    <postBuildHookScript>verify</postBuildHookScript>
-                    <addTestClassPath>true</addTestClassPath>
-                    <skipInvocation>${maven.test.skip}</skipInvocation>
-                    <streamLogs>true</streamLogs>
-                    <invokerPropertiesFile>invoker.properties</invokerPropertiesFile>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>integration-tests</id>
-                        <goals>
-                            <goal>install</goal>
-                            <goal>run</goal>
-                            <goal>verify</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>integration-test</goal>
-                            <goal>verify</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <systemPropertyVariables>
-                        <!--suppress MavenModelInspection -->
-                        <maven.home>${maven.home}</maven.home>
-                        <maven.repo>${settings.localRepository}</maven.repo>
-                        <project.version>${project.version}</project.version>
-                    </systemPropertyVariables>
-                </configuration>
-            </plugin>
-        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <systemPropertyVariables>
+                            <!--suppress MavenModelInspection -->
+                            <maven.home>${maven.home}</maven.home>
+                            <maven.repo>${settings.localRepository}</maven.repo>
+                            <project.version>${project.version}</project.version>
+                        </systemPropertyVariables>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-invoker-plugin</artifactId>
+                    <configuration>
+                        <skipInstallation>true</skipInstallation>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
+
 </project>

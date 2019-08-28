@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>quarkus-application-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../../build-parent/application/pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>quarkus-extension-integration-tests-parent</artifactId>
+    <name>Quarkus - Integration Tests - Extensions - Parent</name>
+
+    <packaging>pom</packaging>
+
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
+    <modules>
+        <module>hibernate-validator</module>
+        <module>infinispan-client</module>
+        <module>main</module>
+        <module>kafka</module>
+        <module>jpa</module>
+        <module>jpa-postgresql</module>
+        <module>jpa-mariadb</module>
+        <module>jpa-h2</module>
+        <module>jpa-mssql</module>
+        <module>hibernate-orm-panache</module>
+        <module>hibernate-search-elasticsearch</module>
+        <module>vertx</module>
+        <module>vertx-http</module>
+        <module>spring-di</module>
+        <module>spring-web</module>
+        <module>spring-data-jpa</module>
+        <module>infinispan-cache-jpa</module>
+        <module>elytron-security</module>
+        <module>elytron-security-oauth2</module>
+        <module>flyway</module>
+        <module>keycloak</module>
+        <module>reactive-pg-client</module>
+        <module>reactive-mysql-client</module>
+        <module>amazon-dynamodb</module>
+        <module>test-extension</module>
+        <module>amazon-lambda</module>
+        <module>kogito</module>
+        <module>kubernetes-client</module>
+        <module>tika</module>
+        <module>neo4j</module>
+        <module>mongodb-client</module>
+        <module>mongodb-panache</module>
+        <module>jackson</module>
+        <module>resteasy-jackson</module>
+        <module>jgit</module>
+        <module>virtual-http</module>
+        <module>artemis-core</module>
+        <module>artemis-jms</module>
+    </modules>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>docker-maven-plugin</artifactId>
+                    <version>${docker-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>com.github.alexcojocaru</groupId>
+                    <artifactId>elasticsearch-maven-plugin</artifactId>
+                    <version>${elasticsearch-maven-plugin.version}</version>
+                    <configuration>
+                        <version>${elasticsearch-server.version}</version>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>${nexus-staging-maven-plugin.version}</version>
+                <configuration>
+                    <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-integration-test-class-transformer-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-integration-test-class-transformer</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-integration-test-shared-library</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-test-amazon-lambda</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>

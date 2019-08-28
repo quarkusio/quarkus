@@ -11,7 +11,7 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-build-parent</artifactId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../../build-parent/pom.xml</relativePath>
+        <relativePath>../../build-parent/internal/pom.xml</relativePath>
     </parent>
 
     <properties>
@@ -64,7 +64,6 @@
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.21.0</version>
                 <configuration>
                     <systemProperties>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>

@@ -29,8 +29,12 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
     }
 
     protected void run(String... options) throws FileNotFoundException, MavenInvocationException {
+        run(false, options);
+    }
+
+    protected void run(boolean offline, String... options) throws FileNotFoundException, MavenInvocationException {
         assertThat(testDir).isDirectory();
-        running = new RunningInvoker(testDir, false);
+        running = new RunningInvoker(testDir, false, offline);
         final List<String> args = new ArrayList<>(2 + options.length);
         args.add("compile");
         args.add("quarkus:dev");
@@ -41,9 +45,14 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
     }
 
     protected void runAndCheck(String... options) throws FileNotFoundException, MavenInvocationException {
-        run(options);
+        runAndCheck(false, 20, options);
+    }
 
-        String resp = getHttpResponse();
+    protected void runAndCheck(boolean offline, long waitLimitMin, String... options)
+            throws FileNotFoundException, MavenInvocationException {
+        run(offline, options);
+
+        String resp = getHttpResponse(waitLimitMin);
 
         assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
                 .containsIgnoringCase("1.0-SNAPSHOT");

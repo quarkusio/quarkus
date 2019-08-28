@@ -32,5 +32,5 @@ docker/distroless/bazel-*
 quarkus.log
 replay_*.log
 
-
-
+docs/src/main/asciidoc/generated
+.flattened-pom.xml

@@ -33,8 +33,9 @@ public class RunAndCheckWithAgentMojoTestBase extends RunAndCheckMojoTestBase {
     }
 
     @Override
-    protected void runAndCheck(String... options) throws FileNotFoundException, MavenInvocationException {
-        super.runAndCheck(options);
+    protected void runAndCheck(boolean offline, long waitLimitMin, String... options)
+            throws FileNotFoundException, MavenInvocationException {
+        super.runAndCheck(offline, waitLimitMin, options);
 
         try {
             //file granularity is 1s on some platforms

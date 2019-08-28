@@ -27,6 +27,7 @@
             <plugin>
                 <groupId>org.jboss.jandex</groupId>
                 <artifactId>jandex-maven-plugin</artifactId>
+                <version>${jandex-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>make-index</id>

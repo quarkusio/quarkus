@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-test-maven</artifactId>
     <packaging>jar</packaging>
-    <name>Quarkus - Maven Integration Test Framework</name>
+    <name>Quarkus - Test framework - Maven integration test framework</name>
 
     <dependencies>
         <dependency>
@@ -53,5 +53,4 @@
             <artifactId>junit-jupiter-engine</artifactId>
         </dependency>
     </dependencies>
-
 </project>

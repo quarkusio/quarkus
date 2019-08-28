@@ -3,10 +3,10 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-build-parent</artifactId>
+        <artifactId>quarkus-extension-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../build-parent/pom.xml</relativePath>
+        <relativePath>../build-parent/extension/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -124,7 +124,6 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <version>${project.version}</version>
                 <inherited>false</inherited>
                 <!-- Settings for stubbing new extensions via
                      mvn quarkus:create-extension -N -Dquarkus.artifactIdBase=my-ext -Dquarkus.nameBase="My Extension"
@@ -135,7 +134,7 @@
                     <quarkusVersion>@{project.version}</quarkusVersion>
                     <runtimeBomPath>../bom/runtime/pom.xml</runtimeBomPath>
                     <deploymentBomPath>../bom/deployment/pom.xml</deploymentBomPath>
-                    <itestParentPath>../integration-tests/pom.xml</itestParentPath>
+                    <itestParentPath>../integration-tests/extensions/pom.xml</itestParentPath>
                 </configuration>
             </plugin>
         </plugins>

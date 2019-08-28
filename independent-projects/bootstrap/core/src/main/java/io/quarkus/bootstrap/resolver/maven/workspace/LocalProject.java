@@ -42,8 +42,19 @@ public class LocalProject {
     public static LocalProject loadWorkspace(Path path, boolean required) throws BootstrapException {
         final Path currentProjectDir = locateCurrentProjectDir(path, required);
         final LocalWorkspace ws = new LocalWorkspace();
-        final LocalProject project = load(ws, null, loadRootModel(currentProjectDir), currentProjectDir);
-        return project == null ? load(ws, null, readModel(currentProjectDir.resolve(POM_XML)), currentProjectDir) : project;
+        final List<Model> parentChain = loadParents(currentProjectDir);
+        LocalProject requestedProject = null;
+        for(int i = parentChain.size() - 1; i >= 0; --i) {
+            final Model parent = parentChain.get(i);
+            if(ws.getProject(new AppArtifactKey(getGroupId(parent), parent.getArtifactId())) != null) {
+                continue;
+            }
+            final LocalProject project = load(ws, null, parent, requestedProject == null ? currentProjectDir : null);
+            if(project != null && requestedProject == null) {
+                requestedProject = project;
+            }
+        }
+        return requestedProject;
     }
 
     private static LocalProject load(LocalWorkspace workspace, LocalProject parent, Model model, Path currentProjectDir) throws BootstrapException {
@@ -66,15 +77,21 @@ public class LocalProject {
         return result;
     }
 
-    private static Model loadRootModel(Path currentProjectDir) throws BootstrapException {
+    /**
+     * Loads POM models starting from the specified project directory and then its parents up to the root
+     * that is found in the same workspace.
+     */
+    private static List<Model> loadParents(Path currentProjectDir) throws BootstrapException {
         Path pomXml = currentProjectDir.resolve(POM_XML);
         Model model = readModel(pomXml);
+        List<Model> chain = new ArrayList<>(1);
+        chain.add(model);
         Parent parent = model.getParent();
         while(parent != null) {
             if(parent.getRelativePath() != null && !parent.getRelativePath().isEmpty()) {
                 pomXml = pomXml.getParent().resolve(parent.getRelativePath()).normalize();
                 if(!Files.exists(pomXml)) {
-                    return model;
+                    return chain;
                 }
                 if(Files.isDirectory(pomXml)) {
                     pomXml = pomXml.resolve(POM_XML);
@@ -82,13 +99,14 @@ public class LocalProject {
             } else {
                 pomXml = pomXml.getParent().getParent().resolve(POM_XML);
                 if(!Files.exists(pomXml)) {
-                    return model;
+                    return chain;
                 }
             }
             model = readModel(pomXml);
+            chain.add(model);
             parent = model.getParent();
         }
-        return model;
+        return chain;
     }
 
     private static final Model readModel(Path pom) throws BootstrapException {
@@ -115,6 +133,18 @@ public class LocalProject {
         return null;
     }
 
+    private static String getGroupId(Model rawModel) throws BootstrapException {
+        String groupId = rawModel.getGroupId();
+        if(groupId != null) {
+            return groupId;
+        }
+        final Parent parent = rawModel.getParent();
+        if (parent == null) {
+            throw new BootstrapException("Failed to determine groupId for " + rawModel.getPomFile());
+        }
+        return parent.getGroupId();
+    }
+
     private final Model rawModel;
     private final String groupId;
     private final String artifactId;
@@ -127,20 +157,12 @@ public class LocalProject {
         this.rawModel = rawModel;
         this.dir = rawModel.getProjectDirectory().toPath();
         this.workspace = workspace;
-        final Parent parent = rawModel.getParent();
-        String groupId = rawModel.getGroupId();
-        if(groupId == null) {
-            if(parent == null) {
-                throw new BootstrapException("Failed to determine groupId for " + rawModel.getPomFile());
-            }
-            this.groupId = parent.getGroupId();
-        } else {
-            this.groupId = groupId;
-        }
+        this.groupId = getGroupId(rawModel);
 
         this.artifactId = rawModel.getArtifactId();
         String version = rawModel.getVersion();
         if(version == null) {
+            final Parent parent = rawModel.getParent();
             if(parent == null) {
                 throw new BootstrapException("Failed to determine version for " + rawModel.getPomFile());
             }

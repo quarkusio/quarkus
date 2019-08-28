@@ -77,7 +77,7 @@ public class MojoTestBase {
                     .log(Level.FINE, "test-classes created? " + mkdirs);
         }
 
-        File in = new File("src/test/resources", name);
+        File in = new File(tc, name);
         if (!in.isDirectory()) {
             throw new RuntimeException("Cannot find directory: " + in.getAbsolutePath());
         }
@@ -92,6 +92,7 @@ public class MojoTestBase {
         try {
             org.codehaus.plexus.util.FileUtils.copyDirectoryStructure(in, out);
         } catch (IOException e) {
+            e.printStackTrace();
             throw new RuntimeException("Cannot copy project resources", e);
         }
         filterPom(out);
@@ -156,12 +157,16 @@ public class MojoTestBase {
     }
 
     String getHttpResponse() {
+        return getHttpResponse(1);
+    }
+
+    String getHttpResponse(long waitLimitMin) {
         AtomicReference<String> resp = new AtomicReference<>();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 //Allow for a long maximum time as the first hit to a build might require to download dependencies from Maven repositories;
                 //some, such as org.jetbrains.kotlin:kotlin-compiler, are huge and will take more than a minute.
-                .atMost(20, TimeUnit.MINUTES).until(() -> {
+                .atMost(waitLimitMin, TimeUnit.MINUTES).until(() -> {
                     try {
                         String broken = getBrokenReason();
                         if (broken != null) {

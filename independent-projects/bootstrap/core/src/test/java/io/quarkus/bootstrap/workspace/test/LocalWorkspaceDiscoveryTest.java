@@ -47,7 +47,7 @@ public class LocalWorkspaceDiscoveryTest {
         parent.setArtifactId("parent");
         parent.setVersion(MvnProjectBuilder.DEFAULT_VERSION);
         parent.setRelativePath(null);
-        
+
         final Parent parentWithEmptyRelativePath = new Parent();
         parent.setGroupId(MvnProjectBuilder.DEFAULT_GROUP_ID);
         parent.setArtifactId("parent-empty-path");
@@ -69,7 +69,7 @@ public class LocalWorkspaceDiscoveryTest {
 
         .addModule("other/module3", "root-module-not-direct-child", true)
         .getParent()
-        
+
         .addModule("module4", "empty-parent-relative-path-module").setParent(parentWithEmptyRelativePath)
         .getParent()
 
@@ -91,6 +91,25 @@ public class LocalWorkspaceDiscoveryTest {
         MvnProjectBuilder.forArtifact("independent")
         .addDependency(newDependency("root-module-with-parent"))
         .build(workDir.resolve("root").resolve("independent"));
+
+        // multi-module project with the root not referencing the parent of the modules
+        MvnProjectBuilder.forArtifact("standalone-parent")
+        .build(workDir.resolve("standalone-parent"));
+
+        final Parent standaloneRoot = new Parent();
+        standaloneRoot.setGroupId(MvnProjectBuilder.DEFAULT_GROUP_ID);
+        standaloneRoot.setArtifactId("standalone-root");
+        standaloneRoot.setVersion(MvnProjectBuilder.DEFAULT_VERSION);
+        standaloneRoot.setRelativePath("../standalone-parent/pom.xml");
+
+        MvnProjectBuilder.forArtifact("parent-project")
+        .setParent(standaloneRoot)
+        .addModule("module1", "project-module1")
+        .getParent()
+        .addModule("module2", "project-module2")
+        .addDependency("project-module1")
+        .getParent()
+        .build(workDir.resolve("project-parent"));
     }
 
     @AfterAll
@@ -200,7 +219,7 @@ public class LocalWorkspaceDiscoveryTest {
         assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "empty-parent-relative-path-module")));
         assertLocalDeps(project, "another-child");
     }
-    
+
     /**
      * Empty relativePath is a hack sometimes used to always resolve parent from repository and skip default "../" lookup
      */
@@ -216,6 +235,25 @@ public class LocalWorkspaceDiscoveryTest {
 
         assertCompleteWorkspace(project);
         assertLocalDeps(project);
+    }
+
+    @Test
+    public void standaloneParentWithMultimoduleProject() throws Exception {
+        final LocalProject project = LocalProject
+                .loadWorkspace(workDir.resolve("project-parent").resolve("module2").resolve("target").resolve("classes"));
+        assertNotNull(project);
+        assertNotNull(project.getWorkspace());
+        assertEquals(MvnProjectBuilder.DEFAULT_GROUP_ID, project.getGroupId());
+        assertEquals("project-module2", project.getArtifactId());
+        assertEquals(MvnProjectBuilder.DEFAULT_VERSION, project.getVersion());
+        final Map<AppArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
+        assertEquals(4, projects.size());
+        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "standalone-parent")));
+        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "parent-project")));
+        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "project-module1")));
+        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "project-module2")));
+
+        assertLocalDeps(project, "project-module1");
     }
 
     private void assertCompleteWorkspace(final LocalProject project) {

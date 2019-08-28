@@ -17,12 +17,18 @@ import org.jutils.jprocesses.model.ProcessInfo;
 public class RunningInvoker extends MavenProcessInvoker {
 
     private final boolean debug;
+    private final boolean offline;
     private MavenProcessInvocationResult result;
     private final File log;
     private final PrintStreamHandler logHandler;
 
     public RunningInvoker(File basedir, boolean debug) throws FileNotFoundException {
+        this(basedir, debug, false);
+    }
+
+    public RunningInvoker(File basedir, boolean debug, boolean offline) throws FileNotFoundException {
         this.debug = debug;
+        this.offline = offline;
         setWorkingDirectory(basedir);
         String repo = System.getProperty("maven.repo");
         if (repo == null) {
@@ -63,6 +69,7 @@ public class RunningInvoker extends MavenProcessInvoker {
         DefaultInvocationRequest request = new DefaultInvocationRequest();
         request.setGoals(goals);
         request.setDebug(debug);
+        request.setOffline(offline);
         request.setLocalRepositoryDirectory(getLocalRepositoryDirectory());
         request.setBaseDirectory(getWorkingDirectory());
         request.setPomFile(new File(getWorkingDirectory(), "pom.xml"));

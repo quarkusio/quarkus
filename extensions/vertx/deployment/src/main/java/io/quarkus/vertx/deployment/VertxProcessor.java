@@ -134,7 +134,7 @@ class VertxProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     EventLoopSupplierBuildItem eventLoop(VertxRecorder recorder) {
-        return new EventLoopSupplierBuildItem(recorder.bossSupplier(), recorder.mainSupplier());
+        return new EventLoopSupplierBuildItem(recorder.mainSupplier(), recorder.bossSupplier());
     }
 
     @BuildStep

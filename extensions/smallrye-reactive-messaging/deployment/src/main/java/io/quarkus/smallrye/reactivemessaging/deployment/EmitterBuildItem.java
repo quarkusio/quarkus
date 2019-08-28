@@ -9,6 +9,10 @@ public final class EmitterBuildItem extends MultiBuildItem {
      */
     private final String name;
 
+    private String overflow;
+
+    private int bufferSize;
+
     public EmitterBuildItem(String name) {
         this.name = name;
     }
@@ -17,4 +21,21 @@ public final class EmitterBuildItem extends MultiBuildItem {
         return name;
     }
 
+    public String getOverflow() {
+        return overflow;
+    }
+
+    public EmitterBuildItem setOverflow(String overflow) {
+        this.overflow = overflow;
+        return this;
+    }
+
+    public int getBufferSize() {
+        return bufferSize;
+    }
+
+    public EmitterBuildItem setBufferSize(int bufferSize) {
+        this.bufferSize = bufferSize;
+        return this;
+    }
 }

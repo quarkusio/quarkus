@@ -33,6 +33,7 @@ final public class HyphenateEnumConverter<E extends Enum<E>> implements Converte
             return null;
         }
 
+        value = value.trim();
         final String hyphenatedValue = hyphenate(value);
         final Enum<?> enumValue = values.get(hyphenatedValue);
 

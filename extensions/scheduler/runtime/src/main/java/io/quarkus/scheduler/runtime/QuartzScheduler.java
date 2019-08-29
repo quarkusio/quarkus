@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,6 +20,7 @@ import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.Job;
@@ -92,7 +94,7 @@ public class QuartzScheduler implements Scheduler {
             int idx = timerIdx.incrementAndGet();
             String name = "timer_" + idx;
             timers.put(name, action);
-            // Impl note: we can only store primitives in JobDataMap
+            // Impl note: we can only stateStore primitives in JobDataMap
             JobDetail job = JobBuilder.newJob(TimerJob.class).withIdentity(name, Scheduler.class.getName()).build();
             org.quartz.Trigger trigger = TriggerBuilder.newTrigger().withIdentity(name + "_trigger", Scheduler.class.getName())
                     .startAt(new Date(Instant.now().plusMillis(delay).toEpochMilli()))
@@ -113,19 +115,7 @@ public class QuartzScheduler implements Scheduler {
         if (running.compareAndSet(false, true)) {
 
             try {
-                // TODO: leverage quarkus config - these values are just copied from the default quartz.properties
-                Properties props = new Properties();
-                props.put("org.quartz.scheduler.instanceName", "DefaultQuartzScheduler");
-                props.put("org.quartz.scheduler.rmi.export", false);
-                props.put("org.quartz.scheduler.rmi.proxy", false);
-                props.put("org.quartz.scheduler.wrapJobExecutionInUserTransaction", false);
-                props.put("org.quartz.threadPool.class", "org.quartz.simpl.SimpleThreadPool");
-                props.put("org.quartz.threadPool.threadCount", "10");
-                props.put("org.quartz.threadPool.threadPriority", "5");
-                props.put("org.quartz.threadPool.threadsInheritContextClassLoaderOfInitializingThread", true);
-                props.put("org.quartz.threadPool.threadPriority", "5");
-                props.put("org.quartz.jobStore.misfireThreshold", "60000");
-                props.put("org.quartz.jobStore.class", "org.quartz.simpl.RAMJobStore");
+                Properties props = getSchedulerConfigurationProperties();
 
                 SchedulerFactory schedulerFactory = new StdSchedulerFactory(props);
                 scheduler = schedulerFactory.getScheduler();
@@ -212,6 +202,65 @@ public class QuartzScheduler implements Scheduler {
         } else {
             LOGGER.warnf("Unable to start scheduler - already started");
         }
+    }
+
+    private Properties getSchedulerConfigurationProperties() {
+        Properties props = new Properties();
+        SchedulerRuntimeConfig schedulerRuntimeConfig = SchedulerConfigHolder.getSchedulerRuntimeConfig();
+        SchedulerBuildTimeConfig schedulerBuildTimeConfig = SchedulerConfigHolder.getSchedulerBuildTimeConfig();
+
+        props.put(StdSchedulerFactory.PROP_SCHED_WRAP_JOB_IN_USER_TX, false);
+        props.put(StdSchedulerFactory.PROP_THREAD_POOL_CLASS, "org.quartz.simpl.SimpleThreadPool");
+        props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_ID, schedulerRuntimeConfig.instanceId);
+        props.put("org.quartz.threadPool.threadsInheritContextClassLoaderOfInitializingThread", true);
+        props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_NAME, schedulerBuildTimeConfig.instanceName);
+        props.put("org.quartz.threadPool.threadCount", String.valueOf(schedulerRuntimeConfig.threadCount));
+        props.put("org.quartz.threadPool.threadPriority", String.valueOf(schedulerRuntimeConfig.threadPriority));
+        props.put("org.quartz.jobStore.misfireThreshold",
+                String.valueOf(schedulerBuildTimeConfig.stateStore.misfireThreshold.toMillis()));
+
+        StateStoreType stateStore = schedulerBuildTimeConfig.stateStore.type;
+        switch (stateStore) {
+            case IN_MEMORY:
+                props.put(StdSchedulerFactory.PROP_JOB_STORE_CLASS, StateStoreType.IN_MEMORY.clazz);
+                break;
+            case JDBC: {
+                if (ImageInfo.inImageRuntimeCode()) {
+                    /**
+                     * Defaulting to {@link org.quartz.simpl.RAMJobStore} since Quartz scheduler relies on Object
+                     * serialization to persist job details in database.
+                     * This is feature is not supported yet in Native Image.
+                     * See https://github.com/quarkusio/quarkus/issues/2656
+                     * See https://github.com/oracle/graal/issues/460
+                     */
+                    props.put(StdSchedulerFactory.PROP_JOB_STORE_CLASS, StateStoreType.IN_MEMORY.clazz);
+                    LOGGER.warnf("Quartz scheduler relies on Object serialization to persist job details in database. " +
+                            "This feature is not supported yet in Native Image: see https://github.com/oracle/graal/issues/460. Defaulting to usage of RAMJobStore.");
+                } else {
+                    props.put(StdSchedulerFactory.PROP_JOB_STORE_CLASS, StateStoreType.JDBC.clazz);
+                    String dataSourceName = schedulerBuildTimeConfig.stateStore.datasource.name.orElse("QUARKUS_SCHEDULER_DS");
+                    props.put("org.quartz.jobStore.useProperties", true);
+                    props.put("org.quartz.jobStore.dataSource", dataSourceName);
+                    props.put("org.quartz.jobStore.tablePrefix", "QRTZ_");
+                    props.put("org.quartz.jobStore.driverDelegateClass",
+                            schedulerBuildTimeConfig.stateStore.datasource.driverDelegateClass);
+                    props.put("org.quartz.dataSource." + dataSourceName + ".connectionProvider.class",
+                            AgroalQuartzConnectionPoolingProvider.class.getName());
+                    Optional<Boolean> clusterEnabled = schedulerBuildTimeConfig.stateStore.clusterEnabled;
+                    if (clusterEnabled.isPresent()) {
+                        String interval = "20000"; // Default to 20 seconds
+                        Optional<Duration> clusterCheckingInterval = schedulerBuildTimeConfig.stateStore.clusterCheckingInterval;
+                        if (clusterCheckingInterval.isPresent()) {
+                            interval = String.valueOf(clusterCheckingInterval.get().toMillis());
+                        }
+                        props.put("org.quartz.jobStore.isClustered", clusterEnabled.get().booleanValue());
+                        props.put("org.quartz.jobStore.clusterCheckinInterval", interval);
+                    }
+                }
+            }
+        }
+
+        return props;
     }
 
     @PreDestroy

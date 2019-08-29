@@ -1,5 +1,6 @@
 package io.quarkus.scheduler.deployment;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.text.ParseException;
@@ -21,8 +22,12 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 import org.quartz.CronExpression;
+import org.quartz.impl.jdbcjobstore.JobStoreSupport;
+import org.quartz.impl.jdbcjobstore.JobStoreTX;
+import org.quartz.impl.jdbcjobstore.StdJDBCDelegate;
 import org.quartz.simpl.CascadingClassLoadHelper;
 import org.quartz.simpl.RAMJobStore;
+import org.quartz.simpl.SimpleInstanceIdGenerator;
 import org.quartz.simpl.SimpleThreadPool;
 
 import io.quarkus.arc.Arc;
@@ -58,10 +63,14 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
+import io.quarkus.scheduler.runtime.AgroalQuartzConnectionPoolingProvider;
 import io.quarkus.scheduler.runtime.QuartzScheduler;
 import io.quarkus.scheduler.runtime.ScheduledInvoker;
+import io.quarkus.scheduler.runtime.SchedulerBuildTimeConfig;
 import io.quarkus.scheduler.runtime.SchedulerConfiguration;
 import io.quarkus.scheduler.runtime.SchedulerDeploymentRecorder;
+import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig;
+import io.quarkus.scheduler.runtime.StateStoreType;
 
 /**
  * @author Martin Kouba
@@ -118,9 +127,12 @@ public class SchedulerProcessor {
     @BuildStep
     List<ReflectiveClassBuildItem> reflectiveClasses() {
         List<ReflectiveClassBuildItem> reflectiveClasses = new ArrayList<>();
-        reflectiveClasses.add(new ReflectiveClassBuildItem(false, false, CascadingClassLoadHelper.class.getName()));
         reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, SimpleThreadPool.class.getName()));
+        reflectiveClasses.add(new ReflectiveClassBuildItem(false, false, CascadingClassLoadHelper.class.getName()));
+        reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, SimpleInstanceIdGenerator.class.getName()));
+        reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, AgroalQuartzConnectionPoolingProvider.class.getName()));
         reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, RAMJobStore.class.getName()));
+        reflectiveClasses.add(new ReflectiveClassBuildItem(true, true, JobStoreTX.class.getName()));
         return reflectiveClasses;
     }
 
@@ -225,12 +237,39 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    public void logCleanup(BuildProducer<LogCleanupFilterBuildItem> logCleanupFilter) {
+    @Record(RUNTIME_INIT)
+    public void registerConfiguration(SchedulerDeploymentRecorder recorder,
+            SchedulerRuntimeConfig schedulerRuntimeConfig) {
+        recorder.registerConfiguration(schedulerRuntimeConfig);
+    }
+
+    @BuildStep
+    @Record(STATIC_INIT)
+    public void registerConfiguration(SchedulerDeploymentRecorder recorder,
+            SchedulerBuildTimeConfig schedulerBuildTimeConfig,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
+        StateStoreType stateStore = schedulerBuildTimeConfig.stateStore.type;
+
+        if (StateStoreType.JDBC.equals(stateStore)) {
+            reflectiveClassBuildItemBuildProducer
+                    .produce((new ReflectiveClassBuildItem(true, false, StdJDBCDelegate.class.getName())));
+            reflectiveClassBuildItemBuildProducer
+                    .produce((new ReflectiveClassBuildItem(true, false, JobStoreSupport.class.getName())));
+            reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, true,
+                    schedulerBuildTimeConfig.stateStore.datasource.driverDelegateClass));
+        }
+
+        recorder.registerConfiguration(schedulerBuildTimeConfig);
+    }
+
+    @BuildStep
+    public void logCleanup(BuildProducer<LogCleanupFilterBuildItem> logCleanupFilter,
+            SchedulerBuildTimeConfig schedulerBuildTimeConfig) {
         logCleanupFilter.produce(new LogCleanupFilterBuildItem("org.quartz.impl.StdSchedulerFactory",
                 "Quartz scheduler version:",
                 // no need to log if it's the default
                 "Using default implementation for",
-                "Quartz scheduler 'DefaultQuartzScheduler'"));
+                "Quartz scheduler '" + schedulerBuildTimeConfig.instanceName + "'"));
 
         logCleanupFilter.produce(new LogCleanupFilterBuildItem("org.quartz.core.QuartzScheduler",
                 "Quartz Scheduler v",
@@ -239,9 +278,10 @@ public class SchedulerProcessor {
                 // no need to log if it's the default
                 "Scheduler DefaultQuartzScheduler"));
 
-        logCleanupFilter.produce(new LogCleanupFilterBuildItem("org.quartz.simpl.RAMJobStore",
-                "RAMJobStore initialized."));
-
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem(StateStoreType.IN_MEMORY.clazz,
+                StateStoreType.IN_MEMORY.name + " initialized.", "Handling"));
+        logCleanupFilter.produce(new LogCleanupFilterBuildItem(StateStoreType.JDBC.clazz,
+                StateStoreType.JDBC.name + " initialized.", "Handling"));
         logCleanupFilter.produce(new LogCleanupFilterBuildItem("org.quartz.core.SchedulerSignalerImpl",
                 "Initialized Scheduler Signaller of type"));
     }

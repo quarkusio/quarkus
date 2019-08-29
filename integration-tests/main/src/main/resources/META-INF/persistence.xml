@@ -21,6 +21,8 @@
             <property name="hibernate.connection.pool_size" value="2"/>
             <property name="hibernate.show_sql" value="false"/>
             <property name="hibernate.format_sql" value="false"/>
+            <property name="hibernate.hbm2ddl.import_files" value="import.sql"/>
+            <property name="hibernate.hbm2ddl.import_files_sql_extractor" value="org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor"/>
 
             <!--
                 Optimistically create the tables;

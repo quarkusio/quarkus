@@ -159,6 +159,78 @@ public class CountResourceTest {
 ----
 1. Ensure that the response contains `count`
 
+== Scheduler configurations
+
+`quarkus.scheduler.instance-name`:: The instance name of the scheduler.
++
+Type: `java.lang.String` +
+Defaults to: `DefaultQuartzScheduler` +
+
+
+`quarkus.scheduler.state-store.misfire-threshold`:: The number of duration by which a trigger must have missed its next-fire-time, in order for it to be considered "misfired" and thus have its misfire instruction applied.
++
+Type: `java.time.Duration` +
+Defaults to: `1m` +
+
+
+`quarkus.scheduler.state-store.cluster-checking-interval`:: The frequency at which this instance "checks-in" with the other instances of the cluster .This affects the rate of detecting failed instances.
++
+Type: `java.time.Duration` +
+Defaults to: `20s` +
+
+
+`quarkus.scheduler.state-store.cluster-enabled`:: Enable cluster mode or not. This takes effect if the <<state-store-type, state store>> is `jdbc`.
++
+Type: `java.lang.Boolean` +
+
+
+`quarkus.scheduler.state-store.driver-delegate-class`:: The JDBC driver delegate class. This is not required if the <<state-store-type, state store>> is `in-memory`.
+Otherwise it must be set to a delegate class corresponding to the SQL driver in use.
+Possible values can be obtained from https://github.com/quartz-scheduler/quartz/tree/master/quartz-core/src/main/java/org/quartz/impl/jdbcjobstore[quartz-scheduler JDBC stores delegate]
++
+Type: `java.lang.String` +
+Defaults to: `org.quartz.impl.jdbcjobstore.StdJDBCDelegate` +
+
+[[state-store-type]]
+`quarkus.scheduler.state-store`:: The type of state store to use. Possible values are: `in-memory`, and `jdbc`.
+ -  If set to `in-memory`, the scheduler will use the `org.quartz.simpl.RAMJobStore` job store class
+ -  If set to `jdbc`, the scheduler will use the `org.quartz.impl.jdbcjobstore.JobStoreTX` job store class.
+ When using this option make sure that you have the link:datasource-guide.html[agroal datasource configured] and that <<creating-scheduling-job, scheduling tables>> exists.
+ This store type is not supported in Native Image because of https://github.com/oracle/graal/issues/460[unsupported Object serialization].
++
+Type: `io.quarkus.scheduler.runtime.SchedulerBuildTimeConfig.StoreType` +
+Defaults to: `in-memory` +
+
+
+`quarkus.scheduler.instance-id`:: The instance id of the scheduler. This is highly required when running clustered schedulers as each node in the cluster MUST have a unique instanceId.
+Defaults to `AUTO` to automatically generate unique ids for each node in the cluster
++
+Type: `java.lang.String` +
+Defaults to: `AUTO` +
+
+
+`quarkus.scheduler.thread-count`:: The size of scheduler thread pool. This will initialise the number of worker threads in the pool
++
+Type: `int` +
+Defaults to: `25` +
+
+
+`quarkus.scheduler.thread-priority`:: Thread priority of worker threads in the pool.
++
+Type: `int` +
+Defaults to: `5` +
+
+include::duration-format-note.adoc[]
+
+[TIP]
+[[creating-scheduling-job]]
+.About creating database tables when using `jdbc` state store
+=====
+The Quarkus scheduler does not create the necessary scheduling tables in database automatically. If these tables are missing, the schuduler will throw an excpetion during application startup.
+Thus you'll need to create them. To do so, choose a file corresponding to your SQL driver from https://github.com/quartz-scheduler/quartz/tree/master/quartz-core/src/main/resources/org/quartz/impl/jdbcjobstore[quartz sql script files].
+Once you are done, you can use the link:flyway-guide.html[flyway extension] to execute table creation using the choosen SQL file.
+=====
+
 == Package and run the application
 
 Run the application with: `./mvnw compile quarkus:dev`.

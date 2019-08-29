@@ -27,4 +27,11 @@ public class SchedulerDeploymentRecorder {
         }
     }
 
+    public void registerConfiguration(SchedulerRuntimeConfig schedulerRuntimeConfig) {
+        SchedulerConfigHolder.holdRuntimeConfig(schedulerRuntimeConfig);
+    }
+
+    public void registerConfiguration(SchedulerBuildTimeConfig schedulerBuildTimeConfig) {
+        SchedulerConfigHolder.holdBuildtimeConfig(schedulerBuildTimeConfig);
+    }
 }

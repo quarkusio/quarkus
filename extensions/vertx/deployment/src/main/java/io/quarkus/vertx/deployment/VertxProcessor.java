@@ -403,7 +403,9 @@ class VertxProcessor {
                 codecByTypes.put(typeToAdd, GENERIC_MESSAGE_CODEC);
             }
         }
-        Map<Class<?>, Class<?>> codecByClass = new HashMap<>();
+
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, GenericMessageCodec.class));
+
         for (Map.Entry<Type, DotName> entry : codecByTypes.entrySet()) {
             messageCodecs.produce(new MessageCodecBuildItem(entry.getKey().toString(), entry.getValue().toString()));
         }

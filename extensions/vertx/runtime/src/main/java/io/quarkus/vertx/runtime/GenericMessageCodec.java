@@ -11,6 +11,10 @@ import io.vertx.core.eventbus.MessageCodec;
 public class GenericMessageCodec implements MessageCodec<Object, Object> {
     private static final Logger LOGGER = Logger.getLogger(GenericMessageCodec.class.getName());
 
+    public GenericMessageCodec() {
+
+    }
+
     @Override
     public void encodeToWire(Buffer buffer, Object o) {
         // Encode object to byte[]

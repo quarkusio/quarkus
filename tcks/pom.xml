@@ -16,6 +16,7 @@
     <modules>
         <module>microprofile-config</module>
         <module>microprofile-health</module>
+        <module>microprofile-metrics</module>
         <module>microprofile-rest-client</module>
     </modules>
 

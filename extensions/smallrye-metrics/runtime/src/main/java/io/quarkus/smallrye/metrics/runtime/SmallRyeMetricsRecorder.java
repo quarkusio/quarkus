@@ -119,7 +119,7 @@ public class SmallRyeMetricsRecorder {
             return;
         }
         Metadata countMetadata = Metadata.builder()
-                .withName("gc.count")
+                .withName("gc.total")
                 .withType(MetricType.COUNTER)
                 .withDisplayName("Garbage Collection Time")
                 .withUnit("none")
@@ -216,30 +216,30 @@ public class SmallRyeMetricsRecorder {
 
         Metadata meta = Metadata.builder()
                 .withName(THREAD_COUNT)
-                .withType(MetricType.COUNTER)
+                .withType(MetricType.GAUGE)
                 .withDisplayName("Thread Count")
                 .withDescription("Displays the current number of live threads including both daemon and non-daemon threads")
                 .build();
-        registry.register(meta, new LambdaCounter(() -> (long) thread.getThreadCount()));
+        registry.register(meta, new LambdaGauge(() -> (long) thread.getThreadCount()));
         names.add(THREAD_COUNT);
 
         meta = Metadata.builder()
                 .withName(THREAD_DAEMON_COUNT)
-                .withType(MetricType.COUNTER)
+                .withType(MetricType.GAUGE)
                 .withDisplayName("Daemon Thread Count")
                 .withDescription("Displays the current number of live daemon threads.")
                 .build();
-        registry.register(meta, new LambdaCounter(() -> (long) thread.getDaemonThreadCount()));
+        registry.register(meta, new LambdaGauge(() -> (long) thread.getDaemonThreadCount()));
         names.add(THREAD_DAEMON_COUNT);
 
         meta = Metadata.builder()
                 .withName(THREAD_MAX_COUNT)
-                .withType(MetricType.COUNTER)
+                .withType(MetricType.GAUGE)
                 .withDisplayName("Peak Thread Count")
                 .withDescription("Displays the peak live thread count since the Java virtual machine started or peak was " +
                         "reset. This includes daemon and non-daemon threads.")
                 .build();
-        registry.register(meta, new LambdaCounter(() -> (long) thread.getPeakThreadCount()));
+        registry.register(meta, new LambdaGauge(() -> (long) thread.getPeakThreadCount()));
         names.add(THREAD_MAX_COUNT);
     }
 

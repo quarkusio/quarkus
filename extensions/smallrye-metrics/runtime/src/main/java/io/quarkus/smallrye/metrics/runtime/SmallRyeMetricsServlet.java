@@ -32,7 +32,23 @@ public class SmallRyeMetricsServlet extends HttpServlet {
         metricsHandler.handleRequest(requestPath, method, acceptHeaders, (status, message, headers) -> {
             headers.forEach(response::addHeader);
             response.setStatus(status);
-            response.getWriter().write(message);
+
+            // FIXME: this is a workaround for issue #3673, normally just response.getWriter().write(message) should do
+            final int stepSize = 5000;
+            if (message.length() < stepSize) {
+                response.getWriter().write(message);
+            } else {
+                // split a string longer than 8192 characters into smaller chunks
+                // and feed them one by one to the writer
+                // and call flush() in between
+                for (int i = 0; i < (message.length() / stepSize) + 1; i++) {
+                    int start = stepSize * i;
+                    final int chars = Math.min(stepSize, message.length() - (stepSize * i));
+                    response.getWriter()
+                            .write(message.substring(start, start + chars));
+                    response.getWriter().flush();
+                }
+            }
         });
     }
 }

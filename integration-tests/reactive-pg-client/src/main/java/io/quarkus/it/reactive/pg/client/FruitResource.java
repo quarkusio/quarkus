@@ -34,7 +34,7 @@ public class FruitResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<JsonArray> listFruits() {
-        return client.query("SELECT * FROM fruits").thenApply(pgRowSet -> {
+        return client.query("SELECT * FROM fruits").thenApplyAsync(pgRowSet -> {
             JsonArray jsonArray = new JsonArray();
             for (Row row : pgRowSet) {
                 jsonArray.add(toJson(row));

@@ -1383,7 +1383,7 @@
                 <artifactId>aesh</artifactId>
                 <version>${aesh.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>com.oracle.substratevm</groupId>
                 <artifactId>svm</artifactId>

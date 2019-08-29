@@ -32,9 +32,9 @@ For more information, see [Setting Up DynamoDB (Web Service)](https://docs.aws.a
 
 You can then run the tests
 ```
-mvn clean install -Dtest-dynamodb -Ddynamodb.url -Dquarkus.dynamodb.region=eu-central-1 -Dquarkus.dynamodb.credentials-config.type=DEFAULT
+mvn clean install -Dtest-dynamodb -Ddynamodb.url -Dquarkus.dynamodb.aws.region=eu-central-1 -Dquarkus.dynamodb.aws.credentials-config.type=DEFAULT
 ```
 
 - `-Ddynamodb.url` have to be empty in order to remove URL override from the test
-- `-Dquarkus.dynamodb.region=eu-central-1` - define your AWS region
-- `-Dquarkus.dynamodb.credentials-config.type=DEFAULT` enables default credentials provider chain that looks, among other places, in the environment variables
+- `-Dquarkus.dynamodb.aws.region=eu-central-1` - define your AWS region
+- `-Dquarkus.dynamodb.aws.credentials-config.type=DEFAULT` enables default credentials provider chain that looks, among other places, in the environment variables

@@ -81,7 +81,7 @@ The following table lists the properties that can be configured:
 | own-host-name | String | The hostname to be used for `HELO/EHLO` and the `Message-ID` |
 | keep-alive | Boolean | Set if connection pool is enabled. | `true`
 | disable-esmtp | Boolean | Disable ESMTP | `false`
-| start-tls | `NONE`, `OPTIONAL`, `REQUIRED` | Set the TLS security mode | `OPTIONAL`
+| start-tls | `DISABLED`, `OPTIONAL`, `REQUIRED` | Set the TLS security mode | `OPTIONAL`
 | login | `DISABLED`, `OPTIONAL`, `REQUIRED` | Set the login mode for the connection | `NONE`
 | auth-methods | space-separated list | Set the allowed auth methods, accept all methods if not set |
 | key-store | String | Path of the key store |

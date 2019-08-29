@@ -284,7 +284,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                             log.infof("File change detected: %s", file);
                             if (doCopy) {
                                 Path target = classesDir.resolve(path);
-                                byte[] data = CopyUtils.readFileContent(file);
+                                byte[] data = Files.readAllBytes(file);
                                 try (FileOutputStream out = new FileOutputStream(target.toFile())) {
                                     out.write(data);
                                 }

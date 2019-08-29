@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -80,7 +81,9 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
                     });
                 }
             }
+
             this.applicationClasses = applicationClasses;
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -201,17 +204,11 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
                 }
             }
             try {
-                byte[] buf = new byte[1024];
-                int r;
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                try (FileInputStream in = new FileInputStream(classLoc.toFile())) {
-                    while ((r = in.read(buf)) > 0) {
-                        out.write(buf, 0, r);
-                    }
+                try {
+                    bytes = Files.readAllBytes(classLoc);
                 } catch (IOException e) {
                     throw new ClassNotFoundException("Failed to load class", e);
                 }
-                bytes = out.toByteArray();
                 bytes = handleTransform(name, bytes);
                 definePackage(name);
                 Class<?> clazz = defineClass(name, bytes, 0, bytes.length);
@@ -271,6 +268,38 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
     @Override
     public void setTransformers(Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> functions) {
         this.bytecodeTransformers = functions;
+    }
+
+    public void setApplicationArchives(List<Path> archives) {
+        //we also need to be able to transform application archives
+        //this is not great but I can't really see a better solution
+        if (bytecodeTransformers == null) {
+            return;
+        }
+        try {
+            for (Path root : archives) {
+                Map<String, Path> classes = new HashMap<>();
+                AtomicBoolean transform = new AtomicBoolean();
+                Files.walk(root).forEach(new Consumer<Path>() {
+                    @Override
+                    public void accept(Path path) {
+                        if (path.toString().endsWith(".class")) {
+                            String key = root.relativize(path).toString().replace('\\', '/');
+                            classes.put(key, path);
+                            if (bytecodeTransformers
+                                    .containsKey(key.substring(0, key.length() - ".class".length()).replace("/", "."))) {
+                                transform.set(true);
+                            }
+                        }
+                    }
+                });
+                if (transform.get()) {
+                    applicationClasses.putAll(classes);
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

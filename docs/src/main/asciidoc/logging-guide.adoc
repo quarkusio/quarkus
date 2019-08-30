@@ -140,7 +140,7 @@ The logging format string supports the following symbols:
 [source, properties]
 ----
 quarkus.log.console.enable=true
-quarkus.log.console.format=%d{HH:mm:ss} %-5p [%c{2.}]] (%t) %s%e%n
+quarkus.log.console.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
 quarkus.log.console.level=DEBUG
 quarkus.log.console.color=false
 
@@ -158,7 +158,7 @@ quarkus.log.file.enable=true
 # Send output to a trace.log file under the /tmp directory
 quarkus.log.file.path=/tmp/trace.log
 quarkus.log.file.level=TRACE
-quarkus.log.file.format=%d{HH:mm:ss} %-5p [%c{2.}]] (%t) %s%e%n
+quarkus.log.file.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
 # Set 2 categories (io.quarkus.smallrye.jwt, io.undertow.request.security) to TRACE level
 quarkus.log.category."io.quarkus.smallrye.jwt".level=TRACE
 quarkus.log.category."io.undertow.request.security".level=TRACE

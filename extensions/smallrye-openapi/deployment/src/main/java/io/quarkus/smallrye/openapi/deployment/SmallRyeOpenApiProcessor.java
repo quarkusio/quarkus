@@ -163,7 +163,11 @@ public class SmallRyeOpenApiProcessor {
 
             AnnotationInstance[] contents = contentAnnotationValue.asNestedArray();
             for (AnnotationInstance content : contents) {
-                AnnotationInstance schema = content.value(OPENAPI_RESPONSE_SCHEMA).asNested();
+                AnnotationValue annotationValue = content.value(OPENAPI_RESPONSE_SCHEMA);
+                if (annotationValue == null) {
+                    continue;
+                }
+                AnnotationInstance schema = annotationValue.asNested();
                 AnnotationValue schemaImplementationClass = schema.value(OPENAPI_SCHEMA_IMPLEMENTATION);
                 if (schemaImplementationClass != null) {
                     reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(schemaImplementationClass.asClass()));

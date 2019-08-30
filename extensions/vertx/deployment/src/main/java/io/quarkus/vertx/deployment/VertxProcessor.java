@@ -124,7 +124,10 @@ class VertxProcessor {
 
     @BuildStep
     SubstrateConfigBuildItem build() {
-        return SubstrateConfigBuildItem.builder().addNativeImageSystemProperty("vertx.disableDnsResolver", "true").build();
+        return SubstrateConfigBuildItem.builder()
+                .addNativeImageSystemProperty("vertx.disableDnsResolver", "true")
+                .addRuntimeInitializedClass("io.vertx.core.http.impl.VertxHttp2ClientUpgradeCodec")
+                .build();
     }
 
     @BuildStep

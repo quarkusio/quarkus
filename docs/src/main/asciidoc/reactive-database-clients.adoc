@@ -3,14 +3,20 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Reactive Postgres Client
+= Quarkus - Reactive Database Clients
 
 include::./attributes.adoc[]
 :config-file: application.properties
 
-The Reactive Postgres Client is a client for Postgres with a straightforward API focusing on scalability and low-overhead.
+The Reactive Database Clients have a straightforward API focusing on scalability and low-overhead.
+Currently, the following database servers are supported:
 
-In this guide, you will learn how to implement a simple CRUD application exposing a RESTful API.
+* Postgres
+* MySQL
+
+In this guide, you will learn how to implement a simple CRUD application exposing data stored in *Postgres* over a RESTful API.
+
+NOTE: Extension and connection pool class names for each client can be found at the bottom of this document.
 
 IMPORTANT: If you are not familiar with the Quarkus Vert.x extension, consider reading the link:using-vertx.html[Using Eclipse Vert.x] guide first.
 
@@ -451,3 +457,18 @@ $(document).ready(function () {
 
 All done!
 Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits.
+
+== Database Clients details
+
+[cols="15,35,50"]
+|===
+|Database |Extension name |Pool class name
+
+|Postgres
+|`quarkus-reactive-pg-client`
+|`io.vertx.axle.pgclient.PgPool`
+
+|MySQL
+|quarkus-reactive-mysql-client
+|`io.vertx.axle.mysqlclient.MySQLPool`
+|===

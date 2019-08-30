@@ -29,6 +29,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyIgnoreWarningBuildItem;
 
 public class ReflectiveHierarchyStep {
 
@@ -46,12 +47,18 @@ public class ReflectiveHierarchyStep {
     @Inject
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
 
+    @Inject
+    List<ReflectiveHierarchyIgnoreWarningBuildItem> ignored;
+
     @BuildStep
     public void build() throws Exception {
         Set<DotName> processedReflectiveHierarchies = new HashSet<>();
         Set<DotName> unindexedClasses = new TreeSet<>();
         for (ReflectiveHierarchyBuildItem i : hierarchy) {
             addReflectiveHierarchy(i, i.getType(), processedReflectiveHierarchies, unindexedClasses);
+        }
+        for (ReflectiveHierarchyIgnoreWarningBuildItem i : ignored) {
+            unindexedClasses.remove(i.getDotName());
         }
 
         if (!unindexedClasses.isEmpty()) {

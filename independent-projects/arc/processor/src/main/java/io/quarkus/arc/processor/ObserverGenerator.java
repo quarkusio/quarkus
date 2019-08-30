@@ -19,7 +19,6 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -350,14 +349,14 @@ public class ObserverGenerator extends AbstractGenerator {
                     ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(constructor, injectionPoint);
 
                     // Wrap the constructor arg in a Supplier so we can pass it to CurrentInjectionPointProvider c'tor.
-                    FunctionCreator delegateSupplier = constructor.createFunction(Supplier.class);
-                    delegateSupplier.getBytecode().returnValue(constructor.getMethodParam(paramIdx++));
+                    ResultHandle delegateSupplier = constructor.newInstance(
+                            MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, constructor.getMethodParam(paramIdx++));
 
                     ResultHandle wrapHandle = constructor.newInstance(
                             MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class,
                                     Supplier.class, java.lang.reflect.Type.class,
                                     Set.class, Set.class, Member.class, int.class),
-                            constructor.getThis(), delegateSupplier.getInstance(),
+                            constructor.getThis(), delegateSupplier,
                             Types.getTypeHandle(constructor, injectionPoint.getRequiredType()),
                             requiredQualifiersHandle, annotationsHandle, javaMemberHandle,
                             constructor.load(injectionPoint.getPosition()));

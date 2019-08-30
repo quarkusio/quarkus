@@ -583,12 +583,12 @@ public class BeanGenerator extends AbstractGenerator {
                     // reference provider
                     ResultHandle wrapHandle = wrapCurrentInjectionPoint(classOutput, beanCreator, bean, constructor,
                             injectionPoint, paramIdx++);
-                    FunctionCreator wrapSupplierHandle = constructor.createFunction(Supplier.class);
-                    wrapSupplierHandle.getBytecode().returnValue(wrapHandle);
+                    ResultHandle wrapSupplierHandle = constructor.newInstance(
+                            MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, wrapHandle);
                     constructor.writeInstanceField(
                             FieldDescriptor.of(beanCreator.getClassName(), injectionPointToProviderField.get(injectionPoint),
                                     Supplier.class.getName()),
-                            constructor.getThis(), wrapSupplierHandle.getInstance());
+                            constructor.getThis(), wrapSupplierHandle);
                 } else {
                     constructor.writeInstanceField(
                             FieldDescriptor.of(beanCreator.getClassName(), injectionPointToProviderField.get(injectionPoint),

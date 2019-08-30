@@ -12,7 +12,6 @@ import io.quarkus.arc.processor.InjectionPointInfo.InjectionPointKind;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -46,24 +45,24 @@ enum BuiltinBean {
                         InjectableBean.class, Set.class, Member.class, int.class),
                 parameterizedType, qualifiers, ctx.constructor.getThis(), annotationsHandle, javaMemberHandle,
                 ctx.constructor.load(ctx.injectionPoint.getPosition()));
-        FunctionCreator instanceProviderSuppler = ctx.constructor.createFunction(Supplier.class);
-        instanceProviderSuppler.getBytecode().returnValue(instanceProvider);
+        ResultHandle instanceProviderSupplier = ctx.constructor.newInstance(
+                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, instanceProvider);
         ctx.constructor.writeInstanceField(
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
                         Supplier.class.getName()),
-                ctx.constructor.getThis(), instanceProviderSuppler.getInstance());
+                ctx.constructor.getThis(), instanceProviderSupplier);
     }, BuiltinBean::isInstanceInjectionPoint),
     INJECTION_POINT(DotNames.INJECTION_POINT, ctx -> {
         // this.injectionPointProvider1 = () -> new InjectionPointProvider();
         ResultHandle injectionPointProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(InjectionPointProvider.class));
-        FunctionCreator injectionPointProviderSupplier = ctx.constructor.createFunction(Supplier.class);
-        injectionPointProviderSupplier.getBytecode().returnValue(injectionPointProvider);
+        ResultHandle injectionPointProviderSupplier = ctx.constructor.newInstance(
+                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, injectionPointProvider);
         ctx.constructor.writeInstanceField(
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
                         Supplier.class.getName()),
                 ctx.constructor.getThis(),
-                injectionPointProviderSupplier.getInstance());
+                injectionPointProviderSupplier);
     }),
     BEAN(DotNames.BEAN, ctx -> {
         // this.beanProvider1 = () -> new BeanMetadataProvider<>();
@@ -73,13 +72,13 @@ enum BuiltinBean {
         ResultHandle beanProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(BeanMetadataProvider.class, String.class),
                 ctx.constructor.load(ctx.targetInfo.asBean().getIdentifier()));
-        FunctionCreator beanProviderSupplier = ctx.constructor.createFunction(Supplier.class);
-        beanProviderSupplier.getBytecode().returnValue(beanProvider);
+        ResultHandle beanProviderSupplier = ctx.constructor.newInstance(
+                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, beanProvider);
         ctx.constructor.writeInstanceField(
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
                         Supplier.class.getName()),
                 ctx.constructor.getThis(),
-                beanProviderSupplier.getInstance());
+                beanProviderSupplier);
     }, ip -> {
         return isCdiAndRawTypeMatches(ip, DotNames.BEAN) && ip.hasDefaultedQualifier();
     }),
@@ -90,13 +89,13 @@ enum BuiltinBean {
         ResultHandle interceptedBeanMetadataProvider = ctx.constructor
                 .newInstance(MethodDescriptor.ofConstructor(InterceptedBeanMetadataProvider.class));
 
-        FunctionCreator interceptedBeanMetadataProviderSupplier = ctx.constructor.createFunction(Supplier.class);
-        interceptedBeanMetadataProviderSupplier.getBytecode().returnValue(interceptedBeanMetadataProvider);
+        ResultHandle interceptedBeanMetadataProviderSupplier = ctx.constructor.newInstance(
+                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, interceptedBeanMetadataProvider);
         ctx.constructor.writeInstanceField(
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
                         Supplier.class.getName()),
                 ctx.constructor.getThis(),
-                interceptedBeanMetadataProviderSupplier.getInstance());
+                interceptedBeanMetadataProviderSupplier);
     }, ip -> {
         return isCdiAndRawTypeMatches(ip, DotNames.BEAN) && !ip.hasDefaultedQualifier()
                 && ip.getRequiredQualifiers().size() == 1
@@ -105,13 +104,13 @@ enum BuiltinBean {
     BEAN_MANAGER(DotNames.BEAN_MANAGER, ctx -> {
         ResultHandle beanManagerProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(BeanManagerProvider.class));
-        FunctionCreator injectionPointProviderSupplier = ctx.constructor.createFunction(Supplier.class);
-        injectionPointProviderSupplier.getBytecode().returnValue(beanManagerProvider);
+        ResultHandle injectionPointProviderSupplier = ctx.constructor.newInstance(
+                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, beanManagerProvider);
         ctx.constructor.writeInstanceField(
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
                         Supplier.class.getName()),
                 ctx.constructor.getThis(),
-                injectionPointProviderSupplier.getInstance());
+                injectionPointProviderSupplier);
     }),
     EVENT(DotNames.EVENT, ctx -> {
 
@@ -140,12 +139,12 @@ enum BuiltinBean {
                 MethodDescriptor.ofConstructor(EventProvider.class, java.lang.reflect.Type.class,
                         Set.class),
                 parameterizedType, qualifiers);
-        FunctionCreator eventProviderSupplier = ctx.constructor.createFunction(Supplier.class);
-        eventProviderSupplier.getBytecode().returnValue(eventProvider);
+        ResultHandle eventProviderSupplier = ctx.constructor.newInstance(
+                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, eventProvider);
         ctx.constructor.writeInstanceField(
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
                         Supplier.class.getName()),
-                ctx.constructor.getThis(), eventProviderSupplier.getInstance());
+                ctx.constructor.getThis(), eventProviderSupplier);
     }),
     RESOURCE(DotNames.OBJECT, ctx -> {
 
@@ -166,12 +165,12 @@ enum BuiltinBean {
                 MethodDescriptor.ofConstructor(ResourceProvider.class, java.lang.reflect.Type.class,
                         Set.class),
                 parameterizedType, annotations);
-        FunctionCreator resourceProviderSupplier = ctx.constructor.createFunction(Supplier.class);
-        resourceProviderSupplier.getBytecode().returnValue(resourceProvider);
+        ResultHandle resourceProviderSupplier = ctx.constructor.newInstance(
+                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, resourceProvider);
         ctx.constructor.writeInstanceField(
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
                         Supplier.class.getName()),
-                ctx.constructor.getThis(), resourceProviderSupplier.getInstance());
+                ctx.constructor.getThis(), resourceProviderSupplier);
     }, ip -> ip.getKind() == InjectionPointKind.RESOURCE),
     EVENT_METADATA(DotNames.EVENT_METADATA, ctx -> {
     }),

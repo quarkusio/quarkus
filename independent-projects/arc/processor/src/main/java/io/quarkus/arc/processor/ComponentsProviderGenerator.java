@@ -8,7 +8,6 @@ import io.quarkus.arc.Components;
 import io.quarkus.arc.ComponentsProvider;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -66,7 +65,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         MethodCreator getComponents = componentsProvider.getMethodCreator("getComponents", Components.class)
                 .setModifiers(ACC_PUBLIC);
 
-        // Map<String, Supplier<InjectableBean<?>>>> beanIdToBeanSupplier = new HashMap<>();
+        // Map<String, Supplier<InjectableBean<?>>> beanIdToBeanSupplier = new HashMap<>();
         ResultHandle beanIdToBeanSupplierHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
 
         // Bar -> Foo, Baz
@@ -252,17 +251,12 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         }
         for (InjectionPointInfo injectionPoint : injectionPoints) {
 
-            // beanIdToBeanSupplier.get(....);
-            FunctionCreator supplierInstance = getComponents.createFunction(Supplier.class);
-            ResultHandle beanIdHandle = supplierInstance.getBytecode().load(injectionPoint.getResolvedBean().getIdentifier());
-            ResultHandle beanSupplier = supplierInstance.getBytecode().invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class),
-                    beanIdToBeanSupplierHandle,
-                    beanIdHandle);
+            // new MapBeanSupplier(beanIdToBeanSupplier, id);
+            ResultHandle beanIdHandle = getComponents.load(injectionPoint.getResolvedBean().getIdentifier());
+            ResultHandle beanSupplierHandle = getComponents.newInstance(MethodDescriptors.MAP_BEAN_SUPPLIER_CONSTRUCTOR,
+                    beanIdToBeanSupplierHandle, beanIdHandle);
 
-            supplierInstance.getBytecode().returnValue(beanSupplier);
-            params.add(supplierInstance.getInstance());
-
+            params.add(beanSupplierHandle);
             paramTypes.add(Type.getDescriptor(Supplier.class));
         }
         if (bean.getDisposer() != null) {
@@ -288,9 +282,9 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 beanInstance);
 
         // Create a Supplier that will return the bean instance at runtime.
-        FunctionCreator beanInstanceSupplier = getComponents.createFunction(Supplier.class);
-        beanInstanceSupplier.getBytecode().returnValue(beanInstance);
-        beanToResultSupplierHandle.put(bean, beanInstanceSupplier.getInstance());
+        ResultHandle beanInstanceSupplier = getComponents.newInstance(MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR,
+                beanInstance);
+        beanToResultSupplierHandle.put(bean, beanInstanceSupplier);
     }
 
     private boolean isDependency(BeanInfo bean, Map<BeanInfo, List<BeanInfo>> beanToInjections) {

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -44,19 +45,24 @@ public class VertxRecorder {
 
     private static final Logger LOGGER = Logger.getLogger(VertxRecorder.class.getName());
 
-    static volatile Vertx vertx;
+    static volatile Vertx mainVertx;
+
+    //TODO: there should only be one vertx
+    //remove this ASAP once the RESTeasy aync IO problem is fixed
+    static volatile Vertx webVertx;
     static volatile List<MessageConsumer<?>> messageConsumers;
 
-    public RuntimeValue<Vertx> configureVertx(BeanContainer container, VertxConfiguration config,
+    public RuntimeValue<Vertx> configureMainVertx(BeanContainer container, VertxConfiguration config,
             Map<String, ConsumeEvent> messageConsumerConfigurations,
             LaunchMode launchMode, ShutdownContext shutdown, Map<Class<?>, Class<?>> codecByClass) {
+        messageConsumers = new ArrayList<>();
 
-        initialize(config);
+        mainVertx = initialize(config);
         registerMessageConsumers(messageConsumerConfigurations);
         registerCodecs(codecByClass);
 
         VertxProducer producer = container.instance(VertxProducer.class);
-        producer.initialize(vertx);
+        producer.initialize(mainVertx);
         if (launchMode == LaunchMode.DEVELOPMENT) {
             shutdown.addShutdownTask(new Runnable() {
                 @Override
@@ -72,7 +78,7 @@ public class VertxRecorder {
                 }
             });
         }
-        return new RuntimeValue<Vertx>(vertx);
+        return new RuntimeValue<Vertx>(mainVertx);
     }
 
     public IOThreadDetector detector() {
@@ -84,17 +90,44 @@ public class VertxRecorder {
         };
     }
 
-    public static Vertx getVertx() {
-        return vertx;
+    public RuntimeValue<Vertx> configureWebVertx(VertxConfiguration config,
+            LaunchMode launchMode, ShutdownContext shutdown) {
+        webVertx = initialize(config);
+
+        if (launchMode == LaunchMode.DEVELOPMENT) {
+            shutdown.addShutdownTask(new Runnable() {
+                @Override
+                public void run() {
+                    unregisterMessageConsumers();
+                }
+            });
+        } else {
+            shutdown.addShutdownTask(new Runnable() {
+                @Override
+                public void run() {
+                    destroy();
+                }
+            });
+        }
+        return new RuntimeValue<Vertx>(webVertx);
     }
 
-    public static void initialize(VertxConfiguration conf) {
-        if (vertx != null) {
-            return;
-        }
+    public static Vertx getMainVertx() {
+        return mainVertx;
+    }
+
+    public static Vertx getWebVertx() {
+        return webVertx;
+    }
+
+    public static void setWebVertx(Vertx v) {
+        webVertx = v;
+    }
+
+    public static Vertx initialize(VertxConfiguration conf) {
+
         if (conf == null) {
-            vertx = Vertx.vertx();
-            return;
+            return Vertx.vertx();
         }
 
         VertxOptions options = convertToVertxOptions(conf);
@@ -103,31 +136,19 @@ public class VertxRecorder {
             System.setProperty("vertx.disableDnsResolver", "true");
         }
 
+        final CompletableFuture<Vertx> result = new CompletableFuture<>();
         if (options.getEventBusOptions().isClustered()) {
-            AtomicReference<Throwable> failure = new AtomicReference<>();
-            CountDownLatch latch = new CountDownLatch(1);
             Vertx.clusteredVertx(options, ar -> {
                 if (ar.failed()) {
-                    failure.set(ar.cause());
+                    result.completeExceptionally(ar.cause());
                 } else {
-                    vertx = ar.result();
+                    result.complete(ar.result());
                 }
-                latch.countDown();
             });
-            try {
-                latch.await();
-                if (failure.get() != null) {
-                    throw new IllegalStateException("Unable to initialize the Vert.x instance", failure.get());
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException("Unable to initialize the Vert.x instance", e);
-            }
+            return result.join();
         } else {
-            vertx = Vertx.vertx(options);
+            return Vertx.vertx(options);
         }
-
-        messageConsumers = new ArrayList<>();
     }
 
     private static VertxOptions convertToVertxOptions(VertxConfiguration conf) {
@@ -158,10 +179,10 @@ public class VertxRecorder {
     }
 
     void destroy() {
-        if (vertx != null) {
+        if (mainVertx != null) {
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> problem = new AtomicReference<>();
-            vertx.close(ar -> {
+            mainVertx.close(ar -> {
                 if (ar.failed()) {
                     problem.set(ar.cause());
                 }
@@ -176,8 +197,28 @@ public class VertxRecorder {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Interrupted when closing Vertx instance", e);
             }
-            vertx = null;
+            mainVertx = null;
             messageConsumers = null;
+        }
+        if (webVertx != null) {
+            CountDownLatch latch = new CountDownLatch(1);
+            AtomicReference<Throwable> problem = new AtomicReference<>();
+            webVertx.close(ar -> {
+                if (ar.failed()) {
+                    problem.set(ar.cause());
+                }
+                latch.countDown();
+            });
+            try {
+                latch.await();
+                if (problem.get() != null) {
+                    throw new IllegalStateException("Error when closing Vertx instance", problem.get());
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted when closing Vertx instance", e);
+            }
+            webVertx = null;
         }
     }
 
@@ -275,7 +316,7 @@ public class VertxRecorder {
 
     void registerMessageConsumers(Map<String, ConsumeEvent> messageConsumerConfigurations) {
         if (!messageConsumerConfigurations.isEmpty()) {
-            EventBus eventBus = vertx.eventBus();
+            EventBus eventBus = mainVertx.eventBus();
             CountDownLatch latch = new CountDownLatch(messageConsumerConfigurations.size());
             for (Entry<String, ConsumeEvent> entry : messageConsumerConfigurations.entrySet()) {
                 EventConsumerInvoker invoker = createInvoker(entry.getKey());
@@ -363,7 +404,7 @@ public class VertxRecorder {
     }
 
     private void registerCodec(Class<?> typeToAdd, MessageCodec codec) {
-        EventBus eventBus = vertx.eventBus();
+        EventBus eventBus = mainVertx.eventBus();
         eventBus.registerDefaultCodec(typeToAdd, codec);
     }
 
@@ -371,7 +412,7 @@ public class VertxRecorder {
         return new Supplier<EventLoopGroup>() {
             @Override
             public EventLoopGroup get() {
-                return ((VertxImpl) vertx).getAcceptorEventLoopGroup();
+                return ((VertxImpl) mainVertx).getAcceptorEventLoopGroup();
             }
         };
     }
@@ -380,7 +421,7 @@ public class VertxRecorder {
         return new Supplier<EventLoopGroup>() {
             @Override
             public EventLoopGroup get() {
-                return vertx.nettyEventLoopGroup();
+                return mainVertx.nettyEventLoopGroup();
             }
         };
     }

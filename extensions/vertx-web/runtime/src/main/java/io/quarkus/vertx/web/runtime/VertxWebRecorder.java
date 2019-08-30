@@ -86,19 +86,19 @@ public class VertxWebRecorder {
     public static void startServerAfterFailedStart() {
         VertxConfiguration vertxConfiguration = new VertxConfiguration();
         ConfigInstantiator.handleObject(vertxConfiguration);
-        VertxRecorder.initialize(vertxConfiguration);
+        VertxRecorder.setWebVertx(VertxRecorder.initialize(vertxConfiguration));
 
         try {
             HttpConfiguration config = new HttpConfiguration();
             ConfigInstantiator.handleObject(config);
 
-            router = Router.router(VertxRecorder.getVertx());
+            router = Router.router(VertxRecorder.getWebVertx());
             if (hotReplacementHandler != null) {
                 router.route().blockingHandler(hotReplacementHandler);
             }
 
             //we can't really do
-            doServerStart(VertxRecorder.getVertx(), config, LaunchMode.DEVELOPMENT);
+            doServerStart(VertxRecorder.getWebVertx(), config, LaunchMode.DEVELOPMENT);
 
         } catch (Exception e) {
             throw new RuntimeException(e);

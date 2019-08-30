@@ -55,7 +55,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.vertx.deployment.VertxBuildItem;
+import io.quarkus.vertx.deployment.WebVertxBuildItem;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RoutingExchange;
 import io.quarkus.vertx.web.runtime.HttpConfiguration;
@@ -154,7 +154,7 @@ class VertxWebProcessor {
             LaunchModeBuildItem launchMode,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             ShutdownContextBuildItem shutdown,
-            VertxBuildItem vertx,
+            WebVertxBuildItem vertx,
             Optional<DefaultRouteBuildItem> defaultRoute,
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
             List<FilterBuildItem> filters) throws IOException {

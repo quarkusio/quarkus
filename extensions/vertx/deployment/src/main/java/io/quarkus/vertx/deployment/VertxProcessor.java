@@ -148,7 +148,8 @@ class VertxProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
             VertxConfiguration config, BuildProducer<ServiceStartBuildItem> serviceStart,
-            List<MessageCodecBuildItem> messageCodecs, RecorderContext recorderContext) {
+            List<MessageCodecBuildItem> messageCodecs, RecorderContext recorderContext,
+            BuildProducer<WebVertxBuildItem> webBuild) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX));
         Map<String, ConsumeEvent> messageConsumerConfigurations = new HashMap<>();
         ClassOutput classOutput = new ClassOutput() {
@@ -172,9 +173,10 @@ class VertxProcessor {
                     recorderContext.classProxy(messageCodecItem.getCodec()));
         }
 
-        RuntimeValue<Vertx> vertx = recorder.configureVertx(beanContainer.getValue(), config, messageConsumerConfigurations,
+        RuntimeValue<Vertx> vertx = recorder.configureMainVertx(beanContainer.getValue(), config, messageConsumerConfigurations,
                 launchMode.getLaunchMode(),
                 shutdown, codecByClass);
+        webBuild.produce(new WebVertxBuildItem(recorder.configureWebVertx(config, launchMode.getLaunchMode(), shutdown)));
         serviceStart.produce(new ServiceStartBuildItem("vertx"));
         return new VertxBuildItem(vertx);
     }

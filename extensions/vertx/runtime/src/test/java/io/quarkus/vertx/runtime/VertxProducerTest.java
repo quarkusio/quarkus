@@ -30,8 +30,8 @@ public class VertxProducerTest {
 
     @Test
     public void shouldNotFailWithoutConfig() {
-        VertxRecorder.initialize(null);
-        producer.initialize(VertxRecorder.vertx);
+        VertxRecorder.mainVertx = VertxRecorder.initialize(null);
+        producer.initialize(VertxRecorder.mainVertx);
         verifyProducer();
     }
 
@@ -55,8 +55,8 @@ public class VertxProducerTest {
         configuration.workerPoolSize = 10;
         configuration.warningExceptionTime = Duration.ofSeconds(1);
         configuration.internalBlockingPoolSize = 5;
-        VertxRecorder.initialize(configuration);
-        producer.initialize(VertxRecorder.vertx);
+        VertxRecorder.mainVertx = VertxRecorder.initialize(configuration);
+        producer.initialize(VertxRecorder.mainVertx);
         verifyProducer();
     }
 

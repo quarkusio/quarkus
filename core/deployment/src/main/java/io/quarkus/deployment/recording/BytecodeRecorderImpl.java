@@ -34,8 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.jboss.invocation.proxy.ProxyConfiguration;
-import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
@@ -44,6 +42,8 @@ import org.jboss.jandex.Type;
 import org.wildfly.common.Assert;
 
 import io.quarkus.deployment.ClassOutput;
+import io.quarkus.deployment.proxy.ProxyConfiguration;
+import io.quarkus.deployment.proxy.ProxyFactory;
 import io.quarkus.deployment.recording.AnnotationProxyProvider.AnnotationProxy;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BytecodeCreator;

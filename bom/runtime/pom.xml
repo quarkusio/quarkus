@@ -47,8 +47,6 @@
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.security.jacc-api.version>1.0.2.Final</javax.security.jacc-api.version>
         <javax.security.jaspi-api.version>1.0.2.Final</javax.security.jaspi-api.version>
-        <jboss-classfilewriter.version>1.2.4.Final</jboss-classfilewriter.version>
-        <jboss-invocation.version>1.5.2.Final</jboss-invocation.version>
         <javax.json.version>1.1.4</javax.json.version>
         <javax.json.bind-api.version>1.0</javax.json.bind-api.version>
         <javax.xml.bind.version>2.3.1</javax.xml.bind.version>
@@ -1354,12 +1352,7 @@
                 <artifactId>aesh</artifactId>
                 <version>${aesh.version}</version>
             </dependency>
-
-            <dependency>
-                <groupId>org.jboss.classfilewriter</groupId>
-                <artifactId>jboss-classfilewriter</artifactId>
-                <version>${jboss-classfilewriter.version}</version>
-            </dependency>
+            
             <dependency>
                 <groupId>com.oracle.substratevm</groupId>
                 <artifactId>svm</artifactId>
@@ -1372,11 +1365,6 @@
                         <groupId>*</groupId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.invocation</groupId>
-                <artifactId>jboss-invocation</artifactId>
-                <version>${jboss-invocation.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.logging</groupId>

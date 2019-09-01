@@ -56,7 +56,7 @@ stages:
             displayName: 'Maven Build'
             condition: ne(variables.CACHE_RESTORED, 'true')
             inputs:
-              goals: 'package maven-dependency-plugin:resolve-plugins'
+              goals: 'package'
               mavenOptions: $(MAVEN_OPTS)
               options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format'
       - job: Cache_Windows_Maven_Repo #windows has different line endings so the cache key is different
@@ -82,7 +82,7 @@ stages:
             displayName: 'Maven Build'
             condition: ne(variables.CACHE_RESTORED, 'true')
             inputs:
-              goals: 'package maven-dependency-plugin:resolve-plugins'
+              goals: 'package'
               mavenOptions: $(MAVEN_OPTS)
               options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format'
 

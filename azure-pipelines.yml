@@ -34,7 +34,7 @@ stages:
     displayName: 'Maven Cache'
     jobs:
       - job: Cache_Maven_Repo
-        displayName: 'Deploy'
+        displayName: 'Linux Maven Repo'
         timeoutInMinutes: 30
         pool:
           vmImage: 'Ubuntu 16.04'
@@ -56,7 +56,33 @@ stages:
             displayName: 'Maven Build'
             condition: ne(variables.CACHE_RESTORED, 'true')
             inputs:
-              goals: 'package'
+              goals: 'package maven-dependency-plugin:resolve-plugins'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format'
+      - job: Cache_Windows_Maven_Repo #windows has different line endings so the cache key is different
+        displayName: 'Windows Maven Repo'
+        timeoutInMinutes: 30
+        pool:
+          vmImage: 'vs2017-win2016'
+
+        variables:
+          imageName: 'quarkus-windows:$(build.buildId)'
+
+        steps:
+
+          - task: CacheBeta@0
+            inputs:
+              key: mavenWindows | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
+              path: $(MAVEN_CACHE_FOLDER)
+              securityNamespace: cache
+              cacheHitVar: CACHE_RESTORED
+            displayName: Cache Maven local repo
+
+          - task: Maven@3
+            displayName: 'Maven Build'
+            condition: ne(variables.CACHE_RESTORED, 'true')
+            inputs:
+              goals: 'package maven-dependency-plugin:resolve-plugins'
               mavenOptions: $(MAVEN_OPTS)
               options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format'
 
@@ -97,6 +123,12 @@ stages:
           MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
           MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
         steps:
+          - task: CacheBeta@0 #we know the very first job will have restored or created this, so this will never write built artifacts to the cache
+            inputs:
+              key: mavenWindows | bom/runtime/pom.xml
+              path: $(MAVEN_CACHE_FOLDER)
+              securityNamespace: cache
+            displayName: Restore Maven Cache
 
           - task: Maven@3
             displayName: 'Maven Build'

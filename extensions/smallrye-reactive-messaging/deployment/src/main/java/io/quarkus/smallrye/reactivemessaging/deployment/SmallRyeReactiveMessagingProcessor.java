@@ -6,11 +6,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
@@ -33,20 +36,22 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLifecycle;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder;
 import io.smallrye.reactive.messaging.annotations.Emitter;
+import io.smallrye.reactive.messaging.annotations.OnOverflow;
 import io.smallrye.reactive.messaging.annotations.Stream;
 
 /**
- *
  * @author Martin Kouba
  */
 public class SmallRyeReactiveMessagingProcessor {
 
-    private static final Logger LOGGER = Logger.getLogger("io.quarkus.smallrye-reactive-messaging.deployment.processor");
+    private static final Logger LOGGER = Logger
+            .getLogger("io.quarkus.smallrye-reactive-messaging.deployment.processor");
 
     static final DotName NAME_INCOMING = DotName.createSimple(Incoming.class.getName());
     static final DotName NAME_OUTGOING = DotName.createSimple(Outgoing.class.getName());
     static final DotName NAME_STREAM = DotName.createSimple(Stream.class.getName());
     static final DotName NAME_EMITTER = DotName.createSimple(Emitter.class.getName());
+    static final DotName ON_OVERFLOW = DotName.createSimple(OnOverflow.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -82,15 +87,37 @@ public class SmallRyeReactiveMessagingProcessor {
             }
         }
 
-        for (InjectionPointInfo injectionPoint : validationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
+        for (InjectionPointInfo injectionPoint : validationPhase.getContext()
+                .get(BuildExtension.Key.INJECTION_POINTS)) {
             if (injectionPoint.getRequiredType().name().equals(NAME_EMITTER)) {
                 AnnotationInstance stream = injectionPoint.getRequiredQualifier(NAME_STREAM);
                 if (stream != null) {
                     // Stream.value() is mandatory
                     String name = stream.value().asString();
+                    Optional<AnnotationInstance> maybeOverflow = annotationStore.getAnnotations(injectionPoint.getTarget())
+                            .stream()
+                            .filter(ai -> ON_OVERFLOW.equals(ai.name()))
+                            .filter(ai -> {
+                                if (ai.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER && injectionPoint.isParam()) {
+                                    return ai.target().asMethodParameter().position() == injectionPoint.getPosition();
+                                }
+                                return true;
+                            })
+                            .findAny();
                     LOGGER.debugf("Emitter injection point '%s' detected, stream name: '%s'",
                             injectionPoint.getTargetInfo(), name);
-                    emitters.produce(new EmitterBuildItem(name));
+
+                    if (maybeOverflow.isPresent()) {
+                        AnnotationInstance annotation = maybeOverflow.get();
+                        AnnotationValue maybeBufferSize = annotation.value("bufferSize");
+                        int bufferSize = maybeBufferSize != null ? maybeBufferSize.asInt() : 0;
+                        emitters.produce(
+                                EmitterBuildItem.of(name,
+                                        annotation.value().asString(),
+                                        bufferSize));
+                    } else {
+                        emitters.produce(EmitterBuildItem.of(name));
+                    }
                 }
             }
         }
@@ -126,8 +153,19 @@ public class SmallRyeReactiveMessagingProcessor {
                         .getIdentifier());
             }
         }
-        recorder.registerMediators(beanClassToBeanId, beanContainer.getValue(),
-                emitterFields.stream().map(EmitterBuildItem::getName).collect(Collectors.toList()));
+
+        for (EmitterBuildItem it : emitterFields) {
+            int defaultBufferSize = ConfigProviderResolver.instance().getConfig()
+                    .getOptionalValue("smallrye.messaging.emitter.default-buffer-size", Integer.class).orElse(127);
+            if (it.getOverflow() != null) {
+                recorder.configureEmitter(beanContainer.getValue(), it.getName(), it.getOverflow(), it.getBufferSize(),
+                        defaultBufferSize);
+            } else {
+                recorder.configureEmitter(beanContainer.getValue(), it.getName(), null, 0, defaultBufferSize);
+            }
+        }
+
+        recorder.registerMediators(beanClassToBeanId, beanContainer.getValue());
     }
 
 }

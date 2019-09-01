@@ -56,4 +56,5 @@ public class SimpleTest {
         assertEquals("b", list.get(1));
         assertEquals("c", list.get(2));
     }
+
 }

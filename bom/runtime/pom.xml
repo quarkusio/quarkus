@@ -23,7 +23,7 @@
         <opentracing-tracerresolver.version>0.1.5</opentracing-tracerresolver.version>
         <opentracing-concurrent.version>0.2.0</opentracing-concurrent.version>
         <jaeger.version>0.34.0</jaeger.version>
-        <quarkus-http.version>3.0.0.Alpha4</quarkus-http.version>
+        <quarkus-http.version>3.0.0.Alpha5</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <microprofile-config-api.version>1.3</microprofile-config-api.version>
         <microprofile-context-propagation.version>1.0-RC1</microprofile-context-propagation.version>
@@ -38,9 +38,9 @@
         <smallrye-fault-tolerance.version>1.0.1</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>2.0.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.0.11</smallrye-context-propagation.version>
-        <smallrye-reactive-streams-operators.version>1.0.6</smallrye-reactive-streams-operators.version>
-        <smallrye-converter-api.version>1.0.4</smallrye-converter-api.version>
-        <smallrye-reactive-messaging.version>0.0.10</smallrye-reactive-messaging.version>
+        <smallrye-reactive-streams-operators.version>1.0.9</smallrye-reactive-streams-operators.version>
+        <smallrye-converter-api.version>1.0.9</smallrye-converter-api.version>
+        <smallrye-reactive-messaging.version>1.0.3</smallrye-reactive-messaging.version>
         <swagger-ui.version>3.20.9</swagger-ui.version>
         <javax.activation.version>1.1.1</javax.activation.version>
         <javax.inject.version>1</javax.inject.version>
@@ -100,7 +100,7 @@
         <wildfly-elytron.version>2.0.0.Alpha4</wildfly-elytron.version>
         <jboss-modules.version>1.8.7.Final</jboss-modules.version>
         <jboss-threads.version>3.0.0.Beta5</jboss-threads.version>
-        <vertx.version>3.8.0</vertx.version>
+        <vertx.version>3.8.1</vertx.version>
         <httpclient.version>4.5.9</httpclient.version>
         <httpcore.version>4.4.11</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>
@@ -119,11 +119,11 @@
         <infinispan.version>10.0.0.Beta5</infinispan.version>
         <infinispan.protostream.version>4.3.0.Alpha9</infinispan.protostream.version>
         <caffeine.version>2.6.2</caffeine.version>
-        <netty.version>4.1.34.Final</netty.version>
+        <netty.version>4.1.39.Final</netty.version>
         <reactive-streams.version>1.0.2</reactive-streams.version>
         <test-containers.version>1.12.0</test-containers.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
-        <axle-client.version>0.0.8</axle-client.version>
+        <axle-client.version>0.0.9</axle-client.version>
         <kafka-clients.version>2.2.1</kafka-clients.version>
         <kafka2.version>2.2.1</kafka2.version>
         <debezium.version>0.9.5.Final</debezium.version>
@@ -133,7 +133,7 @@
         <aws-lambda-java.version>1.1.0</aws-lambda-java.version>
         <aws-lambda-java-events.version>2.2.5</aws-lambda-java-events.version>
         <aws-lambda-serverless-java-container.version>1.3.1</aws-lambda-serverless-java-container.version>
-        <awssdk.version>2.7.0</awssdk.version>
+        <awssdk.version>2.7.35</awssdk.version>
         <azure-functions-java-library.version>1.3.0</azure-functions-java-library.version>
         <kotlin.version>1.3.41</kotlin.version>
         <dekorate.version>0.6.1</dekorate.version>
@@ -412,7 +412,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
+                <artifactId>quarkus-smallrye-reactive-amqp</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1829,17 +1829,17 @@
 
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-reactive-messaging-provider-1.0</artifactId>
+                <artifactId>smallrye-reactive-messaging-provider</artifactId>
                 <version>${smallrye-reactive-messaging.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-reactive-messaging-mqtt-1.0</artifactId>
+                <artifactId>smallrye-reactive-messaging-mqtt</artifactId>
                 <version>${smallrye-reactive-messaging.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-reactive-messaging-kafka-1.0</artifactId>
+                <artifactId>smallrye-reactive-messaging-kafka</artifactId>
                 <version>${smallrye-reactive-messaging.version}</version>
                 <exclusions>
                     <exclusion>
@@ -1866,7 +1866,7 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-reactive-messaging-amqp-1.0</artifactId>
+                <artifactId>smallrye-reactive-messaging-amqp</artifactId>
                 <version>${smallrye-reactive-messaging.version}</version>
                 <exclusions>
                     <exclusion>
@@ -1950,7 +1950,7 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-reactive-streams-operators-1.0</artifactId>
+                <artifactId>smallrye-reactive-streams-operators</artifactId>
                 <version>${smallrye-reactive-streams-operators.version}</version>
             </dependency>
             <dependency>

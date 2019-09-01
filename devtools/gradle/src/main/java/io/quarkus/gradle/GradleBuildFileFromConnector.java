@@ -3,6 +3,7 @@ package io.quarkus.gradle;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.maven.model.Dependency;
@@ -42,6 +43,7 @@ public class GradleBuildFileFromConnector extends GradleBuildFile {
             }
             if (eclipseProject != null) {
                 dependencies = eclipseProject.getClasspath().stream().map(this::gradleModuleVersionToDependency)
+                        .filter(Objects::nonNull)
                         .collect(Collectors.toList());
             } else {
                 dependencies = Collections.emptyList();
@@ -53,6 +55,11 @@ public class GradleBuildFileFromConnector extends GradleBuildFile {
 
     private Dependency gradleModuleVersionToDependency(EclipseExternalDependency eed) {
         Dependency dependency = new Dependency();
+        if (eed == null || eed.getGradleModuleVersion() == null) {
+            // local dependencies are ignored
+            System.err.println("Found null dependency:" + eed);
+            return null;
+        }
         dependency.setGroupId(eed.getGradleModuleVersion().getGroup());
         dependency.setArtifactId(eed.getGradleModuleVersion().getName());
         dependency.setVersion(eed.getGradleModuleVersion().getVersion());

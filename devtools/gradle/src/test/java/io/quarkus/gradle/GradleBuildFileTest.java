@@ -8,11 +8,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.maven.model.Dependency;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -24,10 +35,28 @@ class GradleBuildFileTest {
     private static GradleBuildFileFromConnector buildFile;
 
     @BeforeAll
-    public static void beforeAll() throws IOException {
-
-        final File file = new File("build/resources/test/gradle-project");
-        buildFile = new GradleBuildFileFromConnector(new FileProjectWriter(file));
+    public static void beforeAll() throws IOException, URISyntaxException {
+        URL url = GradleBuildFileTest.class.getClassLoader().getResource("gradle-project");
+        URI uri = url.toURI();
+        Path gradleProjectPath;
+        if (uri.getScheme().equals("jar")) {
+            FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object> emptyMap());
+            gradleProjectPath = fileSystem.getPath("gradle-project");
+        } else {
+            gradleProjectPath = Paths.get(uri);
+        }
+        Path gradleTestTmpDir = Files.createTempDirectory("gradle-test");
+        try (Stream<Path> walk = Files.walk(gradleProjectPath, 1)) {
+            for (Iterator<Path> it = walk.iterator(); it.hasNext();) {
+                Path fileFromJar = it.next();
+                Path tmpFile = Paths.get(gradleTestTmpDir.toString(), fileFromJar.getFileName().toString());
+                Files.createFile(tmpFile);
+                FileUtils.copyURLToFile(fileFromJar.toUri().toURL(), tmpFile.toFile());
+            }
+        }
+        File tmpDirectoryFile = gradleTestTmpDir.toFile();
+        tmpDirectoryFile.deleteOnExit();
+        buildFile = new GradleBuildFileFromConnector(new FileProjectWriter(tmpDirectoryFile));
     }
 
     @Test

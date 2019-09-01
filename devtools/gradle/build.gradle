@@ -17,6 +17,7 @@ compileJava   {
 repositories {
     maven { url 'target/dependencies/' }
     mavenCentral()
+    maven { url 'https://repo.gradle.org/gradle/libs-releases-local/' }
 }
 
 dependencies {

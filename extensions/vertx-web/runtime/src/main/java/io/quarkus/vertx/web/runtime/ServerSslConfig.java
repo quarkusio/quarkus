@@ -1,4 +1,4 @@
-package io.quarkus.runtime.configuration.ssl;
+package io.quarkus.vertx.web.runtime;
 
 import java.util.List;
 

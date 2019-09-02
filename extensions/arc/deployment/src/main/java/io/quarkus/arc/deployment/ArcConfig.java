@@ -17,7 +17,14 @@ public class ArcConfig {
             .unmodifiableSet(new HashSet<>(Arrays.asList("all", "true", "none", "false", "fwk", "framework")));
 
     /**
-     * If set to all (or true) the container will attempt to remove all unused beans.
+     * <ul>
+     * <li>If set to `all` (or `true`) the container will attempt to remove all unused beans.</li>
+     * <li>If set to none (or `false`) no beans will ever be removed even if they are unused (according to the criteria set out
+     * below)</li>
+     * <li>If set to `fwk`, then all unused beans will be removed, except the unused beans whose classes are declared in the
+     * application code</li>
+     * </ul>
+     * <br>
      * <p>
      * An unused bean:
      * <ul>
@@ -29,12 +36,7 @@ public class ArcConfig {
      * <li>does not declare any producer which is eligible for injection to any injection point,</li>
      * <li>is not directly eligible for injection into any {@link javax.enterprise.inject.Instance} injection point</li>
      * </ul>
-     *
-     * If set to none (or false) no beans will ever be removed even if they are unused (according to the criteria
-     * set out above)
-     *
-     * If set to fwk, then all unused beans will be removed, except the unused beans whose classes are declared
-     * in the application code
+     * </p>
      * 
      * @see UnremovableBeanBuildItem
      */

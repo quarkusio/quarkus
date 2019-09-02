@@ -38,8 +38,18 @@ public class TikaProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void initializeTikaParser(BeanContainerBuildItem beanContainer, TikaRecorder recorder) {
-        recorder.initTikaParser(beanContainer.getValue(), config);
+    void tikaParserStaticInitialization(BeanContainerBuildItem beanContainer, TikaRecorder recorder) {
+        if (config.tikaConfigPath.isPresent()) {
+            recorder.initTikaParserFromCustomConfiguration(beanContainer.getValue(), config);
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void tikaParserRuntimeInitialization(BeanContainerBuildItem beanContainer, TikaRecorder recorder) {
+        if (!config.tikaConfigPath.isPresent()) {
+            recorder.initTikaParserFromDefaultConfiguration(beanContainer.getValue(), config);
+        }
     }
 
     @BuildStep(providesCapabilities = "io.quarkus.tika")

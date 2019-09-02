@@ -1206,6 +1206,36 @@ As a CDI based runtime, Quarkus extensions often make CDI beans available as par
 However, Quarkus DI solution does not support CDI Portable Extensions.
 Instead, Quarkus extensions can make use of various link:cdi-reference.html[Build Time Extension Points].
 
+=== Extension Health Check
+
+Health checks are provided via the `quarkus-smallrye-health` extension. It provides both liveness and readiness checks capabilities.
+
+When writing an extension, it's beneficial to provide health checks for the extension, that can be automatically included without the developer needing to write their own.
+
+In order to provide a health check, you should do the following:
+
+- Import the `quarkus-smallrye-health` extension as an **optional** dependency in your runtime module so it will not impact the size of the application if
+health check is not included.
+- Create your health check following the link:health-guide.html[Quarkus - MicroProfile Health] guide. We advise providing only
+readiness check for an extension (liveness check is designed to express the fact that an application is up and needs to be lightweight).
+- Import the `quarkus-smallrye-health-spi` library in your deployment module.
+- Add a build step in your deployment module that produces a `HealthBuildItem`.
+- Add a way to disable the extension health check via a config item `quarkus.<extension>.health.enabled` that should be enabled by default.
+
+Following is an example from the Agroal extension that provides a `DataSourceHealthCheck` to validate the readiness of a datasource.
+
+[source%nowrap,java]
+----
+@BuildStep
+HealthBuildItem addHealthCheck(AgroalBuildTimeConfig agroalBuildTimeConfig) {
+    if (agroalBuildTimeConfig.healthEnabled) {
+        //produce the health bean
+        return new HealthBuildItem(DataSourceHealthCheck.class);
+    }
+    return null;
+}
+----
+
 === Testing Extensions
 
 Testing of extensions should be done with the `io.quarkus.test.QuarkusUnitTest` runner. This runner allows

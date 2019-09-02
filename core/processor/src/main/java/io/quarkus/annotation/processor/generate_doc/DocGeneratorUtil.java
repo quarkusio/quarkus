@@ -113,7 +113,7 @@ class DocGeneratorUtil {
      * Retrieve enclosed type from known optional types
      */
     static String getKnownGenericType(DeclaredType declaredType) {
-        return Constants.OPTIONAL_NUMBER_TYPES.get(declaredType.toString());
+        return Constants.ALIASED_TYPES.get(declaredType.toString());
     }
 
     static Iterator<String> camelHumpsIterator(String str) {

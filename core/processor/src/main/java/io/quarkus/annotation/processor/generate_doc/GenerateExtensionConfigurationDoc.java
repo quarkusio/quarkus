@@ -360,18 +360,10 @@ final public class GenerateExtensionConfigurationDoc {
                         } else {
                             // FIXME: I assume this is for Optional<T>
                             TypeMirror realTypeMirror = typeArguments.get(0);
-                            if (isEnumType(realTypeMirror))
-                                type = extractEnumValues(realTypeMirror);
-                            else
-                                type = realTypeMirror.toString();
+                            type = simpleTypeToString(realTypeMirror);
                         }
                     } else {
-                        final String knownGenericType = getKnownGenericType(declaredType);
-                        if (knownGenericType != null) {
-                            type = knownGenericType;
-                        }
-                        if (isEnumType(declaredType))
-                            type = extractEnumValues(declaredType);
+                        type = simpleTypeToString(declaredType);
                     }
                 }
 
@@ -387,6 +379,16 @@ final public class GenerateExtensionConfigurationDoc {
                 configItem.setJavaDocSiteLink(getJavaDocSiteLink(type));
             }
         }
+    }
+
+    private String simpleTypeToString(TypeMirror typeMirror) {
+        if (typeMirror.getKind().isPrimitive())
+            return typeMirror.toString();
+
+        if (isEnumType(typeMirror))
+            return extractEnumValues(typeMirror);
+        final String knownGenericType = getKnownGenericType((DeclaredType) typeMirror);
+        return knownGenericType != null ? knownGenericType : typeMirror.toString();
     }
 
     private String extractEnumValues(TypeMirror realTypeMirror) {

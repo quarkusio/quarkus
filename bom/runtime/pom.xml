@@ -412,7 +412,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-amqp</artifactId>
+                <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

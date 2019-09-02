@@ -4,7 +4,9 @@ import static io.vertx.core.file.impl.FileResolver.CACHE_DIR_BASE_PROP_NAME;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -213,9 +215,11 @@ public class VertxRecorder {
             List<String> certs = new ArrayList<>();
             List<String> keys = new ArrayList<>();
             eb.keyCertificatePem.certs.ifPresent(
-                    s -> certs.addAll(Pattern.compile(",").splitAsStream(s).map(String::trim).collect(Collectors.toList())));
+                    s -> certs.addAll(Pattern.compile(",").splitAsStream(s).map(String::trim)
+                            .collect(Collectors.toList())));
             eb.keyCertificatePem.keys.ifPresent(
-                    s -> keys.addAll(Pattern.compile(",").splitAsStream(s).map(String::trim).collect(Collectors.toList())));
+                    s -> keys.addAll(Pattern.compile(",").splitAsStream(s).map(String::trim)
+                            .collect(Collectors.toList())));
             PemKeyCertOptions o = new PemKeyCertOptions()
                     .setCertPaths(certs)
                     .setKeyPaths(keys);
@@ -330,28 +334,23 @@ public class VertxRecorder {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void registerCodecs(Map<Class<?>, Class<?>> codecByClass) {
-        for (Map.Entry<Class<?>, Class<?>> codecEntry : codecByClass.entrySet()) {
-            registerCodec(codecEntry.getKey(), codecEntry.getValue());
-        }
-    }
-
-    private void registerCodec(Class<?> typeToAdd, Class<?> messageCodecClass) {
-        try {
-            if (MessageCodec.class.isAssignableFrom(messageCodecClass)) {
-                MessageCodec messageCodec = (MessageCodec) messageCodecClass.newInstance();
-                registerCodec(typeToAdd, messageCodec);
-            } else {
-                LOGGER.error(String.format("The codec %s does not inherit from MessageCodec ", messageCodecClass.toString()));
-            }
-        } catch (InstantiationException | IllegalAccessException e) {
-            LOGGER.error("Cannot instantiate the MessageCodec " + messageCodecClass.toString(), e);
-        }
-    }
-
-    private void registerCodec(Class<?> typeToAdd, MessageCodec codec) {
         EventBus eventBus = vertx.eventBus();
-        eventBus.registerDefaultCodec(typeToAdd, codec);
+        for (Map.Entry<Class<?>, Class<?>> codecEntry : codecByClass.entrySet()) {
+            Class<?> target = codecEntry.getKey();
+            Class<?> codec = codecEntry.getValue();
+            try {
+                if (MessageCodec.class.isAssignableFrom(codec)) {
+                    MessageCodec messageCodec = (MessageCodec) codec.newInstance();
+                    eventBus.registerDefaultCodec(target, messageCodec);
+                } else {
+                    LOGGER.error(String.format("The codec %s does not inherit from MessageCodec ", target.toString()));
+                }
+            } catch (InstantiationException | IllegalAccessException e) {
+                LOGGER.error("Cannot instantiate the MessageCodec " + target.toString(), e);
+            }
+        }
     }
 
     public Supplier<EventLoopGroup> bossSupplier() {

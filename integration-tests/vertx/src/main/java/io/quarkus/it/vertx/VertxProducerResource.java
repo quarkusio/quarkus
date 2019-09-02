@@ -50,7 +50,7 @@ public class VertxProducerResource {
 
         CompletableFuture<String> future = new CompletableFuture<>();
         // Use the Vert.x bean.
-        vertx.eventBus().<String> send(address, "quarkus", ar -> {
+        vertx.eventBus().<String> request(address, "quarkus", ar -> {
             if (ar.failed()) {
                 future.completeExceptionally(ar.cause());
             } else {

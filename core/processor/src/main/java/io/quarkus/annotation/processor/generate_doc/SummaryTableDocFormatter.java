@@ -7,8 +7,8 @@ import io.quarkus.annotation.processor.Constants;
 
 class SummaryTableDocFormatter implements DocFormatter {
     private static final String TABLE_CLOSING_TAG = "\n|===";
-    private static final String TABLE_ROW_FORMAT = "\n\n|<<%s, %s>>\n|%s %s\n|%s\n| %s";
-    private static final String TABLE_HEADER_FORMAT = "== Summary\n%s|===\n|Configuration property|Type|Default|Lifecycle";
+    private static final String TABLE_ROW_FORMAT = "\n\n|<<%s, %s>>\n\n%s|%s %s\n|%s\n| %s";
+    private static final String TABLE_HEADER_FORMAT = "== Summary\n%s\n[cols=\"50,10,10,5\"]\n|===\n|Configuration property|Type|Default|Lifecycle";
 
     /**
      * Generate configuration keys in table format.
@@ -25,11 +25,15 @@ class SummaryTableDocFormatter implements DocFormatter {
             if (!javaDocLink.isEmpty()) {
                 typeSimpleName = String.format("link:%s[%s]\n", javaDocLink, typeSimpleName);
             }
+            String doc = configItem.getConfigDoc();
+            int firstDot = doc.indexOf('.');
+            String firstLineDoc = firstDot != -1 ? doc.substring(0, firstDot + 1) : doc;
 
             final String typeDetail = getTypeFormatInformationNote(configItem);
             final String defaultValue = configItem.getDefaultValue();
             generatedAsciiDoc.append(String.format(TABLE_ROW_FORMAT,
                     getAnchor(configItem), configItem.getKey(),
+                    firstLineDoc,
                     typeSimpleName, typeDetail,
                     defaultValue.isEmpty() ? Constants.EMPTY : String.format("`%s`", defaultValue),
                     configItem.getConfigPhase().getIllustration()));

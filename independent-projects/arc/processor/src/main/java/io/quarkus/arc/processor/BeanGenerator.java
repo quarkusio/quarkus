@@ -677,7 +677,7 @@ public class BeanGenerator extends AbstractGenerator {
             if (!bean.isInterceptor()) {
                 // PreDestroy interceptors
                 if (!bean.getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()) {
-                    destroy.invokeInterfaceMethod(MethodDescriptor.ofMethod(Subclass.class, "destroy", void.class),
+                    destroy.invokeInterfaceMethod(MethodDescriptor.ofMethod(Subclass.class, "destroy$subclass", void.class),
                             destroy.getMethodParam(0));
                 }
 

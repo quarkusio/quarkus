@@ -7,7 +7,7 @@ package io.quarkus.arc;
  */
 public interface Subclass {
 
-    default void destroy() {
+    default void destroy$subclass() {
         // Noop
     }
 

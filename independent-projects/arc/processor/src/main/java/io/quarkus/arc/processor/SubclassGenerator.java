@@ -372,12 +372,13 @@ public class SubclassGenerator extends AbstractGenerator {
      * @param bean
      * @param subclass
      * @param preDestroysField
-     * @see Subclass#destroy()
+     * @see Subclass#destroy$subclass()
      */
     protected void createDestroy(ClassOutput classOutput, BeanInfo bean, ClassCreator subclass,
             FieldDescriptor preDestroysField) {
         if (preDestroysField != null) {
-            MethodCreator destroy = subclass.getMethodCreator(MethodDescriptor.ofMethod(Subclass.class, "destroy", void.class));
+            MethodCreator destroy = subclass
+                    .getMethodCreator(MethodDescriptor.ofMethod(Subclass.class, "destroy$subclass", void.class));
             ResultHandle predestroysHandle = destroy.readInstanceField(preDestroysField, destroy.getThis());
 
             // Interceptor bindings

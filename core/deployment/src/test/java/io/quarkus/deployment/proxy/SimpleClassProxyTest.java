@@ -15,7 +15,8 @@ public class SimpleClassProxyTest {
         SimpleInvocationHandler invocationHandler = new SimpleInvocationHandler();
         ProxyConfiguration<SimpleClass> proxyConfiguration = new ProxyConfiguration<SimpleClass>()
                 .setSuperClass(SimpleClass.class)
-                .setProxyName(SimpleClass.class.getPackage(), "SimpleClass$$Proxy3")
+                .setAnchorClass(SimpleClass.class)
+                .setProxyNameSuffix("$$Proxy1")
                 .setClassLoader(SimpleClass.class.getClassLoader());
         SimpleClass instance = new ProxyFactory<>(proxyConfiguration).newInstance(invocationHandler);
 
@@ -63,7 +64,8 @@ public class SimpleClassProxyTest {
         };
         ProxyConfiguration<SimpleClass> proxyConfiguration = new ProxyConfiguration<SimpleClass>()
                 .setSuperClass(SimpleClass.class)
-                .setProxyName(SimpleClass.class.getPackage(), "SimpleClass$$Proxy")
+                .setAnchorClass(SimpleClass.class)
+                .setProxyNameSuffix("$$Proxy2")
                 .setClassLoader(cl1);
         ProxyFactory<SimpleClass> proxyFactory = new ProxyFactory<>(proxyConfiguration);
         SimpleClass instance = proxyFactory.newInstance(new SimpleInvocationHandler());

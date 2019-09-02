@@ -11,7 +11,8 @@ import java.util.List;
  */
 public class ProxyConfiguration<T> {
 
-    private String proxyName = null;
+    private Class<?> anchorClass;
+    private String proxyNameSuffix;
     private ClassLoader classLoader;
     private Class<T> superClass;
     private List<Class<?>> additionalInterfaces = new ArrayList<>(0);
@@ -37,18 +38,26 @@ public class ProxyConfiguration<T> {
         return this;
     }
 
+    public Class<?> getAnchorClass() {
+        return anchorClass;
+    }
+
+    public ProxyConfiguration<T> setAnchorClass(Class<?> anchorClass) {
+        this.anchorClass = anchorClass;
+        return this;
+    }
+
+    public String getProxyNameSuffix() {
+        return proxyNameSuffix;
+    }
+
+    public ProxyConfiguration<T> setProxyNameSuffix(final String proxyNameSuffix) {
+        this.proxyNameSuffix = proxyNameSuffix;
+        return this;
+    }
+
     public String getProxyName() {
-        return proxyName;
-    }
-
-    public ProxyConfiguration<T> setProxyName(final String proxyName) {
-        this.proxyName = proxyName;
-        return this;
-    }
-
-    public ProxyConfiguration<T> setProxyName(final Package pkg, final String simpleName) {
-        this.proxyName = pkg.getName() + '.' + simpleName;
-        return this;
+        return getAnchorClass().getName() + proxyNameSuffix;
     }
 
     public Class<T> getSuperClass() {

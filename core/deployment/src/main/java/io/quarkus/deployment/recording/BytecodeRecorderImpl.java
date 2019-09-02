@@ -159,7 +159,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
         ProxyFactory<Object> factory = new ProxyFactory<>(new ProxyConfiguration<Object>()
                 .setSuperClass(Object.class)
                 .setClassLoader(classLoader)
-                .setProxyName(getClass().getName() + "$$ClassProxy" + COUNT.incrementAndGet()));
+                .setAnchorClass(getClass())
+                .setProxyNameSuffix("$$ClassProxy" + COUNT.incrementAndGet()));
         Class theClass = factory.defineClass();
         classProxies.put(theClass, name);
         return theClass;
@@ -200,11 +201,15 @@ public class BytecodeRecorderImpl implements RecorderContext {
         if (existingProxyClasses.containsKey(theClass)) {
             return theClass.cast(existingProxyClasses.get(theClass));
         }
-        String proxyName = getClass().getName() + "$$RecordingProxyProxy" + COUNT.incrementAndGet();
-        ProxyFactory<T> factory = new ProxyFactory<T>(new ProxyConfiguration<T>()
+        String proxyNameSuffix = "$$RecordingProxyProxy" + COUNT.incrementAndGet();
+
+        ProxyConfiguration<T> proxyConfiguration = new ProxyConfiguration<T>()
                 .setSuperClass(theClass)
                 .setClassLoader(classLoader)
-                .setProxyName(proxyName));
+                .setAnchorClass(getClass())
+                .setProxyNameSuffix(proxyNameSuffix);
+        String proxyName = proxyConfiguration.getProxyName();
+        ProxyFactory<T> factory = new ProxyFactory<T>(proxyConfiguration);
         try {
             T recordingProxy = factory.newInstance(new InvocationHandler() {
                 @Override
@@ -251,7 +256,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     .setSuperClass(returnInterface ? Object.class : (Class) returnType)
                     .setClassLoader(classLoader)
                     .addAdditionalInterface(ReturnedProxy.class)
-                    .setProxyName(getClass().getName() + "$$ReturnValueProxy" + COUNT.incrementAndGet());
+                    .setAnchorClass(getClass())
+                    .setProxyNameSuffix("$$ReturnValueProxy" + COUNT.incrementAndGet());
 
             if (returnInterface) {
                 proxyConfiguration.addAdditionalInterface(returnType);

@@ -11,7 +11,8 @@ public class SimpleInterfaceProxyTest {
         FirstArgInvocationHandler invocationHandler = new FirstArgInvocationHandler();
         ProxyConfiguration<Object> proxyConfiguration = new ProxyConfiguration<>()
                 .setSuperClass(Object.class)
-                .setProxyName(SimpleInterface.class.getName() + "$Proxy2")
+                .setAnchorClass(SimpleInterface.class)
+                .setProxyNameSuffix("$Proxy2")
                 .setClassLoader(SimpleClass.class.getClassLoader())
                 .addAdditionalInterface(SimpleInterface.class);
         SimpleInterface instance = (SimpleInterface) new ProxyFactory<>(proxyConfiguration).newInstance(invocationHandler);

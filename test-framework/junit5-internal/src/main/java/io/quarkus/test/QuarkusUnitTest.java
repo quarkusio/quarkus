@@ -197,7 +197,8 @@ public class QuarkusUnitTest
 
         if (store.get(proxyFactoryKey(testClass)) == null) {
             ProxyFactory<?> factory = new ProxyFactory<>(new ProxyConfiguration<>()
-                    .setProxyName(testClass.getName() + "$$QuarkusUnitTestProxy")
+                    .setAnchorClass(testClass)
+                    .setProxyNameSuffix("$$QuarkusUnitTestProxy")
                     .setClassLoader(testClass.getClassLoader())
                     .setSuperClass((Class<Object>) testClass));
             store.put(proxyFactoryKey(testClass), factory);

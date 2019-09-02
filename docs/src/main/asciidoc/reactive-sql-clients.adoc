@@ -3,12 +3,12 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Reactive Database Clients
+= Quarkus - Reactive SQL Clients
 
 include::./attributes.adoc[]
 :config-file: application.properties
 
-The Reactive Database Clients have a straightforward API focusing on scalability and low-overhead.
+The Reactive SQL Clients have a straightforward API focusing on scalability and low-overhead.
 Currently, the following database servers are supported:
 
 * Postgres

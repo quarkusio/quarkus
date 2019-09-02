@@ -479,4 +479,4 @@ This part is covered in the link:async-message-passing.html[Async Message Passin
 Quarkus integrates data streaming using Reactive Messaging.
 More details on link:kafka-guide.html[Interacting with Kafka].
 
-* Learn how to implement highly performant, low-overhead database applications on Quarkus with the link:reactive-database-clients.html[Reactive Database Clients].
+* Learn how to implement highly performant, low-overhead database applications on Quarkus with the link:reactive-sql-clients.html[Reactive SQL Clients].

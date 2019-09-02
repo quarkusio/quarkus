@@ -23,6 +23,7 @@ import java.util.regex.Matcher;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
@@ -342,6 +343,7 @@ final public class GenerateExtensionConfigurationDoc {
                     List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
 
                     if (!typeArguments.isEmpty()) {
+                        // FIXME: this is super dodgy: we should check the type!!
                         if (typeArguments.size() == 2) {
                             final String mapKey = String.format(NAMED_MAP_CONFIG_ITEM_FORMAT, hyphenate(fieldName));
                             type = typeArguments.get(1).toString();
@@ -356,13 +358,20 @@ final public class GenerateExtensionConfigurationDoc {
                                 configItem.setWithinAMap(true);
                             }
                         } else {
-                            type = typeArguments.get(0).toString();
+                            // FIXME: I assume this is for Optional<T>
+                            TypeMirror realTypeMirror = typeArguments.get(0);
+                            if (isEnumType(realTypeMirror))
+                                type = extractEnumValues(realTypeMirror);
+                            else
+                                type = realTypeMirror.toString();
                         }
                     } else {
                         final String knownGenericType = getKnownGenericType(declaredType);
                         if (knownGenericType != null) {
                             type = knownGenericType;
                         }
+                        if (isEnumType(declaredType))
+                            type = extractEnumValues(declaredType);
                     }
                 }
 
@@ -378,6 +387,24 @@ final public class GenerateExtensionConfigurationDoc {
                 configItem.setJavaDocSiteLink(getJavaDocSiteLink(type));
             }
         }
+    }
+
+    private String extractEnumValues(TypeMirror realTypeMirror) {
+        Element declaredTypeElement = ((DeclaredType) realTypeMirror).asElement();
+        StringBuilder sb = new StringBuilder();
+        for (Element field : declaredTypeElement.getEnclosedElements()) {
+            if (field.getKind() == ElementKind.ENUM_CONSTANT) {
+                if (sb.length() > 0)
+                    sb.append(", ");
+                sb.append(DocGeneratorUtil.hyphenateEnumValue(field.getSimpleName().toString()));
+            }
+        }
+        return sb.toString();
+    }
+
+    private boolean isEnumType(TypeMirror realTypeMirror) {
+        return realTypeMirror instanceof DeclaredType
+                && ((DeclaredType) realTypeMirror).asElement().getKind() == ElementKind.ENUM;
     }
 
     @Override

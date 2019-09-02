@@ -217,4 +217,8 @@ class DocGeneratorUtil {
     static String hyphenate(String orig) {
         return join("-", lowerCase(camelHumpsIterator(orig)));
     }
+
+    static String hyphenateEnumValue(String orig) {
+        return orig.replace('_', '-').toLowerCase(Locale.ROOT);
+    }
 }

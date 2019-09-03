@@ -94,6 +94,8 @@ final public class Constants {
         ALIASED_TYPES.put(OptionalInt.class.getName(), Integer.class.getName());
         ALIASED_TYPES.put(OptionalDouble.class.getName(), Double.class.getName());
         ALIASED_TYPES.put("java.lang.Class<?>", "class name");
+        ALIASED_TYPES.put(Path.class.getName(), "path");
+        ALIASED_TYPES.put(String.class.getName(), "string");
         SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_BUILD_STEP);
         SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_CONFIG_GROUP);
         SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_CONFIG_ROOT);

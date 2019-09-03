@@ -354,6 +354,12 @@ class VertxProcessor {
             }
 
             Type returnType = typeTarget.asMethod().returnType();
+
+            // skip void
+            if (returnType.kind() == Kind.VOID) {
+                continue;
+            }
+
             Type typeToAdd = null;
             if (returnType.kind() == Kind.CLASS) {
                 typeToAdd = returnType;

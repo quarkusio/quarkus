@@ -25,7 +25,7 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.ReferenceCountUtil;
 import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
 import io.quarkus.runtime.Application;
-import io.quarkus.vertx.web.runtime.VertxWebRecorder;
+import io.quarkus.vertx.web.common.runtime.VertxWebCommonRecorder;
 
 public class BaseFunction {
     private static final Logger log = Logger.getLogger("io.quarkus.azure");
@@ -56,7 +56,7 @@ public class BaseFunction {
     }
 
     protected HttpResponseMessage dispatch(HttpRequestMessage<Optional<byte[]>> request) {
-        VirtualClientConnection connection = VirtualClientConnection.connect(VertxWebRecorder.VIRTUAL_HTTP);
+        VirtualClientConnection connection = VirtualClientConnection.connect(VertxWebCommonRecorder.VIRTUAL_HTTP);
         try {
             return nettyDispatch(connection, request);
         } catch (Exception e) {

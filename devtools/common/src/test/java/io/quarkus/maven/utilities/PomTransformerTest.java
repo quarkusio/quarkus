@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Node;
 
+import io.quarkus.maven.utilities.PomTransformer.Gavtcs;
 import io.quarkus.maven.utilities.PomTransformer.Transformation;
 
 public class PomTransformerTest {
@@ -415,7 +416,8 @@ public class PomTransformerTest {
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
         asserTransformation(source,
-                Collections.singletonList(Transformation.addManagedDependency("org.acme", "my-ext", "${project.version}")),
+                Collections.singletonList(
+                        Transformation.addManagedDependency(new Gavtcs("org.acme", "my-ext", "${project.version}"))),
                 expected);
     }
 
@@ -451,7 +453,8 @@ public class PomTransformerTest {
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
         asserTransformation(source,
-                Collections.singletonList(Transformation.importBom("org.acme", "bom", "${bom.version}")),
+                Collections.singletonList(
+                        Transformation.addManagedDependency(Gavtcs.importBom("org.acme", "bom", "${bom.version}"))),
                 expected);
     }
 

@@ -18,7 +18,8 @@ class DescriptiveDocFormatter implements DocFormatter {
         StringBuilder generatedAsciiDoc = new StringBuilder(DETAILS_TITLE);
         for (ConfigItem configItem : configItems) {
             final String basicDescription = String.format(BASIC_DESCRIPTION_FORMAT, getAnchor(configItem), configItem.getKey(),
-                    configItem.getConfigPhase().getIllustration(), configItem.getConfigDoc(), configItem.getType());
+                    configItem.getConfigPhase().getIllustration(), configItem.getConfigDoc(),
+                    configItem.computeTypeSimpleName());
 
             generatedAsciiDoc.append(basicDescription);
             if (!configItem.getDefaultValue().isEmpty()) {

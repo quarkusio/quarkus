@@ -17,9 +17,11 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
@@ -127,7 +129,7 @@ class VertxProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
             BuildProducer<ServiceStartBuildItem> serviceStart,
-            List<MessageCodecBuildItem> messageCodecs, RecorderContext recorderContext) {
+            List<MessageCodecBuildItem> codecs, RecorderContext recorderContext) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX));
         Map<String, ConsumeEvent> messageConsumerConfigurations = new HashMap<>();
         ClassOutput classOutput = new ClassOutput() {
@@ -338,4 +340,5 @@ class VertxProcessor {
             invoke.invokeInterfaceMethod(INSTANCE_HANDLE_DESTROY, instanceHandle);
         }
     }
+
 }

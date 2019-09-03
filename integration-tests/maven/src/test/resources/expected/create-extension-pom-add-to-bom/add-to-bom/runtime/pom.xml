@@ -4,41 +4,32 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>[=groupId]</groupId>
-        <artifactId>[=artifactId]-parent</artifactId>
-        <version>[=version]</version>
+        <groupId>org.acme</groupId>
+        <artifactId>my-project-add-to-bom-parent</artifactId>
+        <version>0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>[=artifactId]</artifactId>
-[#if nameBase?? ]    <name>[=namePrefix][=nameBase][=nameSegmentDelimiter]Runtime</name>
-[/#if]
-[#if additionalRuntimeDependencies?size > 0 ]
+    <artifactId>my-project-add-to-bom</artifactId>
+    <name>Add To Bom - Runtime</name>
 
     <dependencies>
-[#list additionalRuntimeDependencies as dep]
         <dependency>
-            <groupId>[=dep.groupId]</groupId>
-            <artifactId>[=dep.artifactId]</artifactId>
-[#if !runtimeBomPathSet ]            <version>[=dep.version]</version>
-[/#if]
-[#if dep.type?? ]            <type>[=dep.type]</type>
-[/#if]
-[#if dep.classifier?? ]            <type>[=dep.classifier]</type>
-[/#if]
-[#if dep.scope?? ]            <type>[=dep.scope]</type>
-[/#if]
+            <groupId>org.example</groupId>
+            <artifactId>example-1</artifactId>
         </dependency>
-[/#list]
+        <dependency>
+            <groupId>org.acme</groupId>
+            <artifactId>acme-add-to-bom</artifactId>
+        </dependency>
     </dependencies>
-[/#if]
 
     <build>
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
-[#if !assumeManaged ]                <version>[=quarkusVersion]</version>
+                <version>${quarkus.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -46,12 +37,11 @@
                         </goals>
                         <phase>compile</phase>
                         <configuration>
-                            <deployment>[=r"$"]{project.groupId}:[=r"$"]{project.artifactId}-deployment:[=r"$"]{project.version}
+                            <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}
                             </deployment>
                         </configuration>
                     </execution>
                 </executions>
-[/#if]
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -61,7 +51,7 @@
                         <path>
                             <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-extension-processor</artifactId>
-                            <version>[=quarkusVersion]</version>
+                            <version>${quarkus.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>

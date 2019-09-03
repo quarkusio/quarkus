@@ -227,6 +227,7 @@ The keys are structured as follows:
 `mp.messaging.[outgoing|incoming].{channel-name}.property=value`
 
 The `channel-name` segment must match the value set in the `@Incoming` and `@Outgoing` annotation:
+
 * `generated-price` -> sink in which we write the prices
 * `prices` -> source in which we read the prices
 

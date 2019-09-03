@@ -26,7 +26,6 @@ import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.spring.data.deployment.DotNames;
 
 public class SpringDataRepositoryCreator {
@@ -91,18 +90,14 @@ public class SpringDataRepositoryCreator {
             try (MethodCreator ctor = classCreator.getMethodCreator("<init>", "V")) {
                 ctor.invokeSpecialMethod(MethodDescriptor.ofMethod(Object.class, "<init>", void.class), ctor.getThis());
                 // initialize the entityClass field
-                ResultHandle entityClass = ctor.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(Class.class, "forName", Class.class, String.class),
-                        ctor.load(entityTypeStr));
-                ctor.writeInstanceField(entityClassFieldCreator.getFieldDescriptor(), ctor.getThis(), entityClass);
+                ctor.writeInstanceField(entityClassFieldCreator.getFieldDescriptor(), ctor.getThis(),
+                        ctor.loadClass(entityTypeStr));
 
                 //initialize the custom impl classes fields
                 for (Map.Entry<String, FieldDescriptor> customClassFieldEntry : fragmentImplNameToFieldDescriptor
                         .entrySet()) {
-                    ResultHandle customInterfaceImplClass = ctor.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(Class.class, "forName", Class.class, String.class),
-                            ctor.load(customClassFieldEntry.getKey()));
-                    ctor.writeInstanceField(customClassFieldEntry.getValue(), ctor.getThis(), customInterfaceImplClass);
+                    ctor.writeInstanceField(customClassFieldEntry.getValue(), ctor.getThis(),
+                            ctor.loadClass(customClassFieldEntry.getKey()));
                 }
 
                 ctor.returnValue(null);

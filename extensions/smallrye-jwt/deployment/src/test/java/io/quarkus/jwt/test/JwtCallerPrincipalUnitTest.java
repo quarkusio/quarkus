@@ -16,7 +16,7 @@ import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.smallrye.jwt.runtime.auth.ElytronJwtCallerPrincipal;
+import io.quarkus.smallrye.jwt.runtime.auth.QuarkusJwtCallerPrincipal;
 
 public class JwtCallerPrincipalUnitTest {
     @Test
@@ -24,7 +24,7 @@ public class JwtCallerPrincipalUnitTest {
         InputStream is = getClass().getResourceAsStream("/Token1.json");
         JsonObject content = Json.createReader(is).readObject();
         JwtClaims jwtClaims = JwtClaims.parse(content.toString());
-        ElytronJwtCallerPrincipal principal = new ElytronJwtCallerPrincipal("testAllClaims", jwtClaims);
+        QuarkusJwtCallerPrincipal principal = new QuarkusJwtCallerPrincipal("testAllClaims", jwtClaims);
 
         String iss = principal.getIssuer();
         Assertions.assertEquals("https://server.example.com", iss);

@@ -1,4 +1,4 @@
-package io.quarkus.elytron.security.runtime;
+package io.quarkus.undertow.runtime;
 
 import java.security.Principal;
 import java.util.HashSet;
@@ -10,11 +10,11 @@ import io.undertow.security.idm.Account;
 /**
  * An Undertow account implementation that maps to the Elytron {@link SecurityIdentity}
  */
-public class QuarkusAccount implements Account {
+public class QuarkusUndertowAccount implements Account {
 
     private final SecurityIdentity securityIdentity;
 
-    public QuarkusAccount(SecurityIdentity securityIdentity) {
+    public QuarkusUndertowAccount(SecurityIdentity securityIdentity) {
         this.securityIdentity = securityIdentity;
     }
 

@@ -112,7 +112,7 @@ import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.RoutingContext;
 
 //TODO: break this up, it is getting too big
 public class UndertowBuildStep {
@@ -144,7 +144,7 @@ public class UndertowBuildStep {
             Consumer<DefaultRouteBuildItem> undertowProducer,
             ExecutorBuildItem executorBuildItem, HttpConfiguration httpConfiguration,
             ServletRuntimeConfig servletRuntimeConfig) throws Exception {
-        Handler<HttpServerRequest> ut = recorder.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
+        Handler<RoutingContext> ut = recorder.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
                 servletDeploymentManagerBuildItem.getDeploymentManager(),
                 wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()), httpConfiguration,
                 servletRuntimeConfig);

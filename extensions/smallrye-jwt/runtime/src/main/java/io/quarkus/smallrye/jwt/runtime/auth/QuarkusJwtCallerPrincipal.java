@@ -8,25 +8,17 @@ import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
 /**
  * An implementation of JWTCallerPrincipal that builds on the Elytron attributes
  */
-public class ElytronJwtCallerPrincipal extends DefaultJWTCallerPrincipal {
-    private Attributes claims;
+public class QuarkusJwtCallerPrincipal extends DefaultJWTCallerPrincipal {
+    private JwtClaims claims;
     private String customPrincipalName;
 
-    public ElytronJwtCallerPrincipal(final String customPrincipalName, final Attributes claims) {
-        super(getClaimsSet(claims));
+    public QuarkusJwtCallerPrincipal(final String customPrincipalName, final JwtClaims claims) {
+        super(claims);
         this.claims = claims;
         this.customPrincipalName = customPrincipalName;
     }
 
-    public ElytronJwtCallerPrincipal(final String customPrincipalName, final JwtClaims claimsSet) {
-        this(customPrincipalName, new ClaimAttributes(claimsSet));
-    }
-
-    public ElytronJwtCallerPrincipal(Attributes claims) {
-        this(null, claims);
-    }
-
-    public Attributes getClaims() {
+    public JwtClaims getClaims() {
         return claims;
     }
 

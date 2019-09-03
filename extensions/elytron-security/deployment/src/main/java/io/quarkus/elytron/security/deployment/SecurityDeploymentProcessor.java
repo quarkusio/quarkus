@@ -1,9 +1,6 @@
 package io.quarkus.elytron.security.deployment;
 
-import java.security.Provider;
-import java.security.Security;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -30,6 +27,7 @@ import io.quarkus.elytron.security.runtime.PropertiesRealmConfig;
 import io.quarkus.elytron.security.runtime.SecurityConfig;
 import io.quarkus.elytron.security.runtime.SecurityRecorder;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.security.deployment.JCAProviderBuildItem;
 import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.servlet.ServletExtension;
@@ -289,54 +287,6 @@ class SecurityDeploymentProcessor {
         }
 
         extension.produce(new ServletExtensionBuildItem(recorder.configureLoginConfig(allAuthConfigs)));
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    ServletExtensionBuildItem addSecurityContextPrincipalHandler(SecurityRecorder recorder) {
-        log.debugf("addSecurityContextPrincipalHandler");
-        return new ServletExtensionBuildItem(recorder.configureSecurityContextPrincipalHandler());
-    }
-
-    /**
-     * Register the classes for reflection in the requested named providers
-     *
-     * @param classes - ReflectiveClassBuildItem producer
-     * @param jcaProviders - JCAProviderBuildItem for requested providers
-     */
-    @BuildStep
-    void registerJCAProviders(BuildProducer<ReflectiveClassBuildItem> classes, List<JCAProviderBuildItem> jcaProviders) {
-        for (JCAProviderBuildItem provider : jcaProviders) {
-            List<String> providerClasses = registerProvider(provider.getProviderName());
-            for (String className : providerClasses) {
-                classes.produce(new ReflectiveClassBuildItem(true, true, className));
-                log.debugf("Register JCA class: %s", className);
-            }
-        }
-    }
-
-    /**
-     * Determine the classes that make up the provider and its services
-     *
-     * @param providerName - JCA provider name
-     * @return class names that make up the provider and its services
-     */
-    private List<String> registerProvider(String providerName) {
-        ArrayList<String> providerClasses = new ArrayList<>();
-        Provider provider = Security.getProvider(providerName);
-        providerClasses.add(provider.getClass().getName());
-        Set<Provider.Service> services = provider.getServices();
-        for (Provider.Service service : services) {
-            String serviceClass = service.getClassName();
-            providerClasses.add(serviceClass);
-            // Need to pull in the key classes
-            String supportedKeyClasses = service.getAttribute("SupportedKeyClasses");
-            if (supportedKeyClasses != null) {
-                String[] keyClasses = supportedKeyClasses.split("\\|");
-                providerClasses.addAll(Arrays.asList(keyClasses));
-            }
-        }
-        return providerClasses;
     }
 
     /**

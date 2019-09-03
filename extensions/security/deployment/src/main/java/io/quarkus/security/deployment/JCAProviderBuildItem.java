@@ -1,4 +1,4 @@
-package io.quarkus.elytron.security.deployment;
+package io.quarkus.security.deployment;
 
 import io.quarkus.builder.item.MultiBuildItem;
 

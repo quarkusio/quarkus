@@ -264,20 +264,4 @@ public class SecurityRecorder {
             }
         };
     }
-
-    public ServletExtension configureSecurityContextPrincipalHandler() {
-        return new SecurityContextPrincipalExtension();
-        /*
-         * this ends up putting the SecurityContext class into the RuntimeClassLoader while the SecurityContextPrincipalHandler
-         * is loaded by the Launcher$AppClassLoade
-         * return new ServletExtension() {
-         *
-         * @Override
-         * public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
-         * deploymentInfo.addInnerHandlerChainWrapper(SecurityContextPrincipalHandler::new);
-         * }
-         * };
-         */
-    }
-
 }

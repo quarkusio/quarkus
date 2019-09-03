@@ -1,75 +1,39 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
-import static io.undertow.httpcore.HttpHeaderNames.WWW_AUTHENTICATE;
-import static io.undertow.httpcore.StatusCodes.UNAUTHORIZED;
+import static io.vertx.core.http.HttpHeaders.COOKIE;
 
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.spi.CDI;
+import javax.inject.Inject;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
+import io.quarkus.security.credential.TokenCredential;
+import io.quarkus.security.identity.IdentityProviderManager;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.TokenAuthenticationRequest;
+import io.quarkus.vertx.web.runtime.security.AuthenticationMechanism;
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
-import io.undertow.UndertowLogger;
-import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.api.SecurityContext;
-import io.undertow.security.idm.Account;
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.Cookie;
+import io.vertx.ext.web.Cookie;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * An AuthenticationMechanism that validates a caller based on a MicroProfile JWT bearer token
  */
+@ApplicationScoped
 public class JWTAuthMechanism implements AuthenticationMechanism {
 
+    @Inject
     private JWTAuthContextInfo authContextInfo;
-    private IdentityManager identityManager;
-
-    public JWTAuthMechanism(JWTAuthContextInfo authContextInfo, IdentityManager identityManager) {
-        this.authContextInfo = authContextInfo;
-        this.identityManager = identityManager;
-    }
-
-    /**
-     * Extract the Authorization header and validate the bearer token if it exists. If it does, and is validated, this
-     * builds the org.jboss.security.SecurityContext authenticated Subject that drives the container APIs as well as
-     * the authorization layers.
-     *
-     * @param exchange - the http request exchange object
-     * @param securityContext - the current security context that
-     * @return one of AUTHENTICATED, NOT_AUTHENTICATED or NOT_ATTEMPTED depending on the header and authentication outcome.
-     */
-    @Override
-    public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
-        String jwtToken = new UndertowBearerTokenExtractor(authContextInfo, exchange).getBearerToken();
-        if (jwtToken != null) {
-            try {
-                JWTCredential credential = new JWTCredential(jwtToken, authContextInfo);
-                if (UndertowLogger.SECURITY_LOGGER.isTraceEnabled()) {
-                    UndertowLogger.SECURITY_LOGGER.tracef("Bearer token: %s", jwtToken);
-                }
-                // Install the JWT principal as the caller
-                Account account = identityManager.verify(credential.getName(), credential);
-                if (account != null) {
-                    preparePrincipalProducer((JsonWebToken) account.getPrincipal());
-                    securityContext.authenticationComplete(account, "MP-JWT", false);
-                    UndertowLogger.SECURITY_LOGGER.debugf("Authenticated caller(%s) for path(%s) with roles: %s",
-                            credential.getName(), exchange.getRequestPath(), account.getRoles());
-                    return AuthenticationMechanismOutcome.AUTHENTICATED;
-                } else {
-                    UndertowLogger.SECURITY_LOGGER.info("Failed to authenticate JWT bearer token");
-                    return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
-                }
-            } catch (Exception e) {
-                UndertowLogger.SECURITY_LOGGER.infof(e, "Failed to validate JWT bearer token");
-                return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
-            }
-        }
-
-        // No suitable header has been found in this request,
-        return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
-    }
 
     private void preparePrincipalProducer(JsonWebToken jwtPrincipal) {
         PrincipalProducer principalProducer = CDI.current().select(PrincipalProducer.class).get();
@@ -77,28 +41,49 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
     }
 
     @Override
-    public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
-        exchange.addResponseHeader(WWW_AUTHENTICATE, "Bearer {token}");
-        UndertowLogger.SECURITY_LOGGER.debugf("Sending Bearer {token} challenge for %s", exchange);
-        return new ChallengeResult(true, UNAUTHORIZED);
+    public CompletionStage<SecurityIdentity> authenticate(RoutingContext context,
+            IdentityProviderManager identityProviderManager) {
+        String jwtToken = new VertxBearerTokenExtractor(authContextInfo, context).getBearerToken();
+        if (jwtToken != null) {
+            return identityProviderManager
+                    .authenticate(new TokenAuthenticationRequest(new TokenCredential(jwtToken, "bearer")));
+        }
+        return CompletableFuture.completedFuture(null);
     }
 
-    private static class UndertowBearerTokenExtractor extends AbstractBearerTokenExtractor {
-        private HttpServerExchange httpExchange;
+    @Override
+    public CompletionStage<Boolean> sendChallenge(RoutingContext context) {
+        context.response().headers().set(HttpHeaderNames.WWW_AUTHENTICATE, "Bearer {token}");
+        context.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code());
+        return CompletableFuture.completedFuture(true);
+    }
 
-        UndertowBearerTokenExtractor(JWTAuthContextInfo authContextInfo, HttpServerExchange exchange) {
+    private static class VertxBearerTokenExtractor extends AbstractBearerTokenExtractor {
+        private RoutingContext httpExchange;
+
+        VertxBearerTokenExtractor(JWTAuthContextInfo authContextInfo, RoutingContext exchange) {
             super(authContextInfo);
             this.httpExchange = exchange;
         }
 
         @Override
         protected String getHeaderValue(String headerName) {
-            return httpExchange.getRequestHeader(headerName);
+            return httpExchange.request().headers().get(headerName);
         }
 
         @Override
         protected String getCookieValue(String cookieName) {
-            Cookie cookie = httpExchange.getRequestCookies().get(cookieName);
+            String cookieHeader = httpExchange.request().headers().get(COOKIE);
+
+            if (cookieHeader != null && httpExchange.cookieCount() == 0) {
+                Set<io.netty.handler.codec.http.cookie.Cookie> nettyCookies = ServerCookieDecoder.STRICT.decode(cookieHeader);
+                for (io.netty.handler.codec.http.cookie.Cookie cookie : nettyCookies) {
+                    if (cookie.name().equals(cookieName)) {
+                        return cookie.value();
+                    }
+                }
+            }
+            Cookie cookie = httpExchange.getCookie(cookieName);
             return cookie != null ? cookie.getValue() : null;
         }
     }

@@ -10,6 +10,7 @@ import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
+import io.quarkus.undertow.runtime.QuarkusUndertowAccount;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
@@ -37,7 +38,7 @@ public class ElytronIdentityManager implements IdentityManager {
                         .authenticateBlocking(new UsernamePasswordAuthenticationRequest(id,
                                 new io.quarkus.security.credential.PasswordCredential(
                                         ((PasswordCredential) credential).getPassword())));
-                return new QuarkusAccount(securityIdentity);
+                return new QuarkusUndertowAccount(securityIdentity);
             }
         } catch (Exception e) {
             log.debugf(e, "Failed to authenticate");
@@ -53,7 +54,7 @@ public class ElytronIdentityManager implements IdentityManager {
             SecurityIdentity securityIdentity = manager
                     .authenticateBlocking(new TokenAuthenticationRequest(
                             new TokenCredential(((UndertowTokenCredential) credential).getBearerToken(), "bearer")));
-            return new QuarkusAccount(securityIdentity);
+            return new QuarkusUndertowAccount(securityIdentity);
         }
         return null;
     }

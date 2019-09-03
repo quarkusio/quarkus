@@ -15,6 +15,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
+import javax.enterprise.inject.spi.CDI;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -40,6 +41,8 @@ import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.undertow.httpcore.BufferAllocator;
 import io.undertow.httpcore.StatusCodes;
+import io.undertow.security.api.NotificationReceiver;
+import io.undertow.security.api.SecurityNotification;
 import io.undertow.server.DefaultExchangeHandler;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
@@ -61,6 +64,7 @@ import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.InstanceFactory;
 import io.undertow.servlet.api.InstanceHandle;
 import io.undertow.servlet.api.ListenerInfo;
+import io.undertow.servlet.api.LoginConfig;
 import io.undertow.servlet.api.ServletContainer;
 import io.undertow.servlet.api.ServletContainerInitializerInfo;
 import io.undertow.servlet.api.ServletInfo;
@@ -71,9 +75,10 @@ import io.undertow.servlet.handlers.ServletPathMatches;
 import io.undertow.servlet.handlers.ServletRequestContext;
 import io.undertow.servlet.spec.HttpServletRequestImpl;
 import io.undertow.util.AttachmentKey;
+import io.undertow.util.ImmediateAuthenticationMechanismFactory;
 import io.undertow.vertx.VertxHttpExchange;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * Provides the runtime methods to bootstrap Undertow. This class is present in the final uber-jar,
@@ -166,6 +171,8 @@ public class UndertowDeploymentRecorder {
         for (HandlerWrapper i : hotDeploymentWrappers) {
             d.addOuterHandlerChainWrapper(i);
         }
+        d.addAuthenticationMechanism("QUARKUS", new ImmediateAuthenticationMechanismFactory(QuarkusAuthMechanism.INSTANCE));
+        d.setLoginConfig(new LoginConfig("QUARKUS", "QUARKUS"));
         context.addShutdownTask(new Runnable() {
             @Override
             public void run() {
@@ -173,6 +180,16 @@ public class UndertowDeploymentRecorder {
                     d.getResourceManager().close();
                 } catch (IOException e) {
                     log.error("Failed to close Servlet ResourceManager", e);
+                }
+            }
+        });
+
+        d.addNotificationReceiver(new NotificationReceiver() {
+            @Override
+            public void handleNotification(SecurityNotification notification) {
+                if (notification.getEventType() == SecurityNotification.EventType.AUTHENTICATED) {
+                    QuarkusUndertowAccount account = (QuarkusUndertowAccount) notification.getAccount();
+                    CDI.current().getBeanManager().fireEvent(account.getSecurityIdentity());
                 }
             }
         });
@@ -282,7 +299,7 @@ public class UndertowDeploymentRecorder {
         info.getValue().addInitParameter(name, value);
     }
 
-    public Handler<HttpServerRequest> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
+    public Handler<RoutingContext> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
             DeploymentManager manager, List<HandlerWrapper> wrappers, HttpConfiguration httpConfiguration,
             ServletRuntimeConfig servletRuntimeConfig) throws Exception {
 
@@ -313,10 +330,10 @@ public class UndertowDeploymentRecorder {
         UndertowBufferAllocator allocator = new UndertowBufferAllocator(
                 servletRuntimeConfig.directBuffers.orElse(DEFAULT_DIRECT_BUFFERS), (int) servletRuntimeConfig.bufferSize
                         .orElse(new MemorySize(BigInteger.valueOf(DEFAULT_BUFFER_SIZE))).asLongValue());
-        return new Handler<HttpServerRequest>() {
+        return new Handler<RoutingContext>() {
             @Override
-            public void handle(HttpServerRequest event) {
-                VertxHttpExchange exchange = new VertxHttpExchange(event, allocator, executorService);
+            public void handle(RoutingContext event) {
+                VertxHttpExchange exchange = new VertxHttpExchange(event.request(), allocator, executorService, event);
                 Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
                 if (maxBodySize.isPresent()) {
                     exchange.setMaxEntitySize(maxBodySize.get().asLongValue());

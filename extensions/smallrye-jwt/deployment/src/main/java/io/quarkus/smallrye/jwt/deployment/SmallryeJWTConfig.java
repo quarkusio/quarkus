@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.jwt.runtime;
+package io.quarkus.smallrye.jwt.deployment;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -7,19 +7,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  * deployment configuration
  */
 @ConfigRoot(name = "smallrye-jwt")
-public class JWTAuthContextInfoGroup {
-
-    /**
-     * The authentication mechanism
-     */
-    @ConfigItem(defaultValue = "MP-JWT")
-    public String authMechanism;
-
-    /**
-     * The authentication mechanism
-     */
-    @ConfigItem(defaultValue = "Quarkus-JWT")
-    public String realmName;
+public class SmallryeJWTConfig {
 
     /**
      * The MP-JWT configuration object

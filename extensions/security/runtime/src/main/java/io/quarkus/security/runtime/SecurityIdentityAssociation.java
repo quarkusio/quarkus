@@ -3,6 +3,7 @@ package io.quarkus.security.runtime;
 import java.security.Principal;
 
 import javax.enterprise.context.RequestScoped;
+import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
@@ -33,7 +34,7 @@ public class SecurityIdentityAssociation implements CurrentIdentityAssociation {
     }
 
     @Override
-    public SecurityIdentity setIdentity(SecurityIdentity identity) {
+    public SecurityIdentity setIdentity(@Observes SecurityIdentity identity) {
         SecurityIdentity old = this.identity;
         this.identity = identity;
         return old;

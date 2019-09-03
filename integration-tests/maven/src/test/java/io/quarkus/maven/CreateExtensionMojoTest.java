@@ -73,6 +73,19 @@ public class CreateExtensionMojoTest {
     }
 
     @Test
+    void createExtensionUnderExistingPomWithItest() throws MojoExecutionException, MojoFailureException,
+            IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, IOException {
+        final CreateExtensionMojo mojo = createMojo("create-extension-pom");
+        mojo.artifactId = "my-project-(itest)";
+        mojo.assumeManaged = false;
+        mojo.itestParentPath = Paths.get("integration-tests/pom.xml");
+        mojo.execute();
+
+        assertTreesMatch(Paths.get("src/test/resources/expected/create-extension-pom-itest"),
+                mojo.basedir);
+    }
+
+    @Test
     void createExtensionUnderExistingPomCustomGrandParent() throws MojoExecutionException, MojoFailureException,
             IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, IOException {
         final CreateExtensionMojo mojo = createMojo("create-extension-pom");

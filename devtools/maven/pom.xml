@@ -137,10 +137,16 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
+                <excludes>
+                    <exclude>create-extension-templates/**/*</exclude>
+                </excludes>
             </resource>
             <resource>
-                <directory>src/main/templates</directory>
+                <directory>src/main/resources</directory>
                 <filtering>false</filtering>
+                <includes>
+                    <include>create-extension-templates/**/*</include>
+                </includes>
             </resource>
         </resources>
         <plugins>

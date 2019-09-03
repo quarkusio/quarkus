@@ -28,7 +28,7 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 @ApplicationScoped
 public class ElytronPasswordIdentityProvider implements IdentityProvider<UsernamePasswordAuthenticationRequest> {
 
-    private static Logger log = Logger.getLogger(ElytronIdentityManager.class);
+    private static Logger log = Logger.getLogger(ElytronPasswordIdentityProvider.class);
 
     @Inject
     SecurityDomain domain;

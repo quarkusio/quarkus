@@ -1,4 +1,4 @@
-package io.quarkus.vertx.web.runtime;
+package io.quarkus.vertx.http.runtime.security;
 
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.core.AsyncResult;

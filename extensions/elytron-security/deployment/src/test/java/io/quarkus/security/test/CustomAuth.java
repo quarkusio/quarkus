@@ -1,32 +1,34 @@
 package io.quarkus.security.test;
 
-import static io.undertow.UndertowMessages.MESSAGES;
-import static io.undertow.httpcore.HttpHeaderNames.AUTHORIZATION;
 import static io.undertow.httpcore.HttpHeaderNames.BASIC;
-import static io.undertow.httpcore.HttpHeaderNames.WWW_AUTHENTICATE;
-import static io.undertow.httpcore.StatusCodes.UNAUTHORIZED;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import javax.enterprise.context.ApplicationScoped;
 
 import org.jboss.logging.Logger;
 
-import io.netty.buffer.ByteBuf;
-import io.undertow.UndertowLogger;
-import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.api.SecurityContext;
-import io.undertow.security.idm.Account;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.credential.PasswordCredential;
+import io.quarkus.security.identity.IdentityProviderManager;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
+import io.quarkus.vertx.http.runtime.security.HTTPAuthenticationMechanism;
 import io.undertow.security.idm.IdentityManager;
-import io.undertow.security.idm.PasswordCredential;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.FlexBase64;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * An alternate BASIC auth based mechanism to test installing a custom AuthenticationMechanism into Undertow
  */
-public class CustomAuth implements AuthenticationMechanism {
+@ApplicationScoped
+public class CustomAuth implements HTTPAuthenticationMechanism {
     private static final Logger log = Logger.getLogger(CustomAuth.class.getName());
     private static final String BASIC_PREFIX = BASIC + " ";
     private static final String LOWERCASE_BASIC_PREFIX = BASIC_PREFIX.toLowerCase(Locale.ENGLISH);
@@ -36,71 +38,46 @@ public class CustomAuth implements AuthenticationMechanism {
     private IdentityManager identityManager;
 
     @Override
-    public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
-        List<String> authHeaders = exchange.getRequestHeaders(AUTHORIZATION);
-        log.info("CustomAuth, authHeaders: " + authHeaders);
+    public CompletionStage<SecurityIdentity> authenticate(RoutingContext context,
+            IdentityProviderManager identityProviderManager) {
+        List<String> authHeaders = context.request().headers().getAll(HttpHeaderNames.AUTHORIZATION);
         if (authHeaders != null) {
             for (String current : authHeaders) {
                 if (current.toLowerCase(Locale.ENGLISH).startsWith(LOWERCASE_BASIC_PREFIX)) {
 
                     String base64Challenge = current.substring(PREFIX_LENGTH);
                     String plainChallenge = null;
-                    try {
-                        ByteBuf decode = FlexBase64.decode(base64Challenge);
+                    byte[] decode = Base64.getDecoder().decode(base64Challenge);
 
-                        plainChallenge = decode.toString(StandardCharsets.UTF_8);
-                        UndertowLogger.SECURITY_LOGGER.infof("Found basic auth header %s (decoded using charset %s) in %s",
-                                plainChallenge, StandardCharsets.UTF_8, exchange);
-                    } catch (IOException e) {
-                        UndertowLogger.SECURITY_LOGGER.infof(e, "Failed to decode basic auth header %s in %s", base64Challenge,
-                                exchange);
-                    }
+                    plainChallenge = new String(decode, StandardCharsets.UTF_8);
+                    log.debugf("Found basic auth header %s (decoded using charset %s)", plainChallenge, StandardCharsets.UTF_8);
                     int colonPos;
-                    if (plainChallenge != null && (colonPos = plainChallenge.indexOf(COLON)) > -1) {
+                    if ((colonPos = plainChallenge.indexOf(COLON)) > -1) {
                         String userName = plainChallenge.substring(0, colonPos);
                         char[] password = plainChallenge.substring(colonPos + 1).toCharArray();
 
-                        IdentityManager idm = getIdentityManager(securityContext);
-                        PasswordCredential credential = new PasswordCredential(password);
-                        try {
-                            final AuthenticationMechanismOutcome result;
-                            Account account = idm.verify(userName, credential);
-                            UndertowLogger.SECURITY_LOGGER.infof("Obtained account: %s", account);
-                            if (account != null) {
-                                UndertowLogger.SECURITY_LOGGER.infof("AUTHENTICATED, roles: %s", account.getRoles());
-                                securityContext.authenticationComplete(account, "CUSTOM", false);
-                                result = AuthenticationMechanismOutcome.AUTHENTICATED;
-                            } else {
-                                securityContext.authenticationFailed(MESSAGES.authenticationFailed(userName), "CUSTOM");
-                                result = AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
-                            }
-                            return result;
-                        } finally {
-                            for (int i = 0; i < password.length; i++) {
-                                password[i] = 0x00;
-                            }
-                        }
+                        UsernamePasswordAuthenticationRequest credential = new UsernamePasswordAuthenticationRequest(userName,
+                                new PasswordCredential(password));
+                        return identityProviderManager.authenticate(credential);
                     }
 
                     // By this point we had a header we should have been able to verify but for some reason
                     // it was not correctly structured.
-                    return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
+                    CompletableFuture<SecurityIdentity> cf = new CompletableFuture<>();
+                    cf.completeExceptionally(new AuthenticationFailedException());
+                    return cf;
                 }
             }
         }
-        return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
+
+        // No suitable header has been found in this request,
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
-        exchange.addResponseHeader(WWW_AUTHENTICATE, "BASIC realm=CUSTOM");
-        UndertowLogger.SECURITY_LOGGER.infof("Sending basic auth challenge for %s", exchange);
-        return new ChallengeResult(true, UNAUTHORIZED);
+    public CompletionStage<Boolean> sendChallenge(RoutingContext context) {
+        context.response().headers().set(HttpHeaderNames.WWW_AUTHENTICATE, "BASIC realm=CUSTOM");
+        context.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code());
+        return CompletableFuture.completedFuture(true);
     }
-
-    @SuppressWarnings("deprecation")
-    private IdentityManager getIdentityManager(SecurityContext securityContext) {
-        return identityManager != null ? identityManager : securityContext.getIdentityManager();
-    }
-
 }

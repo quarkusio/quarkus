@@ -1,7 +1,7 @@
 package io.quarkus.undertow.runtime;
 
-import io.quarkus.vertx.web.runtime.QuarkusHttpUser;
-import io.quarkus.vertx.web.runtime.security.HttpAuthenticator;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;

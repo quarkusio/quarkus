@@ -1,6 +1,5 @@
-package io.quarkus.vertx.web.runtime.security;
+package io.quarkus.vertx.http.runtime.security;
 
-import java.util.List;
 import java.util.function.BiFunction;
 
 import javax.enterprise.inject.spi.CDI;
@@ -9,22 +8,11 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.vertx.web.runtime.QuarkusHttpUser;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class HttpSecurityRecorder {
-
-    public HttpAuthenticator createAuthenticator(List<AuthenticationMechanism> mechanisms) {
-        if (mechanisms.size() > 1) {
-            throw new IllegalStateException("Multiple HTTP authentication mechanisms are not implemented yet");
-        }
-        if (mechanisms.isEmpty()) {
-            return null;
-        }
-        return new HttpAuthenticator(mechanisms.get(0));
-    }
 
     public Handler<RoutingContext> authenticationMechanismHandler() {
         return new Handler<RoutingContext>() {

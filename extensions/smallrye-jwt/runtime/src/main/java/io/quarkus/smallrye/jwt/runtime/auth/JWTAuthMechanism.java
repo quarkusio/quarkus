@@ -19,7 +19,7 @@ import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
-import io.quarkus.vertx.web.runtime.security.AuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.HTTPAuthenticationMechanism;
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
@@ -30,7 +30,7 @@ import io.vertx.ext.web.RoutingContext;
  * An AuthenticationMechanism that validates a caller based on a MicroProfile JWT bearer token
  */
 @ApplicationScoped
-public class JWTAuthMechanism implements AuthenticationMechanism {
+public class JWTAuthMechanism implements HTTPAuthenticationMechanism {
 
     @Inject
     private JWTAuthContextInfo authContextInfo;

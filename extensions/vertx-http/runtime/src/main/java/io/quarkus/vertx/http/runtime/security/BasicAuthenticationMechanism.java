@@ -15,7 +15,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package io.quarkus.vertx.web.runtime.security;
+package io.quarkus.vertx.http.runtime.security;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -45,7 +45,7 @@ import io.vertx.ext.web.RoutingContext;
  *
  * @author <a href="mailto:darran.lofthouse@jboss.com">Darran Lofthouse</a>
  */
-public class BasicAuthenticationMechanism implements AuthenticationMechanism {
+public class BasicAuthenticationMechanism implements HTTPAuthenticationMechanism {
 
     private static final Logger log = Logger.getLogger(BasicAuthenticationMechanism.class);
 
@@ -91,7 +91,7 @@ public class BasicAuthenticationMechanism implements AuthenticationMechanism {
     }
 
     public BasicAuthenticationMechanism(final String realmName, final String mechanismName, final boolean silent) {
-        this(realmName, mechanismName, silent, StandardCharsets.UTF_8, null);
+        this(realmName, mechanismName, silent, StandardCharsets.UTF_8, Collections.emptyMap());
     }
 
     public BasicAuthenticationMechanism(final String realmName, final String mechanismName, final boolean silent,

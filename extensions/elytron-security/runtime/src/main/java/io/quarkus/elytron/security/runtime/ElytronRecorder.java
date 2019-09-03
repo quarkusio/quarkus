@@ -1,5 +1,6 @@
 package io.quarkus.elytron.security.runtime;
 
+import java.io.IOException;
 import java.net.URL;
 import java.security.Permission;
 import java.security.Provider;
@@ -8,8 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
-import javax.servlet.ServletContext;
 
 import org.jboss.logging.Logger;
 import org.wildfly.security.WildFlyElytronProvider;
@@ -32,17 +31,13 @@ import org.wildfly.security.permission.PermissionVerifier;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.servlet.ServletExtension;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.LoginConfig;
 
 /**
  * The runtime security recorder class that provides methods for creating RuntimeValues for the deployment security objects.
  */
 @Recorder
-public class SecurityRecorder {
-    static final Logger log = Logger.getLogger(SecurityRecorder.class);
+public class ElytronRecorder {
+    static final Logger log = Logger.getLogger(ElytronRecorder.class);
 
     /**
      * Load the user.properties and roles.properties files into the {@linkplain SecurityRealm}
@@ -51,26 +46,35 @@ public class SecurityRecorder {
      * @param config - realm configuration info
      * @throws Exception
      */
-    public void loadRealm(RuntimeValue<SecurityRealm> realm, PropertiesRealmConfig config) throws Exception {
-        log.debugf("loadRealm, config=%s", config);
-        SecurityRealm secRealm = realm.getValue();
-        if (!(secRealm instanceof LegacyPropertiesSecurityRealm)) {
-            return;
-        }
-        log.debugf("Trying to loader users: /%s", config.users);
-        URL users = Thread.currentThread().getContextClassLoader().getResource(config.users);
-        log.debugf("users: %s", users);
-        log.debugf("Trying to loader roles: %s", config.roles);
-        URL roles = Thread.currentThread().getContextClassLoader().getResource(config.roles);
-        log.debugf("roles: %s", roles);
-        if (users == null && roles == null) {
-            String msg = String.format(
-                    "No PropertiesRealmConfig users/roles settings found. Configure the quarkus.security.file.%s properties",
-                    config.help());
-            throw new IllegalStateException(msg);
-        }
-        LegacyPropertiesSecurityRealm propsRealm = (LegacyPropertiesSecurityRealm) secRealm;
-        propsRealm.load(users.openStream(), roles.openStream());
+    public Runnable loadRealm(RuntimeValue<SecurityRealm> realm, PropertiesRealmConfig config) throws Exception {
+        return new Runnable() {
+            @Override
+            public void run() {
+                log.debugf("loadRealm, config=%s", config);
+                SecurityRealm secRealm = realm.getValue();
+                if (!(secRealm instanceof LegacyPropertiesSecurityRealm)) {
+                    return;
+                }
+                log.debugf("Trying to loader users: /%s", config.users);
+                URL users = Thread.currentThread().getContextClassLoader().getResource(config.users);
+                log.debugf("users: %s", users);
+                log.debugf("Trying to loader roles: %s", config.roles);
+                URL roles = Thread.currentThread().getContextClassLoader().getResource(config.roles);
+                log.debugf("roles: %s", roles);
+                if (users == null && roles == null) {
+                    String msg = String.format(
+                            "No PropertiesRealmConfig users/roles settings found. Configure the quarkus.security.file.%s properties",
+                            config.help());
+                    throw new IllegalStateException(msg);
+                }
+                LegacyPropertiesSecurityRealm propsRealm = (LegacyPropertiesSecurityRealm) secRealm;
+                try {
+                    propsRealm.load(users.openStream(), roles.openStream());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
     }
 
     /**
@@ -80,36 +84,45 @@ public class SecurityRecorder {
      * @param config - the realm config
      * @throws Exception
      */
-    public void loadRealm(RuntimeValue<SecurityRealm> realm, MPRealmConfig config) throws Exception {
-        log.debugf("loadRealm, config=%s", config);
-        SecurityRealm secRealm = realm.getValue();
-        if (!(secRealm instanceof SimpleMapBackedSecurityRealm)) {
-            return;
-        }
-        SimpleMapBackedSecurityRealm memRealm = (SimpleMapBackedSecurityRealm) secRealm;
-        HashMap<String, SimpleRealmEntry> identityMap = new HashMap<>();
-        Map<String, String> userInfo = config.getUsers();
-        log.debugf("UserInfoMap: %s%n", userInfo);
-        Map<String, String> roleInfo = config.getRoles();
-        log.debugf("RoleInfoMap: %s%n", roleInfo);
-        for (Map.Entry<String, String> userPasswordEntry : userInfo.entrySet()) {
-            String user = userPasswordEntry.getKey();
-            ClearPassword clear = ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR,
-                    userPasswordEntry.getValue().toCharArray());
-            PasswordCredential passwordCred = new PasswordCredential(clear);
-            List<Credential> credentials = new ArrayList<>();
-            credentials.add(passwordCred);
-            String rawRoles = roleInfo.get(user);
-            String[] roles = rawRoles.split(",");
-            Attributes attributes = new MapAttributes();
-            for (String role : roles) {
-                attributes.addLast("groups", role);
+    public Runnable loadRealm(RuntimeValue<SecurityRealm> realm, MPRealmConfig config) throws Exception {
+        return new Runnable() {
+            @Override
+            public void run() {
+                log.debugf("loadRealm, config=%s", config);
+                SecurityRealm secRealm = realm.getValue();
+                if (!(secRealm instanceof SimpleMapBackedSecurityRealm)) {
+                    return;
+                }
+                SimpleMapBackedSecurityRealm memRealm = (SimpleMapBackedSecurityRealm) secRealm;
+                HashMap<String, SimpleRealmEntry> identityMap = new HashMap<>();
+                Map<String, String> userInfo = config.getUsers();
+                log.debugf("UserInfoMap: %s%n", userInfo);
+                Map<String, String> roleInfo = config.getRoles();
+                log.debugf("RoleInfoMap: %s%n", roleInfo);
+                for (Map.Entry<String, String> userPasswordEntry : userInfo.entrySet()) {
+                    String user = userPasswordEntry.getKey();
+                    ClearPassword clear = ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR,
+                            userPasswordEntry.getValue().toCharArray());
+                    PasswordCredential passwordCred = new PasswordCredential(clear);
+                    List<Credential> credentials = new ArrayList<>();
+                    credentials.add(passwordCred);
+                    String rawRoles = roleInfo.get(user);
+                    String[] roles = rawRoles.split(",");
+                    Attributes attributes = new MapAttributes();
+                    for (String role : roles) {
+                        attributes.addLast("groups", role);
+                    }
+                    SimpleRealmEntry entry = new SimpleRealmEntry(credentials, attributes);
+                    identityMap.put(user, entry);
+                    log.debugf("Added user(%s), roles=%s%n", user, attributes.get("groups"));
+                }
+                memRealm.setIdentityMap(identityMap);
             }
-            SimpleRealmEntry entry = new SimpleRealmEntry(credentials, attributes);
-            identityMap.put(user, entry);
-            log.debugf("Added user(%s), roles=%s%n", user, attributes.get("groups"));
-        }
-        memRealm.setIdentityMap(identityMap);
+        };
+    }
+
+    public void runLoadTask(Runnable runnable) {
+        runnable.run();
     }
 
     /**
@@ -211,57 +224,5 @@ public class SecurityRecorder {
      */
     public RuntimeValue<SecurityDomain> buildDomain(RuntimeValue<SecurityDomain.Builder> builder) {
         return new RuntimeValue<>(builder.getValue().build());
-    }
-
-    /**
-     * Create an ElytronIdentityManager for the given SecurityDomain
-     *
-     * @return runtime value for ElytronIdentityManager
-     */
-    public IdentityManager createIdentityManager() {
-        return new ElytronIdentityManager();
-    }
-
-    /**
-     * Called to create a {@linkplain ServletExtension} to associate the {@linkplain ElytronIdentityManager} with the
-     * deployment.
-     *
-     * @param domain - the SecurityDomain to use for auth decisions
-     * @param identityManager - the IdentityManager for auth decisions
-     * @return - the ServletExtension instance to register
-     */
-    public ServletExtension configureUndertowIdentityManager(RuntimeValue<SecurityDomain> domain,
-            IdentityManager identityManager) {
-        return new ServletExtension() {
-            @Override
-            public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
-                deploymentInfo.setIdentityManager(identityManager);
-            }
-        };
-    }
-
-    /**
-     * Called to create a {@linkplain ServletExtension} to associate the {@linkplain LoginConfig} with the
-     * deployment.
-     *
-     * @param authConfigs - the authenticaiton methods to register with the deployment {@linkplain LoginConfig}
-     * @return - the ServletExtension instance to register
-     */
-    public ServletExtension configureLoginConfig(List<AuthConfig> authConfigs) {
-        return new ServletExtension() {
-            @Override
-            public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
-                if (authConfigs.size() > 0) {
-                    AuthConfig first = authConfigs.get(0);
-                    log.debugf("configureLoginConfig, %s", authConfigs);
-                    LoginConfig loginConfig = new LoginConfig(first.authMechanism, first.realmName);
-                    for (int n = 1; n < authConfigs.size(); n++) {
-                        AuthConfig ac = authConfigs.get(n);
-                        loginConfig.addLastAuthMethod(ac.getAuthMechanism());
-                    }
-                    deploymentInfo.setLoginConfig(loginConfig);
-                }
-            }
-        };
     }
 }

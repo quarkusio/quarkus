@@ -20,12 +20,6 @@ public class PropertiesRealmConfig {
     /**
      * The authentication mechanism
      */
-    @ConfigItem(defaultValue = "BASIC")
-    public String authMechanism;
-
-    /**
-     * The authentication mechanism
-     */
     @ConfigItem(defaultValue = "Quarkus")
     public String realmName;
 
@@ -75,14 +69,6 @@ public class PropertiesRealmConfig {
         this.roles = roles;
     }
 
-    public String getAuthMechanism() {
-        return authMechanism;
-    }
-
-    public void setAuthMechanism(String authMechanism) {
-        this.authMechanism = authMechanism;
-    }
-
     public String getRealmName() {
         return realmName;
     }
@@ -91,20 +77,9 @@ public class PropertiesRealmConfig {
         this.realmName = realmName;
     }
 
-    /**
-     * Used to access what should be a parent class, but parsing of the MP config properties is not working
-     * from parent to child
-     * 
-     * @return AuthConfig information
-     */
-    public AuthConfig getAuthConfig() {
-        return new AuthConfig(authMechanism, realmName, getClass());
-    }
-
     @Override
     public String toString() {
         return "PropertiesRealmConfig{" +
-                "authMechanism='" + authMechanism + '\'' +
                 ", realmName='" + realmName + '\'' +
                 ", enabled=" + enabled +
                 ", users='" + users + '\'' +

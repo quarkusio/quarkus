@@ -13,8 +13,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
-import io.quarkus.elytron.security.deployment.AuthConfigBuildItem;
-import io.quarkus.elytron.security.runtime.AuthConfig;
 import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
 
 public class KeycloakAdapterProcessor {
@@ -23,11 +21,10 @@ public class KeycloakAdapterProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    BeanContainerListenerBuildItem configureAdapter(KeycloakRecorder recorder, BuildProducer<AuthConfigBuildItem> authConfig,
+    BeanContainerListenerBuildItem configureAdapter(KeycloakRecorder recorder,
             BuildProducer<HotDeploymentWatchedFileBuildItem> resources,
             BuildProducer<ServletExtensionBuildItem> servletExtension) {
         // configure login info
-        authConfig.produce(new AuthConfigBuildItem(new AuthConfig("KEYCLOAK", "KEYCLOAK", Object.class)));
 
         // in case keycloak.json is used, register it as a hot deployment config file
         resources.produce(new HotDeploymentWatchedFileBuildItem("keycloak.json"));
@@ -41,7 +38,7 @@ public class KeycloakAdapterProcessor {
 
         QuarkusDeploymentContext deploymentContext = recorder.createKeycloakDeploymentContext(adapterConfig);
 
-        // register keycloak servlet extension
+        // register keycloak servlet extensionOAuth2AuthMechanis
         servletExtension.produce(new ServletExtensionBuildItem(recorder.createServletExtension(deploymentContext)));
 
         return new BeanContainerListenerBuildItem(recorder.createBeanContainerListener(deploymentContext));

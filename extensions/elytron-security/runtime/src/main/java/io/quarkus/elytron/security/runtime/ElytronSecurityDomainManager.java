@@ -9,7 +9,7 @@ import org.wildfly.security.auth.server.SecurityDomain;
 @ApplicationScoped
 public class ElytronSecurityDomainManager {
 
-    private static Logger log = Logger.getLogger(ElytronIdentityManager.class);
+    private static Logger log = Logger.getLogger(ElytronSecurityDomainManager.class);
 
     private volatile SecurityDomain domain;
 

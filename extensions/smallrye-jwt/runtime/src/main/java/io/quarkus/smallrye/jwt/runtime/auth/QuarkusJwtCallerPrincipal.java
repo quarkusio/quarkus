@@ -1,7 +1,6 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
 import org.jose4j.jwt.JwtClaims;
-import org.wildfly.security.authz.Attributes;
 
 import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
 
@@ -20,14 +19,6 @@ public class QuarkusJwtCallerPrincipal extends DefaultJWTCallerPrincipal {
 
     public JwtClaims getClaims() {
         return claims;
-    }
-
-    private static JwtClaims getClaimsSet(Attributes claims) {
-        if (!(claims instanceof ClaimAttributes)) {
-            throw new IllegalStateException(
-                    "ElytronJwtCallerPrincipal requires Attributes to be a: " + ClaimAttributes.class.getName());
-        }
-        return ((ClaimAttributes) claims).getClaimsSet();
     }
 
     @Override

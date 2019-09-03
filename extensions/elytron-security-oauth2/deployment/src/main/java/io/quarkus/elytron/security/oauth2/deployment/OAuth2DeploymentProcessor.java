@@ -6,7 +6,7 @@ import javax.enterprise.context.ApplicationScoped;
 
 import org.wildfly.security.auth.server.SecurityRealm;
 
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -14,17 +14,12 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.elytron.security.deployment.AuthConfigBuildItem;
-import io.quarkus.elytron.security.deployment.IdentityManagerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.oauth2.runtime.OAuth2Config;
 import io.quarkus.elytron.security.oauth2.runtime.OAuth2Recorder;
-import io.quarkus.elytron.security.runtime.AuthConfig;
-import io.quarkus.elytron.security.runtime.ElytronIdentityManager;
+import io.quarkus.elytron.security.oauth2.runtime.auth.OAuth2AuthMechanism;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
-import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
-import io.undertow.servlet.ServletExtension;
 
 /**
  * The build time process for the OAUth2 security aspects of the deployment. This creates {@linkplain BuildStep}s for
@@ -34,7 +29,6 @@ import io.undertow.servlet.ServletExtension;
  */
 class OAuth2DeploymentProcessor {
     private static final String REALM_NAME = "OAuth2";
-    private static final String AUTH_MECHANISM = "BEARER_TOKEN";
 
     OAuth2Config oauth2;
 
@@ -59,46 +53,14 @@ class OAuth2DeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    AuthConfigBuildItem configureOauth2RealmAuthConfig(OAuth2Recorder recorder,
+    AdditionalBeanBuildItem configureOauth2RealmAuthConfig(OAuth2Recorder recorder,
             BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
         if (oauth2.enabled) {
             RuntimeValue<SecurityRealm> realm = recorder.createRealm(oauth2);
-            AuthConfig authConfig = new AuthConfig();
-            authConfig.setAuthMechanism(AUTH_MECHANISM);
-            authConfig.setRealmName(REALM_NAME);
-            securityRealm.produce(new SecurityRealmBuildItem(realm, authConfig));
-            return new AuthConfigBuildItem(authConfig);
+            securityRealm.produce(new SecurityRealmBuildItem(realm, REALM_NAME, null));
+            return AdditionalBeanBuildItem.unremovableOf(OAuth2AuthMechanism.class);
         }
         return null;
-    }
-
-    /**
-     * Create the OAuthZIdentityManager
-     *
-     * @param recorder - runtime recorder
-     * @param identityManagerProducer - producer factory for IdentityManagerBuildItem
-     */
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void configureIdentityManager(OAuth2Recorder recorder,
-            BuildProducer<IdentityManagerBuildItem> identityManagerProducer) {
-        if (oauth2.enabled) {
-            identityManagerProducer.produce(new IdentityManagerBuildItem(new ElytronIdentityManager()));
-        }
-    }
-
-    /**
-     * Register the Oauth2 authentication servlet extension
-     *
-     * @param recorder - Oauth2 runtime recorder
-     * @param container - the BeanContainer for creating CDI beans
-     * @return servlet extension build item
-     */
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    ServletExtensionBuildItem registerAuthExtension(OAuth2Recorder recorder, BeanContainerBuildItem container) {
-        ServletExtension authExt = recorder.createAuthExtension(AUTH_MECHANISM, container.getValue());
-        return new ServletExtensionBuildItem(authExt);
     }
 
     @BuildStep

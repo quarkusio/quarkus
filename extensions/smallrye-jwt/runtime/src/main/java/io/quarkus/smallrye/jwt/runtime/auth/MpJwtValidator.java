@@ -11,7 +11,6 @@ import org.jboss.logging.Logger;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
 import org.jose4j.jwt.consumer.JwtContext;
-import org.wildfly.security.auth.server.RealmUnavailableException;
 
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -42,15 +41,6 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
     @Inject
     public MpJwtValidator(JWTAuthContextInfo authContextInfo) {
         this.authContextInfo = authContextInfo;
-    }
-
-    private JwtClaims validateClaimsSet(String token) throws RealmUnavailableException {
-        try {
-            JwtContext jwtContext = parser.parse(token, authContextInfo);
-            return jwtContext.getJwtClaims();
-        } catch (ParseException e) {
-            throw new RealmUnavailableException("Failed to verify token", e);
-        }
     }
 
     @Override

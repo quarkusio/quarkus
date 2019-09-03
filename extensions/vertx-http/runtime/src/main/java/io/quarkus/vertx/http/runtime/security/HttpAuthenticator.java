@@ -1,4 +1,4 @@
-package io.quarkus.vertx.web.runtime.security;
+package io.quarkus.vertx.http.runtime.security;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -10,8 +10,10 @@ import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -23,14 +25,15 @@ public class HttpAuthenticator {
     @Inject
     IdentityProviderManager identityProviderManager;
 
-    final AuthenticationMechanism mechanism;
+    final HTTPAuthenticationMechanism mechanism;
 
     public HttpAuthenticator() {
         mechanism = null;
     }
 
     @Inject
-    public HttpAuthenticator(Instance<AuthenticationMechanism> instance) {
+    public HttpAuthenticator(Instance<HTTPAuthenticationMechanism> instance,
+            Instance<IdentityProvider<UsernamePasswordAuthenticationRequest>> usernamePassword) {
         if (instance.isResolvable()) {
             if (instance.isAmbiguous()) {
                 throw new IllegalStateException("Multiple HTTP authentication mechanisms are not implemented yet, discovered "
@@ -38,11 +41,16 @@ public class HttpAuthenticator {
             }
             mechanism = instance.get();
         } else {
-            mechanism = null;
+            if (!usernamePassword.isUnsatisfied()) {
+                //TODO: config
+                mechanism = new BasicAuthenticationMechanism("Quarkus");
+            } else {
+                mechanism = null;
+            }
         }
     }
 
-    public HttpAuthenticator(AuthenticationMechanism mechanism) {
+    public HttpAuthenticator(HTTPAuthenticationMechanism mechanism) {
         this.mechanism = mechanism;
     }
 

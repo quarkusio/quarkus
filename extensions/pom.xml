@@ -25,6 +25,8 @@
         <module>jsonb</module>
 
         <!-- HTTP -->
+        <module>vertx-common</module>
+        <module>vertx-web-common</module>
         <module>undertow</module>
         <module>undertow-websockets</module>
 

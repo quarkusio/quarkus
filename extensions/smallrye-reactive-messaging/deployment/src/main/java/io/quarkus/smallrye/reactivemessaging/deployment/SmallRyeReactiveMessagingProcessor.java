@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
+import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
@@ -55,7 +56,8 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem beans() {
-        return new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class);
+        // We add the connector and stream qualifiers to make them part of the index.
+        return new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class, Connector.class, Stream.class);
     }
 
     @BuildStep

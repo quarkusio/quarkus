@@ -347,6 +347,16 @@ public class CreateExtensionMojo extends AbstractMojo {
     @Parameter(property = "quarkus.additionalRuntimeDependencies")
     List<String> additionalRuntimeDependencies;
 
+    /**
+     * A path relative to {@link #basedir} pointing at a {@code pom.xml} file that should serve as a parent for the
+     * integration test Maven module this mojo generates. If {@link #itestParentPath} is not set, the integration test
+     * module will not be generated.
+     *
+     * @since 0.22.0
+     */
+    @Parameter(property = "quarkus.itestParentPath")
+    Path itestParentPath;
+
     @Parameter(defaultValue = "${project}", readonly = true)
     MavenProject project;
 
@@ -411,7 +421,7 @@ public class CreateExtensionMojo extends AbstractMojo {
                 Model basePom = new MavenXpp3Reader().read(r);
                 if (!"pom".equals(basePom.getPackaging())) {
                     throw new MojoFailureException(
-                            "Can add extensiopn modules only under a project with packagin 'pom'; found: "
+                            "Can add extension modules only under a project with packaging 'pom'; found: "
                                     + basePom.getPackaging() + "");
                 }
                 addModules(basePomXml, basePom, charset);
@@ -427,7 +437,8 @@ public class CreateExtensionMojo extends AbstractMojo {
         }
     }
 
-    void addModules(Path basePomXml, Model basePom, Charset charset) throws IOException, TemplateException {
+    void addModules(Path basePomXml, Model basePom, Charset charset)
+            throws IOException, TemplateException, MojoFailureException, MojoExecutionException {
 
         final Configuration cfg = new Configuration(Configuration.VERSION_2_3_28);
         cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
@@ -495,7 +506,48 @@ public class CreateExtensionMojo extends AbstractMojo {
             new PomTransformer(deploymentBomPath, charset).transform(
                     Transformation.addManagedDependency(model.groupId, aId, "${project.version}"));
         }
+        if (itestParentPath != null) {
+            generateItest(cfg, charset, model);
+        }
 
+    }
+
+    void generateItest(Configuration cfg, Charset charset, TemplateParams model)
+            throws MojoFailureException, MojoExecutionException, TemplateException {
+        final Path itestParentAbsPath = basedir.resolve(itestParentPath).toAbsolutePath();
+        try (Reader r = Files.newBufferedReader(itestParentAbsPath, charset)) {
+            final Model itestParent = new MavenXpp3Reader().read(r);
+            if (!"pom".equals(itestParent.getPackaging())) {
+                throw new MojoFailureException(
+                        "Can add an extension integration test only under a project with packagin 'pom'; found: "
+                                + itestParent.getPackaging() + " in " + itestParentAbsPath);
+            }
+            model.itestParentGroupId = getGroupId(itestParent);
+            model.itestParentArtifactId = itestParent.getArtifactId();
+            model.itestParentVersion = getVersion(itestParent);
+            model.itestParentRelativePath = "../pom.xml";
+
+            final Path itestDir = itestParentAbsPath.getParent().resolve(model.artifactIdBase);
+            evalTemplate(cfg, "integration-test-pom.xml", itestDir.resolve("pom.xml"), charset, model);
+
+            final Path testResourcePath = itestDir.resolve("src/main/java/" + model.javaPackageBase.replace('.', '/')
+                    + "/it/" + model.artifactIdBaseCamelCase + "Resource.java");
+            evalTemplate(cfg, "TestResource.java", testResourcePath, charset, model);
+            final Path testClassDir = itestDir
+                    .resolve("src/test/java/" + model.javaPackageBase.replace('.', '/') + "/it");
+            evalTemplate(cfg, "Test.java", testClassDir.resolve(model.artifactIdBaseCamelCase + "Test.java"), charset,
+                    model);
+            evalTemplate(cfg, "IT.java", testClassDir.resolve(model.artifactIdBaseCamelCase + "IT.java"), charset,
+                    model);
+
+            getLog().info(String.format("Adding module [%s] to [%s]", model.artifactIdBase, itestParentAbsPath));
+            new PomTransformer(itestParentAbsPath, charset).transform(Transformation.addModule(model.artifactIdBase));
+
+        } catch (IOException e) {
+            throw new MojoExecutionException(String.format("Could not read %s", itestParentAbsPath), e);
+        } catch (XmlPullParserException e) {
+            throw new MojoExecutionException(String.format("Could not parse %s", itestParentAbsPath), e);
+        }
     }
 
     private List<Gavtcs> getAdditionalRuntimeDependencies() {
@@ -677,11 +729,19 @@ public class CreateExtensionMojo extends AbstractMojo {
         this.deploymentBomPath = Paths.get(deploymentBomPath);
     }
 
+    public void setItestParentPath(String itestParentPath) {
+        this.itestParentPath = Paths.get(itestParentPath);
+    }
+
     public static class TemplateParams {
         String grandParentRelativePath;
         String grandParentVersion;
         String grandParentArtifactId;
         String grandParentGroupId;
+        String itestParentRelativePath;
+        String itestParentVersion;
+        String itestParentArtifactId;
+        String itestParentGroupId;
         String groupId;
         String artifactId;
         String artifactIdPrefix;
@@ -767,6 +827,22 @@ public class CreateExtensionMojo extends AbstractMojo {
 
         public boolean isRuntimeBomPathSet() {
             return runtimeBomPathSet;
+        }
+
+        public String getItestParentRelativePath() {
+            return itestParentRelativePath;
+        }
+
+        public String getItestParentVersion() {
+            return itestParentVersion;
+        }
+
+        public String getItestParentArtifactId() {
+            return itestParentArtifactId;
+        }
+
+        public String getItestParentGroupId() {
+            return itestParentGroupId;
         }
     }
 }

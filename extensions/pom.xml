@@ -134,6 +134,7 @@
                     <quarkusVersion>@{project.version}</quarkusVersion>
                     <runtimeBomPath>../bom/runtime/pom.xml</runtimeBomPath>
                     <deploymentBomPath>../bom/deployment/pom.xml</deploymentBomPath>
+                    <itestParentPath>../integration-tests/pom.xml</itestParentPath>
                 </configuration>
             </plugin>
         </plugins>

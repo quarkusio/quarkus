@@ -13,6 +13,6 @@
 
     <modules>
         <module>integration-tests</module>
-        <module>with-grand-parent</module>
+        <module>itest</module>
     </modules>
 </project>

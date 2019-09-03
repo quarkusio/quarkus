@@ -17,7 +17,7 @@
 
         <dependency>
             <groupId>io.smallrye</groupId>
-            <artifactId>smallrye-metrics-2.0</artifactId>
+            <artifactId>smallrye-metrics</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

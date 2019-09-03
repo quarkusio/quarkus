@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.Set;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.inject.AmbiguousResolutionException;
+import javax.enterprise.inject.IllegalProductException;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.enterprise.inject.spi.InjectionPoint;
@@ -80,7 +81,13 @@ class InstanceImpl<T> implements Instance<T> {
         } else if (beans.size() > 1) {
             throw new AmbiguousResolutionException("Beans: " + beans.toString());
         }
-        return getBeanInstance((InjectableBean<T>) beans.iterator().next());
+        InjectableBean<T> bean = (InjectableBean<T>) beans.iterator().next();
+        T instance = getBeanInstance(bean);
+        if (instance == null) {
+            throw new IllegalProductException(
+                    "Cannot return null from a non-dependent producer method in " + bean.getBeanClass());
+        }
+        return instance;
     }
 
     @Override

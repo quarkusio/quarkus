@@ -1,10 +1,18 @@
 package io.quarkus.jackson.deployment;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import javax.inject.Inject;
 
-import org.jboss.jandex.*;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Type;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
@@ -28,6 +36,9 @@ public class JacksonProcessor {
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
 
+    @Inject
+    List<IgnoreJsonDeserializeClassBuildItem> ignoreJsonDeserializeClassBuildItems;
+
     @BuildStep
     void register() {
         addReflectiveClass(true, false,
@@ -36,16 +47,20 @@ public class JacksonProcessor {
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
-        // TODO: Here we only check for @JsonDeserialize to detect both Model and Builder
-        //       classes to support @JsonPojoBuilder. The @JsonDeserialize annotiona can
-        //       also be used for other scenarios than builder beside adding just the class
-        //       no other scenarios are supported (like when the annotation is place on
-        //       methods).
+        // TODO: @JsonDeserialize is only supported as a class annotation - we should support the others as well
+
+        Set<DotName> ignoredDotNames = new HashSet<>();
+        for (IgnoreJsonDeserializeClassBuildItem ignoreJsonDeserializeClassBuildItem : ignoreJsonDeserializeClassBuildItems) {
+            ignoredDotNames.add(ignoreJsonDeserializeClassBuildItem.getDotName());
+        }
 
         Collection<AnnotationInstance> pojoBuilderInstances = index.getAnnotations(JSON_DESERIALIZE);
         for (AnnotationInstance pojoBuilderInstance : pojoBuilderInstances) {
             if (AnnotationTarget.Kind.CLASS.equals(pojoBuilderInstance.target().kind())) {
-                addReflectiveHierarchyClass(pojoBuilderInstance.target().asClass().name());
+                DotName dotName = pojoBuilderInstance.target().asClass().name();
+                if (!ignoredDotNames.contains(dotName)) {
+                    addReflectiveHierarchyClass(dotName);
+                }
 
                 AnnotationValue annotationValue = pojoBuilderInstance.value("builder");
                 if (null != annotationValue && AnnotationValue.Kind.CLASS.equals(annotationValue.kind())) {

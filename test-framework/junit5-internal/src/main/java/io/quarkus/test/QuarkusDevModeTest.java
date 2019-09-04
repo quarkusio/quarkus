@@ -377,6 +377,7 @@ public class QuarkusDevModeTest
             try (OutputStream out = Files.newOutputStream(resourcePath)) {
                 out.write(content.getBytes(StandardCharsets.UTF_8));
             }
+            sleepForFileChanges(resourcePath);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

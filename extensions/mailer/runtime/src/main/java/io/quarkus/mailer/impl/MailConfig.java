@@ -102,14 +102,14 @@ public class MailConfig {
 
     /**
      * Set the TLS security mode for the connection.
-     * Either {@code NONE}, {@code OPTIONAL} or {@code REQUIRED}.
+     * Either {@code DISABLED}, {@code OPTIONAL} or {@code REQUIRED}.
      */
     @ConfigItem
     public Optional<String> startTLS;
 
     /**
      * Set the login mode for the connection.
-     * Either {@code DISABLED}, @{code OPTIONAL} or {@code REQUIRED}
+     * Either {@code DISABLED}, {@code OPTIONAL} or {@code REQUIRED}
      */
     @ConfigItem
     public Optional<String> login;

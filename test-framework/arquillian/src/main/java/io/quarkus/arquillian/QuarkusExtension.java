@@ -10,6 +10,7 @@ public class QuarkusExtension implements LoadableExtension {
     public void register(ExtensionBuilder builder) {
         builder.service(DeployableContainer.class, QuarkusDeployableContainer.class);
         builder.service(Protocol.class, QuarkusProtocol.class);
+        builder.observer(QuarkusBeforeAfterLifecycle.class);
     }
 
 }

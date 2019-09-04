@@ -21,16 +21,22 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-netty</artifactId>
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>dynamodb</artifactId>
         </dependency>
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>netty-nio-client</artifactId>
-        </dependency>
+        <!-- Until we have a compatible version of the AWS SDK with the Netty version used in Quarkus, disable the
+             async support. -->
+        <!--<dependency>-->
+            <!--<groupId>software.amazon.awssdk</groupId>-->
+            <!--<artifactId>netty-nio-client</artifactId>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>apache-client</artifactId>

@@ -126,6 +126,7 @@ public class GenerateConfigMojo extends AbstractMojo {
         if (project.getResources().isEmpty()) {
             throw new MojoExecutionException("No resources directory, cannot create application.properties");
         }
+
         Resource res = project.getResources().get(0);
         File target = new File(res.getDirectory());
 

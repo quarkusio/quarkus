@@ -30,32 +30,32 @@
             <artifactId>quarkus-netty</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.wildfly.security</groupId>
+            <artifactId>wildfly-elytron-sasl-plain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wildfly.security</groupId>
+            <artifactId>wildfly-elytron-sasl-digest</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wildfly.security</groupId>
+            <artifactId>wildfly-elytron-sasl-external</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wildfly.security</groupId>
+            <artifactId>wildfly-elytron-sasl-oauth2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wildfly.security</groupId>
+            <artifactId>wildfly-elytron-sasl-scram</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.infinispan</groupId>
             <artifactId>infinispan-client-hotrod</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.jboss.marshalling</groupId>
                     <artifactId>jboss-marshalling-osgi</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.wildfly.security</groupId>
-                    <artifactId>wildfly-elytron-sasl-plain</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.wildfly.security</groupId>
-                    <artifactId>wildfly-elytron-sasl-digest</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.wildfly.security</groupId>
-                    <artifactId>wildfly-elytron-sasl-external</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.wildfly.security</groupId>
-                    <artifactId>wildfly-elytron-sasl-oauth2</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.wildfly.security</groupId>
-                    <artifactId>wildfly-elytron-sasl-scram</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

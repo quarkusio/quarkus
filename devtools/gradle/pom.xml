@@ -113,7 +113,6 @@
                             <arguments>
                                 <argument>clean</argument>
                                 <argument>${gradle.task}</argument>
-                                <argument>-Pversion=${project.version}</argument>
                                 <argument>-Pdescription=${project.description}</argument>
                                 <argument>-S</argument>
                             </arguments>

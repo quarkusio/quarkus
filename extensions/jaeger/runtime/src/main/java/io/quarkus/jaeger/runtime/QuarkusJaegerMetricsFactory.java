@@ -17,7 +17,7 @@ import io.smallrye.metrics.MetricRegistries;
 
 public class QuarkusJaegerMetricsFactory implements MetricsFactory {
 
-    MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.BASE);
+    MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.VENDOR);
 
     @Override
     public Counter createCounter(final String name, final Map<String, String> tags) {

@@ -46,6 +46,11 @@ public class UndertowWebsocketProcessor {
     private static final DotName ENDPOINT = DotName.createSimple(Endpoint.class.getName());
 
     @BuildStep
+    void holdConfig(BuildProducer<FeatureBuildItem> feature, HotReloadConfig hotReloadConfig) {
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.UNDERTOW_WEBSOCKETS));
+    }
+
+    @BuildStep
     void scanForAnnotatedEndpoints(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<AnnotatedWebsocketEndpointBuildItem> annotatedProducer) {
 
@@ -77,10 +82,8 @@ public class UndertowWebsocketProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     public ServletContextAttributeBuildItem deploy(final CombinedIndexBuildItem indexBuildItem,
             UndertowWebsocketRecorder recorder,
-            BuildProducer<ReflectiveClassBuildItem> reflection, BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<ReflectiveClassBuildItem> reflection,
             List<AnnotatedWebsocketEndpointBuildItem> annotatedEndpoints) throws Exception {
-
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.UNDERTOW_WEBSOCKETS));
 
         final Set<String> endpoints = new HashSet<>();
         final Set<String> config = new HashSet<>();

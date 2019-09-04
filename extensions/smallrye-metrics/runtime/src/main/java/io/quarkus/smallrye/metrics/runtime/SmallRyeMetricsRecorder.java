@@ -49,6 +49,11 @@ public class SmallRyeMetricsRecorder {
     // operating system
     private static final String SYSTEM_LOAD_AVERAGE = "cpu.systemLoadAverage";
     private static final String CPU_AVAILABLE_PROCESSORS = "cpu.availableProcessors";
+    private static final String SYSTEM_CPU_LOAD = "cpu.systemCpuLoad";
+    private static final String PROCESS_CPU_LOAD = "cpu.processCpuLoad";
+    private static final String PROCESS_CPU_TIME = "cpu.processCpuTime";
+    private static final String FREE_PHYSICAL_MEM_SIZE = "memory.freePhysicalSize";
+    private static final String FREE_SWAP_SIZE = "memory.freeSwapSize";
 
     // memory
     private static final String MEMORY_COMMITTED_NON_HEAP = "memory.committedNonHeap";
@@ -64,6 +69,7 @@ public class SmallRyeMetricsRecorder {
 
         memoryPoolMetrics(registry, names);
         vendorSpecificMemoryMetrics(registry, names);
+        vendorOperatingSystemMetrics(registry, names);
 
         if (!names.isEmpty()) {
             shutdown.addShutdownTask(() -> {
@@ -80,7 +86,7 @@ public class SmallRyeMetricsRecorder {
 
         garbageCollectionMetrics(registry, names);
         classLoadingMetrics(registry, names);
-        operatingSystemMetrics(registry, names);
+        baseOperatingSystemMetrics(registry, names);
         threadingMetrics(registry, names);
         runtimeMetrics(registry, names);
         baseMemoryMetrics(registry, names);
@@ -119,7 +125,7 @@ public class SmallRyeMetricsRecorder {
             return;
         }
         Metadata countMetadata = Metadata.builder()
-                .withName("gc.count")
+                .withName("gc.total")
                 .withType(MetricType.COUNTER)
                 .withDisplayName("Garbage Collection Time")
                 .withUnit("none")
@@ -180,7 +186,7 @@ public class SmallRyeMetricsRecorder {
         names.add(CURRENT_LOADED_CLASS_COUNT);
     }
 
-    private void operatingSystemMetrics(MetricRegistry registry, List<String> names) {
+    private void baseOperatingSystemMetrics(MetricRegistry registry, List<String> names) {
         OperatingSystemMXBean operatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean();
 
         Metadata meta = Metadata.builder()
@@ -209,6 +215,103 @@ public class SmallRyeMetricsRecorder {
                 .build();
         registry.register(meta, new LambdaGauge(() -> operatingSystemMXBean.getAvailableProcessors()));
         names.add(CPU_AVAILABLE_PROCESSORS);
+
+        // some metrics are only available in jdk internal class 'com.sun.management.OperatingSystemMXBean': cast to it.
+        // com.sun.management.OperatingSystemMXBean is not available in SubstratVM
+        // the cast will fail for some JVM not derived from HotSpot (J9 for example) so we check if it is assignable to it
+        if (!ImageInfo.inImageCode()
+                && com.sun.management.OperatingSystemMXBean.class.isAssignableFrom(operatingSystemMXBean.getClass())) {
+            try {
+                com.sun.management.OperatingSystemMXBean internalOperatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) operatingSystemMXBean;
+                meta = Metadata.builder()
+                        .withName(PROCESS_CPU_LOAD)
+                        .withType(MetricType.GAUGE)
+                        .withUnit(MetricUnits.PERCENT)
+                        .withDisplayName("Process CPU load")
+                        .withDescription("Displays  the \"recent cpu usage\" for the Java Virtual Machine process. " +
+                                "This value is a double in the [0.0,1.0] interval. A value of 0.0 means that none of " +
+                                "the CPUs were running threads from the JVM process during the recent period of time " +
+                                "observed, while a value of 1.0 means that all CPUs were actively running threads from " +
+                                "the JVM 100% of the time during the recent period being observed. Threads from the JVM " +
+                                "include the application threads as well as the JVM internal threads. " +
+                                "All values betweens 0.0 and 1.0 are possible depending of the activities going on in " +
+                                "the JVM process and the whole system. " +
+                                "If the Java Virtual Machine recent CPU usage is not available, the method returns a negative value.")
+                        .build();
+                registry.register(meta, new LambdaGauge(() -> internalOperatingSystemMXBean.getProcessCpuLoad()));
+                names.add(PROCESS_CPU_LOAD);
+            } catch (ClassCastException cce) {
+                // this should never occurs
+                log.debug("Unable to cast the OperatingSystemMXBean to com.sun.management.OperatingSystemMXBean, " +
+                        "not registering extended operating system metrics", cce);
+            }
+        }
+    }
+
+    private void vendorOperatingSystemMetrics(MetricRegistry registry, List<String> names) {
+        OperatingSystemMXBean operatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean();
+
+        // some metrics are only available in jdk internal class 'com.sun.management.OperatingSystemMXBean': cast to it.
+        // com.sun.management.OperatingSystemMXBean is not available in SubstratVM
+        // the cast will fail for some JVM not derived from HotSpot (J9 for example) so we check if it is assignable to it
+        if (!ImageInfo.inImageCode()
+                && com.sun.management.OperatingSystemMXBean.class.isAssignableFrom(operatingSystemMXBean.getClass())) {
+            try {
+                com.sun.management.OperatingSystemMXBean internalOperatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) operatingSystemMXBean;
+                Metadata meta = Metadata.builder()
+                        .withName(SYSTEM_CPU_LOAD)
+                        .withType(MetricType.GAUGE)
+                        .withUnit(MetricUnits.PERCENT)
+                        .withDisplayName("System CPU load")
+                        .withDescription("Displays the \"recent cpu usage\" for the whole system. This value is a double " +
+                                "in the [0.0,1.0] interval. A value of 0.0 means that all CPUs were idle during the recent " +
+                                "period of time observed, while a value of 1.0 means that all CPUs were actively running " +
+                                "100% of the time during the recent period being observed. " +
+                                "All values betweens 0.0 and 1.0 are possible depending of the activities going on in the " +
+                                "system. If the system recent cpu usage is not available, the method returns a negative value.")
+                        .build();
+                registry.register(meta, new LambdaGauge(() -> internalOperatingSystemMXBean.getSystemCpuLoad()));
+                names.add(SYSTEM_CPU_LOAD);
+
+                meta = Metadata.builder()
+                        .withName(PROCESS_CPU_TIME)
+                        .withType(MetricType.GAUGE)
+                        .withUnit(MetricUnits.NANOSECONDS)
+                        .withDisplayName("Process CPU time")
+                        .withDescription(
+                                "Displays the CPU time used by the process on which the Java virtual machine is running " +
+                                        "in nanoseconds. The returned value is of nanoseconds precision but not necessarily " +
+                                        "nanoseconds accuracy. This method returns -1 if the the platform does not support " +
+                                        "this operation.")
+                        .build();
+                registry.register(meta, new LambdaGauge(() -> internalOperatingSystemMXBean.getProcessCpuTime()));
+                names.add(PROCESS_CPU_TIME);
+
+                meta = Metadata.builder()
+                        .withName(FREE_PHYSICAL_MEM_SIZE)
+                        .withType(MetricType.GAUGE)
+                        .withUnit(MetricUnits.BYTES)
+                        .withDisplayName("Free physical memory size")
+                        .withDescription("Displays the amount of free physical memory in bytes.")
+                        .build();
+                registry.register(meta, new LambdaGauge(() -> internalOperatingSystemMXBean.getFreePhysicalMemorySize()));
+                names.add(FREE_PHYSICAL_MEM_SIZE);
+
+                meta = Metadata.builder()
+                        .withName(FREE_SWAP_SIZE)
+                        .withType(MetricType.GAUGE)
+                        .withUnit(MetricUnits.BYTES)
+                        .withDisplayName("Free swap size")
+                        .withDescription("Displays the amount of free swap space in bytes.")
+                        .build();
+                registry.register(meta, new LambdaGauge(() -> internalOperatingSystemMXBean.getFreePhysicalMemorySize()));
+                names.add(FREE_SWAP_SIZE);
+            } catch (ClassCastException cce) {
+                // this should never occurs
+                log.debug("Unable to cast the OperatingSystemMXBean to com.sun.management.OperatingSystemMXBean, " +
+                        "not registering extended operating system metrics", cce);
+            }
+        }
     }
 
     private void threadingMetrics(MetricRegistry registry, List<String> names) {
@@ -216,30 +319,30 @@ public class SmallRyeMetricsRecorder {
 
         Metadata meta = Metadata.builder()
                 .withName(THREAD_COUNT)
-                .withType(MetricType.COUNTER)
+                .withType(MetricType.GAUGE)
                 .withDisplayName("Thread Count")
                 .withDescription("Displays the current number of live threads including both daemon and non-daemon threads")
                 .build();
-        registry.register(meta, new LambdaCounter(() -> (long) thread.getThreadCount()));
+        registry.register(meta, new LambdaGauge(() -> (long) thread.getThreadCount()));
         names.add(THREAD_COUNT);
 
         meta = Metadata.builder()
                 .withName(THREAD_DAEMON_COUNT)
-                .withType(MetricType.COUNTER)
+                .withType(MetricType.GAUGE)
                 .withDisplayName("Daemon Thread Count")
                 .withDescription("Displays the current number of live daemon threads.")
                 .build();
-        registry.register(meta, new LambdaCounter(() -> (long) thread.getDaemonThreadCount()));
+        registry.register(meta, new LambdaGauge(() -> (long) thread.getDaemonThreadCount()));
         names.add(THREAD_DAEMON_COUNT);
 
         meta = Metadata.builder()
                 .withName(THREAD_MAX_COUNT)
-                .withType(MetricType.COUNTER)
+                .withType(MetricType.GAUGE)
                 .withDisplayName("Peak Thread Count")
                 .withDescription("Displays the peak live thread count since the Java virtual machine started or peak was " +
                         "reset. This includes daemon and non-daemon threads.")
                 .build();
-        registry.register(meta, new LambdaCounter(() -> (long) thread.getPeakThreadCount()));
+        registry.register(meta, new LambdaGauge(() -> (long) thread.getPeakThreadCount()));
         names.add(THREAD_MAX_COUNT);
     }
 
@@ -354,7 +457,17 @@ public class SmallRyeMetricsRecorder {
                     .build();
             for (MemoryPoolMXBean mp : mps) {
                 if (mp.getCollectionUsage() != null && mp.getPeakUsage() != null) {
+                    // this will be the case for the heap memory pools
                     registry.register(usageMetadata, new LambdaGauge(() -> mp.getCollectionUsage().getUsed()),
+                            new Tag("name", mp.getName()));
+                    names.add(usageMetadata.getName());
+
+                    registry.register(maxMetadata, new LambdaGauge(() -> mp.getPeakUsage().getUsed()),
+                            new Tag("name", mp.getName()));
+                    names.add(maxMetadata.getName());
+                } else if (mp.getUsage() != null && mp.getPeakUsage() != null) {
+                    // this will be the case for the non-heap memory pools
+                    registry.register(usageMetadata, new LambdaGauge(() -> mp.getUsage().getUsed()),
                             new Tag("name", mp.getName()));
                     names.add(usageMetadata.getName());
 

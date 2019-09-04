@@ -1,12 +1,15 @@
 parameters:
-  module: ''
+  modules: []
   name: ''
   postgres: false
   dynamodb: false
+  keycloak: false
+
 
 jobs:
   - job: ${{ parameters.name }}
-    timeoutInMinutes: 20
+    displayName: ${{ join(', ', parameters.modules) }}
+    timeoutInMinutes: 80
     pool:
       vmImage: 'Ubuntu 16.04'
     variables:
@@ -23,10 +26,12 @@ jobs:
     - ${{ if eq(parameters.dynamodb, 'true') }}:
       - script: docker run --rm --publish 8000:8000 --name build-dynamodb -d amazon/dynamodb-local:1.11.477
         displayName: 'start dynamodb'
-
+    - ${{ if eq(parameters.keycloak, 'true') }}:
+        - script: docker run --rm --publish 8180:8080 --name build-keycloak  -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -d quay.io/keycloak/keycloak
+          displayName: 'start keycloak'
     - task: Maven@3
       displayName: 'Maven Build'
       inputs:
         goals: 'install'
         mavenOptions: $(MAVEN_OPTS)
-        options: '-pl integration-tests/${{ parameters.module }} -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-dynamodb -Ddynamodb-local.port=8000 -Dnative-image.xmx=6g -Dnative -Dno-format'
+        options: '-pl integration-tests/${{ join('',integration-tests/'', parameters.modules) }} -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dnative-image.xmx=6g -Dnative -Dno-format'

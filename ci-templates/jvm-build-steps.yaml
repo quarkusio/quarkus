@@ -1,8 +1,10 @@
 steps:
-- task: DownloadPipelineArtifact@2
+- task: CacheBeta@0 #we know the very first job will have restored or created this, so this will never write built artifacts to the cache
   inputs:
-    artifact: MavenRepo
+    key: maven | bom/runtime/pom.xml
     path: $(Pipeline.Workspace)/.m2/repository/
+    securityNamespace: cache
+  displayName: Restore Maven Cache
 
 - script: docker run --rm --publish 5432:5432 --name build-postgres -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -d postgres:10.5
   displayName: 'start postgres'
@@ -15,4 +17,4 @@ steps:
   inputs:
     goals: 'install'
     mavenOptions: $(MAVEN_OPTS)
-    options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-dynamodb -Ddynamodb-local.port=8000 -Dno-format'
+    options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-dynamodb -Dno-format'

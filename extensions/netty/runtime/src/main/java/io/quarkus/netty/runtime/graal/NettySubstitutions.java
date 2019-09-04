@@ -11,8 +11,6 @@ import javax.net.ssl.TrustManagerFactory;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Delete;
-import com.oracle.svm.core.annotate.RecomputeFieldValue;
-import com.oracle.svm.core.annotate.RecomputeFieldValue.Kind;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.jdk.JDK11OrLater;
@@ -47,59 +45,20 @@ final class Target_io_netty_util_internal_logging_InternalLoggerFactory {
     }
 }
 
-/**
- * This substitution allows the usage of platform specific code to do low level
- * buffer related tasks
- */
-@TargetClass(className = "io.netty.util.internal.CleanerJava6")
-final class Target_io_netty_util_internal_CleanerJava6 {
-
-    @Alias
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FieldOffset, declClassName = "java.nio.DirectByteBuffer", name = "cleaner")
-    private static long CLEANER_FIELD_OFFSET;
-}
-
-/**
- * This substitution allows the usage of platform specific code to do low level
- * buffer related tasks
- */
-@TargetClass(className = "io.netty.util.internal.PlatformDependent0")
-final class Target_io_netty_util_internal_PlatformDependent0 {
-
-    @Alias
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FieldOffset, declClassName = "java.nio.Buffer", name = "address")
-    private static long ADDRESS_FIELD_OFFSET;
-}
-
-/**
- * This substitution allows the usage of platform specific code to do low level
- * buffer related tasks
- */
-@TargetClass(className = "io.netty.util.internal.shaded.org.jctools.util.UnsafeRefArrayAccess")
-final class Target_io_netty_util_internal_shaded_org_jctools_util_UnsafeRefArrayAccess {
-
-    @Alias
-    @RecomputeFieldValue(kind = Kind.ArrayIndexShift, declClass = Object[].class)
-    public static int REF_ELEMENT_SHIFT;
-}
-
 // SSL
 // This whole section is mostly about removing static analysis references to openssl/tcnative
-
-@Delete
-@TargetClass(className = "io.netty.handler.ssl.ReferenceCountedOpenSslEngine")
-final class Target_io_netty_handler_ssl_ReferenceCountedOpenSslEngine {
-}
 
 @TargetClass(className = "io.netty.handler.ssl.JdkSslServerContext")
 final class Target_io_netty_handler_ssl_JdkSslServerContext {
 
     @Alias
-    Target_io_netty_handler_ssl_JdkSslServerContext(Provider provider, X509Certificate[] trustCertCollection,
-            TrustManagerFactory trustManagerFactory, X509Certificate[] keyCertChain, PrivateKey key,
-            String keyPassword, KeyManagerFactory keyManagerFactory, Iterable<String> ciphers,
-            CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn, long sessionCacheSize,
-            long sessionTimeout, ClientAuth clientAuth, String[] protocols, boolean startTls)
+    Target_io_netty_handler_ssl_JdkSslServerContext(Provider provider,
+            X509Certificate[] trustCertCollection, TrustManagerFactory trustManagerFactory,
+            X509Certificate[] keyCertChain, PrivateKey key, String keyPassword,
+            KeyManagerFactory keyManagerFactory, Iterable<String> ciphers, CipherSuiteFilter cipherFilter,
+            ApplicationProtocolConfig apn, long sessionCacheSize, long sessionTimeout,
+            ClientAuth clientAuth, String[] protocols, boolean startTls,
+            String keyStore)
             throws SSLException {
     }
 }
@@ -112,8 +71,9 @@ final class Target_io_netty_handler_ssl_JdkSslClientContext {
             TrustManagerFactory trustManagerFactory, X509Certificate[] keyCertChain, PrivateKey key,
             String keyPassword, KeyManagerFactory keyManagerFactory, Iterable<String> ciphers,
             CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn, String[] protocols,
-            long sessionCacheSize, long sessionTimeout)
+            long sessionCacheSize, long sessionTimeout, String keyStoreType)
             throws SSLException {
+
     }
 }
 
@@ -157,39 +117,39 @@ final class Target_io_netty_handler_ssl_Java9SslEngine {
 final class Target_io_netty_handler_ssl_SslContext {
 
     @Substitute
-    static SslContext newServerContextInternal(SslProvider provider, Provider sslContextProvider,
-            X509Certificate[] trustCertCollection,
-            TrustManagerFactory trustManagerFactory, X509Certificate[] keyCertChain, PrivateKey key,
-            String keyPassword, KeyManagerFactory keyManagerFactory, Iterable<String> ciphers,
-            CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn, long sessionCacheSize,
-            long sessionTimeout, ClientAuth clientAuth, String[] protocols, boolean startTls,
-            boolean enableOcsp)
+    static SslContext newServerContextInternal(SslProvider provider,
+            Provider sslContextProvider,
+            X509Certificate[] trustCertCollection, TrustManagerFactory trustManagerFactory,
+            X509Certificate[] keyCertChain, PrivateKey key, String keyPassword, KeyManagerFactory keyManagerFactory,
+            Iterable<String> ciphers, CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn,
+            long sessionCacheSize, long sessionTimeout, ClientAuth clientAuth, String[] protocols, boolean startTls,
+            boolean enableOcsp, String keyStoreType)
             throws SSLException {
 
         if (enableOcsp) {
             throw new IllegalArgumentException("OCSP is not supported with this SslProvider: " + provider);
         }
         return (SslContext) (Object) new Target_io_netty_handler_ssl_JdkSslServerContext(sslContextProvider,
-                trustCertCollection,
-                trustManagerFactory, keyCertChain, key, keyPassword, keyManagerFactory, ciphers, cipherFilter, apn,
-                sessionCacheSize,
-                sessionTimeout, clientAuth, protocols, startTls);
+                trustCertCollection, trustManagerFactory, keyCertChain, key, keyPassword,
+                keyManagerFactory, ciphers, cipherFilter, apn, sessionCacheSize, sessionTimeout,
+                clientAuth, protocols, startTls, keyStoreType);
     }
 
     @Substitute
-    static SslContext newClientContextInternal(SslProvider provider, Provider sslContextProvider, X509Certificate[] trustCert,
-            TrustManagerFactory trustManagerFactory, X509Certificate[] keyCertChain, PrivateKey key,
-            String keyPassword, KeyManagerFactory keyManagerFactory, Iterable<String> ciphers,
-            CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn, String[] protocols,
-            long sessionCacheSize, long sessionTimeout, boolean enableOcsp)
-            throws SSLException {
+    static SslContext newClientContextInternal(
+            SslProvider provider,
+            Provider sslContextProvider,
+            X509Certificate[] trustCert, TrustManagerFactory trustManagerFactory,
+            X509Certificate[] keyCertChain, PrivateKey key, String keyPassword, KeyManagerFactory keyManagerFactory,
+            Iterable<String> ciphers, CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn, String[] protocols,
+            long sessionCacheSize, long sessionTimeout, boolean enableOcsp, String keyStoreType) throws SSLException {
         if (enableOcsp) {
             throw new IllegalArgumentException("OCSP is not supported with this SslProvider: " + provider);
         }
-        return (SslContext) (Object) new Target_io_netty_handler_ssl_JdkSslClientContext(sslContextProvider, trustCert,
-                trustManagerFactory,
-                keyCertChain, key, keyPassword, keyManagerFactory, ciphers, cipherFilter, apn, protocols, sessionCacheSize,
-                sessionTimeout);
+        return (SslContext) (Object) new Target_io_netty_handler_ssl_JdkSslClientContext(sslContextProvider,
+                trustCert, trustManagerFactory, keyCertChain, key, keyPassword,
+                keyManagerFactory, ciphers, cipherFilter, apn, protocols, sessionCacheSize,
+                sessionTimeout, keyStoreType);
     }
 
 }

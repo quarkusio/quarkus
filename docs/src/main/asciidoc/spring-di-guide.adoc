@@ -3,13 +3,13 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Using our Spring Dependency Injection compatibility layer
+= Quarkus - Quarkus Extension for Spring DI API
 
 include::./attributes.adoc[]
 
-While you are encouraged to use CDI annotations for injection, Quarkus provides a compatibility layer for Spring dependency injection in the form of the `spring-di` extension.
+While users are encouraged to use CDI annotations for injection, Quarkus provides a compatibility layer for Spring dependency injection in the form of the `spring-di` extension.
 
-This guide explains how your Quarkus application can leverage the well known Dependency Injection annotations included in the Spring Framework.
+This guide explains how a Quarkus application can leverage the well known Dependency Injection annotations included in the Spring Framework.
 
 == Prerequisites
 
@@ -252,5 +252,12 @@ You can of course create a native image using instructions similar to link:build
 
 Please note that the Spring support in Quarkus does not start a Spring Application Context nor are any Spring infrastructure classes run.
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
-What that means for end users, is that adding arbitrary Spring to the classpath will not be used at all. Moreover Spring infrastructure
-things like `org.springframework.beans.factory.config.BeanPostProcessor` will not be run.
+What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
+classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for example) will not be executed.
+
+== More Spring guides
+
+Quarkus supports additional Spring compatibility features. See the following guides for more details:
+
+* link:spring-web-guide.adoc[Quarkus - Extension for Spring Web]
+* link:spring-data-jpa-guide.adoc[Quarkus - Extension for Spring Data JPA]

@@ -89,7 +89,7 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter
     private boolean enableRetainedHeapReporting;
 
-    @Parameter
+    @Parameter(defaultValue = "true")
     private boolean enableIsolates;
 
     @Parameter

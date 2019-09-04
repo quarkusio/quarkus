@@ -48,6 +48,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.runtime.LaunchMode;
@@ -106,6 +107,22 @@ public class KogitoAssetsProcessor {
         if (usePersistence) {
             resource.produce(new SubstrateResourceBuildItem("kogito-types.proto"));
         }
+    }
+
+    @BuildStep
+    public List<ReflectiveHierarchyIgnoreWarningBuildItem> reflectiveDMNREST() {
+        List<ReflectiveHierarchyIgnoreWarningBuildItem> result = new ArrayList<>();
+        result.add(new ReflectiveHierarchyIgnoreWarningBuildItem(createDotName("org.kie.api.builder.Message$Level")));
+        result.add(new ReflectiveHierarchyIgnoreWarningBuildItem(createDotName("org.kie.dmn.api.core.DMNContext")));
+        result.add(new ReflectiveHierarchyIgnoreWarningBuildItem(createDotName("org.kie.dmn.api.core.DMNDecisionResult")));
+        result.add(new ReflectiveHierarchyIgnoreWarningBuildItem(
+                createDotName("org.kie.dmn.api.core.DMNDecisionResult$DecisionEvaluationStatus")));
+        result.add(new ReflectiveHierarchyIgnoreWarningBuildItem(createDotName("org.kie.dmn.api.core.DMNMessage")));
+        result.add(new ReflectiveHierarchyIgnoreWarningBuildItem(createDotName("org.kie.dmn.api.core.DMNMessage$Severity")));
+        result.add(new ReflectiveHierarchyIgnoreWarningBuildItem(createDotName("org.kie.dmn.api.core.DMNMessageType")));
+        result.add(
+                new ReflectiveHierarchyIgnoreWarningBuildItem(createDotName("org.kie.dmn.api.feel.runtime.events.FEELEvent")));
+        return result;
     }
 
     @BuildStep
@@ -327,7 +344,22 @@ public class KogitoAssetsProcessor {
             lastDotName = DotName.createComponentized(lastDotName, local);
         }
 
-        return DotName.createComponentized(lastDotName, name);
+        int lastDollar = name.indexOf('$');
+        if (lastDollar < 0) {
+            return DotName.createComponentized(lastDotName, name);
+        }
+        DotName lastDollarName = null;
+        while (lastDollar > 0) {
+            String local = name.substring(0, lastDollar);
+            name = name.substring(lastDollar + 1);
+            lastDollar = name.indexOf('$');
+            if (lastDollarName == null) {
+                lastDollarName = DotName.createComponentized(lastDotName, local);
+            } else {
+                lastDollarName = DotName.createComponentized(lastDollarName, local, true);
+            }
+        }
+        return DotName.createComponentized(lastDollarName, name, true);
     }
 
 }

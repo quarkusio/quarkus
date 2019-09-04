@@ -36,6 +36,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String MONGODB_CLIENT = "mongodb-client";
     public static final String NARAYANA_JTA = "narayana-jta";
     public static final String REACTIVE_PG_CLIENT = "reactive-pg-client";
+    public static final String REACTIVE_MYSQL_CLIENT = "reactive-mysql-client";
     public static final String NEO4J = "neo4j";
     public static final String RESTEASY = "resteasy";
     public static final String RESTEASY_JACKSON = "resteasy-jackson";
@@ -59,6 +60,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String SMALLRYE_REACTIVE_STREAMS_OPERATORS = "smallrye-reactive-streams-operators";
     public static final String SMALLRYE_REACTIVE_TYPE_CONVERTERS = "smallrye-reactive-type-converters";
     public static final String SPRING_DI = "spring-di";
+    public static final String SPRING_DATA_JPA = "spring-data-jpa";
     public static final String SWAGGER_UI = "swagger-ui";
     public static final String TIKA = "tika";
     public static final String UNDERTOW_WEBSOCKETS = "undertow-websockets";

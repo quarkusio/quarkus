@@ -23,7 +23,7 @@ public class TemplateHtmlBuilder {
             "</header>\n" +
             "<div class=\"container content\">\n";
 
-    private static final String RESOURCES_START = "<div class=\"intro\">If you are looking for your REST resources, here are the ones we discovered:</div><div class=\"resources\">";
+    private static final String RESOURCES_START = "<div class=\"intro\">%1$s</div><div class=\"resources\">";
 
     private static final String RESOURCE_TEMPLATE = "<h3>%1$s</h3>\n";
 
@@ -148,8 +148,8 @@ public class TemplateHtmlBuilder {
         return this;
     }
 
-    public TemplateHtmlBuilder resourcesStart() {
-        result.append(RESOURCES_START);
+    public TemplateHtmlBuilder resourcesStart(String title) {
+        result.append(String.format(RESOURCES_START, title));
         return this;
     }
 
@@ -164,8 +164,18 @@ public class TemplateHtmlBuilder {
     }
 
     public TemplateHtmlBuilder resourcePath(String title) {
+        return resourcePath(title, true);
+    }
+
+    public TemplateHtmlBuilder staticResourcePath(String title) {
+        return resourcePath(title, false);
+    }
+
+    private TemplateHtmlBuilder resourcePath(String title, boolean withListStart) {
         result.append(String.format(RESOURCE_TEMPLATE, escapeHtml(title)));
-        result.append(LIST_START);
+        if (withListStart) {
+            result.append(LIST_START);
+        }
         return this;
     }
 
@@ -186,6 +196,11 @@ public class TemplateHtmlBuilder {
 
     public TemplateHtmlBuilder methodEnd() {
         result.append(METHOD_END);
+        return this;
+    }
+
+    public TemplateHtmlBuilder resourceStart() {
+        result.append(LIST_START);
         return this;
     }
 

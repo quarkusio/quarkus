@@ -41,6 +41,8 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     private final static Variant HTML_VARIANT = new Variant(MediaType.TEXT_HTML_TYPE, (String) null, null);
     private final static List<Variant> VARIANTS = Arrays.asList(JSON_VARIANT, HTML_VARIANT);
 
+    private static Set<String> staticResources;
+
     @Context
     private Registry registry = null;
 
@@ -60,12 +62,11 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             this.produces = produces;
             this.consumes = consumes;
         }
-
     }
 
     public static final class ResourceDescription {
-        public String basePath;
-        public List<MethodDescription> calls;
+        public final String basePath;
+        public final List<MethodDescription> calls;
 
         public ResourceDescription(String basePath) {
             this.basePath = basePath;
@@ -153,6 +154,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         List<ResourceDescription> descriptions = ResourceDescription
                 .fromBoundResourceInvokers(bounded
                         .entrySet());
+
         return respond(descriptions);
     }
 
@@ -179,8 +181,8 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         }
 
         if (variant == HTML_VARIANT) {
-            TemplateHtmlBuilder sb = new TemplateHtmlBuilder("404 - Resource Not Found", "", "REST interface overview");
-            sb.resourcesStart();
+            TemplateHtmlBuilder sb = new TemplateHtmlBuilder("404 - Resource Not Found", "", "Resources overview");
+            sb.resourcesStart("REST resources");
             for (ResourceDescription resource : descriptions) {
                 sb.resourcePath(resource.basePath);
                 for (MethodDescription method : resource.calls) {
@@ -200,6 +202,16 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             }
             sb.resourcesEnd();
 
+            if (!staticResources.isEmpty()) {
+                sb.resourcesStart("Static Resources");
+                sb.resourceStart();
+                for (String staticResource : staticResources) {
+                    sb.staticResourcePath(staticResource);
+                }
+                sb.resourceEnd();
+                sb.resourcesEnd();
+            }
+
             return Response.status(Status.NOT_FOUND).entity(sb.toString()).type(MediaType.TEXT_HTML_TYPE).build();
         }
 
@@ -210,5 +222,9 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         ServerDrivenNegotiation negotiation = new ServerDrivenNegotiation();
         negotiation.setAcceptHeaders(headers.getRequestHeaders().get(ACCEPT));
         return negotiation.getBestMatch(VARIANTS);
+    }
+
+    public static void staticResources(Set<String> knownFiles) {
+        NotFoundExceptionMapper.staticResources = knownFiles;
     }
 }

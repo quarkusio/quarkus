@@ -201,12 +201,6 @@ public class VertxHttpRequest extends BaseHttpRequest {
             return asyncResponse;
         }
 
-        @Override
-        public void complete() {
-            if (wasSuspended && asyncResponse != null)
-                asyncResponse.complete();
-        }
-
         /**
          * Vertx implementation of {@link AsyncResponse}.
          *

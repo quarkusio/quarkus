@@ -4,15 +4,9 @@ import java.util.Map.Entry;
 import java.util.Optional;
 
 import javax.servlet.DispatcherType;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
 import javax.ws.rs.core.Application;
 
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.microprofile.config.FilterConfigSourceImpl;
-import org.jboss.resteasy.microprofile.config.ServletConfigSourceImpl;
-import org.jboss.resteasy.microprofile.config.ServletContextConfigSourceImpl;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 
 import io.quarkus.deployment.Capabilities;
@@ -65,12 +59,6 @@ public class ResteasyServletProcessor {
 
         if (resteasyServerConfig.isPresent()) {
             String path = resteasyServerConfig.get().getPath();
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ServletContext.class.getName()));
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, FilterConfig.class.getName()));
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ServletConfig.class.getName()));
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ServletConfigSourceImpl.class.getName()));
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, FilterConfigSourceImpl.class.getName()));
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ServletContextConfigSourceImpl.class.getName()));
 
             //if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the whole mapped path
             if (path.equals("/") || path.isEmpty()) {

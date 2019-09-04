@@ -155,9 +155,11 @@ final public class GenerateExtensionConfigurationDoc {
         }
 
         final Properties allExtensionGeneratedDocs = new Properties();
-        try (BufferedReader bufferedReader = Files.newBufferedReader(Constants.ALL_CR_GENERATED_DOC.toPath(),
-                StandardCharsets.UTF_8)) {
-            allExtensionGeneratedDocs.load(bufferedReader);
+        if (Constants.ALL_CR_GENERATED_DOC.exists()) {
+            try (BufferedReader bufferedReader = Files.newBufferedReader(Constants.ALL_CR_GENERATED_DOC.toPath(),
+                    StandardCharsets.UTF_8)) {
+                allExtensionGeneratedDocs.load(bufferedReader);
+            }
         }
 
         if (!inMemoryConfigurationItems.isEmpty()) {

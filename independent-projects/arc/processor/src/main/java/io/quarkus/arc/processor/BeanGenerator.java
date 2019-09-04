@@ -47,6 +47,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.inject.IllegalProductException;
 import javax.enterprise.inject.literal.InjectLiteral;
 import javax.enterprise.inject.spi.InterceptionType;
 import javax.interceptor.InvocationContext;
@@ -1131,6 +1132,13 @@ public class BeanGenerator extends AbstractGenerator {
                         declaringProviderInstanceHandle, referenceHandles));
             }
 
+            if (bean.getScope().isNormal()) {
+                create.ifNull(instanceHandle).trueBranch().throwException(IllegalProductException.class,
+                        "Normal scoped producer method may not return null: " + bean.getDeclaringBean().getImplClazz().name()
+                                + "." +
+                                bean.getTarget().get().asMethod().name() + "()");
+            }
+
             // If the declaring bean is @Dependent we must destroy the instance afterwards
             if (BuiltinScope.DEPENDENT.is(bean.getDeclaringBean().getScope())) {
                 create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle,
@@ -1171,6 +1179,12 @@ public class BeanGenerator extends AbstractGenerator {
             } else {
                 create.assign(instanceHandle,
                         create.readInstanceField(FieldDescriptor.of(producerField), declaringProviderInstanceHandle));
+            }
+
+            if (bean.getScope().isNormal()) {
+                create.ifNull(instanceHandle).trueBranch().throwException(IllegalProductException.class,
+                        "Normal scoped producer field may not be null: " + bean.getDeclaringBean().getImplClazz().name() + "."
+                                + bean.getTarget().get().asField().name());
             }
 
             // If the declaring bean is @Dependent we must destroy the instance afterwards

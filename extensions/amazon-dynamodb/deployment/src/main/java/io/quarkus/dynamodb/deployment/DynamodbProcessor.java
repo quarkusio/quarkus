@@ -21,9 +21,16 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
-import io.quarkus.dynamodb.runtime.*;
+import io.quarkus.dynamodb.runtime.AwsApacheHttpClientConfig;
+import io.quarkus.dynamodb.runtime.AwsCredentialsProviderType;
+import io.quarkus.dynamodb.runtime.AwsNettyNioAsyncHttpClientConfig;
+import io.quarkus.dynamodb.runtime.DynamodbClientProducer;
+import io.quarkus.dynamodb.runtime.DynamodbConfig;
+import io.quarkus.dynamodb.runtime.DynamodbRecorder;
 import software.amazon.awssdk.http.SdkHttpService;
 import software.amazon.awssdk.http.apache.ApacheSdkHttpService;
+import software.amazon.awssdk.http.async.SdkAsyncHttpService;
+import software.amazon.awssdk.http.nio.netty.NettySdkAsyncHttpService;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.utils.StringUtils;
@@ -73,11 +80,8 @@ public class DynamodbProcessor {
                 createSyncClient = true;
             }
 
-            // Until we have a compatible version of the AWS SDK with the Netty version used in Quarkus, disable the
-            // async support.
             if (ASYNC_CLIENT_NAME.equals(requiredType.name())) {
-                throw new UnsupportedOperationException("Async client not supported");
-                //                createAsyncClient = true;
+                createAsyncClient = true;
             }
         }
 
@@ -94,11 +98,9 @@ public class DynamodbProcessor {
 
         if (createAsyncClient) {
             //Register netty as async client
-            // Until we have a compatible version of the AWS SDK with the Netty version used in Quarkus, disable the
-            // async support.
-            //            serviceProvider.produce(
-            //                    new ServiceProviderBuildItem(SdkAsyncHttpService.class.getName(),
-            //                            NettySdkAsyncHttpService.class.getName()));
+            serviceProvider.produce(
+                    new ServiceProviderBuildItem(SdkAsyncHttpService.class.getName(),
+                            NettySdkAsyncHttpService.class.getName()));
         }
 
         return new DynamodbClientBuildItem(createSyncClient, createAsyncClient);

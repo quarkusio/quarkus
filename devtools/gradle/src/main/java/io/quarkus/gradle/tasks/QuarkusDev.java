@@ -53,6 +53,7 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
 import io.quarkus.gradle.QuarkusPluginExtension;
@@ -372,7 +373,13 @@ public class QuarkusDev extends QuarkusTask {
             getProject().getLogger().info("Adding dependency {}", file);
 
             URI uri = file.toPath().toAbsolutePath().toUri();
-            classPathManifest.append(uri.getPath());
+            String path = uri.getRawPath();
+            if (PropertyUtils.isWindows()) {
+                if (path.length() > 2 && Character.isLetter(path.charAt(0)) && path.charAt(1) == ':') {
+                    path = "/" + path;
+                }
+            }
+            classPathManifest.append(path);
             context.getClassPath().add(toUrl(uri));
             if (file.isDirectory()) {
                 classPathManifest.append("/");

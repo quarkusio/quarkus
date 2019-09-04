@@ -15,6 +15,7 @@ import org.jboss.resteasy.core.MediaTypeMap;
 import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
 import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
 import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
+import org.jboss.resteasy.plugins.providers.StringTextStar;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -105,6 +106,10 @@ public class ResteasyCommonProcessor {
 
         // add the other providers detected
         Set<String> providersToRegister = new HashSet<>(otherProviders);
+
+        // we add a couple of default providers
+        providersToRegister.add(StringTextStar.class.getName());
+        providersToRegister.addAll(categorizedWriters.getPossible(MediaType.APPLICATION_JSON_TYPE));
 
         IndexView index = indexBuildItem.getIndex();
         IndexView beansIndex = beanArchiveIndexBuildItem.getIndex();

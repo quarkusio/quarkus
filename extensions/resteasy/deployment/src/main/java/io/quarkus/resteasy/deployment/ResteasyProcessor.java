@@ -6,6 +6,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.servlet.DispatcherType;
@@ -28,6 +29,7 @@ import io.quarkus.resteasy.server.common.deployment.ResteasyServerConfigBuildIte
 import io.quarkus.undertow.deployment.FilterBuildItem;
 import io.quarkus.undertow.deployment.ServletBuildItem;
 import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
+import io.quarkus.undertow.deployment.StaticResourceFilesBuildItem;
 
 /**
  * Processor that finds JAX-RS classes in the deployment
@@ -95,9 +97,24 @@ public class ResteasyProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(STATIC_INIT)
-    void setupExceptionMapper(List<ServletBuildItem> servlets) {
+    void addServletsToExceptionMapper(List<ServletBuildItem> servlets) {
         NotFoundExceptionMapper.servlets(servlets.stream().filter(s -> !JAX_RS_SERVLET_NAME.equals(s.getName()))
                 .collect(Collectors.toMap(s -> s.getName(), s -> s.getMappings())));
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(STATIC_INIT)
+    void addStaticResourcesExceptionMapper(StaticResourceFilesBuildItem paths) {
+        //limit to 1000 to not have to many files to display
+        Set<String> staticResources = paths.files.stream().filter(this::isHtmlFileName).limit(1000).collect(Collectors.toSet());
+        if (staticResources.isEmpty()) {
+            staticResources = paths.files.stream().limit(1000).collect(Collectors.toSet());
+        }
+        NotFoundExceptionMapper.staticResources(staticResources);
+    }
+
+    private boolean isHtmlFileName(String fileName) {
+        return fileName.endsWith(".html") || fileName.endsWith(".htm");
     }
 
     private String getMappingPath(String path) {

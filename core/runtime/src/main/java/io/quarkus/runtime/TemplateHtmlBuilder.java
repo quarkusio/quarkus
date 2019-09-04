@@ -25,6 +25,8 @@ public class TemplateHtmlBuilder {
 
     private static final String RESOURCES_START = "<div class=\"intro\">%1$s</div><div class=\"resources\">";
 
+    private static final String ANCHOR_TEMPLATE = "<a href=\"/%1$s\">/%2$s</a>";
+
     private static final String RESOURCE_TEMPLATE = "<h3>%1$s</h3>\n";
 
     private static final String LIST_START = "<ul>\n";
@@ -36,8 +38,6 @@ public class TemplateHtmlBuilder {
 
     private static final String METHOD_END = "    </ul>\n"
             + "</li>";
-
-    private static final String SERVLET_MAPPING = "<li>%1$s</li>\n";
 
     private static final String LIST_END = "</ul>\n";
 
@@ -166,8 +166,28 @@ public class TemplateHtmlBuilder {
     }
 
     public TemplateHtmlBuilder resourcePath(String title) {
-        result.append(String.format(RESOURCE_TEMPLATE, escapeHtml(title)));
-        result.append(LIST_START);
+        return resourcePath(title, true, false);
+    }
+
+    public TemplateHtmlBuilder staticResourcePath(String title) {
+        return resourcePath(title, false, true);
+    }
+
+    public TemplateHtmlBuilder servletMapping(String title) {
+        return resourcePath(title, false, false);
+    }
+
+    private TemplateHtmlBuilder resourcePath(String title, boolean withListStart, boolean withAnchor) {
+        String content;
+        if (withAnchor) {
+            content = String.format(ANCHOR_TEMPLATE, title, escapeHtml(title));
+        } else {
+            content = escapeHtml(title);
+        }
+        result.append(String.format(RESOURCE_TEMPLATE, content));
+        if (withListStart) {
+            result.append(LIST_START);
+        }
         return this;
     }
 
@@ -216,10 +236,4 @@ public class TemplateHtmlBuilder {
                 .replace("<", "&lt;")
                 .replace(">", "&gt;");
     }
-
-    public TemplateHtmlBuilder servletMapping(String servletMapping) {
-        result.append(String.format(SERVLET_MAPPING, servletMapping));
-        return this;
-    }
-
 }

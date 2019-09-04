@@ -1,22 +1,20 @@
 package io.quarkus.arc.processor;
 
+import static java.util.stream.Collectors.toList;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.Components;
 import io.quarkus.arc.ComponentsProvider;
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableInterceptor;
-import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -25,6 +23,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -108,7 +107,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             }
         }
 
-        Map<BeanInfo, ResultHandle> beanToResultHandle = new HashMap<>();
+        Map<BeanInfo, ResultHandle> beanToResultSupplierHandle = new HashMap<>();
         List<BeanInfo> processed = new ArrayList<>();
 
         boolean stuck = false;
@@ -128,8 +127,9 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                     .hasNext();) {
                 Entry<BeanInfo, List<BeanInfo>> entry = iterator.next();
                 BeanInfo bean = entry.getKey();
-                if (!isDependency(bean, beanToInjections)) {
-                    addBean(getComponents, beansHandle, bean, beanToGeneratedName, beanToResultHandle);
+                boolean beanHasNormalScope = bean.getScope().isNormal();
+                if (!isDependency(bean, beanToInjections) || beanHasNormalScope) {
+                    addBean(getComponents, beansHandle, bean, beanToGeneratedName, beanToResultSupplierHandle);
                     iterator.remove();
                     processed.add(bean);
                     stuck = false;
@@ -139,12 +139,12 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         // Finally process beans and interceptors that are not dependencies
         for (BeanInfo bean : beanDeployment.getBeans()) {
             if (!processed.contains(bean)) {
-                addBean(getComponents, beansHandle, bean, beanToGeneratedName, beanToResultHandle);
+                addBean(getComponents, beansHandle, bean, beanToGeneratedName, beanToResultSupplierHandle);
             }
         }
         for (BeanInfo interceptor : beanDeployment.getInterceptors()) {
             if (!processed.contains(interceptor)) {
-                addBean(getComponents, beansHandle, interceptor, beanToGeneratedName, beanToResultHandle);
+                addBean(getComponents, beansHandle, interceptor, beanToGeneratedName, beanToResultSupplierHandle);
             }
         }
 
@@ -154,16 +154,17 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             String observerType = observerToGeneratedName.get(observer);
             List<InjectionPointInfo> injectionPoints = observer.getInjection().injectionPoints.stream()
                     .filter(ip -> !BuiltinBean.resolvesTo(ip))
-                    .collect(Collectors.toList());
+                    .collect(toList());
             List<ResultHandle> params = new ArrayList<>();
             List<String> paramTypes = new ArrayList<>();
 
-            params.add(beanToResultHandle.get(observer.getDeclaringBean()));
-            paramTypes.add(Type.getDescriptor(InjectableBean.class));
-            for (InjectionPointInfo injetionPoint : injectionPoints) {
-                ResultHandle resultHandle = beanToResultHandle.get(injetionPoint.getResolvedBean());
-                params.add(resultHandle);
-                paramTypes.add(Type.getDescriptor(InjectableReferenceProvider.class));
+            ResultHandle resultSupplierHandle = beanToResultSupplierHandle.get(observer.getDeclaringBean());
+            params.add(resultSupplierHandle);
+            paramTypes.add(Type.getDescriptor(Supplier.class));
+            for (InjectionPointInfo injectionPoint : injectionPoints) {
+                resultSupplierHandle = beanToResultSupplierHandle.get(injectionPoint.getResolvedBean());
+                params.add(resultSupplierHandle);
+                paramTypes.add(Type.getDescriptor(Supplier.class));
             }
             ResultHandle observerInstance = getComponents.newInstance(
                     MethodDescriptor.ofConstructor(observerType, paramTypes.toArray(new String[0])),
@@ -213,44 +214,69 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
     private void addBean(MethodCreator getComponents, ResultHandle beansResultHandle, BeanInfo bean,
             Map<BeanInfo, String> beanToGeneratedName,
-            Map<BeanInfo, ResultHandle> beanToResultHandle) {
+            Map<BeanInfo, ResultHandle> beanToResultSupplierHandle) {
 
         String beanType = beanToGeneratedName.get(bean);
 
-        List<InjectionPointInfo> injectionPoints = bean.getInjections().isEmpty() ? Collections.emptyList()
-                : bean.getInjections().stream().flatMap(i -> i.injectionPoints.stream())
-                        .filter(ip -> !BuiltinBean.resolvesTo(ip)).collect(Collectors.toList());
+        List<InjectionPointInfo> injectionPoints = bean.getInjections().stream().flatMap(i -> i.injectionPoints.stream())
+                .filter(ip -> !BuiltinBean.resolvesTo(ip)).collect(toList());
         List<ResultHandle> params = new ArrayList<>();
         List<String> paramTypes = new ArrayList<>();
 
         if (bean.isProducerMethod() || bean.isProducerField()) {
-            params.add(beanToResultHandle.get(bean.getDeclaringBean()));
-            paramTypes.add(Type.getDescriptor(InjectableBean.class));
+            ResultHandle resultSupplierHandle = beanToResultSupplierHandle.get(bean.getDeclaringBean());
+            params.add(resultSupplierHandle);
+            paramTypes.add(Type.getDescriptor(Supplier.class));
         }
         for (InjectionPointInfo injectionPoint : injectionPoints) {
-            ResultHandle resultHandle = beanToResultHandle.get(injectionPoint.getResolvedBean());
-            params.add(resultHandle);
-            paramTypes.add(Type.getDescriptor(InjectableReferenceProvider.class));
+            if (injectionPoint.getResolvedBean().equals(bean)) {
+                // The later-to-be-created instance of the resolved bean will be added to the ArrayList.
+                // The current size of the ArrayList will be the index where we can retrieve it later.
+
+                // int indexInBeansList = beans.size(); // this happens in the getComponents() method.
+                ResultHandle indexInBeansList = getComponents.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(List.class, "size", int.class),
+                        beansResultHandle);
+
+                // beans.get(indexInBeansList); // this happens in the Supplier instance.
+                FunctionCreator supplierInstance = getComponents.createFunction(Supplier.class);
+                ResultHandle thingWeWantToReturn = supplierInstance.getBytecode().invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(List.class, "get", Object.class, int.class),
+                        beansResultHandle,
+                        indexInBeansList);
+
+                supplierInstance.getBytecode().returnValue(thingWeWantToReturn);
+                params.add(supplierInstance.getInstance());
+            } else {
+                ResultHandle resultSupplierHandle = beanToResultSupplierHandle.get(injectionPoint.getResolvedBean());
+                params.add(resultSupplierHandle);
+            }
+            paramTypes.add(Type.getDescriptor(Supplier.class));
         }
         if (bean.getDisposer() != null) {
             for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
-                ResultHandle resultHandle = beanToResultHandle.get(injectionPoint.getResolvedBean());
-                params.add(resultHandle);
-                paramTypes.add(Type.getDescriptor(InjectableReferenceProvider.class));
+                ResultHandle resultSupplierHandle = beanToResultSupplierHandle.get(injectionPoint.getResolvedBean());
+                params.add(resultSupplierHandle);
+                paramTypes.add(Type.getDescriptor(Supplier.class));
             }
         }
         for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
-            ResultHandle resultHandle = beanToResultHandle.get(interceptor);
-            params.add(resultHandle);
-            paramTypes.add(Type.getDescriptor(InjectableInterceptor.class));
+            ResultHandle resultSupplierHandle = beanToResultSupplierHandle.get(interceptor);
+            params.add(resultSupplierHandle);
+            paramTypes.add(Type.getDescriptor(Supplier.class));
         }
+
         // Foo_Bean bean2 = new Foo_Bean(bean2)
         ResultHandle beanInstance = getComponents.newInstance(
                 MethodDescriptor.ofConstructor(beanType, paramTypes.toArray(new String[0])),
                 params.toArray(new ResultHandle[0]));
         // beans.add(bean2)
         getComponents.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, beansResultHandle, beanInstance);
-        beanToResultHandle.put(bean, beanInstance);
+
+        // Create a Supplier that will return the bean instance at runtime.
+        FunctionCreator beanInstanceSupplier = getComponents.createFunction(Supplier.class);
+        beanInstanceSupplier.getBytecode().returnValue(beanInstance);
+        beanToResultSupplierHandle.put(bean, beanInstanceSupplier.getInstance());
     }
 
     private boolean isDependency(BeanInfo bean, Map<BeanInfo, List<BeanInfo>> beanToInjections) {

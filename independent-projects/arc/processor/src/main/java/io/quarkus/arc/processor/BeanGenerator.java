@@ -74,7 +74,7 @@ public class BeanGenerator extends AbstractGenerator {
 
     static final String SYNTHETIC_SUFFIX = "_Synthetic";
 
-    protected static final String FIELD_NAME_DECLARING_PROVIDER = "declaringProvider";
+    protected static final String FIELD_NAME_DECLARING_PROVIDER_SUPPLIER = "declaringProviderSupplier";
     protected static final String FIELD_NAME_BEAN_TYPES = "types";
     protected static final String FIELD_NAME_QUALIFIERS = "qualifiers";
     protected static final String FIELD_NAME_STEREOTYPES = "stereotypes";
@@ -264,21 +264,22 @@ public class BeanGenerator extends AbstractGenerator {
             stereotypes = beanCreator.getFieldCreator(FIELD_NAME_STEREOTYPES, Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
 
-        Map<InjectionPointInfo, String> injectionPointToProviderField = new HashMap<>();
-        Map<InterceptorInfo, String> interceptorToProviderField = new HashMap<>();
-        initMaps(bean, injectionPointToProviderField, interceptorToProviderField);
+        Map<InjectionPointInfo, String> injectionPointToProviderSupplierField = new HashMap<>();
+        Map<InterceptorInfo, String> interceptorToProviderSupplierField = new HashMap<>();
+        initMaps(bean, injectionPointToProviderSupplierField, interceptorToProviderSupplierField);
 
-        createProviderFields(beanCreator, bean, injectionPointToProviderField, interceptorToProviderField);
-        createConstructor(classOutput, beanCreator, bean, baseName, injectionPointToProviderField, interceptorToProviderField,
+        createProviderFields(beanCreator, bean, injectionPointToProviderSupplierField, interceptorToProviderSupplierField);
+        createConstructor(classOutput, beanCreator, bean, baseName, injectionPointToProviderSupplierField,
+                interceptorToProviderSupplierField,
                 annotationLiterals);
 
         implementGetIdentifier(bean, beanCreator);
         if (!bean.hasDefaultDestroy()) {
-            implementDestroy(bean, beanCreator, providerTypeName, injectionPointToProviderField, reflectionRegistration,
+            implementDestroy(bean, beanCreator, providerTypeName, injectionPointToProviderSupplierField, reflectionRegistration,
                     isApplicationClass, baseName);
         }
-        implementCreate(classOutput, beanCreator, bean, providerTypeName, baseName, injectionPointToProviderField,
-                interceptorToProviderField,
+        implementCreate(classOutput, beanCreator, bean, providerTypeName, baseName, injectionPointToProviderSupplierField,
+                interceptorToProviderSupplierField,
                 reflectionRegistration, targetPackage, isApplicationClass);
         implementGet(bean, beanCreator, providerTypeName, baseName);
 
@@ -478,33 +479,33 @@ public class BeanGenerator extends AbstractGenerator {
             Map<InterceptorInfo, String> interceptorToProvider) {
         int providerIdx = 1;
         for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
-            injectionPointToProvider.put(injectionPoint, "injectProvider" + providerIdx++);
+            injectionPointToProvider.put(injectionPoint, "injectProviderSupplier" + providerIdx++);
         }
         if (bean.getDisposer() != null) {
             for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
-                injectionPointToProvider.put(injectionPoint, "disposerProvider" + providerIdx++);
+                injectionPointToProvider.put(injectionPoint, "disposerProviderSupplier" + providerIdx++);
             }
         }
         for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
-            interceptorToProvider.put(interceptor, "interceptorProvider" + providerIdx++);
+            interceptorToProvider.put(interceptor, "interceptorProviderSupplier" + providerIdx++);
         }
     }
 
     protected void createProviderFields(ClassCreator beanCreator, BeanInfo bean,
-            Map<InjectionPointInfo, String> injectionPointToProvider,
-            Map<InterceptorInfo, String> interceptorToProvider) {
+            Map<InjectionPointInfo, String> injectionPointToProviderSupplier,
+            Map<InterceptorInfo, String> interceptorToProviderSupplier) {
         // Declaring bean provider
         if (bean.isProducerMethod() || bean.isProducerField()) {
-            beanCreator.getFieldCreator(FIELD_NAME_DECLARING_PROVIDER, InjectableBean.class)
+            beanCreator.getFieldCreator(FIELD_NAME_DECLARING_PROVIDER_SUPPLIER, Supplier.class)
                     .setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
         // Injection points
-        for (String provider : injectionPointToProvider.values()) {
-            beanCreator.getFieldCreator(provider, InjectableReferenceProvider.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
+        for (String provider : injectionPointToProviderSupplier.values()) {
+            beanCreator.getFieldCreator(provider, Supplier.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
         // Interceptors
-        for (String interceptorProvider : interceptorToProvider.values()) {
-            beanCreator.getFieldCreator(interceptorProvider, InjectableInterceptor.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
+        for (String interceptorProvider : interceptorToProviderSupplier.values()) {
+            beanCreator.getFieldCreator(interceptorProvider, Supplier.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
     }
 
@@ -525,22 +526,22 @@ public class BeanGenerator extends AbstractGenerator {
         // First collect all param types
         List<String> parameterTypes = new ArrayList<>();
         if (bean.isProducerMethod() || bean.isProducerField()) {
-            parameterTypes.add(InjectableBean.class.getName());
+            parameterTypes.add(Supplier.class.getName());
         }
         for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
             if (BuiltinBean.resolve(injectionPoint) == null) {
-                parameterTypes.add(InjectableReferenceProvider.class.getName());
+                parameterTypes.add(Supplier.class.getName());
             }
         }
         if (bean.getDisposer() != null) {
             for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
                 if (BuiltinBean.resolve(injectionPoint) == null) {
-                    parameterTypes.add(InjectableReferenceProvider.class.getName());
+                    parameterTypes.add(Supplier.class.getName());
                 }
             }
         }
         for (int i = 0; i < interceptorToProviderField.size(); i++) {
-            parameterTypes.add(InjectableInterceptor.class.getName());
+            parameterTypes.add(Supplier.class.getName());
         }
 
         MethodCreator constructor = beanCreator.getMethodCreator(Methods.INIT, "V", parameterTypes.toArray(new String[0]));
@@ -551,8 +552,8 @@ public class BeanGenerator extends AbstractGenerator {
         int paramIdx = 0;
         if (bean.isProducerMethod() || bean.isProducerField()) {
             constructor.writeInstanceField(
-                    FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER,
-                            InjectableBean.class.getName()),
+                    FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
+                            Supplier.class.getName()),
                     constructor.getThis(), constructor.getMethodParam(0));
             paramIdx++;
         }
@@ -582,14 +583,16 @@ public class BeanGenerator extends AbstractGenerator {
                     // reference provider
                     ResultHandle wrapHandle = wrapCurrentInjectionPoint(classOutput, beanCreator, bean, constructor,
                             injectionPoint, paramIdx++);
+                    FunctionCreator wrapSupplierHandle = constructor.createFunction(Supplier.class);
+                    wrapSupplierHandle.getBytecode().returnValue(wrapHandle);
                     constructor.writeInstanceField(
                             FieldDescriptor.of(beanCreator.getClassName(), injectionPointToProviderField.get(injectionPoint),
-                                    InjectableReferenceProvider.class.getName()),
-                            constructor.getThis(), wrapHandle);
+                                    Supplier.class.getName()),
+                            constructor.getThis(), wrapSupplierHandle.getInstance());
                 } else {
                     constructor.writeInstanceField(
                             FieldDescriptor.of(beanCreator.getClassName(), injectionPointToProviderField.get(injectionPoint),
-                                    InjectableReferenceProvider.class.getName()),
+                                    Supplier.class.getName()),
                             constructor.getThis(), constructor.getMethodParam(paramIdx++));
                 }
             }
@@ -597,7 +600,7 @@ public class BeanGenerator extends AbstractGenerator {
         for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
             constructor.writeInstanceField(
                     FieldDescriptor.of(beanCreator.getClassName(), interceptorToProviderField.get(interceptor),
-                            InjectableInterceptor.class.getName()),
+                            Supplier.class.getName()),
                     constructor.getThis(), constructor.getMethodParam(paramIdx++));
         }
 
@@ -657,7 +660,7 @@ public class BeanGenerator extends AbstractGenerator {
         if (bean.getScope().isNormal()) {
             // this.proxy = new Bar_ClientProxy(this)
             String proxyTypeName = getProxyTypeName(bean, baseName);
-            constructor.writeInstanceField(FieldDescriptor.of(beanCreator.getClassName(), "proxy", proxyTypeName),
+            constructor.writeInstanceField(FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_PROXY, proxyTypeName),
                     constructor.getThis(),
                     constructor.newInstance(
                             MethodDescriptor.ofConstructor(proxyTypeName, beanCreator.getClassName()), constructor.getThis()));
@@ -714,10 +717,12 @@ public class BeanGenerator extends AbstractGenerator {
             // declaringProvider.get(new CreationalContextImpl<>()).dispose()
             MethodInfo disposerMethod = bean.getDisposer().getDisposerMethod();
 
-            ResultHandle declaringProviderHandle = destroy.readInstanceField(
-                    FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER,
-                            InjectableBean.class.getName()),
+            ResultHandle declaringProviderSupplierHandle = destroy.readInstanceField(
+                    FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
+                            Supplier.class.getName()),
                     destroy.getThis());
+            ResultHandle declaringProviderHandle = destroy.invokeInterfaceMethod(
+                    MethodDescriptors.SUPPLIER_GET, declaringProviderSupplierHandle);
             ResultHandle ctxHandle = destroy.newInstance(
                     MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), destroy.loadNull());
             ResultHandle declaringProviderInstanceHandle = destroy.invokeInterfaceMethod(
@@ -740,9 +745,12 @@ public class BeanGenerator extends AbstractGenerator {
                 } else {
                     ResultHandle childCtxHandle = destroy.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
                             declaringProviderHandle, ctxHandle);
-                    ResultHandle providerHandle = destroy.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
-                            injectionPointToProviderField.get(injectionPointsIterator.next()),
-                            InjectableReferenceProvider.class.getName()), destroy.getThis());
+                    ResultHandle providerSupplierHandle = destroy
+                            .readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
+                                    injectionPointToProviderField.get(injectionPointsIterator.next()),
+                                    Supplier.class.getName()), destroy.getThis());
+                    ResultHandle providerHandle = destroy.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
+                            providerSupplierHandle);
                     ResultHandle referenceHandle = destroy.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
                             providerHandle, childCtxHandle);
                     referenceHandles[i] = referenceHandle;
@@ -794,8 +802,8 @@ public class BeanGenerator extends AbstractGenerator {
 
     protected void implementCreate(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean, String providerTypeName,
             String baseName,
-            Map<InjectionPointInfo, String> injectionPointToProviderField,
-            Map<InterceptorInfo, String> interceptorToProviderField,
+            Map<InjectionPointInfo, String> injectionPointToProviderSupplierField,
+            Map<InterceptorInfo, String> interceptorToProviderSupplierField,
             ReflectionRegistration reflectionRegistration, String targetPackage, boolean isApplicationClass) {
 
         MethodCreator create = beanCreator.getMethodCreator("create", providerTypeName, CreationalContext.class)
@@ -832,10 +840,12 @@ public class BeanGenerator extends AbstractGenerator {
                 Map<InterceptorInfo, ResultHandle> interceptorToResultHandle = new HashMap<>();
 
                 for (InterceptorInfo interceptor : wraps) {
-                    ResultHandle interceptorProvider = create.readInstanceField(
-                            FieldDescriptor.of(beanCreator.getClassName(), interceptorToProviderField.get(interceptor),
-                                    InjectableInterceptor.class.getName()),
+                    ResultHandle interceptorProviderSupplier = create.readInstanceField(
+                            FieldDescriptor.of(beanCreator.getClassName(), interceptorToProviderSupplierField.get(interceptor),
+                                    Supplier.class.getName()),
                             create.getThis());
+                    ResultHandle interceptorProvider = create.invokeInterfaceMethod(
+                            MethodDescriptors.SUPPLIER_GET, interceptorProviderSupplier);
                     ResultHandle interceptorInstanceHandle = create.invokeInterfaceMethod(
                             MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, interceptorProvider,
                             create.getMethodParam(0));
@@ -851,9 +861,12 @@ public class BeanGenerator extends AbstractGenerator {
                     // postConstructs = new ArrayList<InterceptorInvocation>()
                     postConstructsHandle = create.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
                     for (InterceptorInfo interceptor : postConstructs.interceptors) {
-                        ResultHandle interceptorHandle = create.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
-                                interceptorToProviderField.get(interceptor), InjectableInterceptor.class.getName()),
+                        ResultHandle interceptorSupplierHandle = create.readInstanceField(
+                                FieldDescriptor.of(beanCreator.getClassName(),
+                                        interceptorToProviderSupplierField.get(interceptor), Supplier.class.getName()),
                                 create.getThis());
+                        ResultHandle interceptorHandle = create.invokeInterfaceMethod(
+                                MethodDescriptors.SUPPLIER_GET, interceptorSupplierHandle);
 
                         ResultHandle interceptorInvocationHandle = create.invokeStaticMethod(
                                 MethodDescriptors.INTERCEPTOR_INVOCATION_POST_CONSTRUCT,
@@ -868,9 +881,12 @@ public class BeanGenerator extends AbstractGenerator {
                     // aroundConstructs = new ArrayList<InterceptorInvocation>()
                     aroundConstructsHandle = create.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
                     for (InterceptorInfo interceptor : aroundConstructs.interceptors) {
-                        ResultHandle interceptorHandle = create.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
-                                interceptorToProviderField.get(interceptor), InjectableInterceptor.class.getName()),
+                        ResultHandle interceptorSupplierHandle = create.readInstanceField(
+                                FieldDescriptor.of(beanCreator.getClassName(),
+                                        interceptorToProviderSupplierField.get(interceptor), Supplier.class.getName()),
                                 create.getThis());
+                        ResultHandle interceptorHandle = create.invokeInterfaceMethod(
+                                MethodDescriptors.SUPPLIER_GET, interceptorSupplierHandle);
 
                         ResultHandle interceptorInvocationHandle = create.invokeStaticMethod(
                                 MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_CONSTRUCT,
@@ -913,7 +929,7 @@ public class BeanGenerator extends AbstractGenerator {
                 }
 
                 List<ResultHandle> providerHandles = newProviderHandles(bean, beanCreator, create,
-                        injectionPointToProviderField, interceptorToProviderField,
+                        injectionPointToProviderSupplierField, interceptorToProviderSupplierField,
                         interceptorToWrap);
 
                 // Forwarding function
@@ -950,7 +966,8 @@ public class BeanGenerator extends AbstractGenerator {
 
             } else {
                 create.assign(instanceHandle, newInstanceHandle(bean, beanCreator, create, create, providerTypeName, baseName,
-                        newProviderHandles(bean, beanCreator, create, injectionPointToProviderField, interceptorToProviderField,
+                        newProviderHandles(bean, beanCreator, create, injectionPointToProviderSupplierField,
+                                interceptorToProviderSupplierField,
                                 interceptorToWrap),
                         reflectionRegistration, isApplicationClass));
             }
@@ -958,9 +975,11 @@ public class BeanGenerator extends AbstractGenerator {
             // Perform field and initializer injections
             for (Injection fieldInjection : fieldInjections) {
                 InjectionPointInfo injectionPoint = fieldInjection.injectionPoints.get(0);
-                ResultHandle providerHandle = create.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
-                        injectionPointToProviderField.get(injectionPoint), InjectableReferenceProvider.class.getName()),
+                ResultHandle providerSupplierHandle = create.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
+                        injectionPointToProviderSupplierField.get(injectionPoint), Supplier.class.getName()),
                         create.getThis());
+                ResultHandle providerHandle = create.invokeInterfaceMethod(
+                        MethodDescriptors.SUPPLIER_GET, providerSupplierHandle);
                 ResultHandle childCtxHandle = create.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
                         providerHandle, create.getMethodParam(0));
                 ResultHandle referenceHandle = create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
@@ -991,9 +1010,12 @@ public class BeanGenerator extends AbstractGenerator {
                 ResultHandle[] referenceHandles = new ResultHandle[methodInjection.injectionPoints.size()];
                 int paramIdx = 0;
                 for (InjectionPointInfo injectionPoint : methodInjection.injectionPoints) {
-                    ResultHandle providerHandle = create.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
-                            injectionPointToProviderField.get(injectionPoint), InjectableReferenceProvider.class.getName()),
+                    ResultHandle providerSupplierHandle = create.readInstanceField(
+                            FieldDescriptor.of(beanCreator.getClassName(),
+                                    injectionPointToProviderSupplierField.get(injectionPoint), Supplier.class.getName()),
                             create.getThis());
+                    ResultHandle providerHandle = create.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
+                            providerSupplierHandle);
                     ResultHandle childCtxHandle = create.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
                             providerHandle, create.getMethodParam(0));
                     ResultHandle referenceHandle = create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
@@ -1079,11 +1101,13 @@ public class BeanGenerator extends AbstractGenerator {
 
         } else if (bean.isProducerMethod()) {
             instanceHandle = create.createVariable(DescriptorUtils.extToInt(providerTypeName));
-            // instance = declaringProvider.get(new CreationalContextImpl<>()).produce()
-            ResultHandle declaringProviderHandle = create.readInstanceField(
-                    FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER,
-                            InjectableBean.class.getName()),
+            // instance = declaringProviderSupplier.get().get(new CreationalContextImpl<>()).produce()
+            ResultHandle declaringProviderSupplierHandle = create.readInstanceField(
+                    FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
+                            Supplier.class.getName()),
                     create.getThis());
+            ResultHandle declaringProviderHandle = create.invokeInterfaceMethod(
+                    MethodDescriptors.SUPPLIER_GET, declaringProviderSupplierHandle);
             ResultHandle ctxHandle = create.newInstance(
                     MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), create.getThis());
             ResultHandle declaringProviderInstanceHandle = create.invokeInterfaceMethod(
@@ -1101,9 +1125,11 @@ public class BeanGenerator extends AbstractGenerator {
             ResultHandle[] referenceHandles = new ResultHandle[injectionPoints.size()];
             int paramIdx = 0;
             for (InjectionPointInfo injectionPoint : injectionPoints) {
-                ResultHandle providerHandle = create.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
-                        injectionPointToProviderField.get(injectionPoint), InjectableReferenceProvider.class.getName()),
+                ResultHandle providerSupplierHandle = create.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
+                        injectionPointToProviderSupplierField.get(injectionPoint), Supplier.class.getName()),
                         create.getThis());
+                ResultHandle providerHandle = create.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
+                        providerSupplierHandle);
                 ResultHandle childCtxHandle = create.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
                         providerHandle, create.getMethodParam(0));
                 ResultHandle referenceHandle = create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
@@ -1148,14 +1174,16 @@ public class BeanGenerator extends AbstractGenerator {
 
         } else if (bean.isProducerField()) {
             instanceHandle = create.createVariable(DescriptorUtils.extToInt(providerTypeName));
-            // instance = declaringProvider.get(new CreationalContextImpl<>()).field
+            // instance = declaringProviderSupplier.get().get(new CreationalContextImpl<>()).field
 
             FieldInfo producerField = bean.getTarget().get().asField();
 
-            ResultHandle declaringProviderHandle = create.readInstanceField(
-                    FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER,
-                            InjectableBean.class.getName()),
+            ResultHandle declaringProviderSupplierHandle = create.readInstanceField(
+                    FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
+                            Supplier.class.getName()),
                     create.getThis());
+            ResultHandle declaringProviderHandle = create.invokeInterfaceMethod(
+                    MethodDescriptors.SUPPLIER_GET, declaringProviderSupplierHandle);
             ResultHandle ctxHandle = create.newInstance(
                     MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), create.getThis());
             ResultHandle declaringProviderInstanceHandle = create.invokeInterfaceMethod(
@@ -1215,9 +1243,12 @@ public class BeanGenerator extends AbstractGenerator {
 
         if (constructorInjection.isPresent()) {
             for (InjectionPointInfo injectionPoint : constructorInjection.get().injectionPoints) {
-                ResultHandle providerHandle = createMethod.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
-                        injectionPointToProviderField.get(injectionPoint), InjectableReferenceProvider.class.getName()),
+                ResultHandle providerSupplierHandle = createMethod.readInstanceField(
+                        FieldDescriptor.of(beanCreator.getClassName(),
+                                injectionPointToProviderField.get(injectionPoint), Supplier.class.getName()),
                         createMethod.getThis());
+                ResultHandle providerHandle = createMethod.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
+                        providerSupplierHandle);
                 ResultHandle childCtx = createMethod.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
                         providerHandle, createMethod.getMethodParam(0));
                 providerHandles.add(createMethod.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
@@ -1230,10 +1261,13 @@ public class BeanGenerator extends AbstractGenerator {
                 if (wrapped != null) {
                     providerHandles.add(wrapped);
                 } else {
-                    providerHandles.add(createMethod.readInstanceField(
+                    ResultHandle interceptorProviderSupplierHandle = createMethod.readInstanceField(
                             FieldDescriptor.of(beanCreator.getClassName(), interceptorToProviderField.get(interceptor),
-                                    InjectableInterceptor.class.getName()),
-                            createMethod.getThis()));
+                                    Supplier.class),
+                            createMethod.getThis());
+                    ResultHandle interceptorProviderHandle = createMethod.invokeInterfaceMethod(
+                            MethodDescriptors.SUPPLIER_GET, interceptorProviderSupplierHandle);
+                    providerHandles.add(interceptorProviderHandle);
                 }
             }
         }
@@ -1424,9 +1458,12 @@ public class BeanGenerator extends AbstractGenerator {
     protected void implementGetDeclaringBean(ClassCreator beanCreator) {
         MethodCreator getDeclaringBean = beanCreator.getMethodCreator("getDeclaringBean", InjectableBean.class)
                 .setModifiers(ACC_PUBLIC);
-        getDeclaringBean.returnValue(getDeclaringBean.readInstanceField(
-                FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER, InjectableBean.class.getName()),
-                getDeclaringBean.getThis()));
+        ResultHandle declaringProviderSupplierHandle = getDeclaringBean.readInstanceField(
+                FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
+                        Supplier.class.getName()),
+                getDeclaringBean.getThis());
+        getDeclaringBean.returnValue(getDeclaringBean.invokeInterfaceMethod(
+                MethodDescriptors.SUPPLIER_GET, declaringProviderSupplierHandle));
     }
 
     protected void implementGetAlternativePriority(BeanInfo bean, ClassCreator beanCreator) {
@@ -1474,9 +1511,10 @@ public class BeanGenerator extends AbstractGenerator {
         ResultHandle annotationsHandle = collectAnnotations(classOutput, beanCreator, bean.getDeployment(), constructor,
                 injectionPoint, annotationLiterals);
         ResultHandle javaMemberHandle = getJavaMemberHandle(constructor, injectionPoint);
+
         return constructor.newInstance(
                 MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class,
-                        InjectableReferenceProvider.class, java.lang.reflect.Type.class,
+                        Supplier.class, java.lang.reflect.Type.class,
                         Set.class, Set.class, Member.class, int.class),
                 constructor.getThis(), constructor.getMethodParam(paramIdx),
                 Types.getTypeHandle(constructor, injectionPoint.getRequiredType()),

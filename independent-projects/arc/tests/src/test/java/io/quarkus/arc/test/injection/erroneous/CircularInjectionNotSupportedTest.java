@@ -1,5 +1,7 @@
 package io.quarkus.arc.test.injection.erroneous;
 
+import static org.junit.Assert.fail;
+
 import io.quarkus.arc.test.ArcTestContainer;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -21,6 +23,7 @@ public class CircularInjectionNotSupportedTest {
                 public void evaluate() throws Throwable {
                     try {
                         base.evaluate();
+                        fail("Expected an IllegalStateException to be thrown, but it wasn't");
                     } catch (IllegalStateException e) {
                         // expected failure on ISE due to circular dependency
                     }

@@ -2,18 +2,16 @@ package io.quarkus.vertx.core.runtime.graal;
 
 import java.util.function.BooleanSupplier;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Delete;
+import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.dns.AddressResolverOptions;
 import io.vertx.core.eventbus.EventBusOptions;
 import io.vertx.core.eventbus.impl.HandlerHolder;
@@ -22,8 +20,6 @@ import io.vertx.core.eventbus.impl.clustered.ClusterNodeInfo;
 import io.vertx.core.impl.HAManager;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.impl.resolver.DefaultResolverProvider;
-import io.vertx.core.json.DecodeException;
-import io.vertx.core.json.EncodeException;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.NetServerOptions;
 import io.vertx.core.net.NetSocket;
@@ -31,6 +27,7 @@ import io.vertx.core.net.TCPSSLOptions;
 import io.vertx.core.net.TrustOptions;
 import io.vertx.core.net.impl.ServerID;
 import io.vertx.core.net.impl.transport.Transport;
+import io.vertx.core.spi.json.JsonCodec;
 import io.vertx.core.spi.resolver.ResolverProvider;
 
 @TargetClass(className = "io.vertx.core.net.impl.transport.Transport")
@@ -166,66 +163,35 @@ final class Target_io_vertx_core_eventbus_impl_clustered_ClusteredEventBusCluste
     }
 }
 
-@TargetClass(className = "io.vertx.core.json.Json", onlyWith = JsonDisabled.class)
-final class Target_io_vertx_core_json_Json {
+@TargetClass(className = "io.vertx.core.spi.json.JsonCodec", onlyWith = JacksonMissingSelector.class)
+final class Target_io_vertx_core_spi_json_JsonCodec {
+    @Alias
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
+    static JsonCodec INSTANCE;
+}
 
-    @Delete
-    public static ObjectMapper mapper;
-    @Delete
-    public static ObjectMapper prettyMapper;
-
-    @Substitute
-    public static String encode(Object obj) throws EncodeException {
-        throw new RuntimeException("Vertx JSON not enabled");
-    }
-
-    @Substitute
-    public static Buffer encodeToBuffer(Object obj) throws EncodeException {
-        throw new RuntimeException("Vertx JSON not enabled");
-    }
-
-    @Substitute
-    public static String encodePrettily(Object obj) throws EncodeException {
-        throw new RuntimeException("Vertx JSON not enabled");
-    }
-
-    @Substitute
-    public static <T> T decodeValue(String str, Class<T> clazz) throws DecodeException {
-        throw new RuntimeException("Vertx JSON not enabled");
-    }
-
-    @Substitute
-    public static Object decodeValue(String str) throws DecodeException {
-        throw new RuntimeException("Vertx JSON not enabled");
-    }
-
-    @Substitute
-    public static <T> T decodeValue(String str, TypeReference<T> type) throws DecodeException {
-        throw new RuntimeException("Vertx JSON not enabled");
-    }
-
-    @Substitute
-    public static Object decodeValue(Buffer buf) throws DecodeException {
-        throw new RuntimeException("Vertx JSON not enabled");
-    }
-
-    @Substitute
-    public static <T> T decodeValue(Buffer buf, TypeReference<T> type) throws DecodeException {
-        throw new RuntimeException("Vertx JSON not enabled");
-    }
-
-    @Substitute
-    public static <T> T decodeValue(Buffer buf, Class<T> clazz) throws DecodeException {
-        throw new RuntimeException("Vertx JSON not enabled");
-    }
+@TargetClass(className = "io.vertx.core.json.jackson.JacksonCodec", onlyWith = JacksonMissingSelector.class)
+@Delete
+final class Target_io_vertx_core_json_jackson_JacksonCodec {
 
 }
 
-class JsonDisabled implements BooleanSupplier {
+@TargetClass(className = "io.vertx.core.json.Json", onlyWith = JacksonMissingSelector.class)
+@Delete
+final class Target_io_vertx_core_json_Json {
+
+}
+
+final class JacksonMissingSelector implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
-        return !Boolean.getBoolean(VertxCoreRecorder.ENABLE_JSON);
+        try {
+            Class.forName("com.fasterxml.jackson.databind.ObjectMapper");
+            return false;
+        } catch (ClassNotFoundException e) {
+            return true;
+        }
     }
 }
 

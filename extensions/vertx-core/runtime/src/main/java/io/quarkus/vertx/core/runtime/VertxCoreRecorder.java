@@ -39,8 +39,6 @@ import io.vertx.core.net.PfxOptions;
 @Recorder
 public class VertxCoreRecorder {
 
-    public static final String ENABLE_JSON = "quarkus-internal.vertx.enabled-json";
-
     static volatile VertxSupplier vertx;
     //temporary vertx instance to work around a JAX-RS problem
     static volatile Vertx webVertx;

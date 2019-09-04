@@ -41,6 +41,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
 
         project.createClasses();
 
+        project.createIndexPage();
         project.createDockerFiles();
         project.createDockerIgnore();
         project.createApplicationConfig();

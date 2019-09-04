@@ -188,6 +188,11 @@ public class RemoteDevMojoIT extends MojoTestBase {
         running = new RunningInvoker(testDir, false);
         running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
 
+        String resp = getHttpResponse();
+
+        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
+                .containsIgnoringCase("1.0-SNAPSHOT");
+
         String greeting = getHttpResponse("/app/hello");
         assertThat(greeting).containsIgnoringCase("hello");
 

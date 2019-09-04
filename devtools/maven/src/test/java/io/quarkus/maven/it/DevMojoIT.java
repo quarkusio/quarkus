@@ -321,6 +321,11 @@ public class DevMojoIT extends MojoTestBase {
         running = new RunningInvoker(testDir, false);
         running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
 
+        String resp = getHttpResponse();
+
+        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
+                .containsIgnoringCase("1.0-SNAPSHOT");
+
         String greeting = getHttpResponse("/app/hello/greeting");
         assertThat(greeting).containsIgnoringCase("bonjour");
 
@@ -346,6 +351,11 @@ public class DevMojoIT extends MojoTestBase {
         assertThat(testDir).isDirectory();
         running = new RunningInvoker(testDir, false);
         running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
+
+        String resp = getHttpResponse();
+
+        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
+                .containsIgnoringCase("1.0-SNAPSHOT");
 
         String greeting = getHttpResponse("/app/hello/greeting");
         assertThat(greeting).contains("initialValue");
@@ -561,6 +571,11 @@ public class DevMojoIT extends MojoTestBase {
 
     private void runAndCheck(String... options) throws FileNotFoundException, MavenInvocationException {
         run(options);
+
+        String resp = getHttpResponse();
+
+        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
+                .containsIgnoringCase("1.0-SNAPSHOT");
 
         String greeting = getHttpResponse("/app/hello");
         assertThat(greeting).containsIgnoringCase("hello");

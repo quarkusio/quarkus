@@ -53,7 +53,7 @@ public class VertxRequestHandler implements Handler<HttpServerRequest> {
         VertxInputStream is = new VertxInputStream(request);
         vertx.executeBlocking(event -> {
             dispatchRequestContext(request, is, new VertxBlockingOutput(request));
-        }, false, event -> {
+        }, event -> {
         });
     }
 

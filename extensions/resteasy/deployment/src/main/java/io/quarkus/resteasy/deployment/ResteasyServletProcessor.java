@@ -52,7 +52,7 @@ public class ResteasyServletProcessor {
         if (!capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
             // todo remove this after this is in the wild a few releases
             log.info("Resteasy running without servlet container.");
-            log.info("- Add quarkus-undertow to run Resteasy within a servlet container");
+            log.info("- Add quarkus-undertow for Resteasy to run within a servlet container");
             return;
         }
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY));

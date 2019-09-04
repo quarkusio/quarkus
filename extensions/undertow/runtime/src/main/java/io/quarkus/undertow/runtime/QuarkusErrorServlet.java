@@ -37,7 +37,7 @@ public class QuarkusErrorServlet extends HttpServlet {
 
         resp.setContentType("text/html");
         resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        resp.getWriter().write(new TemplateHtmlBuilder().error(details).stack(stack).toString());
+        resp.getWriter().write(new TemplateHtmlBuilder("Internal Server Error", details, details).stack(stack).toString());
     }
 
     private static String generateStackTrace(final Throwable exception) {

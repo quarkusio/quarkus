@@ -24,7 +24,7 @@ public class NotFoundExceptionMapperTestCase {
         RestAssured.when().get("/not_found")
                 .then()
                 .statusCode(404)
-                .body(Matchers.containsString("<h1 class=\"container\">Resource Not Found</h1>"));
+                .body(Matchers.containsString("<h1 class=\"container\">404 - Resource Not Found</h1>"));
     }
 
     @Test
@@ -34,7 +34,7 @@ public class NotFoundExceptionMapperTestCase {
                 .when().get("/not_found")
                 .then()
                 .statusCode(404)
-                .body("errorMessage", is("Resource Not Found"))
+                .body("errorMessage", is("404 - Resource Not Found"))
                 .body("existingResourcesDetails[0].basePath", is("/"));
     }
 

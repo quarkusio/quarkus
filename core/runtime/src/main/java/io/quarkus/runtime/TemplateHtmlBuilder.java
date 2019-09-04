@@ -1,11 +1,5 @@
-/**
- * 
- */
 package io.quarkus.runtime;
 
-/**
- * 
- */
 public class TemplateHtmlBuilder {
 
     private static final String HTML_TEMPLATE_START = "" +
@@ -16,22 +10,22 @@ public class TemplateHtmlBuilder {
             "    <meta charset=\"utf-8\">\n" +
             "    <style>%1$s</style>\n" +
             "</head>\n" +
-            "<body><div class=\"content\">\n";
+            "<body>\n";
 
     private static final String HTML_TEMPLATE_END = "</div></body>\n" +
             "</html>\n";
 
-    private static final String ERROR_DETAILS = "<header>\n" +
-            "    <h1 class=\"container\">Internal Server Error</h1>\n" +
+    private static final String HEADER_TEMPLATE = "<header>\n" +
+            "    <h1 class=\"container\">%1$s</h1>\n" +
             "    <div class=\"exception-message\">\n" +
-            "        <h2 class=\"container\">%1$s</h2>\n" +
+            "        <h2 class=\"container\">%2$s</h2>\n" +
             "    </div>\n" +
-            "</header>\n";
+            "</header>\n" +
+            "<div class=\"container content\">\n";
 
-    private static final String HEADER_TEMPLATE = "<div class=\"component-name\"><h1>%1$s</h1><h2>%2$s</h2></div>";
+    private static final String RESOURCE_TEMPLATE = "<h3>%1$s</h3>\n";
 
-    private static final String RESOURCE_TEMPLATE = "<h2>%1$s</h2>\n"
-            + "<ul>";
+    private static final String LIST_START = "<ul>\n";
 
     private static final String METHOD_START = "<li> %1$s <strong>%2$s</strong>\n"
             + "    <ul>\n";
@@ -43,25 +37,18 @@ public class TemplateHtmlBuilder {
 
     private static final String LIST_END = "</ul>\n";
 
-    private static final String ERROR_STACK = "<div class=\"container\">\n" +
-            "    <div class=\"trace\">\n" +
+    private static final String ERROR_STACK = "    <div class=\"trace\">\n" +
             "        <pre>%1$s</pre>\n" +
-            "    </div>\n" +
-            "</div>\n";
+            "    </div>\n";
 
     private static final String ERROR_CSS = "\n" +
             "html, body {\n" +
             "    margin: 0;\n" +
             "    padding: 0;\n" +
-            "    font-family: 'Open Sans', Arial, sans-serif;\n" +
+            "    font-family: 'Open Sans', Helvetica, Arial, sans-serif;\n" +
             "    font-size: 100%;\n" +
             "    font-weight: 100;\n" +
             "    line-height: 1.4;\n" +
-            "    background-color:#000c16;\n" +
-            "}\n" +
-            "\n" +
-            "div.content {\n" +
-            "    padding:0 13rem;\n" +
             "}\n" +
             "\n" +
             "html {\n" +
@@ -69,24 +56,18 @@ public class TemplateHtmlBuilder {
             "}\n" +
             "\n" +
             "body {\n" +
-            "    background: #000c16;\n" +
+            "    background: #f9f9f9;\n" +
             "}\n" +
-            "\n" +
             ".container {\n" +
             "    width: 80%;\n" +
             "    margin: 0 auto;\n" +
             "}\n" +
+            ".content {\n" +
+            "    padding: 1em 0 1em 0;\n" +
+            "}\n" +
             "\n" +
             "header, .component-name {\n" +
-            "    background-color: #004153;\n" +
-            "}\n" +
-            "\n" +
-            ".component-name h1 {\n" +
-            "    margin: 1rem;\n" +
-            "}\n" +
-            "\n" +
-            ".component-name h2 {\n" +
-            "    margin: 0.75rem;\n" +
+            "    background-color: #ad1c1c;\n" +
             "}\n" +
             "\n" +
             "ul {\n" +
@@ -107,6 +88,7 @@ public class TemplateHtmlBuilder {
             "    color: #fff;\n" +
             "    line-height: 3.75rem;\n" +
             "    font-weight: 700;\n" +
+            "    padding: 0.5rem 0rem 0.5rem 0rem;\n" +
             "}\n" +
             "\n" +
             "h2 {\n" +
@@ -114,6 +96,15 @@ public class TemplateHtmlBuilder {
             "    color: rgba(255, 255, 255, 0.85);\n" +
             "    line-height: 2.5rem;\n" +
             "    font-weight: 400;\n" +
+            "    padding: 0.5rem 0rem 0.5rem 0rem;\n" +
+            "}\n" +
+            "\n" +
+            "h3 {\n" +
+            "    font-size: 1.5rem;\n" +
+            "    line-height: 2.5rem;\n" +
+            "    font-weight: 400;\n" +
+            "    color: #555;\n" +
+            "    margin: 0.25em 0 0.25em 0;\n" +
             "}\n" +
             "\n" +
             ".trace {\n" +
@@ -129,18 +120,13 @@ public class TemplateHtmlBuilder {
             "    font-family: Consolas, Monaco, Menlo, \"Ubuntu Mono\", \"Liberation Mono\", monospace;\n" +
             "    font-size: 12px;\n" +
             "    line-height: 1.5;\n" +
-            "}\n" +
-            "\n" +
-            "* {\n" +
-            "    font-family:'Open Sans', Arial, sans-serif;\n" +
-            "    color:#fff;\n" +
+            "    color: #555;\n" +
             "}\n";
 
     private StringBuilder result = new StringBuilder(String.format(HTML_TEMPLATE_START, ERROR_CSS));
 
     public TemplateHtmlBuilder error(String details) {
-        result.append(String.format(ERROR_DETAILS, details));
-        return this;
+        return header("Internal Server Error", details);
     }
 
     public TemplateHtmlBuilder stack(String stack) {
@@ -153,8 +139,14 @@ public class TemplateHtmlBuilder {
         return this;
     }
 
+    public TemplateHtmlBuilder noResourcesFound() {
+        result.append(String.format(RESOURCE_TEMPLATE, "No resources found"));
+        return this;
+    }
+
     public TemplateHtmlBuilder resourcePath(String title) {
         result.append(String.format(RESOURCE_TEMPLATE, title));
+        result.append(LIST_START);
         return this;
     }
 
@@ -183,6 +175,7 @@ public class TemplateHtmlBuilder {
         return this;
     }
 
+    @Override
     public String toString() {
         return result.append(HTML_TEMPLATE_END).toString();
     }

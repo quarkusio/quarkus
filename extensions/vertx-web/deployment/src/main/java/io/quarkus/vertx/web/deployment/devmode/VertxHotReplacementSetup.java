@@ -47,13 +47,13 @@ public class VertxHotReplacementSetup implements HotReplacementSetup {
                 boolean restart = false;
                 synchronized (this) {
                     if (nextUpdate < System.currentTimeMillis() || hotReplacementContext.isTest()) {
+                        nextUpdate = System.currentTimeMillis() + HOT_REPLACEMENT_INTERVAL;
                         try {
                             restart = hotReplacementContext.doScan(true);
                         } catch (Exception e) {
                             event.fail(new IllegalStateException("Unable to perform hot replacement scanning", e));
                             return;
                         }
-                        nextUpdate = System.currentTimeMillis() + HOT_REPLACEMENT_INTERVAL;
                     }
                 }
                 if (hotReplacementContext.getDeploymentProblem() != null) {

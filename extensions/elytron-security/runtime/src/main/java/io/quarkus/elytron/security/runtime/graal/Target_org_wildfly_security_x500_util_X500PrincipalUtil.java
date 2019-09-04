@@ -1,4 +1,4 @@
-package io.quarkus.runtime.graal;
+package io.quarkus.elytron.security.runtime.graal;
 
 import static org.wildfly.security.x500._private.ElytronMessages.log;
 

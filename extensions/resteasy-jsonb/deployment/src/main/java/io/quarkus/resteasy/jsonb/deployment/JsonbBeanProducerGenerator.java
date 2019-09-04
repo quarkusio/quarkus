@@ -128,10 +128,6 @@ public class JsonbBeanProducerGenerator {
                         // build up the serializers array that will be passed to JsonbConfig
                         createJsonb.writeArrayValue(serializersArray, createJsonb.load(i), serializer);
 
-                        ResultHandle clazz = createJsonb.invokeStaticMethod(
-                                MethodDescriptor.ofMethod(Class.class, "forName", Class.class, String.class),
-                                createJsonb.load(entry.getKey()));
-
                         // add a ContainerSerializerProvider for the serializer
                         ResultHandle serializerProvider = createJsonb.newInstance(
                                 MethodDescriptor.ofConstructor(SimpleContainerSerializerProvider.class, JsonbSerializer.class),
@@ -139,7 +135,7 @@ public class JsonbBeanProducerGenerator {
                         createJsonb.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(MappingContext.class, "addSerializerProvider", void.class,
                                         Class.class, ContainerSerializerProvider.class),
-                                mappingContext, clazz, serializerProvider);
+                                mappingContext, createJsonb.loadClass(entry.getKey()), serializerProvider);
 
                         i++;
                     }

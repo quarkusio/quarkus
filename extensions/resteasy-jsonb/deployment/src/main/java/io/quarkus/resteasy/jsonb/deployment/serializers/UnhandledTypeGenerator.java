@@ -45,14 +45,11 @@ public class UnhandledTypeGenerator extends AbstractTypeSerializerGenerator {
         ResultHandle serializationContext = context.getSerializationContext();
 
         ResultHandle marshaller = bytecodeCreator.checkCast(serializationContext, Marshaller.class);
-        ResultHandle enclosingTypeClass = bytecodeCreator.invokeStaticMethod(
-                MethodDescriptor.ofMethod(Class.class, "forName", Class.class, String.class),
-                bytecodeCreator.load(enclosingType.name().toString()));
 
         ResultHandle propertyCachedSerializer = bytecodeCreator.invokeStaticMethod(
                 MethodDescriptor.ofMethod(UnhandledTypeGeneratorUtil.class, "getSerializerForUnhandledType",
                         JsonbSerializer.class, Marshaller.class, Class.class, Object.class, String.class),
-                marshaller, enclosingTypeClass,
+                marshaller, bytecodeCreator.loadClass(enclosingType.name().toString()),
                 context.getCurrentItem(), bytecodeCreator.load(propertyName));
 
         bytecodeCreator.invokeInterfaceMethod(

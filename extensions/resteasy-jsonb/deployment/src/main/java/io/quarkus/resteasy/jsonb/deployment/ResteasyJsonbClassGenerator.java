@@ -47,13 +47,10 @@ class ResteasyJsonbClassGenerator {
                 ResultHandle arcContainer = instanceNull
                         .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
 
-                ResultHandle jsonbClass = instanceNull.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(Class.class, "forName", Class.class, String.class),
-                        instanceNull.load(Jsonb.class.getName()));
                 ResultHandle instanceHandle = instanceNull.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                                 Annotation[].class),
-                        arcContainer, jsonbClass, instanceNull.loadNull());
+                        arcContainer, instanceNull.loadClass(Jsonb.class), instanceNull.loadNull());
                 ResultHandle get = instanceNull.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
                         instanceHandle);

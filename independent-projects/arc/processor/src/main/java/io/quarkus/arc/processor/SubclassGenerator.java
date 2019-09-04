@@ -54,6 +54,8 @@ public class SubclassGenerator extends AbstractGenerator {
 
     static final String SUBCLASS_SUFFIX = "_Subclass";
 
+    static final String DESTROY_METHOD_NAME = "arc$destroy";
+
     private final Predicate<DotName> applicationClassPredicate;
 
     static String generatedName(DotName providerTypeName, String baseName) {
@@ -372,13 +374,12 @@ public class SubclassGenerator extends AbstractGenerator {
      * @param bean
      * @param subclass
      * @param preDestroysField
-     * @see Subclass#destroy$subclass()
      */
     protected void createDestroy(ClassOutput classOutput, BeanInfo bean, ClassCreator subclass,
             FieldDescriptor preDestroysField) {
         if (preDestroysField != null) {
             MethodCreator destroy = subclass
-                    .getMethodCreator(MethodDescriptor.ofMethod(Subclass.class, "destroy$subclass", void.class));
+                    .getMethodCreator(MethodDescriptor.ofMethod(subclass.getClassName(), DESTROY_METHOD_NAME, void.class));
             ResultHandle predestroysHandle = destroy.readInstanceField(preDestroysField, destroy.getThis());
 
             // Interceptor bindings

@@ -85,19 +85,22 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             Map<String, ResourceDescription> descriptions = new HashMap<>();
 
             for (Map.Entry<String, List<ResourceInvoker>> entry : bound) {
-                Class<?> resourceClass = ((ResourceMethodInvoker) entry.getValue().get(0)).getResourceClass();
-                Path path = resourceClass.getAnnotation(Path.class);
-                if (path == null) {
-                    continue;
-                }
-                String basePath = path.value();
-
-                if (!descriptions.containsKey(basePath)) {
-                    descriptions.put(basePath, new ResourceDescription(basePath));
-                }
-
                 for (ResourceInvoker invoker : entry.getValue()) {
+                    // skip those for now
+                    if (!(invoker instanceof ResourceMethodInvoker)) {
+                        continue;
+                    }
                     ResourceMethodInvoker method = (ResourceMethodInvoker) invoker;
+                    Class<?> resourceClass = method.getResourceClass();
+                    Path path = resourceClass.getAnnotation(Path.class);
+                    if (path == null) {
+                        continue;
+                    }
+                    String basePath = path.value();
+
+                    if (!descriptions.containsKey(basePath)) {
+                        descriptions.put(basePath, new ResourceDescription(basePath));
+                    }
 
                     String subPath = "";
                     for (Annotation annotation : method.getMethodAnnotations()) {

@@ -36,7 +36,7 @@ The Infinispan client is configurable in the `application.properties` file that 
 provided in the `src/main/resources` directory. These are the properties that
 can be configured in this file:
 
-[cols=3*,options="header"]
+[cols=4*,options="header"]
 |===
 | Property
 | Default Value

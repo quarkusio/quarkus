@@ -11,7 +11,6 @@ import io.quarkus.arc.InitializedInterceptor;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableReferenceProvider;
-import io.quarkus.arc.Subclass;
 import io.quarkus.arc.processor.BeanInfo.InterceptionInfo;
 import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
 import io.quarkus.arc.processor.BuiltinBean.GeneratorContext;
@@ -196,7 +195,7 @@ public class BeanGenerator extends AbstractGenerator {
         implementGetIdentifier(bean, beanCreator);
         if (!bean.hasDefaultDestroy()) {
             implementDestroy(bean, beanCreator, providerTypeName, Collections.emptyMap(), reflectionRegistration,
-                    isApplicationClass);
+                    isApplicationClass, baseName);
         }
         implementCreate(classOutput, beanCreator, bean, providerTypeName, baseName, Collections.emptyMap(),
                 Collections.emptyMap(), reflectionRegistration,
@@ -275,7 +274,7 @@ public class BeanGenerator extends AbstractGenerator {
         implementGetIdentifier(bean, beanCreator);
         if (!bean.hasDefaultDestroy()) {
             implementDestroy(bean, beanCreator, providerTypeName, injectionPointToProviderField, reflectionRegistration,
-                    isApplicationClass);
+                    isApplicationClass, baseName);
         }
         implementCreate(classOutput, beanCreator, bean, providerTypeName, baseName, injectionPointToProviderField,
                 interceptorToProviderField,
@@ -369,7 +368,7 @@ public class BeanGenerator extends AbstractGenerator {
         implementGetIdentifier(bean, beanCreator);
         if (!bean.hasDefaultDestroy()) {
             implementDestroy(bean, beanCreator, providerTypeName, injectionPointToProviderField, reflectionRegistration,
-                    isApplicationClass);
+                    isApplicationClass, baseName);
         }
         implementCreate(classOutput, beanCreator, bean, providerTypeName, baseName, injectionPointToProviderField,
                 Collections.emptyMap(),
@@ -446,7 +445,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         implementGetIdentifier(bean, beanCreator);
         if (!bean.hasDefaultDestroy()) {
-            implementDestroy(bean, beanCreator, providerTypeName, null, reflectionRegistration, isApplicationClass);
+            implementDestroy(bean, beanCreator, providerTypeName, null, reflectionRegistration, isApplicationClass, baseName);
         }
         implementCreate(classOutput, beanCreator, bean, providerTypeName, baseName, Collections.emptyMap(),
                 Collections.emptyMap(), reflectionRegistration,
@@ -668,7 +667,7 @@ public class BeanGenerator extends AbstractGenerator {
 
     protected void implementDestroy(BeanInfo bean, ClassCreator beanCreator, String providerTypeName,
             Map<InjectionPointInfo, String> injectionPointToProviderField, ReflectionRegistration reflectionRegistration,
-            boolean isApplicationClass) {
+            boolean isApplicationClass, String baseName) {
 
         MethodCreator destroy = beanCreator.getMethodCreator("destroy", void.class, providerTypeName, CreationalContext.class)
                 .setModifiers(ACC_PUBLIC);
@@ -677,7 +676,10 @@ public class BeanGenerator extends AbstractGenerator {
             if (!bean.isInterceptor()) {
                 // PreDestroy interceptors
                 if (!bean.getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()) {
-                    destroy.invokeInterfaceMethod(MethodDescriptor.ofMethod(Subclass.class, "destroy", void.class),
+                    destroy.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(SubclassGenerator.generatedName(bean.getProviderType().name(), baseName),
+                                    SubclassGenerator.DESTROY_METHOD_NAME,
+                                    void.class),
                             destroy.getMethodParam(0));
                 }
 

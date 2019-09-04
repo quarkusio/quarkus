@@ -11,7 +11,14 @@ import software.amazon.awssdk.core.client.builder.SdkSyncClientBuilder;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient.Builder;
 import software.amazon.awssdk.http.apache.ProxyConfiguration;
-import software.amazon.awssdk.services.dynamodb.*;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
+import software.amazon.awssdk.http.nio.netty.SdkEventLoopGroup;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClientBuilder;
+import software.amazon.awssdk.services.dynamodb.DynamoDbBaseClientBuilder;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClientBuilder;
+import software.amazon.awssdk.utils.ThreadFactoryBuilder;
 
 @ApplicationScoped
 public class DynamodbClientProducer {
@@ -72,9 +79,7 @@ public class DynamodbClientProducer {
     }
 
     private void initHttpClient(SdkAsyncClientBuilder builder, DynamodbConfig config) {
-        // Until we have a compatible version of the AWS SDK with the Netty version used in Quarkus, disable the
-        // async support.
-        //        builder.httpClientBuilder(createNettyClientBuilder(config.asyncClient));
+        builder.httpClientBuilder(createNettyClientBuilder(config.asyncClient));
     }
 
     private ApacheHttpClient.Builder createApacheClientBuilder(AwsApacheHttpClientConfig config) {
@@ -104,34 +109,32 @@ public class DynamodbClientProducer {
         return builder;
     }
 
-    // Until we have a compatible version of the AWS SDK with the Netty version used in Quarkus, disable the
-    // async support.
-    //    private NettyNioAsyncHttpClient.Builder createNettyClientBuilder(AwsNettyNioAsyncHttpClientConfig config) {
-    //        NettyNioAsyncHttpClient.Builder builder = NettyNioAsyncHttpClient.builder();
-    //
-    //        config.connectionAcquisitionTimeout.ifPresent(builder::connectionAcquisitionTimeout);
-    //        config.connectionMaxIdleTime.ifPresent(builder::connectionMaxIdleTime);
-    //        config.connectionTimeout.ifPresent(builder::connectionTimeout);
-    //        config.connectionTimeToLive.ifPresent(builder::connectionTimeToLive);
-    //        config.maxConcurrency.ifPresent(builder::maxConcurrency);
-    //        config.maxHttp2Streams.ifPresent(builder::maxHttp2Streams);
-    //        config.maxPendingConnectionAcquires.ifPresent(builder::maxPendingConnectionAcquires);
-    //        config.protocol.ifPresent(builder::protocol);
-    //        config.readTimeout.ifPresent(builder::readTimeout);
-    //        config.sslProvider.ifPresent(builder::sslProvider);
-    //        config.useIdleConnectionReaper.ifPresent(builder::useIdleConnectionReaper);
-    //        config.writeTimeout.ifPresent(builder::writeTimeout);
-    //
-    //        if (config.eventLoop.override) {
-    //            SdkEventLoopGroup.Builder eventLoopBuilder = SdkEventLoopGroup.builder();
-    //            eventLoopBuilder.numberOfThreads(config.eventLoop.numberOfThreads);
-    //            if (config.eventLoop.threadNamePrefix.isPresent()) {
-    //                eventLoopBuilder.threadFactory(
-    //                        new ThreadFactoryBuilder().threadNamePrefix(config.eventLoop.threadNamePrefix.get()).build());
-    //            }
-    //            builder.eventLoopGroupBuilder(eventLoopBuilder);
-    //        }
-    //
-    //        return builder;
-    //    }
+    private NettyNioAsyncHttpClient.Builder createNettyClientBuilder(AwsNettyNioAsyncHttpClientConfig config) {
+        NettyNioAsyncHttpClient.Builder builder = NettyNioAsyncHttpClient.builder();
+
+        config.connectionAcquisitionTimeout.ifPresent(builder::connectionAcquisitionTimeout);
+        config.connectionMaxIdleTime.ifPresent(builder::connectionMaxIdleTime);
+        config.connectionTimeout.ifPresent(builder::connectionTimeout);
+        config.connectionTimeToLive.ifPresent(builder::connectionTimeToLive);
+        config.maxConcurrency.ifPresent(builder::maxConcurrency);
+        config.maxHttp2Streams.ifPresent(builder::maxHttp2Streams);
+        config.maxPendingConnectionAcquires.ifPresent(builder::maxPendingConnectionAcquires);
+        config.protocol.ifPresent(builder::protocol);
+        config.readTimeout.ifPresent(builder::readTimeout);
+        config.sslProvider.ifPresent(builder::sslProvider);
+        config.useIdleConnectionReaper.ifPresent(builder::useIdleConnectionReaper);
+        config.writeTimeout.ifPresent(builder::writeTimeout);
+
+        if (config.eventLoop.override) {
+            SdkEventLoopGroup.Builder eventLoopBuilder = SdkEventLoopGroup.builder();
+            eventLoopBuilder.numberOfThreads(config.eventLoop.numberOfThreads);
+            if (config.eventLoop.threadNamePrefix.isPresent()) {
+                eventLoopBuilder.threadFactory(
+                        new ThreadFactoryBuilder().threadNamePrefix(config.eventLoop.threadNamePrefix.get()).build());
+            }
+            builder.eventLoopGroupBuilder(eventLoopBuilder);
+        }
+
+        return builder;
+    }
 }

@@ -6,7 +6,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import io.quarkus.vertx.runtime.GenericMessageCodec;
 import io.vertx.core.eventbus.MessageCodec;
 
 /**
@@ -78,8 +77,8 @@ public @interface ConsumeEvent {
     /**
      * 
      * @return {@code null} if it should use a default MessageCodec
-     * @see io.quarkus.vertx.runtime.deployment.GenericMessageCodec
+     * @see io.quarkus.vertx.LocalEventBusCodec
      */
-    Class<? extends MessageCodec<?, ?>> codec() default GenericMessageCodec.class;
+    Class<? extends MessageCodec> codec() default LocalEventBusCodec.class;
 
 }

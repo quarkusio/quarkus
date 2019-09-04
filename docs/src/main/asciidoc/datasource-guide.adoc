@@ -109,6 +109,9 @@ quarkus.datasource.max-size=13
 
 There are other configuration options, detailed below.
 
+[TIP]
+For more information about the Agroal extension configuration please refer to the <<configuration-reference, Configuration Reference>>.
+
 === JDBC URL configurations
 
 Each of the supported databases contains different JDBC URL configuration options.
@@ -223,7 +226,9 @@ AgroalDataSource dataSource1;
 AgroalDataSource dataSource2;
 --
 
+
+[[configuration-reference]]
 == Agroal Configuration Reference
 
-include::generated/quarkus-agroal.adoc[]
+include::generated/quarkus-agroal.adoc[opts=optional, leveloffset=+1]
 

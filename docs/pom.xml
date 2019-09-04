@@ -38,7 +38,7 @@
                     <enableVerbose>true</enableVerbose>
                     <logHandler>
                         <failIf>
-                          <severity>INFO</severity>
+                          <severity>WARN</severity>
                         </failIf>
                     </logHandler>
                     <attributes>

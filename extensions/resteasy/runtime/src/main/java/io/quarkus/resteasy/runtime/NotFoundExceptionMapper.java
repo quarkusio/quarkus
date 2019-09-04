@@ -91,29 +91,32 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             Map<String, ResourceDescription> descriptions = new HashMap<>();
 
             for (Map.Entry<String, List<ResourceInvoker>> entry : bound) {
-                Class<?> resourceClass = ((ResourceMethodInvoker) entry.getValue().get(0)).getResourceClass();
-                Path path = resourceClass.getAnnotation(Path.class);
-                if (path == null) {
-                    continue;
-                }
-                String basePath = path.value();
+                ResourceInvoker resourceInvoker = entry.getValue().get(0);
+                if (resourceInvoker instanceof ResourceMethodInvoker) {
+                    Class<?> resourceClass = ((ResourceMethodInvoker) resourceInvoker).getResourceClass();
+                    Path path = resourceClass.getAnnotation(Path.class);
+                    if (path == null) {
+                        continue;
+                    }
+                    String basePath = path.value();
 
-                if (!descriptions.containsKey(basePath)) {
-                    descriptions.put(basePath, new ResourceDescription(basePath));
-                }
-
-                for (ResourceInvoker invoker : entry.getValue()) {
-                    ResourceMethodInvoker method = (ResourceMethodInvoker) invoker;
-
-                    String subPath = "";
-                    for (Annotation annotation : method.getMethodAnnotations()) {
-                        if (annotation.annotationType().equals(Path.class)) {
-                            subPath = ((Path) annotation).value();
-                            break;
-                        }
+                    if (!descriptions.containsKey(basePath)) {
+                        descriptions.put(basePath, new ResourceDescription(basePath));
                     }
 
-                    descriptions.get(basePath).addMethod(basePath + subPath, method);
+                    for (ResourceInvoker invoker : entry.getValue()) {
+                        ResourceMethodInvoker method = (ResourceMethodInvoker) invoker;
+
+                        String subPath = "";
+                        for (Annotation annotation : method.getMethodAnnotations()) {
+                            if (annotation.annotationType().equals(Path.class)) {
+                                subPath = ((Path) annotation).value();
+                                break;
+                            }
+                        }
+
+                        descriptions.get(basePath).addMethod(basePath + subPath, method);
+                    }
                 }
             }
 

@@ -3,6 +3,7 @@ package io.quarkus.resteasy.runtime;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -14,13 +15,15 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
+import org.jboss.resteasy.core.ResourceLocatorInvoker;
 import org.jboss.resteasy.core.ResourceMethodInvoker;
 import org.jboss.resteasy.core.ResourceMethodRegistry;
 import org.jboss.resteasy.spi.Registry;
@@ -32,11 +35,15 @@ import io.quarkus.runtime.TemplateHtmlBuilder;
 @Priority(Priorities.USER + 1)
 public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundException> {
 
+    private final static Variant JSON_VARIANT = new Variant(MediaType.APPLICATION_JSON_TYPE, (String) null, null);
+    private final static Variant HTML_VARIANT = new Variant(MediaType.TEXT_HTML_TYPE, (String) null, null);
+    private final static List<Variant> VARIANTS = Arrays.asList(JSON_VARIANT, HTML_VARIANT);
+
     @Context
     private Registry registry = null;
 
     @Context
-    private HttpHeaders headers;
+    private Request request;
 
     public static final class MethodDescription {
         public String method;
@@ -85,19 +92,21 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             Map<String, ResourceDescription> descriptions = new HashMap<>();
 
             for (Map.Entry<String, List<ResourceInvoker>> entry : bound) {
-                Class<?> resourceClass = ((ResourceMethodInvoker) entry.getValue().get(0)).getResourceClass();
-                Path path = resourceClass.getAnnotation(Path.class);
-                if (path == null) {
-                    continue;
-                }
-                String basePath = path.value();
-
-                if (!descriptions.containsKey(basePath)) {
-                    descriptions.put(basePath, new ResourceDescription(basePath));
-                }
-
                 for (ResourceInvoker invoker : entry.getValue()) {
+                    // skip those for now
+                    if (invoker instanceof ResourceLocatorInvoker)
+                        continue;
                     ResourceMethodInvoker method = (ResourceMethodInvoker) invoker;
+                    Class<?> resourceClass = method.getResourceClass();
+                    Path path = resourceClass.getAnnotation(Path.class);
+                    if (path == null) {
+                        continue;
+                    }
+                    String basePath = path.value();
+
+                    if (!descriptions.containsKey(basePath)) {
+                        descriptions.put(basePath, new ResourceDescription(basePath));
+                    }
 
                     String subPath = "";
                     for (Annotation annotation : method.getMethodAnnotations()) {
@@ -145,46 +154,58 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     }
 
     private Response respond() {
-        if (headers.getAcceptableMediaTypes().contains(MediaType.APPLICATION_JSON_TYPE)) {
+        Variant variant = request.selectVariant(VARIANTS);
+
+        if (variant == JSON_VARIANT) {
             ErrorMessage errorMessage = new ErrorMessage();
             errorMessage.errorMessage = "404 - Resource Not Found";
             return Response.status(Status.NOT_FOUND).entity(errorMessage).type(MediaType.APPLICATION_JSON_TYPE).build();
         }
 
-        TemplateHtmlBuilder sb = new TemplateHtmlBuilder("404 - Resource Not Found", "", "No resources discovered");
-        return Response.status(Status.NOT_FOUND).entity(sb.toString()).build();
+        if (variant == HTML_VARIANT) {
+            TemplateHtmlBuilder sb = new TemplateHtmlBuilder("404 - Resource Not Found", "", "No resources discovered");
+            return Response.status(Status.NOT_FOUND).entity(sb.toString()).type(MediaType.TEXT_HTML_TYPE).build();
+        }
+
+        return Response.status(Status.NOT_FOUND).build();
     }
 
     private Response respond(List<ResourceDescription> descriptions) {
-        if (headers.getAcceptableMediaTypes().contains(MediaType.APPLICATION_JSON_TYPE)) {
+        Variant variant = request.selectVariant(VARIANTS);
+
+        if (variant == JSON_VARIANT) {
             ErrorMessage errorMessage = new ErrorMessage();
             errorMessage.errorMessage = "404 - Resource Not Found";
             errorMessage.existingResourcesDetails = descriptions;
             return Response.status(Status.NOT_FOUND).entity(errorMessage).type(MediaType.APPLICATION_JSON_TYPE).build();
         }
 
-        TemplateHtmlBuilder sb = new TemplateHtmlBuilder("404 - Resource Not Found", "", "REST interface overview");
-        sb.resourcesStart();
-        for (ResourceDescription resource : descriptions) {
-            sb.resourcePath(resource.basePath);
-            for (MethodDescription method : resource.calls) {
-                sb.method(method.method, method.fullPath);
-                if (method.consumes != null) {
-                    sb.consumes(method.consumes);
+        if (variant == HTML_VARIANT) {
+            TemplateHtmlBuilder sb = new TemplateHtmlBuilder("404 - Resource Not Found", "", "REST interface overview");
+            sb.resourcesStart();
+            for (ResourceDescription resource : descriptions) {
+                sb.resourcePath(resource.basePath);
+                for (MethodDescription method : resource.calls) {
+                    sb.method(method.method, method.fullPath);
+                    if (method.consumes != null) {
+                        sb.consumes(method.consumes);
+                    }
+                    if (method.produces != null) {
+                        sb.produces(method.produces);
+                    }
+                    sb.methodEnd();
                 }
-                if (method.produces != null) {
-                    sb.produces(method.produces);
-                }
-                sb.methodEnd();
+                sb.resourceEnd();
             }
-            sb.resourceEnd();
-        }
-        if (descriptions.isEmpty()) {
-            sb.noResourcesFound();
-        }
-        sb.resourcesEnd();
+            if (descriptions.isEmpty()) {
+                sb.noResourcesFound();
+            }
+            sb.resourcesEnd();
 
-        return Response.status(Status.NOT_FOUND).entity(sb.toString()).build();
+            return Response.status(Status.NOT_FOUND).entity(sb.toString()).type(MediaType.TEXT_HTML_TYPE).build();
+        }
+
+        return Response.status(Status.NOT_FOUND).build();
     }
 
     public static class ErrorMessage {

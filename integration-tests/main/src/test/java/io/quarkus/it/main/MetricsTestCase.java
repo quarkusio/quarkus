@@ -109,7 +109,7 @@ public class MetricsTestCase {
     @Test
     public void testInvalidScopes() {
         RestAssured.when().get("/metrics/foo").then().statusCode(404)
-                .body(containsString("Bad scope requested"));
+                .body(containsString("Scope foo not found"));
         RestAssured.when().get("/metrics/vendor/foo").then().statusCode(404)
                 .body(containsString("Metric vendor/foo not found"));
     }

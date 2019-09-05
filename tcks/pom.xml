@@ -15,6 +15,7 @@
     
     <modules>
         <module>microprofile-config</module>
+        <module>microprofile-context-propagation</module>
         <module>microprofile-health</module>
         <module>microprofile-metrics</module>
         <module>microprofile-reactive-messaging</module>

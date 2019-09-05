@@ -4,10 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URLClassLoader;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -108,7 +105,20 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
                 }
                 //META-INF -> archive/META-INF/
                 if (Files.exists(tmpLocation.resolve("META-INF"))) {
-                    Files.move(tmpLocation.resolve("META-INF"), appLocation.resolve("META-INF"));
+                    if (Files.exists(appLocation.resolve("META-INF"))) {
+                        // Target directory not empty.
+                        Files.walk(tmpLocation.resolve("META-INF"), 2).forEach(p -> {
+                            try {
+                                Files.createFile(p);
+                            } catch (FileAlreadyExistsException faee) {
+                                // Do Nothing
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                    } else {
+                        Files.move(tmpLocation.resolve("META-INF"), appLocation.resolve("META-INF"));
+                    }
                 }
                 //WEB-INF -> archive/WEB-INF
                 if (Files.exists(tmpLocation.resolve("WEB-INF"))) {

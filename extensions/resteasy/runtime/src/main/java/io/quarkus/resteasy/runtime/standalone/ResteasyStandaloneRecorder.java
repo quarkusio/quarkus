@@ -1,5 +1,8 @@
 package io.quarkus.resteasy.runtime.standalone;
 
+import java.nio.file.Path;
+import java.util.List;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 
@@ -12,6 +15,8 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.StaticHandler;
 
 /**
  * Provides the runtime methods to bootstrap Resteasy in standalone mode.
@@ -20,6 +25,7 @@ import io.vertx.core.http.HttpServerRequest;
 public class ResteasyStandaloneRecorder {
 
     private static final Logger log = Logger.getLogger("io.quarkus.resteasy");
+    public static final String META_INF_RESOURCES = "META-INF/resources";
 
     /**
      * TODO: configuration
@@ -35,7 +41,7 @@ public class ResteasyStandaloneRecorder {
         }
     };
 
-    private static VertxRequestHandler currentRoot = null;
+    private static Handler<HttpServerRequest> currentRoot = null;
 
     //TODO: clean this up
     private static BufferAllocator ALLOCATOR = new BufferAllocator() {
@@ -69,11 +75,18 @@ public class ResteasyStandaloneRecorder {
         }
     };
 
+    private static volatile List<Path> hotDeploymentResourcePaths;
+
+    public static void setHotDeploymentResources(List<Path> resources) {
+        hotDeploymentResourcePaths = resources;
+    }
+
     public Handler<HttpServerRequest> startResteasy(RuntimeValue<Vertx> vertxValue,
             String contextPath,
             ResteasyDeployment deployment,
             ShutdownContext shutdown,
             BeanContainer beanContainer,
+            boolean hasClasspathResources,
             boolean isVirtual) throws Exception {
 
         shutdown.addShutdownTask(new Runnable() {
@@ -86,7 +99,33 @@ public class ResteasyStandaloneRecorder {
         deployment.start();
         useDirect = !isVirtual;
 
-        currentRoot = new VertxRequestHandler(vertx, beanContainer, deployment, contextPath, ALLOCATOR);
+        Router router = null;
+        if (hotDeploymentResourcePaths != null && !hotDeploymentResourcePaths.isEmpty()) {
+            router = router == null ? Router.router(vertx) : router;
+            for (Path resourcePath : hotDeploymentResourcePaths) {
+                String root = resourcePath.toAbsolutePath().toString();
+                StaticHandler staticHandler = StaticHandler.create();
+                staticHandler.setCachingEnabled(false);
+                staticHandler.setAllowRootFileSystemAccess(true);
+                staticHandler.setWebRoot(root);
+                router.route().handler(staticHandler);
+            }
+        }
+        if (hasClasspathResources) {
+            router = router == null ? Router.router(vertx) : router;
+            router.route().handler(StaticHandler.create(META_INF_RESOURCES));
+        }
+
+        VertxRequestHandler requestHandler = new VertxRequestHandler(vertx, beanContainer, deployment, contextPath, ALLOCATOR);
+
+        // We don't to add a Router if we don't have to
+        if (router == null) {
+            currentRoot = requestHandler;
+        } else {
+            router.route().handler(event -> requestHandler.handle(event.request()));
+            currentRoot = router;
+        }
+
         return ROOT_HANDLER;
     }
 

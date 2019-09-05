@@ -24,6 +24,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.ConsumeEvent;
+import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.eventbus.EventBus;
@@ -33,7 +34,6 @@ import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.file.FileSystemOptions;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.impl.VertxImpl;
-import io.vertx.core.impl.VertxThread;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
@@ -79,7 +79,7 @@ public class VertxRecorder {
         return new IOThreadDetector() {
             @Override
             public boolean isInIOThread() {
-                return Thread.currentThread() instanceof VertxThread;
+                return Context.isOnEventLoopThread();
             }
         };
     }

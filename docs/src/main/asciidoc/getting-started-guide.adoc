@@ -73,13 +73,13 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dpath="/hello"
 ----
 
-It generates:
+It generates the following in  `./getting-started`:
 
 * the Maven structure
 * an `org.acme.quickstart.GreetingResource` resource exposed on `/hello`
 * an associated unit test
 * a landing page that is accessible on `http://localhost:8080` after starting the application
-* example `Dockerfile` files for both `native` and `jvm` modes
+* example `Dockerfile` files for both `native` and `jvm` modes in `src/main/docker`
 * the application configuration file
 
 Once generated, look at the `pom.xml`.

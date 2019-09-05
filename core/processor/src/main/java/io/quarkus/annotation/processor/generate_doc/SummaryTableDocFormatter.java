@@ -33,7 +33,7 @@ class SummaryTableDocFormatter implements DocFormatter {
 
             String doc = configItem.getConfigDoc();
             int firstDot = doc.indexOf('.');
-            String firstLineDoc = firstDot != -1 ? doc.substring(0, firstDot + 1) : doc;
+            String firstLineDoc = firstDot != -1 ? doc.substring(0, firstDot + 1) : doc.trim() + '.';
 
             final String typeDetail = getTypeFormatInformationNote(configItem);
             final String defaultValue = configItem.getDefaultValue();

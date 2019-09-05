@@ -41,6 +41,7 @@
         <module>jpa-mysql</module>
         <module>hibernate-orm-panache</module>
         <module>hibernate-search-elasticsearch</module>
+        <module>hibernate-orm-envers</module>
         <module>vertx-http</module>
         <module>vertx</module>
         <module>spring-di</module>

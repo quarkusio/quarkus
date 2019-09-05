@@ -55,7 +55,9 @@ public final class HibernateOrmReflections {
 
         //Various well known needs:
         simpleConstructor(reflectiveClass, org.hibernate.tuple.entity.PojoEntityTuplizer.class);
+        simpleConstructor(reflectiveClass, org.hibernate.tuple.entity.DynamicMapEntityTuplizer.class);
         allConstructors(reflectiveClass, org.hibernate.tuple.component.PojoComponentTuplizer.class);
+        simpleConstructor(reflectiveClass, org.hibernate.tuple.component.DynamicMapComponentTuplizer.class);
         allConstructors(reflectiveClass, org.hibernate.persister.collection.OneToManyPersister.class);
         allConstructors(reflectiveClass, org.hibernate.persister.collection.BasicCollectionPersister.class);
         simpleConstructor(reflectiveClass, org.hibernate.persister.entity.SingleTableEntityPersister.class);
@@ -138,6 +140,11 @@ public final class HibernateOrmReflections {
         //The CoreMessageLogger is sometimes looked up without it necessarily being a field, so we're
         //not processing it the same way as other Logger lookups.
         simpleConstructor(reflectiveClass, "org.hibernate.internal.CoreMessageLogger_$logger");
+    }
+
+    @BuildStep
+    public void registerEnversReflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "org.hibernate.envers.DefaultRevisionEntity"));
     }
 
     private void allConstructors(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, final Class<?> clazz) {

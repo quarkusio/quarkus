@@ -47,5 +47,9 @@
             <artifactId>microprofile-context-propagation-tck</artifactId>
             <version>${microprofile-context-propagation.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.jboss.arquillian.container</groupId>
+            <artifactId>arquillian-container-spi</artifactId>
+        </dependency>
     </dependencies>
 </project>

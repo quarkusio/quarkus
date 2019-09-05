@@ -2,8 +2,6 @@ io.quarkus.runtime.configuration.InetSocketAddressConverter
 io.quarkus.runtime.configuration.CidrAddressConverter
 io.quarkus.runtime.configuration.InetAddressConverter
 io.quarkus.runtime.configuration.RegexConverter
-io.quarkus.runtime.configuration.ssl.CipherSuiteSelectorConverter
-io.quarkus.runtime.configuration.ssl.ProtocolConverter
 io.quarkus.runtime.configuration.PathConverter
 io.quarkus.runtime.configuration.DurationConverter
 io.quarkus.runtime.configuration.MemorySizeConverter

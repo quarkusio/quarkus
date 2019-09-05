@@ -104,6 +104,13 @@ $ ./mvnw quarkus:add-extensions -Dextensions=jdbc,agroal,non-exist-ent
 [...]
 ----
 
+You can install all extensions wich match a globbing pattern :
+
+[source,shell]
+----
+./mvnw quarkus:add-extension -Dextensions="hibernate-*"
+----
+
 == Development mode
 
 Quarkus comes with a built-in development mode.

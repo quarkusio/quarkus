@@ -16,7 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>io.smallrye</groupId>
-            <artifactId>smallrye-jwt-1.1</artifactId>
+            <artifactId>smallrye-jwt</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

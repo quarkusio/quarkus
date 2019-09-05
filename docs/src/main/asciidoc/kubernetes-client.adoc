@@ -138,3 +138,85 @@ Note that to take advantage of these features, the `quarkus-test-kubernetes-clie
         <scope>test</scope>
     </dependency>
 ----
+
+== Note on implementing the Watcher interface
+
+Due to the restrictions imposed by GraalVM, extra care needs to be taken when implementing a `io.fabric8.kubernetes.client.Watcher` if the application is intended to work in native mode.
+Essentially every `Watcher` implementation needs to specify the Kubernetes model class that it handles via the `Watcher`'s generic type at class definition time.
+To better understand this, suppose we want to watch for changes to Kubernetes `Pod` resources. There are a couple ways to write such a Watcher that are guaranteed to work in native:
+
+[source%nowrap,java]
+----
+client.pods().watch(new Watcher<Pod>() {
+      @Override
+      public void eventReceived(Action action, Pod pod) {
+        // do something
+      }
+
+      @Override
+      public void onClose(KubernetesClientException e) {
+        // do something
+      }
+    });
+----
+
+or
+
+[source%nowrap,java]
+----
+public class PodResourceWatcher implements Watcher<Pod> {
+      @Override
+      public void eventReceived(Action action, Pod pod) {
+        // do something
+      }
+
+      @Override
+      public void onClose(KubernetesClientException e) {
+        // do something
+      }
+}
+
+...
+
+
+client.pods().watch(new PodResourceWatcher());
+----
+
+Note that defining the generic type via a class hierarchy similar to the following example will also work correctly:
+
+[source%nowrap,java]
+----
+public abstract class MyWatcher<S> implements Watcher<S> {
+}
+
+...
+
+
+client.pods().watch(new MyWatcher<Pod>() {
+  @Override
+  public void eventReceived(Action action, Pod pod) {
+    // do something
+  }
+});
+----
+
+WARNING: The following example will **not** work in native mode because the generic type of watcher cannot be determined by looking at the class and method definitions
+thus making Quarkus unable to properly determine the Kubernetes model class for which reflection registration is needed:
+
+[source%nowrap,java]
+----
+public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
+      @Override
+      public void eventReceived(Action action, T resource) {
+        // do something
+      }
+
+      @Override
+      public void onClose(KubernetesClientException e) {
+        // do something
+      }
+}
+
+client.pods().watch(new ResourceWatcher<Pod>());
+----
+

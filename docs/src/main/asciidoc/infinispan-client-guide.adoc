@@ -36,16 +36,18 @@ The Infinispan client is configurable in the `application.properties` file that 
 provided in the `src/main/resources` directory. These are the properties that
 can be configured in this file:
 
-[cols=3*,options="header"]
+[cols=4*,options="header"]
 |===
 | Property
 | Default Value
 | Description
+| Runtime/Buildtime
 
 | `quarkus.infinispan-client.server-list`
 | <empty>
 | Defines the list of servers to connect to upon startup. This allows for multiple servers separated by a semicolon
 for each. (eg. host1:11222;host:11222)
+| Runtime overridable
 
 | `quarkus.infinispan-client.near-cache-max-entries`
 | 0
@@ -53,11 +55,13 @@ for each. (eg. host1:11222;host:11222)
 If this value is zero or less near cache is disabled. A value greater than zero enables near
 cache and only that many entries will be held a time, removing older entries to save memory
 (per cache).
+| Build time only / Requires compilation to change
 
 |===
 
 It is also possible to configure a `hotrod-client.properties` as described in the Infinispan user guide. Note that
 the `hotrod-client.properties` values overwrite any matching property from the other configuration values (eg. near cache).
+This properties file is build time only and if it is changed, requires a full rebuild.
 
 == Serialization (Key Value types support)
 
@@ -99,15 +103,93 @@ public class Book {
 }
 ----
 
-The default serialization is done using a library based on protobuf. We need to define the proto
-buf schema and a marshaller for each user type(s).
+Serialization of user types uses a library based on protobuf, called Protostream.
 
-NOTE: Annotation based proto stream marshalling is not yet supported in
-the Quarkus Infinispan client. This will be added soon, allowing you to only annotate your classes,
-skipping the following steps.
+=== Annotation based Serialization
 
-NOTE: This version has an issue currently requiring the Query DSL module as a dependency when running in
-native mode with proto buf based marshalling. This should be remedied in a future version.
+This can be done automatically by adding protostream annotations to your user classes.
+In addition a single Initializer annotated interface is required which controls how
+the supporting classes are generated.
+
+Here is an example of how the preceding classes should be changed:
+
+.Author.java
+[source,java]
+----
+    @ProtoFactory
+    public Author(String name, String surname) {
+        this.name = Objects.requireNonNull(name);
+        this.surname = Objects.requireNonNull(surname);
+    }
+
+    @ProtoField(number = 1)
+    public String getName() {
+        return name;
+    }
+
+    @ProtoField(number = 2)
+    public String getSurname() {
+        return surname;
+    }
+----
+
+.Book.java
+[source,java]
+----
+    @ProtoFactory
+    public Book(String title, String description, int publicationYear, Set<Author> authors) {
+        this.title = Objects.requireNonNull(title);
+        this.description = Objects.requireNonNull(description);
+        this.publicationYear = publicationYear;
+        this.authors = Objects.requireNonNull(authors);
+    }
+
+    @ProtoField(number = 1)
+    public String getTitle() {
+        return title;
+    }
+
+    @ProtoField(number = 2)
+    public String getDescription() {
+        return description;
+    }
+
+    @ProtoField(number = 3, defaultValue = "-1")
+    public int getPublicationYear() {
+        return publicationYear;
+    }
+
+    @ProtoField(number = 4)
+    public Set<Author> getAuthors() {
+        return authors;
+    }
+----
+If your classes have only mutable fields, then the `ProtoFactory` annotation
+is not required, assuming your class has a no arg constructor.
+
+Then all that is required is a very simple `SerializationContextInitializer` interface with an annotation
+on it to specify configuration settings
+
+.BookContextInitializer.java
+[source,java]
+----
+@AutoProtoSchemaBuilder(includeClasses = { Book.class, Author.class }, schemaPackageName = "book_sample")
+interface BookContextInitializer extends SerializationContextInitializer {
+}
+----
+
+So in this case we will automatically generate the marshaller and schemas for the included classes and
+place them in the schema package automatically. The package does not have to be provided, but if you
+utilize querying, you must know the generated package.
+
+NOTE: In Quarkus the `schemaFileName` and `schemaFilePath` attributes should NOT be set on the `AutoProtoSchemaBuilder` annotation, setting either will cause native runtime to error.
+
+=== User written serialization
+
+The previous method is suggested for any case when the user can annotate their classes.
+Unfortunately the user may not be able to annotate all classes they will put in the
+cache. In this case you must define your schema and create your own Marshaller(s)
+yourself.
 
 Protobuf schema:: You can supply a protobuf schema through either one of two ways.
   . Proto File
@@ -244,28 +326,7 @@ And you pass the marshaller by defining the following:
       return new BookMarshaller();
    }
 ----
-
-NOTE: Annotation based proto stream marshalling is not yet supported in
-the Quarkus Infinispan client.
-
-=== Providing your own Marshaller
-
-You can implement the `org.infinispan.commons.marshaller.Marshaller` interface. This will allow you
-to put keys and values of the types it supports directly with the client. All that is required is to have your
-class available in classpath and configure the property value to be the fully qualified class name. This
-method does not require any optional dependencies.
-
-It is recommended to extend from the `org.infinispan.commons.marshall.AbstractMarshaller` class to reduce
-the lines of the class. Here is an example of a Marshaller implementation for String instances.
-
-With that class in your project/classpath, all you need to do is add the following to your
-hotrod-client.properties as mentioned above.
-
-[source,properties]
-infinispan.client.hotrod.marshaller=com.example.MyMarshaller
-
-Note that the Marshaller implementation must have a no arg constructor or static factory method named
-`getInstance`.
+NOTE: The above produced Marshaller method MUST return `MessageMarshaller` without types or else it will not be found.
 
 == Dependency Injection
 
@@ -303,20 +364,10 @@ The Infinispan client supports both indexed and non indexed querying as long as 
 properties of the proto schema.
 
 Query builds upon the proto definitions you can configure when setting up the `ProtoStreamMarshaller`.
-Make sure to configure this marshaller before attempting querying. Once this is completed
-you must add another optional depdency: `infinispan-query-dsl` to start using queries.
+Either method of Serialization above will automatically register the schema with the server at
+startup, meaning that you will automatically gain the ability to query objects stored in the
+remote Infinispan Server.
 
-You can do this by adding the following dependency to your project.
-
-[source,xml]
-----
-<dependency>
-    <groupId>org.infinispan</groupId>
-    <artifactId>infinispan-query-dsl</artifactId>
-</dependency>
-----
-
-With this added you can use Infinispan querying just as you would normally, nothing special required.
 You can read more about this at https://infinispan.org/docs/dev/user_guide/user_guide.html#query_dsl.
 
 You can use either the Query DSL or the Ickle Query language with the Quarkus Infinispan client

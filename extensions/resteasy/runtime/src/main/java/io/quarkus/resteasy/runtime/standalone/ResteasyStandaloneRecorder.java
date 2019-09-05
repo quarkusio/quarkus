@@ -28,6 +28,15 @@ public class ResteasyStandaloneRecorder {
 
     private static boolean useDirect = true;
 
+    private static Handler<HttpServerRequest> ROOT_HANDLER = new Handler<HttpServerRequest>() {
+        @Override
+        public void handle(HttpServerRequest httpServerRequest) {
+            currentRoot.handle(httpServerRequest);
+        }
+    };
+
+    private static VertxRequestHandler currentRoot = null;
+
     //TODO: clean this up
     private static BufferAllocator ALLOCATOR = new BufferAllocator() {
         @Override
@@ -77,7 +86,8 @@ public class ResteasyStandaloneRecorder {
         deployment.start();
         useDirect = !isVirtual;
 
-        return new VertxRequestHandler(vertx, beanContainer, deployment, contextPath, ALLOCATOR, null);
+        currentRoot = new VertxRequestHandler(vertx, beanContainer, deployment, contextPath, ALLOCATOR);
+        return ROOT_HANDLER;
     }
 
 }

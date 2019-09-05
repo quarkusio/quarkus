@@ -16,11 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-reactive-messaging-amqp-1.0</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
+            <artifactId>smallrye-reactive-messaging-amqp</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -31,8 +27,12 @@
             <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-reactive-messaging-provider-1.0</artifactId>
+            <artifactId>smallrye-reactive-messaging-provider</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>

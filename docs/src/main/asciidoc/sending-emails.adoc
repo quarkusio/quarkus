@@ -63,30 +63,7 @@ quarkus.mailer.password=....
 
 The following table lists the properties that can be configured:
 
-[cols=*,options="header"]
-|===
-
-| Property | Type | Comment | Default
-
-| from | String | the default _from_ address, without, all emails will need an explicit value |
-| mock | Boolean | if set to `true`, the emails are not sent, but printed on the console and collected in a `MockMailbox` bean. | `false` in `PROD` mode, true in `DEV` and `TEST` modes
-| bounce-address | String | the default bounce address |
-| host | String | the SMTP server host name | _mandatory_
-| port | Integer | the SMTP server port | `25`
-| username | String | the username |
-| password | String | the password |
-| ssl | Boolean | Enables or disables SSL | `false`
-| trust-all | Boolean | Set whether to trust all certificates | `false`
-| max-pool-size | Integer | Configures the maximum number of open connections to the mail server | `10`
-| own-host-name | String | The hostname to be used for `HELO/EHLO` and the `Message-ID` |
-| keep-alive | Boolean | Set if connection pool is enabled. | `true`
-| disable-esmtp | Boolean | Disable ESMTP | `false`
-| start-tls | `NONE`, `OPTIONAL`, `REQUIRED` | Set the TLS security mode | `OPTIONAL`
-| login | `DISABLED`, `OPTIONAL`, `REQUIRED` | Set the login mode for the connection | `NONE`
-| auth-methods | space-separated list | Set the allowed auth methods, accept all methods if not set |
-| key-store | String | Path of the key store |
-| key-store-password | String | Key store password |
-|===
+include::generated/quarkus-mailer-impl.adoc[]
 
 == Sending simple emails
 

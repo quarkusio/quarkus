@@ -76,12 +76,14 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             "META-INF/README.txt",
             "META-INF/README.md",
             "META-INF/DEPENDENCIES",
+            "META-INF/DEPENDENCIES.txt",
             "META-INF/beans.xml",
             "META-INF/io.netty.versions.properties",
             "META-INF/quarkus-config-roots.list",
             "META-INF/quarkus-javadoc.properties",
             "META-INF/quarkus-extension.properties",
             "META-INF/quarkus-deployment-dependency.graph",
+            "META-INF/jandex.idx",
             "LICENSE")));
 
     private final Set<String> userConfiguredIgnoredEntries = new HashSet<>();

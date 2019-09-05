@@ -20,11 +20,11 @@
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-reactive-messaging-kafka-1.0</artifactId>
+            <artifactId>smallrye-reactive-messaging-kafka</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson</artifactId>
         </dependency>
 
         <dependency>
@@ -52,7 +52,7 @@
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-reactive-messaging-provider-1.0</artifactId>
+            <artifactId>smallrye-reactive-messaging-provider</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>

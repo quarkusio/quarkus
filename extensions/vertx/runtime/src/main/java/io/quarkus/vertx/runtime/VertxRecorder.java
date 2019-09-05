@@ -4,16 +4,21 @@ import static io.vertx.core.file.impl.FileResolver.CACHE_DIR_BASE_PROP_NAME;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
+import io.netty.channel.EventLoopGroup;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.IOThreadDetector;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
@@ -27,6 +32,8 @@ import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.file.FileSystemOptions;
 import io.vertx.core.http.ClientAuth;
+import io.vertx.core.impl.VertxImpl;
+import io.vertx.core.impl.VertxThread;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
@@ -66,6 +73,18 @@ public class VertxRecorder {
             });
         }
         return new RuntimeValue<Vertx>(vertx);
+    }
+
+    public IOThreadDetector detector() {
+        return new IOThreadDetector() {
+            @Override
+            public boolean isInIOThread() {
+                Thread current = Thread.currentThread();
+                if (!(current instanceof VertxThread))
+                    return false;
+                return (!((VertxThread) current).isWorker());
+            }
+        };
     }
 
     public static Vertx getVertx() {
@@ -335,7 +354,7 @@ public class VertxRecorder {
 
     private void registerCodec(Class<?> typeToAdd, Class<?> messageCodecClass) {
         try {
-            if (messageCodecClass.isAssignableFrom(MessageCodec.class)) {
+            if (MessageCodec.class.isAssignableFrom(messageCodecClass)) {
                 MessageCodec messageCodec = (MessageCodec) messageCodecClass.newInstance();
                 registerCodec(typeToAdd, messageCodec);
             } else {
@@ -349,5 +368,23 @@ public class VertxRecorder {
     private void registerCodec(Class<?> typeToAdd, MessageCodec codec) {
         EventBus eventBus = vertx.eventBus();
         eventBus.registerDefaultCodec(typeToAdd, codec);
+    }
+
+    public Supplier<EventLoopGroup> bossSupplier() {
+        return new Supplier<EventLoopGroup>() {
+            @Override
+            public EventLoopGroup get() {
+                return ((VertxImpl) vertx).getAcceptorEventLoopGroup();
+            }
+        };
+    }
+
+    public Supplier<EventLoopGroup> mainSupplier() {
+        return new Supplier<EventLoopGroup>() {
+            @Override
+            public EventLoopGroup get() {
+                return vertx.nettyEventLoopGroup();
+            }
+        };
     }
 }

@@ -22,6 +22,7 @@ public class InfinispanServerTestResource implements QuarkusTestResourceLifecycl
         EmbeddedCacheManager ecm = TestCacheManagerFactory.createCacheManager(
                 new GlobalConfigurationBuilder().nonClusteredDefault().defaultCacheName("default"),
                 new ConfigurationBuilder());
+        ecm.defineConfiguration("magazine", new ConfigurationBuilder().build());
         // Client connects to a non default port
         hotRodServer = HotRodTestingUtil.startHotRodServer(ecm, 11232);
         return Collections.emptyMap();

@@ -1,6 +1,3 @@
-/**
- * 
- */
 package io.quarkus.resteasy.runtime;
 
 import java.lang.annotation.Annotation;
@@ -31,9 +28,6 @@ import org.jboss.resteasy.spi.ResourceInvoker;
 
 import io.quarkus.runtime.TemplateHtmlBuilder;
 
-/**
- * 
- */
 @Provider
 @Priority(Priorities.USER + 1)
 public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundException> {
@@ -185,6 +179,10 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             }
             sb.resourceEnd();
         }
+        if (descriptions.isEmpty()) {
+            sb.noResourcesFound();
+        }
+
         return Response.status(Status.NOT_FOUND).entity(sb.toString()).build();
     }
 

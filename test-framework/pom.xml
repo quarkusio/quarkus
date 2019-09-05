@@ -22,6 +22,7 @@
         <module>junit5</module>
         <module>amazon-lambda</module>
         <module>arquillian</module>
+        <module>maven</module>
     </modules>
 
 </project>

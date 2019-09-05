@@ -24,7 +24,7 @@ public class TestScopeManager {
 
     public static void tearDown() {
         for (TestScopeSetup i : scopeManagers) {
-            i.setup();
+            i.tearDown();
         }
     }
 }

@@ -34,7 +34,6 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.Timing;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
-import io.quarkus.runtime.configuration.ssl.ServerSslConfig;
 import io.quarkus.vertx.runtime.VertxConfiguration;
 import io.quarkus.vertx.runtime.VertxRecorder;
 import io.quarkus.vertx.web.Route;
@@ -146,7 +145,7 @@ public class VertxWebRecorder {
         if (router == null) {
             router = Router.router(vertx);
             if (hotReplacementHandler != null) {
-                router.route().blockingHandler(hotReplacementHandler);
+                router.route().handler(hotReplacementHandler);
             }
         }
         for (Entry<String, List<Route>> entry : routeHandlers.entrySet()) {
@@ -178,7 +177,6 @@ public class VertxWebRecorder {
 
     private static void doServerStart(Vertx vertx, HttpConfiguration httpConfiguration, LaunchMode launchMode)
             throws IOException {
-        CountDownLatch latch = new CountDownLatch(1);
         // Http server configuration
         HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode);
         HttpServerOptions sslConfig = createSslOptions(httpConfiguration, launchMode);
@@ -410,6 +408,14 @@ public class VertxWebRecorder {
         }
     }
 
+    public void warnIfPortChanged(HttpConfiguration config, int port) {
+        if (config.port != port) {
+            LOGGER.errorf(
+                    "quarkus.http.port was specified at build time as %s however run time value is %s, Kubernetes metadata will be incorrect.",
+                    port, config.port);
+        }
+    }
+
     private static class WebDeploymentVerticle implements Verticle {
 
         private final int port;
@@ -526,5 +532,9 @@ public class VertxWebRecorder {
             throw new RuntimeException("failed to bind virtual http");
         }
 
+    }
+
+    public static Router getRouter() {
+        return router;
     }
 }

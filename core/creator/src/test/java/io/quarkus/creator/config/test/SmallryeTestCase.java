@@ -103,7 +103,7 @@ public class SmallryeTestCase {
         )
                 // read config as properties
                 .read(config.getPropertyNames(), (String name) -> {
-                    return new PropertyLine(name, config.getValue(name, String.class));
+                    return new PropertyLine(name, config.getOptionalValue(name, String.class).orElse(""));
                 });
 
         final User expectedUser = new User();

@@ -98,6 +98,26 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-artemis-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-artemis-core-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-artemis-jms</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-artemis-jms-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-validator-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -179,6 +199,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-reactive-pg-client-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-reactive-mysql-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -378,6 +403,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-data-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jgit-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -419,6 +449,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-integration-test-shared-library</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-test-maven</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

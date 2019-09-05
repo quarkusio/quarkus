@@ -7,7 +7,7 @@ trigger:
   batch: true
   branches:
     include:
-    - master
+      - master
 
 pr:
   branches:
@@ -22,79 +22,247 @@ pr:
       - LICENSE.txt
       - dco.txt
 
-jobs:
-- job: Build_Native_Linux
-  timeoutInMinutes: 180
-  pool:
-    vmImage: 'Ubuntu 16.04'
+variables:
+  MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository/
+  MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+  QUARKUS_LOCAL_REPO: $(MAVEN_CACHE_FOLDER)
 
-  variables:
-    imageName: 'quarkus:$(build.buildId)'
+stages:
+  #This stage uses the azure caching feature to reduce the downloads that are performed from central, which greatly speeds up CI
+  #This is it's own stage to prevent Quarkus artifacts produced by the build from being cached
+  - stage: cache_maven_repo_stage
+    displayName: 'Maven Cache'
+    jobs:
+      - job: Cache_Maven_Repo
+        displayName: 'Linux Maven Repo'
+        timeoutInMinutes: 30
+        pool:
+          vmImage: 'Ubuntu 16.04'
 
-  steps:
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
 
-  - script: docker run --rm --publish 5432:5432 --name build-postgres -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -d postgres:10.5
-    displayName: 'start postgres'
+        steps:
 
-  - script: docker run --rm --publish 8000:8000 --name build-dynamodb -d amazon/dynamodb-local:1.11.477
-    displayName: 'start dynamodb'
+          - task: CacheBeta@0
+            inputs:
+              key: maven | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
+              path: $(MAVEN_CACHE_FOLDER)
+              securityNamespace: cache
+              cacheHitVar: CACHE_RESTORED
+            displayName: Cache Maven local repo
 
-  - task: Maven@3
-    displayName: 'Maven Build'
-    inputs:
-      goals: 'install'
-      options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-dynamodb -Ddynamodb-local.port=8000 -Dnative-image.xmx=6g  -Dnative -Dno-format'
+          - task: Maven@3
+            displayName: 'Maven Build'
+            condition: ne(variables.CACHE_RESTORED, 'true')
+            inputs:
+              goals: 'package'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format'
+      - job: Cache_Windows_Maven_Repo #windows has different line endings so the cache key is different
+        displayName: 'Windows Maven Repo'
+        timeoutInMinutes: 30
+        pool:
+          vmImage: 'vs2017-win2016'
 
-- job: Windows_Build
-  timeoutInMinutes: 60
-  pool:
-    vmImage: 'vs2017-win2016'
+        variables:
+          imageName: 'quarkus-windows:$(build.buildId)'
 
-  variables:
-    imageName: 'quarkus-windows:$(build.buildId)'
+        steps:
 
-  steps:
+          - task: CacheBeta@0
+            inputs:
+              key: mavenWindows | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
+              path: $(MAVEN_CACHE_FOLDER)
+              securityNamespace: cache
+              cacheHitVar: CACHE_RESTORED
+            displayName: Cache Maven local repo
 
-  - task: Maven@3
-    displayName: 'Maven Build'
-    inputs:
-      goals: 'install'
-      options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
+          - task: Maven@3
+            displayName: 'Maven Build'
+            condition: ne(variables.CACHE_RESTORED, 'true')
+            inputs:
+              goals: 'package'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format'
 
-- job: Build_JDK11_Linux
-  timeoutInMinutes: 60
-  pool:
-    vmImage: 'Ubuntu 16.04'
+  #This stage builds the Quarkus artifacts needed for native image testing
+  #but also tests JDK8 linux. While it would be more parallel to have a separate JDK8 test run,
+  #and build this run with tests skipped, this means that if there is a problem with the JVM run
+  #we do not waste time on native runs, and also uses less agent time overall
+  - stage: build_artifact_for_native_stage
+    displayName: 'Build for Native'
+    dependsOn: cache_maven_repo_stage
+    jobs:
+      - job: Build_JDK8_Linux
+        displayName: 'Build JDK8 Linux'
+        timeoutInMinutes: 60
+        pool:
+          vmImage: 'Ubuntu 16.04'
 
-  variables:
-    imageName: 'quarkus-jdk11:$(build.buildId)'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
 
-  steps:
-  - task: Maven@3
-    displayName: 'Maven Build'
-    inputs:
-      jdkVersionOption: '1.11'
-      goals: 'install'
-      options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
+        steps:
+          - template: ci-templates/jvm-build-steps.yaml
 
-- job: Run_TCKs
-  timeoutInMinutes: 45
-  pool:
-    vmImage: 'Ubuntu 16.04'
+          - publish: $(MAVEN_CACHE_FOLDER)
+            artifact: BuiltMavenRepo
 
-  variables:
-    imageName: 'quarkus:$(build.buildId)'
+  - stage: run_jvm_tests_stage
+    displayName: 'Run JVM Tests'
+    dependsOn: cache_maven_repo_stage
+    jobs:
+      - job: Windows_Build
+        displayName: 'Windows JVM Build'
+        timeoutInMinutes: 60
+        pool:
+          vmImage: 'vs2017-win2016'
+        variables:
+          imageName: 'quarkus-windows:$(build.buildId)'
+          MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+          MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+        steps:
+          - task: CacheBeta@0 #we know the very first job will have restored or created this, so this will never write built artifacts to the cache
+            inputs:
+              key: mavenWindows | bom/runtime/pom.xml
+              path: $(MAVEN_CACHE_FOLDER)
+              securityNamespace: cache
+            displayName: Restore Maven Cache
 
-  steps:
+          - task: Maven@3
+            displayName: 'Maven Build'
+            inputs:
+              goals: 'install'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
 
-  - task: Maven@3
-    displayName: 'Maven Install'
-    inputs:
-      goals: 'install'
-      options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format -DskipTests -Dtcks'
+      - job: Build_JDK11_Linux
+        timeoutInMinutes: 60
+        displayName: 'Linux JDK11 Build'
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus-jdk11:$(build.buildId)'
+        steps:
+          - template: ci-templates/jvm-build-steps.yaml
 
-  - task: Maven@3
-    displayName: 'Maven Verify'
-    inputs:
-      goals: 'verify'
-      mavenPomFile: 'tcks/pom.xml'
+      - job: Run_TCKs
+        timeoutInMinutes: 45
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+        steps:
+          - task: Maven@3
+            displayName: 'Maven Install'
+            inputs:
+              goals: 'install'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format -DskipTests -Dtcks'
+          - task: Maven@3
+            displayName: 'Maven Verify'
+            inputs:
+              goals: 'verify'
+              mavenOptions: $(MAVEN_OPTS)
+              mavenPomFile: 'tcks/pom.xml'
+
+
+  - stage: run_native_tests_stage
+    displayName: 'Native Tests'
+    dependsOn: build_artifact_for_native_stage
+    jobs:
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          modules: main
+          name: main
+          postgres: true
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          modules:
+            - jpa
+            - jpa-h2
+            - jpa-mariadb
+            - jpa-mssql
+            - jpa-postgresql
+          name: jpa
+          postgres: true
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          modules:
+            - amazon-dynamodb
+            - amazon-lambda
+          name: amazon
+          dynamodb: true
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          modules:
+            - artemis-core
+            - artemis-jms
+            - kafka
+          name: messaging
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          modules:
+            - elytron-security-oauth2
+            - elytron-security
+            - keycloak
+          name: security
+          keycloak: true
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          modules:
+            - flyway
+            - hibernate-orm-panache
+            - reactive-pg-client
+          name: database
+          postgres: true
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          modules:
+            - infinispan-cache-jpa
+            - infinispan-client
+            - mongodb-client
+            - neo4j
+          name: data
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          modules:
+            - resteasy-jackson
+            - vertx
+            - virtual-http
+          name: http
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          modules:
+            - jackson
+            - jgit
+            - kogito
+            - kubernetes-client
+            - tika
+            - hibernate-validator
+            - test-extension
+          name: misc
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          modules:
+            - spring-di
+            - spring-web
+            - spring-data-jpa
+          name: spring
+
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          modules:
+            - hibernate-search-elasticsearch
+          name: hibernate_search_elasticsearch

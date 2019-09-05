@@ -1,9 +1,11 @@
-# Quarkus
+[![Quarkus](https://design.jboss.org/quarkus/logo/final/PNG/quarkus_logo_horizontal_rgb_1280px_default.png)](https://quarkus.io/)
 
-[![Build Status](https://dev.azure.com/quarkus-ci/quarkus/_apis/build/status/quarkusio.quarkus)](https://dev.azure.com/quarkus-ci/quarkus/_build/latest?definitionId=1)
-[![Project Chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://quarkusio.zulipchat.com/)
+[![Version](https://img.shields.io/github/v/release/quarkusio/quarkus?style=for-the-badge)](https://github.com/quarkusio/quarkus/releases/latest)
+[![Build Status](https://img.shields.io/azure-devops/build/quarkus-ci/quarkus/1?style=for-the-badge&logo=azure-pipelines)](https://dev.azure.com/quarkus-ci/quarkus/_build/latest?definitionId=1)
+[![License](https://img.shields.io/github/license/quarkusio/quarkus?style=for-the-badge&logo=apache)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Project Chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg?style=for-the-badge)](https://quarkusio.zulipchat.com/)
 
-> Quarkus - Supersonic Subatomic Java
+# Quarkus - Supersonic Subatomic Java
 
 Quarkus is a Cloud Native, (Linux) Container First framework for writing Java applications.
 

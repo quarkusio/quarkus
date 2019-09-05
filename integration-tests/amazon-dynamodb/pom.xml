@@ -15,7 +15,7 @@
     <description>The AWS DynamoDB integration tests</description>
 
     <properties>
-        <dynamodb.aws>false</dynamodb.aws>
+        <dynamodb.url>http://localhost:8000</dynamodb.url>
     </properties>
 
     <dependencies>
@@ -106,28 +106,9 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>reserve-network-port</id>
-                                <goals>
-                                    <goal>reserve-network-port</goal>
-                                </goals>
-                                <phase>initialize</phase>
-                                <configuration>
-                                    <portNames>
-                                        <portName>dynamodb-local.port</portName>
-                                    </portNames>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
-                            <argLine>-Ddynamodb.port=${dynamodb-local.port}</argLine>
                         </configuration>
                     </plugin>
                     <plugin>
@@ -139,6 +120,7 @@
                 </plugins>
             </build>
         </profile>
+
         <profile>
             <id>native-image</id>
             <activation>
@@ -158,10 +140,6 @@
                                     <goal>verify</goal>
                                 </goals>
                                 <configuration>
-                                    <environmentVariables>
-                                        <DYNAMODB_PORT>${dynamodb-local.port}</DYNAMODB_PORT>
-                                        <DYNAMODB_AWS>${dynamodb.aws}</DYNAMODB_AWS>
-                                    </environmentVariables>
                                     <systemProperties>
                                         <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
                                     </systemProperties>
@@ -194,6 +172,7 @@
                 </plugins>
             </build>
         </profile>
+
         <profile>
             <id>docker-dynamodb</id>
             <activation>
@@ -201,6 +180,9 @@
                     <name>docker</name>
                 </property>
             </activation>
+            <properties>
+                <dynamodb.url>http://localhost:8000</dynamodb.url>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -213,11 +195,11 @@
                                     <alias>dynamodb-local</alias>
                                     <run>
                                         <ports>
-                                            <port>${dynamodb-local.port}:8000</port>
+                                            <port>8000:8000</port>
                                         </ports>
                                         <wait>
                                             <http>
-                                                <url>http://localhost:${dynamodb-local.port}/shell/</url>
+                                                <url>${dynamodb.url}/shell/</url>
                                             </http>
                                             <time>10000</time>
                                         </wait>

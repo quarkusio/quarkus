@@ -1,8 +1,5 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
-import javax.json.JsonStructure;
-
-import org.eclipse.microprofile.jwt.Claims;
 import org.jose4j.jwt.JwtClaims;
 import org.wildfly.security.authz.Attributes;
 
@@ -46,15 +43,4 @@ public class ElytronJwtCallerPrincipal extends DefaultJWTCallerPrincipal {
         return customPrincipalName != null ? customPrincipalName : super.getName();
     }
 
-    @Override
-    protected Object getClaimValue(String claimName) {
-        Object value = super.getClaimValue(claimName);
-
-        Claims claimType = getClaimType(claimName);
-        if (claimType == Claims.UNKNOWN && !(value instanceof JsonStructure)) {
-            value = wrapClaimValue(value);
-        }
-
-        return value;
-    }
 }

@@ -20,22 +20,8 @@
             <artifactId>commons-beanutils</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.invocation</groupId>
-            <artifactId>jboss-invocation</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.wildfly.common</groupId>
-                    <artifactId>wildfly-common</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>org.wildfly.common</groupId>
             <artifactId>wildfly-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.classfilewriter</groupId>
-            <artifactId>jboss-classfilewriter</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus.gizmo</groupId>

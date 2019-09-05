@@ -57,4 +57,10 @@ public class InfinispanClientFunctionalityTest {
         System.out.println("Running nearCacheInvalidation test");
         RestAssured.when().get("/test/nearcache").then().body(is("worked"));
     }
+
+    @Test
+    public void testQueryWithCustomMarshaller() {
+        System.out.println("Running query with custom marshaller test");
+        RestAssured.when().get("/test/magazinequery/IM").then().body(is("[TIME:1923-03,TIME:1997-04]"));
+    }
 }

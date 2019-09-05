@@ -25,13 +25,15 @@ NOTE: Most of the existing CDI code should work just fine but there are some sma
 == Bean Discovery
 
 Bean discovery in CDI is a complex process which involves legacy deployment structures and accessibility requirements of the underlying module architecture.
-Quarkus is using a simplified bean discovery.
-There is only one bean archive with `annotated` bean discovery mode and no visibility boundaries.
+However, Quarkus is using a *simplified bean discovery*.
+There is only single bean archive with the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"] and no visibility boundaries.
 
 The bean archive is synthesized from:
 
-* the application,
-* application dependencies that contain a `beans.xml` descriptor or a generated Jandex index (`META-INF/jandex.idx`),
+* the application classes,
+* dependencies that contain a `beans.xml` descriptor (content is ignored),
+* dependencies that contain a Jandex index - `META-INF/jandex.idx`,
+* dependencies referenced by `quarkus.index-dependency` in `application.properties`,
 * and Quarkus integration code.
 
 Bean classes that don't have a http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations[bean defining annotation, window="_blank"] are not discovered.
@@ -39,8 +41,52 @@ This behavior is defined by CDI.
 But producer methods and fields and observer methods are discovered even if the declaring class is not annotated with a bean defining annotation (this behavior is different to what is defined in CDI).
 In fact, the declaring bean classes are considered annotated with `@Dependent`. 
 
-NOTE: Quarkus extension may declare additional discovery rules. For example `@Scheduled` business methods are registered even if the declaring class is not annotated with a bean defining annotation.
+NOTE: Quarkus extensions may declare additional discovery rules. For example, `@Scheduled` business methods are registered even if the declaring class is not annotated with a bean defining annotation.
 
+=== How to Generate a Jandex Index
+
+A dependency with a Jandex index is automatically scanned for beans.
+To generate the index just add the following to your `pom.xml`:
+
+[source,xml]
+----
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.jboss.jandex</groupId>
+      <artifactId>jandex-maven-plugin</artifactId>
+      <version>1.0.6</version>
+      <executions>
+        <execution>
+          <id>make-index</id>
+          <goals>
+            <goal>jandex</goal>
+          </goals>
+        </execution>
+      </executions>
+    </plugin>
+  </plugins>
+</build>
+----
+
+If you can't modify the dependency, you can still index it by adding `quarkus.index-dependency` entries to your `application.properties`:
+
+[source,properties]
+----
+quarkus.index-dependency.<name>.group-id=
+quarkus.index-dependency.<name>.artifact-id=
+quarkus.index-dependency.<name>.classifier=(this one is optional)
+----
+
+For example, the following entries ensure that the `org.acme:acme-api` dependency is indexed:
+
+[source,properties]
+----
+quarkus.index-dependency.acme.group-id=org.acme <1>
+quarkus.index-dependency.acme.artifact-id=acme-api <2>
+----
+<1> Value is a group id for a dependency identified by name `acme`.
+<2> Value is an artifact id for a dependency identified by name `acme`.
 
 == Private Members
 

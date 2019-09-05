@@ -17,6 +17,7 @@ public enum SourceType {
 
     private static final String BUILD_FILE_RESOURCE_TEMPLATE = "templates/%s/%s/%s-template.ftl";
     private static final String RESOURCE_TEMPLATE = "templates/%s/%s/resource-template.ftl";
+    private static final String SPRING_CONTROLLER_TEMPLATE = "templates/%s/%s/spring-controller-template.ftl";
     private static final String TEST_RESOURCE_TEMPLATE = "templates/%s/%s/test-resource-template.ftl";
     private static final String NATIVE_TEST_RESOURCE_TEMPLATE = "templates/%s/%s/native-test-resource-template.ftl";
 
@@ -46,6 +47,10 @@ public enum SourceType {
 
     public String getSrcResourceTemplate(String templateName) {
         return computeTemplateFile(RESOURCE_TEMPLATE, templateName);
+    }
+
+    public String getSrcSpringControllerTemplate(String templateName) {
+        return computeTemplateFile(SPRING_CONTROLLER_TEMPLATE, templateName);
     }
 
     public String getTestResourceTemplate(String templateName) {

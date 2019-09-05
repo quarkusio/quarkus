@@ -15,6 +15,7 @@ public interface ProjectGenerator {
     String BUILD_TOOL = "build_tool";
     String ADDITIONAL_GITIGNORE_ENTRIES = "additional_gitignore_entries";
     String CLASS_NAME = "class_name";
+    String IS_SPRING = "is_spring";
     String RESOURCE_PATH = "path";
 
     String getName();

@@ -63,14 +63,6 @@
             <groupId>org.wildfly.common</groupId>
             <artifactId>wildfly-common</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.wildfly.security</groupId>
-            <artifactId>wildfly-elytron-ssl</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.wildfly.security</groupId>
-            <artifactId>wildfly-elytron-x500-cert</artifactId>
-        </dependency>
 
         <!--
           This is required to ensure that the extension processor is built.

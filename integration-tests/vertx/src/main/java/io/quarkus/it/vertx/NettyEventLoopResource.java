@@ -5,16 +5,18 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
 import io.netty.channel.EventLoopGroup;
-import io.quarkus.netty.BossGroup;
+import io.quarkus.netty.BossEventLoopGroup;
+import io.quarkus.netty.MainEventLoopGroup;
 
 @Path("/eventloop")
 public class NettyEventLoopResource {
 
     @Inject
+    @MainEventLoopGroup
     EventLoopGroup worker;
 
     @Inject
-    @BossGroup
+    @BossEventLoopGroup
     EventLoopGroup boss;
 
     @GET

@@ -10,6 +10,7 @@ import javax.inject.Inject;
 
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -22,6 +23,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
+import io.quarkus.jackson.deployment.IgnoreJsonDeserializeClassBuildItem;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientRecorder;
@@ -29,12 +31,19 @@ import io.quarkus.kubernetes.client.runtime.KubernetesClientRecorder;
 public class KubernetesClientProcessor {
 
     private static final DotName WATCHER = DotName.createSimple("io.fabric8.kubernetes.client.Watcher");
+    private static final DotName KUBERNETES_RESOURCE = DotName
+            .createSimple("io.fabric8.kubernetes.api.model.KubernetesResource");
+
+    private static final Logger log = Logger.getLogger(KubernetesClientProcessor.class.getName());
 
     @Inject
     BuildProducer<FeatureBuildItem> featureProducer;
 
     @Inject
     BuildProducer<ReflectiveClassBuildItem> reflectiveClasses;
+
+    @Inject
+    BuildProducer<IgnoreJsonDeserializeClassBuildItem> ignoredJsonDeserializationClasses;
 
     KubernetesClientBuildConfig buildConfig;
 
@@ -58,19 +67,37 @@ public class KubernetesClientProcessor {
                             watchedClasses.add(watcherGenericTypes.get(0).name().toString());
                         }
                     } catch (IllegalStateException ignored) {
-                    } // no need to handle cases when the generic types could not be determined
+                        // when the class has no subclasses and we were not able to determine the generic types, it's likely that
+                        // the watcher will fail due to not being able to deserialize the class
+                        if (applicationIndex.getIndex().getAllKnownSubclasses(c.name()).isEmpty()) {
+                            log.warn("Watcher '" + c.name() + "' will most likely not work correctly in native mode. " +
+                                    "Consider specifying the generic type of 'io.fabric8.kubernetes.client.Watcher' that this class handles. "
+                                    +
+                                    "See https://quarkus.io/guides/kubernetes-client#note-on-implementing-the-watcher-interface for more details");
+                        }
+                    }
                 });
         if (!watchedClasses.isEmpty()) {
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, watchedClasses.toArray(new String[0])));
         }
 
         final String[] modelClasses = combinedIndexBuildItem.getIndex()
-                .getAllKnownImplementors(DotName.createSimple("io.fabric8.kubernetes.api.model.KubernetesResource"))
+                .getAllKnownImplementors(KUBERNETES_RESOURCE)
                 .stream()
+                .peek(c -> {
+                    // we need to make sure that the Jackson extension does not try to fully register the model classes
+                    // since we are going to register them weakly
+                    ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(c.name()));
+                })
                 .map(c -> c.name().toString())
                 .filter(c -> !watchedClasses.contains(c))
                 .toArray(String[]::new);
         reflectiveClasses.produce(ReflectiveClassBuildItem.weakClass(modelClasses));
+
+        // we also ignore some classes that are annotated with @JsonDeserialize that would force the registration of the entire model
+        ignoredJsonDeserializationClasses.produce(
+                new IgnoreJsonDeserializeClassBuildItem(DotName.createSimple("io.fabric8.kubernetes.api.model.KubeSchema")));
+        ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE));
 
         final String[] doneables = combinedIndexBuildItem.getIndex()
                 .getAllKnownImplementors(DotName.createSimple("io.fabric8.kubernetes.api.model.Doneable"))

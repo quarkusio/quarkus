@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.faulttolerance.deployment;
 
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,6 +30,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
@@ -127,6 +129,11 @@ public class SmallRyeFaultToleranceProcessor {
                 DefaultCommandListenersProvider.class,
                 MetricsCollectorFactory.class);
         additionalBean.produce(builder.build());
+    }
+
+    @BuildStep
+    public ConfigurationTypeBuildItem registerTypes() {
+        return new ConfigurationTypeBuildItem(ChronoUnit.class);
     }
 
     @BuildStep

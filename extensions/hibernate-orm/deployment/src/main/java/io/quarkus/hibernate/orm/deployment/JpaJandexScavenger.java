@@ -50,15 +50,18 @@ final class JpaJandexScavenger {
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
     private final IndexView indexView;
     private final Set<String> nonJpaModelClasses;
+    private final Set<String> ignorableNonIndexedClasses;
 
     JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             List<ParsedPersistenceXmlDescriptor> explicitDescriptors,
             IndexView indexView,
-            Set<String> nonJpaModelClasses) {
+            Set<String> nonJpaModelClasses,
+            Set<String> ignorableNonIndexedClasses) {
         this.reflectiveClass = reflectiveClass;
         this.explicitDescriptors = explicitDescriptors;
         this.indexView = indexView;
         this.nonJpaModelClasses = nonJpaModelClasses;
+        this.ignorableNonIndexedClasses = ignorableNonIndexedClasses;
     }
 
     public JpaEntitiesBuildItem discoverModelAndRegisterForReflection() throws IOException {
@@ -88,13 +91,19 @@ final class JpaJandexScavenger {
         }
 
         if (!unindexedClasses.isEmpty()) {
-            final String unindexedClassesErrorMessage = unindexedClasses.stream().map(d -> "\t- " + d + "\n")
-                    .collect(Collectors.joining());
-            throw new ConfigurationError(
-                    "Unable to properly register the hierarchy of the following JPA classes as they are not in the Jandex index:\n"
-                            + unindexedClassesErrorMessage
-                            + "Consider adding them to the index either by creating a Jandex index " +
-                            "for your dependency via the Maven plugin, an empty META-INF/beans.xml or quarkus.index-dependency properties.");
+            Set<String> unIgnorableIndexedClasses = unindexedClasses.stream().map(DotName::toString)
+                    .collect(Collectors.toSet());
+            unIgnorableIndexedClasses.removeAll(ignorableNonIndexedClasses);
+
+            if (!unIgnorableIndexedClasses.isEmpty()) {
+                final String unindexedClassesErrorMessage = unIgnorableIndexedClasses.stream().map(d -> "\t- " + d + "\n")
+                        .collect(Collectors.joining());
+                throw new ConfigurationError(
+                        "Unable to properly register the hierarchy of the following JPA classes as they are not in the Jandex index:\n"
+                                + unindexedClassesErrorMessage
+                                + "Consider adding them to the index either by creating a Jandex index " +
+                                "for your dependency via the Maven plugin, an empty META-INF/beans.xml or quarkus.index-dependency properties.");
+            }
         }
 
         return domainObjectCollector;

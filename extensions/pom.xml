@@ -57,6 +57,7 @@
         <module>smallrye-reactive-messaging-mqtt</module>
         <module>smallrye-context-propagation</module>
         <module>reactive-pg-client</module>
+        <module>reactive-mysql-client</module>
         <module>mailer</module>
 
         <!-- Data access and validation -->
@@ -74,10 +75,13 @@
         <module>tika</module>
         <module>neo4j</module>
         <module>mongodb-client</module>
+        <module>artemis-core</module>
+        <module>artemis-jms</module>
 
         <!-- Spring -->
         <module>spring-di</module>
         <module>spring-web</module>
+        <module>spring-data-jpa</module>
 
         <!-- Security -->
         <module>elytron-security</module>

@@ -17,13 +17,16 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.logging.Handler;
+import java.util.stream.Collectors;
 
 import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildResult;
+import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.QuarkusAugmentor;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
@@ -114,6 +117,11 @@ public class RuntimeRunner implements Runnable, Closeable {
                 }
 
                 transformerTarget.setTransformers(functions);
+            }
+            if (loader instanceof RuntimeClassLoader) {
+                ApplicationArchivesBuildItem archives = result.consume(ApplicationArchivesBuildItem.class);
+                ((RuntimeClassLoader) loader).setApplicationArchives(archives.getApplicationArchives().stream()
+                        .map(ApplicationArchive::getArchiveRoot).collect(Collectors.toList()));
             }
 
             final Application application;

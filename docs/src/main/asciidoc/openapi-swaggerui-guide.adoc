@@ -312,6 +312,11 @@ You can update this path by setting the `quarkus.swagger-ui.path` property in yo
 quarkus.swagger-ui.path=/my-custom-path
 ----
 
+[WARNING]
+====
+The value `/` is not allowed as it blocks the application from serving anything else.
+====
+
 Now, we are ready to run our application:
 
 [source, shell]

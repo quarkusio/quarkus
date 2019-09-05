@@ -27,6 +27,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.index.ClassPathArtifactResolver;
 import io.quarkus.deployment.index.ResolvedArtifact;
 import io.quarkus.deployment.util.FileUtil;
@@ -73,6 +74,11 @@ public class SwaggerUiProcessor {
             BeanContainerBuildItem container,
             BuildProducer<GeneratedWebResourceBuildItem> generatedResources,
             LiveReloadBuildItem liveReloadBuildItem) throws Exception {
+
+        if ("/".equals(swaggerUiConfig.path)) {
+            throw new ConfigurationError(
+                    "quarkus.swagger-ui.path was set to \"/\", this is not allowed as it blocks the application from serving anything else.");
+        }
 
         if (launch.getLaunchMode().isDevOrTest()) {
             CachedSwaggerUI cached = liveReloadBuildItem.getContextObject(CachedSwaggerUI.class);
@@ -181,6 +187,8 @@ public class SwaggerUiProcessor {
     static final class SwaggerUiConfig {
         /**
          * The path of the swagger-ui servlet.
+         * <p>
+         * The value `/` is not allowed as it blocks the application from serving anything else.
          */
         @ConfigItem(defaultValue = "/swagger-ui")
         String path;

@@ -20,11 +20,17 @@ class SummaryTableDocFormatter implements DocFormatter {
         StringBuilder generatedAsciiDoc = new StringBuilder(tableHeaders);
 
         for (ConfigItem configItem : configItems) {
-            String typeSimpleName = configItem.computeTypeSimpleName();
-            final String javaDocLink = configItem.getJavaDocSiteLink();
-            if (!javaDocLink.isEmpty()) {
-                typeSimpleName = String.format("link:%s[%s]\n", javaDocLink, typeSimpleName);
+            String typeContent = "";
+            if (configItem.hasAcceptedValues()) {
+                typeContent = DocGeneratorUtil.joinAcceptedValues(configItem.getAcceptedValues());
+            } else if (configItem.hasType()) {
+                typeContent = configItem.computeTypeSimpleName();
+                final String javaDocLink = configItem.getJavaDocSiteLink();
+                if (!javaDocLink.isEmpty()) {
+                    typeContent = String.format("link:%s[%s]\n", javaDocLink, typeContent);
+                }
             }
+
             String doc = configItem.getConfigDoc();
             int firstDot = doc.indexOf('.');
             String firstLineDoc = firstDot != -1 ? doc.substring(0, firstDot + 1) : doc;
@@ -34,7 +40,7 @@ class SummaryTableDocFormatter implements DocFormatter {
             generatedAsciiDoc.append(String.format(TABLE_ROW_FORMAT,
                     getAnchor(configItem), configItem.getKey(),
                     firstLineDoc,
-                    typeSimpleName, typeDetail,
+                    typeContent, typeDetail,
                     defaultValue.isEmpty() ? Constants.EMPTY : String.format("`%s`", defaultValue),
                     configItem.getConfigPhase().getIllustration()));
         }

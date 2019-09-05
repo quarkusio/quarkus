@@ -36,6 +36,15 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
 
+[TIP]
+.Verify Maven is using the Java you expect
+====
+If you have multiple JDK's installed it is not certain Maven will pick up the expected java
+and you could end up with unexpected results.
+You can verify which JDK Maven uses by running `mvn --version`. 
+====
+
+
 == Architecture
 
 In this guide, we create a straightforward application serving a `hello` endpoint. To demonstrate
@@ -168,6 +177,7 @@ Use: `./mvnw compile quarkus:dev`:
 
 [source,shell]
 ----
+$ ./mvnw compile quarkus:dev
 [INFO] --------------------< org.acme:getting-started >---------------------
 [INFO] Building getting-started 1.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------

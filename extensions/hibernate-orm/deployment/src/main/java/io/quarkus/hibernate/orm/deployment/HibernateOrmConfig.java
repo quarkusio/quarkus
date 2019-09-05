@@ -162,10 +162,10 @@ public class HibernateOrmConfig {
          *
          * `drop-and-create` is awesome in development mode.
          *
-         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`. The default is `none`.
+         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`.
          */
-        @ConfigItem
-        public Optional<String> generation;
+        @ConfigItem(defaultValue = "none")
+        public String generation;
 
         /**
          * Whether we should stop on the first error when applying the schema.
@@ -192,7 +192,8 @@ public class HibernateOrmConfig {
         public Optional<String> charset;
 
         public boolean isAnyPropertySet() {
-            return generation.isPresent() || defaultCatalog.isPresent() || defaultSchema.isPresent() || generationHaltOnError
+            return !"none".equals(generation) || defaultCatalog.isPresent() || defaultSchema.isPresent()
+                    || generationHaltOnError
                     || charset.isPresent();
         }
     }

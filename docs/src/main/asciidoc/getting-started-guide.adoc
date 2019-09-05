@@ -411,7 +411,7 @@ property called `test.url` that is set to the base test URL for situations where
 == Packaging and run the application
 
 The application is packaged using `./mvnw package`.
-It produces 2 jar files:
+It produces 2 jar files in `/target`:
 
 * `getting-started-1.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
 artifact produced by the Maven build;

@@ -4,12 +4,13 @@ parameters:
   postgres: false
   dynamodb: false
   keycloak: false
+  timeoutInMinutes: 80
 
 
 jobs:
   - job: ${{ parameters.name }}
     displayName: ${{ join(', ', parameters.modules) }}
-    timeoutInMinutes: 80
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     pool:
       vmImage: 'Ubuntu 16.04'
     variables:

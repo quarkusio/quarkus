@@ -460,7 +460,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
-    public void testErrorMessageWhenNoTargetClasses() throws IOException, MavenInvocationException {
+    public void testNoErrorMessageWhenNoTargetClasses() throws IOException, MavenInvocationException {
         testDir = initProject("projects/classic", "projects/project-no-classes");
         new File(testDir, "target").mkdirs();
         // Be sure we don't have classes.

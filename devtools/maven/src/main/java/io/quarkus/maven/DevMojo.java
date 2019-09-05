@@ -36,6 +36,10 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.shared.invoker.DefaultInvocationRequest;
+import org.apache.maven.shared.invoker.InvocationRequest;
+import org.apache.maven.shared.invoker.Invoker;
+import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.toolchain.ToolchainManager;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -120,6 +124,9 @@ public class DevMojo extends AbstractMojo {
     @Component
     private RepositorySystem repoSystem;
 
+    @Component
+    private Invoker invoker;
+
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
     private RepositorySystemSession repoSession;
 
@@ -168,8 +175,15 @@ public class DevMojo extends AbstractMojo {
         }
 
         if (!buildDir.isDirectory() || !new File(buildDir, "classes").isDirectory()) {
-            throw new MojoFailureException("The project " + project.getName()
-                    + " has no output yet. Make sure it contains at least one source or resource file and then run `mvn compile quarkus:dev`.");
+            try {
+                InvocationRequest request = new DefaultInvocationRequest();
+                request.setBatchMode(true);
+                request.setGoals(Collections.singletonList("compile"));
+
+                invoker.execute(request);
+            } catch (MavenInvocationException e) {
+                throw new MojoExecutionException(e.getMessage(), e);
+            }
         }
 
         try {

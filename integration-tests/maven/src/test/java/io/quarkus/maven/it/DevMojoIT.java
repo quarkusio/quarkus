@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 
 /**
@@ -453,13 +452,11 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
-    public void testErrorMessageWhenNoTarget() throws IOException, MavenInvocationException {
+    public void testNoErrorMessageWhenNoTarget() throws IOException, MavenInvocationException {
         testDir = initProject("projects/classic", "projects/project-no-target");
         FileUtils.deleteQuietly(new File(testDir, "target"));
-        running = new RunningInvoker(testDir, false);
-        MavenProcessInvocationResult result = running.execute(Collections.singletonList("quarkus:dev"), Collections.emptyMap());
-        await().until(() -> result.getProcess() != null && !result.getProcess().isAlive());
-        assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
+
+        runAndCheck();
     }
 
     @Test
@@ -469,9 +466,6 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         // Be sure we don't have classes.
         FileUtils.deleteQuietly(new File(testDir, "target/classes"));
 
-        running = new RunningInvoker(testDir, false);
-        MavenProcessInvocationResult result = running.execute(Collections.singletonList("quarkus:dev"), Collections.emptyMap());
-        await().until(() -> result.getProcess() != null && !result.getProcess().isAlive());
-        assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
+        runAndCheck();
     }
 }

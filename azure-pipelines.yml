@@ -180,6 +180,7 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 35
           modules:
             - jpa
             - jpa-h2
@@ -191,6 +192,7 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 15
           modules:
             - amazon-dynamodb
             - amazon-lambda
@@ -199,6 +201,7 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 20
           modules:
             - artemis-core
             - artemis-jms
@@ -207,6 +210,7 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 20
           modules:
             - elytron-security-oauth2
             - elytron-security
@@ -216,6 +220,7 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 30
           modules:
             - flyway
             - hibernate-orm-panache
@@ -234,6 +239,7 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 15
           modules:
             - resteasy-jackson
             - vertx
@@ -242,6 +248,7 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 45
           modules:
             - jackson
             - jgit
@@ -254,6 +261,7 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 25
           modules:
             - spring-di
             - spring-web
@@ -263,6 +271,7 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 15
           modules:
             - hibernate-search-elasticsearch
           name: hibernate_search_elasticsearch

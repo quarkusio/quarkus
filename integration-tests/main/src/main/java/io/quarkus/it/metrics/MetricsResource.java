@@ -3,7 +3,6 @@ package io.quarkus.it.metrics;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
@@ -19,7 +18,6 @@ import org.eclipse.microprofile.metrics.annotation.Metric;
 import org.eclipse.microprofile.metrics.annotation.Timed;
 
 @Path("/metricsresource")
-@ApplicationScoped
 public class MetricsResource {
 
     @Inject

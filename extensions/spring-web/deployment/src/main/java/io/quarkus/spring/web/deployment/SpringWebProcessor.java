@@ -30,6 +30,7 @@ import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
@@ -78,6 +79,11 @@ public class SpringWebProcessor {
 
     private static final Set<DotName> DISALLOWED_EXCEPTION_CONTROLLER_RETURN_TYPES = new HashSet<>(Arrays.asList(
             MODEL_AND_VIEW, VIEW, MODEL, HTTP_ENTITY, STRING));
+
+    @BuildStep
+    FeatureBuildItem registerFeature() {
+        return new FeatureBuildItem(FeatureBuildItem.SPRING_WEB);
+    }
 
     @BuildStep
     public BlacklistedServletContainerInitializerBuildItem blacklistSpringServlet() {

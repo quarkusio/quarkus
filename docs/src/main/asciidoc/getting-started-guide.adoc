@@ -367,7 +367,14 @@ public class GreetingResourceTest {
 
 These tests use http://rest-assured.io/[RestAssured], but feel free to use your favorite library.
 
-You can run the test from your IDE directly (be sure you stopped the application first), or from Maven using: `./mvnw test`.
+You can run these using Maven:
+
+[source,shell,subs=attributes+]
+----
+./mvnw test
+----
+
+You can also run the test from your IDE directly (be sure you stopped the application first).
 
 By default, tests will run on port `8081` so as not to conflict with the running application. We automatically
 configure RestAssured to use this port. If you want to use a different client you should use the `@TestHTTPResource`

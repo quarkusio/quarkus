@@ -8,7 +8,7 @@ import io.quarkus.annotation.processor.Constants;
 class SummaryTableDocFormatter implements DocFormatter {
     private static final String TABLE_CLOSING_TAG = "\n|===";
     private static final String TABLE_ROW_FORMAT = "\n\n|<<%s, %s>>\n\n%s|%s %s\n|%s\n| %s";
-    private static final String TABLE_HEADER_FORMAT = "== Summary\n%s\n[cols=\"50,10,10,5\"]\n|===\n|Configuration property|Type|Default|Lifecycle";
+    private static final String TABLE_HEADER_FORMAT = "== Summary\n%s\n[cols=\"50,.^10,.^10,^.^5\"]\n|===\n|Configuration property|Type|Default|Lifecycle";
 
     /**
      * Generate configuration keys in table format.

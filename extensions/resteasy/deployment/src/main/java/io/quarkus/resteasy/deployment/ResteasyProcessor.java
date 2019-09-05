@@ -18,7 +18,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.runtime.NotFoundExceptionMapper;
-import io.quarkus.resteasy.runtime.ResteasyAsyncWrappingFilter;
 import io.quarkus.resteasy.runtime.ResteasyFilter;
 import io.quarkus.resteasy.runtime.RolesFilterRegistrar;
 import io.quarkus.resteasy.server.common.deployment.ResteasyInjectionReadyBuildItem;
@@ -35,7 +34,6 @@ public class ResteasyProcessor {
     private static final String JAVAX_WS_RS_APPLICATION = Application.class.getName();
     private static final String JAX_RS_FILTER_NAME = JAVAX_WS_RS_APPLICATION;
     private static final String JAX_RS_SERVLET_NAME = JAVAX_WS_RS_APPLICATION;
-    protected static final String RESTEASY_ASYNC_FILTER = "resteasy-async-filter";
 
     @BuildStep
     public void jaxrsConfig(Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
@@ -61,12 +59,6 @@ public class ResteasyProcessor {
 
             //if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the whole mapped path
             if (path.equals("/") || path.isEmpty()) {
-
-                filter.produce(FilterBuildItem.builder(RESTEASY_ASYNC_FILTER, ResteasyAsyncWrappingFilter.class.getName())
-                        .addFilterServletNameMapping("default", DispatcherType.REQUEST).setAsyncSupported(true)
-                        .build());
-                reflectiveClass
-                        .produce(new ReflectiveClassBuildItem(false, false, ResteasyAsyncWrappingFilter.class.getName()));
                 filter.produce(FilterBuildItem.builder(JAX_RS_FILTER_NAME, ResteasyFilter.class.getName()).setLoadOnStartup(1)
                         .addFilterServletNameMapping("default", DispatcherType.REQUEST).setAsyncSupported(true)
                         .build());
@@ -76,13 +68,6 @@ public class ResteasyProcessor {
                 servlet.produce(ServletBuildItem.builder(JAX_RS_SERVLET_NAME, HttpServlet30Dispatcher.class.getName())
                         .setLoadOnStartup(1).addMapping(mappingPath).setAsyncSupported(true).build());
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, HttpServlet30Dispatcher.class.getName()));
-
-                filter.produce(FilterBuildItem.builder(RESTEASY_ASYNC_FILTER, ResteasyAsyncWrappingFilter.class.getName())
-                        .addFilterServletNameMapping(JAX_RS_SERVLET_NAME, DispatcherType.REQUEST).setAsyncSupported(true)
-                        .build());
-                reflectiveClass
-                        .produce(new ReflectiveClassBuildItem(false, false, ResteasyAsyncWrappingFilter.class.getName()));
-
             }
 
             for (Entry<String, String> initParameter : resteasyServerConfig.get().getInitParameters().entrySet()) {

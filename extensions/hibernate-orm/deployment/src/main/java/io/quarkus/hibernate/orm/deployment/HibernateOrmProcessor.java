@@ -396,8 +396,8 @@ public final class HibernateOrmProcessor {
                 }
 
                 // Database
-                hibernateConfig.database.generation.ifPresent(
-                        action -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION, action));
+                desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION,
+                        hibernateConfig.database.generation);
 
                 if (hibernateConfig.database.generationHaltOnError) {
                     desc.getProperties().setProperty(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");

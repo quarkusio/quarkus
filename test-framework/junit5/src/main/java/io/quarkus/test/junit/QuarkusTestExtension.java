@@ -37,6 +37,7 @@ import org.opentest4j.TestAbortedException;
 
 import io.quarkus.bootstrap.BootstrapClassLoaderFactory;
 import io.quarkus.bootstrap.BootstrapException;
+import io.quarkus.bootstrap.DefineClassVisibleURLClassLoader;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.builder.BuildChainBuilder;
@@ -280,7 +281,7 @@ public class QuarkusTestExtension
                     throw new IllegalStateException("Failed to parse a deployment classpath entry " + entry, e);
                 }
             }
-            return new URLClassLoader(list.toArray(new URL[list.size()]), getClass().getClassLoader());
+            return new DefineClassVisibleURLClassLoader(list.toArray(new URL[list.size()]), getClass().getClassLoader());
         }
         try {
             return BootstrapClassLoaderFactory.newInstance()

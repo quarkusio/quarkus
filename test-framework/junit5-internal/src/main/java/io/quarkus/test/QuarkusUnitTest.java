@@ -199,7 +199,7 @@ public class QuarkusUnitTest
             ProxyFactory<?> factory = new ProxyFactory<>(new ProxyConfiguration<>()
                     .setAnchorClass(testClass)
                     .setProxyNameSuffix("$$QuarkusUnitTestProxy")
-                    .setClassLoader(testClass.getClassLoader())
+                    .setClassLoader(new DefineClassVisibleClassLoader(testClass.getClassLoader()))
                     .setSuperClass((Class<Object>) testClass));
             store.put(proxyFactoryKey(testClass), factory);
         }

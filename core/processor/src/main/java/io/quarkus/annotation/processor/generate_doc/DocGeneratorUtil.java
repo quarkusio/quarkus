@@ -17,6 +17,7 @@ class DocGeneratorUtil {
     static final String OFFICIAL_JAVA_DOC_BASE_LINK = "https://docs.oracle.com/javase/8/docs/api/";
     static final String AGROAL_API_JAVA_DOC_SITE = "https://jar-download.com/javaDoc/io.agroal/agroal-api/1.5/index.html?";
 
+    private static final Map<String, String> JAVA_PRIMITIVE_WRAPPERS = new HashMap<>();
     private static final Map<String, String> PRIMITIVE_DEFAULT_VALUES = new HashMap<>();
     private static final Map<String, String> EXTENSION_JAVA_DOC_LINK = new HashMap<>();
     private static Pattern PACKAGE_PATTERN = Pattern.compile("^(\\w+)\\.(\\w+)\\..*$");
@@ -30,6 +31,15 @@ class DocGeneratorUtil {
         PRIMITIVE_DEFAULT_VALUES.put("float", "0f");
         PRIMITIVE_DEFAULT_VALUES.put("double", "0d");
         PRIMITIVE_DEFAULT_VALUES.put("boolean", "false");
+
+        JAVA_PRIMITIVE_WRAPPERS.put("java.lang.Character", "char");
+        JAVA_PRIMITIVE_WRAPPERS.put("java.lang.Boolean", "boolean");
+        JAVA_PRIMITIVE_WRAPPERS.put("java.lang.Byte", "byte");
+        JAVA_PRIMITIVE_WRAPPERS.put("java.lang.Short", "short");
+        JAVA_PRIMITIVE_WRAPPERS.put("java.lang.Integer", "int");
+        JAVA_PRIMITIVE_WRAPPERS.put("java.lang.Long", "long");
+        JAVA_PRIMITIVE_WRAPPERS.put("java.lang.Float", "float");
+        JAVA_PRIMITIVE_WRAPPERS.put("java.lang.Double", "double");
 
         EXTENSION_JAVA_DOC_LINK.put("io.vertx.", VERTX_JAVA_DOC_SITE);
         EXTENSION_JAVA_DOC_LINK.put("io.agroal.", AGROAL_API_JAVA_DOC_SITE);
@@ -47,12 +57,24 @@ class DocGeneratorUtil {
     }
 
     /**
+     * Replaces Java primitive wrapper types with primitive types
+     */
+    static String unbox(String type) {
+        String mapping = JAVA_PRIMITIVE_WRAPPERS.get(type);
+        return mapping == null ? type : mapping;
+    }
+
+    /**
      * Get javadoc link of a given type value
      */
     static String getJavaDocSiteLink(String type) {
         Matcher packageMatcher = PACKAGE_PATTERN.matcher(type);
 
         if (!packageMatcher.find()) {
+            return Constants.EMPTY;
+        }
+
+        if (JAVA_PRIMITIVE_WRAPPERS.containsKey(type)) {
             return Constants.EMPTY;
         }
 
@@ -91,7 +113,7 @@ class DocGeneratorUtil {
      * Retrieve enclosed type from known optional types
      */
     static String getKnownGenericType(DeclaredType declaredType) {
-        return Constants.OPTIONAL_NUMBER_TYPES.get(declaredType.toString());
+        return Constants.ALIASED_TYPES.get(declaredType.toString());
     }
 
     static Iterator<String> camelHumpsIterator(String str) {
@@ -194,5 +216,9 @@ class DocGeneratorUtil {
 
     static String hyphenate(String orig) {
         return join("-", lowerCase(camelHumpsIterator(orig)));
+    }
+
+    static String hyphenateEnumValue(String orig) {
+        return orig.replace('_', '-').toLowerCase(Locale.ROOT);
     }
 }

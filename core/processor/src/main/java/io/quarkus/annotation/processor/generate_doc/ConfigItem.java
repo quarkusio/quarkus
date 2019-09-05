@@ -124,12 +124,14 @@ final public class ConfigItem implements Comparable<ConfigItem> {
     }
 
     String computeTypeSimpleName() {
-        Matcher matcher = Constants.CLASS_NAME_PATTERN.matcher(type);
+        String unwrappedType = DocGeneratorUtil.unbox(type);
+
+        Matcher matcher = Constants.CLASS_NAME_PATTERN.matcher(unwrappedType);
         if (matcher.find()) {
             return matcher.group(1);
         }
 
-        return type;
+        return unwrappedType;
     }
 
     /**

@@ -44,7 +44,7 @@ final public class Constants {
     public static final String QUARKUS = "quarkus";
 
     public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES = new HashSet<>();
-    public static final Map<String, String> OPTIONAL_NUMBER_TYPES = new HashMap<>();
+    public static final Map<String, String> ALIASED_TYPES = new HashMap<>();
     public static final String DOCS_SRC_MAIN_ASCIIDOC_GENERATED = "/docs/src/main/asciidoc/generated/";
     public static final Path GENERATED_DOCS_PATH = Paths
             .get(System.getProperties().getProperty("maven.multiModuleProjectDirectory")
@@ -90,9 +90,12 @@ final public class Constants {
             "====\n";
 
     static {
-        OPTIONAL_NUMBER_TYPES.put(OptionalLong.class.getName(), Long.class.getName());
-        OPTIONAL_NUMBER_TYPES.put(OptionalInt.class.getName(), Integer.class.getName());
-        OPTIONAL_NUMBER_TYPES.put(OptionalDouble.class.getName(), Double.class.getName());
+        ALIASED_TYPES.put(OptionalLong.class.getName(), Long.class.getName());
+        ALIASED_TYPES.put(OptionalInt.class.getName(), Integer.class.getName());
+        ALIASED_TYPES.put(OptionalDouble.class.getName(), Double.class.getName());
+        ALIASED_TYPES.put("java.lang.Class<?>", "class name");
+        ALIASED_TYPES.put(Path.class.getName(), "path");
+        ALIASED_TYPES.put(String.class.getName(), "string");
         SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_BUILD_STEP);
         SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_CONFIG_GROUP);
         SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_CONFIG_ROOT);

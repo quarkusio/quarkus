@@ -7,7 +7,7 @@ class DescriptiveDocFormatter implements DocFormatter {
     private static final String DETAILS_TITLE = "\n== Details\n";
     private static final String DEFAULTS_VALUE_FORMAT = "Defaults to: `%s` +\n";
     private static final String BASIC_DESCRIPTION_FORMAT = "\n[[%s]]\n`%s` %s:: %s \n+\n";
-    private static final String TYPE_DESCRIPTION_FORMAT = "Type: `%s` +\n";
+    private static final String TYPE_DESCRIPTION_FORMAT = "Type: `%s` %s +\n";
     private static final String ACCEPTED_VALUES_DESCRIPTION_FORMAT = "Accepted values: %s +\n";
 
     /**
@@ -27,7 +27,8 @@ class DescriptiveDocFormatter implements DocFormatter {
                 generatedAsciiDoc.append(String.format(ACCEPTED_VALUES_DESCRIPTION_FORMAT,
                         DocGeneratorUtil.joinAcceptedValues(configItem.getAcceptedValues())));
             } else if (configItem.hasType()) {
-                generatedAsciiDoc.append(String.format(TYPE_DESCRIPTION_FORMAT, configItem.computeTypeSimpleName()));
+                generatedAsciiDoc.append(String.format(TYPE_DESCRIPTION_FORMAT, configItem.computeTypeSimpleName(),
+                        DocGeneratorUtil.getTypeFormatInformationNote(configItem)));
             }
 
             if (!configItem.getDefaultValue().isEmpty()) {

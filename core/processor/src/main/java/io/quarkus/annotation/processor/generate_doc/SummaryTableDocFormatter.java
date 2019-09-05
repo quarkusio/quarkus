@@ -1,6 +1,5 @@
 package io.quarkus.annotation.processor.generate_doc;
 
-import java.time.Duration;
 import java.util.List;
 
 import io.quarkus.annotation.processor.Constants;
@@ -32,10 +31,13 @@ class SummaryTableDocFormatter implements DocFormatter {
             }
 
             String doc = configItem.getConfigDoc();
-            int firstDot = doc.indexOf('.');
-            String firstLineDoc = firstDot != -1 ? doc.substring(0, firstDot + 1) : doc.trim() + '.';
+            String firstLineDoc = "";
+            if (doc != null && !doc.isEmpty()) {
+                int firstDot = doc.indexOf('.');
+                firstLineDoc = firstDot != -1 ? doc.substring(0, firstDot + 1) : doc.trim() + '.';
+            }
 
-            final String typeDetail = getTypeFormatInformationNote(configItem);
+            final String typeDetail = DocGeneratorUtil.getTypeFormatInformationNote(configItem);
             final String defaultValue = configItem.getDefaultValue();
             generatedAsciiDoc.append(String.format(TABLE_ROW_FORMAT,
                     getAnchor(configItem), configItem.getKey(),
@@ -47,16 +49,6 @@ class SummaryTableDocFormatter implements DocFormatter {
 
         generatedAsciiDoc.append(TABLE_CLOSING_TAG); // close table
         return generatedAsciiDoc.toString();
-    }
-
-    private String getTypeFormatInformationNote(ConfigItem configItem) {
-        if (configItem.getType().equals(Duration.class.getName())) {
-            return Constants.DURATION_INFORMATION;
-        } else if (configItem.getType().equals(Constants.MEMORY_SIZE_TYPE)) {
-            return Constants.MEMORY_SIZE_INFORMATION;
-        }
-
-        return Constants.EMPTY;
     }
 
 }

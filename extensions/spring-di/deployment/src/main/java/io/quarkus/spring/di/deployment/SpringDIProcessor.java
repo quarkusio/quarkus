@@ -64,7 +64,8 @@ public class SpringDIProcessor {
     private static final DotName SPRING_QUALIFIER_ANNOTATION = DotName
             .createSimple("org.springframework.beans.factory.annotation.Qualifier");
 
-    private static final DotName VALUE_ANNOTATION = DotName.createSimple("org.springframework.beans.factory.annotation.Value");
+    private static final DotName SPRING_VALUE_ANNOTATION = DotName
+            .createSimple("org.springframework.beans.factory.annotation.Value");
 
     private static final DotName CDI_SINGLETON_ANNOTATION = BuiltinScope.SINGLETON.getInfo().getDotName();
     private static final DotName CDI_DEPENDENT_ANNOTATION = BuiltinScope.DEPENDENT.getInfo().getDotName();
@@ -352,34 +353,9 @@ public class SpringDIProcessor {
                                 Collections.singletonList((AnnotationValue.createStringValue("value", value)))));
                     }
                 }
-            } else if (fieldInfo.hasAnnotation(VALUE_ANNOTATION)) {
-                final AnnotationInstance annotation = fieldInfo.annotation(VALUE_ANNOTATION);
-                final AnnotationValue annotationValue = annotation.value();
-                if (annotationValue != null) {
-                    String defaultValue = null;
-                    String propertyName = annotationValue.asString().replace("${", "").replace("}", "");
-                    if (propertyName.contains(":")) {
-                        final int index = propertyName.indexOf(':');
-                        if (index < propertyName.length() - 1) {
-                            defaultValue = propertyName.substring(index + 1);
-                        }
-                        propertyName = propertyName.substring(0, index);
-
-                    }
-                    final List<AnnotationValue> annotationValues = new ArrayList<>();
-                    annotationValues.add(AnnotationValue.createStringValue("name", propertyName));
-                    if (defaultValue != null && !defaultValue.isEmpty()) {
-                        annotationValues.add(AnnotationValue.createStringValue("defaultValue", defaultValue));
-                    }
-                    annotationsToAdd.add(create(
-                            MP_CONFIG_PROPERTY_ANNOTATION,
-                            target,
-                            annotationValues));
-                    annotationsToAdd.add(create(
-                            CDI_INJECT_ANNOTATION,
-                            target,
-                            Collections.emptyList()));
-                }
+            } else if (fieldInfo.hasAnnotation(SPRING_VALUE_ANNOTATION)) {
+                final AnnotationInstance annotation = fieldInfo.annotation(SPRING_VALUE_ANNOTATION);
+                addSpringValueAnnotations(target, annotation, true, annotationsToAdd);
             }
         } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
             final MethodInfo methodInfo = target.asMethod();
@@ -410,21 +386,57 @@ public class SpringDIProcessor {
 
             // add method parameter conversion annotations
             for (AnnotationInstance annotation : methodInfo.annotations()) {
-                if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER
-                        && annotation.name().equals(SPRING_QUALIFIER_ANNOTATION)) {
-                    final AnnotationValue annotationValue = annotation.value();
-                    if (annotationValue != null) {
-                        final String value = annotationValue.asString();
-                        annotationsToAdd.add(create(
-                                CDI_NAMED_ANNOTATION,
-                                annotation.target(),
-                                Collections.singletonList(AnnotationValue.createStringValue("value", value))));
+                if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
+                    if (annotation.name().equals(SPRING_QUALIFIER_ANNOTATION)) {
+                        final AnnotationValue annotationValue = annotation.value();
+                        if (annotationValue != null) {
+                            final String value = annotationValue.asString();
+                            annotationsToAdd.add(create(
+                                    CDI_NAMED_ANNOTATION,
+                                    annotation.target(),
+                                    Collections.singletonList(AnnotationValue.createStringValue("value", value))));
+                        }
+                    } else if (annotation.name().equals(SPRING_VALUE_ANNOTATION)) {
+                        addSpringValueAnnotations(annotation.target(), annotation, false, annotationsToAdd);
                     }
                 }
             }
 
         }
         return annotationsToAdd;
+    }
+
+    private void addSpringValueAnnotations(AnnotationTarget target, AnnotationInstance annotation, boolean addInject,
+            Set<AnnotationInstance> annotationsToAdd) {
+        final AnnotationValue annotationValue = annotation.value();
+        if (annotationValue == null) {
+            return;
+        }
+        String defaultValue = null;
+        String propertyName = annotationValue.asString().replace("${", "").replace("}", "");
+        if (propertyName.contains(":")) {
+            final int index = propertyName.indexOf(':');
+            if (index < propertyName.length() - 1) {
+                defaultValue = propertyName.substring(index + 1);
+            }
+            propertyName = propertyName.substring(0, index);
+
+        }
+        final List<AnnotationValue> annotationValues = new ArrayList<>();
+        annotationValues.add(AnnotationValue.createStringValue("name", propertyName));
+        if (defaultValue != null && !defaultValue.isEmpty()) {
+            annotationValues.add(AnnotationValue.createStringValue("defaultValue", defaultValue));
+        }
+        annotationsToAdd.add(create(
+                MP_CONFIG_PROPERTY_ANNOTATION,
+                target,
+                annotationValues));
+        if (addInject) {
+            annotationsToAdd.add(create(
+                    CDI_INJECT_ANNOTATION,
+                    target,
+                    Collections.emptyList()));
+        }
     }
 
     private static boolean addCDINamedAnnotation(AnnotationTarget target,

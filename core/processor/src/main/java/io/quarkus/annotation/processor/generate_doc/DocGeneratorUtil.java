@@ -1,12 +1,15 @@
 package io.quarkus.annotation.processor.generate_doc;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.lang.model.type.DeclaredType;
 
@@ -120,10 +123,12 @@ class DocGeneratorUtil {
         return new Iterator<String>() {
             int idx;
 
+            @Override
             public boolean hasNext() {
                 return idx < str.length();
             }
 
+            @Override
             public String next() {
                 if (idx == str.length())
                     throw new NoSuchElementException();
@@ -192,10 +197,12 @@ class DocGeneratorUtil {
 
     static Iterator<String> lowerCase(Iterator<String> orig) {
         return new Iterator<String>() {
+            @Override
             public boolean hasNext() {
                 return orig.hasNext();
             }
 
+            @Override
             public String next() {
                 return orig.next().toLowerCase(Locale.ROOT);
             }
@@ -220,5 +227,23 @@ class DocGeneratorUtil {
 
     static String hyphenateEnumValue(String orig) {
         return orig.replace('_', '-').toLowerCase(Locale.ROOT);
+    }
+
+    static String joinAcceptedValues(List<String> acceptedValues) {
+        if (acceptedValues == null || acceptedValues.isEmpty()) {
+            return "";
+        }
+
+        return acceptedValues.stream().collect(Collectors.joining("`, `", "`", "`"));
+    }
+
+    static String getTypeFormatInformationNote(ConfigItem configItem) {
+        if (configItem.getType().equals(Duration.class.getName())) {
+            return Constants.DURATION_INFORMATION;
+        } else if (configItem.getType().equals(Constants.MEMORY_SIZE_TYPE)) {
+            return Constants.MEMORY_SIZE_INFORMATION;
+        }
+
+        return Constants.EMPTY;
     }
 }

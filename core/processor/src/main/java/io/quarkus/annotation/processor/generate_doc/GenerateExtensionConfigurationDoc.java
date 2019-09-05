@@ -292,6 +292,7 @@ final public class GenerateExtensionConfigurationDoc {
             String defaultValue = Constants.NO_DEFAULT;
             TypeMirror typeMirror = enclosedElement.asType();
             String type = typeMirror.toString();
+            List<String> acceptedValues = null;
             Element configGroup = configGroups.get(type);
             boolean isConfigGroup = configGroup != null;
             String fieldName = enclosedElement.getSimpleName().toString();
@@ -363,9 +364,17 @@ final public class GenerateExtensionConfigurationDoc {
                             // FIXME: I assume this is for Optional<T>
                             TypeMirror realTypeMirror = typeArguments.get(0);
                             type = simpleTypeToString(realTypeMirror);
+
+                            if (isEnumType(realTypeMirror)) {
+                                acceptedValues = extractEnumValues(realTypeMirror);
+                            }
                         }
                     } else {
                         type = simpleTypeToString(declaredType);
+
+                        if (isEnumType(declaredType)) {
+                            acceptedValues = extractEnumValues(declaredType);
+                        }
                     }
                 }
 
@@ -377,6 +386,7 @@ final public class GenerateExtensionConfigurationDoc {
                 configItem.setConfigPhase(configPhase);
                 configItem.setKey(name);
                 configItem.setType(type);
+                configItem.setAcceptedValues(acceptedValues);
                 configItems.add(configItem);
                 configItem.setJavaDocSiteLink(getJavaDocSiteLink(type));
             }
@@ -384,28 +394,25 @@ final public class GenerateExtensionConfigurationDoc {
     }
 
     private String simpleTypeToString(TypeMirror typeMirror) {
-        if (typeMirror.getKind().isPrimitive())
+        if (typeMirror.getKind().isPrimitive()) {
             return typeMirror.toString();
+        }
 
-        if (isEnumType(typeMirror))
-            return extractEnumValues(typeMirror);
         final String knownGenericType = getKnownGenericType((DeclaredType) typeMirror);
         return knownGenericType != null ? knownGenericType : typeMirror.toString();
     }
 
-    private String extractEnumValues(TypeMirror realTypeMirror) {
+    private List<String> extractEnumValues(TypeMirror realTypeMirror) {
         Element declaredTypeElement = ((DeclaredType) realTypeMirror).asElement();
-        StringBuilder sb = new StringBuilder();
+        List<String> acceptedValues = new ArrayList<>();
+
         for (Element field : declaredTypeElement.getEnclosedElements()) {
             if (field.getKind() == ElementKind.ENUM_CONSTANT) {
-                if (sb.length() > 0)
-                    sb.append(", ");
-                sb.append("`");
-                sb.append(DocGeneratorUtil.hyphenateEnumValue(field.getSimpleName().toString()));
-                sb.append("`");
+                acceptedValues.add(DocGeneratorUtil.hyphenateEnumValue(field.getSimpleName().toString()));
             }
         }
-        return sb.toString();
+
+        return acceptedValues;
     }
 
     private boolean isEnumType(TypeMirror realTypeMirror) {

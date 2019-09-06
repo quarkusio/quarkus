@@ -1777,11 +1777,6 @@
                 <version>${vertx.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.vertx</groupId>
-                <artifactId>vertx-mysql-client</artifactId>
-                <version>${vertx.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-axle-sql-client</artifactId>
                 <version>${axle-client.version}</version>

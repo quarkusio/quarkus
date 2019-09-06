@@ -8,7 +8,7 @@ class DescriptiveDocFormatter implements DocFormatter {
     private static final String DEFAULTS_VALUE_FORMAT = "\n\nDefaults to: `%s`";
     private static final String TYPE_DESCRIPTION_FORMAT = "\n\nType: `%s` %s";
     private static final String ACCEPTED_VALUES_DESCRIPTION_FORMAT = "\n\nAccepted values: %s";
-    private static final String ENTRY_END = "\n--\n";
+    private static final String ENTRY_END = "\n--\n\n***\n";
 
     /**
      * Generate configuration keys in descriptive format.

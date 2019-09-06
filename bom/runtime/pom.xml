@@ -485,7 +485,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-vertx-common</artifactId>
+                <artifactId>quarkus-vertx-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -495,7 +495,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-vertx-web-common</artifactId>
+                <artifactId>quarkus-vertx-http</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

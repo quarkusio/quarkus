@@ -283,7 +283,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-vertx-common-deployment</artifactId>
+                <artifactId>quarkus-vertx-core-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -293,7 +293,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-vertx-web-common-deployment</artifactId>
+                <artifactId>quarkus-vertx-http-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

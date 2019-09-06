@@ -9,7 +9,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import io.quarkus.vertx.common.runtime.VertxCommonRecorder;
+import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 
 public class VertxProducerTest {
 
@@ -29,8 +29,8 @@ public class VertxProducerTest {
 
     @Test
     public void shouldNotFailWithoutConfig() {
-        VertxCommonRecorder.initialize(null);
-        producer.vertx = VertxCommonRecorder.getVertx();
+        VertxCoreRecorder.initialize(null);
+        producer.vertx = VertxCoreRecorder.getVertx();
         producer.initialize();
         verifyProducer();
     }

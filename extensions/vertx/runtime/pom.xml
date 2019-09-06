@@ -37,7 +37,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-common</artifactId>
+            <artifactId>quarkus-vertx-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

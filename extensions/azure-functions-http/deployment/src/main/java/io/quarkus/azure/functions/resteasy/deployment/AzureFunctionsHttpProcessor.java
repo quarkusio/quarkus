@@ -5,7 +5,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.vertx.web.common.deployment.RequireVirtualHttpBuildItem;
+import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 
 public class AzureFunctionsHttpProcessor {
     private static final Logger log = Logger.getLogger(AzureFunctionsHttpProcessor.class);

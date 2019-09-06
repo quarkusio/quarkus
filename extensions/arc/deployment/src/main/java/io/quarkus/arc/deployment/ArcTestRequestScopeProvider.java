@@ -11,10 +11,13 @@ public class ArcTestRequestScopeProvider implements TestScopeSetup {
     private static final Logger LOGGER = Logger.getLogger(ArcTestRequestScopeProvider.class);
 
     @Override
-    public void setup() {
+    public void setup(boolean isSubstrateTest) {
+        if (isSubstrateTest) {
+            return;
+        }
         ArcContainer container = Arc.container();
         if (container == null) {
-            LOGGER.warn("ArcTestRequestScopeProvider: container is null, ignoring setup");
+            LOGGER.warn("Container not available, ignoring setup");
         } else {
             container.requestContext().activate();
         }
@@ -22,10 +25,13 @@ public class ArcTestRequestScopeProvider implements TestScopeSetup {
     }
 
     @Override
-    public void tearDown() {
+    public void tearDown(boolean isSubstrateTest) {
+        if (isSubstrateTest) {
+            return;
+        }
         ArcContainer container = Arc.container();
         if (container == null) {
-            LOGGER.warn("ArcTestRequestScopeProvider: container is null, ignoring tearDown");
+            LOGGER.warn("Container not available, ignoring tearDown");
         } else {
             container.requestContext().terminate();
         }

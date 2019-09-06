@@ -2,7 +2,7 @@ package io.quarkus.deployment.test;
 
 public interface TestScopeSetup {
 
-    void setup();
+    void setup(boolean isSubstrateTest);
 
-    void tearDown();
+    void tearDown(boolean isSubstrateTest);
 }

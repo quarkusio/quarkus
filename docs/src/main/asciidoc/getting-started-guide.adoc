@@ -201,19 +201,17 @@ Listening for transport dt_socket at address: 5005
 Once started, you can request the provided endpoint:
 
 ```
-$ curl http://localhost:8080/hello
+$ curl -w "\n" http://localhost:8080/hello
 hello
 ```
 
 Hit `CTRL+C` to stop the application, but you can also keep it running and enjoy the blazing fast hot-reload.
 
 [TIP]
-Automatically add newline with curl
+.Automatically add newline with `curl -w "\n"`
 ====
-If you terminal are printing a '%' or does not put a newline as you expected then
-you can force curl to add it for you by using `curl -w "\n" http://localhost:8000/hello`
+We are using `curl -w "\n"` in this example to avoid your terminal printing a '%' or put both result and next command prompt on the same line.
 ====
-
 
 == Using injection
 
@@ -278,10 +276,11 @@ public class GreetingResource {
 If you stopped the application, restart the application with `./mvnw compile quarkus:dev`.
 Then check that the endpoint returns `hello quarkus` as expected:
 
-```
-$ curl http://localhost:8080/hello/greeting/quarkus
+[source,shell,subs=attributes+]
+----
+$ curl -w "\n" http://localhost:8080/hello/greeting/quarkus
 hello quarkus
-```
+----
 
 
 

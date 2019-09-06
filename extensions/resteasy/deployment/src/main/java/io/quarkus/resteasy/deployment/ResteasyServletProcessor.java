@@ -7,6 +7,9 @@ import javax.servlet.DispatcherType;
 import javax.ws.rs.core.Application;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.microprofile.config.FilterConfigSourceImpl;
+import org.jboss.resteasy.microprofile.config.ServletConfigSourceImpl;
+import org.jboss.resteasy.microprofile.config.ServletContextConfigSourceImpl;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 
 import io.quarkus.deployment.Capabilities;
@@ -60,6 +63,10 @@ public class ResteasyServletProcessor {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY));
 
         if (resteasyServerConfig.isPresent()) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
+                    ServletConfigSourceImpl.class,
+                    ServletContextConfigSourceImpl.class,
+                    FilterConfigSourceImpl.class));
             String path = resteasyServerConfig.get().getPath();
 
             //if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the whole mapped path

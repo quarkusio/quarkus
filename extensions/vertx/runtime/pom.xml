@@ -50,6 +50,12 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-smallrye-context-propagation</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

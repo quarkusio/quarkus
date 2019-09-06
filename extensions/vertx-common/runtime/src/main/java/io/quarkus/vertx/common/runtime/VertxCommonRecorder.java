@@ -34,6 +34,8 @@ import io.vertx.core.net.PfxOptions;
 public class VertxCommonRecorder {
 
     static volatile Vertx vertx;
+    //temporary vertx instance to work around a JAX-RS problem
+    static volatile Vertx webVertx;
 
     public RuntimeValue<Vertx> configureVertx(BeanContainer container, VertxConfiguration config,
             LaunchMode launchMode, ShutdownContext shutdown) {
@@ -64,6 +66,33 @@ public class VertxCommonRecorder {
 
     public static Vertx getVertx() {
         return vertx;
+    }
+
+    public static Vertx getWebVertx() {
+        return webVertx;
+    }
+
+    public RuntimeValue<Vertx> initializeWeb(VertxConfiguration conf, ShutdownContext shutdown, LaunchMode launchMode) {
+        initializeWeb(conf);
+        if (launchMode != LaunchMode.DEVELOPMENT) {
+            shutdown.addShutdownTask(new Runnable() {
+                @Override
+                public void run() {
+                    destroyWeb();
+                }
+            });
+        }
+        return new RuntimeValue<>(webVertx);
+    }
+
+    public static void initializeWeb(VertxConfiguration conf) {
+        if (webVertx != null) {
+        } else if (conf == null) {
+            webVertx = Vertx.vertx();
+        } else {
+            VertxOptions options = convertToVertxOptions(conf);
+            webVertx = Vertx.vertx(options);
+        }
     }
 
     public static void initialize(VertxConfiguration conf) {
@@ -153,6 +182,29 @@ public class VertxCommonRecorder {
                 throw new IllegalStateException("Interrupted when closing Vert.x instance", e);
             }
             vertx = null;
+        }
+    }
+
+    void destroyWeb() {
+        if (webVertx != null) {
+            CountDownLatch latch = new CountDownLatch(1);
+            AtomicReference<Throwable> problem = new AtomicReference<>();
+            webVertx.close(ar -> {
+                if (ar.failed()) {
+                    problem.set(ar.cause());
+                }
+                latch.countDown();
+            });
+            try {
+                latch.await();
+                if (problem.get() != null) {
+                    throw new IllegalStateException("Error when closing Vert.x instance", problem.get());
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted when closing Vert.x instance", e);
+            }
+            webVertx = null;
         }
     }
 

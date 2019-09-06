@@ -80,26 +80,26 @@ public class VertxWebCommonRecorder {
     public static void startServerAfterFailedStart() {
         VertxConfiguration vertxConfiguration = new VertxConfiguration();
         ConfigInstantiator.handleObject(vertxConfiguration);
-        VertxCommonRecorder.initialize(vertxConfiguration);
+        VertxCommonRecorder.initializeWeb(vertxConfiguration);
 
         try {
             HttpConfiguration config = new HttpConfiguration();
             ConfigInstantiator.handleObject(config);
 
-            router = Router.router(VertxCommonRecorder.getVertx());
+            router = Router.router(VertxCommonRecorder.getWebVertx());
             if (hotReplacementHandler != null) {
                 router.route().blockingHandler(hotReplacementHandler);
             }
 
             //we can't really do
-            doServerStart(VertxCommonRecorder.getVertx(), config, LaunchMode.DEVELOPMENT);
+            doServerStart(VertxCommonRecorder.getWebVertx(), config, LaunchMode.DEVELOPMENT);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    public RuntimeValue<Router> initializeRouter(RuntimeValue<Vertx> vertxRuntimeValue, BeanContainer container,
+    public RuntimeValue<Router> initializeRouter(RuntimeValue<Vertx> vertxRuntimeValue, ShutdownContext shutdown,
             HttpConfiguration httpConfiguration, LaunchMode launchMode,
             boolean startVirtual, boolean startSocket) throws IOException {
 
@@ -122,6 +122,9 @@ public class VertxWebCommonRecorder {
             // Start the server
             if (closeTask == null) {
                 doServerStart(vertx, httpConfiguration, launchMode);
+                if (launchMode != LaunchMode.DEVELOPMENT) {
+                    shutdown.addShutdownTask(closeTask);
+                }
             }
         }
 
@@ -160,8 +163,6 @@ public class VertxWebCommonRecorder {
                     }
                 }
             });
-        } else {
-            shutdown.addShutdownTask(closeTask);
         }
 
         container.instance(RouterProducer.class).initialize(router);
@@ -197,21 +198,30 @@ public class VertxWebCommonRecorder {
             String deploymentId = futureResult.get();
             closeTask = new Runnable() {
                 @Override
-                public void run() {
-                    CountDownLatch latch = new CountDownLatch(1);
-                    vertx.undeploy(deploymentId, new Handler<AsyncResult<Void>>() {
-                        @Override
-                        public void handle(AsyncResult<Void> event) {
-                            latch.countDown();
+                public synchronized void run() {
+                    //guard against this being run twice
+                    if (closeTask == this) {
+                        if (vertx.deploymentIDs().contains(deploymentId)) {
+                            CountDownLatch latch = new CountDownLatch(1);
+                            try {
+                                vertx.undeploy(deploymentId, new Handler<AsyncResult<Void>>() {
+                                    @Override
+                                    public void handle(AsyncResult<Void> event) {
+                                        latch.countDown();
+                                    }
+                                });
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            try {
+                                latch.await();
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
-                    });
-                    try {
-                        latch.await();
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
+                        router = null;
+                        closeTask = null;
                     }
-                    router = null;
-                    closeTask = null;
                 }
             };
         } catch (InterruptedException | ExecutionException e) {

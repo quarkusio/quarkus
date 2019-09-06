@@ -60,4 +60,12 @@ class VertxCommonProcessor {
         return new InternalVertxBuildItem(vertx);
     }
 
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    InternalWebVertxBuildItem buildWeb(VertxCommonRecorder recorder, VertxConfiguration config,
+            ShutdownContextBuildItem context,
+            LaunchModeBuildItem launchModeBuildItem) {
+        RuntimeValue<Vertx> vertx = recorder.initializeWeb(config, context, launchModeBuildItem.getLaunchMode());
+        return new InternalWebVertxBuildItem(vertx);
+    }
 }

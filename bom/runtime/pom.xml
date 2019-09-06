@@ -942,6 +942,10 @@
                 <artifactId>smallrye-config</artifactId>
                 <version>${smallrye-config.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>org.osgi</groupId>
+                        <artifactId>org.osgi.annotation.versioning</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
@@ -958,6 +962,10 @@
                         <groupId>javax</groupId>
                         <artifactId>javaee-api</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.osgi</groupId>
+                        <artifactId>org.osgi.annotation.versioning</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
@@ -968,6 +976,10 @@
                     <exclusion>
                         <groupId>javax</groupId>
                         <artifactId>javaee-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.osgi</groupId>
+                        <artifactId>org.osgi.annotation.versioning</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -987,6 +999,10 @@
                     <exclusion>
                         <groupId>javax</groupId>
                         <artifactId>javaee-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.osgi</groupId>
+                        <artifactId>org.osgi.annotation.versioning</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -1254,6 +1270,12 @@
                 <groupId>org.eclipse.microprofile.config</groupId>
                 <artifactId>microprofile-config-api</artifactId>
                 <version>${microprofile-config-api.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.osgi</groupId>
+                        <artifactId>org.osgi.annotation.versioning</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.microprofile.context-propagation</groupId>
@@ -1264,6 +1286,12 @@
                 <groupId>org.eclipse.microprofile.opentracing</groupId>
                 <artifactId>microprofile-opentracing-api</artifactId>
                 <version>${microprofile-opentracing-api.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.osgi</groupId>
+                        <artifactId>org.osgi.annotation.versioning</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.microprofile.rest.client</groupId>
@@ -1955,11 +1983,23 @@
                 <groupId>org.reactivestreams</groupId>
                 <artifactId>reactive-streams</artifactId>
                 <version>${reactive-streams.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.osgi</groupId>
+                        <artifactId>org.osgi.annotation.versioning</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.microprofile.reactive-streams-operators</groupId>
                 <artifactId>microprofile-reactive-streams-operators-api</artifactId>
                 <version>${microprofile-reactive-streams-operators.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.osgi</groupId>
+                        <artifactId>org.osgi.annotation.versioning</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.microprofile.reactive-streams-operators</groupId>

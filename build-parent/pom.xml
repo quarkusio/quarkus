@@ -28,7 +28,7 @@
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
         <graal-sdk.version-for-documentation>19.2.0</graal-sdk.version-for-documentation>
-        <rest-assured.version>3.3.0</rest-assured.version>
+        <rest-assured.version>4.1.1</rest-assured.version>
         <axle-client.version>0.0.9</axle-client.version>
         <vertx.version>3.8.1</vertx.version>
         <artemis.version>2.9.0</artemis.version>

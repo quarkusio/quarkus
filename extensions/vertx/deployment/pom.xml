@@ -34,11 +34,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-core-deployment</artifactId>
         </dependency>
-        <!-- TODO: this is wrong and should be fixed -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
-        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx</artifactId>

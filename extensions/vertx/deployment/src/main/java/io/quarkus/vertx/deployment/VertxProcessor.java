@@ -1,6 +1,10 @@
 package io.quarkus.vertx.deployment;
 
-import static io.quarkus.vertx.deployment.VertxConstants.*;
+import static io.quarkus.vertx.deployment.VertxConstants.AXLE_MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.COMPLETION_STAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.CONSUME_EVENT;
+import static io.quarkus.vertx.deployment.VertxConstants.MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.RX_MESSAGE;
 
 import java.lang.annotation.Annotation;
 import java.util.HashMap;
@@ -13,9 +17,11 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
@@ -42,12 +48,10 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.IOThreadDetectorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.AssignableResultHandle;
@@ -60,11 +64,9 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
-import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.ConsumeEvent;
+import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.runtime.EventConsumerInvoker;
-import io.quarkus.vertx.runtime.VertxConfiguration;
 import io.quarkus.vertx.runtime.VertxProducer;
 import io.quarkus.vertx.runtime.VertxRecorder;
 import io.vertx.core.Future;
@@ -115,31 +117,17 @@ class VertxProcessor {
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
 
     @BuildStep
-    SubstrateConfigBuildItem build() {
-        return SubstrateConfigBuildItem.builder()
-                .addNativeImageSystemProperty("vertx.disableDnsResolver", "true")
-                .addRuntimeInitializedClass("io.vertx.core.http.impl.VertxHttp2ClientUpgradeCodec")
-                .build();
-    }
-
-    @BuildStep
     AdditionalBeanBuildItem registerBean() {
         return AdditionalBeanBuildItem.unremovableOf(VertxProducer.class);
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
-    EventLoopSupplierBuildItem eventLoop(VertxRecorder recorder) {
-        return new EventLoopSupplierBuildItem(recorder.mainSupplier(), recorder.bossSupplier());
-    }
-
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    VertxBuildItem build(VertxRecorder recorder, BeanContainerBuildItem beanContainer,
-            BuildProducer<FeatureBuildItem> feature,
-            List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
+    VertxBuildItem build(CoreVertxBuildItem internalVertx, VertxRecorder recorder, BeanContainerBuildItem beanContainer,
+            BuildProducer<FeatureBuildItem> feature, List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
-            VertxConfiguration config, BuildProducer<ServiceStartBuildItem> serviceStart,
+            BuildProducer<ServiceStartBuildItem> serviceStart,
             List<MessageCodecBuildItem> codecs, RecorderContext recorderContext) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX));
         Map<String, ConsumeEvent> messageConsumerConfigurations = new HashMap<>();
@@ -165,18 +153,11 @@ class VertxProcessor {
                     recorderContext.classProxy(messageCodecItem.getCodec()));
         }
 
-        RuntimeValue<Vertx> vertx = recorder
-                .configureVertx(beanContainer.getValue(), config, messageConsumerConfigurations,
-                        launchMode.getLaunchMode(),
-                        shutdown, codecByClass);
+        recorder.configureVertx(internalVertx.getVertx(), messageConsumerConfigurations,
+                launchMode.getLaunchMode(),
+                shutdown, codecByClass);
         serviceStart.produce(new ServiceStartBuildItem("vertx"));
-        return new VertxBuildItem(vertx);
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    IOThreadDetectorBuildItem ioThreadDetector(VertxRecorder recorder) {
-        return new IOThreadDetectorBuildItem(recorder.detector());
+        return new VertxBuildItem(internalVertx.getVertx());
     }
 
     @BuildStep
@@ -358,4 +339,5 @@ class VertxProcessor {
             invoke.invokeInterfaceMethod(INSTANCE_HANDLE_DESTROY, instanceHandle);
         }
     }
+
 }

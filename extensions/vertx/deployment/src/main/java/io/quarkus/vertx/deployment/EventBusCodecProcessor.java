@@ -1,12 +1,28 @@
 package io.quarkus.vertx.deployment;
 
-import static io.quarkus.vertx.deployment.VertxConstants.*;
+import static io.quarkus.vertx.deployment.VertxConstants.AXLE_MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.COMPLETION_STAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.CONSUME_EVENT;
+import static io.quarkus.vertx.deployment.VertxConstants.LOCAL_EVENT_BUS_CODEC;
+import static io.quarkus.vertx.deployment.VertxConstants.MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.RX_MESSAGE;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 
-import org.jboss.jandex.*;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
@@ -69,6 +85,7 @@ public class EventBusCodecProcessor {
 
             if (codecTargetFromReturnType != null && !hasBuiltInCodec(codecTargetFromReturnType)
                     && !codecByTypes.containsKey(codecTargetFromReturnType)) {
+
                 LOGGER.infof("Local Message Codec registered for type %s", codecTargetFromReturnType.toString());
                 codecByTypes.put(codecTargetFromReturnType, LOCAL_EVENT_BUS_CODEC);
             }

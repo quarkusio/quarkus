@@ -26,9 +26,9 @@
         <!-- Versions -->
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
         <junit.version>4.12</junit.version>
-        <maven-core.version>3.5.4</maven-core.version>
-        <maven-plugin-annotations.version>3.5.2</maven-plugin-annotations.version>
-        <maven-resolver.version>1.1.1</maven-resolver.version>
+        <maven-core.version>3.6.2</maven-core.version>
+        <maven-plugin-annotations.version>3.6.0</maven-plugin-annotations.version>
+        <maven-resolver.version>1.4.1</maven-resolver.version>
         <maven-wagon.version>3.0.0</maven-wagon.version>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
     </properties>
@@ -59,6 +59,12 @@
                 <groupId>org.apache.maven</groupId>
                 <artifactId>maven-plugin-api</artifactId>
                 <version>${maven-core.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.codehaus.plexus</groupId>
+                        <artifactId>plexus-classworlds</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>
@@ -69,6 +75,12 @@
                 <groupId>org.apache.maven</groupId>
                 <artifactId>maven-core</artifactId>
                 <version>${maven-core.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.codehaus.plexus</groupId>
+                        <artifactId>plexus-classworlds</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>
@@ -82,6 +94,10 @@
                     <exclusion>
                         <groupId>org.sonatype.plexus</groupId>
                         <artifactId>plexus-cipher</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.codehaus.plexus</groupId>
+                        <artifactId>plexus-classworlds</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

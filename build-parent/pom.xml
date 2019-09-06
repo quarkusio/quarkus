@@ -48,7 +48,7 @@
         <supported-maven-versions>[3.5.3,)</supported-maven-versions>
 
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.6.1</proposed-maven-version>
+        <proposed-maven-version>3.6.2</proposed-maven-version>
         <maven-wrapper.version>0.7.6</maven-wrapper.version>
 
         <!-- MicroProfile TCK versions -->

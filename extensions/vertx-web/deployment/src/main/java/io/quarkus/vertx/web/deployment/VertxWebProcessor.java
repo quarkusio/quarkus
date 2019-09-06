@@ -49,8 +49,8 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.vertx.http.deployment.AdditionalRoutesInstalledBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
-import io.quarkus.vertx.http.deployment.InternalVertxWebRouterBuildItem;
 import io.quarkus.vertx.http.deployment.RouteHandlerBuildItem;
+import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RoutingExchange;
@@ -120,7 +120,7 @@ class VertxWebProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    AdditionalRoutesInstalledBuildItem addAdditionalRoutes(InternalVertxWebRouterBuildItem router, VertxWebRecorder recorder,
+    AdditionalRoutesInstalledBuildItem addAdditionalRoutes(VertxWebRouterBuildItem router, VertxWebRecorder recorder,
             BeanContainerBuildItem beanContainer,
             List<RouteHandlerBuildItem> routeHandlerBusinessMethods,
             List<FilterBuildItem> filters,

@@ -53,7 +53,7 @@ class VertxHttpProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    InternalVertxWebRouterBuildItem initializeRouter(VertxHttpRecorder recorder,
+    VertxWebRouterBuildItem initializeRouter(VertxHttpRecorder recorder,
             LaunchModeBuildItem launchMode,
             ShutdownContextBuildItem shutdown,
             InternalWebVertxBuildItem vertx,
@@ -65,14 +65,14 @@ class VertxHttpProcessor {
         RuntimeValue<Router> router = recorder.initializeRouter(vertx.getVertx(), shutdown,
                 httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket);
 
-        return new InternalVertxWebRouterBuildItem(router);
+        return new VertxWebRouterBuildItem(router);
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     ServiceStartBuildItem finalizeRouter(VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer,
             LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, Optional<DefaultRouteBuildItem> defaultRoute,
-            List<FilterBuildItem> filters, InternalVertxWebRouterBuildItem router,
+            List<FilterBuildItem> filters, VertxWebRouterBuildItem router,
             List<AdditionalRoutesInstalledBuildItem> additionalRoutesInstalled) {
         recorder.finalizeRouter(beanContainer.getValue(), defaultRoute.map(DefaultRouteBuildItem::getHandler).orElse(null),
                 filters.stream().map(FilterBuildItem::getHandler).collect(Collectors.toList()),

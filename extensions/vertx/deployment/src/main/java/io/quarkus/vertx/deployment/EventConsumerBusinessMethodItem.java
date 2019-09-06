@@ -1,4 +1,4 @@
-package io.quarkus.vertx.core.deployment;
+package io.quarkus.vertx.deployment;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.MethodInfo;

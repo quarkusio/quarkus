@@ -65,7 +65,6 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.vertx.ConsumeEvent;
-import io.quarkus.vertx.core.deployment.EventConsumerBusinessMethodItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.runtime.EventConsumerInvoker;
 import io.quarkus.vertx.runtime.VertxProducer;

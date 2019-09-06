@@ -135,9 +135,15 @@ The storage engine to use when the dialect supports multiple storage engines.
 ==== Miscellaneous
 
 `quarkus.hibernate-orm.sql-load-script`::
-(defaults to `/import.sql`) Name of the file containing the SQL statements to execute when Hibernate ORM starts.
-By default, simply add `import.sql` in the root of your resources directory and it will be picked up without having to set this property.
-Pass `no-file` to force Hibernate ORM to ignore the SQL import file.
+Name of the file containing the SQL statements to execute when Hibernate ORM starts. Its default value differs depending on the
+Quarkus launch mode:
+
+* In dev and test modes, it defaults to `import.sql`. Simply add an `import.sql` file in the root of your resources directory
+and it will be picked up without having to set this property. Pass `no-file` to force Hibernate ORM to ignore the SQL import
+file.
+* In production mode, it defaults to `no-file`. It means Hibernate ORM won't try to execute any SQL import file by default. Pass
+an explicit value to force Hibernate ORM to execute the SQL import file.
+
 If you need different SQL statements between dev mode, test (`@QuarkusTest`) and in production, use Quarkus https://quarkus.io/guides/application-configuration-guide#configuration-profiles[configuration profiles facility].
 
 [source,property]
@@ -145,7 +151,7 @@ If you need different SQL statements between dev mode, test (`@QuarkusTest`) and
 --
 %dev.quarkus.hibernate-orm.sql-load-script = import-dev.sql
 %test.quarkus.hibernate-orm.sql-load-script = import-test.sql
-%prod.quarkus.hibernate-orm.sql-load-script = no-file
+%prod.quarkus.hibernate-orm.sql-load-script = import-prod.sql
 --
 
 [NOTE]

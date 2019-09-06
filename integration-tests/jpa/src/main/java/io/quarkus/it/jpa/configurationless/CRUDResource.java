@@ -13,6 +13,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ProfileManager;
+
 /**
  * @author Emmanuel Bernard emmanuel@hibernate.org
  */
@@ -76,10 +79,12 @@ public class CRUDResource {
     @Transactional
     @Path("/import")
     public Map<String, String> get() {
+        boolean isProdMode = ProfileManager.getActiveProfile().equals(LaunchMode.NORMAL.getDefaultProfile());
         Gift gift = em.find(Gift.class, 100000L);
-
         Map<String, String> map = new HashMap<>();
-        map.put("jpa", gift != null ? "OK" : "Boooo");
+        // Native tests are run under the 'prod' profile for now. In NORMAL mode, Quarkus doesn't execute the SQL import file
+        // by default. That's why we don't expect a non-null gift in the following line in 'prod' mode.
+        map.put("jpa", gift != null || isProdMode ? "OK" : "Boooo");
         return map;
     }
 

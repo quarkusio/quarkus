@@ -51,13 +51,13 @@ class VertxCommonProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    InternalVertxBuildItem build(VertxCoreRecorder recorder, BeanContainerBuildItem beanContainer,
+    CoreVertxBuildItem build(VertxCoreRecorder recorder, BeanContainerBuildItem beanContainer,
             LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, VertxConfiguration config) {
 
         RuntimeValue<Vertx> vertx = recorder.configureVertx(beanContainer.getValue(), config,
                 launchMode.getLaunchMode(), shutdown);
 
-        return new InternalVertxBuildItem(vertx);
+        return new CoreVertxBuildItem(vertx);
     }
 
     @BuildStep

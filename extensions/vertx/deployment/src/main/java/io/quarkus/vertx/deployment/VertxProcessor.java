@@ -66,7 +66,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.core.deployment.EventConsumerBusinessMethodItem;
-import io.quarkus.vertx.core.deployment.InternalVertxBuildItem;
+import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.runtime.EventConsumerInvoker;
 import io.quarkus.vertx.runtime.VertxProducer;
 import io.quarkus.vertx.runtime.VertxRecorder;
@@ -124,7 +124,7 @@ class VertxProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    VertxBuildItem build(InternalVertxBuildItem internalVertx, VertxRecorder recorder, BeanContainerBuildItem beanContainer,
+    VertxBuildItem build(CoreVertxBuildItem internalVertx, VertxRecorder recorder, BeanContainerBuildItem beanContainer,
             BuildProducer<FeatureBuildItem> feature, List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,

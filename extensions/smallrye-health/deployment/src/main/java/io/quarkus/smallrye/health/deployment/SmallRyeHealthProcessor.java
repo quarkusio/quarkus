@@ -68,11 +68,13 @@ class SmallRyeHealthProcessor {
     }
 
     @BuildStep
-    public void healthCheck(BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer,
+    void healthCheck(BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer,
             List<HealthBuildItem> healthBuildItems) {
         if (config.extensionsEnabled) {
             for (HealthBuildItem buildItem : healthBuildItems) {
-                buildItemBuildProducer.produce(new AdditionalBeanBuildItem(buildItem.getHealthCheckClass()));
+                if (buildItem.isEnabled()) {
+                    buildItemBuildProducer.produce(new AdditionalBeanBuildItem(buildItem.getHealthCheckClass()));
+                }
             }
         }
     }

@@ -248,10 +248,6 @@ class AgroalProcessor {
 
     @BuildStep
     HealthBuildItem addHealthCheck(AgroalBuildTimeConfig agroalBuildTimeConfig) {
-        if (agroalBuildTimeConfig.healthEnabled) {
-            //produce the health bean
-            return new HealthBuildItem(DataSourceHealthCheck.class);
-        }
-        return null;
+        return new HealthBuildItem(DataSourceHealthCheck.class, agroalBuildTimeConfig.healthEnabled);
     }
 }

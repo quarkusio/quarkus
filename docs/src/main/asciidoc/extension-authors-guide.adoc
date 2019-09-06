@@ -1228,11 +1228,7 @@ Following is an example from the Agroal extension that provides a `DataSourceHea
 ----
 @BuildStep
 HealthBuildItem addHealthCheck(AgroalBuildTimeConfig agroalBuildTimeConfig) {
-    if (agroalBuildTimeConfig.healthEnabled) {
-        //produce the health bean
-        return new HealthBuildItem(DataSourceHealthCheck.class);
-    }
-    return null;
+    return new HealthBuildItem(DataSourceHealthCheck.class, agroalBuildTimeConfig.healthEnabled);
 }
 ----
 

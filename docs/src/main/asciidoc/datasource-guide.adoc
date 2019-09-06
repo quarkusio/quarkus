@@ -244,7 +244,7 @@ to validate the datasource.
 So when you access the `/health/ready` endpoint of your application you will have information about the datasource validation status.
 If you have multiple datasources, all datasources will be checked and the status will be `DOWN` as soon as there is one datasource validation failure.
 
-This behavior can be disabled via the property `quarkus.datasource.health.disabled`.
+This behavior can be disabled via the property `quarkus.datasource.health.enabled`.
 
 
 [[configuration-reference]]

@@ -36,6 +36,8 @@ public class VertxProducerTest {
     }
 
     private void verifyProducer() {
+        assertThat(producer.eventbus(), is(notNullValue()));
+
         assertThat(producer.axle(), is(notNullValue()));
         assertFalse(producer.axle().isClustered());
         assertThat(producer.axleEventbus(), is(notNullValue()));

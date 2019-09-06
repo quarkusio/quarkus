@@ -7,11 +7,12 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.EventBus;
 
 /**
- * Produces Axle and Rx Vert.x instances.
+ * Expose the Vert.x event bus and produces Axle and Rx Vert.x instances.
  * <p>
- * The original Vert.x instance is coming from the common artifact.
+ * The original Vert.x instance is coming from the core artifact.
  */
 @ApplicationScoped
 public class VertxProducer {
@@ -26,6 +27,12 @@ public class VertxProducer {
     public void initialize() {
         this.axleVertx = io.vertx.axle.core.Vertx.newInstance(vertx);
         this.rxVertx = io.vertx.reactivex.core.Vertx.newInstance(vertx);
+    }
+
+    @Singleton
+    @Produces
+    public EventBus eventbus() {
+        return vertx.eventBus();
     }
 
     @Singleton

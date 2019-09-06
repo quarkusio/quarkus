@@ -5,11 +5,9 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
 import io.vertx.core.Vertx;
-import io.vertx.core.eventbus.EventBus;
 
 /**
  * Produces a configured Vert.x instance.
- * It also exposes the Vert.x event bus.
  */
 @ApplicationScoped
 public class VertxCoreProducer {
@@ -24,11 +22,5 @@ public class VertxCoreProducer {
     @Produces
     public Vertx vertx() {
         return vertx;
-    }
-
-    @Singleton
-    @Produces
-    public EventBus eventbus() {
-        return vertx.eventBus();
     }
 }

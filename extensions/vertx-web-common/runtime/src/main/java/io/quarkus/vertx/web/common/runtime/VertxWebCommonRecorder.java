@@ -32,8 +32,8 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.vertx.common.runtime.VertxCommonRecorder;
 import io.quarkus.vertx.common.runtime.VertxConfiguration;
+import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -338,14 +338,13 @@ public class VertxWebCommonRecorder {
         }
     }
 
-    private static class WebDeploymentVerticle implements Verticle {
+    private static class WebDeploymentVerticle extends AbstractVerticle {
 
         private final int port;
         private final int httpsPort;
         private final String host;
         private HttpServer httpServer;
         private HttpServer httpsServer;
-        private Vertx vertx;
         private final HttpServerOptions httpOptions;
         private final HttpServerOptions httpsOptions;
         private final Router router;
@@ -358,16 +357,6 @@ public class VertxWebCommonRecorder {
             this.httpOptions = httpOptions;
             this.httpsOptions = httpsOptions;
             this.router = router;
-        }
-
-        @Override
-        public Vertx getVertx() {
-            return vertx;
-        }
-
-        @Override
-        public void init(Vertx vertx, Context context) {
-            this.vertx = vertx;
         }
 
         @Override

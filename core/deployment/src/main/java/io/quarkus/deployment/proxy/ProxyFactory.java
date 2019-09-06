@@ -23,7 +23,6 @@ import io.quarkus.gizmo.ResultHandle;
 public class ProxyFactory<T> {
 
     private final String proxyName;
-    private final Class<?> anchorClass;
     private final ClassLoader classLoader;
 
     private final String superClassName;
@@ -34,7 +33,7 @@ public class ProxyFactory<T> {
     private final Object lock = new Object();
 
     public ProxyFactory(ProxyConfiguration<T> configuration) {
-        this.anchorClass = Objects.requireNonNull(configuration.getAnchorClass(), "anchorClass must be set");
+        Objects.requireNonNull(configuration.getAnchorClass(), "anchorClass must be set");
         Objects.requireNonNull(configuration.getProxyNameSuffix(), "proxyNameSuffix must be set");
         this.proxyName = configuration.getProxyName();
 
@@ -64,7 +63,7 @@ public class ProxyFactory<T> {
         }
 
         this.classBuilder = ClassCreator.builder()
-                .classOutput(new InjectIntoClassloaderClassOutput(configuration.getClassLoader(), this.anchorClass))
+                .classOutput(new InjectIntoClassloaderClassOutput(configuration.getClassLoader()))
                 .className(this.proxyName)
                 .superClass(this.superClassName);
         if (!configuration.getAdditionalInterfaces().isEmpty()) {

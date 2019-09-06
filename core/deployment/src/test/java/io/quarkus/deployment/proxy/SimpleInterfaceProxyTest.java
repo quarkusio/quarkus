@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
 
+import io.quarkus.deployment.TestClassLoader;
+
 public class SimpleInterfaceProxyTest {
 
     @Test
@@ -13,7 +15,7 @@ public class SimpleInterfaceProxyTest {
                 .setSuperClass(Object.class)
                 .setAnchorClass(SimpleInterface.class)
                 .setProxyNameSuffix("$Proxy2")
-                .setClassLoader(SimpleClass.class.getClassLoader())
+                .setClassLoader(new TestClassLoader(SimpleClass.class.getClassLoader()))
                 .addAdditionalInterface(SimpleInterface.class);
         SimpleInterface instance = (SimpleInterface) new ProxyFactory<>(proxyConfiguration).newInstance(invocationHandler);
 

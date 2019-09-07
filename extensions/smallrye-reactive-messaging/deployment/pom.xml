@@ -31,6 +31,10 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-vertx-core</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.quarkus</groupId>

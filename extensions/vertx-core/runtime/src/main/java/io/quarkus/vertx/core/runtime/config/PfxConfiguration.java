@@ -1,4 +1,4 @@
-package io.quarkus.vertx.core.runtime;
+package io.quarkus.vertx.core.runtime.config;
 
 import java.util.Optional;
 

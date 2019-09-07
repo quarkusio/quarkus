@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.*;
 
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -61,13 +60,5 @@ public class JsonTestResource {
     @Produces(APPLICATION_JSON)
     public CompletionStage<JsonArray> arrayAsync() {
         return CompletableFuture.completedFuture(new JsonArray().add("Hello").add("World"));
-    }
-
-    @GET
-    @Path("/json/mapping")
-    @Produces(APPLICATION_JSON)
-    public String getPet() {
-        // This test check that the Jackson mapping (used by Json.encode) works.
-        return Json.encode(new Person("jack", "rabbit"));
     }
 }

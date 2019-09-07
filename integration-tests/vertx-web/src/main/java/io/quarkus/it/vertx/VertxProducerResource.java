@@ -3,7 +3,9 @@ package io.quarkus.it.vertx;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -11,10 +13,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import io.vertx.axle.core.Vertx;
-import io.vertx.axle.core.eventbus.EventBus;
-import io.vertx.axle.core.eventbus.Message;
-import io.vertx.axle.core.eventbus.MessageConsumer;
+import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.MessageConsumer;
 
 @Path("/")
 public class VertxProducerResource {
@@ -47,8 +48,17 @@ public class VertxProducerResource {
             consumer.unregister();
         });
 
+        CompletableFuture<String> future = new CompletableFuture<>();
         // Use the Vert.x bean.
-        return vertx.eventBus().<String> request(address, "quarkus").thenApply(Message::body);
+        vertx.eventBus().<String> request(address, "quarkus", ar -> {
+            if (ar.failed()) {
+                future.completeExceptionally(ar.cause());
+            } else {
+                future.complete(ar.result().body());
+            }
+        });
+
+        return future.thenApplyAsync(Function.identity());
     }
 
 }

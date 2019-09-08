@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.annotation.Priority;
@@ -40,6 +41,8 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     private final static Variant JSON_VARIANT = new Variant(MediaType.APPLICATION_JSON_TYPE, (String) null, null);
     private final static Variant HTML_VARIANT = new Variant(MediaType.TEXT_HTML_TYPE, (String) null, null);
     private final static List<Variant> VARIANTS = Arrays.asList(JSON_VARIANT, HTML_VARIANT);
+
+    private static Map<String, List<String>> servletToMapping;
 
     @Context
     private Registry registry = null;
@@ -179,8 +182,8 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         }
 
         if (variant == HTML_VARIANT) {
-            TemplateHtmlBuilder sb = new TemplateHtmlBuilder("404 - Resource Not Found", "", "REST interface overview");
-            sb.resourcesStart();
+            TemplateHtmlBuilder sb = new TemplateHtmlBuilder("404 - Resource Not Found", "", "Resources overview");
+            sb.resourcesStart("REST resources");
             for (ResourceDescription resource : descriptions) {
                 sb.resourcePath(resource.basePath);
                 for (MethodDescription method : resource.calls) {
@@ -200,9 +203,20 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             }
             sb.resourcesEnd();
 
+            if (!servletToMapping.isEmpty()) {
+                sb.resourcesStart("Servlet mappings");
+                for (Entry<String, List<String>> servletMappings : servletToMapping.entrySet()) {
+                    sb.resourcePath(servletMappings.getKey());
+                    for (String mapping : servletMappings.getValue()) {
+                        sb.servletMapping(mapping);
+                    }
+                    sb.resourceEnd();
+                }
+                sb.resourcesEnd();
+            }
+
             return Response.status(Status.NOT_FOUND).entity(sb.toString()).type(MediaType.TEXT_HTML_TYPE).build();
         }
-
         return Response.status(Status.NOT_FOUND).build();
     }
 
@@ -210,5 +224,9 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         ServerDrivenNegotiation negotiation = new ServerDrivenNegotiation();
         negotiation.setAcceptHeaders(headers.getRequestHeaders().get(ACCEPT));
         return negotiation.getBestMatch(VARIANTS);
+    }
+
+    public static void servlets(Map<String, List<String>> servletToMapping) {
+        NotFoundExceptionMapper.servletToMapping = servletToMapping;
     }
 }

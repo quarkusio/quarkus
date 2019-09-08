@@ -23,7 +23,7 @@ public class TemplateHtmlBuilder {
             "</header>\n" +
             "<div class=\"container content\">\n";
 
-    private static final String RESOURCES_START = "<div class=\"intro\">If you are looking for your REST resources, here are the ones we discovered:</div><div class=\"resources\">";
+    private static final String RESOURCES_START = "<div class=\"intro\">%1$s</div><div class=\"resources\">";
 
     private static final String RESOURCE_TEMPLATE = "<h3>%1$s</h3>\n";
 
@@ -36,6 +36,8 @@ public class TemplateHtmlBuilder {
 
     private static final String METHOD_END = "    </ul>\n"
             + "</li>";
+
+    private static final String SERVLET_MAPPING = "<li>%1$s</li>\n";
 
     private static final String LIST_END = "</ul>\n";
 
@@ -148,8 +150,8 @@ public class TemplateHtmlBuilder {
         return this;
     }
 
-    public TemplateHtmlBuilder resourcesStart() {
-        result.append(RESOURCES_START);
+    public TemplateHtmlBuilder resourcesStart(String title) {
+        result.append(String.format(RESOURCES_START, title));
         return this;
     }
 
@@ -189,6 +191,11 @@ public class TemplateHtmlBuilder {
         return this;
     }
 
+    public TemplateHtmlBuilder resourceStart() {
+        result.append(LIST_START);
+        return this;
+    }
+
     public TemplateHtmlBuilder resourceEnd() {
         result.append(LIST_END);
         return this;
@@ -209,4 +216,10 @@ public class TemplateHtmlBuilder {
                 .replace("<", "&lt;")
                 .replace(">", "&gt;");
     }
+
+    public TemplateHtmlBuilder servletMapping(String servletMapping) {
+        result.append(String.format(SERVLET_MAPPING, servletMapping));
+        return this;
+    }
+
 }

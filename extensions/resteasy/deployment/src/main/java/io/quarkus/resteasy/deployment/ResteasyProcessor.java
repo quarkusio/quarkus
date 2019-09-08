@@ -1,9 +1,12 @@
 package io.quarkus.resteasy.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.servlet.DispatcherType;
 import javax.ws.rs.core.Application;
@@ -88,6 +91,13 @@ public class ResteasyProcessor {
     @Record(RUNTIME_INIT)
     void setupExceptionMapper(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
         providers.produce(new ResteasyJaxrsProviderBuildItem(NotFoundExceptionMapper.class.getName()));
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(STATIC_INIT)
+    void setupExceptionMapper(List<ServletBuildItem> servlets) {
+        NotFoundExceptionMapper.servlets(servlets.stream().filter(s -> !JAX_RS_SERVLET_NAME.equals(s.getName()))
+                .collect(Collectors.toMap(s -> s.getName(), s -> s.getMappings())));
     }
 
     private String getMappingPath(String path) {

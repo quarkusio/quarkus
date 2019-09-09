@@ -1,4 +1,4 @@
-package io.quarkus.vertx.runtime;
+package io.quarkus.resteasy.server.common.vertx;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -15,28 +15,28 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.Provider;
 
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 /**
- * A body reader that allows to get a Vert.x {@link JsonArray} as JAX-RS request content.
+ * A body reader that allows to get a Vert.x {@link JsonObject} as JAX-RS request content.
  */
 @Provider
 @Produces(MediaType.APPLICATION_JSON)
-public class JsonArrayReader implements MessageBodyReader<JsonArray> {
+public class JsonObjectReader implements MessageBodyReader<JsonObject> {
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return type == JsonArray.class;
+        return type == JsonObject.class;
     }
 
     @Override
-    public JsonArray readFrom(Class<JsonArray> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+    public JsonObject readFrom(Class<JsonObject> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
         byte[] bytes = getBytes(entityStream);
         if (bytes.length == 0) {
-            throw new NoContentException("Cannot create JsonArray");
+            throw new NoContentException("Cannot create JsonObject");
         }
-        return new JsonArray(Buffer.buffer(bytes));
+        return new JsonObject(Buffer.buffer(bytes));
     }
 
     private static byte[] getBytes(InputStream entityStream) throws IOException {

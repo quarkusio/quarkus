@@ -1,0 +1,4 @@
+io.quarkus.resteasy.server.common.vertx.JsonObjectWriter
+io.quarkus.resteasy.server.common.vertx.JsonArrayWriter
+io.quarkus.resteasy.server.common.vertx.JsonObjectReader
+io.quarkus.resteasy.server.common.vertx.JsonArrayReader

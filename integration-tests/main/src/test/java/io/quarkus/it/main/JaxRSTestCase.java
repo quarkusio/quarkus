@@ -191,4 +191,24 @@ public class JaxRSTestCase {
         RestAssured.when().get("/envelope/payload").then()
                 .body(containsString("content"), containsString("hello"));
     }
+
+    @Test
+    public void testMaxEntityServerOptionConfig() {
+        // maxEntitySize set to 1K sending a payload larger than the limit should return 400 status code
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 1100; i++) {
+            sb.append("q");
+        }
+
+        RestAssured.given()
+                .body(sb.toString())
+                .post("/test/max-body-size")
+                .then().statusCode(413);
+
+        // while sending a payload within the limit should return 200
+        RestAssured.given()
+                .body("Hello Quarkus")
+                .post("/test/max-body-size")
+                .then().statusCode(200);
+    }
 }

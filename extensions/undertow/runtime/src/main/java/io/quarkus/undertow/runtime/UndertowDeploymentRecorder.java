@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
@@ -34,6 +35,8 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.MemorySize;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.undertow.httpcore.BufferAllocator;
 import io.undertow.httpcore.StatusCodes;
 import io.undertow.server.DefaultExchangeHandler;
@@ -297,8 +300,7 @@ public class UndertowDeploymentRecorder {
     }
 
     public Handler<HttpServerRequest> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
-            DeploymentManager manager,
-            List<HandlerWrapper> wrappers) throws Exception {
+            DeploymentManager manager, List<HandlerWrapper> wrappers, HttpConfiguration httpConfiguration) throws Exception {
 
         shutdown.addShutdownTask(new Runnable() {
             @Override
@@ -327,6 +329,10 @@ public class UndertowDeploymentRecorder {
             @Override
             public void handle(HttpServerRequest event) {
                 VertxHttpExchange exchange = new VertxHttpExchange(event, ALLOCATOR, executorService);
+                Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
+                if (maxBodySize.isPresent()) {
+                    exchange.setMaxEntitySize(maxBodySize.get().asLongValue());
+                }
                 defaultHandler.handle(exchange);
             }
         };

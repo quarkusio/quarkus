@@ -293,6 +293,12 @@ public class TestResource {
         return "gzipped:" + new String(message, "UTF-8");
     }
 
+    @POST
+    @Path("/max-body-size")
+    public String echoPayload(String payload) {
+        return payload;
+    }
+
     @XmlRootElement
     public static class XmlObject {
 

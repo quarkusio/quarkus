@@ -153,3 +153,20 @@ quarkus.http.cors.access-control-max-age=24H
 If you want to use the `keycloak` Quarkus extension in your project, you should configure CORS using the `keycloak` extension
 configuration. See link:keycloak-guide#configuring-cors[the Keycloak guide] for more details.
 ====
+
+== Http Limits Configuration
+The following properties are supported.
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|quarkus.http.limits.max-body-size| `unlimited` |The maximum size of request body.
+|quarkus.http.limits.max-header-size|`2OK`|The maximum length of all headers.
+|===
+
+[NOTE]
+====
+The following config options would recognize strings in this format (shown as a regular expression): `[0-9]+[KkMmGgTtPpEeZzYy]?`. If no suffix is given, assume bytes.
+
+* `quarkus.http.limits.max-body-size`,
+* `quarkus.http.limits.max-header-size`
+====

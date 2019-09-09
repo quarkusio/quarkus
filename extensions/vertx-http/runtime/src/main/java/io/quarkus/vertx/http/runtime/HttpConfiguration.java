@@ -71,6 +71,11 @@ public class HttpConfiguration {
     @ConfigItem(defaultValue = "false")
     public boolean virtual;
 
+    /**
+     * Server limits configuration
+     */
+    public ServerLimitsConfig limits;
+
     public int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort : port;
     }

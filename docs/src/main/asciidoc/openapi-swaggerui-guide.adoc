@@ -284,6 +284,88 @@ quarkus.smallrye-openapi.path=/swagger
 
 Hit `CTRL+C` to stop the application.
 
+== Loading OpenAPI Schama From Static Files
+
+Instead of dynamically creating OpenAPI schemas from annotation scanning, Quarkus also supports serving static OpenAPI documents.
+The static file to serve must be a valid document conforming to the https://swagger.io/docs/specification[OpenAPI specification].
+An OpenAPI document that conforms to the  OpenAPI Specification is itself a valid JSON object, that can be represented in `yaml` or `json` formats.
+
+To see this in action, we'll put OpenAPI documentation under `META-INF/openapi.yaml` for our `/fruits` endpoints.
+Quarkus also supports alternative <<open-document-paths, OpenAPI document paths>> if you prefer.
+
+[source, shell]
+----
+openapi: 3.0.1
+info:
+  title: Static OpenAPI document of fruits resource
+  description: Fruit resources Open API documentation
+  version: "1.0"
+
+servers:
+  - url: http://localhost:8080/openapi
+    description: Optional dev mode server description
+
+paths:
+  /fruits:
+    get:
+      responses:
+        200:
+          description: OK - fruits list
+          content:
+            application/json: {}
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Fruit'
+      responses:
+        200:
+          description: new fruit resource created
+          content:
+            application/json: {}
+    delete:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Fruit'
+      responses:
+        200:
+          description: OK - fruit resource deleted
+          content:
+            application/json: {}
+components:
+  schemas:
+    Fruit:
+      properties:
+        description:
+          type: string
+        name:
+          type: string
+----
+By default, a request to `/openapi` will serve the combined OpenAPI document from the static file and the model generated from application endpoints code.
+We can however change this to only serve the static OpenAPI document by adding `mp.openapi.scan.disable=true` configuration into `application.properties`.
+
+Now, a request to `/openapi` endpoint will serve the static OpenAPI document instead of the generated one.
+
+[[open-document-paths]]
+[TIP]
+.About OpenAPI document paths
+====
+Quarkus supports various paths to store your OpenAPI document under. We recommend you place it under `META-INF/openapi.yml`.
+Alternative paths are:
+
+* `META-INF/openapi.yaml`
+* `META-INF/openapi.yml`
+* `META-INF/openapi.json`
+* `WEB-INF/classes/META-INF/openapi.yml`
+* `WEB-INF/classes/META-INF/openapi.yaml`
+* `WEB-INF/classes/META-INF/openapi.json`
+
+Live reload of static OpenAPI document is supported during development. A modification to your OpenAPI document will be picked up on fly by Quarkus.
+====
+
 == Use Swagger UI for development
 
 When building APIs, developers want to test them quickly. https://swagger.io/tools/swagger-ui/[Swagger UI] is a great tool

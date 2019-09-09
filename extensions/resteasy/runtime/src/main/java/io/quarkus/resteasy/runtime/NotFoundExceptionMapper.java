@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.runtime;
 
+import static org.jboss.resteasy.util.HttpHeaderNames.ACCEPT;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -15,8 +17,8 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Variant;
@@ -25,6 +27,7 @@ import javax.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.core.ResourceMethodInvoker;
 import org.jboss.resteasy.core.ResourceMethodRegistry;
+import org.jboss.resteasy.core.request.ServerDrivenNegotiation;
 import org.jboss.resteasy.spi.Registry;
 import org.jboss.resteasy.spi.ResourceInvoker;
 
@@ -42,7 +45,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     private Registry registry = null;
 
     @Context
-    private Request request;
+    private HttpHeaders headers;
 
     public static final class MethodDescription {
         public String method;
@@ -154,7 +157,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     }
 
     private Response respond() {
-        Variant variant = request.selectVariant(VARIANTS);
+        Variant variant = selectVariant(headers);
 
         if (variant == JSON_VARIANT) {
             return Response.status(Status.NOT_FOUND).type(MediaType.APPLICATION_JSON).build();
@@ -169,7 +172,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     }
 
     private Response respond(List<ResourceDescription> descriptions) {
-        Variant variant = request.selectVariant(VARIANTS);
+        Variant variant = selectVariant(headers);
 
         if (variant == JSON_VARIANT) {
             return Response.status(Status.NOT_FOUND).type(MediaType.APPLICATION_JSON).build();
@@ -203,4 +206,9 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         return Response.status(Status.NOT_FOUND).build();
     }
 
+    private static Variant selectVariant(HttpHeaders headers) {
+        ServerDrivenNegotiation negotiation = new ServerDrivenNegotiation();
+        negotiation.setAcceptHeaders(headers.getRequestHeaders().get(ACCEPT));
+        return negotiation.getBestMatch(VARIANTS);
+    }
 }

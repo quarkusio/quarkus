@@ -1,5 +1,7 @@
 package io.quarkus.tika.runtime;
 
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -12,8 +14,8 @@ public class TikaConfiguration {
     /**
      * The path to the tika-config.xml
      */
-    @ConfigItem(defaultValue = "tika-config.xml")
-    public String tikaConfigPath;
+    @ConfigItem
+    public Optional<String> tikaConfigPath;
 
     /**
      * Controls how the content of the embedded documents is parsed.

@@ -180,12 +180,19 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          timeoutInMinutes: 35
+          timeoutInMinutes: 25
           modules:
-            - jpa
             - jpa-h2
             - jpa-mariadb
             - jpa-mssql
+          name: jpa_db
+          postgres: true
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          timeoutInMinutes: 25
+          modules:
+            - jpa
             - jpa-postgresql
           name: jpa
           postgres: true
@@ -248,16 +255,22 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          timeoutInMinutes: 45
+          timeoutInMinutes: 25
           modules:
             - jackson
             - jgit
             - kogito
             - kubernetes-client
+          name: misc1
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          timeoutInMinutes: 25
+          modules:
             - tika
             - hibernate-validator
             - test-extension
-          name: misc
+          name: misc2
 
       - template: ci-templates/native-build-steps.yaml
         parameters:

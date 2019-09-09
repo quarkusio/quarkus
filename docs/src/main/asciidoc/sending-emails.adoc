@@ -188,6 +188,7 @@ You can then write tests to verify that your emails were sent, for example, by a
 
 [source, java]
 ----
+@QuarkusTest
 class MailTest {
 
     private static final String TO = "foo@quarkus.io";
@@ -207,7 +208,7 @@ class MailTest {
         .when()
         .get("/send-email")
         .then()
-           .statusCode(200)
+           .statusCode(202)
            .body(is("OK"));
 
         // verify that it was sent

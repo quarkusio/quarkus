@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.apache.maven.plugin.Mojo;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.shared.utils.logging.MessageBuilder;
 import org.apache.maven.shared.utils.logging.MessageUtils;

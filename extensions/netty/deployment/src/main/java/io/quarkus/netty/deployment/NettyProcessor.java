@@ -9,6 +9,7 @@ import javax.inject.Inject;
 import org.jboss.logging.Logger;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -27,6 +28,10 @@ class NettyProcessor {
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
 
     private static final Logger log = Logger.getLogger(NettyProcessor.class);
+
+    static {
+        InternalLoggerFactory.setDefaultFactory(new JBossNettyLoggerFactory());
+    }
 
     @BuildStep
     SubstrateConfigBuildItem build(BuildProducer<JniBuildItem> jni) {

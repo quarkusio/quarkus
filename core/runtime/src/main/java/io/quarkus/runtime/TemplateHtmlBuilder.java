@@ -6,9 +6,9 @@ public class TemplateHtmlBuilder {
             "<!doctype html>\n" +
             "<html lang=\"en\">\n" +
             "<head>\n" +
-            "    <title>Internal Server Error</title>\n" +
+            "    <title>%1$s%2$s</title>\n" +
             "    <meta charset=\"utf-8\">\n" +
-            "    <style>%1$s</style>\n" +
+            "    <style>%3$s</style>\n" +
             "</head>\n" +
             "<body>\n";
 
@@ -23,6 +23,8 @@ public class TemplateHtmlBuilder {
             "</header>\n" +
             "<div class=\"container content\">\n";
 
+    private static final String RESOURCES_START = "<div class=\"intro\">If you are looking for your REST resources, here are the ones we discovered:</div><div class=\"resources\">";
+
     private static final String RESOURCE_TEMPLATE = "<h3>%1$s</h3>\n";
 
     private static final String LIST_START = "<ul>\n";
@@ -36,6 +38,8 @@ public class TemplateHtmlBuilder {
             + "</li>";
 
     private static final String LIST_END = "</ul>\n";
+
+    private static final String RESOURCES_END = "</div>";
 
     private static final String ERROR_STACK = "    <div class=\"trace\">\n" +
             "        <pre>%1$s</pre>\n" +
@@ -71,7 +75,8 @@ public class TemplateHtmlBuilder {
             "}\n" +
             "\n" +
             "ul {\n" +
-            "    line-height: 2rem;\n" +
+            "    line-height: 1.5rem;\n" +
+            "    margin: 0.25em 0 0.25em 0;\n" +
             "}\n" +
             "\n" +
             ".exception-message {\n" +
@@ -84,35 +89,42 @@ public class TemplateHtmlBuilder {
             "}\n" +
             "\n" +
             "h1 {\n" +
-            "    font-size: 3rem;\n" +
+            "    font-size: 2rem;\n" +
             "    color: #fff;\n" +
             "    line-height: 3.75rem;\n" +
             "    font-weight: 700;\n" +
-            "    padding: 0.5rem 0rem 0.5rem 0rem;\n" +
+            "    padding: 0.4rem 0rem 0.4rem 0rem;\n" +
             "}\n" +
             "\n" +
             "h2 {\n" +
-            "    font-size: 2rem;\n" +
+            "    font-size: 1.2rem;\n" +
             "    color: rgba(255, 255, 255, 0.85);\n" +
             "    line-height: 2.5rem;\n" +
             "    font-weight: 400;\n" +
-            "    padding: 0.5rem 0rem 0.5rem 0rem;\n" +
+            "    padding: 0.4rem 0rem 0.4rem 0rem;\n" +
             "}\n" +
             "\n" +
+            ".intro {" +
+            "    font-size: 1.2rem;\n" +
+            "    font-weight: 400;\n" +
+            "    margin: 0.25em 0 1em 0;\n" +
+            "}\n" +
             "h3 {\n" +
-            "    font-size: 1.5rem;\n" +
+            "    font-size: 1.2rem;\n" +
             "    line-height: 2.5rem;\n" +
             "    font-weight: 400;\n" +
             "    color: #555;\n" +
             "    margin: 0.25em 0 0.25em 0;\n" +
             "}\n" +
             "\n" +
-            ".trace {\n" +
+            ".trace, .resources {\n" +
             "    background: #fff;\n" +
             "    padding: 15px;\n" +
             "    margin: 15px auto;\n" +
-            "    overflow-y: scroll;\n" +
             "    border: 1px solid #ececec;\n" +
+            "}\n" +
+            ".trace {\n" +
+            "    overflow-y: scroll;\n" +
             "}\n" +
             "\n" +
             "pre {\n" +
@@ -123,45 +135,52 @@ public class TemplateHtmlBuilder {
             "    color: #555;\n" +
             "}\n";
 
-    private StringBuilder result = new StringBuilder(String.format(HTML_TEMPLATE_START, ERROR_CSS));
+    private StringBuilder result;
 
-    public TemplateHtmlBuilder error(String details) {
-        return header("Internal Server Error", details);
+    public TemplateHtmlBuilder(String title, String subTitle, String details) {
+        result = new StringBuilder(String.format(HTML_TEMPLATE_START, escapeHtml(title),
+                subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), ERROR_CSS));
+        result.append(String.format(HEADER_TEMPLATE, escapeHtml(title), escapeHtml(details)));
     }
 
     public TemplateHtmlBuilder stack(String stack) {
-        result.append(String.format(ERROR_STACK, stack));
+        result.append(String.format(ERROR_STACK, escapeHtml(stack)));
         return this;
     }
 
-    public TemplateHtmlBuilder header(String title, String subTitle) {
-        result.append(String.format(HEADER_TEMPLATE, title, subTitle));
+    public TemplateHtmlBuilder resourcesStart() {
+        result.append(RESOURCES_START);
+        return this;
+    }
+
+    public TemplateHtmlBuilder resourcesEnd() {
+        result.append(RESOURCES_END);
         return this;
     }
 
     public TemplateHtmlBuilder noResourcesFound() {
-        result.append(String.format(RESOURCE_TEMPLATE, "No resources found"));
+        result.append(String.format(RESOURCE_TEMPLATE, "No REST resources discovered"));
         return this;
     }
 
     public TemplateHtmlBuilder resourcePath(String title) {
-        result.append(String.format(RESOURCE_TEMPLATE, title));
+        result.append(String.format(RESOURCE_TEMPLATE, escapeHtml(title)));
         result.append(LIST_START);
         return this;
     }
 
     public TemplateHtmlBuilder method(String method, String fullPath) {
-        result.append(String.format(METHOD_START, method, fullPath));
+        result.append(String.format(METHOD_START, escapeHtml(method), escapeHtml(fullPath)));
         return this;
     }
 
     public TemplateHtmlBuilder consumes(String consumes) {
-        result.append(String.format(METHOD_IO, "Consumes", consumes));
+        result.append(String.format(METHOD_IO, "Consumes", escapeHtml(consumes)));
         return this;
     }
 
     public TemplateHtmlBuilder produces(String produces) {
-        result.append(String.format(METHOD_IO, "Produces", produces));
+        result.append(String.format(METHOD_IO, "Produces", escapeHtml(produces)));
         return this;
     }
 
@@ -180,4 +199,14 @@ public class TemplateHtmlBuilder {
         return result.append(HTML_TEMPLATE_END).toString();
     }
 
+    private static String escapeHtml(final String bodyText) {
+        if (bodyText == null) {
+            return "";
+        }
+
+        return bodyText
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
+    }
 }

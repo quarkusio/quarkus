@@ -271,7 +271,6 @@ stages:
             - resteasy-jackson
             - vertx
             - vertx-http
-            - vertx-web
             - virtual-http
           name: http
 

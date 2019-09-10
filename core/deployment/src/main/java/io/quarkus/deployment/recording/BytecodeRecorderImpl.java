@@ -156,6 +156,28 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     @Override
     public Class<?> classProxy(String name) {
+        // if it's a primitive there is no need to create a proxy (and doing so would result in errors when the value is used)
+        switch (name) {
+            case "boolean":
+                return boolean.class;
+            case "byte":
+                return byte.class;
+            case "short":
+                return short.class;
+            case "int":
+                return int.class;
+            case "long":
+                return long.class;
+            case "float":
+                return float.class;
+            case "double":
+                return double.class;
+            case "char":
+                return char.class;
+            case "void":
+                return void.class;
+        }
+
         ProxyFactory<Object> factory = new ProxyFactory<>(new ProxyConfiguration<Object>()
                 .setSuperClass(Object.class)
                 .setClassLoader(classLoader)

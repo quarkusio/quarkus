@@ -1,4 +1,4 @@
-package io.quarkus.vertx.web;
+package io.quarkus.vertx.web.cors;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.core.Is.is;
@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.vertx.web.TestRoute;
 
 public class CORSHandlerTestCase {
 
@@ -17,7 +18,7 @@ public class CORSHandlerTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestRoute.class)
-                    .addAsResource("cors-config.properties", "application.properties"));
+                    .addAsResource("conf/cors-config.properties", "application.properties"));
 
     @Test
     @DisplayName("Handles a preflight CORS request correctly")

@@ -96,10 +96,6 @@ stages:
         timeoutInMinutes: 60
         pool:
           vmImage: 'Ubuntu 16.04'
-
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-
         steps:
           - task: CacheBeta@0 #we know the very first job will have restored or created this, so this will never write built artifacts to the cache
             inputs:
@@ -127,8 +123,6 @@ stages:
         timeoutInMinutes: 60
         pool:
           vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
         steps:
           - template: ci-templates/jvm-build-steps.yaml
 
@@ -137,8 +131,6 @@ stages:
         timeoutInMinutes: 60
         pool:
           vmImage: 'vs2017-win2016'
-        variables:
-          imageName: 'quarkus-windows:$(build.buildId)'
           MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
           MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
         steps:
@@ -161,17 +153,15 @@ stages:
         displayName: 'Linux JDK11 Build'
         pool:
           vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus-jdk11:$(build.buildId)'
         steps:
           - template: ci-templates/jvm-build-steps.yaml
+            parameters:
+              jdk: '1.11'
 
       - job: Run_TCKs
         timeoutInMinutes: 45
         pool:
           vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
         steps:
           - task: Maven@3
             displayName: 'Maven Install'

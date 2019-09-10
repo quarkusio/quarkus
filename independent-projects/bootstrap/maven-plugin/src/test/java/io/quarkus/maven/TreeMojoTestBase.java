@@ -1,7 +1,5 @@
 package io.quarkus.maven;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -12,14 +10,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.maven.artifact.DefaultArtifact;
-import org.apache.maven.artifact.handler.DefaultArtifactHandler;
-import org.apache.maven.model.Model;
-import org.apache.maven.project.MavenProject;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsDependency;
@@ -27,6 +17,15 @@ import io.quarkus.bootstrap.resolver.TsQuarkusExt;
 import io.quarkus.bootstrap.resolver.TsRepoBuilder;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.util.IoUtils;
+import org.apache.maven.artifact.DefaultArtifact;
+import org.apache.maven.artifact.handler.DefaultArtifactHandler;
+import org.apache.maven.model.Model;
+import org.apache.maven.project.MavenProject;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class TreeMojoTestBase {
     protected Path workDir;
@@ -37,7 +36,7 @@ public abstract class TreeMojoTestBase {
     protected TsArtifact app;
     protected Model appModel;
 
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         workDir = IoUtils.createRandomTmpDir();
         repoHome = IoUtils.mkdirs(workDir.resolve("repo"));
@@ -67,7 +66,7 @@ public abstract class TreeMojoTestBase {
         app.install(repoBuilder);
     }
 
-    @After
+    @AfterEach
     public void cleanup() {
         if(workDir != null) {
             IoUtils.recursiveDelete(workDir);

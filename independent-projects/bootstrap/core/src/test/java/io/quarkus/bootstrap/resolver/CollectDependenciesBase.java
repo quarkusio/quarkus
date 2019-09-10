@@ -1,15 +1,15 @@
 package io.quarkus.bootstrap.resolver;
 
-import static org.junit.Assert.assertEquals;
-
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Test;
-
 import io.quarkus.bootstrap.model.AppDependency;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
@@ -21,6 +21,7 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
     protected List<AppDependency> expectedResult = Collections.emptyList();
 
     @Override
+    @BeforeEach
     public void setup() throws Exception {
         super.setup();
         root = new TsArtifact("root");

@@ -25,7 +25,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <!-- Versions -->
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
-        <junit.version>4.12</junit.version>
+        <junit.version>5.5.2</junit.version>
         <maven-core.version>3.5.4</maven-core.version>
         <maven-plugin-annotations.version>3.5.2</maven-plugin-annotations.version>
         <maven-resolver.version>1.1.1</maven-resolver.version>
@@ -132,10 +132,10 @@
                 <version>${jboss-logging.version}</version>
             </dependency>
             <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <scope>test</scope>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
                 <version>${junit.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -40,14 +40,12 @@ public class AnnotationProxyProvider {
     private final ConcurrentMap<String, Boolean> generatedLiterals;
     private final ClassLoader classLoader;
     private final IndexView index;
-    private final Indexer indexer;
 
     AnnotationProxyProvider(IndexView index) {
         this.annotationLiterals = new ConcurrentHashMap<>();
         this.annotationClasses = new ConcurrentHashMap<>();
         this.generatedLiterals = new ConcurrentHashMap<>();
         this.index = index;
-        this.indexer = new Indexer();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         if (classLoader == null) {
             classLoader = AnnotationProxy.class.getClassLoader();
@@ -65,6 +63,7 @@ public class AnnotationProxyProvider {
             ClassInfo clazz = index.getClassByName(name);
             if (clazz == null) {
                 try (InputStream annotationStream = IoUtil.readClass(classLoader, name.toString())) {
+                    Indexer indexer = new Indexer();
                     clazz = indexer.index(annotationStream);
                 } catch (Exception e) {
                     throw new IllegalStateException("Failed to index: " + name, e);

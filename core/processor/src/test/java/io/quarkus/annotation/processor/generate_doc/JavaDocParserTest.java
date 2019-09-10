@@ -226,4 +226,16 @@ public class JavaDocParserTest {
 
         assertEquals(asciidoc, parser.parse(asciidoc + "\n" + "@asciidoclet"));
     }
+
+    @Test
+    public void asciidocLists() {
+        String asciidoc = "* A list\n" +
+                "\n" +
+                "* 1\n" +
+                "  * 1.1\n" +
+                "  * 1.2\n" +
+                "* 2";
+
+        assertEquals(asciidoc, parser.parse(asciidoc + "\n" + "@asciidoclet"));
+    }
 }

@@ -2,12 +2,17 @@ package io.quarkus.security.runtime;
 
 import java.security.Permission;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -18,12 +23,14 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
     private final Set<String> roles;
     private final Set<Credential> credentials;
     private final Map<String, Object> attributes;
+    private final List<Function<Permission, CompletionStage<Boolean>>> permissionCheckers;
 
     private QuarkusSecurityIdentity(Builder builder) {
         this.principal = builder.principal;
         this.roles = Collections.unmodifiableSet(builder.roles);
         this.credentials = Collections.unmodifiableSet(builder.credentials);
         this.attributes = Collections.unmodifiableMap(builder.attributes);
+        this.permissionCheckers = Collections.unmodifiableList(builder.permissionCheckers);
     }
 
     @Override
@@ -68,7 +75,39 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
 
     @Override
     public CompletionStage<Boolean> checkPermission(Permission permission) {
-        throw new RuntimeException("NYI");
+        if (permissionCheckers.isEmpty()) {
+            return CompletableFuture.completedFuture(true);
+        }
+        List<CompletableFuture<Boolean>> results = new ArrayList<>(permissionCheckers.size());
+        for (Function<Permission, CompletionStage<Boolean>> checker : permissionCheckers) {
+            CompletionStage<Boolean> res = checker.apply(permission);
+            if (res != null) {
+                results.add(res.toCompletableFuture());
+            }
+        }
+        if (results.isEmpty()) {
+            return CompletableFuture.completedFuture(true);
+        }
+        if (results.size() == 1) {
+            return results.get(0);
+        }
+        CompletionStage<Boolean> ret = results.get(0);
+        for (int i = 1; i < results.size(); ++i) {
+            ret = ret.thenCombine(results.get(i), new BiFunction<Boolean, Boolean, Boolean>() {
+                @Override
+                public Boolean apply(Boolean aBoolean, Boolean aBoolean2) {
+                    if (aBoolean == null) {
+                        return aBoolean2;
+                    }
+                    if (aBoolean2 == null) {
+                        return aBoolean;
+                    }
+                    return aBoolean || aBoolean2;
+                }
+            });
+        }
+        return ret;
+
     }
 
     public static Builder builder() {
@@ -81,6 +120,7 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         Set<String> roles = new HashSet<>();
         Set<Credential> credentials = new HashSet<>();
         Map<String, Object> attributes = new HashMap<>();
+        List<Function<Permission, CompletionStage<Boolean>>> permissionCheckers = new ArrayList<>();
         boolean built = false;
 
         public Builder setPrincipal(Principal principal) {
@@ -139,10 +179,27 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
             return this;
         }
 
+        /**
+         * Adds a permission checker function. This permission checker has the following semantics:
+         *
+         * If it returns null, or the CompletionStage evaluates to null then this check is ignored
+         * If every function returns null or false then the check is failed
+         * If any function returns true the check passes
+         *
+         * @param function The permission checker function
+         * @return This builder
+         */
+        public Builder addPermissionChecker(Function<Permission, CompletionStage<Boolean>> function) {
+            if (built) {
+                throw new IllegalStateException();
+            }
+            permissionCheckers.add(function);
+            return this;
+        }
+
         public QuarkusSecurityIdentity build() {
             built = true;
-            QuarkusSecurityIdentity ret = new QuarkusSecurityIdentity(this);
-            return ret;
+            return new QuarkusSecurityIdentity(this);
         }
     }
 }

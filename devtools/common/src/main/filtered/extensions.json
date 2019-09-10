@@ -254,7 +254,7 @@
       "openid-connect"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-keycloak",
+    "artifactId": "quarkus-vertx-keycloak",
     "guide": "https://quarkus.io/guides/keycloak-guide"
   },
   {

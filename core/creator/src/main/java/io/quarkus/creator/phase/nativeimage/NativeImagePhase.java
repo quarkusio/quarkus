@@ -426,6 +426,14 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                             : false;
                 }
 
+                if (!enableAllSecurityServices) {
+                    final String enableAllSecurityServicesFromProperties = properties
+                            .getProperty("quarkus.all-security-services.enable");
+                    enableAllSecurityServices = enableAllSecurityServicesFromProperties != null
+                            ? Boolean.parseBoolean(enableAllSecurityServicesFromProperties)
+                            : false;
+                }
+
                 if (!addAllCharsets) {
                     final String nativeEnableAllCharsetsProperty = properties.getProperty("quarkus.native.enable-all-charsets");
                     addAllCharsets = nativeEnableAllCharsetsProperty != null

@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.jwt.deployment;
+package io.quarkus.vertx.keycloak;
 
 import java.util.Set;
 
@@ -12,10 +12,10 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.security.identity.SecurityIdentity;
 
-@Priority(1)
+@Priority(2)
 @Alternative
 @RequestScoped
-public class JwtPrincipalProducer {
+public class VertxJwtPrincipalProducer {
 
     @Inject
     SecurityIdentity identity;

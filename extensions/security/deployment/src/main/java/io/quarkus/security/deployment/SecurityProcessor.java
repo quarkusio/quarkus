@@ -13,8 +13,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.security.runtime.IdentityProviderManagerCreator;
@@ -32,7 +30,6 @@ public class SecurityProcessor {
      * @param jcaProviders - JCAProviderBuildItem for requested providers
      */
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void registerJCAProviders(BuildProducer<ReflectiveClassBuildItem> classes, List<JCAProviderBuildItem> jcaProviders) {
         for (JCAProviderBuildItem provider : jcaProviders) {
             List<String> providerClasses = registerProvider(provider.getProviderName());

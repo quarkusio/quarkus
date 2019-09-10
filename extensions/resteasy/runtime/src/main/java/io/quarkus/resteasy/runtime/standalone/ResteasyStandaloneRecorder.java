@@ -16,6 +16,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.StaticHandler;
 
 /**
@@ -34,10 +35,10 @@ public class ResteasyStandaloneRecorder {
 
     private static boolean useDirect = true;
 
-    private static Handler<HttpServerRequest> ROOT_HANDLER = new Handler<HttpServerRequest>() {
+    private static Handler<RoutingContext> ROOT_HANDLER = new Handler<RoutingContext>() {
         @Override
-        public void handle(HttpServerRequest httpServerRequest) {
-            currentRoot.handle(httpServerRequest);
+        public void handle(RoutingContext httpServerRequest) {
+            currentRoot.handle(httpServerRequest.request());
         }
     };
 
@@ -89,7 +90,7 @@ public class ResteasyStandaloneRecorder {
 
     }
 
-    public Handler<HttpServerRequest> startResteasy(RuntimeValue<Vertx> vertxValue,
+    public Handler<RoutingContext> startResteasy(RuntimeValue<Vertx> vertxValue,
             String contextPath,
             ShutdownContext shutdown,
             BeanContainer beanContainer,

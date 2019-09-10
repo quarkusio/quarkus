@@ -151,8 +151,6 @@
         <artemis.version>2.10.0</artemis.version>
         <!-- Used for integration tests, to make sure webjars work-->
         <bootstrap.version>3.1.0</bootstrap.version>
-        <keycloak.version>6.0.1</keycloak.version>
-        <quarkus-keycloak.version>1.0.0.Alpha1</quarkus-keycloak.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kogito.version>0.4.0</kogito.version>
@@ -320,9 +318,10 @@
                 <artifactId>quarkus-elytron-security-oauth2</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-vertx-web-security</artifactId>
+                <artifactId>quarkus-vertx-keycloak</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -623,11 +622,6 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kubernetes-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-keycloak</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1871,6 +1865,11 @@
                 <version>${vertx.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.vertx</groupId>
+                <artifactId>vertx-auth-oauth2</artifactId>
+                <version>${vertx.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-axle-sql-client</artifactId>
                 <version>${axle-client.version}</version>
@@ -2256,23 +2255,6 @@
                 <groupId>org.webjars</groupId>
                 <artifactId>swagger-ui</artifactId>
                 <version>${swagger-ui.version}</version>
-            </dependency>
-
-            <!-- Keycloak -->
-            <dependency>
-                <groupId>org.keycloak</groupId>
-                <artifactId>keycloak-core</artifactId>
-                <version>${keycloak.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus.keycloak</groupId>
-                <artifactId>quarkus-keycloak-adapter</artifactId>
-                <version>${quarkus-keycloak.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.keycloak</groupId>
-                <artifactId>keycloak-authz-client</artifactId>
-                <version>${keycloak.version}</version>
             </dependency>
 
             <dependency>

@@ -111,20 +111,23 @@ public class SmallRyeMetricsProcessor {
                         return;
                     }
                     ClassInfo clazz = ctx.getTarget().asClass();
-                    while (clazz != null && clazz.superName() != null) {
-                        Map<DotName, List<AnnotationInstance>> annotations = clazz.annotations();
-                        if (annotations.containsKey(GAUGE) || annotations.containsKey(SmallRyeMetricsDotNames.CONCURRENT_GAUGE)
-                                || annotations.containsKey(SmallRyeMetricsDotNames.COUNTED)
-                                || annotations.containsKey(SmallRyeMetricsDotNames.METERED)
-                                || annotations.containsKey(SmallRyeMetricsDotNames.TIMED)
-                                || annotations.containsKey(SmallRyeMetricsDotNames.METRIC)) {
-                            LOGGER.debugf(
-                                    "Found metrics business methods on a class %s with no scope defined - adding @Dependent",
-                                    ctx.getTarget());
-                            ctx.transform().add(Dependent.class).done();
-                            break;
+                    if (!isJaxRsEndpoint(clazz)) {
+                        while (clazz != null && clazz.superName() != null) {
+                            Map<DotName, List<AnnotationInstance>> annotations = clazz.annotations();
+                            if (annotations.containsKey(GAUGE)
+                                    || annotations.containsKey(SmallRyeMetricsDotNames.CONCURRENT_GAUGE)
+                                    || annotations.containsKey(SmallRyeMetricsDotNames.COUNTED)
+                                    || annotations.containsKey(SmallRyeMetricsDotNames.METERED)
+                                    || annotations.containsKey(SmallRyeMetricsDotNames.TIMED)
+                                    || annotations.containsKey(SmallRyeMetricsDotNames.METRIC)) {
+                                LOGGER.debugf(
+                                        "Found metrics business methods on a class %s with no scope defined - adding @Dependent",
+                                        ctx.getTarget());
+                                ctx.transform().add(Dependent.class).done();
+                                break;
+                            }
+                            clazz = index.getIndex().getClassByName(clazz.superName());
                         }
-                        clazz = index.getIndex().getClassByName(clazz.superName());
                     }
                 }
             }
@@ -261,6 +264,11 @@ public class SmallRyeMetricsProcessor {
         for (ClassInfo subClass : index.getAllKnownSubclasses(clazz.name())) {
             collectedMetricsClasses.put(subClass.name(), subClass);
         }
+    }
+
+    private boolean isJaxRsEndpoint(ClassInfo clazz) {
+        return clazz.annotations().containsKey(SmallRyeMetricsDotNames.JAXRS_PATH) ||
+                clazz.annotations().containsKey(SmallRyeMetricsDotNames.REST_CONTROLLER);
     }
 
 }

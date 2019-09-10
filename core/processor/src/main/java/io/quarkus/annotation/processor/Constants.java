@@ -44,7 +44,7 @@ final public class Constants {
     public static final String QUARKUS = "quarkus";
 
     public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES = new HashSet<>();
-    public static final Map<String, String> OPTIONAL_NUMBER_TYPES = new HashMap<>();
+    public static final Map<String, String> ALIASED_TYPES = new HashMap<>();
     public static final String DOCS_SRC_MAIN_ASCIIDOC_GENERATED = "/docs/src/main/asciidoc/generated/";
     public static final Path GENERATED_DOCS_PATH = Paths
             .get(System.getProperties().getProperty("maven.multiModuleProjectDirectory")
@@ -55,14 +55,14 @@ final public class Constants {
 
     public static final String DURATION_NOTE_ANCHOR = "duration-note-anchor";
     public static final String MEMORY_SIZE_NOTE_ANCHOR = "memory-size-note-anchor";
-    public static final String MORE_INFO_ABOUT_TYPE_FORMAT = "+++\n<a href=\"#%s\" title=\"More information about the %s format\">ℹ️</a>\n+++";
+    public static final String MORE_INFO_ABOUT_TYPE_FORMAT = " link:#%s[icon:question-circle[], title=More information about the %s format]";
     public static final String DURATION_INFORMATION = String.format(Constants.MORE_INFO_ABOUT_TYPE_FORMAT,
             Constants.DURATION_NOTE_ANCHOR, Duration.class.getSimpleName());
     public static final String MEMORY_SIZE_INFORMATION = String.format(Constants.MORE_INFO_ABOUT_TYPE_FORMAT,
             Constants.MEMORY_SIZE_NOTE_ANCHOR, "MemorySize");
 
-    public static final String CONFIG_PHASE_RUNTIME_ILLUSTRATION = "⚙️";
-    public static final String CONFIG_PHASE_BUILD_TIME_ILLUSTRATION = "\uD83D\uDCE6";
+    public static final String CONFIG_PHASE_RUNTIME_ILLUSTRATION = "icon:gears[title=Overridable at runtime]";
+    public static final String CONFIG_PHASE_BUILD_TIME_ILLUSTRATION = "icon:archive[title=Fixed at build time]";
     public static final String CONFIG_PHASE_LEGEND = String.format(
             "\n%s Configuration property fixed at build time - %s️ Configuration property overridable at runtime \n",
             CONFIG_PHASE_BUILD_TIME_ILLUSTRATION, CONFIG_PHASE_RUNTIME_ILLUSTRATION);
@@ -90,9 +90,12 @@ final public class Constants {
             "====\n";
 
     static {
-        OPTIONAL_NUMBER_TYPES.put(OptionalLong.class.getName(), Long.class.getName());
-        OPTIONAL_NUMBER_TYPES.put(OptionalInt.class.getName(), Integer.class.getName());
-        OPTIONAL_NUMBER_TYPES.put(OptionalDouble.class.getName(), Double.class.getName());
+        ALIASED_TYPES.put(OptionalLong.class.getName(), Long.class.getName());
+        ALIASED_TYPES.put(OptionalInt.class.getName(), Integer.class.getName());
+        ALIASED_TYPES.put(OptionalDouble.class.getName(), Double.class.getName());
+        ALIASED_TYPES.put("java.lang.Class<?>", "class name");
+        ALIASED_TYPES.put(Path.class.getName(), "path");
+        ALIASED_TYPES.put(String.class.getName(), "string");
         SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_BUILD_STEP);
         SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_CONFIG_GROUP);
         SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_CONFIG_ROOT);

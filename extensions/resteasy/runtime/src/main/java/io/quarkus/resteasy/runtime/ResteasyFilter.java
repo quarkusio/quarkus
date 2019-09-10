@@ -27,8 +27,7 @@ public class ResteasyFilter extends Filter30Dispatcher {
             //we only serve get requests from the default servlet and CORS preflight requests
             filterChain.doFilter(servletRequest, new ResteasyResponseWrapper(response, request));
         } else {
-            servletContainerDispatcher.service(request.getMethod(), request, response,
-                    true);
+            servletContainerDispatcher.service(request.getMethod(), request, response, true);
         }
     }
 

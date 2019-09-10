@@ -15,6 +15,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -68,6 +71,8 @@ public class QuarkusUnitTest
     private List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
     private Runnable afterUndeployListener;
     private String logFileName;
+    private static final Timer timeoutTimer = new Timer("Test thread dump timer");
+    private volatile TimerTask timeoutTask;
 
     private final RestAssuredURLManager restAssuredURLManager;
 
@@ -174,7 +179,21 @@ public class QuarkusUnitTest
         if (archiveProducer == null) {
             throw new RuntimeException("QuarkusUnitTest does not have archive producer set");
         }
-
+        timeoutTask = new TimerTask() {
+            @Override
+            public void run() {
+                System.err.println("Test has been running for more than 5 minutes, thread dump is:");
+                for (Map.Entry<Thread, StackTraceElement[]> i : Thread.getAllStackTraces().entrySet()) {
+                    System.err.println("\n");
+                    System.err.println(i.toString());
+                    System.err.println("\n");
+                    for (StackTraceElement j : i.getValue()) {
+                        System.err.println(j);
+                    }
+                }
+            }
+        };
+        timeoutTimer.schedule(timeoutTask, 1000 * 60 * 5);
         if (logFileName != null) {
             PropertyTestUtil.setLogFileProperty(logFileName);
         } else {
@@ -199,7 +218,7 @@ public class QuarkusUnitTest
             ProxyFactory<?> factory = new ProxyFactory<>(new ProxyConfiguration<>()
                     .setAnchorClass(testClass)
                     .setProxyNameSuffix("$$QuarkusUnitTestProxy")
-                    .setClassLoader(testClass.getClassLoader())
+                    .setClassLoader(new DefineClassVisibleClassLoader(testClass.getClassLoader()))
                     .setSuperClass((Class<Object>) testClass));
             store.put(proxyFactoryKey(testClass), factory);
         }
@@ -302,6 +321,8 @@ public class QuarkusUnitTest
                 afterUndeployListener.run();
             }
         } finally {
+            timeoutTask.cancel();
+            timeoutTask = null;
             if (deploymentDir != null) {
                 Files.walkFileTree(deploymentDir, new FileVisitor<Path>() {
                     @Override

@@ -276,7 +276,7 @@ And finally, run it with:
 docker run -i --rm -p 8080:8080 quarkus-quickstart/getting-started
 ----
 
-NOTE: Interested by tiny Docker images, check the {quarkus-images-url}/graalvm-{graalvm-version}/distroless[distroless] version.
+NOTE: Interested by tiny Docker images, check the {quarkus-images-url}/master/distroless[distroless] version.
 
 == Creating a container with a multi-stage Docker build
 

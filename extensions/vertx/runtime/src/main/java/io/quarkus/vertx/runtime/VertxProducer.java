@@ -1,33 +1,38 @@
 package io.quarkus.vertx.runtime;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 
 /**
- * Produces a configured Vert.x instance.
- * It also exposes the Vert.x event bus.
+ * Expose the Vert.x event bus and produces Axle and Rx Vert.x instances.
+ * <p>
+ * The original Vert.x instance is coming from the core artifact.
  */
 @ApplicationScoped
 public class VertxProducer {
 
-    private volatile Vertx vertx;
-    private volatile io.vertx.axle.core.Vertx axleVertx;
-    private volatile io.vertx.reactivex.core.Vertx rxVertx;
+    @Inject
+    Vertx vertx;
 
-    void initialize(Vertx vertx) {
-        this.vertx = vertx;
+    private io.vertx.axle.core.Vertx axleVertx;
+    private io.vertx.reactivex.core.Vertx rxVertx;
+
+    @PostConstruct
+    public void initialize() {
         this.axleVertx = io.vertx.axle.core.Vertx.newInstance(vertx);
         this.rxVertx = io.vertx.reactivex.core.Vertx.newInstance(vertx);
     }
 
     @Singleton
     @Produces
-    public Vertx vertx() {
-        return vertx;
+    public EventBus eventbus() {
+        return vertx.eventBus();
     }
 
     @Singleton
@@ -44,12 +49,6 @@ public class VertxProducer {
 
     @Singleton
     @Produces
-    public EventBus eventbus() {
-        return vertx.eventBus();
-    }
-
-    @Singleton
-    @Produces
     public io.vertx.axle.core.eventbus.EventBus axleEventbus() {
         return axleVertx.eventBus();
     }
@@ -59,5 +58,4 @@ public class VertxProducer {
     public synchronized io.vertx.reactivex.core.eventbus.EventBus rxRventbus() {
         return rxVertx.eventBus();
     }
-
 }

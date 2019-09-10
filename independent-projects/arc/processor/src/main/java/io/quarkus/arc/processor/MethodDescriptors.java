@@ -4,12 +4,14 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.CreationalContextImpl;
+import io.quarkus.arc.FixedValueSupplier;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.InvocationContextImpl;
 import io.quarkus.arc.InvocationContextImpl.InterceptorInvocation;
+import io.quarkus.arc.MapBeanSupplier;
 import io.quarkus.arc.Reflections;
 import io.quarkus.gizmo.MethodDescriptor;
 import java.lang.reflect.Constructor;
@@ -33,6 +35,14 @@ import javax.interceptor.InvocationContext;
  * @author Martin Kouba
  */
 final class MethodDescriptors {
+
+    static final MethodDescriptor FIXED_VALUE_SUPPLIER_CONSTRUCTOR = MethodDescriptor.ofConstructor(FixedValueSupplier.class,
+            Object.class);
+
+    static final MethodDescriptor MAP_BEAN_SUPPLIER_CONSTRUCTOR = MethodDescriptor.ofConstructor(MapBeanSupplier.class,
+            Map.class, String.class);
+
+    static final MethodDescriptor SUPPLIER_GET = MethodDescriptor.ofMethod(Supplier.class, "get", Object.class);
 
     static final MethodDescriptor CREATIONAL_CTX_CHILD = MethodDescriptor.ofMethod(CreationalContextImpl.class, "child",
             CreationalContextImpl.class,

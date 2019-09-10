@@ -147,10 +147,10 @@ https://docs.gradle.org/current/userguide/java_testing.html#sec:configuring_java
 Quarkus supports running Substrate tests with Gradle, but the `buildNative` task is required to be completed first.
 
 [[custom-test-configuration-profile]]
-=== Custom test configuration profile
+=== Custom test configuration profile in JVM mode
 
-By default, Quarkus tests are run using the `test` configuration profile. If you are not familiar with Quarkus configuration
-profiles, everything you need to know is explained in the
+By default, Quarkus tests in JVM mode are run using the `test` configuration profile. If you are not familiar with Quarkus
+configuration profiles, everything you need to know is explained in the
 link:application-configuration-guide.html#configuration-profiles[Configuration Profiles Documentation].
 
 It is however possible to use a custom configuration profile for your tests with the Gradle build configuration shown below.
@@ -178,6 +178,12 @@ tasks {
 ----
 
 <1> The `foo` configuration profile will be used to run the tests.
+
+[WARNING]
+====
+It is not possible to use a custom test configuration profile in native mode for now. Native tests are always run using the
+`prod` profile.
+====
 
 == Dealing with extensions
 

@@ -6,12 +6,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
@@ -22,7 +20,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -35,8 +32,6 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.builder.BuildException;
-import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -45,8 +40,6 @@ import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.ClassCreator;
@@ -54,16 +47,15 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
-import io.quarkus.runtime.LaunchMode;
-import io.quarkus.vertx.deployment.VertxBuildItem;
+import io.quarkus.vertx.http.deployment.AdditionalRoutesInstalledBuildItem;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
+import io.quarkus.vertx.http.deployment.RouteHandlerBuildItem;
+import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RoutingExchange;
-import io.quarkus.vertx.web.runtime.HttpConfiguration;
-import io.quarkus.vertx.web.runtime.RouterProducer;
 import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
 import io.quarkus.vertx.web.runtime.VertxWebRecorder;
-import io.quarkus.vertx.web.runtime.cors.CORSRecorder;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -82,29 +74,8 @@ class VertxWebProcessor {
     HttpConfiguration httpConfiguration;
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    FilterBuildItem cors(CORSRecorder recorder,
-            HttpConfiguration configuration) {
-        return new FilterBuildItem(recorder.corsHandler(configuration));
-    }
-
-    @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.VERTX_WEB);
-    }
-
-    @BuildStep(onlyIf = IsNormal.class)
-    @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
-    public KubernetesPortBuildItem kubernetes(HttpConfiguration config, BuildProducer<KubernetesPortBuildItem> portProducer,
-            VertxWebRecorder recorder) {
-        int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
-        recorder.warnIfPortChanged(config, port);
-        return new KubernetesPortBuildItem(config.port, "http");
-    }
-
-    @BuildStep
-    AdditionalBeanBuildItem additionalBeans() {
-        return AdditionalBeanBuildItem.unremovableOf(RouterProducer.class);
     }
 
     @BuildStep
@@ -149,16 +120,13 @@ class VertxWebProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem build(VertxWebRecorder recorder, BeanContainerBuildItem beanContainer,
+    AdditionalRoutesInstalledBuildItem addAdditionalRoutes(VertxWebRouterBuildItem router, VertxWebRecorder recorder,
+            BeanContainerBuildItem beanContainer,
             List<RouteHandlerBuildItem> routeHandlerBusinessMethods,
+            List<FilterBuildItem> filters,
             BuildProducer<GeneratedClassBuildItem> generatedClass, AnnotationProxyBuildItem annotationProxy,
             LaunchModeBuildItem launchMode,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-            ShutdownContextBuildItem shutdown,
-            VertxBuildItem vertx,
-            List<DefaultRouteBuildItem> defaultRoutes,
-            Optional<RequireVirtualHttpBuildItem> requireVirtual,
-            List<FilterBuildItem> filters) throws IOException, BuildException {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws IOException {
 
         ClassOutput classOutput = new ClassOutput() {
             @Override
@@ -167,17 +135,6 @@ class VertxWebProcessor {
             }
         };
         Map<String, List<Route>> routeConfigs = new HashMap<>();
-        Optional<DefaultRouteBuildItem> defaultRoute;
-        if (defaultRoutes == null || defaultRoutes.isEmpty()) {
-            defaultRoute = Optional.empty();
-        } else {
-            if (defaultRoutes.size() > 1) {
-                // this should never happen
-                throw new BuildException("Too many default routes.", Collections.emptyList());
-            } else {
-                defaultRoute = Optional.of(defaultRoutes.get(0));
-            }
-        }
         for (RouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
             String handlerClass = generateHandler(businessMethod.getBean(), businessMethod.getMethod(), classOutput);
             List<Route> routes = businessMethod.getRoutes().stream()
@@ -186,15 +143,11 @@ class VertxWebProcessor {
             routeConfigs.put(handlerClass, routes);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
         }
-        boolean startVirtual = requireVirtual.isPresent() || httpConfiguration.virtual;
-        // start http socket in dev/test mode even if virtual http is required
-        boolean startSocket = !startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL;
-        recorder.configureRouter(vertx.getVertx(), beanContainer.getValue(), routeConfigs,
-                filters.stream().map(FilterBuildItem::getHandler).collect(Collectors.toList()), httpConfiguration,
-                launchMode.getLaunchMode(),
-                shutdown, defaultRoute.map(DefaultRouteBuildItem::getHandler).orElse(null),
-                startVirtual, startSocket);
-        return new ServiceStartBuildItem("vertx-web");
+
+        recorder.addAdditionalRoutes(router.getRouter(), routeConfigs,
+                filters.stream().map(FilterBuildItem::getHandler).collect(Collectors.toList()));
+
+        return new AdditionalRoutesInstalledBuildItem();
     }
 
     @BuildStep

@@ -11,8 +11,6 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,6 +36,10 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.shared.invoker.DefaultInvocationRequest;
+import org.apache.maven.shared.invoker.InvocationRequest;
+import org.apache.maven.shared.invoker.Invoker;
+import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.toolchain.ToolchainManager;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -48,6 +50,7 @@ import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
 import io.quarkus.maven.components.MavenVersionEnforcer;
@@ -121,6 +124,9 @@ public class DevMojo extends AbstractMojo {
     @Component
     private RepositorySystem repoSystem;
 
+    @Component
+    private Invoker invoker;
+
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
     private RepositorySystemSession repoSession;
 
@@ -169,8 +175,15 @@ public class DevMojo extends AbstractMojo {
         }
 
         if (!buildDir.isDirectory() || !new File(buildDir, "classes").isDirectory()) {
-            throw new MojoFailureException("The project " + project.getName()
-                    + " has no output yet. Make sure it contains at least one source or resource file and then run `mvn compile quarkus:dev`.");
+            try {
+                InvocationRequest request = new DefaultInvocationRequest();
+                request.setBatchMode(true);
+                request.setGoals(Collections.singletonList("compile"));
+
+                invoker.execute(request);
+            } catch (MavenInvocationException e) {
+                throw new MojoExecutionException(e.getMessage(), e);
+            }
         }
 
         try {
@@ -288,16 +301,20 @@ public class DevMojo extends AbstractMojo {
             URL classFile = DevModeMain.class.getClassLoader()
                     .getResource(DevModeMain.class.getName().replace('.', '/') + ".class");
             File path;
-            if (classFile.getProtocol().equals("jar")) {
-                String jarPath = classFile.getPath().substring(0, classFile.getPath().lastIndexOf('!'));
-                if (jarPath.startsWith("file:"))
-                    jarPath = jarPath.substring(5);
-                // The resource will be URL encoded, so decode is so when addToClassPaths is called the encoding is correct
-                path = new File(URLDecoder.decode(jarPath, StandardCharsets.UTF_8.name()));
-            } else if (classFile.getProtocol().equals("file")) {
-                String filePath = classFile.getPath().substring(0,
-                        classFile.getPath().lastIndexOf(DevModeMain.class.getName().replace('.', '/')));
-                path = new File(URLDecoder.decode(filePath, StandardCharsets.UTF_8.name()));
+            if (classFile == null) {
+                throw new MojoFailureException("No DevModeMain class found");
+            }
+            URI classUri = classFile.toURI();
+            if (classUri.getScheme().equals("jar")) {
+                String jarPath = classUri.getRawSchemeSpecificPart();
+                final int marker = jarPath.indexOf('!');
+                if (marker != -1) {
+                    jarPath = jarPath.substring(0, marker);
+                }
+                URI jarUri = new URI(jarPath);
+                path = Paths.get(jarUri).toFile();
+            } else if (classUri.getScheme().equals("file")) {
+                path = Paths.get(classUri).toFile();
             } else {
                 throw new MojoFailureException("Unsupported DevModeMain artifact URL:" + classFile);
             }
@@ -430,6 +447,11 @@ public class DevMojo extends AbstractMojo {
             throw new RuntimeException(e);
         }
         String path = uri.getRawPath();
+        if (PropertyUtils.isWindows()) {
+            if (path.length() > 2 && Character.isLetter(path.charAt(0)) && path.charAt(1) == ':') {
+                path = "/" + path;
+            }
+        }
         classPathManifest.append(path);
         if (file.isDirectory() && path.charAt(path.length() - 1) != '/') {
             classPathManifest.append("/");

@@ -6,7 +6,9 @@ class DescriptiveDocFormatter implements DocFormatter {
     private static final String ENTRY_END = "\n\n";
     private static final String DETAILS_TITLE = "\n== Details\n";
     private static final String DEFAULTS_VALUE_FORMAT = "Defaults to: `%s` +\n";
-    private static final String BASIC_DESCRIPTION_FORMAT = "\n[[%s]]\n`%s`%s:: %s \n+\nType: `%s` +\n";
+    private static final String BASIC_DESCRIPTION_FORMAT = "\n[[%s]]\n`%s` %s:: %s \n+\n";
+    private static final String TYPE_DESCRIPTION_FORMAT = "Type: `%s` %s +\n";
+    private static final String ACCEPTED_VALUES_DESCRIPTION_FORMAT = "Accepted values: %s +\n";
 
     /**
      * Generate configuration keys in descriptive format.
@@ -18,9 +20,17 @@ class DescriptiveDocFormatter implements DocFormatter {
         StringBuilder generatedAsciiDoc = new StringBuilder(DETAILS_TITLE);
         for (ConfigItem configItem : configItems) {
             final String basicDescription = String.format(BASIC_DESCRIPTION_FORMAT, getAnchor(configItem), configItem.getKey(),
-                    configItem.getConfigPhase().getIllustration(), configItem.getConfigDoc(), configItem.getType());
-
+                    configItem.getConfigPhase().getIllustration(), configItem.getConfigDoc());
             generatedAsciiDoc.append(basicDescription);
+
+            if (configItem.hasAcceptedValues()) {
+                generatedAsciiDoc.append(String.format(ACCEPTED_VALUES_DESCRIPTION_FORMAT,
+                        DocGeneratorUtil.joinAcceptedValues(configItem.getAcceptedValues())));
+            } else if (configItem.hasType()) {
+                generatedAsciiDoc.append(String.format(TYPE_DESCRIPTION_FORMAT, configItem.computeTypeSimpleName(),
+                        DocGeneratorUtil.getTypeFormatInformationNote(configItem)));
+            }
+
             if (!configItem.getDefaultValue().isEmpty()) {
                 generatedAsciiDoc.append(String.format(DEFAULTS_VALUE_FORMAT, configItem.getDefaultValue()));
             }

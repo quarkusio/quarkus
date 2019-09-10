@@ -24,8 +24,8 @@ import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
 import io.quarkus.resteasy.server.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.undertow.deployment.KnownPathsBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
-import io.quarkus.vertx.web.deployment.DefaultRouteBuildItem;
-import io.quarkus.vertx.web.deployment.RequireVirtualHttpBuildItem;
+import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
+import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
 

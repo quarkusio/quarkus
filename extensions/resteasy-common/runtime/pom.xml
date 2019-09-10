@@ -27,6 +27,16 @@
             <artifactId>resteasy-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-context-propagation</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.smallrye</groupId>
+                    <artifactId>smallrye-context-propagation</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
         </dependency>

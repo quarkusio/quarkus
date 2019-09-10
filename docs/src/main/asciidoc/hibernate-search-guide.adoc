@@ -544,8 +544,8 @@ While, on a production setup, the `committed` default might be a suitable value,
 This is for testing purposes with the Elasticsearch Docker container.
 It should not be used in production.
 
-== Hibernate Search Configuration
-include::generated/quarkus-hibernate-search-elasticsearch.adoc[]
+[TIP]
+For more information about the Hibernate Search extension configuration please refer to the <<configuration-reference, Configuration Reference>>.
 
 == Creating a frontend
 
@@ -661,3 +661,7 @@ Thus we focused our efforts on it.
 
 We don't have plans to support the Lucene backend in Quarkus for now.
 
+[[configuration-reference]]
+== Hibernate Search Configuration Reference
+
+include::generated/quarkus-hibernate-search-elasticsearch.adoc[leveloffset=+1, opts=optional]

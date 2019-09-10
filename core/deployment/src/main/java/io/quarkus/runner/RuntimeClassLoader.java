@@ -307,6 +307,15 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         resources.put(name, data);
     }
 
+    /**
+     * This is needed in order to easily inject classes into the classloader
+     * without having to resort to tricks (that don't work that well on new JDKs)
+     * See {@link io.quarkus.deployment.proxy.InjectIntoClassloaderClassOutput}
+     */
+    public Class<?> visibleDefineClass(String name, byte[] b, int off, int len) throws ClassFormatError {
+        return super.defineClass(name, b, off, len);
+    }
+
     private void definePackage(String name) {
         final String pkgName = getPackageNameFromClassName(name);
         if ((pkgName != null) && getPackage(pkgName) == null) {

@@ -38,17 +38,18 @@ public class HibernateOrmConfig {
     @ConfigItem(name = "dialect.storage-engine")
     public Optional<String> dialectStorageEngine;
 
+    // @formatter:off
     /**
      * Name of the file containing the SQL statements to execute when Hibernate ORM starts.
      * Its default value differs depending on the Quarkus launch mode:
      *
-     * - In dev and test modes, it defaults to `import.sql`. +
-     * Simply add an `import.sql` file in the root of your resources directory +
-     * and it will be picked up without having to set this property. +
-     * Pass `no-file` to force Hibernate ORM to ignore the SQL import file.
-     * - In production mode, it defaults to `no-file`. +
-     * It means Hibernate ORM won't try to execute any SQL import file by default. +
-     * Pass an explicit value to force Hibernate ORM to execute the SQL import file.
+     * * In dev and test modes, it defaults to `import.sql`.
+     *   Simply add an `import.sql` file in the root of your resources directory
+     *   and it will be picked up without having to set this property.
+     *   Pass `no-file` to force Hibernate ORM to ignore the SQL import file.
+     * * In production mode, it defaults to `no-file`.
+     *   It means Hibernate ORM won't try to execute any SQL import file by default.
+     *   Pass an explicit value to force Hibernate ORM to execute the SQL import file.
      *
      * If you need different SQL statements between dev mode, test (`@QuarkusTest`) and in production, use Quarkus
      * https://quarkus.io/guides/application-configuration-guide#configuration-profiles[configuration profiles facility].
@@ -69,6 +70,7 @@ public class HibernateOrmConfig {
      *
      * @asciidoclet
      */
+    // @formatter:on
     @ConfigItem
     public Optional<String> sqlLoadScript;
 

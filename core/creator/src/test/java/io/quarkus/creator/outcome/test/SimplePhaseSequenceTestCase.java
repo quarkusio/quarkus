@@ -1,8 +1,8 @@
 package io.quarkus.creator.outcome.test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.quarkus.creator.AppCreatorException;
 import io.quarkus.creator.outcome.OutcomeMap;

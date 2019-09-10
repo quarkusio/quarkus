@@ -1,11 +1,11 @@
 package io.quarkus.creator.config.test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.file.Paths;
 
 import org.eclipse.microprofile.config.Config;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.quarkus.creator.config.reader.MappedPropertiesHandler;
 import io.quarkus.creator.config.reader.MultirootedConfigHandler;

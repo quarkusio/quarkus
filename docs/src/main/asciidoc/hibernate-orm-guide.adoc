@@ -121,7 +121,7 @@ so at your application entry point boundaries like your REST endpoint controller
 
 There are optional properties useful to refine your `EntityManagerFactory` or guide guesses of Quarkus.
 
-include::generated/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]
+include::{generated-dir}/config/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]
 
 [NOTE]
 --

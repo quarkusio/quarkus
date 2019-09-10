@@ -561,6 +561,10 @@ public class UndertowDeploymentRecorder {
         deployment.getValue().addServletContainerInitializer(new ServletContainerInitializerInfo(sciClass, handlesTypes));
     }
 
+    public void addContextParam(RuntimeValue<DeploymentInfo> deployment, String paramName, String paramValue) {
+        deployment.getValue().addInitParameter(paramName, paramValue);
+    }
+
     /**
      * we can't have SecureRandom in the native image heap, so we need to lazy init
      */

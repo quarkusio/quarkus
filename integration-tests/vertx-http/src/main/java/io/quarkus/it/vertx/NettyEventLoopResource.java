@@ -1,19 +1,22 @@
 package io.quarkus.it.vertx;
 
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
 import io.netty.channel.EventLoopGroup;
+import io.quarkus.netty.BossEventLoopGroup;
+import io.quarkus.netty.MainEventLoopGroup;
 
 @Path("/eventloop")
 public class NettyEventLoopResource {
 
-    //    @Inject
-    //    @MainEventLoopGroup
+    @Inject
+    @MainEventLoopGroup
     EventLoopGroup worker;
 
-    //    @Inject
-    //    @BossEventLoopGroup
+    @Inject
+    @BossEventLoopGroup
     EventLoopGroup boss;
 
     @GET

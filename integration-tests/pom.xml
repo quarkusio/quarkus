@@ -76,7 +76,20 @@
                 </configuration>
             </plugin>
         </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-maven-plugin</artifactId>
+                    <version>${project.version}</version>
+                    <configuration>
+                        <noDeps>true</noDeps>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
+
 
     <dependencyManagement>
         <dependencies>

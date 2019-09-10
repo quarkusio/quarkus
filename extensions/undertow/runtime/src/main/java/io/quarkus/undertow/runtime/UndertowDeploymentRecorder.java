@@ -1,6 +1,7 @@
 package io.quarkus.undertow.runtime;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.security.SecureRandom;
@@ -8,6 +9,7 @@ import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
@@ -34,6 +36,8 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.MemorySize;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.undertow.httpcore.BufferAllocator;
 import io.undertow.httpcore.StatusCodes;
 import io.undertow.server.DefaultExchangeHandler;
@@ -95,46 +99,28 @@ public class UndertowDeploymentRecorder {
     private static final AttachmentKey<InjectableContext.ContextState> REQUEST_CONTEXT = AttachmentKey
             .create(InjectableContext.ContextState.class);
 
-    /**
-     * TODO: configuration
-     */
-    protected static final int BUFFER_SIZE = 8 * 1024;
+    protected static final int DEFAULT_BUFFER_SIZE;
+    protected static final boolean DEFAULT_DIRECT_BUFFERS;
 
-    //TODO: clean this up
-    private static BufferAllocator ALLOCATOR = new BufferAllocator() {
-        @Override
-        public ByteBuf allocateBuffer() {
-            return PooledByteBufAllocator.DEFAULT.buffer(BUFFER_SIZE);
+    static {
+        long maxMemory = Runtime.getRuntime().maxMemory();
+        //smaller than 64mb of ram we use 512b buffers
+        if (maxMemory < 64 * 1024 * 1024) {
+            //use 512b buffers
+            DEFAULT_DIRECT_BUFFERS = false;
+            DEFAULT_BUFFER_SIZE = 512;
+        } else if (maxMemory < 128 * 1024 * 1024) {
+            //use 1k buffers
+            DEFAULT_DIRECT_BUFFERS = true;
+            DEFAULT_BUFFER_SIZE = 1024;
+        } else {
+            //use 16k buffers for best performance
+            //as 16k is generally the max amount of data that can be sent in a single write() call
+            DEFAULT_DIRECT_BUFFERS = true;
+            DEFAULT_BUFFER_SIZE = 1024 * 16 - 20; //the 20 is to allow some space for protocol headers, see UNDERTOW-1209
         }
 
-        @Override
-        public ByteBuf allocateBuffer(boolean direct) {
-            if (direct) {
-                return PooledByteBufAllocator.DEFAULT.directBuffer(BUFFER_SIZE);
-            } else {
-                return PooledByteBufAllocator.DEFAULT.heapBuffer(BUFFER_SIZE);
-            }
-        }
-
-        @Override
-        public ByteBuf allocateBuffer(int bufferSize) {
-            return PooledByteBufAllocator.DEFAULT.buffer(bufferSize);
-        }
-
-        @Override
-        public ByteBuf allocateBuffer(boolean direct, int bufferSize) {
-            if (direct) {
-                return PooledByteBufAllocator.DEFAULT.directBuffer(bufferSize);
-            } else {
-                return PooledByteBufAllocator.DEFAULT.heapBuffer(bufferSize);
-            }
-        }
-
-        @Override
-        public int getBufferSize() {
-            return BUFFER_SIZE;
-        }
-    };
+    }
 
     public static void setHotDeploymentResources(List<Path> resources) {
         hotDeploymentResourcePaths = resources;
@@ -297,8 +283,8 @@ public class UndertowDeploymentRecorder {
     }
 
     public Handler<HttpServerRequest> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
-            DeploymentManager manager,
-            List<HandlerWrapper> wrappers) throws Exception {
+            DeploymentManager manager, List<HandlerWrapper> wrappers, HttpConfiguration httpConfiguration,
+            ServletRuntimeConfig servletRuntimeConfig) throws Exception {
 
         shutdown.addShutdownTask(new Runnable() {
             @Override
@@ -323,10 +309,18 @@ public class UndertowDeploymentRecorder {
         currentRoot = main;
 
         DefaultExchangeHandler defaultHandler = new DefaultExchangeHandler(ROOT_HANDLER);
+
+        UndertowBufferAllocator allocator = new UndertowBufferAllocator(
+                servletRuntimeConfig.directBuffers.orElse(DEFAULT_DIRECT_BUFFERS), (int) servletRuntimeConfig.bufferSize
+                        .orElse(new MemorySize(BigInteger.valueOf(DEFAULT_BUFFER_SIZE))).asLongValue());
         return new Handler<HttpServerRequest>() {
             @Override
             public void handle(HttpServerRequest event) {
-                VertxHttpExchange exchange = new VertxHttpExchange(event, ALLOCATOR, executorService);
+                VertxHttpExchange exchange = new VertxHttpExchange(event, allocator, executorService);
+                Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
+                if (maxBodySize.isPresent()) {
+                    exchange.setMaxEntitySize(maxBodySize.get().asLongValue());
+                }
                 defaultHandler.handle(exchange);
             }
         };
@@ -575,6 +569,50 @@ public class UndertowDeploymentRecorder {
         @Override
         public ServletContext get() {
             return servletContext;
+        }
+    }
+
+    private static class UndertowBufferAllocator implements BufferAllocator {
+
+        private final boolean defaultDirectBuffers;
+        private final int defaultBufferSize;
+
+        private UndertowBufferAllocator(boolean defaultDirectBuffers, int defaultBufferSize) {
+            this.defaultDirectBuffers = defaultDirectBuffers;
+            this.defaultBufferSize = defaultBufferSize;
+        }
+
+        @Override
+        public ByteBuf allocateBuffer() {
+            return allocateBuffer(defaultDirectBuffers);
+        }
+
+        @Override
+        public ByteBuf allocateBuffer(boolean direct) {
+            if (direct) {
+                return PooledByteBufAllocator.DEFAULT.directBuffer(defaultBufferSize);
+            } else {
+                return PooledByteBufAllocator.DEFAULT.heapBuffer(defaultBufferSize);
+            }
+        }
+
+        @Override
+        public ByteBuf allocateBuffer(int bufferSize) {
+            return allocateBuffer(defaultDirectBuffers, bufferSize);
+        }
+
+        @Override
+        public ByteBuf allocateBuffer(boolean direct, int bufferSize) {
+            if (direct) {
+                return PooledByteBufAllocator.DEFAULT.directBuffer(bufferSize);
+            } else {
+                return PooledByteBufAllocator.DEFAULT.heapBuffer(bufferSize);
+            }
+        }
+
+        @Override
+        public int getBufferSize() {
+            return defaultBufferSize;
         }
     }
 }

@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 
 import javax.enterprise.event.Event;
 
@@ -12,6 +13,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.MemorySize;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.quarkus.vertx.web.Route;
 import io.vertx.core.Handler;
@@ -26,13 +29,13 @@ public class VertxWebRecorder {
     private static final Logger LOGGER = Logger.getLogger(VertxWebRecorder.class.getName());
 
     public void addAdditionalRoutes(RuntimeValue<Router> routerRuntimeValue, Map<String, List<Route>> routeHandlers,
-            List<Handler<RoutingContext>> filters) {
+            List<Handler<RoutingContext>> filters, HttpConfiguration httpConfiguration) {
         Router router = routerRuntimeValue.getValue();
 
         for (Entry<String, List<Route>> entry : routeHandlers.entrySet()) {
             Handler<RoutingContext> handler = createHandler(entry.getKey());
             for (Route route : entry.getValue()) {
-                addRoute(router, handler, route, filters);
+                addRoute(router, handler, route, filters, httpConfiguration);
             }
         }
         // Make it also possible to register the route handlers programmatically
@@ -41,7 +44,7 @@ public class VertxWebRecorder {
     }
 
     private io.vertx.ext.web.Route addRoute(Router router, Handler<RoutingContext> handler, Route routeAnnotation,
-            List<Handler<RoutingContext>> filters) {
+            List<Handler<RoutingContext>> filters, HttpConfiguration httpConfiguration) {
         io.vertx.ext.web.Route route;
         if (!routeAnnotation.regex().isEmpty()) {
             route = router.routeWithRegex(routeAnnotation.regex());
@@ -76,7 +79,14 @@ public class VertxWebRecorder {
             }
         }
 
-        route.handler(BodyHandler.create());
+        BodyHandler bodyHandler = BodyHandler.create();
+        Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
+        if (maxBodySize.isPresent()) {
+            bodyHandler.setBodyLimit(maxBodySize.get().asLongValue());
+        }
+
+        route.handler(bodyHandler);
+
         switch (routeAnnotation.type()) {
             case NORMAL:
                 route.handler(handler);

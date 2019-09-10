@@ -359,15 +359,10 @@ public class PomTransformer {
         }
 
         public static Transformation addManagedDependency(String groupId, String artifactId, String version) {
-            return addManagedDependency(groupId, artifactId, version, null, null);
+            return addManagedDependency(new Gavtcs(groupId, artifactId, version, null, null, null));
         }
 
-        public static Transformation importBom(String groupId, String artifactId, String version) {
-            return addManagedDependency(groupId, artifactId, version, "pom", "import");
-        }
-
-        public static Transformation addManagedDependency(String groupId, String artifactId, String version, String type,
-                String scope) {
+        public static Transformation addManagedDependency(Gavtcs gavtcs) {
             return (Document document, TransformationContext context) -> {
                 try {
                     addDependencyManagementIfNeeded().perform(document, context);
@@ -386,18 +381,22 @@ public class PomTransformer {
                     dependencyManagementDeps.insertBefore(context.indent(3), ws);
                     final Node dep = document.createElement("dependency");
                     dep.appendChild(context.indent(4));
-                    dep.appendChild(context.textElement("groupId", groupId));
+                    dep.appendChild(context.textElement("groupId", gavtcs.groupId));
                     dep.appendChild(context.indent(4));
-                    dep.appendChild(context.textElement("artifactId", artifactId));
+                    dep.appendChild(context.textElement("artifactId", gavtcs.artifactId));
                     dep.appendChild(context.indent(4));
-                    dep.appendChild(context.textElement("version", version));
-                    if (type != null) {
+                    dep.appendChild(context.textElement("version", gavtcs.version));
+                    if (gavtcs.type != null) {
                         dep.appendChild(context.indent(4));
-                        dep.appendChild(context.textElement("type", type));
+                        dep.appendChild(context.textElement("type", gavtcs.type));
                     }
-                    if (scope != null) {
+                    if (gavtcs.classifier != null) {
                         dep.appendChild(context.indent(4));
-                        dep.appendChild(context.textElement("scope", scope));
+                        dep.appendChild(context.textElement("classifier", gavtcs.classifier));
+                    }
+                    if (gavtcs.scope != null) {
+                        dep.appendChild(context.indent(4));
+                        dep.appendChild(context.textElement("scope", gavtcs.scope));
                     }
                     dep.appendChild(context.indent(3));
                     dependencyManagementDeps.insertBefore(dep, ws);
@@ -415,5 +414,95 @@ public class PomTransformer {
          */
         void perform(Document document, TransformationContext context);
 
+    }
+
+    public static class Gavtcs {
+
+        public static Gavtcs importBom(String groupId, String artifactId, String version) {
+            return new Gavtcs(groupId, artifactId, version, "pom", null, "import");
+        }
+
+        public static Gavtcs of(String rawGavtcs) {
+            String[] gavtcArr = rawGavtcs.split(":");
+            int i = 0;
+            final String groupId = gavtcArr[i++];
+            final String artifactId = gavtcArr[i++];
+            final String version = gavtcArr[i++];
+            final String type = i < gavtcArr.length ? emptyToNull(gavtcArr[i++]) : null;
+            final String classifier = i < gavtcArr.length ? emptyToNull(gavtcArr[i++]) : null;
+            final String scope = i < gavtcArr.length ? emptyToNull(gavtcArr[i++]) : null;
+            return new Gavtcs(groupId, artifactId, version, type, classifier, scope);
+        }
+
+        private static String emptyToNull(String string) {
+            return string != null && !string.isEmpty() ? string : null;
+        }
+
+        private final String groupId;
+        private final String artifactId;
+        private final String version;
+        private final String type;
+        private final String classifier;
+        private final String scope;
+
+        public Gavtcs(String groupId, String artifactId, String version) {
+            this(groupId, artifactId, version, null, null, null);
+        }
+
+        public Gavtcs(String groupId, String artifactId, String version, String type, String classifier, String scope) {
+            super();
+            this.groupId = groupId;
+            this.artifactId = artifactId;
+            this.version = version;
+            this.type = type;
+            this.classifier = classifier;
+            this.scope = scope;
+        }
+
+        public String getGroupId() {
+            return groupId;
+        }
+
+        public String getArtifactId() {
+            return artifactId;
+        }
+
+        public String getVersion() {
+            return version;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public String getClassifier() {
+            return classifier;
+        }
+
+        public String getScope() {
+            return scope;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder().append(groupId).append(':').append(artifactId).append(':')
+                    .append(version);
+            if (type != null || classifier != null || scope != null) {
+                sb.append(':');
+                if (type != null) {
+                    sb.append(type);
+                }
+                if (classifier != null || scope != null) {
+                    sb.append(':');
+                    if (classifier != null) {
+                        sb.append(classifier);
+                    }
+                    if (scope != null) {
+                        sb.append(':').append(scope);
+                    }
+                }
+            }
+            return sb.toString();
+        }
     }
 }

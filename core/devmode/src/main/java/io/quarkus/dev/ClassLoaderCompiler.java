@@ -2,12 +2,14 @@ package io.quarkus.dev;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
@@ -102,9 +104,8 @@ public class ClassLoaderCompiler {
                                 for (String i : classPath.toString().split(" ")) {
                                     File f;
                                     try {
-                                        URL u = new URL(i);
-                                        f = new File(u.getPath());
-                                    } catch (MalformedURLException e) {
+                                        f = Paths.get(new URI("file", null, "/", null).resolve(new URI(i))).toFile();
+                                    } catch (URISyntaxException e) {
                                         f = new File(file.getParentFile(), i);
                                     }
                                     if (f.exists()) {

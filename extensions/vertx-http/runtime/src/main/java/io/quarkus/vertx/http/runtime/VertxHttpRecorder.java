@@ -246,6 +246,8 @@ public class VertxHttpRecorder {
         final Optional<Path> keyStoreFile = sslConfig.certificate.keyStoreFile;
         final String keystorePassword = sslConfig.certificate.keyStorePassword;
         final HttpServerOptions serverOptions = new HttpServerOptions();
+        serverOptions.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
+
         if (certFile.isPresent() && keyFile.isPresent()) {
             PemKeyCertOptions pemKeyCertOptions = new PemKeyCertOptions()
                     .setCertPath(certFile.get().toAbsolutePath().toString())
@@ -337,6 +339,7 @@ public class VertxHttpRecorder {
         HttpServerOptions options = new HttpServerOptions();
         options.setHost(httpConfiguration.host);
         options.setPort(httpConfiguration.determinePort(launchMode));
+        options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
         return options;
     }
 

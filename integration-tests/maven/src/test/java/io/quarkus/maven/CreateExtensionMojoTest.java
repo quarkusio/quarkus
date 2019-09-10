@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -53,6 +54,34 @@ public class CreateExtensionMojoTest {
         mojo.execute();
 
         assertTreesMatch(Paths.get("src/test/resources/expected/create-extension-pom-minimal"),
+                mojo.basedir);
+    }
+
+    @Test
+    void createExtensionUnderExistingPomWithAdditionalRuntimeDependencies() throws MojoExecutionException, MojoFailureException,
+            IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, IOException {
+        final CreateExtensionMojo mojo = createMojo("create-extension-pom");
+        mojo.artifactId = "my-project-(add-to-bom)";
+        mojo.assumeManaged = false;
+        mojo.runtimeBomPath = Paths.get("boms/runtime/pom.xml");
+        mojo.additionalRuntimeDependencies = Arrays.asList("org.example:example-1:1.2.3",
+                "org.acme:acme-@{quarkus.artifactIdBase}:@{$}{acme.version}");
+        mojo.execute();
+
+        assertTreesMatch(Paths.get("src/test/resources/expected/create-extension-pom-add-to-bom"),
+                mojo.basedir);
+    }
+
+    @Test
+    void createExtensionUnderExistingPomWithItest() throws MojoExecutionException, MojoFailureException,
+            IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, IOException {
+        final CreateExtensionMojo mojo = createMojo("create-extension-pom");
+        mojo.artifactId = "my-project-(itest)";
+        mojo.assumeManaged = false;
+        mojo.itestParentPath = Paths.get("integration-tests/pom.xml");
+        mojo.execute();
+
+        assertTreesMatch(Paths.get("src/test/resources/expected/create-extension-pom-itest"),
                 mojo.basedir);
     }
 

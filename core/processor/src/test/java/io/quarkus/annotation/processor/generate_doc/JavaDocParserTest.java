@@ -125,7 +125,7 @@ public class JavaDocParserTest {
                 "<li>2</li>\n" +
                 "</ul>" +
                 "";
-        String expectedOutput = "List: \n - 1 \n - 2 ";
+        String expectedOutput = "List: \n - 1 \n - 2";
         String parsed = parser.parse(javaDoc);
 
         assertEquals(expectedOutput, parsed);
@@ -139,7 +139,7 @@ public class JavaDocParserTest {
                 "<li>2</li>\n" +
                 "</ol>" +
                 "";
-        String expectedOutput = "List: \n . 1 \n . 2 ";
+        String expectedOutput = "List: \n . 1 \n . 2";
         String parsed = parser.parse(javaDoc);
 
         assertEquals(expectedOutput, parsed);
@@ -206,5 +206,36 @@ public class JavaDocParserTest {
         String parsed = parser.parse(javaDoc);
 
         assertEquals(expectedOutput, parsed);
+    }
+
+    @Test
+    public void asciidoc() {
+        String asciidoc = "== My Asciidoc\n" +
+                "\n" +
+                "Let's have a https://quarkus.io[link to our website].\n" +
+                "\n" +
+                "[TIP]\n" +
+                "====\n" +
+                "A nice tip\n" +
+                "====\n" +
+                "\n" +
+                "[source,java]\n" +
+                "----\n" +
+                "And some code\n" +
+                "----";
+
+        assertEquals(asciidoc, parser.parse(asciidoc + "\n" + "@asciidoclet"));
+    }
+
+    @Test
+    public void asciidocLists() {
+        String asciidoc = "* A list\n" +
+                "\n" +
+                "* 1\n" +
+                "  * 1.1\n" +
+                "  * 1.2\n" +
+                "* 2";
+
+        assertEquals(asciidoc, parser.parse(asciidoc + "\n" + "@asciidoclet"));
     }
 }

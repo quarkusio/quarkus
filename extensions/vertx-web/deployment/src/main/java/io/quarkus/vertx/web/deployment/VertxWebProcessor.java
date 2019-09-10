@@ -126,7 +126,7 @@ class VertxWebProcessor {
             List<FilterBuildItem> filters,
             BuildProducer<GeneratedClassBuildItem> generatedClass, AnnotationProxyBuildItem annotationProxy,
             LaunchModeBuildItem launchMode,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws IOException {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, HttpConfiguration httpConfiguration) throws IOException {
 
         ClassOutput classOutput = new ClassOutput() {
             @Override
@@ -145,7 +145,7 @@ class VertxWebProcessor {
         }
 
         recorder.addAdditionalRoutes(router.getRouter(), routeConfigs,
-                filters.stream().map(FilterBuildItem::getHandler).collect(Collectors.toList()));
+                filters.stream().map(FilterBuildItem::getHandler).collect(Collectors.toList()), httpConfiguration);
 
         return new AdditionalRoutesInstalledBuildItem();
     }

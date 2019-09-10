@@ -42,6 +42,8 @@
                         </failIf>
                     </logHandler>
                     <attributes>
+                        <generated-dir>${project.basedir}/../target/asciidoc/generated</generated-dir>
+
                         <quarkus-version>${project.version}</quarkus-version>
                         <surefire-version>${version.surefire.plugin}</surefire-version>
                         <graalvm-version>${graal-sdk.version-for-documentation}</graalvm-version>

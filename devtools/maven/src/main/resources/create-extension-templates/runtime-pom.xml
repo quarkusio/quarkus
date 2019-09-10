@@ -13,6 +13,25 @@
     <artifactId>[=artifactId]</artifactId>
 [#if nameBase?? ]    <name>[=namePrefix][=nameBase][=nameSegmentDelimiter]Runtime</name>
 [/#if]
+[#if additionalRuntimeDependencies?size > 0 ]
+
+    <dependencies>
+[#list additionalRuntimeDependencies as dep]
+        <dependency>
+            <groupId>[=dep.groupId]</groupId>
+            <artifactId>[=dep.artifactId]</artifactId>
+[#if !runtimeBomPathSet ]            <version>[=dep.version]</version>
+[/#if]
+[#if dep.type?? ]            <type>[=dep.type]</type>
+[/#if]
+[#if dep.classifier?? ]            <type>[=dep.classifier]</type>
+[/#if]
+[#if dep.scope?? ]            <type>[=dep.scope]</type>
+[/#if]
+        </dependency>
+[/#list]
+    </dependencies>
+[/#if]
 
     <build>
         <plugins>

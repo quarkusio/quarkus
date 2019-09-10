@@ -36,6 +36,15 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
 
+[TIP]
+.Verify Maven is using the Java you expect
+====
+If you have multiple JDK's installed it is not certain Maven will pick up the expected java
+and you could end up with unexpected results.
+You can verify which JDK Maven uses by running `mvn --version`. 
+====
+
+
 == Architecture
 
 In this guide, we create a straightforward application serving a `hello` endpoint. To demonstrate
@@ -47,10 +56,16 @@ This guide also covers the testing of the endpoint.
 
 == Solution
 
-We recommend that you follow the instructions in the next sections and create the application step by step.
+We recommend that you follow the instructions from <<bootstrapping-the-project,Boostrapping project>> and onwards to create the application step by step.
+
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+Download an {quickstarts-archive-url}[archive] or clone the git repository:
+
+[source,shell,subs=attributes+]
+----
+git clone {quickstarts-clone-url}
+----
 
 The solution is located in the `getting-started` directory.
 
@@ -67,13 +82,13 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dpath="/hello"
 ----
 
-It generates:
+It generates the following in  `./getting-started`:
 
 * the Maven structure
 * an `org.acme.quickstart.GreetingResource` resource exposed on `/hello`
 * an associated unit test
 * a landing page that is accessible on `http://localhost:8080` after starting the application
-* example `Dockerfile` files for both `native` and `jvm` modes
+* example `Dockerfile` files for both `native` and `jvm` modes in `src/main/docker`
 * the application configuration file
 
 Once generated, look at the `pom.xml`.
@@ -141,7 +156,7 @@ public class GreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "hello\n";
+        return "hello";
     }
 }
 ----
@@ -162,6 +177,7 @@ Use: `./mvnw compile quarkus:dev`:
 
 [source,shell]
 ----
+$ ./mvnw compile quarkus:dev
 [INFO] --------------------< org.acme:getting-started >---------------------
 [INFO] Building getting-started 1.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
@@ -185,11 +201,17 @@ Listening for transport dt_socket at address: 5005
 Once started, you can request the provided endpoint:
 
 ```
-$ curl http://localhost:8080/hello
+$ curl -w "\n" http://localhost:8080/hello
 hello
 ```
 
 Hit `CTRL+C` to stop the application, but you can also keep it running and enjoy the blazing fast hot-reload.
+
+[TIP]
+.Automatically add newline with `curl -w "\n"`
+====
+We are using `curl -w "\n"` in this example to avoid your terminal printing a '%' or put both result and next command prompt on the same line.
+====
 
 == Using injection
 
@@ -211,7 +233,7 @@ import javax.enterprise.context.ApplicationScoped;
 public class GreetingService {
 
     public String greeting(String name) {
-        return "hello " + name + "\n";
+        return "hello " + name;
     }
 
 }
@@ -246,13 +268,21 @@ public class GreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "hello\n";
+        return "hello";
     }
 }
 ----
 
 If you stopped the application, restart the application with `./mvnw compile quarkus:dev`.
-Then check that http://localhost:8080/hello/greeting/quarkus returns `hello quarkus`.
+Then check that the endpoint returns `hello quarkus` as expected:
+
+[source,shell,subs=attributes+]
+----
+$ curl -w "\n" http://localhost:8080/hello/greeting/quarkus
+hello quarkus
+----
+
+
 
 == Development Mode
 
@@ -330,7 +360,7 @@ public class GreetingResourceTest {
           .when().get("/hello")
           .then()
              .statusCode(200)    // <2>
-             .body(is("hello\n"));
+             .body(is("hello"));
     }
 
     @Test
@@ -341,7 +371,7 @@ public class GreetingResourceTest {
           .when().get("/hello/greeting/{name}")
           .then()
             .statusCode(200)
-            .body(is("hello " + uuid + "\n"));
+            .body(is("hello " + uuid));
     }
 
 }
@@ -351,7 +381,14 @@ public class GreetingResourceTest {
 
 These tests use http://rest-assured.io/[RestAssured], but feel free to use your favorite library.
 
-You can run the test from your IDE directly (be sure you stopped the application first), or from Maven using: `./mvnw test`.
+You can run these using Maven:
+
+[source,shell,subs=attributes+]
+----
+./mvnw test
+----
+
+You can also run the test from your IDE directly (be sure you stopped the application first).
 
 By default, tests will run on port `8081` so as not to conflict with the running application. We automatically
 configure RestAssured to use this port. If you want to use a different client you should use the `@TestHTTPResource`
@@ -373,7 +410,7 @@ property called `test.url` that is set to the base test URL for situations where
 == Packaging and run the application
 
 The application is packaged using `./mvnw package`.
-It produces 2 jar files:
+It produces 2 jar files in `/target`:
 
 * `getting-started-1.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
 artifact produced by the Maven build;
@@ -397,7 +434,7 @@ The resource can also use `CompletionStage` as return type to handle asynchronou
 @Produces(MediaType.TEXT_PLAIN)
 public CompletionStage<String> hello() {
     return CompletableFuture.supplyAsync(() -> {
-        return "hello\n";
+        return "hello";
     });
 }
 ----

@@ -152,7 +152,7 @@ quarkus.http.test-port=8083
 ----
 ====
 
-Quarkus also provides Restassured integration that updates the default port used by Restassured before the tests are run,
+Quarkus also provides RestAssured integration that updates the default port used by RestAssured before the tests are run,
 so no additional configuration should be required.
 
 === Injecting a URI
@@ -223,11 +223,6 @@ public class StaticContentTest {
 <1> This annotation allows you to directly inject the URL of the Quarkus instance, the value of the annotation will be the path component of the URL
 
 For now `@TestHTTPResource` allows you to inject `URI`, `URL` and `String` representations of the URL.
-
-[TIP]
-=====
-If `quarkus.servlet.context-path` is configured, make sure to prefix the endpoint with the provided value acting as a base path during injection of a `URI` through `TestHTTPResource` or when calling a rest endpoint with `RestAssured`
-=====
 
 == Injection into tests
 

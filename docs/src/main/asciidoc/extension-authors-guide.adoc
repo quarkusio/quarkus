@@ -362,16 +362,18 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
 
 The above sequence of commands does the following:
 
-* Creates three new Maven modules:
-** `quarkus-my-ext-parent` in the `my-ext` directory
-** `quarkus-my-ext` in the `my-ext/runtime` directory
-** `quarkus-my-ext-deployment` in the `my-ext/deployment` directory; a basic `MyExtProcessor` class is generated in this module.
+* Creates four new Maven modules:
+** `quarkus-my-ext-parent` in the `extensions/my-ext` directory
+** `quarkus-my-ext` in the `extensions/my-ext/runtime` directory
+** `quarkus-my-ext-deployment` in the `extensions/my-ext/deployment` directory; a basic `MyExtProcessor` class is generated in this module.
+** `quarkus-my-ext-integration-test` in the `integration-tests/my-ext/deployment` directory; an empty JAX-RS Resource class and two test classes (for JVM mode and native mode) are generated in this module.
 * Links these three modules where necessary:
 ** `quarkus-my-ext-parent` is added to the `<modules>` of `quarkus-extensions-parent`
 ** `quarkus-my-ext` is added to the `<dependencyManagement>` of the runtime BOM (Bill of Materials) `bom/runtime/pom.xml`
 ** `quarkus-my-ext-deployment` is added to the `<dependencyManagement>` of the deployment BOM (Bill of Materials) `bom/deployment/pom.xml`
+** `quarkus-my-ext-integration-test` is added to the `<modules>` of `quarkus-integration-tests-parent`
 
-A Maven build performed immediately after generating the modules should pass flawlessly.
+A Maven build performed immediately after generating the modules should fail due to a `fail()` assertion in one of the test classes.
 
 There is one step (specific to the Quarkus source tree) that you should do manually when creating a new extension:
 Add the extension coordinates to `devtools/common/src/main/filtered/extensions.json`.
@@ -393,6 +395,7 @@ Note that the parameters of the mojo that will be constant for all the extension
         <namePrefix xml:space="preserve">Quarkus - </namePrefix>
         <runtimeBomPath>../bom/runtime/pom.xml</runtimeBomPath>
         <deploymentBomPath>../bom/deployment/pom.xml</deploymentBomPath>
+        <itestParentPath>../integration-tests/pom.xml</itestParentPath>
     </configuration>
 </plugin>
 ----

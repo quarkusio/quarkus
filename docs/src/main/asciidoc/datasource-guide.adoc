@@ -230,5 +230,5 @@ AgroalDataSource dataSource2;
 [[configuration-reference]]
 == Agroal Configuration Reference
 
-include::generated/quarkus-agroal.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-agroal.adoc[opts=optional, leveloffset=+1]
 

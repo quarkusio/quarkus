@@ -664,4 +664,4 @@ We don't have plans to support the Lucene backend in Quarkus for now.
 [[configuration-reference]]
 == Hibernate Search Configuration Reference
 
-include::generated/quarkus-hibernate-search-elasticsearch.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-hibernate-search-elasticsearch.adoc[leveloffset=+1, opts=optional]

@@ -287,4 +287,4 @@ The _mailer_ extension works in JVM and native mode.
 [[configuration-reference]]
 == Mailer Configuration Reference
 
-include::generated/quarkus-mailer-impl.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-mailer-impl.adoc[opts=optional, leveloffset=+1]

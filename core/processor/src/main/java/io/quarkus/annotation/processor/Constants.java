@@ -45,7 +45,7 @@ final public class Constants {
 
     public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES = new HashSet<>();
     public static final Map<String, String> ALIASED_TYPES = new HashMap<>();
-    public static final String DOCS_SRC_MAIN_ASCIIDOC_GENERATED = "/docs/src/main/asciidoc/generated/";
+    public static final String DOCS_SRC_MAIN_ASCIIDOC_GENERATED = "/target/asciidoc/generated/config/";
     public static final Path GENERATED_DOCS_PATH = Paths
             .get(System.getProperties().getProperty("maven.multiModuleProjectDirectory")
                     + Constants.DOCS_SRC_MAIN_ASCIIDOC_GENERATED);

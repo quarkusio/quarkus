@@ -104,7 +104,7 @@ final public class GenerateExtensionConfigurationDoc {
     }
 
     /**
-     * Write extension configuration AsciiDoc format in `{root}/docs/src/main/asciidoc/generated`
+     * Write extension configuration AsciiDoc format in `{root}/docs/target/asciidoc/generated`
      */
     public void writeExtensionConfiguration(Properties javaDocProperties) throws IOException {
         final Map<String, List<ConfigItem>> extensionsConfigurations = findExtensionsConfigurationItems(javaDocProperties);

@@ -118,14 +118,6 @@ public class ResteasyCommonProcessor {
         boolean useBuiltinProviders = collectDeclaredProviders(providersToRegister, categorizedReaders, categorizedWriters,
                 categorizedContextResolvers, index, beansIndex);
 
-        // filter out ContextFeature if context propagation doesn't exist
-        // We do this so that this isn't loaded in Graal builds with no smallrye context propagation.
-        try {
-            Class.forName("org.eclipse.microprofile.context.spi.ContextManagerProvider");
-        } catch (ClassNotFoundException e) {
-            availableProviders.remove("org.jboss.resteasy.context.ContextFeature");
-        }
-
         if (useBuiltinProviders) {
             providersToRegister = new HashSet<>(contributedProviders);
             providersToRegister.addAll(availableProviders);

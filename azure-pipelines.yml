@@ -297,3 +297,27 @@ stages:
           modules:
             - hibernate-search-elasticsearch
           name: hibernate_search_elasticsearch
+
+
+  - stage: test_quickstarts_stage
+    displayName: 'Quickstart Tests'
+    dependsOn: build_artifact_for_native_stage
+    jobs:
+      - job: Test_Quickstarts
+        displayName: 'Test Quickstarts'
+        timeoutInMinutes: 45
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        steps:
+          - checkout: none
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifact: BuiltMavenRepo
+              path: $(Pipeline.Workspace)/.m2/repository/
+          - script: git clone https://github.com/quarkusio/quarkus-quickstarts $(Agent.BuildDirectory)/s && cd $(Agent.BuildDirectory)/s && git checkout development
+          - task: Maven@3
+            displayName: 'Maven Install'
+            inputs:
+              goals: 'install'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B -e'

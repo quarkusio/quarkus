@@ -67,7 +67,7 @@ class QuarkusProtocol implements Protocol<QuarkusProtocolConfiguration> {
                 public void invoke(Object... parameters) throws Throwable {
                     Object actualTestInstance = QuarkusDeployableContainer.testInstance;
                     Method actualMethod = actualTestInstance.getClass().getMethod(getMethod().getName(),
-                            getMethod().getParameterTypes());
+                            convertToTCCL(getMethod().getParameterTypes()));
                     try {
                         actualMethod.invoke(actualTestInstance, parameters);
                     } catch (InvocationTargetException e) {
@@ -93,6 +93,24 @@ class QuarkusProtocol implements Protocol<QuarkusProtocolConfiguration> {
             return testResult.get();
         }
 
+    }
+
+    /**
+     * getMethod() returns a method found using the system class loader, but the actual parameters are loaded by
+     * TCCL
+     * so to be able to invoke the method we find the same method using TCCL
+     */
+    static Class<?>[] convertToTCCL(Class<?>[] classes) throws ClassNotFoundException {
+        Class<?>[] result = new Class<?>[classes.length];
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        for (int i = 0; i < classes.length; i++) {
+            if (classes[i].getClassLoader() != tccl) {
+                result[i] = tccl.loadClass(classes[i].getName());
+            } else {
+                result[i] = classes[i];
+            }
+        }
+        return result;
     }
 
 }

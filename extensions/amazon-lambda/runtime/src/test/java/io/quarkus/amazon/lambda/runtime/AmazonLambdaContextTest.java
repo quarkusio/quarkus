@@ -1,12 +1,12 @@
 package io.quarkus.amazon.lambda.runtime;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.HttpURLConnection;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class AmazonLambdaContextTest {
 
@@ -20,6 +20,6 @@ public class AmazonLambdaContextTest {
 
         AmazonLambdaContext amazonLambdaContext = new AmazonLambdaContext(request, null, null);
 
-        assertTrue("The remaining time in millis should not be negative", amazonLambdaContext.getRemainingTimeInMillis() > 0);
+        assertTrue(amazonLambdaContext.getRemainingTimeInMillis() > 0, "The remaining time in millis should not be negative");
     }
 }

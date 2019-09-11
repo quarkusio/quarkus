@@ -209,7 +209,7 @@ In this example, we are using a single instance running on localhost:
 
 [source,properties]
 ----
-# configure the mongoDB client for a replica set of two nodes
+# configure the mongoDB client for a single instance on localhost
 quarkus.mongodb.connection-string = mongodb://localhost:27017
 ----
 

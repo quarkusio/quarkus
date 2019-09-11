@@ -107,7 +107,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             }
         }
 
-        Map<BeanInfo, ResultHandle> beanToResultSupplierHandle = new HashMap<>();
+        Map<BeanInfo, Supplier<ResultHandle>> beanToResultSupplierHandle = new HashMap<>();
         List<BeanInfo> processed = new ArrayList<>();
 
         // At this point we are going to fill the beanIdToBeanSupplier map
@@ -171,11 +171,11 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             List<ResultHandle> params = new ArrayList<>();
             List<String> paramTypes = new ArrayList<>();
 
-            ResultHandle resultSupplierHandle = beanToResultSupplierHandle.get(observer.getDeclaringBean());
+            ResultHandle resultSupplierHandle = beanToResultSupplierHandle.get(observer.getDeclaringBean()).get();
             params.add(resultSupplierHandle);
             paramTypes.add(Type.getDescriptor(Supplier.class));
             for (InjectionPointInfo injectionPoint : injectionPoints) {
-                resultSupplierHandle = beanToResultSupplierHandle.get(injectionPoint.getResolvedBean());
+                resultSupplierHandle = beanToResultSupplierHandle.get(injectionPoint.getResolvedBean()).get();
                 params.add(resultSupplierHandle);
                 paramTypes.add(Type.getDescriptor(Supplier.class));
             }
@@ -231,7 +231,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
     }
 
     private boolean addBeans(Map<BeanInfo, List<BeanInfo>> beanToInjections, List<BeanInfo> processed,
-            Map<BeanInfo, ResultHandle> beanToResultSupplierHandle, MethodCreator getComponents,
+            Map<BeanInfo, Supplier<ResultHandle>> beanToResultSupplierHandle, MethodCreator getComponents,
             ResultHandle beanIdToBeanSupplierHandle, Map<BeanInfo, String> beanToGeneratedName, Predicate<BeanInfo> filter) {
         boolean stuck = true;
         for (Iterator<Entry<BeanInfo, List<BeanInfo>>> iterator = beanToInjections.entrySet().iterator(); iterator
@@ -251,7 +251,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
     private void addBean(MethodCreator getComponents, ResultHandle beanIdToBeanSupplierHandle, BeanInfo bean,
             Map<BeanInfo, String> beanToGeneratedName,
-            Map<BeanInfo, ResultHandle> beanToResultSupplierHandle) {
+            Map<BeanInfo, Supplier<ResultHandle>> beanToResultSupplierHandle) {
 
         String beanType = beanToGeneratedName.get(bean);
 
@@ -261,7 +261,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         List<String> paramTypes = new ArrayList<>();
 
         if (bean.isProducerMethod() || bean.isProducerField()) {
-            ResultHandle resultSupplierHandle = beanToResultSupplierHandle.get(bean.getDeclaringBean());
+            ResultHandle resultSupplierHandle = beanToResultSupplierHandle.get(bean.getDeclaringBean()).get();
             if (resultSupplierHandle == null) {
                 throw new IllegalStateException(
                         "A supplier for a declaring bean of a producer bean is not available - most probaly an unsupported circular dependency use case \n - declaring bean: "
@@ -282,13 +282,13 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         }
         if (bean.getDisposer() != null) {
             for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
-                ResultHandle resultSupplierHandle = beanToResultSupplierHandle.get(injectionPoint.getResolvedBean());
+                ResultHandle resultSupplierHandle = beanToResultSupplierHandle.get(injectionPoint.getResolvedBean()).get();
                 params.add(resultSupplierHandle);
                 paramTypes.add(Type.getDescriptor(Supplier.class));
             }
         }
         for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
-            ResultHandle resultSupplierHandle = beanToResultSupplierHandle.get(interceptor);
+            ResultHandle resultSupplierHandle = beanToResultSupplierHandle.get(interceptor).get();
             params.add(resultSupplierHandle);
             paramTypes.add(Type.getDescriptor(Supplier.class));
         }
@@ -303,9 +303,8 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 beanInstance);
 
         // Create a Supplier that will return the bean instance at runtime.
-        ResultHandle beanInstanceSupplier = getComponents.newInstance(MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR,
-                beanInstance);
-        beanToResultSupplierHandle.put(bean, beanInstanceSupplier);
+        beanToResultSupplierHandle.put(bean,
+                () -> getComponents.newInstance(MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, beanInstance));
     }
 
     private boolean isDependency(BeanInfo bean, Map<BeanInfo, List<BeanInfo>> beanToInjections) {

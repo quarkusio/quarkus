@@ -9,7 +9,39 @@ include::./attributes.adoc[]
 
 This guide explains how your Quarkus application can use https://tika.apache.org/[Apache Tika] to parse the documents. 
 
-https://tika.apache.org/[Apache Tika] is a content analysis toolkit which is used to parse the documents in PDF, Open Document, Excel and many other well known binary and text formats using a simple uniform API. Both the document text and properties (metadata) are available once the document has been parsed. 
+https://tika.apache.org/[Apache Tika] is a content analysis toolkit which is used to parse the documents in PDF, Open Document, Excel and many other well known binary and text formats using a simple uniform API. Both the document text and properties (metadata) are available once the document has been parsed.
+
+== Creating the Maven Project
+
+First, we need a new project. Create a new project with the following command:
+
+[source, subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=using-tika \
+    -Dextensions="tika"
+----
+
+This command generates a Maven project, importing the `tika` extension.
+
+If you already have your Quarkus project configured you can add the `tika` extension
+to your project by running the following command in your project base directory.
+
+[source,bash]
+----
+mvn quarkus:add-extension -Dextensions="tika"
+----
+
+This will add the following to your pom.xml:
+
+[source,xml]
+----
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-tika</artifactId>
+    </dependency>
+----
 
 == Configuration
 

@@ -9,16 +9,18 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -42,6 +44,7 @@ import org.objectweb.asm.Opcodes;
 import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
@@ -50,6 +53,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.Transformation;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -104,8 +108,6 @@ public class ResteasyServerCommonProcessor {
             ResteasyDotNames.RESTEASY_MATRIX_PARAM,
     };
 
-    private static final DotName CONFIG_PROPERTY_DOTNAME = DotName.createSimple(ConfigProperty.class.getName());
-
     /**
      * JAX-RS configuration.
      */
@@ -158,6 +160,8 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ResteasyServerConfigBuildItem> resteasyServerConfig,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
+            List<AutoInjectAnnotationBuildItem> autoInjectAnnotations,
             List<AdditionalJaxRsResourceDefiningAnnotationBuildItem> additionalJaxRsResourceDefiningAnnotations,
             List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
             List<AdditionalJaxRsResourceMethodParamAnnotations> additionalJaxRsResourceMethodParamAnnotations,
@@ -202,7 +206,7 @@ public class ResteasyServerCommonProcessor {
             appClass = null;
         }
 
-        Set<String> scannedResources = new HashSet<>();
+        Map<DotName, ClassInfo> scannedResources = new HashMap<>();
         Set<DotName> pathInterfaces = new HashSet<>();
         Set<ClassInfo> withoutDefaultCtor = new HashSet<>();
         for (AnnotationInstance annotation : allPaths) {
@@ -211,7 +215,8 @@ public class ResteasyServerCommonProcessor {
                 if (!Modifier.isInterface(clazz.flags())) {
                     String className = clazz.name().toString();
                     if (!additionalPaths.contains(annotation)) { // scanned resources only contains real JAX-RS resources
-                        scannedResources.add(className);
+                        scannedResources.putIfAbsent(clazz.name(), clazz);
+
                     }
                     reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
 
@@ -230,8 +235,19 @@ public class ResteasyServerCommonProcessor {
             for (final ClassInfo implementor : implementors) {
                 String className = implementor.name().toString();
                 reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
-                scannedResources.add(className);
+                scannedResources.putIfAbsent(implementor.name(), implementor);
             }
+        }
+
+        Set<DotName> subresources = findSubresources(index, scannedResources);
+        if (!subresources.isEmpty()) {
+            for (DotName locator : subresources) {
+                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, locator.toString()));
+            }
+            // Sub-resource locators are unremovable beans
+            unremovableBeans.produce(
+                    new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(
+                            subresources.stream().map(Object::toString).collect(Collectors.toSet()))));
         }
 
         // generate default constructors for suitable concrete @Path classes that don't have them
@@ -255,7 +271,7 @@ public class ResteasyServerCommonProcessor {
 
         if (!scannedResources.isEmpty()) {
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES,
-                    String.join(",", scannedResources));
+                    scannedResources.keySet().stream().map(Object::toString).collect(Collectors.joining(",")));
         }
         resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_SERVLET_MAPPING_PREFIX, path);
         if (appClass != null) {
@@ -271,6 +287,61 @@ public class ResteasyServerCommonProcessor {
                 ArcUndeclaredThrowableException.class.getName());
 
         resteasyServerConfig.produce(new ResteasyServerConfigBuildItem(path, resteasyInitParameters));
+
+        Set<DotName> autoInjectAnnotationNames = autoInjectAnnotations.stream().flatMap(a -> a.getAnnotationNames().stream())
+                .collect(Collectors.toSet());
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+
+            @Override
+            public boolean appliesTo(Kind kind) {
+                return kind == Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext transformationContext) {
+                ClassInfo clazz = transformationContext.getTarget().asClass();
+                if (clazz.classAnnotation(ResteasyDotNames.PATH) != null) {
+                    // Root resources - no need to add scope, @Path is a bean defining annotation
+                    if (clazz.classAnnotation(DotNames.TYPED) == null) {
+                        // Add @Typed(MyResource.class)
+                        transformationContext.transform().add(createTypedAnnotationInstance(clazz)).done();
+                    }
+                    return;
+                }
+                if (BuiltinScope.isIn(clazz.classAnnotations())) {
+                    // Skip classes annotated with built-in scope
+                    return;
+                }
+                if (clazz.classAnnotation(ResteasyDotNames.PROVIDER) != null) {
+                    Transformation transformation = null;
+                    if (clazz.annotations().containsKey(DotNames.INJECT)
+                            || hasAutoInjectAnnotation(autoInjectAnnotationNames, clazz)) {
+                        // A provider with an injection point but no built-in scope is @Singleton
+                        transformation = transformationContext.transform().add(BuiltinScope.SINGLETON.getName());
+                    }
+                    if (clazz.classAnnotation(DotNames.TYPED) == null) {
+                        // Add @Typed(MyProvider.class)
+                        if (transformation == null) {
+                            transformation = transformationContext.transform();
+                        }
+                        transformation.add(createTypedAnnotationInstance(clazz));
+                    }
+                    if (transformation != null) {
+                        transformation.done();
+                    }
+                } else if (subresources.contains(clazz.name())) {
+                    // Transform a class annotated with a request method designator
+                    Transformation transformation = transformationContext.transform()
+                            .add(resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName()
+                                    : BuiltinScope.DEPENDENT.getName());
+                    if (clazz.classAnnotation(DotNames.TYPED) == null) {
+                        // Add @Typed(MySubresource.class)
+                        transformation.add(createTypedAnnotationInstance(clazz));
+                    }
+                    transformation.done();
+                }
+            }
+        }));
     }
 
     @BuildStep
@@ -337,29 +408,6 @@ public class ResteasyServerCommonProcessor {
                         BuiltinScope.SINGLETON.getName()));
     }
 
-    @BuildStep
-    AnnotationsTransformerBuildItem annotationTransformer() {
-        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-
-            @Override
-            public boolean appliesTo(Kind kind) {
-                return kind == Kind.CLASS;
-            }
-
-            @Override
-            public void transform(TransformationContext transformationContext) {
-                ClassInfo clazz = transformationContext.getTarget().asClass();
-                if (clazz.classAnnotation(ResteasyDotNames.PROVIDER) != null
-                        && (clazz.annotations().containsKey(DotNames.INJECT)
-                                || clazz.annotations().containsKey(CONFIG_PROPERTY_DOTNAME))
-                        && !BuiltinScope.isIn(clazz.classAnnotations())) {
-                    // A provider with an injection point but no built-in scope is @Singleton
-                    transformationContext.transform().add(BuiltinScope.SINGLETON.getName()).done();
-                }
-            }
-        });
-    }
-
     /**
      * Indicates that JAXB support should be enabled
      *
@@ -368,6 +416,76 @@ public class ResteasyServerCommonProcessor {
     @BuildStep
     JaxbEnabledBuildItem enableJaxb() {
         return new JaxbEnabledBuildItem();
+    }
+
+    private boolean hasAutoInjectAnnotation(Set<DotName> autoInjectAnnotationNames, ClassInfo clazz) {
+        for (DotName name : autoInjectAnnotationNames) {
+            List<AnnotationInstance> instances = clazz.annotations().get(name);
+            if (instances != null) {
+                for (AnnotationInstance instance : instances) {
+                    if (instance.target().kind() == Kind.FIELD) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private AnnotationInstance createTypedAnnotationInstance(ClassInfo clazz) {
+        return AnnotationInstance.create(DotNames.TYPED, clazz,
+                new AnnotationValue[] { AnnotationValue.createArrayValue("value",
+                        new AnnotationValue[] { AnnotationValue.createClassValue("value",
+                                Type.create(clazz.name(), org.jboss.jandex.Type.Kind.CLASS)) }) });
+    }
+
+    private Set<DotName> findSubresources(IndexView index, Map<DotName, ClassInfo> scannedResources) {
+        // First identify sub-resource candidates  
+        Set<DotName> subresources = new HashSet<>();
+        for (DotName annotation : METHOD_ANNOTATIONS) {
+            Collection<AnnotationInstance> annotationInstances = index.getAnnotations(annotation);
+            for (AnnotationInstance annotationInstance : annotationInstances) {
+                DotName declaringClassName = annotationInstance.target().asMethod().declaringClass().name();
+                if (scannedResources.containsKey(declaringClassName)) {
+                    // Skip resource classes
+                    continue;
+                }
+                subresources.add(declaringClassName);
+            }
+        }
+        if (!subresources.isEmpty()) {
+            // Collect sub-resource locator return types
+            Set<DotName> subresourceLocatorTypes = new HashSet<>();
+            for (ClassInfo resourceClass : scannedResources.values()) {
+                ClassInfo clazz = resourceClass;
+                while (clazz != null) {
+                    for (MethodInfo method : clazz.methods()) {
+                        if (method.hasAnnotation(ResteasyDotNames.PATH)) {
+                            subresourceLocatorTypes.add(method.returnType().name());
+                        }
+                    }
+                    if (clazz.superName().equals(DotNames.OBJECT)) {
+                        clazz = null;
+                    } else {
+                        clazz = index.getClassByName(clazz.superName());
+                    }
+                }
+            }
+            // Remove false positives
+            for (Iterator<DotName> iterator = subresources.iterator(); iterator.hasNext();) {
+                DotName subresource = iterator.next();
+                for (DotName type : subresourceLocatorTypes) {
+                    // Sub-resource may be a subclass of a locator return type
+                    if (!subresource.equals(type)
+                            && index.getAllKnownSubclasses(type).stream().noneMatch(c -> c.name().equals(subresource))) {
+                        iterator.remove();
+                        break;
+                    }
+                }
+            }
+        }
+        log.trace("Sub-resources found: " + subresources);
+        return subresources;
     }
 
     private static void registerProviders(Map<String, String> resteasyInitParameters,

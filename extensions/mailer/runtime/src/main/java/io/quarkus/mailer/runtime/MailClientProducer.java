@@ -1,4 +1,4 @@
-package io.quarkus.mailer.impl;
+package io.quarkus.mailer.runtime;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;

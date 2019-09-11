@@ -1,4 +1,4 @@
-package io.quarkus.mailer.impl;
+package io.quarkus.mailer.runtime;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.LaunchMode;

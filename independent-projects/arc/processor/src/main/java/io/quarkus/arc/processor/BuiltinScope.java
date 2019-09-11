@@ -39,6 +39,15 @@ public enum BuiltinScope {
         return null;
     }
 
+    public static BuiltinScope from(ClassInfo clazz) {
+        for (BuiltinScope scope : BuiltinScope.values()) {
+            if (clazz.classAnnotation(scope.getName()) != null) {
+                return scope;
+            }
+        }
+        return null;
+    }
+
     public static boolean isDefault(ScopeInfo scope) {
         return DEPENDENT.is(scope);
     }

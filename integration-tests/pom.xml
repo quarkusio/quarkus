@@ -85,6 +85,7 @@
         <module>narayana-jta</module>
         <module>elytron-security-jdbc</module>
         <module>vertx-graphql</module>
+        <module>config-yaml</module>
     </modules>
 
     <build>

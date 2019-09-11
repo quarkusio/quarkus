@@ -1,0 +1,19 @@
+quarkus:
+  datasource:
+    url: jdbc:postgresql://localhost/quarkus_test
+  hibernate-orm:
+    database:
+      generation: drop-and-create
+    cache:
+      '"first-cache"': 
+        expiration:
+          max-idle: 5M
+      "\"second-cache\"": 
+        memory:
+          object-count: 123
+  http:
+    cors:
+      methods:
+        - GET
+        - POST
+        - Hello, World!

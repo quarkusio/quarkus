@@ -333,6 +333,7 @@ stages:
             - tika
             - hibernate-validator
             - test-extension
+            - config-yaml
           name: misc_2
 
       - template: native-build-steps.yaml

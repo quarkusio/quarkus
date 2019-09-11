@@ -444,6 +444,58 @@ For example:
 ----
 <1> The command will run with the `prod-aws` profile. This can be overridden using the `quarkus.profile` system property.
 
+== Using a YAML configuration file
+
+You can also configure your Quarkus application using a hierarchical YAML file thanks to the `quarkus-config-yaml` extension.
+
+First, you need to add the extension to your project:
+
+[source,shell]
+--
+./mvnw quarkus:add-extension -Dextensions="config-yaml"
+--
+
+Then, create the `src/main/resources/application.yaml` file with a content corresponding to your desired configuration.
+
+[WARNING]
+====
+The configuration values from `application.yaml` will take precedence over the ones from `application.properties` if both files are present in your application.
+But if a configuration key is present in `application.properties` and not in `application.yaml`, the value from `application.properties` will be used.
+====
+
+Here's an example of a Quarkus `application.properties` configuration file, followed by its `application.yaml` equivalent:
+
+.application.properties
+[source,properties]
+--
+quarkus.http.port=9090
+quarkus.http.test-port=9091
+quarkus.http.ssl.protocols=TLSv1.3,TLSv1.2
+quarkus.log.category."foo.bar".level=DEBUG
+%dev.quarkus.http.port=8080
+--
+
+.application.yaml
+[source,yaml]
+--
+quarkus:
+  http:
+    port: 9090
+    test-port: 9091
+    ssl:
+      protocols:
+        - TLSv1.3
+        - TLSv1.2
+  log:
+    category:
+      "\"foo.bar\"":
+        level: DEBUG
+"%dev":
+  quarkus:
+    http:
+      port: 8080
+--
+
 == Custom Configuration
 
 === Custom configuration sources

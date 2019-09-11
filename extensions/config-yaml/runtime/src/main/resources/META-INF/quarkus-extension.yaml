@@ -1,0 +1,10 @@
+---
+name: "YAML Configuration"
+metadata:
+  keywords:
+  - "yaml"
+  - "config"
+  - "configuration"
+  categories:
+  - "config"
+  status: "stable"

@@ -172,6 +172,7 @@
         <antlr.version>4.7.2</antlr.version>
         <quarkus-security.version>1.0.0.Beta1</quarkus-security.version>
         <keycloak.version>7.0.1</keycloak.version>
+        <snakeyaml.version>1.25</snakeyaml.version>
     </properties>
 
     <dependencyManagement>
@@ -696,6 +697,11 @@
                 <artifactId>quarkus-vault-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-config-yaml</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Quarkus test dependencies -->
             <dependency>
@@ -1165,6 +1171,11 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+	        <dependency>
+	            <groupId>org.yaml</groupId>
+	            <artifactId>snakeyaml</artifactId>
+	            <version>${snakeyaml.version}</version>
+	        </dependency>
             <dependency>
                 <groupId>io.sundr</groupId>
                 <artifactId>builder-annotations</artifactId>

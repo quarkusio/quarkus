@@ -1,0 +1,3 @@
+quarkus:
+  http:
+    cors: true

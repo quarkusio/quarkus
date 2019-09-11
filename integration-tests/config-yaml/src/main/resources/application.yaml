@@ -1,0 +1,6 @@
+quarkus:
+  http:
+    cors:
+      methods:
+        - GET
+        - POST

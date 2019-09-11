@@ -14,6 +14,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String ARTEMIS_CORE = "artemis-core";
     public static final String ARTEMIS_JMS = "artemis-jms";
     public static final String CDI = "cdi";
+    public static final String CONFIG_YAML = "config-yaml";
     public static final String DYNAMODB = "dynamodb";
     public static final String ELASTICSEARCH_REST_CLIENT = "elasticsearch-rest-client";
     public static final String FLYWAY = "flyway";

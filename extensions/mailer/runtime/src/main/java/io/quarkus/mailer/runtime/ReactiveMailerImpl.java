@@ -1,4 +1,4 @@
-package io.quarkus.mailer.impl;
+package io.quarkus.mailer.runtime;
 
 import static java.util.Arrays.stream;
 

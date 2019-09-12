@@ -2,6 +2,9 @@ package io.quarkus.vertx.core.runtime.graal;
 
 import java.util.function.BooleanSupplier;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
@@ -10,6 +13,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.dns.AddressResolverOptions;
 import io.vertx.core.eventbus.EventBusOptions;
 import io.vertx.core.eventbus.impl.HandlerHolder;
@@ -18,6 +22,8 @@ import io.vertx.core.eventbus.impl.clustered.ClusterNodeInfo;
 import io.vertx.core.impl.HAManager;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.impl.resolver.DefaultResolverProvider;
+import io.vertx.core.json.DecodeException;
+import io.vertx.core.json.EncodeException;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.NetServerOptions;
 import io.vertx.core.net.NetSocket;
@@ -157,6 +163,69 @@ final class Target_io_vertx_core_eventbus_impl_clustered_ClusteredEventBusCluste
     @Substitute
     EventBusOptions options() {
         throw new RuntimeException("Not Implemented");
+    }
+}
+
+@TargetClass(className = "io.vertx.core.json.Json", onlyWith = JsonDisabled.class)
+final class Target_io_vertx_core_json_Json {
+
+    @Delete
+    public static ObjectMapper mapper;
+    @Delete
+    public static ObjectMapper prettyMapper;
+
+    @Substitute
+    public static String encode(Object obj) throws EncodeException {
+        throw new RuntimeException("Vertx JSON not enabled");
+    }
+
+    @Substitute
+    public static Buffer encodeToBuffer(Object obj) throws EncodeException {
+        throw new RuntimeException("Vertx JSON not enabled");
+    }
+
+    @Substitute
+    public static String encodePrettily(Object obj) throws EncodeException {
+        throw new RuntimeException("Vertx JSON not enabled");
+    }
+
+    @Substitute
+    public static <T> T decodeValue(String str, Class<T> clazz) throws DecodeException {
+        throw new RuntimeException("Vertx JSON not enabled");
+    }
+
+    @Substitute
+    public static Object decodeValue(String str) throws DecodeException {
+        throw new RuntimeException("Vertx JSON not enabled");
+    }
+
+    @Substitute
+    public static <T> T decodeValue(String str, TypeReference<T> type) throws DecodeException {
+        throw new RuntimeException("Vertx JSON not enabled");
+    }
+
+    @Substitute
+    public static Object decodeValue(Buffer buf) throws DecodeException {
+        throw new RuntimeException("Vertx JSON not enabled");
+    }
+
+    @Substitute
+    public static <T> T decodeValue(Buffer buf, TypeReference<T> type) throws DecodeException {
+        throw new RuntimeException("Vertx JSON not enabled");
+    }
+
+    @Substitute
+    public static <T> T decodeValue(Buffer buf, Class<T> clazz) throws DecodeException {
+        throw new RuntimeException("Vertx JSON not enabled");
+    }
+
+}
+
+class JsonDisabled implements BooleanSupplier {
+
+    @Override
+    public boolean getAsBoolean() {
+        return !Boolean.getBoolean(VertxCoreRecorder.ENABLE_JSON);
     }
 }
 

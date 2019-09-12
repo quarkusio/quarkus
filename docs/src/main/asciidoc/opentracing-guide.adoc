@@ -137,3 +137,33 @@ Then visit the http://localhost:16686[Jaeger UI] to see the tracing information.
 
 
 Hit `CTRL+C` to stop the application.
+
+== Additional tracers
+
+The https://github.com/opentracing-contrib[OpenTracing API Contributions project] offers additional tracers that can be used to add tracing to a large variety of technologies/components.
+
+The tracers documented in the following section has been tested with Quarkus and works in both standard and native mode.
+
+=== JDBC Tracer
+
+The https://github.com/opentracing-contrib/java-jdbc[JDBC tracer] will add a span for each JDBC queries done by your application, to enable it, add the following dependency to your pom.xml:
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.opentracing.contrib</groupId>
+    <artifactId>opentracing-jdbc</artifactId>
+</dependency>
+----
+
+As it uses a dedicated JDBC driver, you must configure your datasource and Hibernate to use it.
+
+[source, properties]
+----
+# add ':tracing' to your database URL
+quarkus.datasource.url=jdbc:tracing:postgresql://localhost:5432/mydatabase
+# use the 'TracingDriver' instead of the one for your database
+quarkus.datasource.driver=io.opentracing.contrib.jdbc.TracingDriver
+# configure Hibernate dialect
+quarkus.hibernate-orm.dialect=org.hibernate.dialect.PostgreSQLDialect
+----

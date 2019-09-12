@@ -30,6 +30,7 @@ class VertxCommonProcessor {
         return SubstrateConfigBuildItem.builder()
                 .addNativeImageSystemProperty("vertx.disableDnsResolver", "true")
                 .addRuntimeInitializedClass("io.vertx.core.http.impl.VertxHttp2ClientUpgradeCodec")
+                .addRuntimeReinitializedClass("io.vertx.core.net.impl.PartialPooledByteBufAllocator")
                 .build();
     }
 

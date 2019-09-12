@@ -27,8 +27,6 @@ import javax.servlet.ServletException;
 
 import org.jboss.logging.Logger;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -38,7 +36,6 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
-import io.undertow.httpcore.BufferAllocator;
 import io.undertow.httpcore.StatusCodes;
 import io.undertow.server.DefaultExchangeHandler;
 import io.undertow.server.HandlerWrapper;
@@ -576,47 +573,4 @@ public class UndertowDeploymentRecorder {
         }
     }
 
-    private static class UndertowBufferAllocator implements BufferAllocator {
-
-        private final boolean defaultDirectBuffers;
-        private final int defaultBufferSize;
-
-        private UndertowBufferAllocator(boolean defaultDirectBuffers, int defaultBufferSize) {
-            this.defaultDirectBuffers = defaultDirectBuffers;
-            this.defaultBufferSize = defaultBufferSize;
-        }
-
-        @Override
-        public ByteBuf allocateBuffer() {
-            return allocateBuffer(defaultDirectBuffers);
-        }
-
-        @Override
-        public ByteBuf allocateBuffer(boolean direct) {
-            if (direct) {
-                return PooledByteBufAllocator.DEFAULT.directBuffer(defaultBufferSize);
-            } else {
-                return PooledByteBufAllocator.DEFAULT.heapBuffer(defaultBufferSize);
-            }
-        }
-
-        @Override
-        public ByteBuf allocateBuffer(int bufferSize) {
-            return allocateBuffer(defaultDirectBuffers, bufferSize);
-        }
-
-        @Override
-        public ByteBuf allocateBuffer(boolean direct, int bufferSize) {
-            if (direct) {
-                return PooledByteBufAllocator.DEFAULT.directBuffer(bufferSize);
-            } else {
-                return PooledByteBufAllocator.DEFAULT.heapBuffer(bufferSize);
-            }
-        }
-
-        @Override
-        public int getBufferSize() {
-            return defaultBufferSize;
-        }
-    }
 }

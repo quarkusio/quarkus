@@ -52,6 +52,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.AssignableResultHandle;
@@ -66,6 +67,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.runtime.EventConsumerInvoker;
 import io.quarkus.vertx.runtime.VertxProducer;
 import io.quarkus.vertx.runtime.VertxRecorder;
@@ -115,6 +117,11 @@ class VertxProcessor {
 
     @Inject
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
+
+    @BuildStep
+    SubstrateSystemPropertyBuildItem enableJson() {
+        return new SubstrateSystemPropertyBuildItem(VertxCoreRecorder.ENABLE_JSON, "true");
+    }
 
     @BuildStep
     AdditionalBeanBuildItem registerBean() {

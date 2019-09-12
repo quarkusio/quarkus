@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.core.MediaType;
@@ -54,13 +55,21 @@ public class SpringWebProcessor {
     private static final DotName REST_CONTROLLER_ANNOTATION = DotName
             .createSimple("org.springframework.web.bind.annotation.RestController");
 
-    private static final List<DotName> MAPPING_CLASSES = Arrays.asList(
-            DotName.createSimple("org.springframework.web.bind.annotation.RequestMapping"),
-            DotName.createSimple("org.springframework.web.bind.annotation.GetMapping"),
-            DotName.createSimple("org.springframework.web.bind.annotation.PostMapping"),
-            DotName.createSimple("org.springframework.web.bind.annotation.PutMapping"),
-            DotName.createSimple("org.springframework.web.bind.annotation.DeleteMapping"),
-            DotName.createSimple("org.springframework.web.bind.annotation.PatchMapping"));
+    private static final DotName REQUEST_MAPPING = DotName
+            .createSimple("org.springframework.web.bind.annotation.RequestMapping");
+    private static final DotName PATH_VARIABLE = DotName.createSimple("org.springframework.web.bind.annotation.PathVariable");
+
+    private static final List<DotName> MAPPING_CLASSES;
+
+    static {
+        MAPPING_CLASSES = Arrays.asList(
+                REQUEST_MAPPING,
+                DotName.createSimple("org.springframework.web.bind.annotation.GetMapping"),
+                DotName.createSimple("org.springframework.web.bind.annotation.PostMapping"),
+                DotName.createSimple("org.springframework.web.bind.annotation.PutMapping"),
+                DotName.createSimple("org.springframework.web.bind.annotation.DeleteMapping"),
+                DotName.createSimple("org.springframework.web.bind.annotation.PatchMapping"));
+    }
 
     private static final DotName RESPONSE_STATUS = DotName
             .createSimple("org.springframework.web.bind.annotation.ResponseStatus");
@@ -104,7 +113,7 @@ public class SpringWebProcessor {
     public AdditionalJaxRsResourceMethodParamAnnotations additionalJaxRsResourceMethodParamAnnotations() {
         return new AdditionalJaxRsResourceMethodParamAnnotations(
                 Arrays.asList(DotName.createSimple("org.springframework.web.bind.annotation.RequestParam"),
-                        DotName.createSimple("org.springframework.web.bind.annotation.PathVariable"),
+                        PATH_VARIABLE,
                         DotName.createSimple("org.springframework.web.bind.annotation.RequestBody"),
                         DotName.createSimple("org.springframework.web.bind.annotation.MatrixVariable"),
                         DotName.createSimple("org.springframework.web.bind.annotation.RequestHeader"),
@@ -130,6 +139,8 @@ public class SpringWebProcessor {
             return;
         }
 
+        validate(annotations);
+
         final Set<String> classNames = new HashSet<>();
         for (AnnotationInstance annotation : annotations) {
             classNames.add(annotation.target().asClass().toString());
@@ -141,6 +152,38 @@ public class SpringWebProcessor {
                         SpringResourceBuilder.class.getName() + ":" + String.join(",", classNames)));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, SpringResourceBuilder.class.getName()));
+    }
+
+    private void validate(Collection<AnnotationInstance> restControllerInstances) {
+        for (AnnotationInstance restControllerInstance : restControllerInstances) {
+            ClassInfo restControllerClass = restControllerInstance.target().asClass();
+            if (restControllerClass.classAnnotation(REQUEST_MAPPING) == null) {
+                throw new IllegalArgumentException(
+                        "Currently any class annotated with @RestController also needs to be annotated with @RequestMapping. " +
+                                "Offending class is " + restControllerClass.name());
+            }
+
+            Map<DotName, List<AnnotationInstance>> annotations = restControllerClass.annotations();
+            for (Map.Entry<DotName, List<AnnotationInstance>> entry : annotations.entrySet()) {
+                DotName dotName = entry.getKey();
+                if (PATH_VARIABLE.equals(dotName)) {
+                    List<AnnotationInstance> pathVariableInstances = entry.getValue();
+                    for (AnnotationInstance pathVariableInstance : pathVariableInstances) {
+                        if (pathVariableInstance.target().kind() != AnnotationTarget.Kind.METHOD_PARAMETER) {
+                            continue;
+                        }
+                        if ((pathVariableInstance.value() == null) && (pathVariableInstance.value("name") == null)) {
+                            MethodInfo method = pathVariableInstance.target().asMethodParameter().method();
+                            throw new IllegalArgumentException(
+                                    "Currently method parameters annotated with @PathVariable must supply a value for 'name' or 'value'."
+                                            +
+                                            "Offending method is " + method.declaringClass().name() + "#" + method.name());
+                        }
+
+                    }
+                }
+            }
+        }
     }
 
     @BuildStep

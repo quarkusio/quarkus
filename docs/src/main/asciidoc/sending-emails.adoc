@@ -155,7 +155,7 @@ Attachments can be created from raw bytes (as shown in the snippet) or files.
 == Sending HTML emails with inlined attachments
 
 When sending HTML email, you can add inlined attachments.
-For example, you can send an image with your email, and this image will be displayed in the mail content.
+For example, you can send an image with your email, and this image will be displayed in the mail content. If you put the image file into resources folder, you should specify the full path to the file. "e.g." "META-INF/resources/quarkus-logo.png" otherwise quarkus will lookup in the root folder of the project
 
 [source, java]
 ----

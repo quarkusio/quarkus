@@ -25,10 +25,18 @@ To complete this guide, you need:
 * Apache Maven 3.5.3+
 * Docker
 
-=== Install Eclipse with modelling plugins
+=== Install modelling plugins in your IDE
+
+Kogito Tooling is currently supported in Eclipse and VSCode:
+
+* Eclipse
 
 To be able to make use of visual modelling of your processes, download Eclipse IDE and
 install from Market place Eclipse BPMN2 Modeller plugin (with jBPM Runtime Extension)
+
+* VSCode
+
+Download and install the VSCode Extension from https://github.com/kiegroup/kogito-tooling/releases[Kogito Tooling release page] to edit and model process definitions from VSCode IDE.
 
 == Architecture
 

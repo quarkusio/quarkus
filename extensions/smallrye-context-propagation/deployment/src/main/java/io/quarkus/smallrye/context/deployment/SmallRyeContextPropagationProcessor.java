@@ -39,7 +39,7 @@ class SmallRyeContextPropagationProcessor {
             throws ClassNotFoundException, IOException {
         List<ThreadContextProvider> discoveredProviders = new ArrayList<>();
         List<ContextManagerExtension> discoveredExtensions = new ArrayList<>();
-        for (Class<?> provider : ServiceUtil.classesNamedIn(SmallRyeContextPropagationRecorder.class.getClassLoader(),
+        for (Class<?> provider : ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
                 "META-INF/services/" + ThreadContextProvider.class.getName())) {
             if (provider.equals(ResteasyContextProvider.class)) {
                 try {
@@ -55,7 +55,7 @@ class SmallRyeContextPropagationProcessor {
                         e);
             }
         }
-        for (Class<?> extension : ServiceUtil.classesNamedIn(SmallRyeContextPropagationRecorder.class.getClassLoader(),
+        for (Class<?> extension : ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
                 "META-INF/services/" + ContextManagerExtension.class.getName())) {
             try {
                 discoveredExtensions.add((ContextManagerExtension) extension.newInstance());

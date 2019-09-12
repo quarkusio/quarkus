@@ -146,17 +146,25 @@ public class SmallRyeMetricsProcessor {
                     return;
                 }
 
-                for (DotName annotationName : clazz.annotations().keySet()) {
-                    if (GAUGE.equals(annotationName)) {
-                        ctx.transform().add(AnnotationInstance.create(METRICS_BINDING,
-                                ctx.getTarget(), new AnnotationValue[0]))
-                                .done();
-                        return;
+                if (clazz.annotations().keySet().contains(GAUGE)) {
+                    BuiltinScope beanScope = BuiltinScope.from(clazz);
+                    if (!isJaxRsEndpoint(clazz) && beanScope != null &&
+                            !beanScope.equals(BuiltinScope.APPLICATION) &&
+                            !beanScope.equals(BuiltinScope.SINGLETON)) {
+                        LOGGER.warnf("Bean %s declares a org.eclipse.microprofile.metrics.annotation.Gauge " +
+                                "but is of a scope that typically " +
+                                "creates multiple instances. Gauges are forbidden on beans " +
+                                "that create multiple instances, this will cause errors " +
+                                "when constructing them. Please use annotated gauges only in beans with " +
+                                "@ApplicationScoped or @Singleton scopes, or in JAX-RS endpoints.",
+                                clazz.name().toString());
                     }
+                    ctx.transform().add(AnnotationInstance.create(METRICS_BINDING,
+                            ctx.getTarget(), new AnnotationValue[0]))
+                            .done();
                 }
             }
         }));
-
     }
 
     @BuildStep

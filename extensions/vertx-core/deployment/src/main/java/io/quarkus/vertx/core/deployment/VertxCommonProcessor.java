@@ -50,7 +50,7 @@ class VertxCommonProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
+    @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
     CoreVertxBuildItem build(VertxCoreRecorder recorder, BeanContainerBuildItem beanContainer,
             LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, VertxConfiguration config) {
 
@@ -61,7 +61,7 @@ class VertxCommonProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
+    @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
     InternalWebVertxBuildItem buildWeb(VertxCoreRecorder recorder, VertxConfiguration config,
             ShutdownContextBuildItem context,
             LaunchModeBuildItem launchModeBuildItem) {

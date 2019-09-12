@@ -16,7 +16,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 
-import io.quarkus.mailer.impl.ReactiveMailerImpl;
+import io.quarkus.mailer.runtime.ReactiveMailerImpl;
 import io.vertx.axle.core.Vertx;
 import io.vertx.core.file.OpenOptions;
 

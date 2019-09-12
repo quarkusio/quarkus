@@ -37,6 +37,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
@@ -265,6 +266,8 @@ public class ResteasyServerCommonProcessor {
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_GZIP_MAX_INPUT,
                     Long.toString(commonConfig.gzip.maxInput.asLongValue()));
         }
+        resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_UNWRAPPED_EXCEPTIONS,
+                ArcUndeclaredThrowableException.class.getName());
 
         resteasyServerConfig.produce(new ResteasyServerConfigBuildItem(path, resteasyInitParameters));
         resteasyDeployment.produce(new ResteasyDeploymentBuildItem(path, deployment));

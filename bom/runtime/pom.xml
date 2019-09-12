@@ -66,7 +66,7 @@
         <!-- What we actually depend on for the annotations, as latest Graal
            is not available in Maven fast enough: -->
         <graal-sdk.version>19.2.0</graal-sdk.version>
-        <gizmo.version>1.0.0.Alpha7</gizmo.version>
+        <gizmo.version>1.0.0.Alpha8</gizmo.version>
         <jackson.version>2.9.9.20190807</jackson.version>
         <commons-beanutils.version>1.9.4</commons-beanutils.version>
         <commons-logging.version>1.2</commons-logging.version>
@@ -156,7 +156,7 @@
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kogito.version>0.3.0</kogito.version>
-        <kubernetes-client.version>4.4.2</kubernetes-client.version>
+        <kubernetes-client.version>4.5.1</kubernetes-client.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <wiremock.version>2.24.1</wiremock.version>
@@ -2263,11 +2263,23 @@
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-web</artifactId>
                 <version>${spring.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-jcl</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.springframework.data</groupId>
                 <artifactId>spring-data-jpa</artifactId>
                 <version>${spring-data.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-jcl</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>

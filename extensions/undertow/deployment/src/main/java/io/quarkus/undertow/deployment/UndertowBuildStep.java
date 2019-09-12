@@ -282,6 +282,12 @@ public class UndertowBuildStep {
                 knownPaths.knownDirectories,
                 launchMode.getLaunchMode(), shutdownContext, contextPath);
 
+        if (webMetaData.getContextParams() != null) {
+            for (ParamValueMetaData i : webMetaData.getContextParams()) {
+                recorder.addContextParam(deployment, i.getParamName(), i.getParamValue());
+            }
+        }
+
         //add servlets
         if (webMetaData.getServlets() != null) {
             for (ServletMetaData servlet : webMetaData.getServlets()) {

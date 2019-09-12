@@ -3,6 +3,7 @@ package io.quarkus.arc.processor;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 
+import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InvocationContextImpl.InterceptorInvocation;
 import io.quarkus.arc.Subclass;
@@ -341,7 +342,7 @@ public class SubclassGenerator extends AbstractGenerator {
         if (addCatchException) {
             CatchBlockCreator catchOtherExceptions = tryCatch.addCatch(Exception.class);
             // and wrap them in a new RuntimeException(e)
-            catchOtherExceptions.throwException(RuntimeException.class, "Error invoking subclass method",
+            catchOtherExceptions.throwException(ArcUndeclaredThrowableException.class, "Error invoking subclass method",
                     catchOtherExceptions.getCaughtException());
         }
         // InvocationContextImpl.aroundInvoke(this, methods.get("m1"), params, interceptorChains.get("m1"), forward)

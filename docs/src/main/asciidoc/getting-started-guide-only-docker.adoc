@@ -41,17 +41,17 @@ To get started we are going to setup two aliases to use to emulate java and mvn 
 ----
 alias mvn="docker run -it -p 8080:8080 -p 5005:5005 \
            -v \`pwd\`:/project -v ~/.m2/repository:/home/quarkus/.m2/repository \
-           quay.io/quarkus/centos-quarkus-maven:19.2.0 mvn"
+           quay.io/quarkus/centos-quarkus-maven:{graalvm-version}| mvn"
 alias java="docker run -it -p 8080:8080 -p 5005:5005 \
             -v \`pwd\`:/project -v ~/.m2/repository:/home/quarkus/.m2/repository \
-            quay.io/quarkus/centos-quarkus-maven:19.2.0 java"
+            quay.io/quarkus/centos-quarkus-maven:{graalvm-version}| java"
 ----
 
 With these two aliases you can run the `java` and `mvn` commands used in this guide without installing neither
 Java nor Maven.
 
 [TIP]
-.Speed fifferences with vanilla Quarkus and via Docker
+.Speed differences with vanilla Quarkus and via Docker
 ====
 In this guide you will run everything through a container. That will add a overhead compared to running Quarkus via local native `java` and `mvn` commands. Instead of miliseconds you'll see times in seconds. 
 ====

@@ -79,22 +79,23 @@ public class CounterBean {
 
     private AtomicInteger counter = new AtomicInteger();
 
-    public int get() {
+    public int get() {  // <2>
         return counter.get();
     }
 
-    @Scheduled(every="10s")     // <2>
+    @Scheduled(every="10s")     // <3>
     void increment() {
-        counter.incrementAndGet();
+        counter.incrementAndGet(); // <4>
     }
 
 }
 ----
 1. Declare the bean in the _application_ scope
-2. Use the `@Scheduled` annotation to instruct Quarkus to runs this method every 10 seconds
-
-The code is pretty straightforward. Every 10 seconds, the counter is incremented.
-The `get()` method allows retrieving the current value.
+2. The `get()` method allows retrieving the current value.
+3. Use the `@Scheduled` annotation to instruct Quarkus to run this method every 10 seconds provided a worker thread is available
+(Quarkus is using 10 worker threads for the scheduler). If it is not available the method invocation should be re-scheduled by default i.e
+it should be invoked as soon as possible. The invocation of the scheduled method does not depend on the status or result of the previous invocation.
+4. The code is pretty straightforward. Every 10 seconds, the counter is incremented.
 
 NOTE: Cron-like expressions are also supported. The syntax is currently based on Quartz Cron Trigger. For example a method annotated with `@Scheduled(cron="0 15 10 * * ?")` is executed at 10:15am every day.
 

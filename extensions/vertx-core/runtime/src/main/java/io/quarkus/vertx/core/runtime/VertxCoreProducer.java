@@ -1,5 +1,7 @@
 package io.quarkus.vertx.core.runtime;
 
+import java.util.function.Supplier;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
@@ -12,15 +14,15 @@ import io.vertx.core.Vertx;
 @ApplicationScoped
 public class VertxCoreProducer {
 
-    private volatile Vertx vertx;
+    private volatile Supplier<Vertx> vertx;
 
-    void initialize(Vertx vertx) {
+    void initialize(Supplier<Vertx> vertx) {
         this.vertx = vertx;
     }
 
     @Singleton
     @Produces
     public Vertx vertx() {
-        return vertx;
+        return vertx.get();
     }
 }

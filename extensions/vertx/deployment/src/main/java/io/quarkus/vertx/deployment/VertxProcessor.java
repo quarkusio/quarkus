@@ -164,7 +164,7 @@ class VertxProcessor {
                 launchMode.getLaunchMode(),
                 shutdown, codecByClass);
         serviceStart.produce(new ServiceStartBuildItem("vertx"));
-        return new VertxBuildItem(internalVertx.getVertx());
+        return new VertxBuildItem(recorder.forceStart(internalVertx.getVertx()));
     }
 
     @BuildStep

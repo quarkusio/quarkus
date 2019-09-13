@@ -36,6 +36,7 @@ public class AutoFieldInjectionTest {
     @Test
     public void testConfigWasInjected() {
         Assertions.assertEquals("ok", bean.foo);
+        Assertions.assertEquals(1l, bean.bar);
     }
 
     @Dependent
@@ -45,9 +46,17 @@ public class AutoFieldInjectionTest {
         @MyQualifier
         String foo;
 
+        @MyQualifier
+        Long bar;
+
     }
 
     static class Producer {
+
+        // @Inject should not be added here
+        @MyQualifier
+        @Produces
+        Long producedLong = 1l;
 
         @MyQualifier
         @Produces

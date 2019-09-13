@@ -21,6 +21,7 @@ pr:
       - CONTRIBUTING.md
       - LICENSE.txt
       - dco.txt
+      - .github/ISSUE_TEMPLATE/*.md
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository/

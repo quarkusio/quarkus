@@ -1,7 +1,10 @@
 package io.quarkus.it.spring.web;
 
+import javax.validation.constraints.NotBlank;
+
 public class Person {
 
+    @NotBlank
     private String name;
 
     public String getName() {

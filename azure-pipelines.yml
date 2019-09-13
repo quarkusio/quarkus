@@ -17,8 +17,7 @@ pr:
     exclude:
       - docs/src/main/asciidoc/*
       - docs/src/main/asciidoc/images/*
-      - README.md
-      - CONTRIBUTING.md
+      - *.md
       - LICENSE.txt
       - dco.txt
 

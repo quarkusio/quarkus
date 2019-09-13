@@ -662,6 +662,9 @@ public class BeanDeployment {
             }
             for (FieldInfo field : beanClass.fields()) {
                 if (annotationStore.hasAnnotation(field, DotNames.PRODUCES)) {
+                    if (annotationStore.hasAnnotation(field, DotNames.INJECT)) {
+                        throw new DefinitionException("Injected field cannot be annotated with @Produces: " + field);
+                    }
                     // Producer fields are not inherited
                     producerFields.add(field);
                     if (!hasBeanDefiningAnnotation) {

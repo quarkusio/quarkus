@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -99,6 +100,8 @@ public class ResteasyServerCommonProcessor {
             ResteasyDotNames.RESTEASY_HEADER_PARAM,
             ResteasyDotNames.RESTEASY_MATRIX_PARAM,
     };
+
+    private static final DotName CONFIG_PROPERTY_DOTNAME = DotName.createSimple(ConfigProperty.class.getName());
 
     /**
      * JAX-RS configuration.
@@ -343,7 +346,9 @@ public class ResteasyServerCommonProcessor {
             @Override
             public void transform(TransformationContext transformationContext) {
                 ClassInfo clazz = transformationContext.getTarget().asClass();
-                if (clazz.classAnnotation(ResteasyDotNames.PROVIDER) != null && clazz.annotations().containsKey(DotNames.INJECT)
+                if (clazz.classAnnotation(ResteasyDotNames.PROVIDER) != null
+                        && (clazz.annotations().containsKey(DotNames.INJECT)
+                                || clazz.annotations().containsKey(CONFIG_PROPERTY_DOTNAME))
                         && !BuiltinScope.isIn(clazz.classAnnotations())) {
                     // A provider with an injection point but no built-in scope is @Singleton
                     transformationContext.transform().add(BuiltinScope.SINGLETON.getName()).done();

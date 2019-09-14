@@ -28,6 +28,7 @@
         <module>infinispan-client</module>
         <module>infinispan-embedded</module>
         <module>main</module>
+        <module>cxf</module>
         <module>kafka</module>
         <module>kafka-streams</module>
         <module>jpa</module>

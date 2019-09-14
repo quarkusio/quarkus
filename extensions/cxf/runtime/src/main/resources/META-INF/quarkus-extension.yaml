@@ -1,0 +1,13 @@
+---
+name: "CXF"
+metadata:
+  keywords:
+  - "cxf"
+  - "jaxws"
+  - "jax-ws"
+  - "web"
+  - "soap"
+  categories:
+  - "web"
+  guide: "https://quarkus.io/guides/cxf-guide"
+  status: "preview"

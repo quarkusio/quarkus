@@ -60,6 +60,7 @@ include::quarkus-intro.adoc[tag=intro]
 * link:jms.html[Using Artemis JMS Client]
 * link:reactive-routes.adoc[Using Reactive Routes]
 * link:camel.adoc[Apache Camel]
+* link:soap-web-service-guide.html[Writing SOAP Web Services]
 
 * link:faq.html[FAQs]
 

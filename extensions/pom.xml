@@ -55,6 +55,9 @@
         <module>smallrye-openapi</module>
         <module>swagger-ui</module>
 
+        <!-- Web services -->
+        <module>cxf</module>
+
         <!-- Reactive -->
         <module>mutiny</module>
         <module>vertx</module>

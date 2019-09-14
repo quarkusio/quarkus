@@ -165,6 +165,8 @@
         <antlr.version>4.7.2</antlr.version>
         <quarkus-security.version>1.0.0.Alpha2</quarkus-security.version>
         <javax.interceptor-api.version>1.2</javax.interceptor-api.version>
+        <cxf.version>3.3.3</cxf.version>
+        <jaxws.version>2.0.0.Final</jaxws.version>
     </properties>
 
     <dependencyManagement>
@@ -517,6 +519,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-resteasy-server-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-cxf</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1190,6 +1197,16 @@
                 <version>${artemis.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.apache.cxf</groupId>
+                <artifactId>cxf-rt-frontend-jaxws</artifactId>
+                <version>${cxf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.cxf</groupId>
+                <artifactId>cxf-rt-transports-http</artifactId>
+                <version>${cxf.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
                 <version>${httpclient.version}</version>
@@ -1524,6 +1541,11 @@
                 <groupId>org.jboss.narayana.stm</groupId>
                 <artifactId>stm</artifactId>
                 <version>${narayana.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.spec.javax.xml.ws</groupId>
+                <artifactId>jboss-jaxws-api_2.3_spec</artifactId>
+                <version>${jaxws.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>

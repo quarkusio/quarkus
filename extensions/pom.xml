@@ -49,6 +49,9 @@
         <module>smallrye-openapi</module>
         <module>swagger-ui</module>
 
+        <!-- Web services -->
+        <module>cxf</module>
+
         <!-- Reactive -->
         <module>vertx</module>
         <module>vertx-web</module>

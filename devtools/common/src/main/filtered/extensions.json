@@ -753,5 +753,18 @@
     "groupId": "io.quarkus",
     "artifactId": "quarkus-vertx",
     "guide": "https://quarkus.io/guides/using-vertx"
+  },
+  {
+    "name": "CXF",
+    "shortName": "jax-ws",
+    "labels": [
+      "cxf",
+      "jaxws",
+      "web",
+      "soap"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-cxf",
+    "guide": "https://quarkus.io/guides/cxf-guide"
   }
 ]

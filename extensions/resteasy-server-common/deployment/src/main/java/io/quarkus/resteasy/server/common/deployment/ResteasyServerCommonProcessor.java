@@ -332,24 +332,8 @@ public class ResteasyServerCommonProcessor {
     }
 
     @BuildStep
-    AnnotationsTransformerBuildItem annotationTransformer() {
-        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-
-            @Override
-            public boolean appliesTo(Kind kind) {
-                return kind == Kind.CLASS;
-            }
-
-            @Override
-            public void transform(TransformationContext transformationContext) {
-                ClassInfo clazz = transformationContext.getTarget().asClass();
-                if (clazz.classAnnotation(ResteasyDotNames.PROVIDER) != null && clazz.annotations().containsKey(DotNames.INJECT)
-                        && !BuiltinScope.isIn(clazz.classAnnotations())) {
-                    // A provider with an injection point but no built-in scope is @Singleton
-                    transformationContext.transform().add(BuiltinScope.SINGLETON.getName()).done();
-                }
-            }
-        });
+    BeanDefiningAnnotationBuildItem providerSupport() {
+        return new BeanDefiningAnnotationBuildItem(ResteasyDotNames.PROVIDER, BuiltinScope.SINGLETON.getName());
     }
 
     /**

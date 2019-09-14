@@ -1,5 +1,7 @@
 package io.quarkus.it.rest;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
@@ -16,6 +18,10 @@ import javax.ws.rs.ext.Provider;
 @Provider
 @Produces("application/foo")
 public class ApplicationFooProvider implements MessageBodyWriter<String> {
+
+    @ConfigProperty(name = "microprofile.custom.value")
+    Integer injectedValueNeverUsed;
+
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return mediaType.equals(new MediaType("application", "foo"));

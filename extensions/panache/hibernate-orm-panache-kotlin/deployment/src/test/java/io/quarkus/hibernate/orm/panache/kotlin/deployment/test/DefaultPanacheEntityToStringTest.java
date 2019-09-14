@@ -1,10 +1,10 @@
-package io.quarkus.hibernate.orm.panache.test;
+package io.quarkus.hibernate.orm.panache.kotlin.deployment.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity;
 
 public class DefaultPanacheEntityToStringTest {
 
@@ -19,7 +19,7 @@ public class DefaultPanacheEntityToStringTest {
 
     static class MyPanacheEntity extends PanacheEntity {
         public MyPanacheEntity(Long id) {
-            this.id = id;
+            this.setId(id);
         }
     }
 }

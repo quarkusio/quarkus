@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.panache.test;
+package io.quarkus.hibernate.orm.panache.kotlin.deployment.test;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;

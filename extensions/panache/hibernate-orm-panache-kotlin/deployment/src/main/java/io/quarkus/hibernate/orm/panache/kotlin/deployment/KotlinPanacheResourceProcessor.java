@@ -3,9 +3,13 @@ package io.quarkus.hibernate.orm.panache.kotlin.deployment;
 import static java.util.Arrays.asList;
 import static org.jboss.jandex.DotName.createSimple;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -23,18 +27,22 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateEnhancersRegisteredBuildItem;
+import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanion;
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity;
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase;
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepository;
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepositoryBase;
 import io.quarkus.hibernate.orm.panache.kotlin.runtime.JpaOperations;
+import io.quarkus.hibernate.orm.panache.kotlin.runtime.PanacheKotlinHibernateOrmRecorder;
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
@@ -124,17 +132,22 @@ public final class KotlinPanacheResourceProcessor {
     }
 
     @BuildStep
-    void build(CombinedIndexBuildItem index,
+    @Record(ExecutionTime.STATIC_INIT)
+    void build(PanacheKotlinHibernateOrmRecorder recorder,
+            CombinedIndexBuildItem index,
             ApplicationIndexBuildItem applicationIndex,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             HibernateEnhancersRegisteredBuildItem hibernateMarker,
-            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) {
+            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems,
+            Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping) {
 
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
                 .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
 
         KotlinPanacheRepositoryEnhancer daoEnhancer = new KotlinPanacheRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
+        Map<String, String> panacheEntityToPersistenceUnit = new HashMap<>();
+
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
             if (classInfo.name().equals(PANACHE_REPOSITORY))
@@ -160,18 +173,22 @@ public final class KotlinPanacheResourceProcessor {
         // of PanacheEntity if we ask for subtypes of PanacheEntityBase
         // NOTE: we don't skip abstract/generic entities because they still need accessors
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(PANACHE_COMPANION)) {
-            if (classInfo.name().equals(PANACHE_ENTITY))
+            if (classInfo.name().equals(PANACHE_ENTITY)) {
                 continue;
-            if (modelClasses.add(classInfo.name().toString())) {
-                transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), companionEnhancer));
+            }
+            String className = classInfo.name().toString();
+            if (modelClasses.add(className)) {
+                transformers.produce(new BytecodeTransformerBuildItem(className, companionEnhancer));
             }
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(PANACHE_ENTITY_BASE)) {
-            if (classInfo.name().equals(PANACHE_ENTITY))
+            if (classInfo.name().equals(PANACHE_ENTITY)) {
                 continue;
-            if (modelClasses.add(classInfo.name().toString())) {
+            }
+            String className = classInfo.name().toString();
+            if (modelClasses.add(className)) {
                 entityEnhancer.collectFields(classInfo);
-                transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), entityEnhancer));
+                transformers.produce(new BytecodeTransformerBuildItem(className, entityEnhancer));
             }
         }
 
@@ -185,5 +202,24 @@ public final class KotlinPanacheResourceProcessor {
                 }
             }
         }
+
+        Map<String, Set<String>> collectedEntityToPersistenceUnits = new HashMap<>();
+        if (jpaModelPersistenceUnitMapping.isPresent()) {
+            collectedEntityToPersistenceUnits = jpaModelPersistenceUnitMapping.get().getEntityToPersistenceUnits();
+        }
+
+        for (Map.Entry<String, Set<String>> entry : collectedEntityToPersistenceUnits.entrySet()) {
+            String entityName = entry.getKey();
+            List<String> selectedPersistenceUnits = new ArrayList<>(entry.getValue());
+            boolean isPanacheEntity = modelClasses.stream().anyMatch(name -> name.equals(entityName));
+            if (selectedPersistenceUnits.size() > 1 && isPanacheEntity) {
+                throw new IllegalStateException(String.format(
+                        "PanacheEntity '%s' cannot be defined for usage in several persistence units which is not supported. The following persistence units were found: %s.",
+                        entityName, String.join(",", selectedPersistenceUnits)));
+            }
+
+            panacheEntityToPersistenceUnit.put(entityName, selectedPersistenceUnits.get(0));
+        }
+        recorder.setEntityToPersistenceUnit(panacheEntityToPersistenceUnit);
     }
 }

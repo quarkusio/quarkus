@@ -1,8 +1,12 @@
 package io.quarkus.hibernate.orm.panache.deployment;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -21,6 +25,8 @@ import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
@@ -29,10 +35,12 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateEnhancersRegisteredBuildItem;
+import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
+import io.quarkus.hibernate.orm.panache.runtime.PanacheHibernateOrmRecorder;
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
@@ -45,6 +53,7 @@ public final class PanacheHibernateResourceProcessor {
 
     static final DotName DOTNAME_PANACHE_REPOSITORY_BASE = DotName.createSimple(PanacheRepositoryBase.class.getName());
     private static final DotName DOTNAME_PANACHE_REPOSITORY = DotName.createSimple(PanacheRepository.class.getName());
+
     static final DotName DOTNAME_PANACHE_ENTITY = DotName.createSimple(PanacheEntity.class.getName());
     static final DotName DOTNAME_PANACHE_ENTITY_BASE = DotName.createSimple(PanacheEntityBase.class.getName());
 
@@ -193,5 +202,32 @@ public final class PanacheHibernateResourceProcessor {
             }
         }
         return null;
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void persistenceUnits(PanacheHibernateOrmRecorder recorder,
+            Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
+            List<PanacheEntityClassBuildItem> entityClasses) {
+        Map<String, String> panacheEntityToPersistenceUnit = new HashMap<>();
+        if (jpaModelPersistenceUnitMapping.isPresent()) {
+            Map<String, Set<String>> collectedEntityToPersistenceUnits = jpaModelPersistenceUnitMapping.get()
+                    .getEntityToPersistenceUnits();
+            for (Map.Entry<String, Set<String>> entry : collectedEntityToPersistenceUnits.entrySet()) {
+                String entityName = entry.getKey();
+                List<String> selectedPersistenceUnits = new ArrayList<>(entry.getValue());
+                boolean isPanacheEntity = entityClasses.stream()
+                        .anyMatch(entity -> entity.get().name().toString().equals(entityName));
+
+                if (selectedPersistenceUnits.size() > 1 && isPanacheEntity) {
+                    throw new IllegalStateException(String.format(
+                            "PanacheEntity '%s' cannot be defined for usage in several persistence units which is not supported. The following persistence units were found: %s.",
+                            entityName, String.join(",", selectedPersistenceUnits)));
+                }
+
+                panacheEntityToPersistenceUnit.put(entityName, selectedPersistenceUnits.get(0));
+            }
+        }
+        recorder.setEntityToPersistenceUnit(panacheEntityToPersistenceUnit);
     }
 }

@@ -1,5 +1,7 @@
 package io.quarkus.it.spring.web;
 
+import javax.validation.Valid;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,7 +25,7 @@ public class GreetingController {
     }
 
     @PostMapping(path = "/person")
-    public Greeting newGreeting(@RequestBody Person person) {
+    public Greeting newGreeting(@RequestBody @Valid Person person) {
         return new Greeting("hello " + person.getName());
     }
 }

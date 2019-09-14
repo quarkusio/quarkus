@@ -4,8 +4,10 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -70,6 +72,15 @@ class HibernateValidatorProcessor {
     private static final DotName VALIDATE_ON_EXECUTION = DotName.createSimple(ValidateOnExecution.class.getName());
 
     private static final DotName VALID = DotName.createSimple(Valid.class.getName());
+
+    // TODO this needs to be removed and instead use AdditionalJaxRsResourceMethodAnnotationsBuildItem
+    private static final List<DotName> SPRING_METHOD_MAPPING_ANNOTATIONS = Arrays.asList(
+            DotName.createSimple("org.springframework.web.bind.annotation.RequestMapping"),
+            DotName.createSimple("org.springframework.web.bind.annotation.GetMapping"),
+            DotName.createSimple("org.springframework.web.bind.annotation.PostMapping"),
+            DotName.createSimple("org.springframework.web.bind.annotation.PutMapping"),
+            DotName.createSimple("org.springframework.web.bind.annotation.DeleteMapping"),
+            DotName.createSimple("org.springframework.web.bind.annotation.PatchMapping"));
 
     @BuildStep
     HotDeploymentWatchedFileBuildItem configFile() {
@@ -174,7 +185,8 @@ class HibernateValidatorProcessor {
 
         // Add the annotations transformer to add @MethodValidated annotations on the methods requiring validation
         annotationsTransformers
-                .produce(new AnnotationsTransformerBuildItem(new MethodValidatedAnnotationsTransformer(consideredAnnotations)));
+                .produce(new AnnotationsTransformerBuildItem(
+                        new MethodValidatedAnnotationsTransformer(consideredAnnotations, SPRING_METHOD_MAPPING_ANNOTATIONS)));
 
         Set<Class<?>> classesToBeValidated = new HashSet<>();
         for (DotName className : classNamesToBeValidated) {

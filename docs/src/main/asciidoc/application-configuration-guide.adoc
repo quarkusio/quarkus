@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-Hardcoded values in your code is a _no go_ (even if we all did it at some point ;-)).
+Hardcoded values in your code are a _no go_ (even if we all did it at some point ;-)).
 In this guide, we learn how to configure your application.
 
 == Prerequisites
@@ -118,7 +118,7 @@ So you can quickly know when your configuration is complete.
 
 == Update the test
 
-We also need to update the functional test to reflect the changes made to endpoint.
+We also need to update the functional test to reflect the changes made to the endpoint.
 Edit the `src/test/java/org/acme/config/GreetingResourceTest.java` file and change the content of the `testHelloEndpoint` method to:
 
 
@@ -165,7 +165,7 @@ for its own configuration. For example to configure the HTTP server port you can
 `application.properties`.
 
 It is also possible to generate an example `application.properties` with all known configuration properties, to make
-it easy to see what Quarkus configuration options are available. To do this run
+it easy to see what Quarkus configuration options are available. To do this, run:
 
 [source,shell]
 --
@@ -185,7 +185,7 @@ when applicable. For example this HTTP port config entry will appear as:
 #quarkus.http.port=8080
 --
 
-Rather than generating an example config file you can also add these to you actual config file by setting the `-Dfile`
+Rather than generating an example config file, you can also add these to you actual config file by setting the `-Dfile`
 parameter:
 
 [source,shell]
@@ -193,7 +193,7 @@ parameter:
 ./mvnw quarkus:generate-config -Dfile=application.properties
 --
 
-If a config option is already present (commented or uncommented) it will not be added, so it is safe to run this after
+If a config option is already present (commented or not) it will not be added, so it is safe to run this after
 adding an additional extension to see what additional options have been added.
 
 == Overriding properties at runtime
@@ -225,7 +225,7 @@ NOTE: Environment variables names are following the conversion rules of link:htt
 === Configuration Profiles
 
 Quarkus supports the notion of configuration profiles. These allow you to have multiple configuration in the same file and
-select between then via a profile name.
+select between them via a profile name.
 
 The syntax for this is `%{profile}.config.key=value`. For example if I have the following:
 
@@ -235,7 +235,7 @@ quarkus.http.port=9090
 %dev.quarkus.http.port=8181
 ----
 
-The Quarkus HTTP port will be 9090, unless the 'dev' profile is active, in which case it will be 8181.
+The Quarkus HTTP port will be 9090, unless the `dev` profile is active, in which case it will be 8181.
 
 By default Quarkus has three profiles, although it is possible to use as many as you like. The default profiles are:
 
@@ -246,7 +246,7 @@ By default Quarkus has three profiles, although it is possible to use as many as
 There are two ways to set a custom profile, either via the `quarkus.profile` system property or the `QUARKUS_PROFILE`
 environment variable. If both are set the system property takes precedence. Note that it is not necessary to
 define the names of these profiles anywhere, all that is necessary is to create a config property with the profile
-name, and then set the current profile to that name. For example if I want a 'staging' profile with a different HTTP port
+name, and then set the current profile to that name. For example if I want a `staging` profile with a different HTTP port
 I can add the following to `application.properties`:
 
 [source,properties]
@@ -255,7 +255,7 @@ quarkus.http.port=9090
 %staging.quarkus.http.port=9999
 ----
 
-And then set the `QUARKUS_PROFILE` environment variable to 'staging' to activate my profile.
+And then set the `QUARKUS_PROFILE` environment variable to `staging` to activate my profile.
 
 ==== Miscellaneous
 The default Quarkus application runtime profile is set to the profile used to build the application.
@@ -280,7 +280,7 @@ class and it will be detected and installed at application startup.
 === Custom configuration converters
 
 You can also use your custom types as a configuration values. This can be done by implementing `org.eclipse.microprofile.config.spi.Converter<T>`
-and adding its fully qualified class name in file `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
+and adding its fully qualified class name in the `META-INF/services/org.eclipse.microprofile.config.spi.Converter` file.
 
 Let us assume you have a custom type like this one:
 
@@ -321,8 +321,8 @@ public class MicroProfileCustomValueConverter implements Converter<MicroProfileC
 }
 ----
 
-Then you need to include fully qualified class name of converter in a service file `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
-If you have more converters simply add their class names in this file as well. Single fully qualified class name per line, for example:
+Then you need to include the fully qualified class name of the converter in a service file `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
+If you have more converters, simply add their class names in this file as well. Single fully qualified class name per line, for example:
 
 [source]
 ----
@@ -331,8 +331,8 @@ org.acme.config.SomeOtherConverter
 org.acme.config.YetAnotherConverter
 ----
 
-Please note that `SomeOtherConverter` and `YetAnotherConverter` was added just for a demonstration. If you include in this file classes
-which are not available in runtime, the converters loading will fail.
+Please note that `SomeOtherConverter` and `YetAnotherConverter` were added just for a demonstration. If you include in this file classes
+which are not available at runtime, the converters loading will fail.
 
 After this is done you can use your custom type as a configuration value:
 
@@ -344,7 +344,7 @@ MicroProfileCustomValue value;
 
 ==== Converter priority
 
-In some cases you may want to use a custom converter to convert a type which is already converted
+In some cases, you may want to use a custom converter to convert a type which is already converted
 by a different converter. In such cases, you can use the `javax.annotation.Priority` annotation to
 change converters precedence and make your custom converter of higher priority than the other
 on the list.
@@ -389,7 +389,7 @@ NOTE: This new converter also needs to be listed in a service file, i.e. `META-I
 
 == More info on how to configure
 
-Quarkus relies on Eclipse MicroProfile and inherit its features.
+Quarkus relies on Eclipse MicroProfile and inherits its features.
 
 There are converters that convert your property file content from `String` to typed Java types. See the list link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/converters.asciidoc[in the specification].
 

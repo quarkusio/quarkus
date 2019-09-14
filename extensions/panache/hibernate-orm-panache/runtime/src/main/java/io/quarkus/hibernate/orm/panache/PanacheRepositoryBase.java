@@ -50,7 +50,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      */
     public default void persistAndFlush(Entity entity) {
         JpaOperations.persist(entity);
-        JpaOperations.flush();
+        JpaOperations.flush(entity);
     }
 
     /**

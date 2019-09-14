@@ -50,7 +50,7 @@ public abstract class PanacheEntityBase {
      */
     public void persistAndFlush() {
         JpaOperations.persist(this);
-        JpaOperations.flush();
+        JpaOperations.flush(this);
     }
 
     /**
@@ -81,6 +81,7 @@ public abstract class PanacheEntityBase {
     /**
      * Flushes all pending changes to the database.
      */
+    // TODO rename to flushAll() ?
     public void flush() {
         JpaOperations.flush();
     }

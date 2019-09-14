@@ -100,6 +100,7 @@ public final class PanacheResourceProcessor {
             if (modelClasses.add(classInfo.name().toString()))
                 modelEnhancer.collectFields(classInfo);
         }
+
         for (String modelClass : modelClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(modelClass, modelEnhancer));
         }

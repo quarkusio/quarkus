@@ -1,0 +1,37 @@
+<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence
+             http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd"
+             version="2.1">
+
+    <persistence-unit name="panache-first-pu" transaction-type="JTA">
+
+        <description>Panache test case template Persistence Unit</description>
+
+        <properties>
+            <property name="hibernate.archive.autodetection" value="class, hbm"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
+            <property name="hibernate.show_sql" value="false"/>
+            <property name="hibernate.format_sql" value="false"/>
+            <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
+
+            <property name="javax.persistence.validation.mode" value="NONE"/>
+        </properties>
+
+    </persistence-unit>
+
+    <persistence-unit name="panache-second-pu" transaction-type="JTA">
+
+        <description>Hibernate test case template Persistence Unit</description>
+
+        <properties>
+            <property name="hibernate.archive.autodetection" value="class, hbm"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
+            <property name="hibernate.show_sql" value="false"/>
+            <property name="hibernate.format_sql" value="false"/>
+            <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
+            <property name="javax.persistence.validation.mode" value="NONE"/>
+        </properties>
+
+    </persistence-unit>
+</persistence>

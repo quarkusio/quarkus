@@ -25,6 +25,15 @@ public class Panache {
     }
 
     /**
+     * Returns the {@link EntityManager} for the given {@link Class<?> entity}
+     *
+     * @return the current {@link EntityManager}
+     */
+    public static EntityManager getEntityManager(Class<?> clazz) {
+        return JpaOperations.getEntityManager(clazz);
+    }
+
+    /**
      * Returns the current {@link TransactionManager}
      * 
      * @return the current {@link TransactionManager}

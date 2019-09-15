@@ -4,7 +4,6 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -53,6 +52,7 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
+import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 
 class HibernateValidatorProcessor {
 
@@ -72,15 +72,6 @@ class HibernateValidatorProcessor {
     private static final DotName VALIDATE_ON_EXECUTION = DotName.createSimple(ValidateOnExecution.class.getName());
 
     private static final DotName VALID = DotName.createSimple(Valid.class.getName());
-
-    // TODO this needs to be removed and instead use AdditionalJaxRsResourceMethodAnnotationsBuildItem
-    private static final List<DotName> SPRING_METHOD_MAPPING_ANNOTATIONS = Arrays.asList(
-            DotName.createSimple("org.springframework.web.bind.annotation.RequestMapping"),
-            DotName.createSimple("org.springframework.web.bind.annotation.GetMapping"),
-            DotName.createSimple("org.springframework.web.bind.annotation.PostMapping"),
-            DotName.createSimple("org.springframework.web.bind.annotation.PutMapping"),
-            DotName.createSimple("org.springframework.web.bind.annotation.DeleteMapping"),
-            DotName.createSimple("org.springframework.web.bind.annotation.PatchMapping"));
 
     @BuildStep
     HotDeploymentWatchedFileBuildItem configFile() {
@@ -129,7 +120,8 @@ class HibernateValidatorProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
-            ShutdownContextBuildItem shutdownContext) throws Exception {
+            ShutdownContextBuildItem shutdownContext,
+            List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_VALIDATOR));
 
@@ -184,9 +176,14 @@ class HibernateValidatorProcessor {
         }
 
         // Add the annotations transformer to add @MethodValidated annotations on the methods requiring validation
+        Set<DotName> additionalJaxRsMethodAnnotationsDotNames = new HashSet<>(additionalJaxRsResourceMethodAnnotations.size());
+        for (AdditionalJaxRsResourceMethodAnnotationsBuildItem additionalJaxRsResourceMethodAnnotation : additionalJaxRsResourceMethodAnnotations) {
+            additionalJaxRsMethodAnnotationsDotNames.addAll(additionalJaxRsResourceMethodAnnotation.getAnnotationClasses());
+        }
         annotationsTransformers
                 .produce(new AnnotationsTransformerBuildItem(
-                        new MethodValidatedAnnotationsTransformer(consideredAnnotations, SPRING_METHOD_MAPPING_ANNOTATIONS)));
+                        new MethodValidatedAnnotationsTransformer(consideredAnnotations,
+                                additionalJaxRsMethodAnnotationsDotNames)));
 
         Set<Class<?>> classesToBeValidated = new HashSet<>();
         for (DotName className : classNamesToBeValidated) {

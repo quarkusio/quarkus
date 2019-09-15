@@ -411,6 +411,7 @@ public class ResteasyServerCommonProcessor {
 
         final Set<String> allowedAnnotationPrefixes = new HashSet<>(1 + additionalJaxRsResourceDefiningAnnotations.size());
         allowedAnnotationPrefixes.add(packageName(ResteasyDotNames.PATH));
+        allowedAnnotationPrefixes.add("kotlin"); // make sure the annotation that the Kotlin compiler adds don't interfere with creating a default constructor
         for (AdditionalJaxRsResourceDefiningAnnotationBuildItem additionalJaxRsResourceDefiningAnnotation : additionalJaxRsResourceDefiningAnnotations) {
             final String packageName = packageName(additionalJaxRsResourceDefiningAnnotation.getAnnotationClass());
             if (packageName != null) {

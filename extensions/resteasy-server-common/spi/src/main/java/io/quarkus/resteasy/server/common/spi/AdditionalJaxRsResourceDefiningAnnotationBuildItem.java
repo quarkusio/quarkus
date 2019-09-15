@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.server.common.deployment;
+package io.quarkus.resteasy.server.common.spi;
 
 import org.jboss.jandex.DotName;
 

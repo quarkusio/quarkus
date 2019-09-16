@@ -1,17 +1,16 @@
 package io.quarkus.annotation.processor.generate_doc;
 
+import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.computeExtensionDocFileName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getJavaDocSiteLink;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getKnownGenericType;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.hyphenate;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,16 +35,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.annotation.processor.Constants;
 
-final public class GenerateExtensionConfigurationDoc {
+final public class ConfigDocItemScanner {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static final String NAMED_MAP_CONFIG_ITEM_FORMAT = ".\"<%s>\"";
+    private static final String NAMED_MAP_CONFIG_ITEM_FORMAT = ".\"%s\"";
 
     private final JavaDocParser javaDocParser = new JavaDocParser();
     private final Set<ConfigRootInfo> configRoots = new HashSet<>();
     private final Set<String> processorClassMembers = new HashSet<>();
     private final Map<String, TypeElement> configGroups = new HashMap<>();
-    private final DocFormatter descriptiveDocFormatter = new DescriptiveDocFormatter();
-    private final DocFormatter summaryTableDocFormatter = new SummaryTableDocFormatter();
 
     /**
      * Holds build steps member. These represents possible used configuration roots.
@@ -104,46 +101,12 @@ final public class GenerateExtensionConfigurationDoc {
     }
 
     /**
-     * Write extension configuration AsciiDoc format in `{root}/docs/target/asciidoc/generated`
+     * Return a Map structure which contains extension name as key and generated doc value.
      */
-    public void writeExtensionConfiguration(Properties javaDocProperties) throws IOException {
-        final Map<String, List<ConfigItem>> extensionsConfigurations = findExtensionsConfigurationItems(javaDocProperties);
-
-        for (Map.Entry<String, List<ConfigItem>> entry : extensionsConfigurations.entrySet()) {
-            List<ConfigItem> configItems = entry.getValue();
-            /**
-             * Sort docs keys. The sorted list will contain the properties in the following order
-             * - Map config items as last elements of the generated docs.
-             * - Build time properties will come first.
-             * - Otherwise respect source code declaration order.
-             */
-            Collections.sort(configItems);
-            final StringBuilder doc = new StringBuilder(summaryTableDocFormatter.format(configItems));
-            doc.append("\n\n");
-            doc.append(descriptiveDocFormatter.format(configItems));
-            final String generatedDoc = doc.toString();
-
-            if (generatedDoc.contains(Constants.DURATION_INFORMATION)) {
-                doc.append(Constants.DURATION_FORMAT_NOTE);
-            }
-
-            if (generatedDoc.contains(Constants.MEMORY_SIZE_INFORMATION)) {
-                doc.append(Constants.MEMORY_SIZE_FORMAT_NOTE);
-            }
-
-            try (FileOutputStream out = new FileOutputStream(Constants.GENERATED_DOCS_PATH.resolve(entry.getKey()).toFile())) {
-                out.write(doc.toString().getBytes(StandardCharsets.UTF_8));
-            }
-        }
-    }
-
-    /**
-     * Return a Map structure of which contains extension name as key and generated doc value.
-     */
-    private Map<String, List<ConfigItem>> findExtensionsConfigurationItems(Properties javaDocProperties)
+    public Map<String, List<ConfigDocItem>> scanExtensionsConfigurationItems(Properties javaDocProperties)
             throws IOException {
 
-        final Map<String, List<ConfigItem>> inMemoryConfigurationItems = findInMemoryConfigurationItems(javaDocProperties);
+        final Map<String, List<ConfigDocItem>> inMemoryConfigurationItems = findInMemoryConfigurationItems(javaDocProperties);
 
         if (!inMemoryConfigurationItems.isEmpty()) {
             if (!Constants.GENERATED_DOCS_DIR.exists()) {
@@ -164,7 +127,7 @@ final public class GenerateExtensionConfigurationDoc {
         }
 
         if (!inMemoryConfigurationItems.isEmpty()) {
-            for (Map.Entry<String, List<ConfigItem>> entry : inMemoryConfigurationItems.entrySet()) {
+            for (Map.Entry<String, List<ConfigDocItem>> entry : inMemoryConfigurationItems.entrySet()) {
                 String serializableConfigRootDoc = OBJECT_MAPPER.writeValueAsString(entry.getValue());
                 allExtensionGeneratedDocs.put(entry.getKey(), serializableConfigRootDoc);
             }
@@ -178,26 +141,26 @@ final public class GenerateExtensionConfigurationDoc {
             }
         }
 
-        final Map<String, List<ConfigItem>> foundExtensionConfigurationItems = new HashMap<>();
+        final Map<String, List<ConfigDocItem>> foundExtensionConfigurationItems = new HashMap<>();
 
         for (String member : processorClassMembers) {
-            List<ConfigItem> configItems = inMemoryConfigurationItems.get(member);
-            if (configItems == null) {
+            List<ConfigDocItem> configDocItems = inMemoryConfigurationItems.get(member);
+            if (configDocItems == null) {
                 final String serializedContent = allExtensionGeneratedDocs.getProperty(member);
                 if (serializedContent == null) {
                     continue;
                 }
-                configItems = OBJECT_MAPPER.readValue(serializedContent, new TypeReference<List<ConfigItem>>() {
+                configDocItems = OBJECT_MAPPER.readValue(serializedContent, new TypeReference<List<ConfigDocItem>>() {
                 });
             }
 
             final String fileName = computeExtensionDocFileName(member);
-            final List<ConfigItem> previousExtensionConfigItems = foundExtensionConfigurationItems.get(fileName);
+            final List<ConfigDocItem> previousExtensionConfigDocKeys = foundExtensionConfigurationItems.get(fileName);
 
-            if (previousExtensionConfigItems == null) {
-                foundExtensionConfigurationItems.put(fileName, configItems);
+            if (previousExtensionConfigDocKeys == null) {
+                foundExtensionConfigurationItems.put(fileName, configDocItems);
             } else {
-                previousExtensionConfigItems.addAll(configItems);
+                previousExtensionConfigDocKeys.addAll(configDocItems);
             }
         }
 
@@ -207,73 +170,38 @@ final public class GenerateExtensionConfigurationDoc {
     /**
      * Find configuration items from current encountered configuration roots
      */
-    private Map<String, List<ConfigItem>> findInMemoryConfigurationItems(Properties javaDocProperties) {
-        final Map<String, List<ConfigItem>> configOutput = new HashMap<>();
+    private Map<String, List<ConfigDocItem>> findInMemoryConfigurationItems(Properties javaDocProperties) {
+        final Map<String, List<ConfigDocItem>> configOutput = new HashMap<>();
 
         for (ConfigRootInfo configRootInfo : configRoots) {
             final TypeElement element = configRootInfo.getClazz();
-            final List<ConfigItem> configItems = new ArrayList<>();
-            recordConfigItems(configItems, element, configRootInfo.getName(), configRootInfo.getConfigPhase(), false,
-                    javaDocProperties);
-            configOutput.put(configRootInfo.getClazz().getQualifiedName().toString(), configItems);
+            final List<ConfigDocItem> configDocItems = new ArrayList<>();
+            /**
+             * Config sections will start at level 2 i.e the section title will be prefixed with
+             * ('='* (N + 1)) where N is section level.
+             */
+            final int sectionLevel = 2;
+            recordConfigItems(configDocItems, element, configRootInfo.getName(), configRootInfo.getConfigPhase(),
+                    javaDocProperties, false, sectionLevel);
+            configOutput.put(configRootInfo.getClazz().getQualifiedName().toString(), configDocItems);
         }
 
         return configOutput;
     }
 
     /**
-     * Guess extension name from given configuration root file
-     */
-    String computeExtensionDocFileName(String configRoot) {
-        final Matcher matcher = Constants.PKG_PATTERN.matcher(configRoot);
-        if (!matcher.find()) {
-            return configRoot + Constants.ADOC_EXTENSION;
-        }
-
-        String extensionName = matcher.group(1);
-        final String subgroup = matcher.group(2);
-        final StringBuilder key = new StringBuilder(Constants.QUARKUS);
-        key.append(Constants.DASH);
-
-        if (Constants.DEPLOYMENT.equals(extensionName) || Constants.RUNTIME.equals(extensionName)) {
-            final String configClass = configRoot.substring(configRoot.lastIndexOf(Constants.DOT) + 1);
-            extensionName = hyphenate(configClass);
-            key.append(Constants.CORE);
-            key.append(extensionName);
-        } else if (subgroup != null && !Constants.DEPLOYMENT.equals(subgroup)
-                && !Constants.RUNTIME.equals(subgroup) && !Constants.COMMON.equals(subgroup)
-                && subgroup.matches(Constants.DIGIT_OR_LOWERCASE)) {
-            key.append(extensionName);
-            key.append(Constants.DASH);
-            key.append(subgroup);
-
-            final String qualifier = matcher.group(3);
-            if (qualifier != null && !Constants.DEPLOYMENT.equals(qualifier)
-                    && !Constants.RUNTIME.equals(qualifier) && !Constants.COMMON.equals(qualifier)
-                    && qualifier.matches(Constants.DIGIT_OR_LOWERCASE)) {
-                key.append(Constants.DASH);
-                key.append(qualifier);
-            }
-        } else {
-            key.append(extensionName);
-        }
-
-        key.append(Constants.ADOC_EXTENSION);
-        return key.toString();
-    }
-
-    /**
      * Recursively record config item found in a config root given as {@link Element}
      *
-     * @param configItems - all found config items
+     * @param configDocItems - all found config items
      * @param element - root element
      * @param parentName - root name
      * @param configPhase - configuration phase see {@link ConfigPhase}
-     * @param withinAMap - indicates if a a key is within a map or is a map configuration key
      * @param javaDocProperties - java doc
+     * @param withinAMap - indicates if a a key is within a map or is a map configuration key
+     * @param sectionLevel - section sectionLevel
      */
-    private void recordConfigItems(List<ConfigItem> configItems, Element element, String parentName, ConfigPhase configPhase,
-            boolean withinAMap, Properties javaDocProperties) {
+    private void recordConfigItems(List<ConfigDocItem> configDocItems, Element element, String parentName,
+            ConfigPhase configPhase, Properties javaDocProperties, boolean withinAMap, int sectionLevel) {
         for (Element enclosedElement : element.getEnclosedElements()) {
             if (!enclosedElement.getKind().isField()) {
                 continue;
@@ -290,44 +218,60 @@ final public class GenerateExtensionConfigurationDoc {
 
             String name = Constants.EMPTY;
             String defaultValue = Constants.NO_DEFAULT;
-            TypeMirror typeMirror = enclosedElement.asType();
+            final TypeMirror typeMirror = enclosedElement.asType();
             String type = typeMirror.toString();
             List<String> acceptedValues = null;
             Element configGroup = configGroups.get(type);
+            ConfigDocSection configSection = null;
             boolean isConfigGroup = configGroup != null;
-            String fieldName = enclosedElement.getSimpleName().toString();
+            final TypeElement clazz = (TypeElement) element;
+            final String fieldName = enclosedElement.getSimpleName().toString();
+            final String javaDocKey = clazz.getQualifiedName().toString() + Constants.DOT + fieldName;
             final List<? extends AnnotationMirror> annotationMirrors = enclosedElement.getAnnotationMirrors();
+            final String rawJavaDoc = javaDocProperties.getProperty(javaDocKey);
+
+            String hyphenatedFieldName = hyphenate(fieldName);
+            String configDocMapKey = hyphenatedFieldName;
 
             for (AnnotationMirror annotationMirror : annotationMirrors) {
                 String annotationName = annotationMirror.getAnnotationType().toString();
-                if (annotationName.equals(Constants.ANNOTATION_CONFIG_ITEM)) {
+                if (annotationName.equals(Constants.ANNOTATION_CONFIG_ITEM)
+                        || annotationName.equals(Constants.ANNOTATION_CONFIG_DOC_MAP_KEY)) {
                     for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationMirror
                             .getElementValues().entrySet()) {
-                        String key = entry.getKey().toString();
-
-                        String value = entry.getValue().getValue().toString();
-
-                        if ("name()".equals(key)) {
-                            switch (value) {
-                                case Constants.HYPHENATED_ELEMENT_NAME:
-                                    name = parentName + Constants.DOT + hyphenate(fieldName);
-                                    break;
-                                case Constants.PARENT:
-                                    name = parentName;
-                                    break;
-                                default:
-                                    name = parentName + Constants.DOT + value;
+                        final String key = entry.getKey().toString();
+                        final String value = entry.getValue().getValue().toString();
+                        if (annotationName.equals(Constants.ANNOTATION_CONFIG_DOC_MAP_KEY) && "value()".equals(key)) {
+                            configDocMapKey = value;
+                        } else if (annotationName.equals(Constants.ANNOTATION_CONFIG_ITEM)) {
+                            if ("name()".equals(key)) {
+                                switch (value) {
+                                    case Constants.HYPHENATED_ELEMENT_NAME:
+                                        name = parentName + Constants.DOT + hyphenatedFieldName;
+                                        break;
+                                    case Constants.PARENT:
+                                        name = parentName;
+                                        break;
+                                    default:
+                                        name = parentName + Constants.DOT + value;
+                                }
+                            } else if ("defaultValue()".equals(key)) {
+                                defaultValue = value;
                             }
-                        } else if ("defaultValue()".equals(key)) {
-                            defaultValue = value;
                         }
                     }
-                    break;
+                } else if (annotationName.equals(Constants.ANNOTATION_CONFIG_DOC_SECTION)) {
+                    configSection = new ConfigDocSection();
+                    configSection.setName(hyphenatedFieldName);
+                    configSection.setConfigPhase(configPhase);
+                    configSection.setWithinAMap(withinAMap);
+                    final String sectionDetails = javaDocParser.parseConfigSection(rawJavaDoc, sectionLevel);
+                    configSection.setSectionDetails(sectionDetails);
                 }
             }
 
             if (name.isEmpty()) {
-                name = parentName + Constants.DOT + hyphenate(fieldName);
+                name = parentName + Constants.DOT + hyphenatedFieldName;
             }
 
             if (Constants.NO_DEFAULT.equals(defaultValue)) {
@@ -335,30 +279,28 @@ final public class GenerateExtensionConfigurationDoc {
             }
 
             if (isConfigGroup) {
-                recordConfigItems(configItems, configGroup, name, configPhase, withinAMap, javaDocProperties);
+                recordSectionConfigItems(configDocItems, configPhase, javaDocProperties, name, configGroup, configSection,
+                        withinAMap, sectionLevel);
             } else {
-                final ConfigItem configItem = new ConfigItem();
-                configItem.setWithinAMap(withinAMap);
-                TypeElement clazz = (TypeElement) element;
-                String javaDocKey = clazz.getQualifiedName().toString() + Constants.DOT + fieldName;
+                final ConfigDocKey configDocKey = new ConfigDocKey();
+                configDocKey.setWithinAMap(withinAMap);
                 if (!typeMirror.getKind().isPrimitive()) {
                     DeclaredType declaredType = (DeclaredType) typeMirror;
                     List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
-
                     if (!typeArguments.isEmpty()) {
                         // FIXME: this is super dodgy: we should check the type!!
                         if (typeArguments.size() == 2) {
-                            final String mapKey = String.format(NAMED_MAP_CONFIG_ITEM_FORMAT, hyphenate(fieldName));
+                            final String mapKey = String.format(NAMED_MAP_CONFIG_ITEM_FORMAT, configDocMapKey);
                             type = typeArguments.get(1).toString();
                             configGroup = configGroups.get(type);
+                            name += mapKey;
 
                             if (configGroup != null) {
-                                recordConfigItems(configItems, configGroup, name + mapKey, configPhase, true,
-                                        javaDocProperties);
+                                recordSectionConfigItems(configDocItems, configPhase, javaDocProperties, name, configGroup,
+                                        configSection, true, sectionLevel);
                                 continue;
                             } else {
-                                name += mapKey;
-                                configItem.setWithinAMap(true);
+                                configDocKey.setWithinAMap(true);
                             }
                         } else {
                             // FIXME: I assume this is for Optional<T>
@@ -371,25 +313,39 @@ final public class GenerateExtensionConfigurationDoc {
                         }
                     } else {
                         type = simpleTypeToString(declaredType);
-
                         if (isEnumType(declaredType)) {
                             acceptedValues = extractEnumValues(declaredType);
                         }
                     }
                 }
 
-                final String rawJavaDoc = javaDocProperties.getProperty(javaDocKey);
-                final String doc = javaDocParser.parse(rawJavaDoc);
+                final String configDescription = javaDocParser.parseConfigDescription(rawJavaDoc);
 
-                configItem.setConfigDoc(doc);
-                configItem.setDefaultValue(defaultValue);
-                configItem.setConfigPhase(configPhase);
-                configItem.setKey(name);
-                configItem.setType(type);
-                configItem.setAcceptedValues(acceptedValues);
-                configItems.add(configItem);
-                configItem.setJavaDocSiteLink(getJavaDocSiteLink(type));
+                configDocKey.setKey(name);
+                configDocKey.setType(type);
+                configDocKey.setConfigPhase(configPhase);
+                configDocKey.setDefaultValue(defaultValue);
+                configDocKey.setConfigDoc(configDescription);
+                configDocKey.setAcceptedValues(acceptedValues);
+                configDocKey.setJavaDocSiteLink(getJavaDocSiteLink(type));
+                ConfigDocItem configDocItem = new ConfigDocItem();
+                configDocItem.setConfigDocKey(configDocKey);
+                configDocItems.add(configDocItem);
             }
+        }
+    }
+
+    private void recordSectionConfigItems(List<ConfigDocItem> configDocItems, ConfigPhase configPhase,
+            Properties javaDocProperties,
+            String name, Element configGroup, ConfigDocSection configSection, boolean withinAMap, int sectionLevel) {
+        if (configSection != null) {
+            final ConfigDocItem configDocItem = new ConfigDocItem();
+            configDocItem.setConfigDocSection(configSection);
+            configDocItems.add(configDocItem);
+            recordConfigItems(configSection.getConfigDocItems(), configGroup, name, configPhase, javaDocProperties, withinAMap,
+                    sectionLevel + 1);
+        } else {
+            recordConfigItems(configDocItems, configGroup, name, configPhase, javaDocProperties, withinAMap, sectionLevel);
         }
     }
 
@@ -422,13 +378,11 @@ final public class GenerateExtensionConfigurationDoc {
 
     @Override
     public String toString() {
-        return "GenerateExtensionConfigurationDoc{" +
+        return "ConfigDocItemScanner{" +
                 "javaDocParser=" + javaDocParser +
                 ", configRoots=" + configRoots +
                 ", processorClassMembers=" + processorClassMembers +
                 ", configGroups=" + configGroups +
-                ", descriptiveDocFormatter=" + descriptiveDocFormatter +
-                ", summaryTableDocFormatter=" + summaryTableDocFormatter +
                 '}';
     }
 }

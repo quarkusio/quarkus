@@ -3,6 +3,7 @@ package io.quarkus.annotation.processor.generate_doc;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.AGROAL_API_JAVA_DOC_SITE;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.OFFICIAL_JAVA_DOC_BASE_LINK;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.VERTX_JAVA_DOC_SITE;
+import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.computeExtensionDocFileName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getJavaDocSiteLink;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -111,7 +112,51 @@ public class DocGeneratorUtilTest {
 
     @Test
     public void shouldReturnEmptyLinkIfUnknownJavaDocType() {
-        String value = getJavaDocSiteLink("io.quarkus.ConfigItem");
+        String value = getJavaDocSiteLink("io.quarkus.ConfigDocKey");
         assertEquals(Constants.EMPTY, value);
+    }
+
+    @Test
+    public void shouldReturnConfigRootName() {
+        String configRoot = "org.acme.ConfigRoot";
+        String expected = "org.acme.ConfigRoot.adoc";
+        String fileName = computeExtensionDocFileName(configRoot);
+        assertEquals(expected, fileName);
+    }
+
+    @Test
+    public void shouldAddCoreInComputedExtensionName() {
+        String configRoot = "io.quarkus.runtime.RuntimeConfig";
+        String expected = "quarkus-core-runtime-config.adoc";
+        String fileName = computeExtensionDocFileName(configRoot);
+        assertEquals(expected, fileName);
+
+        configRoot = "io.quarkus.deployment.BuildTimeConfig";
+        expected = "quarkus-core-build-time-config.adoc";
+        fileName = computeExtensionDocFileName(configRoot);
+        assertEquals(expected, fileName);
+
+        configRoot = "io.quarkus.deployment.path.BuildTimeConfig";
+        expected = "quarkus-core-build-time-config.adoc";
+        fileName = computeExtensionDocFileName(configRoot);
+        assertEquals(expected, fileName);
+    }
+
+    @Test
+    public void shouldGuessArtifactId() {
+        String configRoot = "io.quarkus.agroal.Config";
+        String expected = "quarkus-agroal.adoc";
+        String fileName = computeExtensionDocFileName(configRoot);
+        assertEquals(expected, fileName);
+
+        configRoot = "io.quarkus.keycloak.Config";
+        expected = "quarkus-keycloak.adoc";
+        fileName = computeExtensionDocFileName(configRoot);
+        assertEquals(expected, fileName);
+
+        configRoot = "io.quarkus.extension.name.BuildTimeConfig";
+        expected = "quarkus-extension-name.adoc";
+        fileName = computeExtensionDocFileName(configRoot);
+        assertEquals(expected, fileName);
     }
 }

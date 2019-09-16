@@ -6,55 +6,17 @@ import java.util.regex.Matcher;
 
 import io.quarkus.annotation.processor.Constants;
 
-final public class ConfigItem implements Comparable<ConfigItem> {
+final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDocElement> {
     private String type;
-    private List<String> acceptedValues;
     private String key;
     private String configDoc;
     private boolean withinAMap;
     private String defaultValue;
-    private ConfigPhase configPhase;
     private String javaDocSiteLink;
+    private ConfigPhase configPhase;
+    private List<String> acceptedValues;
 
-    public ConfigItem() {
-    }
-
-    @Override
-    public String toString() {
-        return "ConfigItem{" +
-                "type='" + type + '\'' +
-                ", acceptedValues=" + acceptedValues +
-                ", key='" + key + '\'' +
-                ", configDoc='" + configDoc + '\'' +
-                ", withinAMap=" + withinAMap +
-                ", defaultValue='" + defaultValue + '\'' +
-                ", configPhase=" + configPhase +
-                ", javaDocSiteLink='" + javaDocSiteLink + '\'' +
-                '}';
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        ConfigItem that = (ConfigItem) o;
-        return withinAMap == that.withinAMap &&
-                Objects.equals(type, that.type) &&
-                Objects.equals(acceptedValues, that.acceptedValues) &&
-                Objects.equals(key, that.key) &&
-                Objects.equals(configDoc, that.configDoc) &&
-                Objects.equals(defaultValue, that.defaultValue) &&
-                configPhase == that.configPhase &&
-                Objects.equals(javaDocSiteLink, that.javaDocSiteLink);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(type, acceptedValues, key, configDoc, withinAMap, defaultValue, configPhase, javaDocSiteLink);
+    public ConfigDocKey() {
     }
 
     public boolean hasType() {
@@ -155,28 +117,49 @@ final public class ConfigItem implements Comparable<ConfigItem> {
         return unwrappedType;
     }
 
-    /**
-     *
-     * Map config will be at the end of generated doc.
-     * Order build time config first
-     * Otherwise maintain source code order.
-     */
     @Override
-    public int compareTo(ConfigItem item) {
-        if (withinAMap) {
-            if (item.withinAMap) {
-                return 0;
-            }
-            return 1;
-        } else if (item.withinAMap) {
-            return -1;
-        }
+    public String accept(DocFormatter docFormatter) {
+        return docFormatter.format(this);
+    }
 
-        int phaseComparison = ConfigPhase.COMPARATOR.compare(this.configPhase, item.configPhase);
-        if (phaseComparison == 0) {
-            return 0;
-        }
+    @Override
+    public int compareTo(ConfigDocElement o) {
+        return compare(o);
+    }
 
-        return phaseComparison;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        ConfigDocKey that = (ConfigDocKey) o;
+        return withinAMap == that.withinAMap &&
+                Objects.equals(type, that.type) &&
+                Objects.equals(key, that.key) &&
+                Objects.equals(configDoc, that.configDoc) &&
+                Objects.equals(defaultValue, that.defaultValue) &&
+                Objects.equals(javaDocSiteLink, that.javaDocSiteLink) &&
+                configPhase == that.configPhase &&
+                Objects.equals(acceptedValues, that.acceptedValues);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(type, key, configDoc, withinAMap, defaultValue, javaDocSiteLink, configPhase, acceptedValues);
+    }
+
+    @Override
+    public String toString() {
+        return "ConfigDocKey{" +
+                "type='" + type + '\'' +
+                ", key='" + key + '\'' +
+                ", configDoc='" + configDoc + '\'' +
+                ", withinAMap=" + withinAMap +
+                ", defaultValue='" + defaultValue + '\'' +
+                ", javaDocSiteLink='" + javaDocSiteLink + '\'' +
+                ", configPhase=" + configPhase +
+                ", acceptedValues=" + acceptedValues +
+                '}';
     }
 }

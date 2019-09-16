@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -88,29 +89,34 @@ public class HibernateOrmConfig {
      * Query related configuration.
      */
     @ConfigItem
+    @ConfigDocSection
     public HibernateOrmConfigQuery query;
 
     /**
      * Database related configuration.
      */
     @ConfigItem
+    @ConfigDocSection
     public HibernateOrmConfigDatabase database;
 
     /**
      * JDBC related configuration.
      */
     @ConfigItem
+    @ConfigDocSection
     public HibernateOrmConfigJdbc jdbc;
 
     /**
      * Logging configuration.
      */
     @ConfigItem
+    @ConfigDocSection
     public HibernateOrmConfigLog log;
 
     /**
      * Caching configuration
      */
+    @ConfigDocSection
     public Map<String, HibernateOrmConfigCache> cache;
 
     /**

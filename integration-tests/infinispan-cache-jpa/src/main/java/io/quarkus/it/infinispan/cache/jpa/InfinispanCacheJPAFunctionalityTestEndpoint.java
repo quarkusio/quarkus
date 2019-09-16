@@ -1,7 +1,5 @@
 package io.quarkus.it.infinispan.cache.jpa;
 
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.time.Duration;
 import java.util.*;
 
@@ -14,7 +12,6 @@ import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
-import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -662,18 +659,6 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
         em.close();
 
         assertRegionStats(expected, Pokemon.class.getName(), stats);
-    }
-
-    private void reportException(String errorMessage, final Exception e, final HttpServletResponse resp) throws IOException {
-        final PrintWriter writer = resp.getWriter();
-        if (errorMessage != null) {
-            writer.write(errorMessage);
-            writer.write(" ");
-        }
-        writer.write(e.toString());
-        writer.append("\n\t");
-        e.printStackTrace(writer);
-        writer.append("\n\t");
     }
 
     private static Statistics getStatistics(final EntityManagerFactory emf) {

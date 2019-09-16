@@ -30,13 +30,12 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.api.validation.ResteasyConstraintViolation;
 import org.jboss.resteasy.api.validation.ViolationReport;
+import org.jboss.resteasy.core.ResteasyDeploymentImpl;
 import org.jboss.resteasy.microprofile.config.FilterConfigSource;
-import org.jboss.resteasy.microprofile.config.FilterConfigSourceImpl;
 import org.jboss.resteasy.microprofile.config.ServletConfigSource;
-import org.jboss.resteasy.microprofile.config.ServletConfigSourceImpl;
 import org.jboss.resteasy.microprofile.config.ServletContextConfigSource;
-import org.jboss.resteasy.microprofile.config.ServletContextConfigSourceImpl;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
+import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -159,6 +158,7 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ResteasyServerConfigBuildItem> resteasyServerConfig,
+            BuildProducer<ResteasyDeploymentBuildItem> resteasyDeployment,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
             List<AutoInjectAnnotationBuildItem> autoInjectAnnotations,
@@ -216,7 +216,6 @@ public class ResteasyServerCommonProcessor {
                     String className = clazz.name().toString();
                     if (!additionalPaths.contains(annotation)) { // scanned resources only contains real JAX-RS resources
                         scannedResources.putIfAbsent(clazz.name(), clazz);
-
                     }
                     reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
 
@@ -267,17 +266,23 @@ public class ResteasyServerCommonProcessor {
 
         Map<String, String> resteasyInitParameters = new HashMap<>();
 
-        registerProviders(resteasyInitParameters, reflectiveClass, unremovableBeans, jaxrsProvidersToRegisterBuildItem);
+        ResteasyDeployment deployment = new ResteasyDeploymentImpl();
+        registerProviders(deployment, resteasyInitParameters, reflectiveClass, unremovableBeans,
+                jaxrsProvidersToRegisterBuildItem);
 
         if (!scannedResources.isEmpty()) {
+            deployment.getScannedResourceClasses()
+                    .addAll(scannedResources.keySet().stream().map(Object::toString).collect(Collectors.toList()));
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES,
                     scannedResources.keySet().stream().map(Object::toString).collect(Collectors.joining(",")));
         }
         resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_SERVLET_MAPPING_PREFIX, path);
         if (appClass != null) {
+            deployment.setApplicationClass(appClass);
             resteasyInitParameters.put(JAX_RS_APPLICATION_PARAMETER_NAME, appClass);
         }
         resteasyInitParameters.put("resteasy.injector.factory", QuarkusInjectorFactory.class.getName());
+        deployment.setInjectorFactoryClass(QuarkusInjectorFactory.class.getName());
 
         if (commonConfig.gzip.enabled) {
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_GZIP_MAX_INPUT,
@@ -342,6 +347,7 @@ public class ResteasyServerCommonProcessor {
                 }
             }
         }));
+        resteasyDeployment.produce(new ResteasyDeploymentBuildItem(path, deployment));
     }
 
     @BuildStep
@@ -440,7 +446,7 @@ public class ResteasyServerCommonProcessor {
     }
 
     private Set<DotName> findSubresources(IndexView index, Map<DotName, ClassInfo> scannedResources) {
-        // First identify sub-resource candidates  
+        // First identify sub-resource candidates
         Set<DotName> subresources = new HashSet<>();
         for (DotName annotation : METHOD_ANNOTATIONS) {
             Collection<AnnotationInstance> annotationInstances = index.getAnnotations(annotation);
@@ -488,7 +494,8 @@ public class ResteasyServerCommonProcessor {
         return subresources;
     }
 
-    private static void registerProviders(Map<String, String> resteasyInitParameters,
+    private static void registerProviders(ResteasyDeployment deployment,
+            Map<String, String> resteasyInitParameters,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem) {
@@ -496,12 +503,16 @@ public class ResteasyServerCommonProcessor {
         if (jaxrsProvidersToRegisterBuildItem.useBuiltIn()) {
             // if we find a wildcard media type, we just use the built-in providers
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_USE_BUILTIN_PROVIDERS, "true");
+            deployment.setRegisterBuiltin(true);
 
             if (!jaxrsProvidersToRegisterBuildItem.getContributedProviders().isEmpty()) {
+                deployment.getProviderClasses().addAll(jaxrsProvidersToRegisterBuildItem.getContributedProviders());
                 resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_PROVIDERS,
                         String.join(",", jaxrsProvidersToRegisterBuildItem.getContributedProviders()));
             }
         } else {
+            deployment.setRegisterBuiltin(false);
+            deployment.getProviderClasses().addAll(jaxrsProvidersToRegisterBuildItem.getProviders());
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_USE_BUILTIN_PROVIDERS, "false");
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_PROVIDERS,
                     String.join(",", jaxrsProvidersToRegisterBuildItem.getProviders()));
@@ -515,11 +526,8 @@ public class ResteasyServerCommonProcessor {
         // special case: our config providers
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 ServletConfigSource.class,
-                ServletConfigSourceImpl.class,
                 ServletContextConfigSource.class,
-                ServletContextConfigSourceImpl.class,
-                FilterConfigSource.class,
-                FilterConfigSourceImpl.class));
+                FilterConfigSource.class));
 
         // Providers that are also beans are unremovable
         unremovableBeans.produce(new UnremovableBeanBuildItem(

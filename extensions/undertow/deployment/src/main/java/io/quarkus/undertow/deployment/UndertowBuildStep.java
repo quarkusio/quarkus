@@ -78,12 +78,14 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrarBuildItem;
 import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
 import io.quarkus.arc.processor.ContextRegistrar;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
@@ -127,6 +129,11 @@ public class UndertowBuildStep {
 
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
+
+    @BuildStep(providesCapabilities = Capabilities.SERVLET)
+    public FeatureBuildItem setupCapability() {
+        return new FeatureBuildItem(FeatureBuildItem.SERVLET);
+    }
 
     @BuildStep
     @Record(RUNTIME_INIT)

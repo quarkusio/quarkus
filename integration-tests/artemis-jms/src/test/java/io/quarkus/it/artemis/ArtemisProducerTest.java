@@ -11,7 +11,6 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
-import io.undertow.httpcore.StatusCodes;
 
 @QuarkusTest
 @QuarkusTestResource(ArtemisTestResource.class)
@@ -21,7 +20,7 @@ public class ArtemisProducerTest implements ArtemisHelper {
     public void test() throws Exception {
         String body = createBody();
         Response response = RestAssured.with().body(body).post("/artemis");
-        Assertions.assertEquals(StatusCodes.NO_CONTENT, response.statusCode());
+        Assertions.assertEquals(javax.ws.rs.core.Response.Status.NO_CONTENT.getStatusCode(), response.statusCode());
 
         try (Session session = createSession()) {
             MessageConsumer consumer = session.createConsumer(session.createQueue("test-jms"));

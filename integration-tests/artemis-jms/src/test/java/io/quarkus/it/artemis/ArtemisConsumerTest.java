@@ -9,7 +9,6 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
-import io.undertow.httpcore.StatusCodes;
 
 @QuarkusTest
 @QuarkusTestResource(ArtemisTestResource.class)
@@ -23,7 +22,7 @@ public class ArtemisConsumerTest implements ArtemisHelper {
         }
 
         Response response = RestAssured.with().body(body).get("/artemis");
-        Assertions.assertEquals(StatusCodes.OK, response.statusCode());
+        Assertions.assertEquals(javax.ws.rs.core.Response.Status.OK.getStatusCode(), response.statusCode());
         Assertions.assertEquals(body, response.getBody().asString());
     }
 }

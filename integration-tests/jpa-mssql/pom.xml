@@ -33,7 +33,7 @@
         <!-- .. and some REST endpoints -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy</artifactId>
+            <artifactId>quarkus-undertow</artifactId>
         </dependency>
 
         <!-- test dependencies -->

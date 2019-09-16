@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.net.URL;
 import java.nio.file.Files;
@@ -8,9 +9,14 @@ import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.Optional;
 
+import javax.ws.rs.ext.Providers;
+
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.spi.HttpRequest;
+import org.jboss.resteasy.spi.ResteasyConfiguration;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -19,6 +25,8 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import io.quarkus.resteasy.runtime.standalone.ResteasyStandaloneRecorder;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
 import io.quarkus.resteasy.server.common.deployment.ResteasyInjectionReadyBuildItem;
@@ -32,6 +40,39 @@ import io.vertx.core.http.HttpServerRequest;
 public class ResteasyStandaloneBuildStep {
     private static final Logger log = Logger.getLogger("io.quarkus.resteasy");
 
+    //@BuildStep
+    public void substrate(BuildProducer<ServiceProviderBuildItem> serviceProvider,
+            Capabilities capabilities,
+            BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition,
+            ResteasyDeploymentBuildItem deployment) {
+        if (deployment == null || capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
+            return;
+        }
+        // todo I'm not sure why you do not have to do this when running within a servlet
+        serviceProvider.produce(new ServiceProviderBuildItem(Providers.class.getName()));
+        // register proxies
+        proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(HttpRequest.class.getName()));
+        proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(ResteasyConfiguration.class.getName()));
+        proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(Providers.class.getName()));
+    }
+
+    public static final class ResteasyStandaloneBuildItem extends SimpleBuildItem {
+    }
+
+    @BuildStep()
+    @Record(STATIC_INIT)
+    public ResteasyStandaloneBuildItem setupDeployment(ResteasyStandaloneRecorder recorder,
+            Capabilities capabilities,
+            ResteasyDeploymentBuildItem deployment,
+            ResteasyInjectionReadyBuildItem resteasyInjectionReady) {
+        if (deployment == null || capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
+            return null;
+        }
+        recorder.setupDeployment(deployment.getDeployment());
+        return new ResteasyStandaloneBuildItem();
+
+    }
+
     @BuildStep
     @Record(RUNTIME_INIT)
     public void boot(ShutdownContextBuildItem shutdown,
@@ -39,14 +80,14 @@ public class ResteasyStandaloneBuildStep {
             KnownPathsBuildItem known,
             ResteasyStandaloneRecorder recorder,
             BuildProducer<FeatureBuildItem> feature,
-            Capabilities capabilities,
             BuildProducer<DefaultRouteBuildItem> routeProducer,
-            ResteasyDeploymentBuildItem deployment,
             InternalWebVertxBuildItem vertx,
             BeanContainerBuildItem beanContainer,
-            Optional<RequireVirtualHttpBuildItem> requireVirtual,
-            ResteasyInjectionReadyBuildItem resteasyInjectionReady) throws Exception {
-        if (deployment == null || capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
+            ResteasyDeploymentBuildItem deployment,
+            ResteasyStandaloneBuildItem standalone,
+            Optional<RequireVirtualHttpBuildItem> requireVirtual) throws Exception {
+
+        if (deployment == null || standalone == null) {
             return;
         }
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY));
@@ -74,7 +115,6 @@ public class ResteasyStandaloneBuildStep {
         boolean isVirtual = requireVirtual.isPresent();
         Handler<HttpServerRequest> ut = recorder.startResteasy(vertx.getVertx(),
                 deployment.getRootPath(),
-                deployment.getDeployment(),
                 shutdown,
                 beanContainer.getValue(),
                 hasClasspathResources,

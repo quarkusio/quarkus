@@ -29,7 +29,7 @@ public class ResteasyBuiltinsProcessor {
         providers.produce(new ResteasyJaxrsProviderBuildItem(NotFoundExceptionMapper.class.getName()));
     }
 
-    @BuildStep
+    //@BuildStep
     void addCommonReflectionClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 ResteasyProviderFactoryImpl.class,

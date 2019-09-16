@@ -81,9 +81,16 @@ public class ResteasyStandaloneRecorder {
         hotDeploymentResourcePaths = resources;
     }
 
+    private static ResteasyDeployment deployment;
+
+    public void setupDeployment(ResteasyDeployment dep) {
+        deployment = dep;
+        deployment.start();
+
+    }
+
     public Handler<HttpServerRequest> startResteasy(RuntimeValue<Vertx> vertxValue,
             String contextPath,
-            ResteasyDeployment deployment,
             ShutdownContext shutdown,
             BeanContainer beanContainer,
             boolean hasClasspathResources,
@@ -96,7 +103,6 @@ public class ResteasyStandaloneRecorder {
             }
         });
         Vertx vertx = vertxValue.getValue();
-        deployment.start();
         useDirect = !isVirtual;
 
         Router router = null;

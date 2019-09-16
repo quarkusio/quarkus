@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import javax.json.bind.annotation.JsonbTransient;
+import javax.persistence.LockModeType;
 import javax.persistence.Transient;
 
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
@@ -95,6 +96,18 @@ public abstract class PanacheEntityBase {
      */
     @GenerateBridge(targetReturnTypeErased = true)
     public static <T extends PanacheEntityBase> T findById(Object id) {
+        throw JpaOperations.implementationInjectionMissing();
+    }
+
+    /**
+     * Find an entity of this type by ID and lock it.
+     *
+     * @param id the ID of the entity to find.
+     * @param lockModeType the locking strategy to be used when retrieving the entity.
+     * @return the entity found, or <code>null</code> if not found.
+     */
+    @GenerateBridge(targetReturnTypeErased = true)
+    public static <T extends PanacheEntityBase> T findById(Object id, LockModeType lockModeType) {
         throw JpaOperations.implementationInjectionMissing();
     }
 

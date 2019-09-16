@@ -33,15 +33,19 @@ final public class Constants {
     public static final Pattern CONFIG_ROOT_PATTERN = Pattern.compile("^(\\w+)Config(uration)?");
     public static final Pattern PKG_PATTERN = Pattern.compile("^io\\.quarkus\\.(\\w+)\\.?(\\w+)?\\.?(\\w+)?");
 
-    public static final String MEMORY_SIZE_TYPE = "io.quarkus.runtime.configuration.MemorySize";
-    public static final String ANNOTATION_BUILD_STEP = "io.quarkus.deployment.annotations.BuildStep";
-    public static final String ANNOTATION_CONFIG_GROUP = "io.quarkus.runtime.annotations.ConfigGroup";
-    public static final String ANNOTATION_CONFIG_ITEM = "io.quarkus.runtime.annotations.ConfigItem";
-    public static final String ANNOTATION_CONFIG_ROOT = "io.quarkus.runtime.annotations.ConfigRoot";
-    public static final String ANNOTATION_TEMPLATE = "io.quarkus.runtime.annotations.Template";
-    public static final String ANNOTATION_RECORDER = "io.quarkus.runtime.annotations.Recorder";
     public static final String INSTANCE_SYM = "__instance";
     public static final String QUARKUS = "quarkus";
+
+    public static final String ANNOTATION_TEMPLATE = "io.quarkus.runtime.annotations.Template";
+    public static final String ANNOTATION_RECORDER = "io.quarkus.runtime.annotations.Recorder";
+
+    public static final String MEMORY_SIZE_TYPE = "io.quarkus.runtime.configuration.MemorySize";
+    public static final String ANNOTATION_CONFIG_ITEM = "io.quarkus.runtime.annotations.ConfigItem";
+    public static final String ANNOTATION_BUILD_STEP = "io.quarkus.deployment.annotations.BuildStep";
+    public static final String ANNOTATION_CONFIG_ROOT = "io.quarkus.runtime.annotations.ConfigRoot";
+    public static final String ANNOTATION_CONFIG_GROUP = "io.quarkus.runtime.annotations.ConfigGroup";
+    public static final String ANNOTATION_CONFIG_DOC_MAP_KEY = "io.quarkus.runtime.annotations.ConfigDocMapKey";
+    public static final String ANNOTATION_CONFIG_DOC_SECTION = "io.quarkus.runtime.annotations.ConfigDocSection";
 
     public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES = new HashSet<>();
     public static final Map<String, String> ALIASED_TYPES = new HashMap<>();

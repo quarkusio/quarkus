@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class JavaDocParserTest {
+public class JavaDocConfigDescriptionParserTest {
 
     private JavaDocParser parser;
 
@@ -16,22 +16,22 @@ public class JavaDocParserTest {
 
     @Test
     public void parseNullJavaDoc() {
-        String parsed = parser.parse(null);
+        String parsed = parser.parseConfigDescription(null);
         assertEquals("", parsed);
     }
 
     @Test
     public void parseUntrimmedJavaDoc() {
-        String parsed = parser.parse("                ");
+        String parsed = parser.parseConfigDescription("                ");
         assertEquals("", parsed);
-        parsed = parser.parse("      <br> </br>          ");
+        parsed = parser.parseConfigDescription("      <br> </br>          ");
         assertEquals("", parsed);
     }
 
     @Test
     public void parseSimpleJavaDoc() {
         String javaDoc = "hello world";
-        String parsed = parser.parse(javaDoc);
+        String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(javaDoc, parsed);
     }
@@ -40,13 +40,13 @@ public class JavaDocParserTest {
     public void parseJavaDocWithParagraph() {
         String javaDoc = "hello<p>world</p>";
         String expectedOutput = "hello\nworld";
-        String parsed = parser.parse(javaDoc);
+        String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
 
         javaDoc = "hello world<p>bonjour </p><p>le monde</p>";
         expectedOutput = "hello world\nbonjour \nle monde";
-        parsed = parser.parse(javaDoc);
+        parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
     }
@@ -56,49 +56,49 @@ public class JavaDocParserTest {
         // Bold
         String javaDoc = "hello <b>world</b>";
         String expectedOutput = "hello *world*";
-        String parsed = parser.parse(javaDoc);
+        String parsed = parser.parseConfigDescription(javaDoc);
         assertEquals(expectedOutput, parsed);
 
         // Emphasized
         javaDoc = "<em>hello world</em>";
         expectedOutput = "*hello world*";
-        parsed = parser.parse(javaDoc);
+        parsed = parser.parseConfigDescription(javaDoc);
         assertEquals(expectedOutput, parsed);
 
         // Italics
         javaDoc = "<i>hello world</i>";
         expectedOutput = "_hello world_";
-        parsed = parser.parse(javaDoc);
+        parsed = parser.parseConfigDescription(javaDoc);
         assertEquals(expectedOutput, parsed);
 
         // Underline
         javaDoc = "<u>hello world</u>";
         expectedOutput = "[.underline]#hello world#";
-        parsed = parser.parse(javaDoc);
+        parsed = parser.parseConfigDescription(javaDoc);
         assertEquals(expectedOutput, parsed);
 
         // small
         javaDoc = "<small>quarkus subatomic</small>";
         expectedOutput = "[.small]#quarkus subatomic#";
-        parsed = parser.parse(javaDoc);
+        parsed = parser.parseConfigDescription(javaDoc);
         assertEquals(expectedOutput, parsed);
 
         // big
         javaDoc = "<big>hello world</big>";
         expectedOutput = "[.big]#hello world#";
-        parsed = parser.parse(javaDoc);
+        parsed = parser.parseConfigDescription(javaDoc);
         assertEquals(expectedOutput, parsed);
 
         // line through
         javaDoc = "<del>hello </del><strike>monolith </strike><s>world</s>";
         expectedOutput = "[.line-through]#hello #[.line-through]#monolith #[.line-through]#world#";
-        parsed = parser.parse(javaDoc);
+        parsed = parser.parseConfigDescription(javaDoc);
         assertEquals(expectedOutput, parsed);
 
         // superscript and subscript
         javaDoc = "<sup>cloud </sup><sub>in-premise</sub>";
         expectedOutput = "^cloud ^~in-premise~";
-        parsed = parser.parse(javaDoc);
+        parsed = parser.parseConfigDescription(javaDoc);
         assertEquals(expectedOutput, parsed);
     }
 
@@ -106,13 +106,13 @@ public class JavaDocParserTest {
     public void parseJavaDocWithUlTags() {
         String javaDoc = "hello <ul>world</ul>";
         String expectedOutput = "hello world";
-        String parsed = parser.parse(javaDoc);
+        String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
 
         javaDoc = "hello world<ul> bonjour </ul><ul>le monde</ul>";
         expectedOutput = "hello world bonjour le monde";
-        parsed = parser.parse(javaDoc);
+        parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
     }
@@ -126,7 +126,7 @@ public class JavaDocParserTest {
                 "</ul>" +
                 "";
         String expectedOutput = "List: \n - 1 \n - 2";
-        String parsed = parser.parse(javaDoc);
+        String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
     }
@@ -140,7 +140,7 @@ public class JavaDocParserTest {
                 "</ol>" +
                 "";
         String expectedOutput = "List: \n . 1 \n . 2";
-        String parsed = parser.parse(javaDoc);
+        String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
     }
@@ -149,7 +149,7 @@ public class JavaDocParserTest {
     public void parseJavaDocWithLinkInlineSnippet() {
         String javaDoc = "{@link firstlink} {@link #secondlink} \n {@linkplain #third.link}";
         String expectedOutput = "`firstlink` `secondlink` `third.link`";
-        String parsed = parser.parse(javaDoc);
+        String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
     }
@@ -158,7 +158,7 @@ public class JavaDocParserTest {
     public void parseJavaDocWithLinkTag() {
         String javaDoc = "this is a <a href='http://link.com'>hello</a> link";
         String expectedOutput = "this is a http://link.com[hello] link";
-        String parsed = parser.parse(javaDoc);
+        String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
     }
@@ -167,7 +167,7 @@ public class JavaDocParserTest {
     public void parseJavaDocWithCodeInlineSnippet() {
         String javaDoc = "{@code true} {@code false}";
         String expectedOutput = "`true` `false`";
-        String parsed = parser.parse(javaDoc);
+        String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
     }
@@ -176,7 +176,7 @@ public class JavaDocParserTest {
     public void parseJavaDocWithLiteralInlineSnippet() {
         String javaDoc = "{@literal java.util.Boolean}";
         String expectedOutput = "`java.util.Boolean`";
-        String parsed = parser.parse(javaDoc);
+        String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
     }
@@ -185,7 +185,7 @@ public class JavaDocParserTest {
     public void parseJavaDocWithValueInlineSnippet() {
         String javaDoc = "{@value 10s}";
         String expectedOutput = "`10s`";
-        String parsed = parser.parse(javaDoc);
+        String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
     }
@@ -194,7 +194,7 @@ public class JavaDocParserTest {
     public void parseJavaDocWithUnknownInlineSnippet() {
         String javaDoc = "{@see java.util.Boolean}";
         String expectedOutput = "java.util.Boolean";
-        String parsed = parser.parse(javaDoc);
+        String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
     }
@@ -203,7 +203,7 @@ public class JavaDocParserTest {
     public void parseJavaDocWithUnknownNode() {
         String javaDoc = "<unknown>hello</unknown>";
         String expectedOutput = "hello";
-        String parsed = parser.parse(javaDoc);
+        String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
     }
@@ -224,7 +224,7 @@ public class JavaDocParserTest {
                 "And some code\n" +
                 "----";
 
-        assertEquals(asciidoc, parser.parse(asciidoc + "\n" + "@asciidoclet"));
+        assertEquals(asciidoc, parser.parseConfigDescription(asciidoc + "\n" + "@asciidoclet"));
     }
 
     @Test
@@ -236,6 +236,6 @@ public class JavaDocParserTest {
                 "  * 1.2\n" +
                 "* 2";
 
-        assertEquals(asciidoc, parser.parse(asciidoc + "\n" + "@asciidoclet"));
+        assertEquals(asciidoc, parser.parseConfigDescription(asciidoc + "\n" + "@asciidoclet"));
     }
 }

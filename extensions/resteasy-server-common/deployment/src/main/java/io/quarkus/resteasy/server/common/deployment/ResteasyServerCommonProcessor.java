@@ -68,6 +68,9 @@ import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor.ResteasyCom
 import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
 import io.quarkus.resteasy.server.common.runtime.QuarkusInjectorFactory;
 import io.quarkus.resteasy.server.common.runtime.ResteasyServerCommonRecorder;
+import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
+import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
+import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 

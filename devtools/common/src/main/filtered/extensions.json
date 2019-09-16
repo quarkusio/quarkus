@@ -188,6 +188,17 @@
     "artifactId": "quarkus-jdbc-postgresql"
   },
   {
+    "name": "JDBC Driver - Microsoft SQL Server",
+    "labels": [
+      "jdbc-mssql",
+      "jdbc",
+      "mssql",
+      "sql-server"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jdbc-mssql"
+  },
+  {
     "name": "Jackson",
     "labels": [
       "jackson",
@@ -574,6 +585,15 @@
     "groupId": "io.quarkus",
     "artifactId": "quarkus-smallrye-reactive-messaging-amqp",
     "guide": "https://quarkus.io/guides/amqp-guide"
+  },
+  {
+    "name": "SmallRye Reactive Messaging - MQTT Connector",
+    "labels": [
+      "mqtt",
+      "reactive-mqtt"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-reactive-messaging-mqtt"
   },
   {
     "name": "REST Client",

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 
 import io.netty.buffer.ByteBuf;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
@@ -71,9 +72,12 @@ public class VertxBlockingOutput implements VertxOutput {
         }
     }
 
-    private void awaitWriteable() throws InterruptedIOException {
+    private void awaitWriteable() throws IOException {
         assert Thread.holdsLock(request.connection());
         while (request.response().writeQueueFull()) {
+            if (Context.isOnEventLoopThread()) {
+                throw new IOException("Attempting a blocking write on io thread");
+            }
             if (!drainHandlerRegistered) {
                 drainHandlerRegistered = true;
                 request.response().drainHandler(new Handler<Void>() {

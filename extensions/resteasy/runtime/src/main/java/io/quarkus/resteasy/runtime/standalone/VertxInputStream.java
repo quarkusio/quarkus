@@ -7,6 +7,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 import io.netty.buffer.ByteBuf;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
@@ -148,6 +149,9 @@ public class VertxInputStream extends InputStream {
             synchronized (request.connection()) {
                 while (input1 == null && !eof) {
                     try {
+                        if (Context.isOnEventLoopThread()) {
+                            throw new IOException("Attempting a blocking read on io thread");
+                        }
                         waiting = true;
                         request.connection().wait();
                     } catch (InterruptedException e) {

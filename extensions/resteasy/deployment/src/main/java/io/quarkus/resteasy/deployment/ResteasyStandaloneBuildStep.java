@@ -41,22 +41,6 @@ import io.vertx.core.http.HttpServerRequest;
 public class ResteasyStandaloneBuildStep {
     private static final Logger log = Logger.getLogger("io.quarkus.resteasy");
 
-    //@BuildStep
-    public void substrate(BuildProducer<ServiceProviderBuildItem> serviceProvider,
-            Capabilities capabilities,
-            BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition,
-            ResteasyDeploymentBuildItem deployment) {
-        if (deployment == null || capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
-            return;
-        }
-        // todo I'm not sure why you do not have to do this when running within a servlet
-        serviceProvider.produce(new ServiceProviderBuildItem(Providers.class.getName()));
-        // register proxies
-        proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(HttpRequest.class.getName()));
-        proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(ResteasyConfiguration.class.getName()));
-        proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(Providers.class.getName()));
-    }
-
     public static final class ResteasyStandaloneBuildItem extends SimpleBuildItem {
 
     }

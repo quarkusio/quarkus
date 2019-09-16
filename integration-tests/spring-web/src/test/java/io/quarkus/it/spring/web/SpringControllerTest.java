@@ -59,7 +59,7 @@ public class SpringControllerTest {
     public void testExceptionHandlerResponseEntityType() {
         RestAssured.when().get("/exception/responseEntity").then()
                 .contentType("application/json")
-                .body(containsString("bad state"))
+                .body(containsString("bad state"), containsString("responseEntity"))
                 .statusCode(402);
     }
 

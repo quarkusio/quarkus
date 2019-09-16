@@ -31,6 +31,7 @@ import io.quarkus.resteasy.runtime.standalone.ResteasyStandaloneRecorder;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
 import io.quarkus.resteasy.server.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.undertow.deployment.KnownPathsBuildItem;
+import io.quarkus.undertow.deployment.StaticResourceFilesBuildItem;
 import io.quarkus.vertx.core.deployment.InternalWebVertxBuildItem;
 import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
@@ -57,19 +58,21 @@ public class ResteasyStandaloneBuildStep {
     }
 
     public static final class ResteasyStandaloneBuildItem extends SimpleBuildItem {
+
     }
 
     @BuildStep()
     @Record(STATIC_INIT)
-    public ResteasyStandaloneBuildItem setupDeployment(ResteasyStandaloneRecorder recorder,
+    public void setupDeployment(ResteasyStandaloneRecorder recorder,
             Capabilities capabilities,
             ResteasyDeploymentBuildItem deployment,
-            ResteasyInjectionReadyBuildItem resteasyInjectionReady) {
+            ResteasyInjectionReadyBuildItem resteasyInjectionReady,
+            BuildProducer<ResteasyStandaloneBuildItem> standalone) {
         if (deployment == null || capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
-            return null;
+            return;
         }
         recorder.setupDeployment(deployment.getDeployment());
-        return new ResteasyStandaloneBuildItem();
+        standalone.produce(new ResteasyStandaloneBuildItem());
 
     }
 
@@ -77,7 +80,8 @@ public class ResteasyStandaloneBuildStep {
     @Record(RUNTIME_INIT)
     public void boot(ShutdownContextBuildItem shutdown,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            KnownPathsBuildItem known,
+            Optional<KnownPathsBuildItem> known,
+            Optional<StaticResourceFilesBuildItem> staticResources,
             ResteasyStandaloneRecorder recorder,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<DefaultRouteBuildItem> routeProducer,
@@ -93,7 +97,8 @@ public class ResteasyStandaloneBuildStep {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY));
 
         // We don't want to add a Router if we don't have to so check if META-INF/resources exists anywhere
-        boolean hasClasspathResources = !known.knownDirectories.isEmpty() || !known.knownFiles.isEmpty();
+        boolean hasClasspathResources = (staticResources.isPresent() && !staticResources.get().files.isEmpty())
+                || (known.isPresent() && (!known.get().knownDirectories.isEmpty() || !known.get().knownFiles.isEmpty()));
 
         if (!hasClasspathResources) {
             for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {

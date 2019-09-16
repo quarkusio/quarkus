@@ -23,6 +23,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-spring-di</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-validator</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

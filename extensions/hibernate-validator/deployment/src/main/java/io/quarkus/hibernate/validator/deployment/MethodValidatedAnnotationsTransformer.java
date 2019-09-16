@@ -1,5 +1,8 @@
 package io.quarkus.hibernate.validator.deployment;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Set;
 
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -26,9 +29,15 @@ public class MethodValidatedAnnotationsTransformer implements AnnotationsTransfo
     };
 
     private final Set<DotName> consideredAnnotations;
+    private final Collection<DotName> effectiveJaxRsMethodDefiningAnnotations;
 
-    MethodValidatedAnnotationsTransformer(Set<DotName> consideredAnnotations) {
+    MethodValidatedAnnotationsTransformer(Set<DotName> consideredAnnotations,
+            Collection<DotName> additionalJaxRsMethodAnnotationsDotNames) {
         this.consideredAnnotations = consideredAnnotations;
+        this.effectiveJaxRsMethodDefiningAnnotations = new ArrayList<>(
+                JAXRS_METHOD_ANNOTATIONS.length + additionalJaxRsMethodAnnotationsDotNames.size());
+        effectiveJaxRsMethodDefiningAnnotations.addAll(Arrays.asList(JAXRS_METHOD_ANNOTATIONS));
+        effectiveJaxRsMethodDefiningAnnotations.addAll(additionalJaxRsMethodAnnotationsDotNames);
     }
 
     @Override
@@ -64,7 +73,7 @@ public class MethodValidatedAnnotationsTransformer implements AnnotationsTransfo
     }
 
     private boolean isJaxrsMethod(MethodInfo method) {
-        for (DotName jaxrsMethodAnnotation : JAXRS_METHOD_ANNOTATIONS) {
+        for (DotName jaxrsMethodAnnotation : effectiveJaxRsMethodDefiningAnnotations) {
             if (method.hasAnnotation(jaxrsMethodAnnotation)) {
                 return true;
             }

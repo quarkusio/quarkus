@@ -3,6 +3,8 @@ package io.quarkus.netty.runtime.graal;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.cert.X509Certificate;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
@@ -270,6 +272,15 @@ final class Target_io_netty_bootstrap_AbstractBootstrap {
 
         return regFuture;
 
+    }
+}
+
+@TargetClass(className = "io.netty.channel.nio.NioEventLoop")
+final class Target_io_netty_channel_nio_NioEventLoop {
+
+    @Substitute
+    private static Queue<Runnable> newTaskQueue0(int maxPendingTasks) {
+        return new LinkedBlockingDeque<>();
     }
 }
 

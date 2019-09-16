@@ -1,7 +1,11 @@
 package io.quarkus.resteasy.deployment;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.servlet.DispatcherType;
 import javax.ws.rs.core.Application;
@@ -13,10 +17,13 @@ import org.jboss.resteasy.microprofile.config.ServletContextConfigSourceImpl;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.resteasy.runtime.NotFoundExceptionMapper;
 import io.quarkus.resteasy.runtime.ResteasyFilter;
 import io.quarkus.resteasy.server.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.resteasy.server.common.deployment.ResteasyServerConfigBuildItem;
@@ -84,6 +91,13 @@ public class ResteasyServletProcessor {
                 servletInitParameters.produce(new ServletInitParamBuildItem(initParameter.getKey(), initParameter.getValue()));
             }
         }
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(STATIC_INIT)
+    void addServletsToExceptionMapper(List<ServletBuildItem> servlets) {
+        NotFoundExceptionMapper.servlets(servlets.stream().filter(s -> !JAX_RS_SERVLET_NAME.equals(s.getName()))
+                .collect(Collectors.toMap(s -> s.getName(), s -> s.getMappings())));
     }
 
     private String getMappingPath(String path) {

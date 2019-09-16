@@ -1,4 +1,4 @@
-package io.quarkus.infinispan.client.runtime;
+package io.quarkus.infinispan.client;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
@@ -17,13 +17,11 @@ import javax.inject.Qualifier;
  * Qualifier used to specify which remote cache will be injected.
  *
  * @author William Burns
- * @deprecated use {@link io.quarkus.infinispan.client.Remote} instead
  */
 @Target({ METHOD, FIELD, PARAMETER, TYPE })
 @Retention(RUNTIME)
 @Documented
 @Qualifier
-@Deprecated
 public @interface Remote {
     /**
      * The remote cache name. If no value is provided the default cache is assumed.

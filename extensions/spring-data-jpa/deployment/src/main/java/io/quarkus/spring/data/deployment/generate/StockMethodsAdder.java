@@ -32,6 +32,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -41,7 +42,6 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
-import io.quarkus.panache.common.deployment.JavaBeanUtil;
 import io.quarkus.spring.data.deployment.DotNames;
 import io.quarkus.spring.data.runtime.FunctionalityNotImplemented;
 import io.quarkus.spring.data.runtime.RepositorySupport;
@@ -632,7 +632,7 @@ public class StockMethodsAdder {
         }
 
         MethodInfo methodInfo = idAnnotationTarget.asMethod();
-        String propertyName = getPropertyName(methodInfo.name());
+        String propertyName = JavaBeanUtil.getPropertyNameFromGetter(methodInfo.name());
         ClassInfo entityClass = methodInfo.declaringClass();
         FieldInfo field = entityClass.field(propertyName);
         if (field == null) {
@@ -640,19 +640,6 @@ public class StockMethodsAdder {
                     + methodInfo.name() + " which is annotated with @Id");
         }
         return field;
-    }
-
-    private String getPropertyName(String methodName) {
-        final String get = "get";
-        final String is = "is";
-        if (methodName.startsWith(get)) {
-            return JavaBeanUtil.decapitalize(methodName.substring(get.length()));
-        } else if (methodName.startsWith(is)) {
-            return JavaBeanUtil.decapitalize(methodName.substring(is.length()));
-        } else {
-            throw new IllegalStateException(methodName + " is not a getter");
-        }
-
     }
 
     private void generateCount(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor, String generatedClassName,

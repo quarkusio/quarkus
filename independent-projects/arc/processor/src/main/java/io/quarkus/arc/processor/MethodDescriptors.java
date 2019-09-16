@@ -11,7 +11,7 @@ import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.InvocationContextImpl;
 import io.quarkus.arc.InvocationContextImpl.InterceptorInvocation;
-import io.quarkus.arc.MapBeanSupplier;
+import io.quarkus.arc.MapValueSupplier;
 import io.quarkus.arc.Reflections;
 import io.quarkus.gizmo.MethodDescriptor;
 import java.lang.reflect.Constructor;
@@ -39,7 +39,7 @@ final class MethodDescriptors {
     static final MethodDescriptor FIXED_VALUE_SUPPLIER_CONSTRUCTOR = MethodDescriptor.ofConstructor(FixedValueSupplier.class,
             Object.class);
 
-    static final MethodDescriptor MAP_BEAN_SUPPLIER_CONSTRUCTOR = MethodDescriptor.ofConstructor(MapBeanSupplier.class,
+    static final MethodDescriptor MAP_VALUE_SUPPLIER_CONSTRUCTOR = MethodDescriptor.ofConstructor(MapValueSupplier.class,
             Map.class, String.class);
 
     static final MethodDescriptor SUPPLIER_GET = MethodDescriptor.ofMethod(Supplier.class, "get", Object.class);

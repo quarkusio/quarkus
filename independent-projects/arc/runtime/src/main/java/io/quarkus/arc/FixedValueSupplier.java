@@ -7,15 +7,16 @@ import java.util.function.Supplier;
  *
  * @author Maarten Mulders
  */
-public class FixedValueSupplier implements Supplier {
-    private final Object value;
+public class FixedValueSupplier<T> implements Supplier<T> {
 
-    public FixedValueSupplier(Object value) {
+    private final T value;
+
+    public FixedValueSupplier(T value) {
         this.value = value;
     }
 
     @Override
-    public Object get() {
+    public T get() {
         return this.value;
     }
 }

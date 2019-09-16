@@ -2141,6 +2141,46 @@ You cannot use open blocks (`--`) in your Asciidoctor documentation.
 All the other types of blocks (source, admonitions...) are supported.
 ====
 
+[TIP]
+====
+By default, the doc generator will use the hyphenated field name as the key of a `java.util.Map` configuration item.
+To override this default and have a user friendly key (independent of implementation details), you may use the `io.quarkus.runtime.annotations.ConfigDocMapKey` annotation.
+See the following example,
+[source,java]
+----
+@ConfigRoot
+public class SomeConfig {
+    /**
+     * Namespace configuration.
+     */
+    @ConfigItem(name = ConfigItem.PARENT)
+    @ConfigDocMapKey("cache-name") <1>
+    Map<String, CaffeineNamespaceConfig> namespace;
+}
+----
+
+1. This will generate a configuration map key named `quarkus.some."cache-name"` instead of `quarkus.some."namespace"`.
+====
+
+=== Writing section documentation
+
+If you wish to generate configuration section of a given `@ConfigGroup`, Quarkus has got you covered with the `@ConfigDocSection` annotation.
+See the code  example below:
+[source,java]
+----
+/**
+* Config group related configuration.
+* Amazing introduction here
+*/
+@ConfigItem
+@ConfigDocSection <1>
+public ConfigGroupConfig configGroup;
+----
+
+1. This will add a section documentation for the `confgiGroup` config item in the generated documentation.
+Section's title and introduction will be derived from the javadoc of the configuration item. The first sentence from the javadoc is considered as the section title and the remaining sentences used as section introduction.
+You can also use the `@asciidoclet` tag as shown above.
+
 === Generating the documentation
 
 Generating the documentation is easy:

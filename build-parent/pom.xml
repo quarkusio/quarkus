@@ -84,7 +84,7 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>${project.groupId}</groupId>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-creator</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -120,7 +120,7 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <groupId>${project.groupId}</groupId>
+                    <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
                     <version>${project.version}</version>
                 </plugin>

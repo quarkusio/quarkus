@@ -16,7 +16,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>${project.groupId}</groupId>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-spring-web</artifactId>
         </dependency>
         <dependency>

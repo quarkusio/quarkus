@@ -40,11 +40,11 @@
     </build>
     <dependencies>
         <dependency>
-            <groupId>${project.groupId}</groupId>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-core</artifactId>
             <type>test-jar</type>
             <scope>test</scope>

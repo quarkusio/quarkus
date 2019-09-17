@@ -3,6 +3,8 @@ package io.quarkus.smallrye.reactivemessaging.runtime;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.enterprise.inject.spi.DeploymentException;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.annotations.Recorder;
@@ -31,6 +33,8 @@ public class SmallRyeReactiveMessagingRecorder {
                         .bean(entry.getValue()));
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(e);
+            } catch (IllegalArgumentException e) {
+                throw new DeploymentException(e);
             }
         }
 

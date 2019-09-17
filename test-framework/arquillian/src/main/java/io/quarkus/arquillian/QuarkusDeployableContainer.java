@@ -182,8 +182,8 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
             testInstance = TestInstantiator.instantiateTest(Class
                     .forName(testJavaClass.getName(), true, Thread.currentThread().getContextClassLoader()));
 
-        } catch (Exception e) {
-            throw new DeploymentException("Unable to start the runtime runner", e);
+        } catch (Throwable t) {
+            throw new DeploymentException("Unable to start the runtime runner", t);
         }
 
         ProtocolMetaData metadata = new ProtocolMetaData();

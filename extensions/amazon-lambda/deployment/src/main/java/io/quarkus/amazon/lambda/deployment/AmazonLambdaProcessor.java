@@ -92,7 +92,6 @@ public final class AmazonLambdaProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void bootstrap(BuildProducer<GeneratedResourceBuildItem> generatedResources) throws IOException {
         try (final InputStream stream = getClass().getResourceAsStream("/bootstrap");
                 final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {

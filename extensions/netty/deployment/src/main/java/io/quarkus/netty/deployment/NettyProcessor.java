@@ -49,6 +49,7 @@ class NettyProcessor {
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslContext")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslClientContext")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.util.ThreadLocalInsecureRandom")
+                .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil$HexUtil")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ConscryptAlpnSslEngine")
                 .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED");
         try {

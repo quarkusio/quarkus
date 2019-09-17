@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 
 import javax.ws.rs.core.MediaType;
@@ -116,7 +117,7 @@ public class FunctionTest {
 
         // Verify
         Assertions.assertEquals(ret.getStatus(), HttpStatus.OK);
-        Assertions.assertEquals("hello", new String((byte[]) ret.getBody()));
+        Assertions.assertEquals("hello", new String((byte[]) ret.getBody(), StandardCharsets.UTF_8));
         String contentType = ret.getHeader("Content-Type");
         Assertions.assertNotNull(contentType);
         Assertions.assertTrue(MediaType.valueOf(contentType).isCompatible(MediaType.TEXT_PLAIN_TYPE));
@@ -149,7 +150,7 @@ public class FunctionTest {
 
         // Verify
         Assertions.assertEquals(ret.getStatus(), HttpStatus.OK);
-        Assertions.assertEquals("hello Bill", new String((byte[]) ret.getBody()));
+        Assertions.assertEquals("hello Bill", new String((byte[]) ret.getBody(), StandardCharsets.UTF_8));
         String contentType = ret.getHeader("Content-Type");
         Assertions.assertNotNull(contentType);
         Assertions.assertTrue(MediaType.valueOf(contentType).isCompatible(MediaType.TEXT_PLAIN_TYPE));

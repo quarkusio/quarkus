@@ -1,5 +1,6 @@
 package io.quarkus.azure.functions.resteasy.runtime;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 import com.microsoft.azure.functions.ExecutionContext;
@@ -16,7 +17,7 @@ public class Function extends BaseFunction {
         if (!started) {
             HttpResponseMessage.Builder responseBuilder = request
                     .createResponseBuilder(HttpStatus.valueOf(500)).body(
-                            deploymentStatus.getBytes());
+                            deploymentStatus.getBytes(StandardCharsets.UTF_8));
             return responseBuilder.build();
         }
         return dispatch(request);

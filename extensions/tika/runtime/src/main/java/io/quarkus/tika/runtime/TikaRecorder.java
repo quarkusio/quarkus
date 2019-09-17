@@ -2,6 +2,7 @@ package io.quarkus.tika.runtime;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.apache.tika.config.TikaConfig;
@@ -69,6 +70,6 @@ public class TikaRecorder {
         }
         sb.append("</parsers>");
         sb.append("</properties>");
-        return new ByteArrayInputStream(sb.toString().getBytes());
+        return new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8));
     }
 }

@@ -23,6 +23,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String JAEGER = "jaeger";
     public static final String JDBC_H2 = "jdbc-h2";
     public static final String JDBC_MARIADB = "jdbc-mariadb";
+    public static final String JDBC_ORACLE = "jdbc-oracle";
     public static final String JDBC_POSTGRESQL = "jdbc-postgresql";
     public static final String JDBC_MSSQL = "jdbc-mssql";
     public static final String JGIT = "jgit";

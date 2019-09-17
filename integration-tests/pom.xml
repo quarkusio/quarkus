@@ -32,6 +32,7 @@
         <module>jpa-mariadb</module>
         <module>jpa-h2</module>
         <module>jpa-mssql</module>
+        <module>jpa-oracle</module>
         <module>hibernate-orm-panache</module>
         <module>hibernate-search-elasticsearch</module>
         <module>vertx</module>

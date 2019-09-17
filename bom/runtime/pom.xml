@@ -109,6 +109,7 @@
         <postgresql-jdbc.version>42.2.6</postgresql-jdbc.version>
         <mariadb-jdbc.version>2.4.3</mariadb-jdbc.version>
         <mssql-jdbc.version>7.2.1.jre8</mssql-jdbc.version>
+        <oracle-jdbc.version>19.3.0.0</oracle-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>3.3.0</rest-assured.version>
         <junit4.version>4.12</junit4.version>
@@ -342,6 +343,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jaeger</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jdbc-oracle</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1882,7 +1888,11 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-
+            <dependency>
+                <groupId>com.oracle.ojdbc</groupId>
+                <artifactId>ojdbc8</artifactId>
+                <version>${oracle-jdbc.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.quartz-scheduler</groupId>
                 <artifactId>quartz</artifactId>

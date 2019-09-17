@@ -21,6 +21,10 @@ public final class RouteBuildItem extends MultiBuildItem {
         this.type = type;
     }
 
+    public RouteBuildItem(Function<Router, Route> routeFunction, Handler<RoutingContext> handler) {
+        this(routeFunction, handler, HandlerType.NORMAL);
+    }
+
     public Handler<RoutingContext> getHandler() {
         return handler;
     }

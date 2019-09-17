@@ -16,34 +16,34 @@
 
 package io.quarkus.smallrye.health.runtime;
 
-import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 
-import javax.inject.Inject;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.enterprise.inject.spi.CDI;
 
 import io.smallrye.health.SmallRyeHealth;
 import io.smallrye.health.SmallRyeHealthReporter;
+import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.RoutingContext;
 
 @SuppressWarnings("serial")
-@WebServlet
-public class SmallRyeLivenessServlet extends HttpServlet {
-
-    @Inject
-    SmallRyeHealthReporter reporter;
+public class SmallRyeLivenessHandler implements Handler<RoutingContext> {
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    public void handle(RoutingContext event) {
 
+        SmallRyeHealthReporter reporter = CDI.current().select(SmallRyeHealthReporter.class).get();
         SmallRyeHealth health = reporter.getLiveness();
+        HttpServerResponse resp = event.response();
         if (health.isDown()) {
-            resp.setStatus(503);
+            resp.setStatusCode(503);
         }
-        resp.setContentType("application/json");
-        resp.setCharacterEncoding("UTF-8");
-        reporter.reportHealth(resp.getOutputStream(), health);
+        resp.headers().set(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        reporter.reportHealth(outputStream, health);
+        resp.end(Buffer.buffer(outputStream.toByteArray()));
     }
 }

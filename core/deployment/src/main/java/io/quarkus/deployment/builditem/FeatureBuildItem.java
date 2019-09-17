@@ -25,6 +25,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String JDBC_MARIADB = "jdbc-mariadb";
     public static final String JDBC_POSTGRESQL = "jdbc-postgresql";
     public static final String JDBC_MSSQL = "jdbc-mssql";
+    public static final String JDBC_MYSQL = "jdbc-mysql";
     public static final String JGIT = "jgit";
     public static final String KAFKA_STREAMS = "kafka-streams";
     public static final String KEYCLOAK = "keycloak";

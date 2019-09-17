@@ -260,6 +260,7 @@ stages:
           modules:
             - resteasy-jackson
             - vertx
+            - vertx-web
             - virtual-http
           name: http
 

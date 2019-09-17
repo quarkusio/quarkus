@@ -107,6 +107,7 @@
         <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
         <postgresql-jdbc.version>42.2.6</postgresql-jdbc.version>
         <mariadb-jdbc.version>2.4.4</mariadb-jdbc.version>
+        <mysql-jdbc.version>8.0.17</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.1.jre8</mssql-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>4.1.1</rest-assured.version>
@@ -360,6 +361,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jdbc-mssql</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jdbc-mysql</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1731,6 +1737,11 @@
                 <groupId>org.mariadb.jdbc</groupId>
                 <artifactId>mariadb-java-client</artifactId>
                 <version>${mariadb-jdbc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>${mysql-jdbc.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.microsoft.sqlserver</groupId>

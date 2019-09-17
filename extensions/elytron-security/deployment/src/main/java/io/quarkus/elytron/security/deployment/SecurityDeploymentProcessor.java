@@ -298,7 +298,6 @@ class SecurityDeploymentProcessor {
      * @param jcaProviders - JCAProviderBuildItem for requested providers
      */
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void registerJCAProviders(BuildProducer<ReflectiveClassBuildItem> classes, List<JCAProviderBuildItem> jcaProviders) {
         for (JCAProviderBuildItem provider : jcaProviders) {
             List<String> providerClasses = registerProvider(provider.getProviderName());

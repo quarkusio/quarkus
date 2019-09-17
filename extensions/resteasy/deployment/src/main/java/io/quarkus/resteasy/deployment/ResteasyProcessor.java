@@ -1,6 +1,5 @@
 package io.quarkus.resteasy.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.List;
@@ -21,6 +20,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.runtime.ExceptionMapperRecorder;
 import io.quarkus.resteasy.runtime.NotFoundExceptionMapper;
 import io.quarkus.resteasy.runtime.ResteasyFilter;
 import io.quarkus.resteasy.runtime.RolesFilterRegistrar;
@@ -90,27 +90,26 @@ public class ResteasyProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    @Record(RUNTIME_INIT)
     void setupExceptionMapper(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
         providers.produce(new ResteasyJaxrsProviderBuildItem(NotFoundExceptionMapper.class.getName()));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(STATIC_INIT)
-    void addServletsToExceptionMapper(List<ServletBuildItem> servlets) {
-        NotFoundExceptionMapper.servlets(servlets.stream().filter(s -> !JAX_RS_SERVLET_NAME.equals(s.getName()))
+    void addServletsToExceptionMapper(List<ServletBuildItem> servlets, ExceptionMapperRecorder recorder) {
+        recorder.setServlets(servlets.stream().filter(s -> !JAX_RS_SERVLET_NAME.equals(s.getName()))
                 .collect(Collectors.toMap(s -> s.getName(), s -> s.getMappings())));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(STATIC_INIT)
-    void addStaticResourcesExceptionMapper(StaticResourceFilesBuildItem paths) {
+    void addStaticResourcesExceptionMapper(StaticResourceFilesBuildItem paths, ExceptionMapperRecorder recorder) {
         //limit to 1000 to not have to many files to display
         Set<String> staticResources = paths.files.stream().filter(this::isHtmlFileName).limit(1000).collect(Collectors.toSet());
         if (staticResources.isEmpty()) {
             staticResources = paths.files.stream().limit(1000).collect(Collectors.toSet());
         }
-        NotFoundExceptionMapper.staticResources(staticResources);
+        recorder.setStaticResource(staticResources);
     }
 
     private boolean isHtmlFileName(String fileName) {

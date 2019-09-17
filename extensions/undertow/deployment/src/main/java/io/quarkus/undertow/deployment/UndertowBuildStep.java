@@ -164,7 +164,6 @@ public class UndertowBuildStep {
      * Register the undertow-handlers.conf file
      */
     @BuildStep
-    @Record(STATIC_INIT)
     public void registerUndertowHandlersConf(BuildProducer<ServletExtensionBuildItem> producer,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFile,

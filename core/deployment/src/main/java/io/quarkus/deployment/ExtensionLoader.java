@@ -457,6 +457,18 @@ public final class ExtensionLoader {
             final Parameter[] methodParameters = method.getParameters();
             final Record recordAnnotation = method.getAnnotation(Record.class);
             final boolean isRecorder = recordAnnotation != null;
+            if (isRecorder) {
+                boolean recorderFound = false;
+                for (Class<?> p : method.getParameterTypes()) {
+                    if (p.isAnnotationPresent(Recorder.class) || p.isAnnotationPresent(Template.class)) {
+                        recorderFound = true;
+                        break;
+                    }
+                }
+                if (!recorderFound) {
+                    throw new RuntimeException(method + " is marked @Record but does not inject an @Recorder object");
+                }
+            }
             final List<BiFunction<BuildContext, BytecodeRecorderImpl, Object>> methodParamFns;
             Consumer<BuildStepBuilder> methodStepConfig = Functions.discardingConsumer();
             BooleanSupplier addStep = () -> true;

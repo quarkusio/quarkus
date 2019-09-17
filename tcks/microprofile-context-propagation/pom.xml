@@ -43,6 +43,17 @@
             <artifactId>quarkus-smallrye-context-propagation</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-narayana-jta</artifactId>
+            <exclusions>
+                <!--MP CP currently uses 1.2, while we run 1.3-->
+                <exclusion>
+                    <groupId>javax.transaction</groupId>
+                    <artifactId>javax.transaction-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.microprofile.context-propagation</groupId>
             <artifactId>microprofile-context-propagation-tck</artifactId>
             <version>${microprofile-context-propagation.version}</version>

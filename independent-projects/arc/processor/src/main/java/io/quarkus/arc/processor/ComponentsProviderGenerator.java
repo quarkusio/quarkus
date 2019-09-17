@@ -255,6 +255,9 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             Map<BeanInfo, LazyValue<ResultHandle>> beanToResultSupplierHandle) {
 
         String beanType = beanToGeneratedName.get(bean);
+        if (beanType == null) {
+            throw new IllegalStateException("No bean type found for: " + bean);
+        }
 
         List<InjectionPointInfo> injectionPoints = bean.getInjections().stream().flatMap(i -> i.injectionPoints.stream())
                 .filter(ip -> !BuiltinBean.resolvesTo(ip)).collect(toList());

@@ -8,6 +8,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.test.ArcTestContainer;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import javax.annotation.PostConstruct;
 import javax.annotation.Priority;
 import javax.enterprise.context.Dependent;
@@ -27,7 +28,8 @@ public class RemoveUnusedBeansTest {
     @Rule
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(HasObserver.class, Foo.class, FooAlternative.class, HasName.class, UnusedProducers.class,
-                    InjectedViaInstance.class, InjectedViaProvider.class, Excluded.class, UsedProducers.class)
+                    InjectedViaInstance.class, InjectedViaProvider.class, Excluded.class, UsedProducers.class,
+                    UnusedProducerButInjected.class, UsedViaInstanceWithUnusedProducer.class, UsesBeanViaInstance.class)
             .removeUnusedBeans(true)
             .addRemovalExclusion(b -> b.getBeanClass().toString().equals(Excluded.class.getName()))
             .build();
@@ -49,6 +51,12 @@ public class RemoveUnusedBeansTest {
         assertTrue(foo.provider.get().isValid());
         assertEquals(1, container.beanManager().getBeans(Foo.class).size());
         assertEquals("pong", container.instance(Excluded.class).get().ping());
+        // Producer is unused but declaring bean is injected
+        assertTrue(container.instance(UnusedProducerButInjected.class).isAvailable());
+        assertFalse(container.instance(BigInteger.class).isAvailable());
+        // Producer is unused, declaring bean is only used via Instance
+        assertTrue(container.instance(UsedViaInstanceWithUnusedProducer.class).isAvailable());
+        assertFalse(container.instance(Long.class).isAvailable());
     }
 
     @Dependent
@@ -70,6 +78,9 @@ public class RemoveUnusedBeansTest {
 
         @Inject
         Provider<InjectedViaProvider> provider;
+
+        @Inject
+        UnusedProducerButInjected injected;
 
         String ping() {
             return getClass().getName();
@@ -138,6 +149,30 @@ public class RemoveUnusedBeansTest {
             return "pong";
         }
 
+    }
+
+    @Singleton
+    static class UnusedProducerButInjected {
+
+        @Produces
+        BigInteger unusedNumber() {
+            return BigInteger.ZERO;
+        }
+
+    }
+
+    @Singleton
+    static class UsedViaInstanceWithUnusedProducer {
+
+        @Produces
+        Long unusedLong = new Long(0);
+    }
+
+    @Singleton
+    static class UsesBeanViaInstance {
+
+        @Inject
+        Instance<UsedViaInstanceWithUnusedProducer> instance;
     }
 
 }

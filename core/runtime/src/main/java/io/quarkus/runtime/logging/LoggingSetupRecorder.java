@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.ErrorManager;
@@ -35,6 +36,25 @@ import io.quarkus.runtime.annotations.Recorder;
  */
 @Recorder
 public class LoggingSetupRecorder {
+
+    static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("win");
+
+    /**
+     * <a href="https://conemu.github.io">ConEmu</a> ANSI X3.64 support enabled,
+     * used by <a href="https://cmder.net/">cmder</a>
+     */
+    static final boolean IS_CON_EMU_ANSI = "ON".equals(System.getenv("ConEmuANSI"));
+
+    static final boolean IS_CYGWIN = IS_WINDOWS
+            && System.getenv("PWD") != null
+            && System.getenv("PWD").startsWith("/")
+            && !"cygwin".equals(System.getenv("TERM"));
+
+    static final boolean IS_MINGW_XTERM = IS_WINDOWS
+            && System.getenv("MSYSTEM") != null
+            && System.getenv("MSYSTEM").startsWith("MINGW")
+            && "xterm".equals(System.getenv("TERM"));
+
     public LoggingSetupRecorder() {
     }
 
@@ -73,10 +93,29 @@ public class LoggingSetupRecorder {
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
     }
 
+    private boolean workingConsole() {
+        if (System.console() != null) {
+            if (IS_WINDOWS && !(IS_CON_EMU_ANSI || IS_CYGWIN || IS_MINGW_XTERM)) {
+                // On Windows without a known good emulator
+                // TODO: optimally we would check if Win32 getConsoleMode has
+                // ENABLE_VIRTUAL_TERMINAL_PROCESSING enabled or enable it via 
+                // setConsoleMode.
+                // For now we turn it off to not generate noisy output for most
+                // users.
+                return false;
+            } else {
+                // Must be on some Unix variant or ANSI-enabled windows terminal...
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
+
     private ErrorManager configureConsoleHandler(ConsoleConfig config, ErrorManager errorManager,
             List<LogCleanupFilterElement> filterElements, ArrayList<Handler> handlers) {
         final PatternFormatter formatter;
-        if (config.color && System.console() != null) {
+        if (config.color && workingConsole()) {
             formatter = new ColorPatternFormatter(config.darken, config.format);
         } else {
             formatter = new PatternFormatter(config.format);

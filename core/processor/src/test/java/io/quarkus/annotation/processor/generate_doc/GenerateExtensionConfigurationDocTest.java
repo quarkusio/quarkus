@@ -1,15 +1,15 @@
 package io.quarkus.annotation.processor.generate_doc;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class GenerateExtensionConfigurationDocTest {
 
     private GenerateExtensionConfigurationDoc generateExtensionConfigurationDoc;
 
-    @Before
+    @BeforeEach
     public void setup() {
         generateExtensionConfigurationDoc = new GenerateExtensionConfigurationDoc();
     }

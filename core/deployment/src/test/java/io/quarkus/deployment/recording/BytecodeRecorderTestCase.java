@@ -1,5 +1,10 @@
 package io.quarkus.deployment.recording;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.net.URL;
 import java.time.Duration;
@@ -15,8 +20,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.TestClassLoader;
@@ -194,8 +198,8 @@ public class BytecodeRecorderTestCase {
         TestClassLoader tcl = new TestClassLoader(getClass().getClassLoader());
         BytecodeRecorderImpl generator = new BytecodeRecorderImpl(tcl, false, TEST_CLASS);
         TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
-        Assert.assertNotNull(recorder.toString());
-        Assert.assertTrue(recorder.toString().contains("$$RecordingProxyProxy"));
+        assertNotNull(recorder.toString());
+        assertTrue(recorder.toString().contains("$$RecordingProxyProxy"));
     }
 
     @Test
@@ -236,20 +240,20 @@ public class BytecodeRecorderTestCase {
 
         StartupTask task = (StartupTask) tcl.loadClass(TEST_CLASS).newInstance();
         task.deploy(new StartupContext());
-        Assert.assertEquals(expected.length, TestRecorder.RESULT.size());
+        assertEquals(expected.length, TestRecorder.RESULT.size());
         for (Object i : expected) {
             if (i.getClass().isArray()) {
                 if (i instanceof int[]) {
-                    Assert.assertArrayEquals((int[]) i, (int[]) TestRecorder.RESULT.poll());
+                    assertArrayEquals((int[]) i, (int[]) TestRecorder.RESULT.poll());
                 } else if (i instanceof double[]) {
-                    Assert.assertArrayEquals((double[]) i, (double[]) TestRecorder.RESULT.poll(), 0);
+                    assertArrayEquals((double[]) i, (double[]) TestRecorder.RESULT.poll(), 0);
                 } else if (i instanceof Object[]) {
-                    Assert.assertArrayEquals((Object[]) i, (Object[]) TestRecorder.RESULT.poll());
+                    assertArrayEquals((Object[]) i, (Object[]) TestRecorder.RESULT.poll());
                 } else {
                     throw new RuntimeException("not implemented");
                 }
             } else {
-                Assert.assertEquals(i, TestRecorder.RESULT.poll());
+                assertEquals(i, TestRecorder.RESULT.poll());
             }
         }
     }

@@ -1,8 +1,8 @@
 package io.quarkus.creator.outcome.test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.quarkus.creator.AppCreatorException;
 import io.quarkus.creator.outcome.OutcomeMap;
@@ -18,7 +18,7 @@ import io.quarkus.creator.outcome.OutcomeResolverFactory;
 public class ManuallyProvidedOutcomeTestCase {
 
     @Test
-    public void testNoHandler() throws Exception {
+    void testNoHandler() throws Exception {
         final OutcomeResolver<OutcomeMap> router = OutcomeResolverFactory.<OutcomeMap> getInstance().build();
         final OutcomeMap resolver = new OutcomeMap(router);
         final TestResult outcome = new TestResult("manual");
@@ -27,7 +27,7 @@ public class ManuallyProvidedOutcomeTestCase {
     }
 
     @Test
-    public void testSkippedHandler() throws Exception {
+    void testSkippedHandler() throws Exception {
         final OutcomeResolver<OutcomeMap> router = OutcomeResolverFactory.<OutcomeMap> getInstance()
                 .addProvider(new OutcomeProvider<OutcomeMap>() {
                     @Override

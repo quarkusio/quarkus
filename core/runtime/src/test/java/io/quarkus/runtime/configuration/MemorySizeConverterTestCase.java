@@ -1,23 +1,24 @@
 package io.quarkus.runtime.configuration;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigInteger;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class MemorySizeConverterTestCase {
     private MemorySizeConverter memorySizeConverter;
 
-    @Before
+    @BeforeEach
     public void setup() {
         memorySizeConverter = new MemorySizeConverter();
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testValueNotInCorrectFormat() {
-        memorySizeConverter.convert("HJ");
+        assertThrows(IllegalArgumentException.class, () -> memorySizeConverter.convert("HJ"));
     }
 
     @Test

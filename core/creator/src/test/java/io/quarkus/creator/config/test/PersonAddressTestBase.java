@@ -1,6 +1,6 @@
 package io.quarkus.creator.config.test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.creator.config.reader.PropertiesConfigReader;

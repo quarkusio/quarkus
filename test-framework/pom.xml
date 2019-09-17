@@ -17,7 +17,6 @@
         <module>common</module>
         <module>h2</module>
         <module>kubernetes-client</module>
-        <module>junit4</module>
         <module>junit5-internal</module>
         <module>junit5</module>
         <module>amazon-lambda</module>

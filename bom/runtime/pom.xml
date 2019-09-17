@@ -111,7 +111,6 @@
         <mssql-jdbc.version>7.2.1.jre8</mssql-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>3.3.0</rest-assured.version>
-        <junit4.version>4.12</junit4.version>
         <junit.jupiter.version>5.5.2</junit.jupiter.version>
         <assertj.version>3.13.2</assertj.version>
         <json-smart.version>2.3</json-smart.version>
@@ -621,12 +620,6 @@
             </dependency>
 
             <!-- Quarkus test dependencies -->
-
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-junit4</artifactId>
-                <version>${project.version}</version>
-            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-junit5</artifactId>
@@ -1101,11 +1094,6 @@
                 <groupId>javax.ws.rs</groupId>
                 <artifactId>javax.ws.rs-api</artifactId>
                 <version>${javax.ws.rs-api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>${junit4.version}</version>
             </dependency>
             <dependency>
                 <groupId>log4j</groupId>

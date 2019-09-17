@@ -1,13 +1,14 @@
 package io.quarkus.deployment.index;
 
 import static io.quarkus.deployment.index.ApplicationArchiveBuildStep.urlToPath;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Paths;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ApplicationArchiveBuildStepTestCase {
     @Test
@@ -22,8 +23,8 @@ public class ApplicationArchiveBuildStepTestCase {
         assertEquals(Paths.get("/a/path with whitespace"), urlToPath(new URL("file:/a/path%20with%20whitespace"), ""));
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testUrlToPathWithWrongProtocol() throws MalformedURLException {
-        urlToPath(new URL("http://a/path"), "");
+        assertThrows(RuntimeException.class, () -> urlToPath(new URL("http://a/path"), ""));
     }
 }

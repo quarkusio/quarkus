@@ -1,17 +1,18 @@
 package io.quarkus.runtime.configuration;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Duration;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class DurationConverterTestCase {
 
     private DurationConverter durationConverter;
 
-    @Before
+    @BeforeEach
     public void setup() {
         durationConverter = new DurationConverter();
     }
@@ -30,9 +31,9 @@ public class DurationConverterTestCase {
         assertEquals(expectedDuration, actualDuration);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testValueStartingWithNumberAndNotInCorrectFormatProvided() {
-        durationConverter.convert("21.X345S");
+        assertThrows(IllegalArgumentException.class, () -> durationConverter.convert("21.X345S"));
     }
 
     @Test
@@ -42,8 +43,8 @@ public class DurationConverterTestCase {
         assertEquals(expectedDuration, actualDuration);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testValueNotInCorrectFormatProvided() {
-        durationConverter.convert("PT");
+        assertThrows(IllegalArgumentException.class, () -> durationConverter.convert("PT"));
     }
 }

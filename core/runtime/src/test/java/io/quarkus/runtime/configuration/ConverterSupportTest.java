@@ -1,8 +1,8 @@
 package io.quarkus.runtime.configuration;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,8 +13,8 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.Converter;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * A test cases against {@link ConverterSupport} class.
@@ -116,7 +116,7 @@ public class ConverterSupportTest {
 
     TestConfigBuilder builder;
 
-    @Before
+    @BeforeEach
     public void setup() {
         builder = new TestConfigBuilder();
         ConverterSupport.populateConverters(builder);

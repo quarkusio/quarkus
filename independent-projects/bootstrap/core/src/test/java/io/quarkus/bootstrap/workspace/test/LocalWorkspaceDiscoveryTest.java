@@ -3,23 +3,24 @@
  */
 package io.quarkus.bootstrap.workspace.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Parent;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.util.IoUtils;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LocalWorkspaceDiscoveryTest {
 
@@ -37,7 +38,7 @@ public class LocalWorkspaceDiscoveryTest {
 
     protected static Path workDir;
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() throws Exception {
         workDir = IoUtils.createRandomTmpDir();
 
@@ -92,7 +93,7 @@ public class LocalWorkspaceDiscoveryTest {
         .build(workDir.resolve("root").resolve("independent"));
     }
 
-    @AfterClass
+    @AfterAll
     public static void cleanup() {
         IoUtils.recursiveDelete(workDir);
     }

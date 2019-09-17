@@ -1,29 +1,30 @@
 package io.quarkus.vertx.core.runtime;
 
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class VertxCoreProducerTest {
 
     private VertxCoreRecorder recorder;
     private VertxCoreProducer producer;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         producer = new VertxCoreProducer();
         recorder = new VertxCoreRecorder();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         recorder.destroy();
     }
@@ -36,7 +37,7 @@ public class VertxCoreProducerTest {
     }
 
     private void verifyProducer() {
-        assertThat(producer.vertx(), is(notNullValue()));
+        assertThat(producer.vertx()).isNotNull();
         assertFalse(producer.vertx().isClustered());
     }
 

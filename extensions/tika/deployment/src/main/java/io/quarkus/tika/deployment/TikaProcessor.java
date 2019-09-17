@@ -3,6 +3,9 @@ package io.quarkus.tika.deployment;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -10,6 +13,7 @@ import java.util.stream.Collectors;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.detect.EncodingDetector;
 import org.apache.tika.parser.Parser;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -36,12 +40,16 @@ public class TikaProcessor {
             "org.apache.tika.parser.geo.topic.GeoParser"
     }).collect(Collectors.toSet());
 
+    private static final Map<String, String> PARSER_ABBREVIATIONS = Arrays.stream(new String[][] {
+            { "pdf", "org.apache.tika.parser.pdf.PDFParser" },
+    }).collect(Collectors.toMap(kv -> kv[0], kv -> kv[1]));
+
     private TikaConfiguration config;
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void initializeTikaParser(BeanContainerBuildItem beanContainer, TikaRecorder recorder) throws Exception {
-        recorder.initTikaParser(beanContainer.getValue(), config, getSupportedParserNames());
+        recorder.initTikaParser(beanContainer.getValue(), config, getSupportedParserNames(config.parsers));
     }
 
     @BuildStep(providesCapabilities = "io.quarkus.tika")
@@ -81,7 +89,7 @@ public class TikaProcessor {
     @BuildStep
     public void registerTikaProviders(BuildProducer<ServiceProviderBuildItem> serviceProvider) throws Exception {
         serviceProvider.produce(
-                new ServiceProviderBuildItem(Parser.class.getName(), getSupportedParserNames()));
+                new ServiceProviderBuildItem(Parser.class.getName(), getSupportedParserNames(config.parsers)));
         serviceProvider.produce(
                 new ServiceProviderBuildItem(Detector.class.getName(), getProviderNames(Detector.class.getName())));
         serviceProvider.produce(
@@ -89,13 +97,36 @@ public class TikaProcessor {
                         getProviderNames(EncodingDetector.class.getName())));
     }
 
-    private static List<String> getProviderNames(String serviceProviderName) throws Exception {
+    static List<String> getProviderNames(String serviceProviderName) throws Exception {
         return new ArrayList<>(ServiceUtil.classNamesNamedIn(TikaProcessor.class.getClassLoader(),
                 "META-INF/services/" + serviceProviderName));
     }
 
-    private static List<String> getSupportedParserNames() throws Exception {
+    static List<String> getSupportedParserNames(Optional<String> requiredParsers) throws Exception {
         Predicate<String> pred = p -> !NOT_NATIVE_READY_PARSERS.contains(p);
-        return getProviderNames(Parser.class.getName()).stream().filter(pred).collect(Collectors.toList());
+        List<String> providerNames = getProviderNames(Parser.class.getName());
+        if (!requiredParsers.isPresent()) {
+            return providerNames.stream().filter(pred).collect(Collectors.toList());
+        } else {
+            List<String> abbreviations = Arrays.stream(requiredParsers.get().split(",")).map(s -> s.trim())
+                    .collect(Collectors.toList());
+            Set<String> requiredParsersFullNames = abbreviations.stream()
+                    .map(p -> getParserNameFromConfig(p)).collect(Collectors.toSet());
+
+            return providerNames.stream().filter(pred).filter(p -> requiredParsersFullNames.contains(p))
+                    .collect(Collectors.toList());
+        }
+    }
+
+    private static String getParserNameFromConfig(String abbreviation) {
+        if (PARSER_ABBREVIATIONS.containsKey(abbreviation)) {
+            return PARSER_ABBREVIATIONS.get(abbreviation);
+        }
+        try {
+            return ConfigProvider.getConfig().getValue(abbreviation, String.class);
+        } catch (NoSuchElementException ex) {
+            throw new IllegalStateException("The custom abbreviation " + abbreviation
+                    + " can not be resolved to a parser class name");
+        }
     }
 }

@@ -594,5 +594,5 @@ Spring classes and annotations are only used for reading metadata and / or are u
 
 Quarkus support has more Spring compatibility features. See the following guides for more details:
 
-* link:spring-di-guide.adoc[Quarkus - Extension for Spring DI]
-* link:spring-web-guide.adoc[Quarkus - Extension for Spring Web]
+* link:spring-di-guide[Quarkus - Extension for Spring DI]
+* link:spring-web-guide[Quarkus - Extension for Spring Web]

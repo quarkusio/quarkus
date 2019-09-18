@@ -45,6 +45,10 @@ public class LoggingSetupRecorder {
      */
     static final boolean IS_CON_EMU_ANSI = "ON".equals(System.getenv("ConEmuANSI"));
 
+    /**
+     * These tests are same as used in jansi
+     * Source: https://github.com/fusesource/jansi/commit/bb3d538315c44f799d34fd3426f6c91c8e8dfc55
+     */
     static final boolean IS_CYGWIN = IS_WINDOWS
             && System.getenv("PWD") != null
             && System.getenv("PWD").startsWith("/")
@@ -95,8 +99,8 @@ public class LoggingSetupRecorder {
 
     private boolean hasColorSupport() {
 
-        if (System.console() != null) {
-            if (IS_WINDOWS && !(IS_CON_EMU_ANSI || IS_CYGWIN || IS_MINGW_XTERM)) {
+        if (IS_WINDOWS) {
+            if (!(IS_CON_EMU_ANSI || IS_CYGWIN || IS_MINGW_XTERM)) {
                 // On Windows without a known good emulator
                 // TODO: optimally we would check if Win32 getConsoleMode has
                 // ENABLE_VIRTUAL_TERMINAL_PROCESSING enabled or enable it via 
@@ -109,7 +113,9 @@ public class LoggingSetupRecorder {
                 return true;
             }
         } else {
-            return false;
+            // on sane operating systems having a console is a good indicator
+            // you are attached to a TTY with colors.
+            return System.console() != null;
         }
     }
 

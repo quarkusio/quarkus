@@ -14,16 +14,16 @@ public class DynamodbConfig {
     public boolean enableEndpointDiscovery;
 
     /**
-     * AWS service configurations
-     */
-    @ConfigItem
-    public AwsConfig aws;
-
-    /**
      * SDK client configurations
      */
     @ConfigItem(name = ConfigItem.PARENT)
     public SdkConfig sdk;
+
+    /**
+     * AWS service configurations
+     */
+    @ConfigItem
+    public AwsConfig aws;
 
     /**
      * Apache HTTP client transport configuration

@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.deployment;
 import java.util.function.Function;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Route;
@@ -23,6 +24,14 @@ public final class RouteBuildItem extends MultiBuildItem {
 
     public RouteBuildItem(Function<Router, Route> routeFunction, Handler<RoutingContext> handler) {
         this(routeFunction, handler, HandlerType.NORMAL);
+    }
+
+    public RouteBuildItem(String route, Handler<RoutingContext> handler, HandlerType type) {
+        this(new BasicRoute(route), handler, type);
+    }
+
+    public RouteBuildItem(String route, Handler<RoutingContext> handler) {
+        this(new BasicRoute(route), handler);
     }
 
     public Handler<RoutingContext> getHandler() {

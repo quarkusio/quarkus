@@ -302,7 +302,7 @@ final class Types {
                         resolvedTypeParameters, index);
                 Type[] typeParams = new Type[typeParameters.size()];
                 for (int i = 0; i < typeParameters.size(); i++) {
-                    typeParams[i] = resolveTypeParam(arguments.get(0), resolvedMap, index);
+                    typeParams[i] = resolveTypeParam(arguments.get(i), resolvedMap, index);
                 }
                 return ParameterizedType.create(parameterizedType.name(), typeParams, null);
             }

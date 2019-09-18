@@ -3,12 +3,11 @@ package io.quarkus.arc.test.producer.generic;
 import static org.junit.Assert.assertEquals;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
 import java.util.Optional;
 import java.util.function.Function;
 import javax.enterprise.inject.Produces;
-import javax.enterprise.util.TypeLiteral;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.junit.Rule;
 import org.junit.Test;
@@ -16,39 +15,41 @@ import org.junit.Test;
 public class GenericProducerHierarchyTest {
 
     @Rule
-    public ArcTestContainer container = new ArcTestContainer(Producer.class);
+    public ArcTestContainer container = new ArcTestContainer(Producer.class, Registry.class);
 
-    @SuppressWarnings("serial")
     @Test
-    public void testPrimitiveProducers() {
-        InstanceHandle<Function<Optional<String>, String>> strHandle = Arc.container()
-                .instance(new TypeLiteral<Function<Optional<String>, String>>() {
-                });
-        Function<Optional<String>, String> producedStr = strHandle.get();
-        assertEquals("foo", producedStr.apply(Optional.of("FOO")));
-
-        InstanceHandle<Function<Optional<Long>, Long>> longHandle = Arc.container()
-                .instance(new TypeLiteral<Function<Optional<Long>, Long>>() {
-                });
-        Function<Optional<Long>, Long> producedLong = longHandle.get();
-        assertEquals(Long.valueOf(-10), producedLong.apply(Optional.of(10l)));
+    public void testGenericProducers() {
+        Registry registry = Arc.container().instance(Registry.class).get();
+        assertEquals("foo", registry.strProducer.apply(s -> s.toLowerCase()).get());
+        assertEquals(Long.valueOf(-10), registry.longProducer.apply(l -> Long.valueOf(-l)).get());
     }
 
     @Singleton
     static class Producer {
 
         @Produces
-        public Produced<String, String> produce() {
-            return s -> s.get().toLowerCase();
+        public Produced<String, CharSequence> produce() {
+            return f -> Optional.of(f.apply("FOO"));
         }
 
         @Produces
-        public Produced<Long, Long> produceLong() {
-            return v -> -v.get();
+        public Produced<Integer, Long> produceLong() {
+            return f -> Optional.of(f.apply(10));
         }
     }
 
-    static interface Produced<T, R> extends Function<Optional<T>, R> {
+    static interface Produced<T, R> extends Function<Function<T, R>, Optional<R>> {
+
+    }
+
+    @Singleton
+    static class Registry {
+
+        @Inject
+        Function<Function<String, CharSequence>, Optional<CharSequence>> strProducer;
+
+        @Inject
+        Function<Function<Integer, Long>, Optional<Long>> longProducer;
 
     }
 

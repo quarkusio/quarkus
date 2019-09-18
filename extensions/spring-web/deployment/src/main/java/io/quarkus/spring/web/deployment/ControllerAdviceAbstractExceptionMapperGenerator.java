@@ -1,19 +1,28 @@
 package io.quarkus.spring.web.deployment;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FieldCreator;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -24,21 +33,75 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
     private static final DotName RESPONSE_ENTITY = DotName.createSimple("org.springframework.http.ResponseEntity");
 
     private final MethodInfo controllerAdviceMethod;
-    private final IndexView index;
+    private final TypesUtil typesUtil;
     private final Type returnType;
-    private final Type parameterType;
+    private final List<Type> parameterTypes;
     private final String declaringClassName;
 
+    private final Map<Type, FieldDescriptor> parameterTypeToField = new HashMap<>();
+
     ControllerAdviceAbstractExceptionMapperGenerator(MethodInfo controllerAdviceMethod, DotName exceptionDotName,
-            ClassOutput classOutput, IndexView index) {
+            ClassOutput classOutput, TypesUtil typesUtil) {
         super(exceptionDotName, classOutput);
         this.controllerAdviceMethod = controllerAdviceMethod;
-        this.index = index;
+        this.typesUtil = typesUtil;
 
         this.returnType = controllerAdviceMethod.returnType();
-        this.parameterType = controllerAdviceMethod.parameters().size() == 0 ? null
-                : controllerAdviceMethod.parameters().get(0);
+        this.parameterTypes = controllerAdviceMethod.parameters();
         this.declaringClassName = controllerAdviceMethod.declaringClass().name().toString();
+    }
+
+    /**
+     * We need to go through each parameter of the method of the ControllerAdvice
+     * and make sure it's supported
+     * The javax.ws.rs.ext.ExceptionMapper only has one parameter, the exception, however
+     * other parameters can be obtained using @Context and therefore injected into the target method
+     */
+    @Override
+    protected void preGenerateMethodBody(ClassCreator cc) {
+        int notAllowedParameterIndex = -1;
+        for (int i = 0; i < parameterTypes.size(); i++) {
+            Type parameterType = parameterTypes.get(i);
+            DotName parameterTypeDotName = parameterType.name();
+            if (typesUtil.isAssignable(Exception.class, parameterTypeDotName)) {
+                // do nothing since this will be handled during in generateMethodBody
+            } else if (typesUtil.isAssignable(HttpServletRequest.class, parameterTypeDotName)) {
+                if (parameterTypeToField.containsKey(parameterType)) {
+                    throw new IllegalArgumentException("Parameter type " + parameterTypes.get(notAllowedParameterIndex).name()
+                            + " is being used multiple times in method" + controllerAdviceMethod.name() + " of class"
+                            + controllerAdviceMethod.declaringClass().name());
+                }
+
+                // we need to generate a field that injects the HttpServletRequest into the class
+                FieldCreator httpRequestFieldCreator = cc.getFieldCreator("httpServletRequest", HttpServletRequest.class)
+                        .setModifiers(Modifier.PRIVATE);
+                httpRequestFieldCreator.addAnnotation(Context.class);
+
+                // stash the fieldCreator in a map indexed by the parameter type so we can retrieve it later
+                parameterTypeToField.put(parameterType, httpRequestFieldCreator.getFieldDescriptor());
+            } else if (typesUtil.isAssignable(HttpServletResponse.class, parameterTypeDotName)) {
+                if (parameterTypeToField.containsKey(parameterType)) {
+                    throw new IllegalArgumentException("Parameter type " + parameterTypes.get(notAllowedParameterIndex).name()
+                            + " is being used multiple times in method" + controllerAdviceMethod.name() + " of class"
+                            + controllerAdviceMethod.declaringClass().name());
+                }
+
+                // we need to generate a field that injects the HttpServletRequest into the class
+                FieldCreator httpRequestFieldCreator = cc.getFieldCreator("httpServletResponse", HttpServletResponse.class)
+                        .setModifiers(Modifier.PRIVATE);
+                httpRequestFieldCreator.addAnnotation(Context.class);
+
+                // stash the fieldCreator in a map indexed by the parameter type so we can retrieve it later
+                parameterTypeToField.put(parameterType, httpRequestFieldCreator.getFieldDescriptor());
+            } else {
+                notAllowedParameterIndex = i;
+            }
+        }
+        if (notAllowedParameterIndex >= 0) {
+            throw new IllegalArgumentException(
+                    "Parameter type " + parameterTypes.get(notAllowedParameterIndex).name() + " is not supported for method"
+                            + controllerAdviceMethod.name() + " of class" + controllerAdviceMethod.declaringClass().name());
+        }
     }
 
     @Override
@@ -103,15 +166,29 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
     private ResultHandle exceptionHandlerMethodResponse(MethodCreator toResponse) {
         String returnTypeClassName = returnType.kind() == Type.Kind.VOID ? void.class.getName() : returnType.name().toString();
 
-        if (parameterType == null) {
+        if (parameterTypes.isEmpty()) {
             return toResponse.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(declaringClassName, controllerAdviceMethod.name(), returnTypeClassName),
                     controllerAdviceInstance(toResponse));
         }
+
+        String[] parameterTypesStr = new String[parameterTypes.size()];
+        ResultHandle[] parameterTypeHandles = new ResultHandle[parameterTypes.size()];
+        for (int i = 0; i < parameterTypes.size(); i++) {
+            Type parameterType = parameterTypes.get(i);
+            parameterTypesStr[i] = parameterType.name().toString();
+            if (typesUtil.isAssignable(Exception.class, parameterType.name())) {
+                parameterTypeHandles[i] = toResponse.getMethodParam(i);
+            } else {
+                parameterTypeHandles[i] = toResponse.readInstanceField(parameterTypeToField.get(parameterType),
+                        toResponse.getThis());
+            }
+        }
+
         return toResponse.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(declaringClassName, controllerAdviceMethod.name(), returnTypeClassName,
-                        parameterType.name().toString()),
-                controllerAdviceInstance(toResponse), toResponse.getMethodParam(0));
+                        parameterTypesStr),
+                controllerAdviceInstance(toResponse), parameterTypeHandles);
     }
 
     private ResultHandle controllerAdviceInstance(MethodCreator toResponse) {

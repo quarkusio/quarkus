@@ -45,6 +45,8 @@ abstract class AbstractExceptionMapperGenerator {
                         exceptionClassName.replace('.', '/')))
                 .build()) {
 
+            preGenerateMethodBody(cc);
+
             try (MethodCreator toResponse = cc.getMethodCreator("toResponse", Response.class.getName(), exceptionClassName)) {
                 generateMethodBody(toResponse);
             }
@@ -69,6 +71,10 @@ abstract class AbstractExceptionMapperGenerator {
         }
 
         return generatedSubtypeClassName;
+    }
+
+    protected void preGenerateMethodBody(ClassCreator cc) {
+
     }
 
     protected int getHttpStatusFromAnnotation(AnnotationInstance responseStatusInstance) {

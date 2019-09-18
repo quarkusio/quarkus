@@ -1,5 +1,8 @@
 package io.quarkus.it.spring.web;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -16,9 +19,10 @@ public class CustomAdvice {
     }
 
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<Error> handleIllegalStateException(IllegalStateException e) {
+    public ResponseEntity<Error> handleIllegalStateException(IllegalStateException e,
+            HttpServletRequest request, HttpServletResponse response) {
         return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
-                .body(new Error(e.getMessage()));
+                .body(new Error(request.getRequestURI() + ":" + e.getMessage()));
     }
 
     @ResponseStatus(HttpStatus.EXPECTATION_FAILED)

@@ -63,7 +63,6 @@ class GenerateConfigIT extends MojoTestBase {
             throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
-        request.setDebug(true);
         request.setGoals(Collections
                 .singletonList(CreateProjectMojo.PLUGIN_KEY + ":" + MojoUtils.getPluginVersion() + ":generate-config"));
         Properties properties = new Properties();

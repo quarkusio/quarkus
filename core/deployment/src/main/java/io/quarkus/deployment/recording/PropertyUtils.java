@@ -1,95 +1,117 @@
+
 package io.quarkus.deployment.recording;
 
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 
-import org.apache.commons.beanutils.PropertyUtilsBean;
+final class PropertyUtils {
 
-/**
- * <p>
- * Delegates to PropertyUtilsBean from Apache Commons Beanutils;
- * must be closed to release any internal caches.
- * </p>
- *
- * <p>
- * This is inspired by org.apache.commons.beanutils.PropertyUtils, but
- * only exposing the selected methods we use and to avoid allocating some objects
- * which aren't necessary in our limited use cases; also bypasses the classloader
- * scoped cache in favour of an explicit cache control on close, to keep things
- * a bit lighter.
- * </p>
- *
- * @see org.apache.commons.beanutils.PropertyUtils
- * @see org.apache.commons.beanutils.PropertyUtilsBean
- */
-final class PropertyUtils implements AutoCloseable {
+    static final ConcurrentMap<Class<?>, Property[]> CACHE = new ConcurrentHashMap<>();
 
-    /**
-     * Implementation note: the reference to PropertyUtilsBean is static so to avoid allocating multiple of those,
-     * yet we close its cache when this instance is closed.
-     * We're effectively assuming non current, singleton usage.
-     * Although if this is not respected, worse that could happen is some extra cache misses.
-     */
-    private static final PropertyUtilsBean propertyUtilsBean = new PropertyUtilsBean();
+    private static final Function<Class<?>, Property[]> FUNCTION = new Function<Class<?>, Property[]>() {
+        @Override
+        public Property[] apply(Class<?> type) {
+            List<Property> ret = new ArrayList<>();
+            Method[] methods = type.getMethods();
 
-    /**
-     * <p>
-     * Return the value of the specified property of the specified bean,
-     * no matter which property reference format is used, with no
-     * type conversions.
-     * </p>
-     *
-     * <p>
-     * For more details see <code>PropertyUtilsBean</code>.
-     * </p>
-     *
-     * @param bean Bean whose property is to be extracted
-     * @param name Possibly indexed and/or nested name of the property
-     *        to be extracted
-     * @return the property value
-     *
-     * @throws IllegalAccessException if the caller does not have
-     *         access to the property accessor method
-     * @throws IllegalArgumentException if <code>bean</code> or
-     *         <code>name</code> is null
-     * @throws InvocationTargetException if the property accessor method
-     *         throws an exception
-     * @throws NoSuchMethodException if an accessor method for this
-     *         property cannot be found
-     */
-    public Object getProperty(final Object bean, final String name)
-            throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        return propertyUtilsBean.getNestedProperty(bean, name);
+            Map<String, Method> getters = new HashMap<>();
+            Map<String, Method> setters = new HashMap<>();
+            for (Method i : methods) {
+                if (i.getName().startsWith("get") && i.getName().length() > 3 && i.getParameterCount() == 0
+                        && i.getReturnType() != void.class) {
+                    String name = Character.toLowerCase(i.getName().charAt(3)) + i.getName().substring(4);
+                    getters.put(name, i);
+                } else if (i.getName().startsWith("is") && i.getName().length() > 3 && i.getParameterCount() == 0
+                        && i.getReturnType() == boolean.class) {
+                    String name = Character.toLowerCase(i.getName().charAt(2)) + i.getName().substring(3);
+                    getters.put(name, i);
+                } else if (i.getName().startsWith("set") && i.getName().length() > 3 && i.getParameterCount() == 1) {
+                    String name = Character.toLowerCase(i.getName().charAt(3)) + i.getName().substring(4);
+                    setters.put(name, i);
+                }
+            }
+            Set<String> names = new HashSet<>(getters.keySet());
+            names.addAll(setters.keySet());
+            for (String i : names) {
+                Method get = getters.get(i);
+                Method set = setters.get(i);
+                if (get == null) {
+                    ret.add(new Property(i, get, set, set.getParameterTypes()[0]));
+                } else if (set == null) {
+                    ret.add(new Property(i, get, set, get.getReturnType()));
+                } else {
+                    Class<?> gt = get.getReturnType();
+                    Class<?> st = set.getParameterTypes()[0];
+                    if (gt == st) {
+                        ret.add(new Property(i, get, set, gt));
+                    } else if (gt.isAssignableFrom(st)) {
+                        ret.add(new Property(i, get, set, gt));
+                    } else if (st.isAssignableFrom(gt)) {
+                        ret.add(new Property(i, get, set, st));
+                    }
+                }
+            }
+
+            return ret.toArray(new Property[ret.size()]);
+        }
+    };
+
+    public static Property[] getPropertyDescriptors(Object param) {
+        return CACHE.computeIfAbsent(param.getClass(), FUNCTION);
     }
 
-    /**
-     * <p>
-     * Retrieve the property descriptors for the specified bean,
-     * introspecting and caching them the first time a particular bean class
-     * is encountered.
-     * </p>
-     *
-     * <p>
-     * For more details see <code>PropertyUtilsBean</code>.
-     * </p>
-     *
-     * @param bean Bean for which property descriptors are requested
-     * @return the property descriptors
-     * @throws IllegalArgumentException if <code>bean</code> is null
-     */
-    public PropertyDescriptor[] getPropertyDescriptors(final Object bean) {
-        return propertyUtilsBean.getPropertyDescriptors(bean);
-    }
+    public static class Property {
+        final String name;
+        final Method readMethod;
+        final Method writeMethod;
+        final Class<?> propertyType;
 
-    /**
-     * Clears all caches of PropertyUtilsBean and Introspector
-     *
-     * @see Introspector
-     * @see PropertyUtilsBean
-     */
-    public void close() {
-        propertyUtilsBean.clearDescriptors();
+        public Property(String name, Method readMethod, Method writeMethod, Class<?> propertyType) {
+            this.name = name;
+            this.readMethod = readMethod;
+            this.writeMethod = writeMethod;
+            this.propertyType = propertyType;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public Method getReadMethod() {
+            return readMethod;
+        }
+
+        public Method getWriteMethod() {
+            return writeMethod;
+        }
+
+        public Class<?> getPropertyType() {
+            return propertyType;
+        }
+
+        public Object read(Object target) {
+            try {
+                return readMethod.invoke(target);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public void write(Object target, Object value) {
+            try {
+                writeMethod.invoke(target, value);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
 }

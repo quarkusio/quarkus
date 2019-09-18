@@ -141,6 +141,6 @@ public class ZipUtils {
      * @throws IOException  in case of a failure
      */
      public static FileSystem newFileSystem(Path path) throws IOException {
-         return FileSystems.newFileSystem(path, null);
+         return FileSystems.newFileSystem(path, (ClassLoader) null);
      }
 }

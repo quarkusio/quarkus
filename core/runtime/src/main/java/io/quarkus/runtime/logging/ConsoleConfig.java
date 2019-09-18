@@ -1,5 +1,6 @@
 package io.quarkus.runtime.logging;
 
+import java.util.Optional;
 import java.util.logging.Level;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -29,10 +30,11 @@ public class ConsoleConfig {
     Level level;
 
     /**
-     * If the console logging should be in color
+     * If the console logging should be in color. If undefined quarkus takes
+     * best guess based on operating system and environment.
      */
-    @ConfigItem(defaultValue = "true")
-    boolean color;
+    @ConfigItem()
+    Optional<Boolean> color;
 
     /**
      * Specify how much the colors should be darkened

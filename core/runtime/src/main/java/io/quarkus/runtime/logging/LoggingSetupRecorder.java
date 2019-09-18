@@ -43,7 +43,7 @@ public class LoggingSetupRecorder {
      * <a href="https://conemu.github.io">ConEmu</a> ANSI X3.64 support enabled,
      * used by <a href="https://cmder.net/">cmder</a>
      */
-    static final boolean IS_CON_EMU_ANSI = "ON".equals(System.getenv("ConEmuANSI"));
+    static final boolean IS_CON_EMU_ANSI = IS_WINDOWS && "ON".equals(System.getenv("ConEmuANSI"));
 
     /**
      * These tests are same as used in jansi
@@ -122,7 +122,7 @@ public class LoggingSetupRecorder {
     private ErrorManager configureConsoleHandler(ConsoleConfig config, ErrorManager errorManager,
             List<LogCleanupFilterElement> filterElements, ArrayList<Handler> handlers) {
         final PatternFormatter formatter;
-        if (config.color && hasColorSupport()) {
+        if (config.color.orElse(hasColorSupport())) {
             formatter = new ColorPatternFormatter(config.darken, config.format);
         } else {
             formatter = new PatternFormatter(config.format);

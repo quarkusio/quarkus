@@ -48,7 +48,7 @@ public class BootstrapUtils {
                 if(Files.isDirectory(p)) {
                     urlStrs = new String[] {urls[0].toExternalForm()};
                 } else {
-                    try (FileSystem fs = FileSystems.newFileSystem(p, null)) {
+                    try (FileSystem fs = FileSystems.newFileSystem(p, (ClassLoader) null)) {
                         Path path = fs.getPath("META-INF/MANIFEST.MF");
                         if (!Files.exists(path)) {
                             throw new IllegalStateException("Failed to locate the manifest");

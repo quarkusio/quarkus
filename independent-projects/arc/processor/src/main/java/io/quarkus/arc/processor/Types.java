@@ -209,7 +209,6 @@ final class Types {
             // Canonical ParameterizedType with unresolved type variables
             Type[] typeParams = new Type[typeParameters.size()];
             for (int i = 0; i < typeParameters.size(); i++) {
-                // TODO more complicated hierarchy
                 typeParams[i] = resolvedTypeParameters.get(typeParameters.get(i));
             }
             if (resolvedTypeVariablesConsumer != null) {

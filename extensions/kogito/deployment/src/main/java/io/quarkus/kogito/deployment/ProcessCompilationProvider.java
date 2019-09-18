@@ -23,6 +23,7 @@ public class ProcessCompilationProvider extends KogitoCompilationProvider {
     protected Generator addGenerator(ApplicationGenerator appGen, Set<File> filesToCompile, Context context)
             throws IOException {
         return appGen.withGenerator(
-                ProcessCodegen.ofFiles(new ArrayList<>(filesToCompile)));
+                ProcessCodegen.ofFiles(new ArrayList<>(filesToCompile)))
+                .withClassLoader(Thread.currentThread().getContextClassLoader());
     }
 }

@@ -8,10 +8,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import io.vertx.core.Vertx;
 
 public class VertxCoreProducerTest {
 
@@ -31,8 +34,12 @@ public class VertxCoreProducerTest {
 
     @Test
     public void shouldNotFailWithoutConfig() {
-        VertxCoreRecorder.initialize(null);
-        producer.initialize(VertxCoreRecorder.vertx);
+        producer.initialize(new Supplier<Vertx>() {
+            @Override
+            public Vertx get() {
+                return VertxCoreRecorder.initialize(null);
+            }
+        });
         verifyProducer();
     }
 
@@ -47,7 +54,12 @@ public class VertxCoreProducerTest {
         configuration.workerPoolSize = 10;
         configuration.warningExceptionTime = Duration.ofSeconds(1);
         configuration.internalBlockingPoolSize = 5;
-        VertxCoreRecorder.initialize(configuration);
+        VertxCoreRecorder.vertx = new Supplier<Vertx>() {
+            @Override
+            public Vertx get() {
+                return VertxCoreRecorder.initialize(configuration);
+            }
+        };
         producer.initialize(VertxCoreRecorder.vertx);
         verifyProducer();
     }

@@ -27,8 +27,7 @@ public class VertxProducerTest {
 
     @Test
     public void shouldNotFailWithoutConfig() {
-        VertxCoreRecorder.initialize(null);
-        producer.vertx = VertxCoreRecorder.getVertx();
+        producer.vertx = VertxCoreRecorder.initialize(null);
         producer.initialize();
         verifyProducer();
     }

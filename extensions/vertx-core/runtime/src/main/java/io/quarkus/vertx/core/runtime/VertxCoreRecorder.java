@@ -5,6 +5,7 @@ import static io.vertx.core.file.impl.FileResolver.CACHE_DIR_BASE_PROP_NAME;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -35,14 +36,24 @@ public class VertxCoreRecorder {
 
     public static final String ENABLE_JSON = "quarkus-internal.vertx.enabled-json";
 
-    static volatile Vertx vertx;
+    static volatile Supplier<Vertx> vertx;
     //temporary vertx instance to work around a JAX-RS problem
     static volatile Vertx webVertx;
 
-    public RuntimeValue<Vertx> configureVertx(BeanContainer container, VertxConfiguration config,
+    public Supplier<Vertx> configureVertx(BeanContainer container, VertxConfiguration config,
             LaunchMode launchMode, ShutdownContext shutdown) {
+        vertx = new Supplier<Vertx>() {
 
-        initialize(config);
+            Vertx v;
+
+            @Override
+            public synchronized Vertx get() {
+                if (v == null) {
+                    v = initialize(config);
+                }
+                return v;
+            }
+        };
 
         VertxCoreProducer producer = container.instance(VertxCoreProducer.class);
         producer.initialize(vertx);
@@ -54,7 +65,7 @@ public class VertxCoreRecorder {
                 }
             });
         }
-        return new RuntimeValue<Vertx>(vertx);
+        return vertx;
     }
 
     public IOThreadDetector detector() {
@@ -66,7 +77,7 @@ public class VertxCoreRecorder {
         };
     }
 
-    public static Vertx getVertx() {
+    public static Supplier<Vertx> getVertx() {
         return vertx;
     }
 
@@ -97,13 +108,9 @@ public class VertxCoreRecorder {
         }
     }
 
-    public static void initialize(VertxConfiguration conf) {
-        if (vertx != null) {
-            return;
-        }
+    public static Vertx initialize(VertxConfiguration conf) {
         if (conf == null) {
-            vertx = Vertx.vertx();
-            return;
+            return Vertx.vertx();
         }
 
         VertxOptions options = convertToVertxOptions(conf);
@@ -113,27 +120,17 @@ public class VertxCoreRecorder {
         }
 
         if (options.getEventBusOptions().isClustered()) {
-            AtomicReference<Throwable> failure = new AtomicReference<>();
-            CountDownLatch latch = new CountDownLatch(1);
+            CompletableFuture<Vertx> latch = new CompletableFuture<>();
             Vertx.clusteredVertx(options, ar -> {
                 if (ar.failed()) {
-                    failure.set(ar.cause());
+                    latch.completeExceptionally(ar.cause());
                 } else {
-                    vertx = ar.result();
+                    latch.complete(ar.result());
                 }
-                latch.countDown();
             });
-            try {
-                latch.await();
-                if (failure.get() != null) {
-                    throw new IllegalStateException("Unable to initialize the Vert.x instance", failure.get());
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException("Unable to initialize the Vert.x instance", e);
-            }
+            return latch.join();
         } else {
-            vertx = Vertx.vertx(options);
+            return Vertx.vertx(options);
         }
     }
 
@@ -168,7 +165,7 @@ public class VertxCoreRecorder {
         if (vertx != null) {
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> problem = new AtomicReference<>();
-            vertx.close(ar -> {
+            vertx.get().close(ar -> {
                 if (ar.failed()) {
                     problem.set(ar.cause());
                 }
@@ -315,7 +312,7 @@ public class VertxCoreRecorder {
         return new Supplier<EventLoopGroup>() {
             @Override
             public EventLoopGroup get() {
-                return vertx.nettyEventLoopGroup();
+                return vertx.get().nettyEventLoopGroup();
             }
         };
     }

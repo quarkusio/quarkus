@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
@@ -29,9 +30,9 @@ public class VertxRecorder {
     static volatile Vertx vertx;
     static volatile List<MessageConsumer<?>> messageConsumers;
 
-    public void configureVertx(RuntimeValue<Vertx> vertx, Map<String, ConsumeEvent> messageConsumerConfigurations,
+    public void configureVertx(Supplier<Vertx> vertx, Map<String, ConsumeEvent> messageConsumerConfigurations,
             LaunchMode launchMode, ShutdownContext shutdown, Map<Class<?>, Class<?>> codecByClass) {
-        this.vertx = vertx.getValue();
+        this.vertx = vertx.get();
         this.messageConsumers = new ArrayList<>();
 
         registerMessageConsumers(messageConsumerConfigurations);
@@ -163,5 +164,9 @@ public class VertxRecorder {
     private void registerCodec(Class<?> typeToAdd, MessageCodec codec) {
         EventBus eventBus = vertx.eventBus();
         eventBus.registerDefaultCodec(typeToAdd, codec);
+    }
+
+    public RuntimeValue<Vertx> forceStart(Supplier<Vertx> vertx) {
+        return new RuntimeValue<>(vertx.get());
     }
 }

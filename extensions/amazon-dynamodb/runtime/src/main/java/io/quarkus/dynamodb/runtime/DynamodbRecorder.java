@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 @Recorder
 public class DynamodbRecorder {
+
     public void configureRuntimeConfig(DynamodbConfig dynamodbConfig) {
         Arc.container().instance(DynamodbClientProducer.class).get().setConfig(dynamodbConfig);
     }

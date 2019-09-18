@@ -1,6 +1,5 @@
 package io.quarkus.dynamodb.runtime;
 
-import io.quarkus.dynamodb.runtime.AwsCredentialsProviderConfig.ProcessCredentialsProviderConfig;
 import io.quarkus.dynamodb.runtime.AwsCredentialsProviderConfig.ProfileCredentialsProviderConfig;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -18,19 +17,16 @@ public enum AwsCredentialsProviderType {
     DEFAULT {
         @Override
         public AwsCredentialsProvider create(AwsCredentialsProviderConfig config) {
-            DefaultCredentialsProvider.Builder builder = DefaultCredentialsProvider.builder();
-
-            config.defaultProvider.asyncCredentialUpdateEnabled.ifPresent(builder::asyncCredentialUpdateEnabled);
-            config.defaultProvider.reuseLastProviderEnabled.ifPresent(builder::reuseLastProviderEnabled);
-            return builder.build();
+            return DefaultCredentialsProvider.builder()
+                    .asyncCredentialUpdateEnabled(config.defaultProvider.asyncCredentialUpdateEnabled)
+                    .reuseLastProviderEnabled(config.defaultProvider.reuseLastProviderEnabled).build();
         }
     },
     STATIC {
         @Override
         public AwsCredentialsProvider create(AwsCredentialsProviderConfig config) {
-            return StaticCredentialsProvider
-                    .create(AwsBasicCredentials.create(config.staticProvider.accessKeyId,
-                            config.staticProvider.secretAccessKey));
+            return StaticCredentialsProvider.create(
+                    AwsBasicCredentials.create(config.staticProvider.accessKeyId, config.staticProvider.secretAccessKey));
         }
     },
 
@@ -71,13 +67,12 @@ public enum AwsCredentialsProviderType {
     PROCESS {
         @Override
         public AwsCredentialsProvider create(AwsCredentialsProviderConfig config) {
-            ProcessCredentialsProviderConfig cfg = config.processProvider;
-            ProcessCredentialsProvider.Builder builder = ProcessCredentialsProvider.builder();
+            ProcessCredentialsProvider.Builder builder = ProcessCredentialsProvider.builder()
+                    .asyncCredentialUpdateEnabled(config.processProvider.asyncCredentialUpdateEnabled);
 
-            cfg.asyncCredentialUpdateEnabled.ifPresent(builder::asyncCredentialUpdateEnabled);
-            cfg.credentialRefreshThreshold.ifPresent(builder::credentialRefreshThreshold);
-            cfg.processOutputLimit.ifPresent(builder::processOutputLimit);
-            builder.command(cfg.command);
+            builder.credentialRefreshThreshold(config.processProvider.credentialRefreshThreshold);
+            builder.processOutputLimit(config.processProvider.processOutputLimit.asLongValue());
+            builder.command(config.processProvider.command);
 
             return builder.build();
         }

@@ -16,12 +16,12 @@ public class DynamoDbFunctionalityTest {
 
     @Test
     public void testDynamoDbAsync() {
-        RestAssured.when().get("/test/async").then().body(is("OK"));
+        RestAssured.when().get("/test/async").then().body(is("INTERCEPTED OK"));
     }
 
     @Test
     public void testDynamoDbBlocking() {
-        RestAssured.when().get("/test/blocking").then().body(is("OK"));
+        RestAssured.when().get("/test/blocking").then().body(is("INTERCEPTED OK"));
     }
 
 }

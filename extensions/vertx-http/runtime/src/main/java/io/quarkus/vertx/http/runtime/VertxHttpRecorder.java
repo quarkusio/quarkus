@@ -100,9 +100,7 @@ public class VertxHttpRecorder {
         }
     }
 
-    public RuntimeValue<Router> initializeRouter(RuntimeValue<Vertx> vertxRuntimeValue, ShutdownContext shutdown,
-            HttpConfiguration httpConfiguration, LaunchMode launchMode,
-            boolean startVirtual, boolean startSocket) throws IOException {
+    public RuntimeValue<Router> initializeRouter(RuntimeValue<Vertx> vertxRuntimeValue) throws IOException {
 
         Vertx vertx = vertxRuntimeValue.getValue();
 
@@ -116,6 +114,14 @@ public class VertxHttpRecorder {
         Event<Object> event = Arc.container().beanManager().getEvent();
         event.select(Router.class).fire(router);
 
+        return new RuntimeValue<>(router);
+    }
+
+    public void startServer(RuntimeValue<Vertx> vertxRuntimeValue, ShutdownContext shutdown,
+            HttpConfiguration httpConfiguration, LaunchMode launchMode,
+            boolean startVirtual, boolean startSocket) throws IOException {
+
+        Vertx vertx = vertxRuntimeValue.getValue();
         if (startVirtual) {
             initializeVirtual(vertx);
         }
@@ -128,8 +134,6 @@ public class VertxHttpRecorder {
                 }
             }
         }
-
-        return new RuntimeValue<>(router);
     }
 
     public void finalizeRouter(BeanContainer container, Handler<HttpServerRequest> defaultRouteHandler,

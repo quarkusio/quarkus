@@ -25,8 +25,10 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.index.ClassPathArtifactResolver;
 import io.quarkus.deployment.index.ResolvedArtifact;
@@ -35,8 +37,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.swaggerui.runtime.SwaggerUiRecorder;
-import io.quarkus.undertow.deployment.GeneratedWebResourceBuildItem;
-import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
+import io.quarkus.vertx.http.deployment.RouteBuildItem;
 
 public class SwaggerUiProcessor {
 
@@ -44,8 +45,8 @@ public class SwaggerUiProcessor {
 
     private static final String SWAGGER_UI_WEBJAR_GROUP_ID = "org.webjars";
     private static final String SWAGGER_UI_WEBJAR_ARTIFACT_ID = "swagger-ui";
-    private static final String META_INF_RESOURCES = "META-INF/resources/";
     private static final String SWAGGER_UI_WEBJAR_PREFIX = "META-INF/resources/webjars/swagger-ui";
+    private static final String SWAGGER_UI_FINAL_DESTINATION = "META-INF/swagger-ui-files";
     private static final Pattern SWAGGER_UI_DEFAULT_API_URL_PATTERN = Pattern.compile("(.* url: \")(.*)(\",.*)",
             Pattern.DOTALL);
     private static final String TEMP_DIR_PREFIX = "quarkus-swagger-ui_" + System.nanoTime();
@@ -70,9 +71,10 @@ public class SwaggerUiProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public void registerSwaggerUiServletExtension(SwaggerUiRecorder recorder,
-            BuildProducer<ServletExtensionBuildItem> servletExtension,
+            BuildProducer<RouteBuildItem> routes,
             BeanContainerBuildItem container,
-            BuildProducer<GeneratedWebResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<SubstrateResourceBuildItem> substrateResourceBuildItemBuildProducer,
             LiveReloadBuildItem liveReloadBuildItem) throws Exception {
 
         if ("/".equals(swaggerUiConfig.path)) {
@@ -109,12 +111,8 @@ public class SwaggerUiProcessor {
                     throw new RuntimeException(e);
                 }
             }
-            servletExtension.produce(
-                    new ServletExtensionBuildItem(
-                            recorder.createSwaggerUiExtension(
-                                    swaggerUiConfig.path,
-                                    cached.cachedDirectory,
-                                    container.getValue())));
+            routes.produce(new RouteBuildItem(swaggerUiConfig.path + "/*",
+                    recorder.handler(cached.cachedDirectory, swaggerUiConfig.path)));
         } else if (swaggerUiConfig.alwaysInclude) {
             ResolvedArtifact artifact = getSwaggerUiArtifact();
             //we are including in a production artifact
@@ -134,12 +132,18 @@ public class SwaggerUiProcessor {
                                 content = updateApiUrl(new String(content, StandardCharsets.UTF_8))
                                         .getBytes(StandardCharsets.UTF_8);
                             }
+                            String fileName = SWAGGER_UI_FINAL_DESTINATION + "/" + filename;
                             generatedResources
-                                    .produce(new GeneratedWebResourceBuildItem(swaggerUiConfig.path + "/" + filename, content));
+                                    .produce(new GeneratedResourceBuildItem(fileName,
+                                            content));
+                            substrateResourceBuildItemBuildProducer.produce(new SubstrateResourceBuildItem(fileName));
+
                         }
                     }
                 }
             }
+            routes.produce(new RouteBuildItem(swaggerUiConfig.path + "/*",
+                    recorder.handler(SWAGGER_UI_FINAL_DESTINATION, swaggerUiConfig.path)));
         }
     }
 

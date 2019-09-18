@@ -58,18 +58,11 @@ class VertxHttpProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     VertxWebRouterBuildItem initializeRouter(VertxHttpRecorder recorder,
-            LaunchModeBuildItem launchMode,
-            ShutdownContextBuildItem shutdown,
             InternalWebVertxBuildItem vertx,
-            Optional<RequireVirtualHttpBuildItem> requireVirtual,
             List<RouteBuildItem> routes,
             List<FilterBuildItem> filters) throws IOException {
 
-        boolean startVirtual = requireVirtual.isPresent() || httpConfiguration.virtual;
-        // start http socket in dev/test mode even if virtual http is required
-        boolean startSocket = !startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL;
-        RuntimeValue<Router> router = recorder.initializeRouter(vertx.getVertx(), shutdown,
-                httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket);
+        RuntimeValue<Router> router = recorder.initializeRouter(vertx.getVertx());
         List<Handler<RoutingContext>> filterList = filters.stream().map(FilterBuildItem::getHandler)
                 .collect(Collectors.toList());
         for (RouteBuildItem route : routes) {
@@ -81,12 +74,32 @@ class VertxHttpProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem finalizeRouter(VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer,
-            LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, Optional<DefaultRouteBuildItem> defaultRoute,
-            List<FilterBuildItem> filters, VertxWebRouterBuildItem router) {
+    ServiceStartBuildItem finalizeRouter(
+            VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer,
+            Optional<RequireVirtualHttpBuildItem> requireVirtual,
+            InternalWebVertxBuildItem vertx,
+            LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, List<DefaultRouteBuildItem> defaultRoutes,
+            List<FilterBuildItem> filters, VertxWebRouterBuildItem router) throws BuildException, IOException {
+        Optional<DefaultRouteBuildItem> defaultRoute;
+        if (defaultRoutes == null || defaultRoutes.isEmpty()) {
+            defaultRoute = Optional.empty();
+        } else {
+            if (defaultRoutes.size() > 1) {
+                // this should never happen
+                throw new BuildException("Too many default routes.", Collections.emptyList());
+            } else {
+                defaultRoute = Optional.of(defaultRoutes.get(0));
+            }
+        }
         recorder.finalizeRouter(beanContainer.getValue(), defaultRoute.map(DefaultRouteBuildItem::getHandler).orElse(null),
                 filters.stream().map(FilterBuildItem::getHandler).collect(Collectors.toList()),
                 launchMode.getLaunchMode(), shutdown, router.getRouter());
+
+        boolean startVirtual = requireVirtual.isPresent() || httpConfiguration.virtual;
+        // start http socket in dev/test mode even if virtual http is required
+        boolean startSocket = !startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL;
+        recorder.startServer(vertx.getVertx(), shutdown,
+                httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket);
 
         return new ServiceStartBuildItem("vertx-http");
     }

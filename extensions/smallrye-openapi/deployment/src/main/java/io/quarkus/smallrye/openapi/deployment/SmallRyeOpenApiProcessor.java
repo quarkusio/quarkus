@@ -44,6 +44,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.resteasy.deployment.ResteasyJaxrsConfigBuildItem;
@@ -208,6 +209,7 @@ public class SmallRyeOpenApiProcessor {
             BuildProducer<FeatureBuildItem> feature,
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
             BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
+            BuildProducer<SubstrateResourceBuildItem> substrateResources,
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem) throws Exception {
 
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
@@ -228,6 +230,7 @@ public class SmallRyeOpenApiProcessor {
             String name = OpenApiHandler.BASE_NAME + format;
             resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name,
                     OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8)));
+            substrateResources.produce(new SubstrateResourceBuildItem(name));
         }
     }
 

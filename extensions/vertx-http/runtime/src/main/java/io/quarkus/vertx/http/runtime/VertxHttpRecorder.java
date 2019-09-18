@@ -375,18 +375,24 @@ public class VertxHttpRecorder {
         @Override
         public void start(Future<Void> startFuture) throws Exception {
             final AtomicInteger remainingCount = new AtomicInteger(httpsOptions != null ? 2 : 1);
-            Handler<AsyncResult<HttpServer>> doneHandler = event -> {
+            httpServer = vertx.createHttpServer(httpOptions);
+            httpServer.requestHandler(router);
+            httpServer.listen(port, host, event -> {
+                // Port may be random, so set the actual port
+                httpOptions.setPort(event.result().actualPort());
                 if (remainingCount.decrementAndGet() == 0) {
                     startFuture.complete();
                 }
-            };
-            httpServer = vertx.createHttpServer(httpOptions);
-            httpServer.requestHandler(router);
-            httpServer.listen(port, host, doneHandler);
+            });
             if (httpsOptions != null) {
                 httpsServer = vertx.createHttpServer(httpsOptions);
                 httpsServer.requestHandler(router);
-                httpsServer.listen(httpsPort, host, doneHandler);
+                httpsServer.listen(httpsPort, host, event -> {
+                    httpsOptions.setPort(event.result().actualPort());
+                    if (remainingCount.decrementAndGet() == 0) {
+                        startFuture.complete();
+                    }
+                });
             }
         }
 

@@ -449,4 +449,3 @@ public class FruitAsyncResource {
 
 include::{generated-dir}/config/quarkus-dynamodb.adoc[opts=optional, leveloffset=+1]
 
-include::duration-format-note.adoc[]

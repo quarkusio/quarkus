@@ -252,7 +252,8 @@
         <profile>
             <id>jdk-8-classpath</id>
             <activation>
-                <jdk>[9,</jdk>
+                <!-- activate this on any JDK from 9 onwards -->
+                <jdk>[9,)</jdk>
             </activation>
             <build>
                 <plugins>

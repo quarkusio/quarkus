@@ -1,7 +1,6 @@
 package io.quarkus.dynamodb.runtime;
 
 import java.nio.file.Path;
-import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -21,16 +20,14 @@ public class TlsManagersProviderConfig {
      *                        https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html[JSSE].
      * * `FILE_STORE` - Provider that loads a the key store from a file.
      *
-     * If not specified, a `SYSTEM_PROPERTY` provider is used.
      * @asciidoclet
      */
     // @formatter:on
-    @ConfigItem
-    public Optional<TlsManagersProviderType> type;
+    @ConfigItem(defaultValue = "system-property")
+    public TlsManagersProviderType type;
 
     /**
      * Configuration of the file store provider.
-     *
      * <p>
      * Used only if {@code FILE_STORE} type is chosen.
      */
@@ -48,7 +45,6 @@ public class TlsManagersProviderConfig {
 
         /**
          * Key store type.
-         *
          * <p>
          * See the KeyStore section in
          * the https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#KeyStore[Java Cryptography

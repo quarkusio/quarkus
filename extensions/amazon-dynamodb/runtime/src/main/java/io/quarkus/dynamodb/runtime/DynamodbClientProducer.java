@@ -112,14 +112,15 @@ public class DynamodbClientProducer {
     private ApacheHttpClient.Builder createApacheClientBuilder(ApacheHttpClientConfig config) {
         Builder builder = ApacheHttpClient.builder();
 
-        config.connectionAcquisitionTimeout.ifPresent(builder::connectionAcquisitionTimeout);
-        config.connectionMaxIdleTime.ifPresent(builder::connectionMaxIdleTime);
-        config.connectionTimeout.ifPresent(builder::connectionTimeout);
+        builder.connectionTimeout(config.connectionTimeout);
+        builder.connectionAcquisitionTimeout(config.connectionAcquisitionTimeout);
+        builder.connectionMaxIdleTime(config.connectionMaxIdleTime);
         config.connectionTimeToLive.ifPresent(builder::connectionTimeToLive);
-        config.expectContinueEnabled.ifPresent(builder::expectContinueEnabled);
-        config.maxConnections.ifPresent(builder::maxConnections);
-        config.socketTimeout.ifPresent(builder::socketTimeout);
-        config.useIdleConnectionReaper.ifPresent(builder::useIdleConnectionReaper);
+        builder.expectContinueEnabled(config.expectContinueEnabled);
+        builder.maxConnections(config.maxConnections);
+        builder.socketTimeout(config.socketTimeout);
+        builder.useIdleConnectionReaper(config.useIdleConnectionReaper);
+
         if (config.proxy.enabled) {
             ProxyConfiguration.Builder proxyBuilder = ProxyConfiguration.builder().endpoint(config.proxy.endpoint);
             config.proxy.username.ifPresent(proxyBuilder::username);
@@ -132,10 +133,8 @@ public class DynamodbClientProducer {
 
             builder.proxyConfiguration(proxyBuilder.build());
         }
-        if (config.tlsManagersProvider != null) {
-            config.tlsManagersProvider.type.map(type -> type.create(config.tlsManagersProvider))
-                    .ifPresent(builder::tlsKeyManagersProvider);
-        }
+
+        builder.tlsKeyManagersProvider(config.tlsManagersProvider.type.create(config.tlsManagersProvider));
 
         return builder;
     }
@@ -143,18 +142,18 @@ public class DynamodbClientProducer {
     private NettyNioAsyncHttpClient.Builder createNettyClientBuilder(NettyHttpClientConfig config) {
         NettyNioAsyncHttpClient.Builder builder = NettyNioAsyncHttpClient.builder();
 
-        config.connectionAcquisitionTimeout.ifPresent(builder::connectionAcquisitionTimeout);
-        config.connectionMaxIdleTime.ifPresent(builder::connectionMaxIdleTime);
-        config.connectionTimeout.ifPresent(builder::connectionTimeout);
+        builder.connectionAcquisitionTimeout(config.connectionAcquisitionTimeout);
+        builder.connectionMaxIdleTime(config.connectionMaxIdleTime);
+        builder.connectionTimeout(config.connectionTimeout);
         config.connectionTimeToLive.ifPresent(builder::connectionTimeToLive);
-        config.maxConcurrency.ifPresent(builder::maxConcurrency);
-        config.maxHttp2Streams.ifPresent(builder::maxHttp2Streams);
-        config.maxPendingConnectionAcquires.ifPresent(builder::maxPendingConnectionAcquires);
-        config.protocol.ifPresent(builder::protocol);
-        config.readTimeout.ifPresent(builder::readTimeout);
+        builder.maxConcurrency(config.maxConcurrency);
+        builder.maxHttp2Streams(config.maxHttp2Streams);
+        builder.maxPendingConnectionAcquires(config.maxPendingConnectionAcquires);
+        builder.protocol(config.protocol);
+        builder.readTimeout(config.readTimeout);
+        builder.writeTimeout(config.writeTimeout);
         config.sslProvider.ifPresent(builder::sslProvider);
-        config.useIdleConnectionReaper.ifPresent(builder::useIdleConnectionReaper);
-        config.writeTimeout.ifPresent(builder::writeTimeout);
+        builder.useIdleConnectionReaper(config.useIdleConnectionReaper);
 
         if (config.proxy.enabled) {
             software.amazon.awssdk.http.nio.netty.ProxyConfiguration.Builder proxyBuilder = software.amazon.awssdk.http.nio.netty.ProxyConfiguration
@@ -168,14 +167,11 @@ public class DynamodbClientProducer {
             builder.proxyConfiguration(proxyBuilder.build());
         }
 
-        if (config.tlsManagersProvider != null) {
-            config.tlsManagersProvider.type.map(type -> type.create(config.tlsManagersProvider))
-                    .ifPresent(builder::tlsKeyManagersProvider);
-        }
+        builder.tlsKeyManagersProvider(config.tlsManagersProvider.type.create(config.tlsManagersProvider));
 
         if (config.eventLoop.override) {
             SdkEventLoopGroup.Builder eventLoopBuilder = SdkEventLoopGroup.builder();
-            eventLoopBuilder.numberOfThreads(config.eventLoop.numberOfThreads);
+            config.eventLoop.numberOfThreads.ifPresent(eventLoopBuilder::numberOfThreads);
             if (config.eventLoop.threadNamePrefix.isPresent()) {
                 eventLoopBuilder.threadFactory(
                         new ThreadFactoryBuilder().threadNamePrefix(config.eventLoop.threadNamePrefix.get()).build());

@@ -14,8 +14,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 @ConfigGroup
 public class SdkConfig {
     /**
-     * Configure the endpoint URI with which the SDK should communicate.
-     *
+     * The endpoint URI with which the SDK should communicate.
      * <p>
      * If not specified, an appropriate endpoint to be used for DynamoDB service and region.
      */
@@ -23,8 +22,7 @@ public class SdkConfig {
     public Optional<URI> endpointOverride;
 
     /**
-     * Configure the amount of time to allow the client to complete the execution of an API call.
-     *
+     * The amount of time to allow the client to complete the execution of an API call.
      * <p>
      * This timeout covers the entire client execution except for marshalling. This includes request handler execution, all HTTP
      * requests including retries, unmarshalling, etc.
@@ -37,11 +35,10 @@ public class SdkConfig {
     public Optional<Duration> apiCallTimeout;
 
     /**
-     * Configure the amount of time to wait for the http request to complete before giving up and timing out.
-     *
+     * The amount of time to wait for the HTTP request to complete before giving up and timing out.
      * <p>
      * This value should always be positive, if present.
-     * 
+     *
      * @see software.amazon.awssdk.core.client.config.ClientOverrideConfiguration#apiCallAttemptTimeout()
      */
     @ConfigItem
@@ -50,11 +47,10 @@ public class SdkConfig {
     /**
      * List of execution interceptors that will have access to read and modify the request and response objects as they are
      * processed by the AWS SDK.
-     *
      * <p>
      * The list should consists of class names which implements
      * {@code software.amazon.awssdk.core.interceptor.ExecutionInterceptor} interface.
-     * 
+     *
      * @see software.amazon.awssdk.core.interceptor.ExecutionInterceptor
      */
     @ConfigItem

@@ -70,8 +70,8 @@ public enum AwsCredentialsProviderType {
             ProcessCredentialsProvider.Builder builder = ProcessCredentialsProvider.builder()
                     .asyncCredentialUpdateEnabled(config.processProvider.asyncCredentialUpdateEnabled);
 
-            config.processProvider.credentialRefreshThreshold.ifPresent(builder::credentialRefreshThreshold);
-            config.processProvider.processOutputLimit.ifPresent(builder::processOutputLimit);
+            builder.credentialRefreshThreshold(config.processProvider.credentialRefreshThreshold);
+            builder.processOutputLimit(config.processProvider.processOutputLimit.asLongValue());
             builder.command(config.processProvider.command);
 
             return builder.build();

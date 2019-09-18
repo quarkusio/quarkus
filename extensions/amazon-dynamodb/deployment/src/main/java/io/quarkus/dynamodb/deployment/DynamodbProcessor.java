@@ -194,7 +194,7 @@ public class DynamodbProcessor {
     }
 
     private static void checkSyncClientConfig(ApacheHttpClientConfig syncClient) {
-        if (syncClient.maxConnections.isPresent() && syncClient.maxConnections.getAsInt() <= 0) {
+        if (syncClient.maxConnections <= 0) {
             throw new ConfigurationError("quarkus.dynamodb.sync-client.max-connections may not be negative or zero.");
         }
         if (syncClient.proxy != null && syncClient.proxy.enabled) {
@@ -207,20 +207,19 @@ public class DynamodbProcessor {
     }
 
     private static void checkAsyncClientConfig(NettyHttpClientConfig asyncClient) {
-        if (asyncClient.maxConcurrency.isPresent() && asyncClient.maxConcurrency.get() <= 0) {
+        if (asyncClient.maxConcurrency <= 0) {
             throw new ConfigurationError("quarkus.dynamodb.async-client.max-concurrency may not be negative or zero.");
         }
-        if (asyncClient.maxHttp2Streams.isPresent() && asyncClient.maxHttp2Streams.get() <= 0) {
+        if (asyncClient.maxHttp2Streams < 0) {
             throw new ConfigurationError(
-                    "quarkus.dynamodb.async-client.max-http2-streams may not be negative or zero.");
+                    "quarkus.dynamodb.async-client.max-http2-streams may not be negative.");
         }
-        if (asyncClient.maxPendingConnectionAcquires.isPresent()
-                && asyncClient.maxPendingConnectionAcquires.get() <= 0) {
+        if (asyncClient.maxPendingConnectionAcquires <= 0) {
             throw new ConfigurationError(
                     "quarkus.dynamodb.async-client.max-pending-connection-acquires may not be negative or zero.");
         }
         if (asyncClient.eventLoop.override) {
-            if (asyncClient.eventLoop.numberOfThreads <= 0) {
+            if (asyncClient.eventLoop.numberOfThreads.isPresent() && asyncClient.eventLoop.numberOfThreads.get() <= 0) {
                 throw new ConfigurationError(
                         "quarkus.dynamodb.async-client.event-loop.number-of-threads may not be negative or zero.");
             }
@@ -268,9 +267,7 @@ public class DynamodbProcessor {
     }
 
     private static void validateTlsManagersProvider(TlsManagersProviderConfig config, String clientType) {
-        if (config != null && config.type.isPresent()
-                && config.type.get() == TlsManagersProviderType.FILE_STORE) {
-
+        if (config.type == TlsManagersProviderType.FILE_STORE) {
             if (config.fileStore == null) {
                 throw new ConfigurationError(
                         String.format(

@@ -35,9 +35,20 @@ public class QuarkusErrorServlet extends HttpServlet {
             details += "Error id " + uuid;
         }
 
-        resp.setContentType("text/html");
-        resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        resp.getWriter().write(new TemplateHtmlBuilder("Internal Server Error", details, details).stack(stack).toString());
+        String accept = req.getHeader("Accept");
+        if (accept != null && accept.contains("application/json")) {
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            String escapedStack = stack.replace(System.lineSeparator(), "\\n").replace("\"", "\\\"");
+            StringBuilder jsonPayload = new StringBuilder("{\"details\":\"").append(details).append("\",\"stack\":\"")
+                    .append(escapedStack).append("\"}");
+            resp.getWriter().write(jsonPayload.toString());
+        } else {
+            //We default to HTML representation
+            resp.setContentType("text/html");
+            resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            resp.getWriter().write(new TemplateHtmlBuilder("Internal Server Error", details, details).stack(stack).toString());
+        }
     }
 
     private static String generateStackTrace(final Throwable exception) {

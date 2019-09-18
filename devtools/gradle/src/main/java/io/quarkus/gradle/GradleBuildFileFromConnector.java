@@ -41,6 +41,7 @@ public class GradleBuildFileFromConnector extends GradleBuildFile {
                     }
                 }
             }
+            System.out.println("ECLIPSE PROJECT: " + eclipseProject);
             if (eclipseProject != null) {
                 dependencies = eclipseProject.getClasspath().stream().map(this::gradleModuleVersionToDependency)
                         .filter(Objects::nonNull)
@@ -49,12 +50,17 @@ public class GradleBuildFileFromConnector extends GradleBuildFile {
                 dependencies = Collections.emptyList();
             }
             dependencies = Collections.unmodifiableList(dependencies);
+            System.out.println("init deps " + dependencies.size());
+        } else {
+            System.out.println("DEPS " + dependencies.size());
         }
         return dependencies;
     }
 
     private Dependency gradleModuleVersionToDependency(EclipseExternalDependency eed) {
         Dependency dependency = new Dependency();
+        System.out.println("module version: " + eed.getGradleModuleVersion() + " / exists: " + eed.getFile().exists() + " : "
+                + eed.getFile());
         if (eed == null || eed.getGradleModuleVersion() == null) {
             // local dependencies are ignored
             System.err.println("Found null dependency:" + eed);

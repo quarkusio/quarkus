@@ -131,6 +131,9 @@
                                 <argument>-Pdescription=${project.description}</argument>
                                 <argument>-S</argument>
                             </arguments>
+                            <environmentVariables>
+                                <MAVEN_LOCAL_REPO>${settings.localRepository}</MAVEN_LOCAL_REPO>
+                            </environmentVariables>
                             <skip>${skip.gradle.build}</skip>
                         </configuration>
                         <goals>

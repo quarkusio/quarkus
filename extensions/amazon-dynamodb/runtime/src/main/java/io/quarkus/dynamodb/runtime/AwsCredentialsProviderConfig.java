@@ -16,25 +16,25 @@ public class AwsCredentialsProviderConfig {
      *
      * Available values:
      *
-     * * `DEFAULT` - the provider will attempt to identify the credentials automatically using the following checks:
+     * * `default` - the provider will attempt to identify the credentials automatically using the following checks:
      * ** Java System Properties - `aws.accessKeyId` and `aws.secretKey`
      * ** Environment Variables - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
      * ** Credential profiles file at the default location (`~/.aws/credentials`) shared by all AWS SDKs and the AWS CLI
      * ** Credentials delivered through the Amazon EC2 container service if `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` environment variable is set and security manager has permission to access the variable.
      * ** Instance profile credentials delivered through the Amazon EC2 metadata service
-     * * `STATIC` - the provider that uses the access key and secret access key specified in the `tatic-provider` section of the config.
-     * * `SYSTEM_PROPERTY` - it loads credentials from the `aws.accessKeyId`, `aws.secretAccessKey` and `aws.sessionToken` system properties.
-     * * `ENV_VARIABLE` - it loads credentials from the `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_SESSION_TOKEN` environment variables.
-     * * `PROFILE` - credentials are based on AWS configuration profiles. This loads credentials from
+     * * `static` - the provider that uses the access key and secret access key specified in the `tatic-provider` section of the config.
+     * * `system-property` - it loads credentials from the `aws.accessKeyId`, `aws.secretAccessKey` and `aws.sessionToken` system properties.
+     * * `env-variable` - it loads credentials from the `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_SESSION_TOKEN` environment variables.
+     * * `profile` - credentials are based on AWS configuration profiles. This loads credentials from
      *               a http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html[profile file],
      *               allowing you to share multiple sets of AWS security credentials between different tools like the AWS SDK for Java and the AWS CLI.
-     * * `CONTAINER` - It loads credentials from a local metadata service. Containers currently supported by the AWS SDK are
+     * * `container` - It loads credentials from a local metadata service. Containers currently supported by the AWS SDK are
      *                 **Amazon Elastic Container Service (ECS)** and **AWS Greengrass**
-     * * `INSTANCE_PROFILE` - It loads credentials from the Amazon EC2 Instance Metadata Service.
-     * * `PROCESS` - Credentials are loaded from an external process. This is used to support the credential_process setting in the profile
+     * * `instance-profile` - It loads credentials from the Amazon EC2 Instance Metadata Service.
+     * * `process` - Credentials are loaded from an external process. This is used to support the credential_process setting in the profile
      *               credentials file. See https://docs.aws.amazon.com/cli/latest/topic/config-vars.html#sourcing-credentials-from-external-processes[Sourcing Credentials From External Processes]
      *               for more information.
-     * * `ANONYMOUS` - It always returns anonymous AWS credentials. Anonymous AWS credentials result in un-authenticated requests and will
+     * * `anonymous` - It always returns anonymous AWS credentials. Anonymous AWS credentials result in un-authenticated requests and will
      *                 fail unless the resource or API's policy has been configured to specifically allow anonymous access.
      *
      * @asciidoclet

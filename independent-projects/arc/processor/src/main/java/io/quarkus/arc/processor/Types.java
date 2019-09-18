@@ -21,6 +21,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.PrimitiveType.Primitive;
@@ -149,7 +150,7 @@ final class Types {
             } else if (Kind.PARAMETERIZED_TYPE.equals(returnType.kind())) {
                 types = getTypeClosure(returnTypeClassInfo,
                         buildResolvedMap(returnType.asParameterizedType().arguments(), returnTypeClassInfo.typeParameters(),
-                                Collections.emptyMap()),
+                                Collections.emptyMap(), beanDeployment.getIndex()),
                         beanDeployment, null);
             } else {
                 throw new IllegalArgumentException("Unsupported return type");
@@ -175,7 +176,7 @@ final class Types {
             } else if (Kind.PARAMETERIZED_TYPE.equals(fieldType.kind())) {
                 types = getTypeClosure(fieldClassInfo,
                         buildResolvedMap(fieldType.asParameterizedType().arguments(), fieldClassInfo.typeParameters(),
-                                Collections.emptyMap()),
+                                Collections.emptyMap(), beanDeployment.getIndex()),
                         beanDeployment, null);
             } else {
                 throw new IllegalArgumentException("Unsupported return type");
@@ -191,7 +192,7 @@ final class Types {
             types = getTypeClosure(classInfo, Collections.emptyMap(), beanDeployment, null);
         } else {
             types = getTypeClosure(classInfo, buildResolvedMap(typeParameters, typeParameters,
-                    Collections.emptyMap()), beanDeployment, null);
+                    Collections.emptyMap(), beanDeployment.getIndex()), beanDeployment, null);
         }
         return restrictBeanTypes(types, beanDeployment.getAnnotations(classInfo));
     }
@@ -226,7 +227,7 @@ final class Types {
                 Map<TypeVariable, Type> resolved = Collections.emptyMap();
                 if (Kind.PARAMETERIZED_TYPE.equals(interfaceType.kind())) {
                     resolved = buildResolvedMap(interfaceType.asParameterizedType().arguments(),
-                            interfaceClassInfo.typeParameters(), resolvedTypeParameters);
+                            interfaceClassInfo.typeParameters(), resolvedTypeParameters, beanDeployment.getIndex());
                 }
                 types.addAll(getTypeClosure(interfaceClassInfo, resolved, beanDeployment, resolvedTypeVariablesConsumer));
             }
@@ -239,7 +240,7 @@ final class Types {
                 if (Kind.PARAMETERIZED_TYPE.equals(classInfo.superClassType().kind())) {
                     resolved = buildResolvedMap(classInfo.superClassType().asParameterizedType().arguments(),
                             superClassInfo.typeParameters(),
-                            resolvedTypeParameters);
+                            resolvedTypeParameters, beanDeployment.getIndex());
                 }
                 types.addAll(getTypeClosure(superClassInfo, resolved, beanDeployment, resolvedTypeVariablesConsumer));
             }
@@ -277,18 +278,35 @@ final class Types {
         return types;
     }
 
-    static <T extends Type> Map<TypeVariable, Type> buildResolvedMap(List<T> resolvedTypeVariables,
+    static <T extends Type> Map<TypeVariable, Type> buildResolvedMap(List<T> resolvedArguments,
             List<TypeVariable> typeVariables,
-            Map<TypeVariable, Type> resolvedTypeParameters) {
+            Map<TypeVariable, Type> resolvedTypeParameters, IndexView index) {
         Map<TypeVariable, Type> resolvedMap = new HashMap<>();
-        for (int i = 0; i < resolvedTypeVariables.size(); i++) {
-            Type resolvedTypeVariable = resolvedTypeVariables.get(i);
-            Type resolvedTypeParam = Kind.TYPE_VARIABLE.equals(resolvedTypeVariable.kind())
-                    ? resolvedTypeParameters.getOrDefault(resolvedTypeVariable, resolvedTypeVariable)
-                    : resolvedTypeVariable;
-            resolvedMap.put(typeVariables.get(i), resolvedTypeParam);
+        for (int i = 0; i < resolvedArguments.size(); i++) {
+            resolvedMap.put(typeVariables.get(i), resolveTypeParam(resolvedArguments.get(i), resolvedTypeParameters, index));
         }
         return resolvedMap;
+    }
+
+    static Type resolveTypeParam(Type typeParam, Map<TypeVariable, Type> resolvedTypeParameters, IndexView index) {
+        if (typeParam.kind() == Kind.TYPE_VARIABLE) {
+            return resolvedTypeParameters.getOrDefault(typeParam, typeParam);
+        } else if (typeParam.kind() == Kind.PARAMETERIZED_TYPE) {
+            ParameterizedType parameterizedType = typeParam.asParameterizedType();
+            ClassInfo classInfo = index.getClassByName(parameterizedType.name());
+            if (classInfo != null) {
+                List<TypeVariable> typeParameters = classInfo.typeParameters();
+                List<Type> arguments = parameterizedType.arguments();
+                Map<TypeVariable, Type> resolvedMap = buildResolvedMap(arguments, typeParameters,
+                        resolvedTypeParameters, index);
+                Type[] typeParams = new Type[typeParameters.size()];
+                for (int i = 0; i < typeParameters.size(); i++) {
+                    typeParams[i] = resolveTypeParam(arguments.get(i), resolvedMap, index);
+                }
+                return ParameterizedType.create(parameterizedType.name(), typeParams, null);
+            }
+        }
+        return typeParam;
     }
 
     static String getPackageName(String className) {

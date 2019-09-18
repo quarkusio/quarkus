@@ -15,6 +15,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 
 import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.word.Pointer;
 import org.jboss.logmanager.EmbeddedConfigurator;
 import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.Logger;
@@ -107,7 +108,13 @@ public class LoggingSetupRecorder {
                 // setConsoleMode.
                 // For now we turn it off to not generate noisy output for most
                 // users.
-                return false;
+                if (ImageInfo.inImageRuntimeCode()) {
+                    Pointer getStdHandle = ConsoleAPI.GetStdHandle(ConsoleAPI.STD_OUTPUT_HANDLE);
+                    ConsoleAPI.SetConsoleMode(getStdHandle, 7);
+                    return true;
+                } else {
+                    return false;
+                }
             } else {
                 // Must be on some Unix variant or ANSI-enabled windows terminal...
                 return true;

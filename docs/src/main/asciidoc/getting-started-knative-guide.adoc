@@ -25,8 +25,8 @@ For this guide you need:
 
 * roughly 20 minutes
 * having access to a Kubernetes and/or OpenShift cluster. Minikube and Minishift are valid options.
-* having deployed Knative components on https://github.com/knative/docs/blob/master/install/Knative-with-Minikube.md[Minikube]
-or https://github.com/openshift-cloud-functions/Documentation/blob/master/con_knative-minishift.adoc[Minishift]
+* having deployed Knative components on https://knative.dev/docs/install/knative-with-minikube/[Minikube]
+or https://knative.dev/v0.6-docs/install/knative-with-minishift/[Minishift]
 
 
 

@@ -54,12 +54,7 @@ public class VertxCoreProducerTest {
         configuration.workerPoolSize = 10;
         configuration.warningExceptionTime = Duration.ofSeconds(1);
         configuration.internalBlockingPoolSize = 5;
-        VertxCoreRecorder.vertx = new Supplier<Vertx>() {
-            @Override
-            public Vertx get() {
-                return VertxCoreRecorder.initialize(configuration);
-            }
-        };
+        VertxCoreRecorder.vertx = new VertxCoreRecorder.VertxSupplier(configuration);
         producer.initialize(VertxCoreRecorder.vertx);
         verifyProducer();
     }

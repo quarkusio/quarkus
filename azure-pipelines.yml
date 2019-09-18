@@ -159,6 +159,16 @@ stages:
             parameters:
               jdk: '1.11'
 
+      - job: Build_JDK12_Linux
+        timeoutInMinutes: 60
+        displayName: 'Linux JDK12 Build'
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        steps:
+          - template: ci-templates/jvm-build-steps.yaml
+            parameters:
+              jdk: '1.12'
+
       - job: Run_TCKs
         timeoutInMinutes: 45
         pool:

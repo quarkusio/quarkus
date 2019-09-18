@@ -36,25 +36,13 @@ public class VertxCoreRecorder {
 
     public static final String ENABLE_JSON = "quarkus-internal.vertx.enabled-json";
 
-    static volatile Supplier<Vertx> vertx;
+    static volatile VertxSupplier vertx;
     //temporary vertx instance to work around a JAX-RS problem
     static volatile Vertx webVertx;
 
     public Supplier<Vertx> configureVertx(BeanContainer container, VertxConfiguration config,
             LaunchMode launchMode, ShutdownContext shutdown) {
-        vertx = new Supplier<Vertx>() {
-
-            Vertx v;
-
-            @Override
-            public synchronized Vertx get() {
-                if (v == null) {
-                    v = initialize(config);
-                }
-                return v;
-            }
-        };
-
+        vertx = new VertxSupplier(config);
         VertxCoreProducer producer = container.instance(VertxCoreProducer.class);
         producer.initialize(vertx);
         if (launchMode != LaunchMode.DEVELOPMENT) {
@@ -162,10 +150,10 @@ public class VertxCoreRecorder {
     }
 
     void destroy() {
-        if (vertx != null) {
+        if (vertx != null && vertx.v != null) {
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> problem = new AtomicReference<>();
-            vertx.get().close(ar -> {
+            vertx.v.close(ar -> {
                 if (ar.failed()) {
                     problem.set(ar.cause());
                 }
@@ -303,7 +291,7 @@ public class VertxCoreRecorder {
         return new Supplier<EventLoopGroup>() {
             @Override
             public EventLoopGroup get() {
-                return ((VertxImpl) vertx).getAcceptorEventLoopGroup();
+                return ((VertxImpl) vertx.get()).getAcceptorEventLoopGroup();
             }
         };
     }
@@ -315,5 +303,22 @@ public class VertxCoreRecorder {
                 return vertx.get().nettyEventLoopGroup();
             }
         };
+    }
+
+    static class VertxSupplier implements Supplier<Vertx> {
+        final VertxConfiguration config;
+        Vertx v;
+
+        VertxSupplier(VertxConfiguration config) {
+            this.config = config;
+        }
+
+        @Override
+        public synchronized Vertx get() {
+            if (v == null) {
+                v = initialize(config);
+            }
+            return v;
+        }
     }
 }

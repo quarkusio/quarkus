@@ -108,6 +108,11 @@ public abstract class AbstractDataSourceProducer {
                 transactionSynchronizationRegistry);
         poolConfiguration.transactionIntegration(txIntegration);
 
+        // Initial SQL
+        if (dataSourceRuntimeConfig.initialSql.isPresent()) {
+            agroalConnectionFactoryConfigurationSupplier.initialSql(dataSourceRuntimeConfig.initialSql.get());
+        }
+
         // metrics
         dataSourceConfiguration.metricsEnabled(dataSourceRuntimeConfig.enableMetrics);
 

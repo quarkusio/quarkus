@@ -80,6 +80,11 @@ public class HttpConfiguration {
      */
     public ServerLimitsConfig limits;
 
+    /**
+     * Request body related settings
+     */
+    public BodyConfig body;
+
     public int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort : port;
     }

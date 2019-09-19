@@ -92,5 +92,5 @@ public class DataSourceRuntimeConfig {
      * Initial SQL query executed when first using a connection.
      */
     @ConfigItem
-    public Optional<String> initialSQL;
+    public Optional<String> initialSql;
 }

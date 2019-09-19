@@ -52,8 +52,21 @@ public class QuarkusErrorServlet extends HttpServlet {
     }
 
     private static String generateStackTrace(final Throwable exception) {
-        StringWriter stringWriter = new StringWriter();
-        exception.printStackTrace(new PrintWriter(stringWriter));
+        final StringWriter stringWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(stringWriter);
+        // if we have a nested cause, we go all the way to the root cause
+        // and print it first, before printing the whole stacktrace
+        if (exception.getCause() != null) {
+            Throwable rootCause = exception;
+            while (rootCause.getCause() != null) {
+                rootCause = rootCause.getCause();
+            }
+            pw.println("--- (root cause shown first) ---");
+            rootCause.printStackTrace(pw);
+            pw.println();
+            pw.println("--- (complete stacktrace follows) ---");
+        }
+        exception.printStackTrace(pw);
 
         return escapeHtml(stringWriter.toString().trim());
     }

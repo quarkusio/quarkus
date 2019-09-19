@@ -127,6 +127,9 @@
                     <name>native</name>
                 </property>
             </activation>
+            <properties>
+                <native-image.docker-build>true</native-image.docker-build>
+            </properties>
             <build>
                 <plugins>
                     <plugin>

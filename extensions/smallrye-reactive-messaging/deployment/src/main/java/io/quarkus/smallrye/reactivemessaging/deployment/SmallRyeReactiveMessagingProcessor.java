@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.enterprise.context.Dependent;
+import javax.enterprise.inject.spi.DeploymentException;
+
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
@@ -15,19 +18,24 @@ import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AnnotationStore;
+import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -66,6 +74,34 @@ public class SmallRyeReactiveMessagingProcessor {
     }
 
     @BuildStep
+    AnnotationsTransformerBuildItem transformBeanScope(BeanArchiveIndexBuildItem index) {
+        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+            }
+
+            @Override
+            public void transform(AnnotationsTransformer.TransformationContext ctx) {
+                if (ctx.isClass()) {
+                    if (BuiltinScope.isDeclaredOn(ctx.getTarget().asClass())) {
+                        return;
+                    }
+                    ClassInfo clazz = ctx.getTarget().asClass();
+                    Map<DotName, List<AnnotationInstance>> annotations = clazz.annotations();
+                    if (annotations.containsKey(NAME_INCOMING)
+                            || annotations.containsKey(NAME_OUTGOING)) {
+                        LOGGER.debugf(
+                                "Found reactive messaging annotations on a class %s with no scope defined - adding @Dependent",
+                                ctx.getTarget());
+                        ctx.transform().add(Dependent.class).done();
+                    }
+                }
+            }
+        });
+    }
+
+    @BuildStep
     void validateBeanDeployment(
             ValidationPhaseBuildItem validationPhase,
             BuildProducer<MediatorBuildItem> mediatorMethods,
@@ -79,8 +115,17 @@ public class SmallRyeReactiveMessagingProcessor {
             if (bean.isClassBean()) {
                 // TODO: add support for inherited business methods
                 for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
-                    if (annotationStore.hasAnnotation(method, NAME_INCOMING)
-                            || annotationStore.hasAnnotation(method, NAME_OUTGOING)) {
+                    AnnotationInstance incoming = annotationStore.getAnnotation(method, NAME_INCOMING);
+                    AnnotationInstance outgoing = annotationStore.getAnnotation(method, NAME_OUTGOING);
+                    if (incoming != null || outgoing != null) {
+                        if (incoming != null && incoming.value().asString().isEmpty()) {
+                            validationPhase.getContext().addDeploymentProblem(
+                                    new DeploymentException("Empty @Incoming annotation on method " + method));
+                        }
+                        if (outgoing != null && outgoing.value().asString().isEmpty()) {
+                            validationPhase.getContext().addDeploymentProblem(
+                                    new DeploymentException("Empty @Outgoing annotation on method " + method));
+                        }
                         // TODO: validate method params and return type?
                         mediatorMethods.produce(new MediatorBuildItem(bean, method));
                         LOGGER.debugf("Found mediator business method %s declared on %s", method, bean);

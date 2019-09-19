@@ -3,6 +3,7 @@ package io.quarkus.smallrye.reactivemessaging.runtime;
 import javax.annotation.Priority;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.spi.DeploymentException;
 import javax.inject.Inject;
 
 import io.quarkus.runtime.StartupEvent;
@@ -18,7 +19,7 @@ public class SmallRyeReactiveMessagingLifecycle {
         try {
             mediatorManager.initializeAndRun();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new DeploymentException(e);
         }
     }
 

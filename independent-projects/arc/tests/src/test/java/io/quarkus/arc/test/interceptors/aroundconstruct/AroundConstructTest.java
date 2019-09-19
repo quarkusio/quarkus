@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.interceptors.aroundconstruct;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
@@ -9,13 +9,13 @@ import javax.inject.Singleton;
 import javax.interceptor.AroundConstruct;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class AroundConstructTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(MyTransactional.class, SimpleBean.class,
             SimpleInterceptor.class);
 
@@ -25,7 +25,7 @@ public class AroundConstructTest {
     public void testInterception() {
         SimpleBean simpleBean = Arc.container().instance(SimpleBean.class).get();
         assertNotNull(simpleBean);
-        Assert.assertTrue(INTERCEPTOR_CALLED.get());
+        Assertions.assertTrue(INTERCEPTOR_CALLED.get());
     }
 
     @Singleton

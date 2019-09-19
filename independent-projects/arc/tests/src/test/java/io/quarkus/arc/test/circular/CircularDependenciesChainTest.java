@@ -1,9 +1,7 @@
 package io.quarkus.arc.test.circular;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
@@ -11,11 +9,11 @@ import java.util.Comparator;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class CircularDependenciesChainTest {
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(
             Foo.class,
             Bar.class,
@@ -24,8 +22,8 @@ public class CircularDependenciesChainTest {
     @Test
     public void testDependencies() {
         Foo foo = Arc.container().instance(Foo.class).get();
-        assertThat(foo, is(notNullValue(Foo.class)));
-        assertThat(foo.ping(), is("foo is not null"));
+        assertNotNull(foo);
+        assertEquals("foo is not null", foo.ping());
         assertEquals(0, Arc.container().instance(Producing.class).get().getComparator().compare("A", "A"));
     }
 

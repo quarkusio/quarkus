@@ -1,6 +1,7 @@
 package io.quarkus.arc.test.interceptors.aroundconstruct;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
@@ -11,14 +12,13 @@ import javax.inject.Singleton;
 import javax.interceptor.AroundConstruct;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class AroundConstructAppliedViaConstructorTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(MyTransactional.class,
             MyOtherTransactional.class,
             SimpleBean_ConstructorWithInject.class,
@@ -31,7 +31,7 @@ public class AroundConstructAppliedViaConstructorTest {
     public static AtomicBoolean INTERCEPTOR_CALLED = new AtomicBoolean(false);
     public static AtomicBoolean OTHER_INTERCEPTOR_CALLED = new AtomicBoolean(false);
 
-    @Before
+    @BeforeEach
     public void before() {
         INTERCEPTOR_CALLED.set(false);
         OTHER_INTERCEPTOR_CALLED.set(false);
@@ -41,22 +41,22 @@ public class AroundConstructAppliedViaConstructorTest {
     public void testInterception_constructorWithInject() {
         SimpleBean_ConstructorWithInject simpleBean = Arc.container().instance(SimpleBean_ConstructorWithInject.class).get();
         assertNotNull(simpleBean);
-        Assert.assertTrue(INTERCEPTOR_CALLED.get());
+        assertTrue(INTERCEPTOR_CALLED.get());
     }
 
     @Test
     public void testInterception_noArgsConstructor() {
         SimpleBean_NoArgsConstructor simpleBean = Arc.container().instance(SimpleBean_NoArgsConstructor.class).get();
         assertNotNull(simpleBean);
-        Assert.assertTrue(INTERCEPTOR_CALLED.get());
+        assertTrue(INTERCEPTOR_CALLED.get());
     }
 
     @Test
     public void testInterception_twoBindings() {
         SimpleBean_TwoBindings simpleBean = Arc.container().instance(SimpleBean_TwoBindings.class).get();
         assertNotNull(simpleBean);
-        Assert.assertTrue(INTERCEPTOR_CALLED.get());
-        Assert.assertTrue(OTHER_INTERCEPTOR_CALLED.get());
+        assertTrue(INTERCEPTOR_CALLED.get());
+        assertTrue(OTHER_INTERCEPTOR_CALLED.get());
     }
 
     @Dependent

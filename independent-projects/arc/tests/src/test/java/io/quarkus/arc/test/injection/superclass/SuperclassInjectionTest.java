@@ -1,8 +1,8 @@
 package io.quarkus.arc.test.injection.superclass;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
@@ -15,13 +15,14 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class SuperclassInjectionTest {
 
-    @Rule
-    public ArcTestContainer container = new ArcTestContainer(Head.class, CombineHarvester.class, SuperCombineHarvester.class);
+    @RegisterExtension
+    public ArcTestContainer container = new ArcTestContainer(Head.class, CombineHarvester.class,
+            SuperCombineHarvester.class);
 
     @Test
     public void testSuperclassSamePackage() {
@@ -45,7 +46,7 @@ public class SuperclassInjectionTest {
         ids.add(combineHarvester.getHead3().id);
         ids.add(combineHarvester.getHead4().id);
         ids.add(combineHarvester.head5.id);
-        assertEquals("Wrong number of ids: " + ids, 5, ids.size());
+        assertEquals(5, ids.size(), () -> "Wrong number of ids: " + ids);
     }
 
     @Dependent

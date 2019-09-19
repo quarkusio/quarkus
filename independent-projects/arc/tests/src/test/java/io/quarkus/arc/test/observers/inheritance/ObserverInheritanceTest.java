@@ -6,9 +6,9 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
 import java.lang.annotation.Annotation;
 import javax.enterprise.util.AnnotationLiteral;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
@@ -17,8 +17,9 @@ import org.junit.Test;
  */
 public class ObserverInheritanceTest {
 
-    @Rule
-    public ArcTestContainer container = new ArcTestContainer(ObservingBean.THIS.class, EmittingBean.class, ObservingBean.class,
+    @RegisterExtension
+    public ArcTestContainer container = new ArcTestContainer(ObservingBean.THIS.class, EmittingBean.class,
+            ObservingBean.class,
             ObservingSubBean.class,
             NonObservingSubBean.class);
 
@@ -29,7 +30,7 @@ public class ObserverInheritanceTest {
     EmittingBean emittingBean;
 
     @SuppressWarnings("serial")
-    @Before
+    @BeforeEach
     public void setUp() {
         observingBean = Arc.container().instance(ObservingBean.class, new AnnotationLiteral<ObservingBean.THIS>() {
             @Override

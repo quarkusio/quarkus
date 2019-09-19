@@ -2,8 +2,8 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.Basics.index;
 import static io.quarkus.arc.processor.Basics.name;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.processor.types.Bar;
 import io.quarkus.arc.processor.types.Foo;
@@ -20,7 +20,7 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

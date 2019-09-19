@@ -1,7 +1,7 @@
 package io.quarkus.arc.test.cdiprovider;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.test.ArcTestContainer;
 import java.io.IOException;
@@ -11,13 +11,13 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.CDI;
-import org.junit.AfterClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class CDIProviderTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Moo.class);
 
     @Test
@@ -28,7 +28,7 @@ public class CDIProviderTest {
         assertEquals(10, moo.getVal());
     }
 
-    @AfterClass
+    @AfterAll
     public static void unset() {
         assertTrue(Moo.DESTROYED.get());
         try {

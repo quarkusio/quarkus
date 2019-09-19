@@ -5,6 +5,8 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -25,13 +27,12 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class InjectionPointTransformerTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(SimpleProducer.class, SimpleConsumer.class, MyQualifier.class, CasualObserver.class,
                     AnotherQualifier.class)
@@ -41,16 +42,16 @@ public class InjectionPointTransformerTest {
     @Test
     public void testQualifierWasAddedToInjectionPoint() {
         ArcContainer arc = Arc.container();
-        Assert.assertTrue(arc.instance(SimpleConsumer.class).isAvailable());
+        assertTrue(arc.instance(SimpleConsumer.class).isAvailable());
         SimpleConsumer bean = arc.instance(SimpleConsumer.class).get();
-        Assert.assertEquals("foo", bean.getFoo());
-        Assert.assertEquals("bar", bean.getBar());
+        assertEquals("foo", bean.getFoo());
+        assertEquals("bar", bean.getBar());
 
-        Assert.assertTrue(arc.instance(CasualObserver.class).isAvailable());
+        assertTrue(arc.instance(CasualObserver.class).isAvailable());
         Arc.container().beanManager().getEvent().select(Integer.class).fire(42);
         CasualObserver observer = arc.instance(CasualObserver.class).get();
-        Assert.assertEquals("bar", observer.getChangedString());
-        Assert.assertEquals("foo", observer.getUnchangedString());
+        assertEquals("bar", observer.getChangedString());
+        assertEquals("foo", observer.getUnchangedString());
     }
 
     @ApplicationScoped

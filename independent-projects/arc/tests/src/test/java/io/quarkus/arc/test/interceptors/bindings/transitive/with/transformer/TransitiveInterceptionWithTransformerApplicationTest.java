@@ -4,30 +4,30 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.test.ArcTestContainer;
 import org.jboss.jandex.AnnotationTarget;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * Tests transitive interceptor bindings when annotation transformers were applied
  */
 public class TransitiveInterceptionWithTransformerApplicationTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder().beanClasses(PlainBinding.class,
             PlainInterceptor.class, MuchCoolerBinding.class, MuchCoolerInterceptor.class, DummyBean.class)
             .annotationsTransformers(new TransitiveInterceptionWithTransformerApplicationTest.MyTransformer()).build();
 
     @Test
     public void testTransformersAreApplied() {
-        Assert.assertTrue(Arc.container().instance(DummyBean.class).isAvailable());
+        Assertions.assertTrue(Arc.container().instance(DummyBean.class).isAvailable());
         DummyBean bean = Arc.container().instance(DummyBean.class).get();
 
-        Assert.assertTrue(PlainInterceptor.timesInvoked == 0);
-        Assert.assertTrue(MuchCoolerInterceptor.timesInvoked == 0);
+        Assertions.assertTrue(PlainInterceptor.timesInvoked == 0);
+        Assertions.assertTrue(MuchCoolerInterceptor.timesInvoked == 0);
         bean.ping();
-        Assert.assertTrue(PlainInterceptor.timesInvoked == 1);
-        Assert.assertTrue(MuchCoolerInterceptor.timesInvoked == 1);
+        Assertions.assertTrue(PlainInterceptor.timesInvoked == 1);
+        Assertions.assertTrue(MuchCoolerInterceptor.timesInvoked == 1);
     }
 
     static class MyTransformer implements AnnotationsTransformer {

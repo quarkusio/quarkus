@@ -1,7 +1,7 @@
 package io.quarkus.arc.test.build.extension.beans;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.BeanCreator;
@@ -13,12 +13,12 @@ import io.quarkus.gizmo.ResultHandle;
 import java.util.Map;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.spi.CreationalContext;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class BeanRegistrarTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder().beanClasses(UselessBean.class)
             .beanRegistrars(new TestRegistrar()).build();
 

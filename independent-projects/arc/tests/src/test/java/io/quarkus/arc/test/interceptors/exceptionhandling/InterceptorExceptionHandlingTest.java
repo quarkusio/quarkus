@@ -1,37 +1,38 @@
 package io.quarkus.arc.test.interceptors.exceptionhandling;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.Subclass;
 import io.quarkus.arc.test.ArcTestContainer;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class InterceptorExceptionHandlingTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(ExceptionHandlingBean.class,
             ExceptionHandlingInterceptor.class, ExceptionHandlingInterceptorBinding.class);
 
-    @Test(expected = MyDeclaredException.class)
+    @Test
     public void testProperlyThrowsDeclaredExceptions() throws MyDeclaredException {
         ExceptionHandlingBean exceptionHandlingBean = Arc.container().instance(ExceptionHandlingBean.class).get();
 
         assertTrue(exceptionHandlingBean instanceof Subclass);
 
-        exceptionHandlingBean.foo(ExceptionHandlingCase.DECLARED_EXCEPTION);
+        assertThrows(MyDeclaredException.class, () -> exceptionHandlingBean.foo(ExceptionHandlingCase.DECLARED_EXCEPTION));
     }
 
-    @Test(expected = MyRuntimeException.class)
+    @Test
     public void testProperlyThrowsRuntimeExceptions() throws MyDeclaredException {
         ExceptionHandlingBean exceptionHandlingBean = Arc.container().instance(ExceptionHandlingBean.class).get();
 
         assertTrue(exceptionHandlingBean instanceof Subclass);
 
-        exceptionHandlingBean.foo(ExceptionHandlingCase.RUNTIME_EXCEPTION);
+        assertThrows(MyRuntimeException.class, () -> exceptionHandlingBean.foo(ExceptionHandlingCase.RUNTIME_EXCEPTION));
     }
 
     @Test
@@ -51,21 +52,21 @@ public class InterceptorExceptionHandlingTest {
         }
     }
 
-    @Test(expected = Exception.class)
+    @Test
     public void testThrowsException() throws Exception {
         ExceptionHandlingBean exceptionHandlingBean = Arc.container().instance(ExceptionHandlingBean.class).get();
 
         assertTrue(exceptionHandlingBean instanceof Subclass);
 
-        exceptionHandlingBean.bar();
+        assertThrows(Exception.class, () -> exceptionHandlingBean.bar());
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testThrowsRuntimeException() {
         ExceptionHandlingBean exceptionHandlingBean = Arc.container().instance(ExceptionHandlingBean.class).get();
 
         assertTrue(exceptionHandlingBean instanceof Subclass);
 
-        exceptionHandlingBean.baz();
+        assertThrows(RuntimeException.class, () -> exceptionHandlingBean.baz());
     }
 }

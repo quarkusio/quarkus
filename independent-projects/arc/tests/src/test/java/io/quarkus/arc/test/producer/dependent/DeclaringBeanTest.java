@@ -1,9 +1,9 @@
 package io.quarkus.arc.test.producer.dependent;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
@@ -15,13 +15,14 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Singleton;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class DeclaringBeanTest {
 
-    @Rule
-    public ArcTestContainer container = new ArcTestContainer(ListProducer.class, StringProducer.class, LongProducer.class);
+    @RegisterExtension
+    public ArcTestContainer container = new ArcTestContainer(ListProducer.class, StringProducer.class,
+            LongProducer.class);
 
     @SuppressWarnings("serial")
     @Test

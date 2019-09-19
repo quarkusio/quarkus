@@ -41,7 +41,7 @@ public class DefaultDataSourceConfigTest {
 
     private static void testDataSource(AgroalDataSource dataSource, String username, int minSize, int maxSize,
             int initialSize, Duration backgroundValidationInterval, Duration acquisitionTimeout, Duration leakDetectionInterval,
-            Duration idleRemovalInterval, Duration maxLifetime, String initialSQL) throws SQLException {
+            Duration idleRemovalInterval, Duration maxLifetime, String initialSql) throws SQLException {
         AgroalConnectionPoolConfiguration configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         AgroalConnectionFactoryConfiguration agroalConnectionFactoryConfiguration = configuration
                 .connectionFactoryConfiguration();
@@ -58,7 +58,7 @@ public class DefaultDataSourceConfigTest {
         assertEquals(maxLifetime, configuration.maxLifetime());
         assertEquals(AgroalConnectionFactoryConfiguration.TransactionIsolation.SERIALIZABLE,
                 agroalConnectionFactoryConfiguration.jdbcTransactionIsolation());
-        assertEquals(initialSQL, agroalConnectionFactoryConfiguration.initialSql());
+        assertEquals(initialSql, agroalConnectionFactoryConfiguration.initialSql());
         assertTrue(dataSource.getConfiguration().metricsEnabled());
 
         try (Connection connection = dataSource.getConnection()) {

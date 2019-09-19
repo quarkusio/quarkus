@@ -87,4 +87,10 @@ public class DataSourceRuntimeConfig {
      */
     @ConfigItem
     public boolean enableMetrics;
+
+    /**
+     * Set up initial sql configuration of a connection.
+     */
+    @ConfigItem
+    public Optional<String> initialSQL;
 }

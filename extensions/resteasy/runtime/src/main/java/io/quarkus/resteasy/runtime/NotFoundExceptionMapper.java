@@ -6,6 +6,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,8 +43,8 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     private final static Variant HTML_VARIANT = new Variant(MediaType.TEXT_HTML_TYPE, (String) null, null);
     private final static List<Variant> VARIANTS = Arrays.asList(JSON_VARIANT, HTML_VARIANT);
 
-    private static List<String> servletMappings;
-    private static List<String> staticResources;
+    private volatile static List<String> servletMappings = Collections.EMPTY_LIST;
+    private volatile static List<String> staticResources = Collections.EMPTY_LIST;
 
     @Context
     private Registry registry = null;

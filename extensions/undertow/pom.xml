@@ -14,8 +14,9 @@
     <name>Quarkus - Undertow</name>
     <packaging>pom</packaging>
     <modules>
-        <module>deployment</module>
         <module>runtime</module>
+        <module>build-items</module>
+        <module>deployment</module>
     </modules>
 
 </project>

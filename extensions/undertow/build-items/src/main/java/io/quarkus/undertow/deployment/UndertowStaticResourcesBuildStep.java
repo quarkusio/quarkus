@@ -21,6 +21,10 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
+/**
+ * NOTE: Shared with Resteasy standalone!
+ *
+ */
 public class UndertowStaticResourcesBuildStep {
 
     protected static final String META_INF_RESOURCES_SLASH = "META-INF/resources/";

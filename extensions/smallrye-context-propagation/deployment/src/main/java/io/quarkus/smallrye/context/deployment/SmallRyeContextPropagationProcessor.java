@@ -7,6 +7,7 @@ import java.util.List;
 import org.eclipse.microprofile.context.spi.ContextManagerExtension;
 import org.eclipse.microprofile.context.spi.ThreadContextProvider;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.context.ResteasyContextProvider;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -40,6 +41,13 @@ class SmallRyeContextPropagationProcessor {
         List<ContextManagerExtension> discoveredExtensions = new ArrayList<>();
         for (Class<?> provider : ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
                 "META-INF/services/" + ThreadContextProvider.class.getName())) {
+            if (provider.equals(ResteasyContextProvider.class)) {
+                try {
+                    Class.forName("org.jboss.resteasy.core.ResteasyContext");
+                } catch (ClassNotFoundException e) {
+                    continue; // resteasy is not being used so ditch this context provider
+                }
+            }
             try {
                 discoveredProviders.add((ThreadContextProvider) provider.newInstance());
             } catch (InstantiationException | IllegalAccessException e) {

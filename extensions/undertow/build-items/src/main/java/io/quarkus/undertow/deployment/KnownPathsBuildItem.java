@@ -4,10 +4,10 @@ import java.util.Set;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
-final class KnownPathsBuildItem extends SimpleBuildItem {
+final public class KnownPathsBuildItem extends SimpleBuildItem {
 
-    final Set<String> knownFiles;
-    final Set<String> knownDirectories;
+    final public Set<String> knownFiles;
+    final public Set<String> knownDirectories;
 
     KnownPathsBuildItem(Set<String> knownFiles, Set<String> knownDirectories) {
         this.knownFiles = knownFiles;

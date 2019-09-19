@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.deployment;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -9,6 +10,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -71,9 +73,20 @@ class VertxHttpProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     ServiceStartBuildItem finalizeRouter(VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer,
-            LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, Optional<DefaultRouteBuildItem> defaultRoute,
+            LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, List<DefaultRouteBuildItem> defaultRoutes,
             List<FilterBuildItem> filters, VertxWebRouterBuildItem router,
-            List<AdditionalRoutesInstalledBuildItem> additionalRoutesInstalled) {
+            List<AdditionalRoutesInstalledBuildItem> additionalRoutesInstalled) throws BuildException {
+        Optional<DefaultRouteBuildItem> defaultRoute;
+        if (defaultRoutes == null || defaultRoutes.isEmpty()) {
+            defaultRoute = Optional.empty();
+        } else {
+            if (defaultRoutes.size() > 1) {
+                // this should never happen
+                throw new BuildException("Too many default routes.", Collections.emptyList());
+            } else {
+                defaultRoute = Optional.of(defaultRoutes.get(0));
+            }
+        }
         recorder.finalizeRouter(beanContainer.getValue(), defaultRoute.map(DefaultRouteBuildItem::getHandler).orElse(null),
                 filters.stream().map(FilterBuildItem::getHandler).collect(Collectors.toList()),
                 launchMode.getLaunchMode(), shutdown);

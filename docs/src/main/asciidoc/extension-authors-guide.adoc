@@ -202,6 +202,7 @@ The way to port a CDI extension to Quarkus is to rewrite it as a Quarkus extensi
 
 == Technical aspect
 
+[[bootstrap-three-phases]]
 === Three Phases of Bootstrap and Quarkus Philosophy
 
 There are three distinct bootstrap phases of a Quarkus app:

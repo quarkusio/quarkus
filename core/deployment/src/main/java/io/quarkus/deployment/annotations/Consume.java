@@ -13,7 +13,7 @@ import io.quarkus.builder.item.BuildItem;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-@Repeatable(ConsumeRepeatable.class)
+@Repeatable(Consume.List.class)
 public @interface Consume {
     /**
      * The build item type that this comes after.
@@ -21,4 +21,19 @@ public @interface Consume {
      * @return the build item
      */
     Class<? extends BuildItem> value();
+
+    /**
+     * The repeatable holder for {@link Consume}.
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    @interface List {
+        /**
+         * The {@link Consume} instances.
+         *
+         * @return the instances
+         */
+        Consume[] value();
+    }
+
 }

@@ -1,5 +1,6 @@
 package io.quarkus.deployment.annotations;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
@@ -13,7 +14,7 @@ import io.quarkus.builder.item.EmptyBuildItem;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-@Repeatable(ProduceRepeatable.class)
+@Repeatable(Produce.List.class)
 public @interface Produce {
     /**
      * The build item type whose consumption is preceded by this step.
@@ -21,4 +22,19 @@ public @interface Produce {
      * @return the build item
      */
     Class<? extends EmptyBuildItem> value();
+
+    /**
+     * The repeatable holder for {@link Produce}.
+     */
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    @Documented
+    @interface List {
+        /**
+         * The {@link Produce} instances.
+         *
+         * @return the instances
+         */
+        Produce[] value();
+    }
 }

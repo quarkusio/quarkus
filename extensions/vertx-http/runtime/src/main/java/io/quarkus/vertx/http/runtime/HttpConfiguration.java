@@ -59,7 +59,11 @@ public class HttpConfiguration {
 
     /**
      * The number if IO threads used to perform IO. This will be automatically set to a reasonable value based on
-     * the number of CPU cores if it is not provided
+     * the number of CPU cores if it is not provided. If this is set to a higher value than the number of Vert.x event
+     * loops then it will be capped at the number of event loops.
+     *
+     * In general this should be controlled by setting quarkus.vertx.event-loops-pool-size, this setting should only
+     * be used if you want to limit the number of HTTP io threads to a smaller number than the total number of IO threads.
      */
     @ConfigItem
     public OptionalInt ioThreads;

@@ -20,6 +20,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.core.deployment.InternalWebVertxBuildItem;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.RouterProducer;
@@ -57,13 +58,15 @@ class VertxHttpProcessor {
             LaunchModeBuildItem launchMode,
             ShutdownContextBuildItem shutdown,
             InternalWebVertxBuildItem vertx,
-            Optional<RequireVirtualHttpBuildItem> requireVirtual) throws IOException {
+            Optional<RequireVirtualHttpBuildItem> requireVirtual,
+            EventLoopCountBuildItem eventLoopCountBuildItem) throws IOException {
 
         boolean startVirtual = requireVirtual.isPresent() || httpConfiguration.virtual;
         // start http socket in dev/test mode even if virtual http is required
         boolean startSocket = !startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL;
         RuntimeValue<Router> router = recorder.initializeRouter(vertx.getVertx(), shutdown,
-                httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket);
+                httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket,
+                eventLoopCountBuildItem.getEventLoopCount());
 
         return new VertxWebRouterBuildItem(router);
     }

@@ -16,6 +16,7 @@ import java.util.function.Supplier;
 import javax.enterprise.event.Event;
 
 import org.jboss.logging.Logger;
+import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
@@ -92,7 +93,12 @@ public class VertxHttpRecorder {
             }
 
             //we can't really do
-            doServerStart(VertxCoreRecorder.getWebVertx(), config, LaunchMode.DEVELOPMENT);
+            doServerStart(VertxCoreRecorder.getWebVertx(), config, LaunchMode.DEVELOPMENT, new Supplier<Integer>() {
+                @Override
+                public Integer get() {
+                    return ProcessorInfo.availableProcessors() * 2; //this is dev mode, so the number of IO threads not always being 100% correct does not really matter in this case
+                }
+            });
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -101,7 +107,7 @@ public class VertxHttpRecorder {
 
     public RuntimeValue<Router> initializeRouter(RuntimeValue<Vertx> vertxRuntimeValue, ShutdownContext shutdown,
             HttpConfiguration httpConfiguration, LaunchMode launchMode,
-            boolean startVirtual, boolean startSocket) throws IOException {
+            boolean startVirtual, boolean startSocket, Supplier<Integer> eventLoops) throws IOException {
 
         Vertx vertx = vertxRuntimeValue.getValue();
 
@@ -121,7 +127,7 @@ public class VertxHttpRecorder {
         if (startSocket) {
             // Start the server
             if (closeTask == null) {
-                doServerStart(vertx, httpConfiguration, launchMode);
+                doServerStart(vertx, httpConfiguration, launchMode, eventLoops);
                 if (launchMode != LaunchMode.DEVELOPMENT) {
                     shutdown.addShutdownTask(closeTask);
                 }
@@ -165,13 +171,20 @@ public class VertxHttpRecorder {
         container.instance(RouterProducer.class).initialize(router);
     }
 
-    private static void doServerStart(Vertx vertx, HttpConfiguration httpConfiguration, LaunchMode launchMode)
+    private static void doServerStart(Vertx vertx, HttpConfiguration httpConfiguration, LaunchMode launchMode,
+            Supplier<Integer> eventLoops)
             throws IOException {
         // Http server configuration
         HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode);
         HttpServerOptions sslConfig = createSslOptions(httpConfiguration, launchMode);
 
-        int ioThreads = httpConfiguration.ioThreads.orElse(Runtime.getRuntime().availableProcessors() * 2);
+        int eventLoopCount = eventLoops.get();
+        int ioThreads;
+        if (httpConfiguration.ioThreads.isPresent()) {
+            ioThreads = Math.min(httpConfiguration.ioThreads.getAsInt(), eventLoopCount);
+        } else {
+            ioThreads = eventLoopCount;
+        }
         CompletableFuture<String> futureResult = new CompletableFuture<>();
         vertx.deployVerticle(new Supplier<Verticle>() {
             @Override

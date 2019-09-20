@@ -39,6 +39,12 @@ class VertxCoreProcessor {
         return AdditionalBeanBuildItem.unremovableOf(VertxCoreProducer.class);
     }
 
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    EventLoopCountBuildItem eventLoopCount(VertxCoreRecorder recorder, VertxConfiguration vertxConfiguration) {
+        return new EventLoopCountBuildItem(recorder.calculateEventLoopThreads(vertxConfiguration));
+    }
+
     @Record(ExecutionTime.STATIC_INIT)
     EventLoopSupplierBuildItem eventLoop(VertxCoreRecorder recorder) {
         return new EventLoopSupplierBuildItem(recorder.mainSupplier(), recorder.bossSupplier());

@@ -1,5 +1,7 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
+
 import io.quarkus.arc.BeanManagerProvider;
 import io.quarkus.arc.BeanMetadataProvider;
 import io.quarkus.arc.EventProvider;
@@ -153,7 +155,7 @@ enum BuiltinBean {
         if (!ctx.injectionPoint.getRequiredQualifiers().isEmpty()) {
             for (AnnotationInstance annotation : ctx.injectionPoint.getRequiredQualifiers()) {
                 // Create annotation literal first
-                ClassInfo annotationClass = ctx.beanDeployment.getIndex().getClassByName(annotation.name());
+                ClassInfo annotationClass = getClassByName(ctx.beanDeployment.getIndex(), annotation.name());
                 ctx.constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotations,
                         ctx.annotationLiterals.process(ctx.constructor, ctx.classOutput,
                                 annotationClass, annotation,

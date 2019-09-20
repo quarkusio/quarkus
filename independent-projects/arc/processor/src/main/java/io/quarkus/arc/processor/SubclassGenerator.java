@@ -1,5 +1,6 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 
@@ -86,7 +87,7 @@ public class SubclassGenerator extends AbstractGenerator {
         ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()));
 
         Type providerType = bean.getProviderType();
-        ClassInfo providerClass = bean.getDeployment().getIndex().getClassByName(providerType.name());
+        ClassInfo providerClass = getClassByName(bean.getDeployment().getIndex(), providerType.name());
         String providerTypeName = providerClass.name().toString();
         String baseName = getBaseName(bean, beanClassName);
         String generatedName = generatedName(providerType.name(), baseName);

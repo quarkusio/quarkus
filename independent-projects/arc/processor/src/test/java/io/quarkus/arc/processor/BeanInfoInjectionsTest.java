@@ -33,7 +33,7 @@ public class BeanInfoInjectionsTest {
 
         Index index = index(Foo.class, Bar.class, FooQualifier.class, AbstractList.class, AbstractCollection.class,
                 Collection.class, List.class,
-                Iterable.class);
+                Iterable.class, Object.class, String.class);
         DotName barName = name(Bar.class);
         ClassInfo barClass = index.getClassByName(barName);
         Type fooType = Type.create(name(Foo.class), Kind.CLASS);

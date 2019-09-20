@@ -1,5 +1,7 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
+
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 import io.quarkus.arc.processor.InjectionTargetInfo.TargetKind;
 import java.util.ArrayList;
@@ -122,7 +124,7 @@ final class Beans {
     private static ScopeInfo inheritScope(ClassInfo beanClass, BeanDeployment beanDeployment) {
         DotName superClassName = beanClass.superName();
         while (!superClassName.equals(DotNames.OBJECT)) {
-            ClassInfo classFromIndex = beanDeployment.getIndex().getClassByName(superClassName);
+            ClassInfo classFromIndex = getClassByName(beanDeployment.getIndex(), superClassName);
             if (classFromIndex == null) {
                 // class not in index
                 LOGGER.warnf("Unable to determine scope for bean %s using inheritance because its super class " +
@@ -571,7 +573,7 @@ final class Beans {
         }
         if (type.kind() == Type.Kind.CLASS) {
             // Index the class additionally if needed
-            beanDeployment.getIndex().getClassByName(type.name());
+            getClassByName(beanDeployment.getIndex(), type.name());
         } else {
             analyzeType(type, beanDeployment);
         }
@@ -584,7 +586,7 @@ final class Beans {
             }
         }
         if (clazz.superName() != null) {
-            ClassInfo superClass = index.getClassByName(clazz.superName());
+            ClassInfo superClass = getClassByName(index, clazz.superName());
             if (superClass != null) {
                 collectCallbacks(superClass, callbacks, annotation, index);
             }

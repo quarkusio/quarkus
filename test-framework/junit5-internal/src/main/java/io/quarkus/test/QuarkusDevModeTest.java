@@ -314,7 +314,7 @@ public class QuarkusDevModeTest
         sleepForFileChanges(path);
     }
 
-    public void modifyFile(String name, Function<String, String> mutator, Path path) {
+    void modifyFile(String name, Function<String, String> mutator, Path path) {
         try (Stream<Path> sources = Files.walk(path)) {
             sources.forEach(s -> {
                 if (s.endsWith(name)) {

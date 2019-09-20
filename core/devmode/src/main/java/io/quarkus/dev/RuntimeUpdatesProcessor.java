@@ -39,6 +39,12 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     private volatile Map<String, Boolean> watchedFilePaths = Collections.emptyMap();
     private final Map<Path, Long> watchedFileTimestamps = new ConcurrentHashMap<>();
     private final Map<Path, Path> classFilePathToSourceFilePath = new ConcurrentHashMap<>();
+    /**
+     * resources that appear in both src and target, these will be removed if the src resource subsequently disappears
+     *
+     * This set contains the paths in the target dir
+     */
+    private final Set<Path> correspondingResources = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private static final Logger log = Logger.getLogger(RuntimeUpdatesProcessor.class.getPackage().getName());
     private final List<Runnable> preScanSteps = new CopyOnWriteArrayList<>();
@@ -272,6 +278,47 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
             }
             Path root = Paths.get(rootPath);
             Path classesDir = Paths.get(module.getClassesPath());
+            //copy all modified non hot deployment files over
+            if (doCopy) {
+                try {
+                    Set<Path> seen = new HashSet<>(correspondingResources);
+                    Files.walk(root).forEach(new Consumer<Path>() {
+                        @Override
+                        public void accept(Path path) {
+                            try {
+                                Path relative = root.relativize(path);
+                                Path target = classesDir.resolve(relative);
+                                seen.remove(target);
+                                if (!watchedFileTimestamps.containsKey(path)) {
+                                    correspondingResources.add(target);
+                                    if (!Files.exists(target) || Files.getLastModifiedTime(target).toMillis() < Files
+                                            .getLastModifiedTime(path).toMillis()) {
+                                        if (Files.isDirectory(path)) {
+                                            Files.createDirectories(target);
+                                        } else {
+                                            Files.createDirectories(target.getParent());
+                                            byte[] data = Files.readAllBytes(path);
+                                            try (FileOutputStream out = new FileOutputStream(target.toFile())) {
+                                                out.write(data);
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (Exception e) {
+                                log.error("Failed to copy resources", e);
+                            }
+                        }
+                    });
+                    for (Path i : seen) {
+                        if (!Files.isDirectory(i)) {
+                            Files.delete(i);
+                        }
+                    }
+                } catch (IOException e) {
+                    log.error("Failed to copy resources", e);
+                }
+
+            }
 
             for (String path : watchedFilePaths.keySet()) {
                 Path file = root.resolve(path);

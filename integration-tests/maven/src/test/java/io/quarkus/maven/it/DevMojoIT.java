@@ -22,6 +22,10 @@ import io.quarkus.maven.it.verifier.RunningInvoker;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
+ *
+ *         NOTE to anyone diagnosing failures in this test, to run a single method use:
+ *
+ *         mvn install -Dit.test=DevMojoIT#methodName
  */
 public class DevMojoIT extends RunAndCheckMojoTestBase {
 

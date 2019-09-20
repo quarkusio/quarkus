@@ -17,14 +17,15 @@ import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Stereotype;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class ScopeInheritanceTest {
 
-    @Rule
-    public ArcTestContainer container = new ArcTestContainer(SuperBean.class, SubBean.class, RequestScopedSubBean.class,
+    @RegisterExtension
+    public ArcTestContainer container = new ArcTestContainer(SuperBean.class, SubBean.class,
+            RequestScopedSubBean.class,
             InheritedScopeSubBean.class, JustSomeBeanDefiningAnnotation.class);
 
     @Test
@@ -32,11 +33,11 @@ public class ScopeInheritanceTest {
         // we'll use BM to verify scopes
         BeanManager bm = Arc.container().beanManager();
         Set<Bean<?>> beans = bm.getBeans(RequestScopedSubBean.class);
-        Assert.assertTrue(beans.size() == 1);
-        Assert.assertEquals(RequestScoped.class.getSimpleName(), beans.iterator().next().getScope().getSimpleName());
+        Assertions.assertTrue(beans.size() == 1);
+        Assertions.assertEquals(RequestScoped.class.getSimpleName(), beans.iterator().next().getScope().getSimpleName());
         beans = bm.getBeans(InheritedScopeSubBean.class);
-        Assert.assertTrue(beans.size() == 1);
-        Assert.assertEquals(ApplicationScoped.class.getSimpleName(), beans.iterator().next().getScope().getSimpleName());
+        Assertions.assertTrue(beans.size() == 1);
+        Assertions.assertEquals(ApplicationScoped.class.getSimpleName(), beans.iterator().next().getScope().getSimpleName());
     }
 
     @ApplicationScoped

@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.injection.assignability;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
@@ -10,12 +10,12 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Inject;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class OptionalAssignabilityTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(OptionalProducer.class, InjectOptionals.class);
 
     @Test

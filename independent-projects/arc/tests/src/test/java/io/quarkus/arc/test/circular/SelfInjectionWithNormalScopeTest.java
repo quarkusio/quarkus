@@ -1,18 +1,17 @@
 package io.quarkus.arc.test.circular;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.quarkus.arc.test.ArcTestContainer;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.spi.CDI;
 import javax.inject.Inject;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class SelfInjectionWithNormalScopeTest {
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(
             AbstractServiceImpl.class,
             ActualServiceImpl.class,
@@ -21,8 +20,8 @@ public class SelfInjectionWithNormalScopeTest {
     @Test
     public void testDependencies() {
         Foo foo = CDI.current().select(Foo.class).get();
-        assertThat(foo, is(notNullValue(Foo.class)));
-        assertThat(foo.ping(), is("pong"));
+        assertNotNull(foo);
+        assertEquals("pong", foo.ping());
     }
 
     static abstract class AbstractServiceImpl {

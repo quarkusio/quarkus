@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.beanmanager;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
@@ -8,12 +8,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.spi.BeanManager;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class BeanManagerEventTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(StringObserver.class);
 
     @Test

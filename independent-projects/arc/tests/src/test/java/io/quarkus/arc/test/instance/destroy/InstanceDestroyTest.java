@@ -1,8 +1,8 @@
 package io.quarkus.arc.test.instance.destroy;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
@@ -15,12 +15,12 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class InstanceDestroyTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Alpha.class, Washcloth.class, Knight.class);
 
     @Test

@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.stereotypes;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
@@ -13,12 +13,12 @@ import javax.annotation.Priority;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Alternative;
 import javax.enterprise.inject.Stereotype;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class StereotypeAlternativeTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(BeAlternative.class, BeAlternativeWithPriority.class,
             NonAlternative.class, IamAlternative.class, NotAtAllAlternative.class, IamAlternativeWithPriority.class,
             ToBeOverridenFoo.class, MockedFoo.class, MockedFooWithExplicitPriority.class, Mock.class);

@@ -1,18 +1,18 @@
 package io.quarkus.arc.test.interceptors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class SimpleInterceptorTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Counter.class, SimpleBean.class, Simple.class,
             SimpleInterceptor.class, Logging.class,
             LoggingInterceptor.class, Lifecycle.class, LifecycleInterceptor.class);

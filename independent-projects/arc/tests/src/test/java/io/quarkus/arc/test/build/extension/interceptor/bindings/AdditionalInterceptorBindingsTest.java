@@ -21,13 +21,13 @@ import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
 import org.jboss.jandex.DotName;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class AdditionalInterceptorBindingsTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(SomeBean.class, MyInterceptor.class, ToBeBinding.class)
             .interceptorBindingRegistrars(new MyBindingRegistrar())
@@ -35,10 +35,10 @@ public class AdditionalInterceptorBindingsTest {
 
     @Test
     public void testBindingWasRegistered() {
-        Assert.assertTrue(Arc.container().instance(SomeBean.class).isAvailable());
-        Assert.assertFalse(MyInterceptor.INTERCEPTOR_TRIGGERED);
+        Assertions.assertTrue(Arc.container().instance(SomeBean.class).isAvailable());
+        Assertions.assertFalse(MyInterceptor.INTERCEPTOR_TRIGGERED);
         Arc.container().instance(SomeBean.class).get().ping();
-        Assert.assertTrue(MyInterceptor.INTERCEPTOR_TRIGGERED);
+        Assertions.assertTrue(MyInterceptor.INTERCEPTOR_TRIGGERED);
     }
 
     @Inherited

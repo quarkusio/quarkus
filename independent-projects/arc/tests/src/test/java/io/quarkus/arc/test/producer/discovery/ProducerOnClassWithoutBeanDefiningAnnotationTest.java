@@ -1,17 +1,18 @@
 package io.quarkus.arc.test.producer.discovery;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
 import javax.enterprise.inject.Produces;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class ProducerOnClassWithoutBeanDefiningAnnotationTest {
 
-    @Rule
-    public ArcTestContainer container = new ArcTestContainer(StringProducerMethod.class, IntegerProducerField.class);
+    @RegisterExtension
+    public ArcTestContainer container = new ArcTestContainer(StringProducerMethod.class,
+            IntegerProducerField.class);
 
     @Test
     public void testObserver() {

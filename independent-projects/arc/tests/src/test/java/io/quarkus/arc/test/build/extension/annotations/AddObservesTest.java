@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.build.extension.annotations;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.processor.AnnotationsTransformer;
@@ -14,12 +14,12 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class AddObservesTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder().beanClasses(IWantToObserve.class)
             .annotationsTransformers(new AnnotationsTransformer() {
 

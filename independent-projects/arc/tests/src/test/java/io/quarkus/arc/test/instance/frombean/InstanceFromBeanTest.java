@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.instance.frombean;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
@@ -8,12 +8,12 @@ import io.quarkus.arc.test.ArcTestContainer;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
 import javax.inject.Singleton;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class InstanceFromBeanTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Alpha.class);
 
     @SuppressWarnings("unchecked")

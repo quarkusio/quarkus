@@ -410,40 +410,367 @@ Please refer to https://github.com/quarkusio/quarkus/blob/{quarkus-version}/devt
 
 === Build Step Processors
 
-Work is done at deployment time by producing and consuming instances of `io.quarkus.builder.item.BuildItem`. This is done
-by creating a class that has method(s) annotated with `io.quarkus.deployment.annotations.BuildStep`. These classes can
-consume items by injection, and produce items by either returning them from the method or by injecting an
-instance of `io.quarkus.deployment.annotations.BuildProducer` for the produced type. These processors can also record
-bytecode invocations, which is mapped to a `BuildItem` transparently.
+Work is done at augmentation time by _build steps_ which produce and consume _build items_.  The build steps found in
+the deployment modules that correspond to the extensions in the project build are automatically wired together and executed
+to produce the final build artifact(s).
 
-There are two distinct types of `BuildItem`, `SimpleBuildItem` and `MultiBuildItem`. `SimpleBuildItem` will only ever
-have a single instance created, while `MultiBuildItem` can have many instances.
+==== Build steps
 
-Injection can be done either via field injection, or via method parameter injection. Injection is used to set up
-dependencies between build steps. For example if you inject a `List<ServletBuildItem>` your build step will not be called
-until all possible producers of `ServletBuildItem` have been called. Injected objects are only valid during a `@BuildStep`
-method invocation, once the method is complete they are no longer valid.
+A _build step_ is a method which is annotated with the `@io.quarkus.deployment.annotations.BuildStep` annotation.  Each
+build step may <<consuming-values,consume>> items that are produced by earlier stages, and <<producing-values,produce>> items
+that can be consumed by later stages. Build steps are normally only run when they produce a build item that is
+ultimately consumed by another step.
 
-The following items are valid for injection:
+Build steps are normally placed on plain classes within an extension's deployment module.  The classes are automatically
+instantiated during the augment process and utilize <<injection,injection>>.
 
-- `SimpleBuildItem` instances (at some point we may support `Optional<SimpleBuildItem>`, but it is not implemented yet)
-- `List<? extends MultiBuildItem>` instances
-- `BuildProducer<? extends BuildItem>` instances
+[id='build-items']
+==== Build items
 
-If a method returns a `BuildItem`, or injects a `BuildProducer` it is considered to be a producer of that item type,
-while if it injects the item or list of items it is a consumer.
+Build items are concrete, final subclasses of the abstract `io.quarkus.builder.item.BuildItem` class.  Each build item represents
+some unit of information that must be passed from one stage to another.  The base `BuildItem` class may not itself be directly
+subclassed; rather, there are abstract subclasses for each of the kinds of build item subclasses that _may_ be created:
+<<simple-build-items,simple>>, <<multi-build-items,multi>>, and <<empty-build-items,empty>>.
+
+Think of build items as a way for different extensions to communicate with one another.  For example, a build item can:
+
+- expose the fact that a database configuration exists
+- consume that database configuration (e.g. a connection pool extension or an ORM extension)
+- ask an extension to do work for another extension: e.g. an extension wanting to define a new CDI bean and asking the ArC extension
+to do so
+
+This is a very flexible mechanism.
+
+NOTE: `BuildItem` instances should be immutable, as the producer/consumer model does not allow for mutation to be correctly
+ordered. This is not enforced but failure to adhere to this rule can result in race conditions.
+
+[id='simple-build-items']
+===== Simple build items
+
+Simple build items are final classes which extend `io.quarkus.builder.item.SimpleBuildItem`.  Simple build items may only
+be produced by one step in a given build; if multiple steps in a build declare that they produce the same simple build item,
+an error is raised.  Any number of build steps may consume a simple build item.  A build step which consumes a simple
+build item will always run _after_ the build step which produced that item.
+
+.Example of a single build item
+[source%nowrap,java]
+----
+/**
+ * The build item which represents the Jandex index of the application,
+ * and would normally be used by many build steps to find usages
+ * of annotations.
+ */
+public final class ApplicationIndexBuildItem extends SimpleBuildItem {
+
+    private final Index index;
+
+    public ApplicationIndexBuildItem(Index index) {
+        this.index = index;
+    }
+
+    public Index getIndex() {
+        return index;
+    }
+}
+----
+
+
+[id='multi-build-items']
+===== Multi build items
+
+Multiple or "multi" build items are final classes which extend `io.quarkus.builder.item.MultiBuildItem`.  Any number of
+multi build items of a given class may be produced by any number of steps, but any steps which consume multi build items
+will only run _after_ every step which can produce them has run.
+
+.Example of a multiple build item
+[source%nowrap,java]
+----
+public final class ServiceProviderBuildItem extends MultiBuildItem {
+    private final String serviceName;
+    private final List<String> implementations;
+
+    public ServiceProviderBuildItem(String serviceName, String... implementations) {
+        this.serviceName = serviceName;
+        // Make sure it's immutable
+        this.implementations = Collections.unmodifiableList(
+            Arrays.asList(
+                implementations.clone()
+            )
+        );
+    }
+
+    public String getServiceName() {
+        return serviceName;
+    }
+
+    public List<String> getImplementations() {
+        return implementations;
+    }
+}
+----
+
+.Example of multiple build item usage
+[source%nowrap,java]
+----
+/**
+ * This build step produces a single multi build item that declares two
+ * providers of one configuration-related service.
+ */
+@BuildStep
+public ServiceProviderBuildItem registerOneService() {
+    return new ServiceProviderBuildItem(
+        Converter.class.getName(),
+        MyFirstConfigConverterImpl.class.getName(),
+        MySecondConfigConverterImpl.class.getName()
+    );
+}
+
+/**
+ * This build step produces several multi build items that declare multiple
+ * providers of multiple configuration-related services.
+ */
+@BuildStep
+public void registerSeveralSerivces(
+    BuildProducer<ServiceProviderBuildItem> providerProducer
+) {
+    providerProducer.produce(new ServiceProviderBuildItem(
+        Converter.class.getName(),
+        MyThirdConfigConverterImpl.class.getName(),
+        MyFourthConfigConverterImpl.class.getName()
+    ));
+    providerProducer.produce(new ServiceProviderBuildItem(
+        ConfigSource.class.getName(),
+        MyConfigSourceImpl.class.getName()
+    ));
+}
+
+/**
+ * This build step aggregates all the produced service providers
+ * and outputs them as resources.
+ */
+@BuildStep
+public void produceServiceFiles(
+    List<ServiceProviderBuildItem> items,
+    BuildProducer<GeneratedResourceBuildItem> resourceProducer
+) throws IOException {
+    // Aggregate all of the providers
+
+    Map<String, Set<String>> map = new HashMap<>();
+    for (ServiceProviderBuildItem item : items) {
+        String serviceName = item.getName();
+        for (String implName : item.getImplementations()) {
+            map.computeIfAbsent(
+                serviceName,
+                (k, v) -> new LinkedHashSet<>()
+            ).add(implName);
+        }
+    }
+
+    // Now produce the resource(s) for the SPI files
+    for (Map.Entry<String, Set<String>> entry : map.entrySet()) {
+        String serviceName = entry.getKey();
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            try (OutputStreamWriter w = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
+                for (String implName : entry.getValue()) {
+                    w.write(implName);
+                    w.write(System.lineSeparator());
+                }
+            }
+            w.flush();
+            resourceProducer.produce(
+                new GeneratedResourceBuildItem(
+                    "META-INF/services/" + serviceName,
+                    os.toByteArray()
+                )
+            );
+        }
+    }
+}
+----
+
+[id='empty-build-items']
+===== Empty build items
+
+Empty build items are final (usually empty) classes which extend `io.quarkus.builder.item.EmptyBuildItem`.
+They represent build items that don't actually carry any data, and allow such items to be produced and consumed
+without having to instantiate empty classes.  They cannot themselves be instantiated.
+
+.Example of an empty build item
+[source%nowrap,java]
+----
+public final class NativeImageBuildItem extends EmptyBuildItem {
+    // empty
+}
+----
+
+Empty build items can represent "barriers" which can impose ordering between steps.  They can also be used in
+the same way that popular build systems use "pseudo-targets", which is to say that the build item can represent a
+conceptual goal that does not have a concrete representation.
+
+.Example of usage of an empty build item in a "pseudo-target" style
+[source%nowrap,java]
+----
+/**
+ * Contrived build step that produces the native image on disk.  The main augmentation
+ * step (which is run by Maven or Gradle) would be declared to consume this empty item,
+ * causing this step to be run.
+ */
+@BuildStep
+@Produces(NativeImageBuildItem.class)
+void produceNativeImage() {
+    // ...
+    // (produce the native image)
+    // ...
+}
+----
+
+.Example of usage of an empty build item in a "barrier" style
+[source%nowrap,java]
+----
+/**
+ * This would always run after {@link #produceNativeImage()} completes, producing
+ * an instance of {@code SomeOtherBuildItem}.
+ */
+@BuildStep
+@Consumes(NativeImageBuildItem.class)
+SomeOtherBuildItem secondBuildStep() {
+    return new SomeOtherBuildItem("foobar");
+}
+----
+
+[id='injection']
+==== Injection
+
+Classes which contain build steps support the following types of injection:
+
+- Constructor parameter injection
+- Field injection
+- Method parameter injection (for build step methods only)
+
+Build step classes are instantiated and injected for each build step invocation, and are discarded afterwards.  State
+should only be communicated between build steps by way of build items, even if the steps are on the same class.
+
+NOTE: Final fields are not considered for injection, but can be populated by way of constructor parameter injection
+if desired.  Static fields are never considered for injection.
+
+The types of values that can be injected include:
+
+- <<build-items,Build items>> produced by previous build steps
+- <<producing-values,Build producers>> to produce items for subsequent build steps
+- <<configuration-roots,Configuration root>> types
+- Template objects for <<bytecode-recording,bytecode recording>>
+
+WARNING: Objects which are injected into a build step method or its class _must not_ be used outside of that method's
+execution.
+
+NOTE: Injection is resolved at compile time via an annotation processor,
+and the resulting code does not have permission to inject private fields or invoke private methods.
+
+[id='producing-values']
+==== Producing values
+
+A build step may produce values for subsequent steps in several possible ways:
+
+- By returning a <<simple-build-items,simple build item>> or <<multi-build-items,multi build item>> instance
+- By returning a `List` of a multi build item class
+- By injecting a `BuildProducer` of a simple or multi build item class
+- By annotating the method with `@io.quarkus.deployment.annotations.Produces`, giving the class name of a
+<<empty-build-items,empty build item>>
+
+If a simple build item is declared on a build step, it _must_ be produced during that build step, otherwise an error
+will result.  Build producers which are injected into steps _must not_ be used outside of that step.
 
 Note that a `@BuildStep` method will only be called if it produces something that another consumer or the final output
 requires. If there is no consumer for a particular item then it will not be produced. What is required will depend on
-the final target that is being produced, for example when running in developer mode the final output will not ask
-for Substrate-specific build items such as `ReflectiveClassBuildItem` so methods that only produce Substrate specific
+the final target that is being produced.  For example, when running in developer mode the final output will not ask
+for GraalVM-specific build items such as `ReflectiveClassBuildItem`, so methods that only produce these
 items will not be invoked.
 
-Note that private methods and fields are not allowed, as injection is resolved at compile time via an annotation processor,
-and the resulting code does not have permission to inject private fields or invoke private methods.
+[id='consuming-values']
+==== Consuming values
 
-`BuildItem` instances should be immutable, as the producer/consumer model does not allow for mutation to be correctly
-ordered. This is not enforced but failure to adhere to this can result in race conditions.
+A build step may consume values from previous steps in the following ways:
+
+- By injecting a <<simple-build-items,simple build item>>
+- By injecting an `Optional` of a simple build item class
+- By injecting a `List` of a <<multi-build-items,multi build item>> class
+- By annotating the method with `@io.quarkus.deployment.annotations.Consumes`, giving the class name of a
+<<empty-build-items,empty build item>>
+
+Normally it is an error for a step which is included to consume a simple build item that is not produced by any other
+step.  In this way, it is guaranteed that all of the declared values will be present and non-`null` when a step is run.
+
+Sometimes a value isn't necessary for the build to complete, but might inform some behavior of the build step if it is
+present.  In this case, the value can be optionally injected.
+
+NOTE: Multi build values are always considered _optional_.  If not present, an empty list will be injected.
+
+[id='producing-weak-values']
+===== Weak value production
+
+Normally a build step is included whenever it produces any build item which is in turn consumed by any other build step.  In this way,
+only the steps necessary to produce the final artifact(s) are included, and steps which pertain to extensions which are
+not installed or which only produce build items which are not relevant for the given artifact type are excluded.
+
+For cases where this is not desired behavior, the `@io.quarkus.deployment.annotations.Weak` annotation may be used.  This
+annotation indicates that the build step should not automatically be included solely on the basis of producing the annotated value.
+
+.Example of producing a build item weakly
+[source%nowrap,java]
+----
+/**
+ * This build step is only run if something consumes the ExecutorClassBuildItem.
+ */
+@BuildStep
+void createExecutor(
+        @Weak BuildProducer<GeneratedClassBuildItem> classConsumer,
+        BuildProducer<ExecutorClassBuildItem> executorClassConsumer
+) {
+        ClassWriter cw = new ClassWriter(Opcodes.ASM7);
+        String className = generateClassThatCreatesExecutor(cw); // <1>
+        classConsumer.produce(new GeneratedClassBuildItem(true, className, cw.toByteArray()));
+        executorClassConsumer.produce(new ExecutorClassBuildItem(className));
+}
+----
+<1> This method (not provided in this example) would generate the class using the ASM API.
+
+Certain types of build items are generally always consumed, such as generated classes or resources.
+An extension might produce a build item along with a generated class to facilitate the usage
+of that build item.  Such a build step would use the `@Weak` annotation on the generated class build item, while normally
+producing the other build item.  If the other build item is ultimately consumed by something, then the step would run
+and the class would be generated.  If nothing consumes the other build item, the step would not be included in the build
+process.
+
+In the example above, `GeneratedClassBuildItem` would only be produced if `ExecutorClassBuildItem` is consumed by
+some other build step.
+
+Note that when using <<bytecode-recording,bytecode recording>>, the implicitly generated class can be declared to be weak by
+using the `optional` attribute of the `@io.quarkus.deployment.annotations.Record` annotation.
+
+.Example of using a bytecode recorder where the generated class is weakly produced
+[source%nowrap,java]
+----
+/**
+ * This build step is only run if something consumes the ExecutorBuildItem.
+ */
+@BuildStep
+@Record(value = ExecutionTime.RUNTIME_INIT, optional = true) // <1>
+ExecutorBuildItem createExecutor( // <2>
+        ExecutorTemplate executorTemplate,
+        ThreadPoolConfig threadPoolConfig
+) {
+
+    return new ExecutorBuildItem(
+        setupTemplate.setupRunTime(
+            shutdownContextBuildItem,
+            threadPoolConfig,
+            launchModeBuildItem.getLaunchMode()
+        )
+    );
+}
+----
+<1> Note the `optional` attribute.
+<2> This example is using recorder proxies; see the section on <<bytecode-recording,bytecode recording>> for more information.
 
 ==== Capabilities
 
@@ -522,7 +849,7 @@ A `Map` can be used for configuration at any position where a configuration grou
 map *must* be `String`, and its value may be either a configuration group class or a valid leaf type.  The configuration
 key segment following the map's key segment will be used as the key for map values.
 
-[id=configuration-roots]
+[id='configuration-roots']
 ==== Configuration Roots
 
 Configuration roots are configuration groups that appear in the root of the configuration tree.  A configuration property's full
@@ -801,6 +1128,7 @@ public class SomeLogConfig {
 =====
 
 
+[id='bytecode-recording']
 === Bytecode Recording
 
 One of the main outputs of the build process is recorded bytecode. This bytecode actually sets up the runtime environment. For example, in order to start Undertow, the resulting application will have some bytecode that directly registers all

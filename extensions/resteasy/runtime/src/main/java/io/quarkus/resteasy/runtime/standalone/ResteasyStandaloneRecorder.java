@@ -14,7 +14,6 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.StaticHandler;
@@ -38,11 +37,11 @@ public class ResteasyStandaloneRecorder {
     private static Handler<RoutingContext> ROOT_HANDLER = new Handler<RoutingContext>() {
         @Override
         public void handle(RoutingContext httpServerRequest) {
-            currentRoot.handle(httpServerRequest.request());
+            currentRoot.handle(httpServerRequest);
         }
     };
 
-    private volatile static Handler<HttpServerRequest> currentRoot = null;
+    private volatile static Handler<RoutingContext> currentRoot = null;
 
     //TODO: clean this up
     private static BufferAllocator ALLOCATOR = new BufferAllocator() {
@@ -137,8 +136,14 @@ public class ResteasyStandaloneRecorder {
         if (router == null) {
             currentRoot = requestHandler;
         } else {
-            router.route().handler(event -> requestHandler.handle(event.request()));
-            currentRoot = router;
+            router.route().handler(requestHandler);
+            Router finalRouter = router;
+            currentRoot = new Handler<RoutingContext>() {
+                @Override
+                public void handle(RoutingContext event) {
+                    finalRouter.handle(event.request());
+                }
+            };
         }
 
         return ROOT_HANDLER;

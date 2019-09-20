@@ -22,7 +22,7 @@ public class HttpSecurityProcessor {
         if (capabilities.isCapabilityPresent(Capabilities.SECURITY)) {
             beanProducer
                     .produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(HttpAuthenticator.class).build());
-            return new FilterBuildItem(recorder.authenticationMechanismHandler());
+            return new FilterBuildItem(recorder.authenticationMechanismHandler(), 200);
         }
         if (authConfig.basic) {
             beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(BasicAuthenticationMechanism.class));

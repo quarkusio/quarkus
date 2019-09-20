@@ -1,0 +1,8 @@
+
+{
+    "name": "Kubernetes",
+    "labels": [
+        "kubernetes"
+    ],
+    "guide": "https://quarkus.io/guides/kubernetes-guide"
+}

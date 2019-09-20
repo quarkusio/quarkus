@@ -1,0 +1,8 @@
+
+{
+    "name": "SmallRye Reactive Messaging - MQTT Connector",
+    "labels": [
+        "mqtt",
+        "reactive-mqtt"
+    ]
+}

@@ -1,0 +1,8 @@
+
+{
+    "name": "Quarkus Extension for Spring Data API",
+    "labels": [
+        "spring-data"
+    ],
+    "guide": "https://quarkus.io/guides/spring-data-jpa-guide"
+}

@@ -1,0 +1,9 @@
+
+{
+    "name": "JDBC Driver - MariaDB",
+    "labels": [
+        "jdbc-mariadb",
+        "jdbc",
+        "mariadb"
+    ]
+}

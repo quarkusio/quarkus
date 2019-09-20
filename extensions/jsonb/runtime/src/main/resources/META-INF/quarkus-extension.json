@@ -1,0 +1,10 @@
+
+{
+    "name": "JSON-B",
+    "labels": [
+        "jsonb",
+        "json-b",
+        "json"
+    ],
+    "guide": "https://quarkus.io/guides/rest-json-guide"
+}

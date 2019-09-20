@@ -1,0 +1,10 @@
+
+{
+    "name": "REST Client",
+    "labels": [
+        "rest-client",
+        "web-client",
+        "microprofile-rest-client"
+    ],
+    "guide": "https://quarkus.io/guides/rest-client-guide"
+}

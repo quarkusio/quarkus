@@ -1,0 +1,8 @@
+
+{
+    "name": "Quarkus Extension for Spring DI API",
+    "labels": [
+        "spring-di"
+    ],
+    "guide": "https://quarkus.io/guides/spring-di-guide"
+}

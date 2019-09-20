@@ -1,0 +1,10 @@
+
+{
+    "name": "Flyway",
+    "labels": [
+        "flyway",
+        "database",
+        "data"
+    ],
+    "guide": "https://quarkus.io/guides/flyway-guide"
+}

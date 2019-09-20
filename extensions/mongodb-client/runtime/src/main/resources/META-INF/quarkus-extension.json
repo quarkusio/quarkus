@@ -1,0 +1,10 @@
+
+{
+    "name": "MongoDB Client",
+    "labels": [
+        "mongo",
+        "mongodb",
+        "nosql",
+        "datastore"
+    ]
+}

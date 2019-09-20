@@ -1,0 +1,7 @@
+
+{
+    "name": "Kubernetes Client",
+    "labels": [
+        "kubernetes-client"
+    ]
+}

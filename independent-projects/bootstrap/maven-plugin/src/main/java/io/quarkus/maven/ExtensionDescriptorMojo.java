@@ -1,5 +1,6 @@
 package io.quarkus.maven;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -18,14 +19,22 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
+
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.WriterConfig;
+
 import io.quarkus.bootstrap.BootstrapConstants;
 
 /**
  * Generates Quarkus extension descriptor for the runtime artifact.
  *
+ * <p/>Also generates META-INF/quarkus-extension.json which includes properties of the extension
+ * such as name, labels, maven coordinates, etc that are used by the tools.
+ *
  * @author Alexey Loubyansky
  */
-@Mojo(name = "extension-descriptor", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo(name = "extension-descriptor", defaultPhase = LifecyclePhase.PROCESS_RESOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class ExtensionDescriptorMojo extends AbstractMojo {
 
     /**
@@ -60,15 +69,23 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter(readonly = true, required = true, defaultValue = "${project.build.outputDirectory}")
     private File outputDirectory;
 
-    @Parameter(required = true)
+    @Parameter(required = true, defaultValue = "${project.groupId}:${project.artifactId}-deployment:${project.version}")
     private String deployment;
+
+    @Parameter(readonly = true, required = true, defaultValue = "${project.groupId}")
+    private String projectGroupId;
+
+    @Parameter(readonly = true, required = true, defaultValue = "${project.artifactId}")
+    private String projectArtifactId;
+
+    @Parameter(required = true, defaultValue = "${project.build.outputDirectory}/META-INF/quarkus-extension.json")
+    private File extensionJson;
 
     @Override
     public void execute() throws MojoExecutionException {
 
         final Properties props = new Properties();
         props.setProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment);
-
         final Path output = outputDirectory.toPath().resolve(BootstrapConstants.META_INF);
         try {
             Files.createDirectories(output);
@@ -77,6 +94,38 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             }
         } catch(IOException e) {
             throw new MojoExecutionException("Failed to persist extension descriptor " + output.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME), e);
+        }
+
+        // extension.json
+        JsonObject extObject;
+        boolean groupIdProvided = false;
+        boolean artifactIdProvided = false;
+        if(extensionJson == null) {
+            extensionJson = new File(outputDirectory, "META-INF" + File.separator + BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME);
+        }
+        if(extensionJson.exists()) {
+            try(BufferedReader reader = Files.newBufferedReader(extensionJson.toPath())) {
+                extObject = Json.parse(reader).asObject();
+                groupIdProvided = extObject.get("groupId") != null;
+                artifactIdProvided = extObject.get("artifactId") != null;
+            } catch (IOException e) {
+                throw new MojoExecutionException("Failed to parse " + extensionJson, e);
+            }
+        } else {
+            extObject = Json.object();
+        }
+
+        if(!groupIdProvided) {
+            extObject.add("groupId", projectGroupId);
+        }
+        if(!artifactIdProvided) {
+            extObject.add("artifactId", projectArtifactId);
+        }
+
+        try (BufferedWriter bw = Files.newBufferedWriter(output.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME))) {
+            extObject.writeTo(bw, WriterConfig.PRETTY_PRINT);
+        } catch (IOException e) {
+            throw new MojoExecutionException("Failed to persist " + output.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME), e);
         }
     }
 }

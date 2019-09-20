@@ -1,0 +1,10 @@
+
+{
+    "name": "Kogito",
+    "labels": [
+        "kogito",
+        "drools",
+        "jbpm"
+    ],
+    "guide": "https://quarkus.io/guides/kogito-guide"
+}

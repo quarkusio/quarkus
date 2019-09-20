@@ -1,0 +1,12 @@
+
+{
+    "name": "SmallRye Context Propagation",
+    "shortName": "context propagation",
+    "labels": [
+        "smallrye-context-propagation",
+        "microprofile-context-propagation",
+        "context-propagation",
+        "context",
+        "reactive"
+    ]
+}

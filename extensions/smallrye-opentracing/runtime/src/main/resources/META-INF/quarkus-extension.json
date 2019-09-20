@@ -1,0 +1,12 @@
+
+{
+    "name": "SmallRye OpenTracing",
+    "labels": [
+        "smallrye-opentracing",
+        "opentracing",
+        "tracing",
+        "distributed-tracing",
+        "jaeger"
+    ],
+    "guide": "https://quarkus.io/guides/opentracing-guide"
+}

@@ -1,0 +1,12 @@
+
+{
+    "name": "Arc",
+    "shortName": "CDI",
+    "labels": [
+        "arc",
+        "cdi",
+        "dependency-injection",
+        "di"
+    ],
+    "guide": "https://quarkus.io/guides/cdi-reference"
+}

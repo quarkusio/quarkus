@@ -1,0 +1,9 @@
+
+{
+    "name": "Mailer",
+    "labels": [
+        "mail",
+        "mailer"
+    ],
+    "guide": "https://quarkus.io/guides/sending-emails"
+}

@@ -1,0 +1,15 @@
+
+{
+    "name": "Narayana STM - Software Transactional Memory",
+    "labels": [
+        "narayana-stm",
+        "narayana",
+        "stm",
+        "transactions",
+        "transaction",
+        "software-transactional-memory",
+        "tx",
+        "txs"
+    ],
+    "guide": "https://quarkus.io/guides/stm-guide"
+}

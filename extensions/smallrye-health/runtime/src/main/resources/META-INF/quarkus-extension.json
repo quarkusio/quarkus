@@ -1,0 +1,13 @@
+
+{
+    "name": "SmallRye Health",
+    "shortName": "health",
+    "labels": [
+        "smallrye-health",
+        "health-check",
+        "health",
+        "microprofile-health",
+        "microprofile-health-check"
+    ],
+    "guide": "https://quarkus.io/guides/health-guide"
+}

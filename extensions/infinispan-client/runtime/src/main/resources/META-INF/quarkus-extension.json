@@ -1,0 +1,10 @@
+
+{
+    "name": "Infinispan Client",
+    "labels": [
+        "infinispan-client",
+        "data-grid-client",
+        "infinispan"
+    ],
+    "guide": "https://quarkus.io/guides/infinispan-client-guide"
+}

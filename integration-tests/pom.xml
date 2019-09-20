@@ -34,6 +34,7 @@
         <module>jpa-mssql</module>
         <module>hibernate-orm-panache</module>
         <module>hibernate-search-elasticsearch</module>
+        <module>vertx-http</module>
         <module>vertx</module>
         <module>spring-di</module>
         <module>spring-web</module>

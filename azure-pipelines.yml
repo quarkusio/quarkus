@@ -266,10 +266,11 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          timeoutInMinutes: 15
+          timeoutInMinutes: 25
           modules:
             - resteasy-jackson
             - vertx
+            - vertx-http
             - virtual-http
           name: http
 

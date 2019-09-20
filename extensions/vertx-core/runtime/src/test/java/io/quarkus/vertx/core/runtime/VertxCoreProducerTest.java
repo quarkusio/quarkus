@@ -14,6 +14,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.vertx.core.runtime.config.ClusterConfiguration;
+import io.quarkus.vertx.core.runtime.config.EventBusConfiguration;
+import io.quarkus.vertx.core.runtime.config.JksConfiguration;
+import io.quarkus.vertx.core.runtime.config.PemKeyCertConfiguration;
+import io.quarkus.vertx.core.runtime.config.PemTrustCertConfiguration;
+import io.quarkus.vertx.core.runtime.config.PfxConfiguration;
+import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.vertx.core.Vertx;
 
 public class VertxCoreProducerTest {
@@ -87,10 +94,10 @@ public class VertxCoreProducerTest {
         vc.caching = true;
         vc.classpathResolving = true;
         vc.eventLoopsPoolSize = OptionalInt.empty();
-        vc.maxEventLoopExecuteTime = Duration.ofSeconds(2);
+        vc.maxEventLoopExecuteTime = Optional.of(Duration.ofSeconds(2));
         vc.warningExceptionTime = Duration.ofSeconds(2);
         vc.workerPoolSize = 20;
-        vc.maxWorkerExecuteTime = Duration.ofSeconds(1);
+        vc.maxWorkerExecuteTime = Optional.of(Duration.ofSeconds(1));
         vc.internalBlockingPoolSize = 20;
         vc.useAsyncDNS = false;
         vc.eventbus = new EventBusConfiguration();

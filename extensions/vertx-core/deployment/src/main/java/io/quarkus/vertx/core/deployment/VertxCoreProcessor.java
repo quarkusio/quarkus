@@ -4,26 +4,32 @@ import java.util.function.Supplier;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.IOThreadDetectorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.vertx.core.runtime.VertxConfiguration;
 import io.quarkus.vertx.core.runtime.VertxCoreProducer;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
+import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
+import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.vertx.core.Vertx;
 
-class VertxCommonProcessor {
+class VertxCoreProcessor {
 
     @BuildStep
-    SubstrateConfigBuildItem build() {
+    SubstrateConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, VertxLogDelegateFactory.class.getName()));
         return SubstrateConfigBuildItem.builder()
                 .addNativeImageSystemProperty("vertx.disableDnsResolver", "true")
+                .addNativeImageSystemProperty("vertx.logger-delegate-factory-class-name",
+                        VertxLogDelegateFactory.class.getName())
                 .addRuntimeInitializedClass("io.vertx.core.http.impl.VertxHttp2ClientUpgradeCodec")
                 .build();
     }

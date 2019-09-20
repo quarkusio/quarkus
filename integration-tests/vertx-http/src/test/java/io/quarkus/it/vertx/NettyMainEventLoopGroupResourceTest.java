@@ -12,7 +12,7 @@ public class NettyMainEventLoopGroupResourceTest {
 
     @Test
     public void testInjection() {
-        RestAssured.when().get("/vertx-test/eventloop").then()
+        RestAssured.when().get("/eventloop").then()
                 .body(containsString("passed"));
     }
 }

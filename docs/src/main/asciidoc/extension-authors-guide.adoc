@@ -1451,6 +1451,13 @@ A class that will be initialized at runtime rather than build time. This will ca
 `io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem`::
 A convenience feature that allows you to control most of the above features from a single build item.
 
+`io.quarkus.deployment.builditem.NativeEnableAllCharsetsBuildItem`::
+Indicates that all charsets should be enabled in native image.
+
+`io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem`::
+A convenient way to tell Quarkus that the extension requires SSL and it should be enabled during native image build.
+When using this feature, remember to add your extension to the list of extensions that offer SSL support automatically on the https://github.com/quarkusio/quarkus/blob/master/docs/src/main/asciidoc/native-and-ssl-guide.adoc[native and ssl guide].
+
 === IDE support tips
 
 ==== Writing Quarkus extensions in Eclipse

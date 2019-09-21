@@ -1195,9 +1195,9 @@ Calling `classProxy` with a given class name will create a `Class` that can be p
 methods, and at runtime will be substituted with the class whose name was passed in to `classProxy`. This is basically a
 convenience to avoid the need to explicitly load classes in the recorders.
 
-
+////
 TODO: config integration
-
+////
 === Contexts and Dependency Injection
 
 ==== Extension Points

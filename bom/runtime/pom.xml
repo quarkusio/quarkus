@@ -109,7 +109,7 @@
         <mariadb-jdbc.version>2.4.3</mariadb-jdbc.version>
         <mssql-jdbc.version>7.2.1.jre8</mssql-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
-        <rest-assured.version>3.3.0</rest-assured.version>
+        <rest-assured.version>4.1.1</rest-assured.version>
         <junit.jupiter.version>5.5.2</junit.jupiter.version>
         <assertj.version>3.13.2</assertj.version>
         <json-smart.version>2.3</json-smart.version>
@@ -137,7 +137,7 @@
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
         <jline.version>2.14.6</jline.version>
         <maven-invoker.version>3.0.1</maven-invoker.version>
-        <awaitility.version>3.1.6</awaitility.version>
+        <awaitility.version>4.0.1</awaitility.version>
         <jprocesses.version>1.6.5</jprocesses.version>
         <jboss-logmanager.version>1.0.3</jboss-logmanager.version>
         <jgit.version>5.4.3.201909031940-r</jgit.version>

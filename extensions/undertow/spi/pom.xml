@@ -9,8 +9,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-undertow-build-items</artifactId>
-    <name>Quarkus - Undertow - Build Items</name>
+    <artifactId>quarkus-undertow-spi</artifactId>
+    <name>Quarkus - Undertow - SPI</name>
 
     <dependencies>
         <dependency>

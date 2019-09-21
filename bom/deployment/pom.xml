@@ -258,7 +258,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-undertow-build-items</artifactId>
+                <artifactId>quarkus-undertow-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

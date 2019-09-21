@@ -1473,7 +1473,7 @@ memory in a runtime class loader. To have these classes written out to disk for 
 
 [source,shell]
 ----
-./mvnw clean install -Dquarkus.debug.generated-classes-dir=./target/app-generated-classes
+mvn clean install -Dquarkus.debug.generated-classes-dir=./target/app-generated-classes
 ----
 
 ==== Multi-module Maven Projects and the Development Mode

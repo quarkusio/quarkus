@@ -385,19 +385,27 @@ public class VertxHttpRecorder {
             httpServer = vertx.createHttpServer(httpOptions);
             httpServer.requestHandler(router);
             httpServer.listen(port, host, event -> {
-                // Port may be random, so set the actual port
-                httpOptions.setPort(event.result().actualPort());
-                if (remainingCount.decrementAndGet() == 0) {
-                    startFuture.complete(null);
+                if (event.cause() != null) {
+                    startFuture.fail(event.cause());
+                } else {
+                    // Port may be random, so set the actual port
+                    httpOptions.setPort(event.result().actualPort());
+                    if (remainingCount.decrementAndGet() == 0) {
+                        startFuture.complete(null);
+                    }
                 }
             });
             if (httpsOptions != null) {
                 httpsServer = vertx.createHttpServer(httpsOptions);
                 httpsServer.requestHandler(router);
                 httpsServer.listen(httpsPort, host, event -> {
-                    httpsOptions.setPort(event.result().actualPort());
-                    if (remainingCount.decrementAndGet() == 0) {
-                        startFuture.complete();
+                    if (event.cause() != null) {
+                        startFuture.fail(event.cause());
+                    } else {
+                        httpsOptions.setPort(event.result().actualPort());
+                        if (remainingCount.decrementAndGet() == 0) {
+                            startFuture.complete();
+                        }
                     }
                 });
             }
@@ -476,4 +484,5 @@ public class VertxHttpRecorder {
     public static Router getRouter() {
         return router;
     }
+
 }

@@ -143,7 +143,7 @@ public class VertxHttpRecorder {
     }
 
     public void finalizeRouter(BeanContainer container, Handler<HttpServerRequest> defaultRouteHandler,
-            List<Handler<RoutingContext>> filters, LaunchMode launchMode, ShutdownContext shutdown,
+            List<Handler<RoutingContext>> orderedFilters, LaunchMode launchMode, ShutdownContext shutdown,
             RuntimeValue<Router> runtimeValue) {
         // install the default route at the end
         Router router = runtimeValue.getValue();
@@ -152,7 +152,11 @@ public class VertxHttpRecorder {
         Event<Object> event = Arc.container().beanManager().getEvent();
         event.select(Router.class).fire(router);
 
-        for (Handler<RoutingContext> filter : filters) {
+        // Filters are ordered by priority, highest priority first.
+        // However, because filter must be executed before user route, we need to insert them before the user routes.
+        // We use the `order(-1)` _hack_ to indicate they are inserted before the users route.
+        // For the same "order", filters are executed in the insertion order (to highest priority first).
+        for (Handler<RoutingContext> filter : orderedFilters) {
             if (filter != null) {
                 router.route().order(-1).handler(filter);
             }

@@ -17,6 +17,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.zip.ZipError;
 
 /**
  *
@@ -39,6 +40,12 @@ public class ZipUtils {
             for (Path zipRoot : zipfs.getRootDirectories()) {
                 copyFromZip(zipRoot, targetDir);
             }
+        } catch (IOException | ZipError ioe) {
+            // TODO: (at a later date) Get rid of the ZipError catching (and instead only catch IOException)
+            //  since it's a JDK bug which threw the undeclared ZipError instead of an IOException.
+            //  Java 9 fixes it https://bugs.openjdk.java.net/browse/JDK-8062754
+
+            throw new IOException("Could not unzip " + zipFile + " to target dir " + targetDir, ioe);
         }
     }
 
@@ -131,7 +138,16 @@ public class ZipUtils {
         // If Multi threading required, logic should be added to wrap this fs
         // onto a fs that handles a reference counter and close the fs only when all thread are done
         // with it.
-        return FileSystems.newFileSystem(uri, env);
+        try {
+            return FileSystems.newFileSystem(uri, env);
+        } catch (IOException | ZipError ioe) {
+            // TODO: (at a later date) Get rid of the ZipError catching (and instead only catch IOException)
+            //  since it's a JDK bug which threw the undeclared ZipError instead of an IOException.
+            //  Java 9 fixes it https://bugs.openjdk.java.net/browse/JDK-8062754
+
+            // include the URI for which the filesystem creation failed
+            throw new IOException("Failed to create a new filesystem for " + uri, ioe);
+        }
     }
 
     /**
@@ -140,7 +156,16 @@ public class ZipUtils {
      * @return A new FileSystem instance
      * @throws IOException  in case of a failure
      */
-     public static FileSystem newFileSystem(Path path) throws IOException {
-         return FileSystems.newFileSystem(path, (ClassLoader) null);
+     public static FileSystem newFileSystem(final Path path) throws IOException {
+         try {
+             return FileSystems.newFileSystem(path, (ClassLoader) null);
+         } catch (IOException | ZipError ioe) {
+             // TODO: (at a later date) Get rid of the ZipError catching (and instead only catch IOException)
+             //  since it's a JDK bug which threw the undeclared ZipError instead of an IOException.
+             //  Java 9 fixes it https://bugs.openjdk.java.net/browse/JDK-8062754
+
+             // include the path for which the filesystem creation failed
+             throw new IOException("Failed to create a new filesystem for " + path, ioe);
+         }
      }
 }

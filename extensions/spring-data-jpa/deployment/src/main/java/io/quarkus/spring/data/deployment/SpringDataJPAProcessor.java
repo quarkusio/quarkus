@@ -21,8 +21,8 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.QueryByExampleExecutor;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -50,14 +50,14 @@ public class SpringDataJPAProcessor {
     @BuildStep
     void build(CombinedIndexBuildItem index,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         IndexView indexIndex = index.getIndex();
         List<ClassInfo> interfacesExtendingCrudRepository = getAllInterfacesExtending(DotNames.SUPPORTED_REPOSITORIES,
                 indexIndex);
 
         removeNoRepositoryBeanClasses(interfacesExtendingCrudRepository);
-        implementCrudRepositories(generatedBeans, unremovableBeans, interfacesExtendingCrudRepository, indexIndex);
+        implementCrudRepositories(generatedBeans, additionalBeans, interfacesExtendingCrudRepository, indexIndex);
     }
 
     private void removeNoRepositoryBeanClasses(List<ClassInfo> interfacesExtendingCrudRepository) {
@@ -95,7 +95,7 @@ public class SpringDataJPAProcessor {
 
     // generate a concrete class that will be used by Arc to resolve injection points
     private void implementCrudRepositories(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             List<ClassInfo> crudRepositoriesToImplement, IndexView index) {
 
         ClassOutput classOutput = new ClassOutput() {
@@ -116,7 +116,8 @@ public class SpringDataJPAProcessor {
         CompositeIndex compositeIndex = CompositeIndex.create(index, indexer.complete());
 
         SpringDataRepositoryCreator repositoryCreator = new SpringDataRepositoryCreator(classOutput, compositeIndex, (n) -> {
-            unremovableBeans.produce(new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNameExclusion(n)));
+            // the implementation of fragments don't need to be beans themselves
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(n));
         });
 
         for (ClassInfo crudRepositoryToImplement : crudRepositoriesToImplement) {

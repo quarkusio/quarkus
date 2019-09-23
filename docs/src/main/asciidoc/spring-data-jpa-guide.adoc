@@ -452,11 +452,8 @@ The implementation of that fragment looks like this:
 ----
 import java.util.List;
 
-import org.springframework.stereotype.Component;
-
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 
-@Component
 public class PersonFragmentImpl implements PersonFragment {
 
     @Override

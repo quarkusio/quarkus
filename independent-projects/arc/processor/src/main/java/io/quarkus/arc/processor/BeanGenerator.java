@@ -385,6 +385,9 @@ public class BeanGenerator extends AbstractGenerator {
         if (qualifiers != null) {
             implementGetQualifiers(bean, beanCreator, qualifiers.getFieldDescriptor());
         }
+        if (bean.isAlternative()) {
+            implementGetAlternativePriority(bean, beanCreator);
+        }
         implementGetDeclaringBean(beanCreator);
         if (stereotypes != null) {
             implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
@@ -461,6 +464,9 @@ public class BeanGenerator extends AbstractGenerator {
         }
         if (qualifiers != null) {
             implementGetQualifiers(bean, beanCreator, qualifiers.getFieldDescriptor());
+        }
+        if (bean.isAlternative()) {
+            implementGetAlternativePriority(bean, beanCreator);
         }
         implementGetDeclaringBean(beanCreator);
         if (stereotypes != null) {

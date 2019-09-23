@@ -1,5 +1,6 @@
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.AlternativePriority;
 import io.quarkus.arc.ComputingCache;
 import io.quarkus.arc.DefaultBean;
 import java.util.Optional;
@@ -68,6 +69,7 @@ public final class DotNames {
     public static final DotName EVENT = create(Event.class);
     public static final DotName EVENT_METADATA = create(EventMetadata.class);
     public static final DotName ALTERNATIVE = create(Alternative.class);
+    public static final DotName ALTERNATIVE_PRIORITY = create(AlternativePriority.class);
     public static final DotName DEFAULT_BEAN = create(DefaultBean.class);
     public static final DotName STEREOTYPE = create(Stereotype.class);
     public static final DotName TYPED = create(Typed.class);

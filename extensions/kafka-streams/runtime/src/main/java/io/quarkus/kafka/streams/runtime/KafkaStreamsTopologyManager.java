@@ -24,8 +24,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.ListTopicsResult;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
@@ -141,8 +141,17 @@ public class KafkaStreamsTopologyManager {
 
     private void waitForTopicsToBeCreated(Set<String> topicsToAwait, String bootstrapServersConfig)
             throws InterruptedException {
-        Map<String, Object> config = new HashMap<>();
-        config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServersConfig);
+        final Map<String, Object> config = new HashMap<>();
+        config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServersConfig);
+        // include other AdminClientConfig(s) that have been configured
+        for (final String knownAdminClientConfig : AdminClientConfig.configNames()) {
+            // give preference to admin.<propname> first
+            if (properties.containsKey(StreamsConfig.ADMIN_CLIENT_PREFIX + knownAdminClientConfig)) {
+                config.put(knownAdminClientConfig, properties.get(StreamsConfig.ADMIN_CLIENT_PREFIX + knownAdminClientConfig));
+            } else if (properties.containsKey(knownAdminClientConfig)) {
+                config.put(knownAdminClientConfig, properties.get(knownAdminClientConfig));
+            }
+        }
 
         try (AdminClient adminClient = AdminClient.create(config)) {
             while (true) {

@@ -2,15 +2,14 @@ package io.quarkus.vertx.web.deployment;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
 import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -21,7 +20,6 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
@@ -39,7 +37,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.ClassCreator;
@@ -47,16 +44,15 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.vertx.http.deployment.AdditionalRoutesInstalledBuildItem;
-import io.quarkus.vertx.http.deployment.FilterBuildItem;
-import io.quarkus.vertx.http.deployment.RouteHandlerBuildItem;
-import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
+import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RoutingExchange;
 import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
 import io.quarkus.vertx.web.runtime.VertxWebRecorder;
 import io.vertx.core.Handler;
+import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 class VertxWebProcessor {
@@ -87,7 +83,7 @@ class VertxWebProcessor {
     @BuildStep
     void validateBeanDeployment(
             ValidationPhaseBuildItem validationPhase,
-            BuildProducer<RouteHandlerBuildItem> routeHandlerBusinessMethods,
+            BuildProducer<AnnotatedRouteHandlerBuildItem> routeHandlerBusinessMethods,
             BuildProducer<ValidationErrorBuildItem> errors) {
 
         // We need to collect all business methods annotated with @Route first
@@ -111,7 +107,7 @@ class VertxWebProcessor {
                     }
                     if (!routes.isEmpty()) {
                         LOGGER.debugf("Found route handler business method %s declared on %s", method, bean);
-                        routeHandlerBusinessMethods.produce(new RouteHandlerBuildItem(bean, method, routes));
+                        routeHandlerBusinessMethods.produce(new AnnotatedRouteHandlerBuildItem(bean, method, routes));
                     }
                 }
             }
@@ -120,13 +116,14 @@ class VertxWebProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    AdditionalRoutesInstalledBuildItem addAdditionalRoutes(VertxWebRouterBuildItem router, VertxWebRecorder recorder,
-            BeanContainerBuildItem beanContainer,
-            List<RouteHandlerBuildItem> routeHandlerBusinessMethods,
-            List<FilterBuildItem> filters,
-            BuildProducer<GeneratedClassBuildItem> generatedClass, AnnotationProxyBuildItem annotationProxy,
-            LaunchModeBuildItem launchMode,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, HttpConfiguration httpConfiguration) throws IOException {
+    void addAdditionalRoutes(
+            VertxWebRecorder recorder,
+            List<AnnotatedRouteHandlerBuildItem> routeHandlerBusinessMethods,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            AnnotationProxyBuildItem annotationProxy,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            HttpConfiguration httpConfiguration,
+            BuildProducer<RouteBuildItem> routeProducer) throws IOException {
 
         ClassOutput classOutput = new ClassOutput() {
             @Override
@@ -134,20 +131,34 @@ class VertxWebProcessor {
                 generatedClass.produce(new GeneratedClassBuildItem(true, name, data));
             }
         };
-        Map<String, List<Route>> routeConfigs = new HashMap<>();
-        for (RouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
+        for (AnnotatedRouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
             String handlerClass = generateHandler(businessMethod.getBean(), businessMethod.getMethod(), classOutput);
-            List<Route> routes = businessMethod.getRoutes().stream()
-                    .map(annotationInstance -> annotationProxy.builder(annotationInstance, Route.class).build(classOutput))
-                    .collect(Collectors.toList());
-            routeConfigs.put(handlerClass, routes);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
+            Handler<RoutingContext> routingHandler = recorder.createHandler(handlerClass);
+            for (AnnotationInstance routeAnnotation : businessMethod.getRoutes()) {
+                Route route = annotationProxy.builder(routeAnnotation, Route.class).build(classOutput);
+                Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(route, httpConfiguration);
+                AnnotationValue typeValue = routeAnnotation.value("type");
+                HandlerType handlerType = HandlerType.NORMAL;
+                if (typeValue != null) {
+                    String typeString = typeValue.asEnum();
+                    switch (typeString) {
+                        case "NORMAL":
+                            handlerType = HandlerType.NORMAL;
+                            break;
+                        case "BLOCKING":
+                            handlerType = HandlerType.BLOCKING;
+                            break;
+                        case "FAILURE":
+                            handlerType = HandlerType.FAILURE;
+                            break;
+                        default:
+                            throw new IllegalStateException("Unkown type " + typeString);
+                    }
+                }
+                routeProducer.produce(new RouteBuildItem(routeFunction, routingHandler, handlerType));
+            }
         }
-
-        recorder.addAdditionalRoutes(router.getRouter(), routeConfigs,
-                filters.stream().map(FilterBuildItem::getHandler).collect(Collectors.toList()), httpConfiguration);
-
-        return new AdditionalRoutesInstalledBuildItem();
     }
 
     @BuildStep

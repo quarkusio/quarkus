@@ -797,7 +797,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     return out;
                 }
             };
-        } else if (AnnotationProxy.class.isAssignableFrom(expectedType)) {
+        } else if (param instanceof AnnotationProxy) {
             // new com.foo.MyAnnotation_Proxy_AnnotationLiteral("foo")
             AnnotationProxy annotationProxy = (AnnotationProxy) param;
             List<MethodInfo> constructorParams = annotationProxy.getAnnotationClass().methods().stream()

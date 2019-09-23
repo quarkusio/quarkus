@@ -1,16 +1,34 @@
 package io.quarkus.swaggerui.runtime;
 
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.annotations.Recorder;
-import io.undertow.servlet.ServletExtension;
+import io.vertx.core.Handler;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.StaticHandler;
 
 @Recorder
 public class SwaggerUiRecorder {
+    public Handler<RoutingContext> handler(String swaggerUiFinalDestination, String swaggerUiPath) {
 
-    public ServletExtension createSwaggerUiExtension(String path, String resourceDir, BeanContainer container) {
-        SwaggerUiServletExtension extension = container.instance(SwaggerUiServletExtension.class);
-        extension.setPath(path);
-        extension.setResourceDir(resourceDir);
-        return extension;
+        Handler<RoutingContext> handler = StaticHandler.create().setAllowRootFileSystemAccess(true)
+                .setWebRoot(swaggerUiFinalDestination);
+
+        return new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext event) {
+                if (event.normalisedPath().length() == swaggerUiPath.length()) {
+
+                    event.response().setStatusCode(302);
+                    event.response().headers().set(HttpHeaders.LOCATION, swaggerUiPath + "/");
+                    event.response().end();
+                    return;
+                } else if (event.normalisedPath().length() == swaggerUiPath.length() + 1) {
+                    event.reroute(swaggerUiPath + "/index.html");
+                    return;
+                }
+
+                handler.handle(event);
+            }
+        };
     }
 }

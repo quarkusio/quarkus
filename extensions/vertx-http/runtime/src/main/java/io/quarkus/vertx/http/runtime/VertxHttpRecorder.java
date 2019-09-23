@@ -11,6 +11,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import javax.enterprise.event.Event;
@@ -99,9 +100,7 @@ public class VertxHttpRecorder {
         }
     }
 
-    public RuntimeValue<Router> initializeRouter(RuntimeValue<Vertx> vertxRuntimeValue, ShutdownContext shutdown,
-            HttpConfiguration httpConfiguration, LaunchMode launchMode,
-            boolean startVirtual, boolean startSocket) throws IOException {
+    public RuntimeValue<Router> initializeRouter(RuntimeValue<Vertx> vertxRuntimeValue) throws IOException {
 
         Vertx vertx = vertxRuntimeValue.getValue();
 
@@ -115,6 +114,14 @@ public class VertxHttpRecorder {
         Event<Object> event = Arc.container().beanManager().getEvent();
         event.select(Router.class).fire(router);
 
+        return new RuntimeValue<>(router);
+    }
+
+    public void startServer(RuntimeValue<Vertx> vertxRuntimeValue, ShutdownContext shutdown,
+            HttpConfiguration httpConfiguration, LaunchMode launchMode,
+            boolean startVirtual, boolean startSocket) throws IOException {
+
+        Vertx vertx = vertxRuntimeValue.getValue();
         if (startVirtual) {
             initializeVirtual(vertx);
         }
@@ -127,12 +134,17 @@ public class VertxHttpRecorder {
                 }
             }
         }
-
-        return new RuntimeValue<>(router);
     }
 
     public void finalizeRouter(BeanContainer container, Handler<HttpServerRequest> defaultRouteHandler,
-            List<Handler<RoutingContext>> filters, LaunchMode launchMode, ShutdownContext shutdown) {
+            List<Handler<RoutingContext>> filters, LaunchMode launchMode, ShutdownContext shutdown,
+            RuntimeValue<Router> runtimeValue) {
+        // install the default route at the end
+        Router router = runtimeValue.getValue();
+
+        //allow the router to be modified programmatically
+        Event<Object> event = Arc.container().beanManager().getEvent();
+        event.select(Router.class).fire(router);
 
         for (Handler<RoutingContext> filter : filters) {
             if (filter != null) {
@@ -355,6 +367,26 @@ public class VertxHttpRecorder {
             LOGGER.errorf(
                     "quarkus.http.port was specified at build time as %s however run time value is %s, Kubernetes metadata will be incorrect.",
                     port, config.port);
+        }
+    }
+
+    public void addRoute(RuntimeValue<Router> router, Function<Router, Route> route, Handler<RoutingContext> handler,
+            HandlerType blocking, List<Handler<RoutingContext>> filters) {
+
+        Route vr = route.apply(router.getValue());
+
+        // we add the filters to each route
+        for (Handler<RoutingContext> i : filters) {
+            if (i != null) {
+                vr.handler(i);
+            }
+        }
+        if (blocking == HandlerType.BLOCKING) {
+            vr.blockingHandler(handler);
+        } else if (blocking == HandlerType.FAILURE) {
+            vr.failureHandler(handler);
+        } else {
+            vr.handler(handler);
         }
     }
 

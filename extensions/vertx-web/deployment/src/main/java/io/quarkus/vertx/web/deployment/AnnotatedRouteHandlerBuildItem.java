@@ -8,13 +8,13 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 
-public final class RouteHandlerBuildItem extends MultiBuildItem {
+public final class AnnotatedRouteHandlerBuildItem extends MultiBuildItem {
 
     private final BeanInfo bean;
     private final List<AnnotationInstance> routes;
     private final MethodInfo method;
 
-    public RouteHandlerBuildItem(BeanInfo bean, MethodInfo method, List<AnnotationInstance> routes) {
+    public AnnotatedRouteHandlerBuildItem(BeanInfo bean, MethodInfo method, List<AnnotationInstance> routes) {
         this.bean = bean;
         this.method = method;
         this.routes = routes;

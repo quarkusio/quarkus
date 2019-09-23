@@ -40,7 +40,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.jackson.runtime.ObjectMapperProducer;
 
 public class ResteasyJacksonProcessor {
@@ -50,7 +50,7 @@ public class ResteasyJacksonProcessor {
 
     private static final String QUARKUS_CONTEXT_RESOLVER_NAME = "io.quarkus.resteasy.jackson.runtime.QuarkusObjectMapperContextResolver";
 
-    @BuildStep(providesCapabilities = Capabilities.RESTEASY_JSON_EXTENSION)
+    @BuildStep(providesCapabilities = { Capabilities.RESTEASY_JSON_EXTENSION, "io.quarkus.resteasy.jackson" })
     void build(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY_JACKSON));
     }

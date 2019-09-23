@@ -7,7 +7,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 
 public class ResteasyJsonbProcessor {
 
-    @BuildStep(providesCapabilities = Capabilities.RESTEASY_JSON_EXTENSION)
+    @BuildStep(providesCapabilities = { Capabilities.RESTEASY_JSON_EXTENSION, "io.quarkus.resteasy.jsonb" })
     void build(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY_JSONB));
     }

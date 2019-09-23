@@ -17,7 +17,7 @@ public class JsonConfig {
      * Determine whether to enable the JSON console formatting extension, which disables "normal" console formatting.
      */
     @ConfigItem(name = ConfigItem.PARENT)
-    boolean enabled;
+    boolean enable;
     /**
      * Enable "pretty printing" of the JSON record. Note that some JSON parsers will fail to read pretty printed output.
      */

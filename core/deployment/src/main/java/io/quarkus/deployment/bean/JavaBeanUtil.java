@@ -1,9 +1,12 @@
-package io.quarkus.panache.common.deployment;
+package io.quarkus.deployment.bean;
 
 public class JavaBeanUtil {
 
+    private static final String GET = "get";
+    private static final String IS = "is";
+
     public static String getGetterName(String name, String type) {
-        String prefix = type.equals("Z") ? "is" : "get";
+        String prefix = type.equals("Z") ? IS : GET;
         return prefix + capitalize(name);
     }
 
@@ -38,6 +41,21 @@ public class JavaBeanUtil {
             }
         } else {
             return name;
+        }
+    }
+
+    /**
+     * Returns the corresponding property name for a getter method name
+     * 
+     * @throws IllegalArgumentException if the method name does not follow the getter name convention
+     */
+    public static String getPropertyNameFromGetter(String methodName) {
+        if (methodName.startsWith(GET)) {
+            return decapitalize(methodName.substring(GET.length()));
+        } else if (methodName.startsWith(IS)) {
+            return decapitalize(methodName.substring(IS.length()));
+        } else {
+            throw new IllegalArgumentException(methodName + " is not a getter");
         }
     }
 }

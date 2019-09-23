@@ -15,7 +15,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -141,6 +143,40 @@ public class BytecodeRecorderTestCase {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.list(beans);
         }, beans);
+    }
+
+    @Test
+    public void testUnmodifiableMapWithinAMap() throws Exception {
+        Map<Integer, Map<Integer, TestJavaBean>> outerMap = new HashMap<>();
+        outerMap.put(1, Collections.unmodifiableMap(
+                Collections.singletonMap(1, new TestJavaBean())));
+
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.map(outerMap);
+        }, outerMap);
+    }
+
+    @Test
+    public void testUnmodifiableListWithinAMap() throws Exception {
+        Map<Integer, List<TestJavaBean>> map = new HashMap<>();
+        map.put(1, Collections.unmodifiableList(Collections.singletonList(new TestJavaBean())));
+
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.map(map);
+        }, map);
+    }
+
+    @Test
+    public void testUnmodifiableSetWithinAMap() throws Exception {
+        Map<Integer, Set<TestJavaBean>> map = new HashMap<>();
+        map.put(1, Collections.unmodifiableSet(Collections.singleton(new TestJavaBean())));
+
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.map(map);
+        }, map);
     }
 
     @Test

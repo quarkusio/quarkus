@@ -184,8 +184,18 @@ public abstract class Application {
     public final void run(String[] args) {
         try {
             if (ImageInfo.inImageRuntimeCode() && System.getenv(DISABLE_SIGNAL_HANDLERS) == null) {
-                final SignalHandler handler = signal -> System.exit(signal.getNumber() + 0x80);
-                final SignalHandler quitHandler = signal -> DiagnosticPrinter.printDiagnostics(System.out);
+                final SignalHandler handler = new SignalHandler() {
+                    @Override
+                    public void handle(Signal signal) {
+                        System.exit(signal.getNumber() + 0x80);
+                    }
+                };
+                final SignalHandler quitHandler = new SignalHandler() {
+                    @Override
+                    public void handle(Signal signal) {
+                        DiagnosticPrinter.printDiagnostics(System.out);
+                    }
+                };
                 handleSignal("INT", handler);
                 handleSignal("TERM", handler);
                 // the HUP and QUIT signals are not defined for the Windows OpenJDK implementation:

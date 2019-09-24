@@ -50,12 +50,13 @@ public class Timing {
         bootStartTime = System.nanoTime();
     }
 
-    public static void printStartupTime(String version, String features) {
+    public static void printStartupTime(String version, String features, String profile, boolean liveCoding) {
         final long bootTimeNanoSeconds = System.nanoTime() - bootStartTime;
         final Logger logger = Logger.getLogger("io.quarkus");
         //Use a BigDecimal so we can render in seconds with 3 digits precision, as requested:
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(bootTimeNanoSeconds);
         logger.infof("Quarkus %s started in %ss. %s", version, secondsRepresentation, httpServerInfo);
+        logger.infof("Profile %s activated. %s", profile, liveCoding ? "Live Coding activated." : "");
         logger.infof("Installed features: [%s]", features);
         bootStartTime = -1;
     }

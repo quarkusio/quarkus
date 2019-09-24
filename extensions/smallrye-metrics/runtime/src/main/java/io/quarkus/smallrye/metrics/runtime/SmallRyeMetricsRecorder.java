@@ -10,6 +10,7 @@ import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import org.eclipse.microprofile.metrics.Metadata;
 import org.eclipse.microprofile.metrics.MetricRegistry;
@@ -27,6 +28,8 @@ import io.smallrye.metrics.elementdesc.BeanInfo;
 import io.smallrye.metrics.elementdesc.MemberInfo;
 import io.smallrye.metrics.interceptors.MetricResolver;
 import io.smallrye.metrics.setup.MetricsMetadata;
+import io.vertx.ext.web.Route;
+import io.vertx.ext.web.Router;
 
 @Recorder
 public class SmallRyeMetricsRecorder {
@@ -62,6 +65,21 @@ public class SmallRyeMetricsRecorder {
     private static final String MEMORY_MAX_NON_HEAP = "memory.maxNonHeap";
     private static final String MEMORY_USED_HEAP = "memory.usedHeap";
     private static final String MEMORY_USED_NON_HEAP = "memory.usedNonHeap";
+
+    public Function<Router, Route> route(String name) {
+        return new Function<Router, Route>() {
+            @Override
+            public Route apply(Router router) {
+                return router.route(name);
+            }
+        };
+    }
+
+    public SmallRyeMetricsHandler handler(String metricsPath) {
+        SmallRyeMetricsHandler handler = new SmallRyeMetricsHandler();
+        handler.setMetricsPath(metricsPath);
+        return handler;
+    }
 
     public void registerVendorMetrics(ShutdownContext shutdown) {
         MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.VENDOR);

@@ -2,7 +2,7 @@ package io.quarkus.it.artemis;
 
 import java.util.Random;
 
-import javax.jms.Connection;
+import javax.jms.JMSContext;
 import javax.jms.JMSException;
 import javax.jms.Session;
 
@@ -14,9 +14,7 @@ public interface ArtemisHelper {
         return Integer.toString(new Random().nextInt(Integer.MAX_VALUE), 16);
     }
 
-    default Session createSession() throws JMSException {
-        Connection connection = new ActiveMQJMSConnectionFactory("tcp://localhost:61616").createConnection();
-        connection.start();
-        return connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+    default JMSContext createContext() throws JMSException {
+        return new ActiveMQJMSConnectionFactory("tcp://localhost:61616").createContext(Session.AUTO_ACKNOWLEDGE);
     }
 }

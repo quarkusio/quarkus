@@ -34,12 +34,27 @@ public class FragmentMethodsAdder {
             List<DotName> customInterfaceNamesToImplement, Map<String, FieldDescriptor> customImplNameToHandle) {
         for (DotName customInterfaceToImplement : customInterfaceNamesToImplement) {
             Collection<ClassInfo> knownImplementors = index.getAllKnownImplementors(customInterfaceToImplement);
-            if (knownImplementors.size() != 1) {
+            ClassInfo customInterfaceImpl = null;
+            if (knownImplementors.size() > 1) {
+                for (ClassInfo knownImplementor : knownImplementors) {
+                    if (knownImplementor.name().toString().endsWith("Impl")) { // the default suffix that Spring Data JPA looks for is 'Impl'
+                        if (customInterfaceImpl != null) { // make sure we don't have multiple implementations suffixed with 'Impl'
+                            throw new IllegalArgumentException(
+                                    "Interface " + customInterfaceToImplement
+                                            + " must contain a single implementation whose name ends with 'Impl'. Multiple implementations were found: "
+                                            + customInterfaceImpl + "," + knownImplementor);
+                        }
+                        customInterfaceImpl = knownImplementor;
+                    }
+                }
+
+            } else if (knownImplementors.size() == 1) {
+                customInterfaceImpl = knownImplementors.iterator().next();
+            } else {
                 throw new IllegalArgumentException(
-                        "Interface " + customInterfaceToImplement + " must contain a single implementation which is a bean");
+                        "No implementation of interface " + customInterfaceToImplement + " was found");
             }
 
-            ClassInfo customInterfaceImpl = knownImplementors.iterator().next();
             String customImplementationClassName = customInterfaceImpl.name().toString();
             fragmentImplClassResolvedCallback.accept(customImplementationClassName);
 

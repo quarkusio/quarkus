@@ -227,6 +227,15 @@
                 <type>pom</type>
             </dependency>
 
+            <!-- Kogito dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>org.kie.kogito</groupId>
+                <artifactId>kogito-bom</artifactId>
+                <version>${kogito.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
             <!-- Quarkus core -->
 
             <dependency>
@@ -2015,8 +2024,33 @@
                 <version>${infinispan.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.infinispan</groupId>
+                <artifactId>infinispan-lucene-directory</artifactId>
+                <version>${infinispan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.infinispan</groupId>
+                <artifactId>infinispan-directory-provider</artifactId>
+                <version>${infinispan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.infinispan</groupId>
+                <artifactId>infinispan-query</artifactId>
+                <version>${infinispan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.infinispan</groupId>
+                <artifactId>infinispan-objectfilter</artifactId>
+                <version>${infinispan.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.infinispan.protostream</groupId>
                 <artifactId>protostream-processor</artifactId>
+                <version>${infinispan.protostream.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.infinispan.protostream</groupId>
+                <artifactId>protostream</artifactId>
                 <version>${infinispan.protostream.version}</version>
             </dependency>
 

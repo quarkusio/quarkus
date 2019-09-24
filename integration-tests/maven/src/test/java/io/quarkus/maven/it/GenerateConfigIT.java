@@ -19,7 +19,7 @@ import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.InvokerLogger;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.shared.invoker.PrintStreamLogger;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.CreateProjectMojo;
@@ -38,18 +38,18 @@ class GenerateConfigIT extends MojoTestBase {
         generateConfig("test.properties");
 
         String file = loadFile("test.properties");
-        Assert.assertTrue(file.contains("#quarkus.log.file.enable"));
-        Assert.assertTrue(file.contains("If file logging should be enabled"));
-        Assert.assertTrue(file.contains("#quarkus.thread-pool.growth-resistance=0"));
-        Assert.assertTrue(file.contains("The executor growth resistance"));
+        Assertions.assertTrue(file.contains("#quarkus.log.file.enable"));
+        Assertions.assertTrue(file.contains("If file logging should be enabled"));
+        Assertions.assertTrue(file.contains("#quarkus.thread-pool.growth-resistance=0"));
+        Assertions.assertTrue(file.contains("The executor growth resistance"));
 
         generateConfig("application.properties");
         //the existing file should not add properties that already exist
         file = loadFile("application.properties");
-        Assert.assertTrue(file.contains("quarkus.log.file.enable=false"));
-        Assert.assertFalse(file.contains("If file logging should be enabled"));
-        Assert.assertTrue(file.contains("#quarkus.thread-pool.growth-resistance=0"));
-        Assert.assertTrue(file.contains("The executor growth resistance"));
+        Assertions.assertTrue(file.contains("quarkus.log.file.enable=false"));
+        Assertions.assertFalse(file.contains("If file logging should be enabled"));
+        Assertions.assertTrue(file.contains("#quarkus.thread-pool.growth-resistance=0"));
+        Assertions.assertTrue(file.contains("The executor growth resistance"));
     }
 
     private String loadFile(String file) throws IOException {

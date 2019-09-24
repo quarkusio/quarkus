@@ -91,7 +91,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         this.frameworkClassesPath = frameworkClassesDirectory;
         if (!Files.isDirectory(frameworkClassesDirectory)) {
             throw new IllegalStateException(
-                    "Test classes directory path does not point to an existsing directory: " + frameworkClassesPath);
+                    "Test classes directory path does not point to an existing directory: " + frameworkClassesPath);
         }
         this.transformerCache = transformerCache;
     }

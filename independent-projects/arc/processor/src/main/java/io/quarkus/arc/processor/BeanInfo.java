@@ -364,6 +364,35 @@ public class BeanInfo implements InjectionTargetInfo {
                                         "%s bean is not proxyable because it has a private no-args constructor: %s. To fix this problem, change the constructor to be package-private",
                                         classifier, this)));
             }
+
+        } else if (isProducerField() || isProducerMethod()) {
+            ClassInfo returnTypeClass = getClassByName(beanDeployment.getIndex(),
+                    (isProducerMethod() ? target.get().asMethod().returnType() : target.get().asField().type()).name());
+            // can be null for primitive types
+            if (returnTypeClass != null && scope.isNormal() && !Modifier.isInterface(returnTypeClass.flags())) {
+                String methodOrField = isProducerMethod() ? "method" : "field";
+                String classifier = "Producer " + methodOrField + " for a normal scoped bean";
+                if (Modifier.isFinal(returnTypeClass.flags())) {
+                    errors.add(
+                            new DefinitionException(String.format("%s must not have a" +
+                                    " return type that is final: %s", classifier, this)));
+                }
+                MethodInfo noArgsConstructor = returnTypeClass.method(Methods.INIT);
+                if (!ValidationRule.NO_ARGS_CONSTRUCTOR.skipFor(validators, this)) {
+                    if (noArgsConstructor == null) {
+                        errors.add(new DefinitionException(String
+                                .format("Return type of a producer " + methodOrField + " for normal scoped beans must" +
+                                        " declare a non-private constructor with no parameters: %s", this)));
+                    }
+                }
+                if (noArgsConstructor != null && Modifier.isPrivate(noArgsConstructor.flags())) {
+                    errors.add(
+                            new DefinitionException(
+                                    String.format(
+                                            "%s is not proxyable because it has a private no-args constructor: %s.",
+                                            classifier, this)));
+                }
+            }
         }
     }
 

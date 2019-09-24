@@ -18,7 +18,7 @@ public class H2DatabaseTestResource implements QuarkusTestResourceLifecycleManag
         try {
             tcpServer = Server.createTcpServer();
             tcpServer.start();
-            System.out.println("[INFO] H2 database started in TCP server mode");
+            System.out.println("[INFO] H2 database started in TCP server mode; server status: " + tcpServer.getStatus());
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -29,7 +29,7 @@ public class H2DatabaseTestResource implements QuarkusTestResourceLifecycleManag
     public synchronized void stop() {
         if (tcpServer != null) {
             tcpServer.stop();
-            System.out.println("[INFO] H2 database was shut down");
+            System.out.println("[INFO] H2 database was shut down; server status: " + tcpServer.getStatus());
             tcpServer = null;
         }
     }

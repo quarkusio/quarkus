@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.jwt.deployment;
 
+import org.eclipse.microprofile.jwt.Claim;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -47,7 +48,7 @@ class SmallRyeJwtProcessor {
         removable.addBeanClass(JsonValueProducer.class);
         removable.addBeanClass(JwtPrincipalProducer.class);
         additionalBeans.produce(removable.build());
-
+        additionalBeans.produce(new AdditionalBeanBuildItem(Claim.class));
     }
 
     /**

@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.common.deployment;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -8,9 +9,18 @@ import java.util.Set;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.*;
+import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.MessageBodyReader;
+import javax.ws.rs.ext.MessageBodyWriter;
+import javax.ws.rs.ext.Providers;
 
-import org.jboss.jandex.*;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.MediaTypeMap;
 import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
 import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
@@ -18,6 +28,7 @@ import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
 import org.jboss.resteasy.plugins.providers.StringTextStar;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -29,6 +40,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
 
 public class ResteasyCommonProcessor {
+    private static final Logger LOGGER = Logger.getLogger(ResteasyCommonProcessor.class.getName());
 
     private static final ProviderDiscoverer[] PROVIDER_DISCOVERERS = {
             new ProviderDiscoverer(ResteasyDotNames.GET, false, true),
@@ -81,12 +93,13 @@ public class ResteasyCommonProcessor {
     JaxrsProvidersToRegisterBuildItem setupProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             CombinedIndexBuildItem indexBuildItem,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            List<ResteasyJaxrsProviderBuildItem> contributedProviderBuildItems) throws Exception {
+            List<ResteasyJaxrsProviderBuildItem> contributedProviderBuildItems, Capabilities capabilities) throws Exception {
 
         Set<String> contributedProviders = new HashSet<>();
         for (ResteasyJaxrsProviderBuildItem contributedProviderBuildItem : contributedProviderBuildItems) {
             contributedProviders.add(contributedProviderBuildItem.getName());
         }
+
         for (AnnotationInstance i : indexBuildItem.getIndex().getAnnotations(ResteasyDotNames.PROVIDER)) {
             if (i.target().kind() == AnnotationTarget.Kind.CLASS) {
                 contributedProviders.add(i.target().asClass().name().toString());
@@ -106,6 +119,18 @@ public class ResteasyCommonProcessor {
 
         // add the other providers detected
         Set<String> providersToRegister = new HashSet<>(otherProviders);
+
+        if (!capabilities.isCapabilityPresent(Capabilities.RESTEASY_JSON_EXTENSION)) {
+
+            boolean needJsonSupport = restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.CONSUMES)
+                    || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.PRODUCES);
+            if (needJsonSupport) {
+                LOGGER.warn(
+                        "Quarkus detected the need of REST JSON support but you have not provided the necessary JSON " +
+                                "extension for this. You can visit https://quarkus.io/guides/rest-json-guide for more " +
+                                "information on how to set one.");
+            }
+        }
 
         // we add a couple of default providers
         providersToRegister.add(StringTextStar.class.getName());
@@ -132,6 +157,21 @@ public class ResteasyCommonProcessor {
         }
 
         return new JaxrsProvidersToRegisterBuildItem(providersToRegister, contributedProviders, useBuiltinProviders);
+    }
+
+    private boolean restJsonSupportNeeded(CombinedIndexBuildItem indexBuildItem, DotName mediaTypeAnnotation) {
+        for (AnnotationInstance annotationInstance : indexBuildItem.getIndex().getAnnotations(mediaTypeAnnotation)) {
+            final AnnotationValue annotationValue = annotationInstance.value();
+            if (annotationInstance == null) {
+                continue;
+            }
+
+            final List<String> mediaTypes = Arrays.asList(annotationValue.asStringArray());
+            return mediaTypes.contains(MediaType.APPLICATION_JSON)
+                    || mediaTypes.contains(MediaType.APPLICATION_JSON_PATCH_JSON);
+        }
+
+        return false;
     }
 
     public static void categorizeProviders(Set<String> availableProviders, MediaTypeMap<String> categorizedReaders,

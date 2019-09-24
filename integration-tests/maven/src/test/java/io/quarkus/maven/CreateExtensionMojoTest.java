@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.maven.plugin.MojoExecutionException;
@@ -24,8 +25,7 @@ public class CreateExtensionMojoTest {
          * We want to run on the same project multiple times with different args so let's create a copy with a random
          * suffix
          */
-        final Path copyDir = Paths
-                .get("target/test-classes/projects/" + testProjectName + "-" + ((int) (Math.random() * 1000)));
+        final Path copyDir = getCopyDir(testProjectName);
         Files.walk(srcDir).forEach(source -> {
             try {
                 final Path dest = copyDir.resolve(srcDir.relativize(source));
@@ -43,6 +43,20 @@ public class CreateExtensionMojoTest {
         mojo.assumeManaged = true;
         mojo.nameSegmentDelimiter = CreateExtensionMojo.DEFAULT_NAME_SEGMENT_DELIMITER;
         return mojo;
+    }
+
+    private static Path getCopyDir(String testProjectName) {
+        int count = 0;
+        while (count < 100) {
+            Path path = Paths.get("target/test-classes/projects/" + testProjectName + "-" + UUID.randomUUID());
+            if (!Files.exists(path)) {
+                return path;
+            }
+            count++;
+        }
+
+        // if we have tried too many times we just give up instead of looping forever which could cause the test to never end
+        throw new RuntimeException("Unable to create a directory for copying the test application into");
     }
 
     @Test

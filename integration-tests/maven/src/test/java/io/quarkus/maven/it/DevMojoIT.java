@@ -247,6 +247,21 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testSourceModificationBeforeFirstCallWorks() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic", "projects/project-classic-source-modification-before-first-call");
+        run();
+
+        File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        // Edit the "Hello" message and provide a random string.
+        String uuid = UUID.randomUUID().toString();
+        filter(source, ImmutableMap.of("return \"hello\";", "return \"" + uuid + "\";"));
+
+        // Check that the random string is returned
+        String greeting = getHttpResponse("/app/hello");
+        assertThat(greeting).containsIgnoringCase(uuid);
+    }
+
+    @Test
     public void testThatTheApplicationIsReloadedOnConfigChange() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-config-change");
         assertThat(testDir).isDirectory();
@@ -433,7 +448,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 "}";
         FileUtils.write(source, content, "UTF-8");
 
-        // Update the resource ot use the bean
+        // Update the resource to use the bean
         File resource = new File(testDir, "src/main/java/org/acme/HelloResource.java");
         filter(resource, Collections.singletonMap("String greeting;", "String greeting;\n @Inject MyBean bean;"));
         filter(resource, Collections.singletonMap("\"hello\"", "bean.get()"));

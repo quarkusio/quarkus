@@ -63,8 +63,9 @@
         <module>artemis-core</module>
         <module>artemis-jms</module>
         <module>maven</module>
-        <module>kotlin</module>
         <module>scala</module>
+        <module>kotlin</module>
+        <module>mongodb-panache</module>
     </modules>
 
     <build>

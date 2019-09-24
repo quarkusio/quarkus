@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.common.deployment;
+package io.quarkus.resteasy.common.spi;
 
 import io.quarkus.builder.item.MultiBuildItem;
 

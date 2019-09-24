@@ -12,7 +12,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
-import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.smallrye.opentracing.runtime.QuarkusSmallRyeTracingDynamicFeature;
 import io.quarkus.smallrye.opentracing.runtime.TracerProducer;
 import io.quarkus.undertow.deployment.FilterBuildItem;

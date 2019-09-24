@@ -35,6 +35,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String KUBERNETES_CLIENT = "kubernetes-client";
     public static final String MAILER = "mailer";
     public static final String MONGODB_CLIENT = "mongodb-client";
+    public static final String MONGODB_PANACHE = "mongodb-panache";
     public static final String NARAYANA_JTA = "narayana-jta";
     public static final String REACTIVE_PG_CLIENT = "reactive-pg-client";
     public static final String REACTIVE_MYSQL_CLIENT = "reactive-mysql-client";

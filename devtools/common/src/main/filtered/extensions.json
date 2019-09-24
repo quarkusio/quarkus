@@ -316,6 +316,18 @@
     "artifactId": "quarkus-mongodb-client"
   },
   {
+    "name": "MongoDB with Panache",
+    "labels": [
+      "mongo",
+      "mongodb",
+      "nosql",
+      "datastore",
+      "panache"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-mongodb-panache"
+  },
+  {
     "name": "Narayana JTA - Transaction manager",
     "labels": [
       "narayana-jta",

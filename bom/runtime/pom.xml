@@ -164,6 +164,8 @@
         <spring-data.version>2.1.9.RELEASE</spring-data.version>
         <mvel2.version>2.4.4.Final</mvel2.version>
         <mockito.version>3.0.0</mockito.version>
+        <jna.version>5.3.1</jna.version>
+        <antlr.version>4.7.2</antlr.version>
     </properties>
 
     <dependencyManagement>
@@ -320,7 +322,17 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-panacheql</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-orm-panache</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-mongodb-panache</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -699,7 +711,6 @@
             </dependency>
 
             <!-- Additional dependencies, keep in alphabetical order -->
-
             <dependency>
                 <groupId>commons-logging</groupId>
                 <artifactId>commons-logging</artifactId>
@@ -881,6 +892,11 @@
                 <artifactId>debezium-core</artifactId>
                 <version>${debezium.version}</version>
                 <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-runtime</artifactId>
+                <version>${antlr.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.scala-lang</groupId>
@@ -1249,9 +1265,20 @@
                 <artifactId>json-smart</artifactId>
                 <version>${json-smart.version}</version>
             </dependency>
+            <!-- JNA dependency is fixed due to transitive dependency issue on testcontainers-->
+            <dependency>
+                <groupId>net.java.dev.jna</groupId>
+                <artifactId>jna</artifactId>
+                <version>${jna.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>testcontainers</artifactId>
+                <version>${test-containers.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>junit-jupiter</artifactId>
                 <version>${test-containers.version}</version>
             </dependency>
 

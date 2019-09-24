@@ -262,6 +262,7 @@ stages:
             - infinispan-cache-jpa
             - infinispan-client
             - mongodb-client
+            - mongodb-panache
             - neo4j
           name: data
 

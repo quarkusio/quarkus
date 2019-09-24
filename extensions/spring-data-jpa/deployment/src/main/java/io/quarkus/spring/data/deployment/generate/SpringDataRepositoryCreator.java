@@ -3,7 +3,6 @@ package io.quarkus.spring.data.deployment.generate;
 import java.lang.reflect.Modifier;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -12,6 +11,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
@@ -92,14 +92,6 @@ public class SpringDataRepositoryCreator {
                 // initialize the entityClass field
                 ctor.writeInstanceField(entityClassFieldCreator.getFieldDescriptor(), ctor.getThis(),
                         ctor.loadClass(entityTypeStr));
-
-                //initialize the custom impl classes fields
-                for (Map.Entry<String, FieldDescriptor> customClassFieldEntry : fragmentImplNameToFieldDescriptor
-                        .entrySet()) {
-                    ctor.writeInstanceField(customClassFieldEntry.getValue(), ctor.getThis(),
-                            ctor.loadClass(customClassFieldEntry.getKey()));
-                }
-
                 ctor.returnValue(null);
             }
 
@@ -155,28 +147,24 @@ public class SpringDataRepositoryCreator {
 
     private void createCustomImplFields(ClassCreator repositoryImpl, List<DotName> customInterfaceNamesToImplement,
             IndexView index, Map<String, FieldDescriptor> customImplNameToFieldDescriptor) {
-        Set<String> customImplNames = new HashSet<>(customInterfaceNamesToImplement.size());
+        Set<String> customImplClassNames = new HashSet<>(customInterfaceNamesToImplement.size());
 
         // go through the interfaces and collect the implementing classes in a Set
         // this is done because it is possible for an implementing class to implement multiple fragments
         for (DotName customInterfaceToImplement : customInterfaceNamesToImplement) {
-            Collection<ClassInfo> knownImplementors = index.getAllKnownImplementors(customInterfaceToImplement);
-            if (knownImplementors.size() != 1) {
-                throw new IllegalArgumentException(
-                        "Interface " + customInterfaceToImplement
-                                + " must contain a single implementation which is a bean");
-            }
-            customImplNames.add(knownImplementors.iterator().next().name().toString());
+            customImplClassNames
+                    .add(FragmentMethodsUtil.getImplementationDotName(customInterfaceToImplement, index).toString());
         }
 
         // do the actual field creation and book-keeping of them in the customImplNameToFieldDescriptor Map
         int i = 0;
-        for (String customImplName : customImplNames) {
+        for (String customImplClassName : customImplClassNames) {
             FieldCreator customClassField = repositoryImpl
-                    .getFieldCreator("customImplClass" + (i + 1), Class.class.getName())
-                    .setModifiers(Modifier.PRIVATE | Modifier.FINAL);
+                    .getFieldCreator("customImplClass" + (i + 1), customImplClassName)
+                    .setModifiers(Modifier.PRIVATE);
+            customClassField.addAnnotation(Inject.class);
 
-            customImplNameToFieldDescriptor.put(customImplName,
+            customImplNameToFieldDescriptor.put(customImplClassName,
                     customClassField.getFieldDescriptor());
             i++;
         }

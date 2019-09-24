@@ -178,6 +178,16 @@
     "artifactId": "quarkus-jdbc-mariadb"
   },
   {
+    "name": "JDBC Driver - MySQL",
+    "labels": [
+      "jdbc-mysql",
+      "jdbc",
+      "mysql"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jdbc-mysql"
+  },
+  {
     "name": "JDBC Driver - PostgreSQL",
     "labels": [
       "jdbc-postgresql",

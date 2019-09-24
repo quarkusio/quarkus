@@ -206,7 +206,6 @@ stages:
             - jpa-mariadb
             - jpa-mssql
           name: jpa_db
-          postgres: true
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
@@ -214,8 +213,10 @@ stages:
           modules:
             - jpa
             - jpa-postgresql
+            - jpa-mysql
           name: jpa
           postgres: true
+          mysql: true
 
       - template: ci-templates/native-build-steps.yaml
         parameters:

@@ -68,9 +68,6 @@ public final class HibernateOrmReflections {
         simpleConstructor(reflectiveClass,
                 org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl.class);
         simpleConstructor(reflectiveClass, EnumType.class);
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, com.arjuna.ats.jta.UserTransaction.class.getName()));
-        reflectiveClass
-                .produce(new ReflectiveClassBuildItem(true, false, com.arjuna.ats.jta.TransactionManager.class.getName()));
         simpleConstructor(reflectiveClass, MultipleLinesSqlCommandExtractor.class);
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.HqlToken.class);
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.tree.Node.class);

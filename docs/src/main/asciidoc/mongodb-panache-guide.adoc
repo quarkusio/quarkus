@@ -341,7 +341,7 @@ Person.find("name = :name and status = :status", params);
 Person.find("{'name': :name, 'status', :status}", params);
 ----
 
-Or using the convenience class `Parameters` to either build a `Map` or just use as-is:
+Or using the convenience class `Parameters` either as is or to build a `Map`:
 
 [source,java]
 ----

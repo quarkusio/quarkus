@@ -21,6 +21,12 @@ public class PersonEntityResource {
         return PersonEntity.listAll();
     }
 
+    @GET
+    @Path("/search/{name}")
+    public List<PersonName> searchPersons(@PathParam("name") String name) {
+        return PersonEntity.find("lastname", name).project(PersonName.class).list();
+    }
+
     @POST
     public Response addPerson(PersonEntity person) {
         person.persist();

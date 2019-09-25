@@ -387,6 +387,48 @@ public class Person extends PanacheMongoEntity {
 Both `findByNameWithPanacheQLQuery()` and `findByNameWithNativeQuery()` methods will return the same result but query written in PanacheQL
 will use the entity field name: `name`, and native query will use the MongoDB field name: `lastname`.
 
+== Query projection
+
+Query projection can be done with the `project(Class)` method on the `PanacheQuery` object that is returned by the `find()` methods.
+
+You can use it to restrict which fields will be returned by the database, the ID field will always be returned.
+
+For this, you need to create a class (a Pojo) that will only contains the projected fields.
+The field names, or the getters, of the projection class will be used to restrict which properties will be loaded from the database.
+If your entity uses `@BsonProperty` to map a property to a database column, the same mapping must be used inside the projection class.
+
+Projection can be done for both PanacheQL and native queries.
+
+[source,java]
+----
+// using public fields
+public class PersonName {
+    @BsonProperty("lastname")
+    public String name;
+}
+
+// using getters
+public class PersonNameWithGetter {
+    private String name;
+
+    @BsonProperty("lastname")
+    public String getName(){
+        return name;
+    }
+
+    public void setName(String name){
+        this.name = name;
+    }
+}
+
+// only 'name' will be loaded from the database
+PanacheQuery<PersonName> shortQuery = Person.find("status ", Status.Alive).project(PersonName.class);
+PanacheQuery<PersonName> query = Person.find("'status': ?1", Status.Alive).project(PersonNameWithGetter.class);
+PanacheQuery<PersonName> nativeQuery = Person.find("{'status': 'ALIVE'}", Status.Alive).project(PersonName.class);
+----
+
+TIP: Inherited fields and methods from a super type will also be used.
+
 == The DAO/Repository option
 
 Repository is a very popular pattern and can be very accurate for some use case, depending on

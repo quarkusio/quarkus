@@ -284,7 +284,7 @@ Then, you just need to run the application using:
 
 [source, shell]
 ----
-mvn compile quarkus:dev
+./mvnw compile quarkus:dev
 ----
 
 Open `http://localhost:8080/prices.html` in your browser.
@@ -297,7 +297,7 @@ You can build the native executable with:
 
 [source, shell]
 ----
-mvn package -Pnative
+./mvnw package -Pnative
 ----
 
 == Going further

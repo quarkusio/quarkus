@@ -46,6 +46,7 @@ public class KubernetesMockServerTestResource implements QuarkusTestResourceLife
                     f.setAccessible(true);
                     try {
                         f.set(testInstance, mockServer);
+                        return;
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -56,10 +57,6 @@ public class KubernetesMockServerTestResource implements QuarkusTestResourceLife
     }
 
     private boolean useHttps() {
-        final String property = System.getProperty("quarkus.kubernetes-client.test.https");
-        if (property == null || property.isEmpty()) {
-            return false;
-        }
-        return property.toLowerCase().trim().equals("true");
+        return Boolean.getBoolean("quarkus.kubernetes-client.test.https");
     }
 }

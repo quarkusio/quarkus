@@ -381,3 +381,7 @@ Rather than enabling caching on mutable data, ideally a better solution would be
 Finally, the second-level cache can be disabled globally by setting `hibernate.cache.use_second_level_cache` to `false`; this is a setting that needs to be specified in the `persistence.xml` configuration file.
 
 When second-level cache is disabled, all cache annotations are ignored and all queries are run ignoring caches; this is generally useful only to diagnose issues.
+
+== Simplifying Hibernate ORM with Panache
+
+The link:hibernate-orm-panache-guide.html[Hibernate ORM with Panache] extension facilitates the usage of Hibernate ORM by providing active record style entities (and repositories) and focuses on making your entities trivial and fun to write in Quarkus.

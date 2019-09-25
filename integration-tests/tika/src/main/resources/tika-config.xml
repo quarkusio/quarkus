@@ -1,9 +1,0 @@
-<properties>
-  <parsers>
-    <parser class="org.apache.tika.parser.pdf.PDFParser">
-      <params>
-        <param name="sortByPosition" type="bool">true</param>
-      </params>
-    </parser>
-  </parsers>
-</properties>

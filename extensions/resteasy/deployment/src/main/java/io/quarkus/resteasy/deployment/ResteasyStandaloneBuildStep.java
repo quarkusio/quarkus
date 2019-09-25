@@ -30,7 +30,7 @@ import io.quarkus.vertx.core.deployment.InternalWebVertxBuildItem;
 import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.RoutingContext;
 
 public class ResteasyStandaloneBuildStep {
     private static final Logger log = Logger.getLogger("io.quarkus.resteasy");
@@ -96,7 +96,7 @@ public class ResteasyStandaloneBuildStep {
         }
 
         boolean isVirtual = requireVirtual.isPresent();
-        Handler<HttpServerRequest> ut = recorder.startResteasy(vertx.getVertx(),
+        Handler<RoutingContext> ut = recorder.startResteasy(vertx.getVertx(),
                 deployment.getRootPath(),
                 shutdown,
                 beanContainer.getValue(),

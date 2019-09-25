@@ -3,9 +3,13 @@ package io.quarkus.resteasy.runtime.standalone;
 import java.io.IOException;
 import java.io.InputStream;
 
+import javax.enterprise.inject.Instance;
+import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.SecurityContext;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.core.ResteasyContext;
 import org.jboss.resteasy.core.SynchronousDispatcher;
 import org.jboss.resteasy.specimpl.ResteasyHttpHeaders;
 import org.jboss.resteasy.specimpl.ResteasyUriInfo;
@@ -15,16 +19,19 @@ import org.jboss.resteasy.spi.UnhandledException;
 
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public class VertxRequestHandler implements Handler<HttpServerRequest> {
+public class VertxRequestHandler implements Handler<RoutingContext> {
     private static final Logger log = Logger.getLogger("io.quarkus.resteasy");
 
     protected final Vertx vertx;
@@ -32,6 +39,7 @@ public class VertxRequestHandler implements Handler<HttpServerRequest> {
     protected final String servletMappingPrefix;
     protected final BufferAllocator allocator;
     protected final BeanContainer beanContainer;
+    protected final CurrentIdentityAssociation association;
 
     public VertxRequestHandler(Vertx vertx,
             BeanContainer beanContainer,
@@ -44,24 +52,30 @@ public class VertxRequestHandler implements Handler<HttpServerRequest> {
                 deployment.getProviderFactory(), null);
         this.servletMappingPrefix = servletMappingPrefix;
         this.allocator = allocator;
+        Instance<CurrentIdentityAssociation> association = CDI.current().select(CurrentIdentityAssociation.class);
+        this.association = association.isResolvable() ? association.get() : null;
     }
 
     @Override
-    public void handle(HttpServerRequest request) {
+    public void handle(RoutingContext request) {
         // have to create input stream here.  Cannot execute in another thread
         // otherwise request handlers may not get set up before request ends
-        VertxInputStream is = new VertxInputStream(request);
+        VertxInputStream is = new VertxInputStream(request.request());
         vertx.executeBlocking(event -> {
-            dispatchRequestContext(request, is, new VertxBlockingOutput(request));
+            dispatchRequestContext(request, is, new VertxBlockingOutput(request.request()));
         }, false, event -> {
         });
     }
 
-    private void dispatchRequestContext(HttpServerRequest request, InputStream is, VertxOutput output) {
+    private void dispatchRequestContext(RoutingContext request, InputStream is, VertxOutput output) {
         ManagedContext requestContext = beanContainer.requestContext();
         requestContext.activate();
+        QuarkusHttpUser user = (QuarkusHttpUser) request.user();
+        if (user != null && association != null) {
+            association.setIdentity(user.getSecurityIdentity());
+        }
         try {
-            dispatch(request, is, output);
+            dispatch(request.request(), is, output);
         } finally {
             requestContext.terminate();
         }
@@ -78,6 +92,7 @@ public class VertxRequestHandler implements Handler<HttpServerRequest> {
                 dispatcher.getDispatcher(), vertxResponse, false);
         vertxRequest.setInputStream(is);
         try {
+            ResteasyContext.pushContext(SecurityContext.class, new QuarkusResteasySecurityContext(request));
             dispatcher.service(ctx, request, response, vertxRequest, vertxResponse, true);
         } catch (Failure e1) {
             vertxResponse.setStatus(e1.getErrorCode());

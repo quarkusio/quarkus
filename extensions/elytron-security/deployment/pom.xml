@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-elytron-security-deployment</artifactId>
-    <name>Quarkus - Security - Deployment</name>
+    <name>Quarkus - Elytron Security - Deployment</name>
 
     <dependencies>
         <dependency>
@@ -31,6 +31,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-elytron-security</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-security-deployment</artifactId>
+        </dependency>
+
 
         <dependency>
             <groupId>io.quarkus</groupId>

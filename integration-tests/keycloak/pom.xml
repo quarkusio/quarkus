@@ -21,11 +21,16 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-keycloak</artifactId>
+            <artifactId>quarkus-vertx-keycloak</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-jsonb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus.keycloak</groupId>
+            <artifactId>quarkus-keycloak-adapter</artifactId>
+            <version>1.0.0.Alpha1</version>
         </dependency>
 
         <!-- test dependencies -->
@@ -165,7 +170,6 @@
                                       <enableCodeSizeReporting>true</enableCodeSizeReporting>
                                     -->
                                     <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <enableJni>false</enableJni>
                                     <debugBuildProcess>false</debugBuildProcess>
                                 </configuration>
                             </execution>

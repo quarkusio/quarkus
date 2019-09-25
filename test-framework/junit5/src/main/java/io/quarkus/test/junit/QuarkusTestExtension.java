@@ -299,16 +299,20 @@ public class QuarkusTestExtension
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
-        boolean substrateTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
-        restAssuredURLManager.clearURL();
-        TestScopeManager.tearDown(substrateTest);
+        if (!failedBoot) {
+            boolean substrateTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
+            restAssuredURLManager.clearURL();
+            TestScopeManager.tearDown(substrateTest);
+        }
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        boolean substrateTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
-        restAssuredURLManager.setURL();
-        TestScopeManager.setup(substrateTest);
+        if (!failedBoot) {
+            boolean substrateTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
+            restAssuredURLManager.setURL();
+            TestScopeManager.setup(substrateTest);
+        }
     }
 
     @Override
@@ -349,7 +353,7 @@ public class QuarkusTestExtension
                 }
                 store.put(ExtensionState.class.getName(), state);
 
-            } catch (RuntimeException e) {
+            } catch (Throwable e) {
                 try {
                     testResourceManager.stop();
                 } catch (Exception ex) {

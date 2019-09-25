@@ -348,6 +348,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-security-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-elytron-security-oauth2-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -399,11 +404,6 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-flyway-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-keycloak-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

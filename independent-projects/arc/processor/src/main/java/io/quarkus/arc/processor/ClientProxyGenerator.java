@@ -98,7 +98,13 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
             // Exceptions
             for (Type exception : method.exceptions()) {
-                forward.addException(exception.asClassType().toString());
+                if (exception.kind() == Type.Kind.CLASS) {
+                    forward.addException(exception.asClassType().toString());
+                } else if (exception.kind() == Type.Kind.TYPE_VARIABLE) {
+                    forward.addException(exception.asTypeVariable().bounds().get(0).asClassType().toString());
+                } else {
+                    throw new IllegalArgumentException("Unknown exception type " + exception);
+                }
             }
             // Method params
             ResultHandle[] params = new ResultHandle[method.parameters().size()];

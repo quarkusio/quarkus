@@ -16,11 +16,13 @@ import org.jboss.jandex.Type;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
+import io.quarkus.jackson.ObjectMapperProducer;
 
 public class JacksonProcessor {
 
@@ -32,6 +34,9 @@ public class JacksonProcessor {
 
     @Inject
     BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass;
+
+    @Inject
+    BuildProducer<AdditionalBeanBuildItem> additionalBeans;
 
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
@@ -71,6 +76,9 @@ public class JacksonProcessor {
                 }
             }
         }
+
+        // this needs to be registered manually since the runtime module is not indexed by Jandex
+        additionalBeans.produce(new AdditionalBeanBuildItem(ObjectMapperProducer.class));
     }
 
     private void addReflectiveHierarchyClass(DotName className) {

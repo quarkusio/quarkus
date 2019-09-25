@@ -1,6 +1,7 @@
 package io.quarkus.it.artemis;
 
-import javax.jms.Session;
+import javax.jms.JMSContext;
+import javax.ws.rs.core.Response.Status;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -17,12 +18,12 @@ public class ArtemisConsumerTest implements ArtemisHelper {
     @Test
     public void test() throws Exception {
         String body = createBody();
-        try (Session session = createSession()) {
-            session.createProducer(session.createQueue("test-jms")).send(session.createTextMessage(body));
+        try (JMSContext context = createContext()) {
+            context.createProducer().send(context.createQueue("test-jms"), body);
         }
 
         Response response = RestAssured.with().body(body).get("/artemis");
-        Assertions.assertEquals(javax.ws.rs.core.Response.Status.OK.getStatusCode(), response.statusCode());
+        Assertions.assertEquals(Status.OK.getStatusCode(), response.statusCode());
         Assertions.assertEquals(body, response.getBody().asString());
     }
 }

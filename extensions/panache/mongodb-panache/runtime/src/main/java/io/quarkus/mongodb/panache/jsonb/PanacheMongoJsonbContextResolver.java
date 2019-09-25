@@ -16,10 +16,16 @@ import javax.ws.rs.ext.Provider;
 @Provider
 public class PanacheMongoJsonbContextResolver implements ContextResolver<Jsonb> {
 
-    public Jsonb getContext(Class clazz) {
+    private final Jsonb jsonb;
+
+    public PanacheMongoJsonbContextResolver() {
         JsonbConfig config = new JsonbConfig();
         config.withSerializers(new ObjectIdSerializer()).withDeserializers(new ObjectIdDeserializer());
-        return JsonbBuilder.create(config);
+        this.jsonb = JsonbBuilder.create(config);
+    }
+
+    public Jsonb getContext(Class clazz) {
+        return jsonb;
     }
 
 }

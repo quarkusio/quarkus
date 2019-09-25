@@ -41,7 +41,6 @@ import io.quarkus.hibernate.orm.runtime.service.CfgXmlAccessServiceInitiatorQuar
 import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusJdbcEnvironmentInitiator;
-import io.quarkus.hibernate.orm.runtime.service.QuarkusJtaPlatformResolver;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
 
 /**
@@ -184,8 +183,6 @@ public class PreconfiguredServiceRegistryBuilder {
         // Disabled: IdentifierGenerators are no longer initiated after Metadata was generated.
         // serviceInitiators.add(MutableIdentifierGeneratorFactoryInitiator.INSTANCE);
 
-        // Replaces JtaPlatformResolverInitiator.INSTANCE );
-        serviceInitiators.add(new QuarkusJtaPlatformResolver(rs.getJtaPlatform()));
         serviceInitiators.add(QuarkusJtaPlatformInitiator.INSTANCE);
 
         serviceInitiators.add(SessionFactoryServiceRegistryFactoryInitiator.INSTANCE);

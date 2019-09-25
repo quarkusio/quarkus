@@ -165,6 +165,9 @@ class MongodbPanacheResourceTest {
         // magic query find("author", author)
         list = get(endpoint + "/search/Victor Hugo").as(LIST_OF_BOOK_TYPE_REF);
         Assertions.assertEquals(2, list.size());
+        // we have a projection so we should not have the details field but we should have the title thanks to @BsonProperty
+        Assertions.assertNotNull(list.get(0).getTitle());
+        Assertions.assertNull(list.get(0).getDetails());
 
         // magic query find("{'author':?1,'title':?1}", author, title)
         BookDTO book = get(endpoint + "/search?author=Victor Hugo&title=Notre-Dame de Paris").as(BookDTO.class);
@@ -278,6 +281,13 @@ class MongodbPanacheResourceTest {
         //with sort
         list = get(endpoint + "?sort=firstname").as(LIST_OF_PERSON_TYPE_REF);
         Assertions.assertEquals(4, list.size());
+
+        //with project
+        list = get(endpoint + "/search/Doe").as(LIST_OF_PERSON_TYPE_REF);
+        Assertions.assertEquals(2, list.size());
+        Assertions.assertNotNull(list.get(0).lastname);
+        //expected the firstname field to be null as we project on lastname only
+        Assertions.assertNull(list.get(0).firstname);
 
         //count
         Long count = get(endpoint + "/count").as(Long.class);

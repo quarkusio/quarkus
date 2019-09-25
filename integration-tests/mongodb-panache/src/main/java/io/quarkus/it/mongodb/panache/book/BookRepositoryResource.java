@@ -80,8 +80,8 @@ public class BookRepositoryResource {
 
     @GET
     @Path("/search/{author}")
-    public List<Book> getBooksByAuthor(@PathParam("author") String author) {
-        return bookRepository.list("author", author);
+    public List<BookShortView> getBooksByAuthor(@PathParam("author") String author) {
+        return bookRepository.find("author", author).project(BookShortView.class).list();
     }
 
     @GET

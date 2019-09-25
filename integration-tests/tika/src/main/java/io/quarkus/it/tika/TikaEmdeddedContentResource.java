@@ -10,6 +10,8 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.RecursiveParserWrapper;
+import org.apache.tika.parser.microsoft.OfficeParser;
+import org.apache.tika.parser.pdf.PDFParser;
 
 import io.quarkus.tika.TikaContent;
 import io.quarkus.tika.TikaParser;
@@ -18,7 +20,8 @@ import io.quarkus.tika.TikaParser;
 public class TikaEmdeddedContentResource {
 
     // Avoiding the injection, otherwise the recorded tika-config.xml intended for TikaPdfInvoiceTest is used
-    TikaParser parser = new TikaParser(new RecursiveParserWrapper(new AutoDetectParser(), true), false);
+    TikaParser parser = new TikaParser(new RecursiveParserWrapper(
+            new AutoDetectParser(new OfficeParser(), new PDFParser()), true), false);
 
     @POST
     @Path("/outerText")

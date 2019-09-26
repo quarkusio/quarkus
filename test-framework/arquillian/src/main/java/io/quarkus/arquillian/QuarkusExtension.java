@@ -14,6 +14,7 @@ public class QuarkusExtension implements LoadableExtension {
         builder.service(TestEnricher.class, InjectionEnricher.class);
         builder.observer(CreationalContextDestroyer.class);
         builder.observer(QuarkusBeforeAfterLifecycle.class);
+        builder.observer(RequestContextLifecycle.class);
     }
 
 }

@@ -46,10 +46,10 @@ public class DevModeMain implements Closeable {
     private static volatile URLClassLoader runtimeCl;
     private final DevModeContext context;
 
-    private static Closeable runner;
+    private static volatile Closeable runner;
     static volatile Throwable deploymentProblem;
     static volatile Throwable compileProblem;
-    static RuntimeUpdatesProcessor runtimeUpdatesProcessor;
+    static volatile RuntimeUpdatesProcessor runtimeUpdatesProcessor;
     private List<HotReplacementSetup> hotReplacement = new ArrayList<>();
 
     private final Map<Class<?>, Object> liveReloadContext = new ConcurrentHashMap<>();

@@ -119,6 +119,7 @@
 
         <!-- kogito -->
         <module>kogito</module>
+        <module>elytron-security-jdbc</module>
     </modules>
 
     <build>

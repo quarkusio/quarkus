@@ -66,6 +66,7 @@
         <module>scala</module>
         <module>kotlin</module>
         <module>mongodb-panache</module>
+        <module>elytron-security-jdbc</module>
     </modules>
 
     <build>

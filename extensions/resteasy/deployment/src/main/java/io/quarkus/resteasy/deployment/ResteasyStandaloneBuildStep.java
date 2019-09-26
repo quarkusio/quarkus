@@ -3,11 +3,17 @@ package io.quarkus.resteasy.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.net.JarURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.jar.JarEntry;
 import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
@@ -25,8 +31,6 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.resteasy.runtime.standalone.ResteasyStandaloneRecorder;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
-import io.quarkus.undertow.deployment.KnownPathsBuildItem;
-import io.quarkus.undertow.deployment.StaticResourceFilesBuildItem;
 import io.quarkus.vertx.core.deployment.InternalWebVertxBuildItem;
 import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
@@ -34,6 +38,8 @@ import io.vertx.ext.web.Route;
 
 public class ResteasyStandaloneBuildStep {
     private static final Logger log = Logger.getLogger("io.quarkus.resteasy");
+    protected static final String META_INF_RESOURCES_SLASH = "META-INF/resources/";
+    protected static final String META_INF_RESOURCES = "META-INF/resources";
 
     public static final class ResteasyStandaloneBuildItem extends SimpleBuildItem {
 
@@ -41,66 +47,126 @@ public class ResteasyStandaloneBuildStep {
 
     @BuildStep()
     @Record(STATIC_INIT)
-    public void setupDeployment(ResteasyStandaloneRecorder recorder,
+    public void staticInit(ResteasyStandaloneRecorder recorder,
             Capabilities capabilities,
             ResteasyDeploymentBuildItem deployment,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
             ResteasyInjectionReadyBuildItem resteasyInjectionReady,
-            BuildProducer<ResteasyStandaloneBuildItem> standalone) {
+            BuildProducer<ResteasyStandaloneBuildItem> standalone) throws Exception {
         if (deployment == null || capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
             return;
         }
-        recorder.setupDeployment(deployment.getDeployment());
+        Set<String> knownPaths = getClasspathResources(applicationArchivesBuildItem);
+        recorder.staticInit(deployment.getDeployment(), deployment.getRootPath(), knownPaths);
         standalone.produce(new ResteasyStandaloneBuildItem());
 
+    }
+
+    /**
+     * Find all static file resources that are available from classpath.
+     *
+     * @param applicationArchivesBuildItem
+     * @return
+     * @throws Exception
+     */
+    private Set<String> getClasspathResources(ApplicationArchivesBuildItem applicationArchivesBuildItem) throws Exception {
+        Set<String> knownPaths = new HashSet<>();
+        for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
+            Path resource = i.getChildPath(META_INF_RESOURCES);
+            if (resource != null && Files.exists(resource)) {
+                Files.walk(resource).forEach(new Consumer<Path>() {
+                    @Override
+                    public void accept(Path path) {
+                        // Skip META-INF/resources entry
+                        if (resource.equals(path)) {
+                            return;
+                        }
+                        Path rel = resource.relativize(path);
+                        if (!Files.isDirectory(path)) {
+                            String file = rel.toString();
+                            if (file.equals("index.html") || file.equals("index.htm")) {
+                                knownPaths.add("/");
+                            }
+                            if (!file.startsWith("/")) {
+                                file = "/" + file;
+                            }
+                            knownPaths.add(file);
+                        }
+                    }
+                });
+            }
+        }
+        Enumeration<URL> resources = getClass().getClassLoader().getResources(META_INF_RESOURCES);
+        while (resources.hasMoreElements()) {
+            URL url = resources.nextElement();
+            if (url.getProtocol().equals("jar")) {
+                JarURLConnection jar = (JarURLConnection) url.openConnection();
+                Enumeration<JarEntry> entries = jar.getJarFile().entries();
+                while (entries.hasMoreElements()) {
+                    JarEntry entry = entries.nextElement();
+                    if (entry.getName().startsWith(META_INF_RESOURCES_SLASH)) {
+                        String sub = entry.getName().substring(META_INF_RESOURCES_SLASH.length());
+                        if (!sub.isEmpty()) {
+                            if (sub.equals("index.html") || sub.equals("index.htm")) {
+                                knownPaths.add("/");
+                            }
+                            if (!sub.startsWith("/")) {
+                                sub = "/" + sub;
+                            }
+                            knownPaths.add(sub);
+                        }
+                    }
+                }
+            }
+            if (url.getProtocol().equals("file")) {
+                Path resource = Paths.get(url.toURI());
+                if (resource != null && Files.exists(resource)) {
+                    Files.walk(resource).forEach(new Consumer<Path>() {
+                        @Override
+                        public void accept(Path path) {
+                            // Skip META-INF/resources entry
+                            if (resource.equals(path)) {
+                                return;
+                            }
+                            Path rel = resource.relativize(path);
+                            if (!Files.isDirectory(path)) {
+                                String file = rel.toString();
+                                if (file.equals("index.html") || file.equals("index.htm")) {
+                                    knownPaths.add("/");
+                                }
+                                if (!file.startsWith("/")) {
+                                    file = "/" + file;
+                                }
+                                knownPaths.add(file);
+                            }
+                        }
+                    });
+                }
+            }
+        }
+        return knownPaths;
     }
 
     @BuildStep
     @Record(RUNTIME_INIT)
     public void boot(ShutdownContextBuildItem shutdown,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            Optional<KnownPathsBuildItem> known,
-            Optional<StaticResourceFilesBuildItem> staticResources,
             ResteasyStandaloneRecorder recorder,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<DefaultRouteBuildItem> routeProducer,
             InternalWebVertxBuildItem vertx,
             BeanContainerBuildItem beanContainer,
-            ResteasyDeploymentBuildItem deployment,
             ResteasyStandaloneBuildItem standalone,
             Optional<RequireVirtualHttpBuildItem> requireVirtual) throws Exception {
 
-        if (deployment == null || standalone == null) {
+        if (standalone == null) {
             return;
         }
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY));
 
-        // We don't want to add a Router if we don't have to so check if META-INF/resources exists anywhere
-        boolean hasClasspathResources = (staticResources.isPresent() && !staticResources.get().files.isEmpty())
-                || (known.isPresent() && (!known.get().knownDirectories.isEmpty() || !known.get().knownFiles.isEmpty()));
-
-        if (!hasClasspathResources) {
-            for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
-                Path resource = i.getChildPath(ResteasyStandaloneRecorder.META_INF_RESOURCES);
-                if (resource != null && Files.exists(resource)) {
-                    hasClasspathResources = true;
-                    break;
-                }
-            }
-
-        }
-
-        if (!hasClasspathResources) {
-            Enumeration<URL> resources = getClass().getClassLoader()
-                    .getResources(ResteasyStandaloneRecorder.META_INF_RESOURCES);
-            hasClasspathResources = resources.hasMoreElements();
-        }
-
         boolean isVirtual = requireVirtual.isPresent();
-        Consumer<Route> ut = recorder.startResteasy(vertx.getVertx(),
-                deployment.getRootPath(),
+        Consumer<Route> ut = recorder.start(vertx.getVertx(),
                 shutdown,
                 beanContainer.getValue(),
-                hasClasspathResources,
                 isVirtual);
 
         routeProducer.produce(new DefaultRouteBuildItem(ut));

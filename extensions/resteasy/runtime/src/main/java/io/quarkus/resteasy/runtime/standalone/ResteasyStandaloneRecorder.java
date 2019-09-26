@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.spi.ResteasyDeployment;
@@ -75,19 +76,20 @@ public class ResteasyStandaloneRecorder {
     }
 
     private static ResteasyDeployment deployment;
+    private static Set<String> knownPaths;
+    private static String contextPath;
 
-    public void setupDeployment(ResteasyDeployment dep) {
+    public void staticInit(ResteasyDeployment dep, String path, Set<String> known) {
         deployment = dep;
         deployment.start();
-
+        knownPaths = known;
+        contextPath = path;
     }
 
-    public Consumer<Route> startResteasy(RuntimeValue<Vertx> vertxValue,
-            String contextPath,
+    public Consumer<Route> start(RuntimeValue<Vertx> vertxValue,
             ShutdownContext shutdown,
             BeanContainer beanContainer,
-            boolean hasClasspathResources,
-            boolean isVirtual) throws Exception {
+            boolean isVirtual) {
 
         shutdown.addShutdownTask(new Runnable() {
             @Override
@@ -117,8 +119,15 @@ public class ResteasyStandaloneRecorder {
                 });
             }
         }
-        if (hasClasspathResources) {
-            handlers.add(StaticHandler.create(META_INF_RESOURCES));
+        if (!knownPaths.isEmpty()) {
+            StaticHandler staticHandler = StaticHandler.create(META_INF_RESOURCES);
+            handlers.add(ctx -> {
+                if (knownPaths.contains(ctx.request().path())) {
+                    staticHandler.handle(ctx);
+                } else {
+                    ctx.next();
+                }
+            });
         }
 
         VertxRequestHandler requestHandler = new VertxRequestHandler(vertx, beanContainer, deployment, contextPath, ALLOCATOR);

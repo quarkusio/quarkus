@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.faulttolerance.deployment;
 
+import java.lang.reflect.Method;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Set;
@@ -13,18 +14,14 @@ import org.eclipse.microprofile.faulttolerance.Fallback;
 import org.eclipse.microprofile.faulttolerance.FallbackHandler;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.faulttolerance.Timeout;
+import org.eclipse.microprofile.faulttolerance.exceptions.FaultToleranceDefinitionException;
+import org.jboss.jandex.*;
 import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
 
 import com.netflix.hystrix.HystrixCircuitBreaker;
 
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.processor.AnnotationsTransformer;
-import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.deployment.*;
+import io.quarkus.arc.processor.*;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -38,15 +35,23 @@ import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildIte
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
+import io.quarkus.smallrye.faulttolerance.runtime.RequestContextListener;
 import io.quarkus.smallrye.faulttolerance.runtime.SmallryeFaultToleranceRecorder;
 import io.smallrye.faulttolerance.DefaultCommandListenersProvider;
 import io.smallrye.faulttolerance.DefaultHystrixConcurrencyStrategy;
 import io.smallrye.faulttolerance.HystrixCommandBinding;
 import io.smallrye.faulttolerance.HystrixCommandInterceptor;
 import io.smallrye.faulttolerance.HystrixInitializer;
+import io.smallrye.faulttolerance.config.FaultToleranceOperation;
 import io.smallrye.faulttolerance.metrics.MetricsCollectorFactory;
 
 public class SmallRyeFaultToleranceProcessor {
+    private static final DotName ASYNCHRONOUS = DotName.createSimple(Asynchronous.class.getName());
+    private static final DotName BULKHEAD = DotName.createSimple(Bulkhead.class.getName());
+    private static final DotName CIRCUIT_BREAKER = DotName.createSimple(CircuitBreaker.class.getName());
+    private static final DotName FALLBACK = DotName.createSimple(Fallback.class.getName());
+    private static final DotName RETRY = DotName.createSimple(Retry.class.getName());
+    private static final DotName TIMEOUT = DotName.createSimple(Timeout.class.getName());
 
     @Inject
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
@@ -127,9 +132,76 @@ public class SmallRyeFaultToleranceProcessor {
                 DefaultHystrixConcurrencyStrategy.class,
                 QuarkusFaultToleranceOperationProvider.class, QuarkusFallbackHandlerProvider.class,
                 DefaultCommandListenersProvider.class,
-                MetricsCollectorFactory.class);
+                MetricsCollectorFactory.class,
+                RequestContextListener.class);
         additionalBean.produce(builder.build());
     }
+
+    @BuildStep
+    void validateFaultToleranceAnnotations(
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errorBuildItemProducer,
+            ValidationPhaseBuildItem validationPhase) {
+        for (BeanInfo bean : validationPhase.getContext().get(BuildExtension.Key.BEANS)) {
+            if (bean.isClassBean()) {
+                try {
+                    Class<?> beanClass = Class.forName(bean.getBeanClass().toString());
+
+                    for (Method method : beanClass.getDeclaredMethods()) {
+                        FaultToleranceOperation operation = FaultToleranceOperation.of(beanClass, method);
+                        if (operation.isLegitimate()) {
+                            try {
+                                operation.validate();
+                            } catch (FaultToleranceDefinitionException e) {
+                                errorBuildItemProducer.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(e));
+                            }
+                        }
+                    }
+                } catch (ClassNotFoundException e) {
+                    // Ignore
+                }
+            }
+        }
+    }
+
+    //    @BuildStep
+    //    AnnotationsTransformerBuildItem addActivateRequestContextAnnotation(BeanArchiveIndexBuildItem index) {
+    //        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+    //            @Override
+    //            public boolean appliesTo(AnnotationTarget.Kind kind) {
+    //                return kind == Kind.CLASS || kind == Kind.METHOD;
+    //            }
+    //
+    //            @Override
+    //            public void transform(TransformationContext ctx) {
+    //                if (ctx.isClass()) {
+    //                    ClassInfo clazz = ctx.getTarget().asClass();
+    //                    while (clazz != null && clazz.superName() != null) {
+    //                        Map<DotName, List<AnnotationInstance>> annotations = clazz.annotations();
+    //                        if (annotations.containsKey(ASYNCHRONOUS)
+    //                                || annotations.containsKey(BULKHEAD)
+    //                                || annotations.containsKey(CIRCUIT_BREAKER)
+    //                                || annotations.containsKey(FALLBACK)
+    //                                || annotations.containsKey(RETRY)
+    //                                || annotations.containsKey(TIMEOUT)) {
+    //                            ctx.transform().add(ActivateRequestContext.class).done();
+    //                            break;
+    //                        }
+    //                        clazz = index.getIndex().getClassByName(clazz.superName());
+    //                    }
+    //                } else if (ctx.isMethod()) {
+    //                    MethodInfo method = ctx.getTarget().asMethod();
+    //                    if (method.hasAnnotation(ASYNCHRONOUS)
+    //                            || method.hasAnnotation(BULKHEAD)
+    //                            || method.hasAnnotation(CIRCUIT_BREAKER)
+    //                            || method.hasAnnotation(FALLBACK)
+    //                            || method.hasAnnotation(RETRY)
+    //                            || method.hasAnnotation(TIMEOUT)) {
+    //                        ctx.transform().add(ActivateRequestContext.class).done();
+    //                    }
+    //                }
+    //            }
+    //        });
+    //    }
 
     @BuildStep
     public ConfigurationTypeBuildItem registerTypes() {

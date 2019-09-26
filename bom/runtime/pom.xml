@@ -41,7 +41,7 @@
         <smallrye-context-propagation.version>1.0.11</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.9</smallrye-reactive-streams-operators.version>
         <smallrye-converter-api.version>1.0.9</smallrye-converter-api.version>
-        <smallrye-reactive-messaging.version>1.0.3</smallrye-reactive-messaging.version>
+        <smallrye-reactive-messaging.version>1.0.6</smallrye-reactive-messaging.version>
         <swagger-ui.version>3.20.9</swagger-ui.version>
         <javax.activation.version>1.1.1</javax.activation.version>
         <javax.inject.version>1</javax.inject.version>

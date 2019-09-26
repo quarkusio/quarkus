@@ -388,7 +388,6 @@ public class TestResource {
         String getName();
     }
 
-    @RegisterForReflection
     public static class MyEntity {
         private String name;
         private String value;
@@ -408,6 +407,11 @@ public class TestResource {
         public void setValue(String value) {
             this.value = value;
         }
+    }
+
+    @RegisterForReflection(targets = MyEntity.class)
+    public static class EmptyClass {
+
     }
 
     public static class MyOpenApiEntityV1 {

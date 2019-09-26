@@ -21,6 +21,8 @@ import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.Provider;
 
+import io.quarkus.security.Authenticated;
+
 /**
  * A JAXRS provider that installs security filters to support the RBAC access to endpoints based on the
  * common security annotations.
@@ -30,7 +32,7 @@ public class RolesFilterRegistrar implements DynamicFeature {
 
     private static final DenyAllFilter denyAllFilter = new DenyAllFilter();
     private final Set<Class<? extends Annotation>> mpJwtAnnotations = new HashSet<>(
-            asList(DenyAll.class, PermitAll.class, RolesAllowed.class));
+            asList(DenyAll.class, PermitAll.class, RolesAllowed.class, Authenticated.class));
 
     @Override
     public void configure(ResourceInfo resourceInfo, FeatureContext context) {
@@ -40,6 +42,8 @@ public class RolesFilterRegistrar implements DynamicFeature {
                 configureDenyAll(context);
             } else if (mpJwtAnnotation instanceof RolesAllowed) {
                 configureRolesAllowed((RolesAllowed) mpJwtAnnotation, context);
+            } else if (mpJwtAnnotation instanceof Authenticated) {
+                configureAuthenticated(context);
             }
         } else {
             // the resource method is not annotated and the class is not annotated either
@@ -52,6 +56,10 @@ public class RolesFilterRegistrar implements DynamicFeature {
 
     private void configureRolesAllowed(RolesAllowed mpJwtAnnotation, FeatureContext context) {
         context.register(new RolesAllowedFilter(mpJwtAnnotation.value()));
+    }
+
+    private void configureAuthenticated(FeatureContext context) {
+        context.register(new RolesAllowedFilter("*"));
     }
 
     private void configureDenyAll(FeatureContext context) {

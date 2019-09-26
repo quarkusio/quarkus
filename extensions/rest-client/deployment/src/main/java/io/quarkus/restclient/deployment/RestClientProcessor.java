@@ -16,8 +16,6 @@ import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.ext.Providers;
 
-import org.apache.commons.logging.impl.Jdk14Logger;
-import org.apache.commons.logging.impl.LogFactoryImpl;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -110,8 +108,6 @@ class RestClientProcessor {
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                LogFactoryImpl.class.getName(),
-                Jdk14Logger.class.getName(),
                 DefaultResponseExceptionMapper.class.getName(),
                 AsyncInterceptorRxInvokerProvider.class.getName(),
                 ResteasyProviderFactoryImpl.class.getName(),

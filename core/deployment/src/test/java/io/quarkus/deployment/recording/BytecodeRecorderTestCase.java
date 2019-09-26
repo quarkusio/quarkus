@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
 
@@ -129,6 +130,21 @@ public class BytecodeRecorderTestCase {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.bean(new TestJavaBean("A string", 99));
         }, new TestJavaBean("A string", 99));
+    }
+
+    @Test
+    public void testJavaBeanWithEmbeddedReturnValue() throws Exception {
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            TestJavaBean newBean = new TestJavaBean("A string", 99);
+            newBean.setSupplier(recorder.stringSupplier("Runtime String"));
+            recorder.bean(newBean);
+        }, new TestJavaBean("A string", 99, new Supplier<String>() {
+            @Override
+            public String get() {
+                return "Runtime String";
+            }
+        }));
     }
 
     @Test

@@ -28,9 +28,8 @@ import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
-import io.vertx.core.Handler;
+import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.RoutingContext;
 
 class VertxHttpProcessor {
 
@@ -60,14 +59,11 @@ class VertxHttpProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     VertxWebRouterBuildItem initializeRouter(VertxHttpRecorder recorder,
             InternalWebVertxBuildItem vertx,
-            List<RouteBuildItem> routes,
-            List<FilterBuildItem> filters) throws IOException {
+            List<RouteBuildItem> routes) {
 
         RuntimeValue<Router> router = recorder.initializeRouter(vertx.getVertx());
-        List<Handler<RoutingContext>> filterList = filters.stream().map(FilterBuildItem::getHandler)
-                .collect(Collectors.toList());
         for (RouteBuildItem route : routes) {
-            recorder.addRoute(router, route.getRouteFunction(), route.getHandler(), route.getType(), filterList);
+            recorder.addRoute(router, route.getRouteFunction(), route.getHandler(), route.getType());
         }
 
         return new VertxWebRouterBuildItem(router);
@@ -94,13 +90,13 @@ class VertxHttpProcessor {
             }
         }
 
-        List<Handler<RoutingContext>> orderedFilters = filters.stream()
-                .sorted() // Sort the handler by priority, highest priority get registered first on the router.
-                .map(FilterBuildItem::getHandler).collect(Collectors.toList());
+        List<Filter> listOfFilters = filters.stream()
+                .filter(f -> f.getHandler() != null)
+                .map(FilterBuildItem::toFilter).collect(Collectors.toList());
 
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getHandler).orElse(null),
-                orderedFilters,
+                listOfFilters,
                 launchMode.getLaunchMode(), shutdown, router.getRouter());
 
         boolean startVirtual = requireVirtual.isPresent() || httpConfiguration.virtual;

@@ -256,13 +256,13 @@ class BookResourceTest {
         Assertions.assertEquals(204, response.statusCode());
 
         Person person4 = new Person();
-        person1.id = 4L;
-        person1.firstname = "Charles";
-        person1.lastname = "Baudelaire";
+        person4.id = 4L;
+        person4.firstname = "Charles";
+        person4.lastname = "Baudelaire";
         response = RestAssured
                 .given()
                 .header("Content-Type", "application/json")
-                .body(person1)
+                .body(person4)
                 .patch(endpoint)
                 .andReturn();
         Assertions.assertEquals(202, response.statusCode());

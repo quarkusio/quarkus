@@ -84,7 +84,6 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
     public SecurityIdentity authenticateBlocking(AuthenticationRequest request) {
         List<IdentityProvider> providers = this.providers.get(request.getClass());
         if (providers == null) {
-            CompletableFuture<SecurityIdentity> cf = new CompletableFuture<>();
             throw new IllegalArgumentException(
                     "No IdentityProviders were registered to handle AuthenticationRequest " + request);
         }

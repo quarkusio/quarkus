@@ -95,7 +95,7 @@ class VertxHttpProcessor {
                 .map(FilterBuildItem::toFilter).collect(Collectors.toList());
 
         recorder.finalizeRouter(beanContainer.getValue(),
-                defaultRoute.map(DefaultRouteBuildItem::getHandler).orElse(null),
+                defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters,
                 launchMode.getLaunchMode(), shutdown, router.getRouter());
 

@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 
@@ -29,8 +30,7 @@ import io.quarkus.undertow.deployment.StaticResourceFilesBuildItem;
 import io.quarkus.vertx.core.deployment.InternalWebVertxBuildItem;
 import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
-import io.vertx.core.Handler;
-import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.Route;
 
 public class ResteasyStandaloneBuildStep {
     private static final Logger log = Logger.getLogger("io.quarkus.resteasy");
@@ -96,7 +96,7 @@ public class ResteasyStandaloneBuildStep {
         }
 
         boolean isVirtual = requireVirtual.isPresent();
-        Handler<RoutingContext> ut = recorder.startResteasy(vertx.getVertx(),
+        Consumer<Route> ut = recorder.startResteasy(vertx.getVertx(),
                 deployment.getRootPath(),
                 shutdown,
                 beanContainer.getValue(),

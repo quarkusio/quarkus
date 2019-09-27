@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.server.common.runtime;
+package io.quarkus.resteasy.common.runtime;
 
 import java.lang.reflect.Constructor;
 import java.util.concurrent.CompletableFuture;

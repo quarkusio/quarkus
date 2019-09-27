@@ -69,6 +69,7 @@ import io.quarkus.restclient.runtime.RestClientBase;
 import io.quarkus.restclient.runtime.RestClientRecorder;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
+import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 
 class RestClientProcessor {
     private static final Logger log = Logger.getLogger(RestClientProcessor.class);
@@ -284,8 +285,11 @@ class RestClientProcessor {
     void registerProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
+            ResteasyInjectionReadyBuildItem injectorFactory,
             RestClientRecorder restClientRecorder) {
-        restClientRecorder.initializeResteasyProviderFactory(jaxrsProvidersToRegisterBuildItem.useBuiltIn(),
+
+        restClientRecorder.initializeResteasyProviderFactory(injectorFactory.getInjectorFactory(),
+                jaxrsProvidersToRegisterBuildItem.useBuiltIn(),
                 jaxrsProvidersToRegisterBuildItem.getProviders(), jaxrsProvidersToRegisterBuildItem.getContributedProviders());
 
         // register the providers for reflection

@@ -12,6 +12,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
 
 import com.oracle.svm.core.annotate.Alias;
+import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
@@ -331,6 +332,33 @@ final class Target_io_netty_util_AbstractReferenceCounted {
     @Alias
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FieldOffset, name = "refCnt")
     private static long REFCNT_FIELD_OFFSET;
+}
+
+// This class is runtime-initialized by NettyProcessor
+final class Holder_io_netty_util_concurrent_ScheduledFutureTask {
+    static final long START_TIME = System.nanoTime();
+}
+
+@TargetClass(className = "io.netty.util.concurrent.ScheduledFutureTask")
+final class Target_io_netty_util_concurrent_ScheduledFutureTask {
+    @Delete
+    public static long START_TIME = 0;
+
+    @Substitute
+    static long nanoTime() {
+        return System.nanoTime() - Holder_io_netty_util_concurrent_ScheduledFutureTask.START_TIME;
+    }
+
+    @Alias
+    public long deadlineNanos() {
+        return 0;
+    }
+
+    @Substitute
+    public long delayNanos(long currentTimeNanos) {
+        return Math.max(0,
+                deadlineNanos() - (currentTimeNanos - Holder_io_netty_util_concurrent_ScheduledFutureTask.START_TIME));
+    }
 }
 
 class NettySubstitutions {

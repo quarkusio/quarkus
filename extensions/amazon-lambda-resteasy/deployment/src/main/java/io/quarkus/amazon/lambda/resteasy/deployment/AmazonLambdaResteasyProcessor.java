@@ -7,7 +7,7 @@ import io.quarkus.amazon.lambda.resteasy.runtime.AmazonLambdaResteasyRecorder;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.resteasy.server.common.deployment.ResteasyInjectionReadyBuildItem;
+import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.resteasy.server.common.deployment.ResteasyServerConfigBuildItem;
 
 public class AmazonLambdaResteasyProcessor {

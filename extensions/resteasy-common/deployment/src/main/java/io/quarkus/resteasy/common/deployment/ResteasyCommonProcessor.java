@@ -1,10 +1,14 @@
 package io.quarkus.resteasy.common.deployment;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
@@ -26,15 +30,21 @@ import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
 import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
 import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
 import org.jboss.resteasy.plugins.providers.StringTextStar;
+import org.jboss.resteasy.spi.InjectorFactory;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ProxyUnwrapperBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.resteasy.common.runtime.ResteasyInjectorFactoryRecorder;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -88,6 +98,19 @@ public class ResteasyCommonProcessor {
             providers.produce(new ResteasyJaxrsProviderBuildItem(GZIPDecodingInterceptor.class.getName()));
             providers.produce(new ResteasyJaxrsProviderBuildItem(GZIPEncodingInterceptor.class.getName()));
         }
+    }
+
+    @Record(STATIC_INIT)
+    @BuildStep
+    ResteasyInjectionReadyBuildItem setupResteasyInjection(List<ProxyUnwrapperBuildItem> proxyUnwrappers,
+            BeanContainerBuildItem beanContainerBuildItem,
+            ResteasyInjectorFactoryRecorder recorder) {
+        List<Function<Object, Object>> unwrappers = new ArrayList<>();
+        for (ProxyUnwrapperBuildItem i : proxyUnwrappers) {
+            unwrappers.add(i.getUnwrapper());
+        }
+        RuntimeValue<InjectorFactory> injectorFactory = recorder.setup(beanContainerBuildItem.getValue(), unwrappers);
+        return new ResteasyInjectionReadyBuildItem(injectorFactory);
     }
 
     @BuildStep

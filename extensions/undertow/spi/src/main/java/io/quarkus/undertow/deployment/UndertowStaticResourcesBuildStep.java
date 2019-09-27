@@ -52,7 +52,9 @@ public class UndertowStaticResourcesBuildStep {
         Set<String> knownFiles = new HashSet<>();
         Set<String> knownDirectories = new HashSet<>();
         for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
-            Path resource = i.getChildPath(META_INF_RESOURCES);
+            final String nameSeparator = i.getArchiveRoot().getFileSystem().getSeparator();
+            Path resource = i.getChildPath("META-INF" + nameSeparator + "resources");
+
             if (resource != null && Files.exists(resource)) {
                 Files.walk(resource).forEach(new Consumer<Path>() {
                     @Override

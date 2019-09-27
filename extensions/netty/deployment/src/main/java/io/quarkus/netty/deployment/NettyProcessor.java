@@ -18,6 +18,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
 import io.quarkus.netty.BossEventLoopGroup;
@@ -163,6 +164,12 @@ class NettyProcessor {
                 .setScope(ApplicationScoped.class)
                 .addQualifier(MainEventLoopGroup.class)
                 .build());
+    }
+
+    @BuildStep
+    public RuntimeReinitializedClassBuildItem reinitScheduledFutureTask() {
+        return new RuntimeReinitializedClassBuildItem(
+                "io.quarkus.netty.runtime.graal.Holder_io_netty_util_concurrent_ScheduledFutureTask");
     }
 
 }

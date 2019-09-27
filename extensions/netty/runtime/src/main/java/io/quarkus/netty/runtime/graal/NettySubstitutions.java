@@ -301,6 +301,33 @@ final class Target_io_netty_util_AbstractReferenceCounted {
     private static long REFCNT_FIELD_OFFSET;
 }
 
+// This class is runtime-initialized by NettyProcessor
+final class Holder_io_netty_util_concurrent_ScheduledFutureTask {
+    static final long START_TIME = System.nanoTime();
+}
+
+@TargetClass(className = "io.netty.util.concurrent.ScheduledFutureTask")
+final class Target_io_netty_util_concurrent_ScheduledFutureTask {
+    @Delete
+    public static long START_TIME = 0;
+
+    @Substitute
+    static long nanoTime() {
+        return System.nanoTime() - Holder_io_netty_util_concurrent_ScheduledFutureTask.START_TIME;
+    }
+
+    @Alias
+    public long deadlineNanos() {
+        return 0;
+    }
+
+    @Substitute
+    public long delayNanos(long currentTimeNanos) {
+        return Math.max(0,
+                deadlineNanos() - (currentTimeNanos - Holder_io_netty_util_concurrent_ScheduledFutureTask.START_TIME));
+    }
+}
+
 class NettySubstitutions {
 
 }

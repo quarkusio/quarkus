@@ -20,19 +20,24 @@ class QuarkusJunitCallbacks {
 
     static void invokeBefores() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         Object testInstance = QuarkusDeployableContainer.testInstance;
-        List<Method> befores = new ArrayList<>();
-        collectCallbacks(testInstance.getClass(), befores, Before.class);
-        for (Method before : befores) {
-            before.invoke(testInstance);
+        // if there is no managed deployment, then we have no test instance because it hasn't been deployed yet
+        if (testInstance != null) {
+            List<Method> befores = new ArrayList<>();
+            collectCallbacks(testInstance.getClass(), befores, Before.class);
+            for (Method before : befores) {
+                before.invoke(testInstance);
+            }
         }
     }
 
     static void invokeAfters() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         Object testInstance = QuarkusDeployableContainer.testInstance;
-        List<Method> afters = new ArrayList<>();
-        collectCallbacks(testInstance.getClass(), afters, After.class);
-        for (Method after : afters) {
-            after.invoke(testInstance);
+        if (testInstance != null) {
+            List<Method> afters = new ArrayList<>();
+            collectCallbacks(testInstance.getClass(), afters, After.class);
+            for (Method after : afters) {
+                after.invoke(testInstance);
+            }
         }
     }
 

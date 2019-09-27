@@ -21,4 +21,13 @@ public @interface RegisterForReflection {
      * If the fields should be registered
      */
     boolean fields() default true;
+
+    /**
+     * Alternative classes that should actually be registered for reflection instead of the current class.
+     *
+     * This allows for classes in 3rd party libraries to be registered without modification or writing an
+     * extension. If this is set then the class it is placed on is not registered for reflection, so this should
+     * generally just be placed on an empty class that is not otherwise used.
+     */
+    Class<?>[] targets() default {};
 }

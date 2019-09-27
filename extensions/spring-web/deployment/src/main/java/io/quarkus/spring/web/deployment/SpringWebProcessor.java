@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.core.MediaType;
@@ -30,15 +31,16 @@ import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor;
-import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
-import io.quarkus.resteasy.server.common.deployment.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
-import io.quarkus.resteasy.server.common.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
-import io.quarkus.resteasy.server.common.deployment.AdditionalJaxRsResourceMethodParamAnnotations;
+import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
+import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
+import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
 import io.quarkus.undertow.deployment.BlacklistedServletContainerInitializerBuildItem;
 import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
 
@@ -53,13 +55,21 @@ public class SpringWebProcessor {
     private static final DotName REST_CONTROLLER_ANNOTATION = DotName
             .createSimple("org.springframework.web.bind.annotation.RestController");
 
-    private static final List<DotName> MAPPING_CLASSES = Arrays.asList(
-            DotName.createSimple("org.springframework.web.bind.annotation.RequestMapping"),
-            DotName.createSimple("org.springframework.web.bind.annotation.GetMapping"),
-            DotName.createSimple("org.springframework.web.bind.annotation.PostMapping"),
-            DotName.createSimple("org.springframework.web.bind.annotation.PutMapping"),
-            DotName.createSimple("org.springframework.web.bind.annotation.DeleteMapping"),
-            DotName.createSimple("org.springframework.web.bind.annotation.PatchMapping"));
+    private static final DotName REQUEST_MAPPING = DotName
+            .createSimple("org.springframework.web.bind.annotation.RequestMapping");
+    private static final DotName PATH_VARIABLE = DotName.createSimple("org.springframework.web.bind.annotation.PathVariable");
+
+    private static final List<DotName> MAPPING_CLASSES;
+
+    static {
+        MAPPING_CLASSES = Arrays.asList(
+                REQUEST_MAPPING,
+                DotName.createSimple("org.springframework.web.bind.annotation.GetMapping"),
+                DotName.createSimple("org.springframework.web.bind.annotation.PostMapping"),
+                DotName.createSimple("org.springframework.web.bind.annotation.PutMapping"),
+                DotName.createSimple("org.springframework.web.bind.annotation.DeleteMapping"),
+                DotName.createSimple("org.springframework.web.bind.annotation.PatchMapping"));
+    }
 
     private static final DotName RESPONSE_STATUS = DotName
             .createSimple("org.springframework.web.bind.annotation.ResponseStatus");
@@ -80,6 +90,11 @@ public class SpringWebProcessor {
             MODEL_AND_VIEW, VIEW, MODEL, HTTP_ENTITY, STRING));
 
     @BuildStep
+    FeatureBuildItem registerFeature() {
+        return new FeatureBuildItem(FeatureBuildItem.SPRING_WEB);
+    }
+
+    @BuildStep
     public BlacklistedServletContainerInitializerBuildItem blacklistSpringServlet() {
         return new BlacklistedServletContainerInitializerBuildItem("org.springframework.web.SpringServletContainerInitializer");
     }
@@ -98,7 +113,7 @@ public class SpringWebProcessor {
     public AdditionalJaxRsResourceMethodParamAnnotations additionalJaxRsResourceMethodParamAnnotations() {
         return new AdditionalJaxRsResourceMethodParamAnnotations(
                 Arrays.asList(DotName.createSimple("org.springframework.web.bind.annotation.RequestParam"),
-                        DotName.createSimple("org.springframework.web.bind.annotation.PathVariable"),
+                        PATH_VARIABLE,
                         DotName.createSimple("org.springframework.web.bind.annotation.RequestBody"),
                         DotName.createSimple("org.springframework.web.bind.annotation.MatrixVariable"),
                         DotName.createSimple("org.springframework.web.bind.annotation.RequestHeader"),
@@ -124,6 +139,8 @@ public class SpringWebProcessor {
             return;
         }
 
+        validate(annotations);
+
         final Set<String> classNames = new HashSet<>();
         for (AnnotationInstance annotation : annotations) {
             classNames.add(annotation.target().asClass().toString());
@@ -135,6 +152,38 @@ public class SpringWebProcessor {
                         SpringResourceBuilder.class.getName() + ":" + String.join(",", classNames)));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, SpringResourceBuilder.class.getName()));
+    }
+
+    private void validate(Collection<AnnotationInstance> restControllerInstances) {
+        for (AnnotationInstance restControllerInstance : restControllerInstances) {
+            ClassInfo restControllerClass = restControllerInstance.target().asClass();
+            if (restControllerClass.classAnnotation(REQUEST_MAPPING) == null) {
+                throw new IllegalArgumentException(
+                        "Currently any class annotated with @RestController also needs to be annotated with @RequestMapping. " +
+                                "Offending class is " + restControllerClass.name());
+            }
+
+            Map<DotName, List<AnnotationInstance>> annotations = restControllerClass.annotations();
+            for (Map.Entry<DotName, List<AnnotationInstance>> entry : annotations.entrySet()) {
+                DotName dotName = entry.getKey();
+                if (PATH_VARIABLE.equals(dotName)) {
+                    List<AnnotationInstance> pathVariableInstances = entry.getValue();
+                    for (AnnotationInstance pathVariableInstance : pathVariableInstances) {
+                        if (pathVariableInstance.target().kind() != AnnotationTarget.Kind.METHOD_PARAMETER) {
+                            continue;
+                        }
+                        if ((pathVariableInstance.value() == null) && (pathVariableInstance.value("name") == null)) {
+                            MethodInfo method = pathVariableInstance.target().asMethodParameter().method();
+                            throw new IllegalArgumentException(
+                                    "Currently method parameters annotated with @PathVariable must supply a value for 'name' or 'value'."
+                                            +
+                                            "Offending method is " + method.declaringClass().name() + "#" + method.name());
+                        }
+
+                    }
+                }
+            }
+        }
     }
 
     @BuildStep
@@ -210,6 +259,8 @@ public class SpringWebProcessor {
             BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
 
+        TypesUtil typesUtil = new TypesUtil(Thread.currentThread().getContextClassLoader());
+
         // Look for all exception classes that are annotated with @ResponseStatus
 
         IndexView index = beanArchiveIndexBuildItem.getIndex();
@@ -219,12 +270,13 @@ public class SpringWebProcessor {
                 generatedExceptionMappers.produce(new GeneratedClassBuildItem(true, name, data));
             }
         };
-        generateMappersForResponseStatusOnException(providersProducer, index, classOutput);
-        generateMappersForExceptionHandlerInControllerAdvice(providersProducer, reflectiveClassProducer, index, classOutput);
+        generateMappersForResponseStatusOnException(providersProducer, index, classOutput, typesUtil);
+        generateMappersForExceptionHandlerInControllerAdvice(providersProducer, reflectiveClassProducer, index, classOutput,
+                typesUtil);
     }
 
     private void generateMappersForResponseStatusOnException(BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,
-            IndexView index, ClassOutput classOutput) {
+            IndexView index, ClassOutput classOutput, TypesUtil typesUtil) {
         Collection<AnnotationInstance> responseStatusInstances = index
                 .getAnnotations(RESPONSE_STATUS);
 
@@ -236,7 +288,7 @@ public class SpringWebProcessor {
             if (AnnotationTarget.Kind.CLASS != instance.target().kind()) {
                 continue;
             }
-            if (!isException(instance.target().asClass(), index)) {
+            if (!typesUtil.isAssignable(Exception.class, instance.target().asClass().name())) {
                 continue;
             }
 
@@ -247,7 +299,8 @@ public class SpringWebProcessor {
 
     private void generateMappersForExceptionHandlerInControllerAdvice(
             BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer, IndexView index, ClassOutput classOutput) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer, IndexView index, ClassOutput classOutput,
+            TypesUtil typesUtil) {
 
         AnnotationInstance controllerAdviceInstance = getSingleControllerAdviceInstance(index);
         if (controllerAdviceInstance == null) {
@@ -283,43 +336,15 @@ public class SpringWebProcessor {
                         "void methods annotated with @ExceptionHandler must also be annotated with @ResponseStatus");
             }
 
-            List<Type> parameters = method.parameters();
-            boolean parametersSupported = true;
-            if (parameters.size() > 1) {
-                parametersSupported = false;
-            } else if (parameters.size() == 1) {
-                parametersSupported = isException(index.getClassByName(parameters.get(0).name()), index);
-            }
-
-            if (!parametersSupported) {
-                throw new IllegalStateException(
-                        "The only supported (optional) parameter type method for methods annotated with @ExceptionHandler is the exception type");
-            }
-
+            // we need to generate one JAX-RS ExceptionMapper per Exception type
             Type[] handledExceptionTypes = exceptionHandlerInstance.value().asClassArray();
             for (Type handledExceptionType : handledExceptionTypes) {
                 String name = new ControllerAdviceAbstractExceptionMapperGenerator(method, handledExceptionType.name(),
-                        classOutput, index).generate();
+                        classOutput, typesUtil).generate();
                 providersProducer.produce(new ResteasyJaxrsProviderBuildItem(name));
             }
 
         }
-    }
-
-    private boolean isException(ClassInfo classInfo, IndexView index) {
-        if (classInfo == null) {
-            return false;
-        }
-
-        if (OBJECT.equals(classInfo.name())) {
-            return false;
-        }
-
-        if (EXCEPTION.equals(classInfo.superName()) || RUNTIME_EXCEPTION.equals(classInfo.superName())) {
-            return true;
-        }
-
-        return isException(index.getClassByName(classInfo.superName()), index);
     }
 
     private AnnotationInstance getSingleControllerAdviceInstance(IndexView index) {

@@ -25,6 +25,8 @@
         <module>jsonb</module>
 
         <!-- HTTP -->
+        <module>vertx-core</module>
+        <module>vertx-http</module>
         <module>undertow</module>
         <module>undertow-websockets</module>
 
@@ -84,10 +86,11 @@
         <module>spring-data-jpa</module>
 
         <!-- Security -->
+        <module>security</module>
         <module>elytron-security</module>
         <module>elytron-security-oauth2</module>
         <module>smallrye-jwt</module>
-        <module>keycloak</module>
+        <module>vertx-keycloak</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>
@@ -132,6 +135,7 @@
                     <quarkusVersion>@{project.version}</quarkusVersion>
                     <runtimeBomPath>../bom/runtime/pom.xml</runtimeBomPath>
                     <deploymentBomPath>../bom/deployment/pom.xml</deploymentBomPath>
+                    <itestParentPath>../integration-tests/pom.xml</itestParentPath>
                 </configuration>
             </plugin>
         </plugins>

@@ -1,5 +1,7 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
+
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 import io.quarkus.arc.processor.InjectionTargetInfo.TargetKind;
 import java.util.ArrayList;
@@ -67,12 +69,18 @@ final class Beans {
                 isAlternative = true;
                 continue;
             }
+            if (annotation.name()
+                    .equals(DotNames.ALTERNATIVE_PRIORITY)) {
+                isAlternative = true;
+                alternativePriority = annotation.value().asInt();
+                continue;
+            }
             if (DotNames.DEFAULT_BEAN.equals(annotation.name())) {
                 isDefaultBean = true;
                 continue;
             }
             if (annotation.name()
-                    .equals(DotNames.PRIORITY)) {
+                    .equals(DotNames.PRIORITY) && alternativePriority == null) {
                 alternativePriority = annotation.value()
                         .asInt();
                 continue;
@@ -111,6 +119,13 @@ final class Beans {
         }
         if (isAlternative && alternativePriority == null) {
             alternativePriority = initStereotypeAlternativePriority(stereotypes);
+
+            // after all attempts, priority is still null, bean will be ignored
+            if (alternativePriority == null) {
+                throw new IllegalStateException("Bean defined via class " + beanClass.name()
+                        + " is declared as an @Alternative, " +
+                        "but has no @Priority. Either declare a @Priority or leverage @io.quarkus.arc.AlernativePriority annotation.");
+            }
         }
 
         BeanInfo bean = new BeanInfo(beanClass, beanDeployment, scope, types, qualifiers,
@@ -122,7 +137,7 @@ final class Beans {
     private static ScopeInfo inheritScope(ClassInfo beanClass, BeanDeployment beanDeployment) {
         DotName superClassName = beanClass.superName();
         while (!superClassName.equals(DotNames.OBJECT)) {
-            ClassInfo classFromIndex = beanDeployment.getIndex().getClassByName(superClassName);
+            ClassInfo classFromIndex = getClassByName(beanDeployment.getIndex(), superClassName);
             if (classFromIndex == null) {
                 // class not in index
                 LOGGER.warnf("Unable to determine scope for bean %s using inheritance because its super class " +
@@ -183,6 +198,11 @@ final class Beans {
                 isAlternative = true;
                 continue;
             }
+            if (DotNames.ALTERNATIVE_PRIORITY.equals(annotation.name())) {
+                isAlternative = true;
+                alternativePriority = annotation.value().asInt();
+                continue;
+            }
             if (DotNames.DEFAULT_BEAN.equals(annotation.name())) {
                 isDefaultBean = true;
                 continue;
@@ -214,7 +234,7 @@ final class Beans {
         if (name == null) {
             name = initStereotypeName(stereotypes, producerMethod);
         }
-        if (isAlternative) {
+        if (isAlternative && alternativePriority == null) {
             alternativePriority = declaringBean.getAlternativePriority();
             if (alternativePriority == null) {
                 // Declaring bean itself does not have to be an alternative and can only have @Priority
@@ -224,6 +244,13 @@ final class Beans {
             }
             if (alternativePriority == null) {
                 alternativePriority = initStereotypeAlternativePriority(stereotypes);
+            }
+            // after all attempts, priority is still null
+            if (alternativePriority == null) {
+                throw new IllegalStateException("Declaring bean " + declaringBean +
+                        " contains a producer method " + producerMethod + " declaring an @Alternative, " +
+                        "but without @Priority. Either make sure @Priority annotation gets inherited, or replace" +
+                        "@Alternative annotation with @io.quarkus.arc.AlternativePriority annotation.");
             }
         }
 
@@ -265,6 +292,15 @@ final class Beans {
                 }
                 continue;
             }
+            if (DotNames.ALTERNATIVE.equals(annotation.name())) {
+                isAlternative = true;
+                continue;
+            }
+            if (DotNames.ALTERNATIVE_PRIORITY.equals(annotation.name())) {
+                isAlternative = true;
+                alternativePriority = annotation.value().asInt();
+                continue;
+            }
             ScopeInfo scopeAnnotation = beanDeployment.getScope(annotation.name());
             if (scopeAnnotation != null) {
                 scopes.add(scopeAnnotation);
@@ -296,7 +332,7 @@ final class Beans {
         if (name == null) {
             name = initStereotypeName(stereotypes, producerField);
         }
-        if (isAlternative) {
+        if (isAlternative && alternativePriority == null) {
             alternativePriority = declaringBean.getAlternativePriority();
             if (alternativePriority == null) {
                 // Declaring bean itself does not have to be an alternative and can only have @Priority
@@ -306,6 +342,14 @@ final class Beans {
             }
             if (alternativePriority == null) {
                 alternativePriority = initStereotypeAlternativePriority(stereotypes);
+            }
+            // after all attempts, priority is still null
+            if (alternativePriority == null) {
+                throw new IllegalStateException("Declaring bean " + declaringBean +
+                        " contains a producer field " + producerField + " declaring an @Alternative, " +
+                        "but without @Priority. Either make sure @Priority annotation gets inherited, or replace " +
+                        "@Alternative annotation with @io.quarkus.arc.AlternativePriority annotation.");
+
             }
         }
 
@@ -491,8 +535,11 @@ final class Beans {
     }
 
     private static Integer getAlternativePriority(BeanInfo bean) {
-        return bean.getDeclaringBean() != null ? bean.getDeclaringBean().getAlternativePriority()
-                : bean.getAlternativePriority();
+        Integer beanPriority = bean.getAlternativePriority();
+        if (beanPriority == null && bean.getDeclaringBean() != null) {
+            beanPriority = bean.getDeclaringBean().getAlternativePriority();
+        }
+        return beanPriority;
     }
 
     private static int compareAlternativeBeans(BeanInfo bean1, BeanInfo bean2) {
@@ -571,7 +618,7 @@ final class Beans {
         }
         if (type.kind() == Type.Kind.CLASS) {
             // Index the class additionally if needed
-            beanDeployment.getIndex().getClassByName(type.name());
+            getClassByName(beanDeployment.getIndex(), type.name());
         } else {
             analyzeType(type, beanDeployment);
         }
@@ -584,7 +631,7 @@ final class Beans {
             }
         }
         if (clazz.superName() != null) {
-            ClassInfo superClass = index.getClassByName(clazz.superName());
+            ClassInfo superClass = getClassByName(index, clazz.superName());
             if (superClass != null) {
                 collectCallbacks(superClass, callbacks, annotation, index);
             }

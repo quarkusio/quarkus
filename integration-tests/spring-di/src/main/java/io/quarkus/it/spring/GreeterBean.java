@@ -18,11 +18,11 @@ public class GreeterBean {
     @Qualifier("cap")
     StringFunction capitalizerStringFunction;
 
-    @Value("${greeting.suffix:!}")
-    String suffix;
+    final String suffix;
 
-    public GreeterBean(MessageProducer messageProducer) {
+    public GreeterBean(MessageProducer messageProducer, @Value("${greeting.suffix:!}") String suffix) {
         this.messageProducer = messageProducer;
+        this.suffix = suffix;
     }
 
     public String greet(String name) {

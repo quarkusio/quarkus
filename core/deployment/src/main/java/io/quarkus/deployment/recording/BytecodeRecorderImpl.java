@@ -3,7 +3,6 @@ package io.quarkus.deployment.recording;
 import static io.quarkus.gizmo.MethodDescriptor.ofConstructor;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
-import java.beans.PropertyDescriptor;
 import java.io.Closeable;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -22,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -30,6 +30,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -45,6 +47,7 @@ import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.proxy.ProxyConfiguration;
 import io.quarkus.deployment.proxy.ProxyFactory;
 import io.quarkus.deployment.recording.AnnotationProxyProvider.AnnotationProxy;
+import io.quarkus.deployment.recording.PropertyUtils.Property;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
@@ -119,7 +122,6 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     private int deferredParameterCount = 0;
     private boolean loadComplete;
-    private PropertyUtils introspection = new PropertyUtils();
 
     public BytecodeRecorderImpl(ClassLoader classLoader, boolean staticInit, String className) {
         this.classLoader = classLoader;
@@ -156,6 +158,28 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     @Override
     public Class<?> classProxy(String name) {
+        // if it's a primitive there is no need to create a proxy (and doing so would result in errors when the value is used)
+        switch (name) {
+            case "boolean":
+                return boolean.class;
+            case "byte":
+                return byte.class;
+            case "short":
+                return short.class;
+            case "int":
+                return int.class;
+            case "long":
+                return long.class;
+            case "float":
+                return float.class;
+            case "double":
+                return double.class;
+            case "char":
+                return char.class;
+            case "void":
+                return void.class;
+        }
+
         ProxyFactory<Object> factory = new ProxyFactory<>(new ProxyConfiguration<Object>()
                 .setSuperClass(Object.class)
                 .setClassLoader(classLoader)
@@ -294,140 +318,137 @@ public class BytecodeRecorderImpl implements RecorderContext {
     }
 
     public void writeBytecode(ClassOutput classOutput) {
-        try {
-            ClassCreator file = ClassCreator.builder().classOutput(ClassOutput.gizmoAdaptor(classOutput, true))
-                    .className(className)
-                    .superClass(Object.class).interfaces(StartupTask.class).build();
-            MethodCreator mainMethod = file.getMethodCreator("deploy", void.class, StartupContext.class);
-            //now create instances of all the classes we invoke on and store them in variables as well
-            Map<Class, DeferredArrayStoreParameter> classInstanceVariables = new HashMap<>();
+        ClassCreator file = ClassCreator.builder().classOutput(ClassOutput.gizmoAdaptor(classOutput, true))
+                .className(className)
+                .superClass(Object.class).interfaces(StartupTask.class).build();
+        MethodCreator mainMethod = file.getMethodCreator("deploy", void.class, StartupContext.class);
+        //now create instances of all the classes we invoke on and store them in variables as well
+        Map<Class, DeferredArrayStoreParameter> classInstanceVariables = new HashMap<>();
 
-            Map<Object, DeferredParameter> parameterMap = new IdentityHashMap<>();
+        Map<Object, DeferredParameter> parameterMap = new IdentityHashMap<>();
 
-            //THIS IS FAIRLY COMPLEX
-            //the simple approach of just writing out the serialized invocations and method parameters as they are needed
-            //runs into trouble if you have a moderate number of items (in practice we seem to hit it around the 1k item
-            //mark, so apps with 1k entities or endpoints will fail)
+        //THIS IS FAIRLY COMPLEX
+        //the simple approach of just writing out the serialized invocations and method parameters as they are needed
+        //runs into trouble if you have a moderate number of items (in practice we seem to hit it around the 1k item
+        //mark, so apps with 1k entities or endpoints will fail)
 
-            //to get around this we break the code up into multiple methods, however this is not as simple as it sounds
-            //because it is not just the number of invocations that can be a problem but also the size of collections
-            //we need to account for both collections with a large number or items, and recorders with a large
-            //number of invocations.
+        //to get around this we break the code up into multiple methods, however this is not as simple as it sounds
+        //because it is not just the number of invocations that can be a problem but also the size of collections
+        //we need to account for both collections with a large number or items, and recorders with a large
+        //number of invocations.
 
-            //we solve this by breaking up all serialized state into a global array, that is passed between methods
-            //and non-primitive that is serialized will be stored into this array in a specific index, which allows
-            //for access from any method without needing to track ResultHandle's between methods and attempt to
-            //calculate which methods require which data
+        //we solve this by breaking up all serialized state into a global array, that is passed between methods
+        //and non-primitive that is serialized will be stored into this array in a specific index, which allows
+        //for access from any method without needing to track ResultHandle's between methods and attempt to
+        //calculate which methods require which data
 
-            //note that this does not necessarily give the most efficient bytecode, however it does seem to be the simplest
-            //implementation wise.
+        //note that this does not necessarily give the most efficient bytecode, however it does seem to be the simplest
+        //implementation wise.
 
-            //the first step is to create list of all these values that need to be placed into the array. We do that
-            //here, as well as creating the recorder instances (and also preparing them to be stored in the array)
-            for (BytecodeInstruction set : storedMethodCalls) {
-                if (set instanceof StoredMethodCall) {
-                    StoredMethodCall call = (StoredMethodCall) set;
-                    if (!classInstanceVariables.containsKey(call.theClass)) {
-                        //this is a new recorder, create a deffered value that will allocate an array position for
-                        //the recorder
-                        DeferredArrayStoreParameter value = new DeferredArrayStoreParameter() {
-                            @Override
-                            ResultHandle createValue(MethodContext context, MethodCreator method, ResultHandle array) {
-                                return method.newInstance(ofConstructor(call.theClass));
-                            }
-                        };
-                        classInstanceVariables.put(call.theClass, value);
-                    }
-                    //for every parameter that was passed into the method we create a deferred value
-                    //this will allocate a space in the array, so the value can be deserialized correctly
-                    //even if the code for an invocation is split over several methods
-                    for (int i = 0; i < call.parameters.length; ++i) {
-                        call.deferredParameters[i] = loadObjectInstance(call.parameters[i], parameterMap,
-                                call.method.getParameterTypes()[i]);
-                    }
+        //the first step is to create list of all these values that need to be placed into the array. We do that
+        //here, as well as creating the recorder instances (and also preparing them to be stored in the array)
+        for (BytecodeInstruction set : storedMethodCalls) {
+            if (set instanceof StoredMethodCall) {
+                StoredMethodCall call = (StoredMethodCall) set;
+                if (!classInstanceVariables.containsKey(call.theClass)) {
+                    //this is a new recorder, create a deffered value that will allocate an array position for
+                    //the recorder
+                    DeferredArrayStoreParameter value = new DeferredArrayStoreParameter() {
+                        @Override
+                        ResultHandle createValue(MethodContext context, MethodCreator method, ResultHandle array) {
+                            return method.newInstance(ofConstructor(call.theClass));
+                        }
+                    };
+                    classInstanceVariables.put(call.theClass, value);
+                }
+                //for every parameter that was passed into the method we create a deferred value
+                //this will allocate a space in the array, so the value can be deserialized correctly
+                //even if the code for an invocation is split over several methods
+                for (int i = 0; i < call.parameters.length; ++i) {
+                    call.deferredParameters[i] = loadObjectInstance(call.parameters[i], parameterMap,
+                            call.method.getParameterTypes()[i]);
                 }
             }
-
-            //when this is true it is no longer possible to allocate items in the array. this is a guard against programmer error
-
-            loadComplete = true;
-            //now we know know many items we have, create the array
-            ResultHandle array = mainMethod.newArray(Object.class, mainMethod.load(deferredParameterCount));
-
-            //this context manages the creation of new methods
-            //it tracks the number of instruction groups and when they hit a threshold it
-            //allocates a new method
-            SplitMethodContext context = new SplitMethodContext(array, mainMethod, file);
-
-            //now we invoke the actual method call
-            for (BytecodeInstruction set : storedMethodCalls) {
-
-                if (set instanceof StoredMethodCall) {
-                    //this instruction is a recorder invocation
-                    StoredMethodCall call = (StoredMethodCall) set;
-                    for (int i = 0; i < call.parameters.length; ++i) {
-                        //we need to doPrepare the loading before the write instruction call
-                        //this actually writes out the code to load the methods calls parameters
-                        //this code can end up in a different method to the actual call itself (or even multiple methods)
-                        //so this has to be outside the writeInstruction call, which will naturally group everything inside
-                        //it into a single method
-                        call.deferredParameters[i].prepare(context);
-                    }
-                    final DeferredArrayStoreParameter recorderInstance = classInstanceVariables.get(call.theClass);
-                    recorderInstance.prepare(context);
-                    //write the method invocation. Everything in the instruction group is scoped to a single method
-                    context.writeInstruction(new InstructionGroup() {
-                        @Override
-                        public void write(MethodContext context, MethodCreator method, ResultHandle array) {
-                            ResultHandle[] params = new ResultHandle[call.parameters.length];
-
-                            //now we actually load the arguments
-                            //this will retreive them from the array and create a ResultHandle
-                            //(or possible re-use an existing ResultHandler if there is already one for the current method)
-                            for (int i = 0; i < call.parameters.length; ++i) {
-                                params[i] = context.loadDeferred(call.deferredParameters[i]);
-                            }
-                            //do the invocation
-                            ResultHandle callResult = method.invokeVirtualMethod(ofMethod(call.method.getDeclaringClass(),
-                                    call.method.getName(), call.method.getReturnType(), call.method.getParameterTypes()),
-                                    context.loadDeferred(recorderInstance), params);
-
-                            if (call.method.getReturnType() != void.class) {
-                                if (call.returnedProxy != null) {
-                                    //if the invocation had a return valye put it in the startup context
-                                    //to make it availible to other recorders (and also this recorder)
-                                    method.invokeVirtualMethod(
-                                            ofMethod(StartupContext.class, "putValue", void.class, String.class, Object.class),
-                                            method.getMethodParam(0), method.load(call.proxyId), callResult);
-                                }
-                            }
-                        }
-                    });
-                } else if (set instanceof NewInstance) {
-                    context.writeInstruction(new InstructionGroup() {
-                        @Override
-                        public void write(MethodContext context, MethodCreator method, ResultHandle array) {
-                            //this instruction creates a new instance
-                            //it just goes in the startup context
-                            NewInstance ni = (NewInstance) set;
-                            ResultHandle val = method.newInstance(ofConstructor(ni.theClass));
-                            ResultHandle rv = method.newInstance(ofConstructor(RuntimeValue.class, Object.class), val);
-                            method.invokeVirtualMethod(
-                                    ofMethod(StartupContext.class, "putValue", void.class, String.class, Object.class),
-                                    method.getMethodParam(0), method.load(ni.proxyId), rv);
-                        }
-                    });
-                } else {
-                    throw new RuntimeException("unknown type " + set);
-                }
-
-            }
-            context.close();
-            mainMethod.returnValue(null);
-            file.close();
-        } finally {
-            introspection.close();
         }
+
+        //when this is true it is no longer possible to allocate items in the array. this is a guard against programmer error
+
+        loadComplete = true;
+        //now we know know many items we have, create the array
+        ResultHandle array = mainMethod.newArray(Object.class, mainMethod.load(deferredParameterCount));
+
+        //this context manages the creation of new methods
+        //it tracks the number of instruction groups and when they hit a threshold it
+        //allocates a new method
+        SplitMethodContext context = new SplitMethodContext(array, mainMethod, file);
+
+        //now we invoke the actual method call
+        for (BytecodeInstruction set : storedMethodCalls) {
+
+            if (set instanceof StoredMethodCall) {
+                //this instruction is a recorder invocation
+                StoredMethodCall call = (StoredMethodCall) set;
+                for (int i = 0; i < call.parameters.length; ++i) {
+                    //we need to doPrepare the loading before the write instruction call
+                    //this actually writes out the code to load the methods calls parameters
+                    //this code can end up in a different method to the actual call itself (or even multiple methods)
+                    //so this has to be outside the writeInstruction call, which will naturally group everything inside
+                    //it into a single method
+                    call.deferredParameters[i].prepare(context);
+                }
+                final DeferredArrayStoreParameter recorderInstance = classInstanceVariables.get(call.theClass);
+                recorderInstance.prepare(context);
+                //write the method invocation. Everything in the instruction group is scoped to a single method
+                context.writeInstruction(new InstructionGroup() {
+                    @Override
+                    public void write(MethodContext context, MethodCreator method, ResultHandle array) {
+                        ResultHandle[] params = new ResultHandle[call.parameters.length];
+
+                        //now we actually load the arguments
+                        //this will retreive them from the array and create a ResultHandle
+                        //(or possible re-use an existing ResultHandler if there is already one for the current method)
+                        for (int i = 0; i < call.parameters.length; ++i) {
+                            params[i] = context.loadDeferred(call.deferredParameters[i]);
+                        }
+                        //do the invocation
+                        ResultHandle callResult = method.invokeVirtualMethod(ofMethod(call.method.getDeclaringClass(),
+                                call.method.getName(), call.method.getReturnType(), call.method.getParameterTypes()),
+                                context.loadDeferred(recorderInstance), params);
+
+                        if (call.method.getReturnType() != void.class) {
+                            if (call.returnedProxy != null) {
+                                //if the invocation had a return valye put it in the startup context
+                                //to make it availible to other recorders (and also this recorder)
+                                method.invokeVirtualMethod(
+                                        ofMethod(StartupContext.class, "putValue", void.class, String.class, Object.class),
+                                        method.getMethodParam(0), method.load(call.proxyId), callResult);
+                            }
+                        }
+                    }
+                });
+            } else if (set instanceof NewInstance) {
+                context.writeInstruction(new InstructionGroup() {
+                    @Override
+                    public void write(MethodContext context, MethodCreator method, ResultHandle array) {
+                        //this instruction creates a new instance
+                        //it just goes in the startup context
+                        NewInstance ni = (NewInstance) set;
+                        ResultHandle val = method.newInstance(ofConstructor(ni.theClass));
+                        ResultHandle rv = method.newInstance(ofConstructor(RuntimeValue.class, Object.class), val);
+                        method.invokeVirtualMethod(
+                                ofMethod(StartupContext.class, "putValue", void.class, String.class, Object.class),
+                                method.getMethodParam(0), method.load(ni.proxyId), rv);
+                    }
+                });
+            } else {
+                throw new RuntimeException("unknown type " + set);
+            }
+
+        }
+        context.close();
+        mainMethod.returnValue(null);
+        file.close();
+
     }
 
     /**
@@ -779,7 +800,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     return out;
                 }
             };
-        } else if (AnnotationProxy.class.isAssignableFrom(expectedType)) {
+        } else if (param instanceof AnnotationProxy) {
             // new com.foo.MyAnnotation_Proxy_AnnotationLiteral("foo")
             AnnotationProxy annotationProxy = (AnnotationProxy) param;
             List<MethodInfo> constructorParams = annotationProxy.getAnnotationClass().methods().stream()
@@ -1010,8 +1031,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
             }
         }
         Set<String> handledProperties = new HashSet<>();
-        PropertyDescriptor[] desc = introspection.getPropertyDescriptors(param);
-        for (PropertyDescriptor i : desc) {
+        Property[] desc = PropertyUtils.getPropertyDescriptors(param);
+        for (Property i : desc) {
             if (i.getReadMethod() != null && i.getWriteMethod() == null) {
                 try {
                     //read only prop, we may still be able to do stuff with it if it is a collection
@@ -1020,7 +1041,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         //we assume we can just add to the connection
                         handledProperties.add(i.getName());
 
-                        Collection propertyValue = (Collection) introspection.getProperty(param, i.getName());
+                        Collection propertyValue = (Collection) i.read(param);
                         if (!propertyValue.isEmpty()) {
 
                             List<DeferredParameter> params = new ArrayList<>();
@@ -1059,8 +1080,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         //similar to how collection works above
 
                         handledProperties.add(i.getName());
-                        Map<Object, Object> propertyValue = (Map<Object, Object>) introspection.getProperty(param,
-                                i.getName());
+                        Map<Object, Object> propertyValue = (Map<Object, Object>) i.read(param);
                         if (!propertyValue.isEmpty()) {
                             Map<DeferredParameter, DeferredParameter> def = new LinkedHashMap<>();
                             for (Map.Entry<Object, Object> entry : propertyValue.entrySet()) {
@@ -1101,7 +1121,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 //normal javabean property
                 try {
                     handledProperties.add(i.getName());
-                    Object propertyValue = introspection.getProperty(param, i.getName());
+                    Object propertyValue = i.read(param);
                     if (propertyValue == null) {
                         //we just assume properties are null by default
                         //TODO: is this a valid assumption? Should we check this by creating an instance?
@@ -1130,7 +1150,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         @Override
                         public void handle(MethodContext context, MethodCreator method, DeferredArrayStoreParameter out) {
                             method.invokeVirtualMethod(
-                                    ofMethod(param.getClass(), i.getWriteMethod().getName(), void.class,
+                                    ofMethod(param.getClass(), i.getWriteMethod().getName(), i.getWriteMethod().getReturnType(),
                                             finalPropertyType),
                                     context.loadDeferred(out),
                                     context.loadDeferred(val));
@@ -1214,12 +1234,16 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         out = method.newInstance(ofConstructor(param.getClass()));
                     } catch (NoSuchMethodException e) {
                         //fallback for collection types, such as unmodifiableMap
-                        if (expectedType == Map.class) {
+                        if (SortedMap.class.isAssignableFrom(expectedType)) {
+                            out = method.newInstance(ofConstructor(TreeMap.class));
+                        } else if (Map.class.isAssignableFrom(expectedType)) {
                             out = method.newInstance(ofConstructor(LinkedHashMap.class));
-                        } else if (expectedType == List.class) {
+                        } else if (List.class.isAssignableFrom(expectedType)) {
                             out = method.newInstance(ofConstructor(ArrayList.class));
-                        } else if (expectedType == Set.class) {
-                            out = method.newInstance(ofConstructor(Set.class));
+                        } else if (SortedSet.class.isAssignableFrom(expectedType)) {
+                            out = method.newInstance(ofConstructor(TreeSet.class));
+                        } else if (Set.class.isAssignableFrom(expectedType)) {
+                            out = method.newInstance(ofConstructor(LinkedHashSet.class));
                         } else {
                             throw new RuntimeException("Unable to serialize objects of type " + param.getClass()
                                     + " to bytecode as it has no default constructor");

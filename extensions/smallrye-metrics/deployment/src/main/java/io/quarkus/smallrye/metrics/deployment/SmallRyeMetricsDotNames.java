@@ -34,4 +34,10 @@ public class SmallRyeMetricsDotNames {
     public static boolean isMetricAnnotation(AnnotationInstance instance) {
         return METRICS_ANNOTATIONS.contains(instance.name());
     }
+
+    // these are needed for determining whether a class is a REST endpoint
+    public static final DotName JAXRS_PATH = DotName.createSimple("javax.ws.rs.Path");
+    public static final DotName REST_CONTROLLER = DotName
+            .createSimple("org.springframework.web.bind.annotation.RestController");
+
 }

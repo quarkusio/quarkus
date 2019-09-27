@@ -23,6 +23,7 @@ import java.util.regex.Matcher;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
@@ -103,7 +104,7 @@ final public class GenerateExtensionConfigurationDoc {
     }
 
     /**
-     * Write extension configuration AsciiDoc format in `{root}/docs/src/main/asciidoc/generated`
+     * Write extension configuration AsciiDoc format in `{root}/docs/target/asciidoc/generated`
      */
     public void writeExtensionConfiguration(Properties javaDocProperties) throws IOException {
         final Map<String, List<ConfigItem>> extensionsConfigurations = findExtensionsConfigurationItems(javaDocProperties);
@@ -155,9 +156,11 @@ final public class GenerateExtensionConfigurationDoc {
         }
 
         final Properties allExtensionGeneratedDocs = new Properties();
-        try (BufferedReader bufferedReader = Files.newBufferedReader(Constants.ALL_CR_GENERATED_DOC.toPath(),
-                StandardCharsets.UTF_8)) {
-            allExtensionGeneratedDocs.load(bufferedReader);
+        if (Constants.ALL_CR_GENERATED_DOC.exists()) {
+            try (BufferedReader bufferedReader = Files.newBufferedReader(Constants.ALL_CR_GENERATED_DOC.toPath(),
+                    StandardCharsets.UTF_8)) {
+                allExtensionGeneratedDocs.load(bufferedReader);
+            }
         }
 
         if (!inMemoryConfigurationItems.isEmpty()) {
@@ -289,6 +292,7 @@ final public class GenerateExtensionConfigurationDoc {
             String defaultValue = Constants.NO_DEFAULT;
             TypeMirror typeMirror = enclosedElement.asType();
             String type = typeMirror.toString();
+            List<String> acceptedValues = null;
             Element configGroup = configGroups.get(type);
             boolean isConfigGroup = configGroup != null;
             String fieldName = enclosedElement.getSimpleName().toString();
@@ -342,6 +346,7 @@ final public class GenerateExtensionConfigurationDoc {
                     List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
 
                     if (!typeArguments.isEmpty()) {
+                        // FIXME: this is super dodgy: we should check the type!!
                         if (typeArguments.size() == 2) {
                             final String mapKey = String.format(NAMED_MAP_CONFIG_ITEM_FORMAT, hyphenate(fieldName));
                             type = typeArguments.get(1).toString();
@@ -356,12 +361,19 @@ final public class GenerateExtensionConfigurationDoc {
                                 configItem.setWithinAMap(true);
                             }
                         } else {
-                            type = typeArguments.get(0).toString();
+                            // FIXME: I assume this is for Optional<T>
+                            TypeMirror realTypeMirror = typeArguments.get(0);
+                            type = simpleTypeToString(realTypeMirror);
+
+                            if (isEnumType(realTypeMirror)) {
+                                acceptedValues = extractEnumValues(realTypeMirror);
+                            }
                         }
                     } else {
-                        final String knownGenericType = getKnownGenericType(declaredType);
-                        if (knownGenericType != null) {
-                            type = knownGenericType;
+                        type = simpleTypeToString(declaredType);
+
+                        if (isEnumType(declaredType)) {
+                            acceptedValues = extractEnumValues(declaredType);
                         }
                     }
                 }
@@ -374,10 +386,38 @@ final public class GenerateExtensionConfigurationDoc {
                 configItem.setConfigPhase(configPhase);
                 configItem.setKey(name);
                 configItem.setType(type);
+                configItem.setAcceptedValues(acceptedValues);
                 configItems.add(configItem);
                 configItem.setJavaDocSiteLink(getJavaDocSiteLink(type));
             }
         }
+    }
+
+    private String simpleTypeToString(TypeMirror typeMirror) {
+        if (typeMirror.getKind().isPrimitive()) {
+            return typeMirror.toString();
+        }
+
+        final String knownGenericType = getKnownGenericType((DeclaredType) typeMirror);
+        return knownGenericType != null ? knownGenericType : typeMirror.toString();
+    }
+
+    private List<String> extractEnumValues(TypeMirror realTypeMirror) {
+        Element declaredTypeElement = ((DeclaredType) realTypeMirror).asElement();
+        List<String> acceptedValues = new ArrayList<>();
+
+        for (Element field : declaredTypeElement.getEnclosedElements()) {
+            if (field.getKind() == ElementKind.ENUM_CONSTANT) {
+                acceptedValues.add(DocGeneratorUtil.hyphenateEnumValue(field.getSimpleName().toString()));
+            }
+        }
+
+        return acceptedValues;
+    }
+
+    private boolean isEnumType(TypeMirror realTypeMirror) {
+        return realTypeMirror instanceof DeclaredType
+                && ((DeclaredType) realTypeMirror).asElement().getKind() == ElementKind.ENUM;
     }
 
     @Override

@@ -5,7 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.resolver.ResolverSetupCleanup;
 import io.quarkus.bootstrap.resolver.TsArtifact;

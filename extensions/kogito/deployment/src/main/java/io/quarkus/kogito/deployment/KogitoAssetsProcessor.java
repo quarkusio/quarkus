@@ -292,7 +292,8 @@ public class KogitoAssetsProcessor {
         if (generateProcesses) {
 
             appGen.withGenerator(ProcessCodegen.ofPath(projectPath))
-                    .withPersistence(usePersistence);
+                    .withPersistence(usePersistence)
+                    .withClassLoader(Thread.currentThread().getContextClassLoader());
         }
 
         return appGen;

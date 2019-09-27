@@ -5,9 +5,9 @@ import static io.quarkus.runtime.util.StringUtil.join;
 import static io.quarkus.runtime.util.StringUtil.lowerCase;
 import static io.quarkus.runtime.util.StringUtil.lowerCaseFirst;
 import static io.quarkus.runtime.util.StringUtil.withoutSuffix;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests of the {@linkplain StringUtil} methods
@@ -20,7 +20,7 @@ public class StringUtilTestCase {
     @Test
     public void testHyphenateUppercaseBegin() {
         String hyphenated = StringUtil.hyphenate("SBVbt");
-        Assert.assertEquals("sb-vbt", hyphenated);
+        assertEquals("sb-vbt", hyphenated);
     }
 
     /**
@@ -29,7 +29,7 @@ public class StringUtilTestCase {
     @Test
     public void testHyphenateAllUppercase() {
         String hyphenated = StringUtil.hyphenate("SHOUT");
-        Assert.assertEquals("shout", hyphenated);
+        assertEquals("shout", hyphenated);
     }
 
     /**
@@ -38,7 +38,7 @@ public class StringUtilTestCase {
     @Test
     public void testHyphenateUppercaseMiddle() {
         String hyphenated = StringUtil.hyphenate("btSBVsuffix");
-        Assert.assertEquals("bt-sb-vsuffix", hyphenated);
+        assertEquals("bt-sb-vsuffix", hyphenated);
     }
 
     /**
@@ -47,7 +47,7 @@ public class StringUtilTestCase {
     @Test
     public void testHyphenateUppercaseEnd() {
         String hyphenated = StringUtil.hyphenate("btSBV");
-        Assert.assertEquals("bt-sbv", hyphenated);
+        assertEquals("bt-sbv", hyphenated);
     }
 
     /**
@@ -56,7 +56,7 @@ public class StringUtilTestCase {
     @Test
     public void testHyphenateJBossWord() {
         String hyphenated = StringUtil.hyphenate("JBossHome");
-        Assert.assertEquals("jboss-home", hyphenated);
+        assertEquals("jboss-home", hyphenated);
     }
 
     /**
@@ -65,7 +65,7 @@ public class StringUtilTestCase {
     @Test
     public void testHyphenateJBossWordAtEnd() {
         String hyphenated = StringUtil.hyphenate("HomeOfJBoss");
-        Assert.assertEquals("home-of-jboss", hyphenated);
+        assertEquals("home-of-jboss", hyphenated);
     }
 
     /**
@@ -74,7 +74,7 @@ public class StringUtilTestCase {
     @Test
     public void testLowerCaseFirst() {
         String result = StringUtil.join(StringUtil.lowerCaseFirst(StringUtil.camelHumpsIterator("SomeRootConfig")));
-        Assert.assertEquals("someRootConfig", result);
+        assertEquals("someRootConfig", result);
     }
 
     /**
@@ -83,9 +83,9 @@ public class StringUtilTestCase {
     @Test
     public void testLowerCaseFirstNoSuffix() {
         String result = join(withoutSuffix(lowerCaseFirst(camelHumpsIterator("SomeRootConfig")), "Config", "Class"));
-        Assert.assertEquals("someRoot", result);
+        assertEquals("someRoot", result);
         result = join(withoutSuffix(lowerCaseFirst(camelHumpsIterator("SomeRootClass")), "Config", "Class"));
-        Assert.assertEquals("someRoot", result);
+        assertEquals("someRoot", result);
     }
 
     /**
@@ -94,8 +94,8 @@ public class StringUtilTestCase {
     @Test
     public void testLowerCaseNoSuffix() {
         String result = join(withoutSuffix(lowerCase(camelHumpsIterator("SomeRootConfig")), "config", "class"));
-        Assert.assertEquals("someroot", result);
+        assertEquals("someroot", result);
         result = join(withoutSuffix(lowerCase(camelHumpsIterator("SomeRootClass")), "config", "class"));
-        Assert.assertEquals("someroot", result);
+        assertEquals("someroot", result);
     }
 }

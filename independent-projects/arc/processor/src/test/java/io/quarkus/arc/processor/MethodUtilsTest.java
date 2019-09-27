@@ -13,8 +13,8 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.MethodInfo;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -26,7 +26,7 @@ public class MethodUtilsTest {
 
     private Index index;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException {
         index = index(SomeClass.class, SuperClass.class, SuperSuperClass.class, TheRoot.class);
     }

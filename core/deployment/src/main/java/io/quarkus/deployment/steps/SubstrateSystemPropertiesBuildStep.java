@@ -8,18 +8,23 @@ import java.util.List;
 import java.util.Properties;
 
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateOutputBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import io.quarkus.runtime.SubstrateRuntimePropertiesRecorder;
 
 public class SubstrateSystemPropertiesBuildStep {
 
     @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
     SubstrateOutputBuildItem writeNativeProps(ArchiveRootBuildItem root,
-            List<SubstrateSystemPropertyBuildItem> props) throws Exception {
+            List<SubstrateSystemPropertyBuildItem> props, SubstrateRuntimePropertiesRecorder recorder) throws Exception {
 
         final Properties properties = new Properties();
         for (SubstrateSystemPropertyBuildItem i : props) {
+            recorder.setInStaticInit(i.getKey(), i.getValue());
             if (!properties.containsKey(i.getKey())) {
                 properties.put(i.getKey(), i.getValue());
             } else if (!properties.get(i.getKey()).equals(i.getValue())) {

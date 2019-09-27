@@ -1,8 +1,8 @@
 package io.quarkus.it.main;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyString;
 
 import java.io.ByteArrayOutputStream;
 import java.util.zip.GZIPOutputStream;
@@ -162,13 +162,13 @@ public class JaxRSTestCase {
     @Test
     public void testOpenApiResponsesWithNoContent() {
         RestAssured.when().get("/test/openapi/no-content/api-responses").then()
-                .body(isEmptyString());
+                .body(emptyString());
     }
 
     @Test
     public void testOpenApiResponseWithNoContent() {
         RestAssured.when().get("/test/openapi/no-content/api-response").then()
-                .body(isEmptyString());
+                .body(emptyString());
     }
 
     @Test
@@ -190,5 +190,25 @@ public class JaxRSTestCase {
     public void testReturnTypeWithGenericArgument() {
         RestAssured.when().get("/envelope/payload").then()
                 .body(containsString("content"), containsString("hello"));
+    }
+
+    @Test
+    public void testMaxEntityServerOptionConfig() {
+        // maxEntitySize set to 1K sending a payload larger than the limit should return 400 status code
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 1100; i++) {
+            sb.append("q");
+        }
+
+        RestAssured.given()
+                .body(sb.toString())
+                .post("/test/max-body-size")
+                .then().statusCode(413);
+
+        // while sending a payload within the limit should return 200
+        RestAssured.given()
+                .body("Hello Quarkus")
+                .post("/test/max-body-size")
+                .then().statusCode(200);
     }
 }

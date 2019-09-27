@@ -32,7 +32,7 @@ import org.jboss.logging.Logger;
  * <li>{@link #initialize()}</li>
  * <li>{@link #validate()}</li>
  * <li>{@link #processValidationErrors(io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext)}</li>
- * <li>{@link #generateResources()}</li>
+ * <li>{@link #generateResources(ReflectionRegistration)}</li>
  * </ol>
  */
 public class BeanProcessor {

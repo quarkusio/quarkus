@@ -8,8 +8,11 @@
     <packaging>pom</packaging>
     <properties>
         <quarkus.version>0.19.0</quarkus.version>
+        <rest-assured.version>3.3.0</rest-assured.version>
     </properties>
+
     <modules>
+        <module>integration-tests</module>
         <module>with-grand-parent</module>
     </modules>
 </project>

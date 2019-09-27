@@ -1,9 +1,9 @@
 package io.quarkus.arc.test.injection.resource;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
@@ -38,13 +38,14 @@ import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Metamodel;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class ResourceInjectionTest {
 
-    @Rule
-    public ArcTestContainer container = ArcTestContainer.builder().beanClasses(EEResourceField.class, JpaClient.class)
+    @RegisterExtension
+    public ArcTestContainer container = ArcTestContainer.builder()
+            .beanClasses(EEResourceField.class, JpaClient.class)
             .resourceReferenceProviders(EntityManagerProvider.class, DummyProvider.class)
             .resourceAnnotations(PersistenceContext.class, Dummy.class).build();
 

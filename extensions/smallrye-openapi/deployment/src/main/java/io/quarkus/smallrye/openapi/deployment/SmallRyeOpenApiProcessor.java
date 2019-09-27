@@ -40,17 +40,19 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.resteasy.deployment.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
-import io.quarkus.smallrye.openapi.runtime.OpenApiServlet;
-import io.quarkus.undertow.deployment.GeneratedWebResourceBuildItem;
-import io.quarkus.undertow.deployment.ServletBuildItem;
+import io.quarkus.smallrye.openapi.runtime.OpenApiHandler;
+import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.runtime.HandlerType;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
 import io.smallrye.openapi.api.OpenApiDocument;
@@ -95,13 +97,13 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    ServletBuildItem servlet() {
-        return ServletBuildItem.builder("openapi", OpenApiServlet.class.getName()).addMapping(openapi.path).build();
+    RouteBuildItem handler() {
+        return new RouteBuildItem(openapi.path, new OpenApiHandler(), HandlerType.BLOCKING);
     }
 
     @BuildStep
     AdditionalBeanBuildItem beans() {
-        return new AdditionalBeanBuildItem(OpenApiServlet.class, OpenApiDocumentProducer.class);
+        return new AdditionalBeanBuildItem(OpenApiDocumentProducer.class);
     }
 
     @BuildStep
@@ -206,7 +208,8 @@ public class SmallRyeOpenApiProcessor {
     public void build(ApplicationArchivesBuildItem archivesBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
-            BuildProducer<GeneratedWebResourceBuildItem> resourceBuildItemBuildProducer,
+            BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
+            BuildProducer<SubstrateResourceBuildItem> substrateResources,
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem) throws Exception {
 
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
@@ -224,9 +227,10 @@ public class SmallRyeOpenApiProcessor {
         }
         OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel);
         for (OpenApiSerializer.Format format : OpenApiSerializer.Format.values()) {
-            String name = OpenApiServlet.GENERATED_DOC_BASE + format;
-            resourceBuildItemBuildProducer.produce(new GeneratedWebResourceBuildItem(name,
+            String name = OpenApiHandler.BASE_NAME + format;
+            resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name,
                     OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8)));
+            substrateResources.produce(new SubstrateResourceBuildItem(name));
         }
     }
 

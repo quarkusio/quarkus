@@ -259,5 +259,5 @@ classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for e
 
 Quarkus supports additional Spring compatibility features. See the following guides for more details:
 
-* link:spring-web-guide.adoc[Quarkus - Extension for Spring Web]
-* link:spring-data-jpa-guide.adoc[Quarkus - Extension for Spring Data JPA]
+* link:spring-web-guide[Quarkus - Extension for Spring Web]
+* link:spring-data-jpa-guide[Quarkus - Extension for Spring Data JPA]

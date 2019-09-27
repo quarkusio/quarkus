@@ -1,17 +1,17 @@
 package io.quarkus.arc.test.interceptors.selfinvocation;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class SelfInvocationTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Nok.class, Ok.class,
             NokInterceptor.class, OkInterceptor.class, InterceptedBean.class, DependentInterceptedBean.class);
 

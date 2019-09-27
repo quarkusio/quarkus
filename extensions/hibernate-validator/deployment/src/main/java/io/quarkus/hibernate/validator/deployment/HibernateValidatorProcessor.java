@@ -6,6 +6,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -51,6 +52,7 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
+import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 
 class HibernateValidatorProcessor {
 
@@ -118,7 +120,8 @@ class HibernateValidatorProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
-            ShutdownContextBuildItem shutdownContext) throws Exception {
+            ShutdownContextBuildItem shutdownContext,
+            List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_VALIDATOR));
 
@@ -173,8 +176,14 @@ class HibernateValidatorProcessor {
         }
 
         // Add the annotations transformer to add @MethodValidated annotations on the methods requiring validation
+        Set<DotName> additionalJaxRsMethodAnnotationsDotNames = new HashSet<>(additionalJaxRsResourceMethodAnnotations.size());
+        for (AdditionalJaxRsResourceMethodAnnotationsBuildItem additionalJaxRsResourceMethodAnnotation : additionalJaxRsResourceMethodAnnotations) {
+            additionalJaxRsMethodAnnotationsDotNames.addAll(additionalJaxRsResourceMethodAnnotation.getAnnotationClasses());
+        }
         annotationsTransformers
-                .produce(new AnnotationsTransformerBuildItem(new MethodValidatedAnnotationsTransformer(consideredAnnotations)));
+                .produce(new AnnotationsTransformerBuildItem(
+                        new MethodValidatedAnnotationsTransformer(consideredAnnotations,
+                                additionalJaxRsMethodAnnotationsDotNames)));
 
         Set<Class<?>> classesToBeValidated = new HashSet<>();
         for (DotName className : classNamesToBeValidated) {

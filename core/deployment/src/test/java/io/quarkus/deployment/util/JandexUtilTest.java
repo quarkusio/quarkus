@@ -13,7 +13,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class JandexUtilTest {
 

@@ -124,3 +124,18 @@ The full source of the `kubernetes.json` file looks something like this:
 An important thing to note about the `Deployment` is that is uses `yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT` as the Docker image of the `Pod`.
 
 Also the `Service` is configured to use container port `8080` (which is automatically picked up by the standard Quarkus configuration).
+
+=== Add readiness and liveness probes
+
+By default the Kubernetes resources do not contain readiness and liveness probes in the generated `Deployment`. Adding them however is just a matter of adding the Smallrye Health extension like so:
+
+[source,xml]
+----
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-smallrye-health</artifactId>
+    </dependency>
+----
+
+The values of the generated probes will be determined by the configured health properties: `quarkus.smallrye-health.root-path`, `quarkus.smallrye-health.liveness-path` and `quarkus.smallrye-health.readiness-path`.
+More information about the health extension can be found in the relevant link:health-guide[guide].

@@ -47,6 +47,9 @@ include::quarkus-intro.adoc[tag=intro]
 * link:kogito-guide.html[Using Kogito (business automation with processes and rules)]
 * link:oauth2-guide.html[Using OAuth2 RBAC]
 * link:tika-guide.html[Using Apache Tika]
+* link:mongo-guide.html[Using MongoDB]
+* link:mongodb-panache-guide.html[Simplified MongoDB with Panache]
+* link:artemis-jms-guide.html[Using Artemis JMS Client]
 
 * link:faq.html[FAQs]
 

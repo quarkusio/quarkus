@@ -1,5 +1,7 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
+
 import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationRule;
 import io.quarkus.arc.processor.Methods.MethodKey;
 import io.quarkus.gizmo.MethodCreator;
@@ -362,6 +364,35 @@ public class BeanInfo implements InjectionTargetInfo {
                                         "%s bean is not proxyable because it has a private no-args constructor: %s. To fix this problem, change the constructor to be package-private",
                                         classifier, this)));
             }
+
+        } else if (isProducerField() || isProducerMethod()) {
+            ClassInfo returnTypeClass = getClassByName(beanDeployment.getIndex(),
+                    (isProducerMethod() ? target.get().asMethod().returnType() : target.get().asField().type()).name());
+            // can be null for primitive types
+            if (returnTypeClass != null && scope.isNormal() && !Modifier.isInterface(returnTypeClass.flags())) {
+                String methodOrField = isProducerMethod() ? "method" : "field";
+                String classifier = "Producer " + methodOrField + " for a normal scoped bean";
+                if (Modifier.isFinal(returnTypeClass.flags())) {
+                    errors.add(
+                            new DefinitionException(String.format("%s must not have a" +
+                                    " return type that is final: %s", classifier, this)));
+                }
+                MethodInfo noArgsConstructor = returnTypeClass.method(Methods.INIT);
+                if (!ValidationRule.NO_ARGS_CONSTRUCTOR.skipFor(validators, this)) {
+                    if (noArgsConstructor == null) {
+                        errors.add(new DefinitionException(String
+                                .format("Return type of a producer " + methodOrField + " for normal scoped beans must" +
+                                        " declare a non-private constructor with no parameters: %s", this)));
+                    }
+                }
+                if (noArgsConstructor != null && Modifier.isPrivate(noArgsConstructor.flags())) {
+                    errors.add(
+                            new DefinitionException(
+                                    String.format(
+                                            "%s is not proxyable because it has a private no-args constructor: %s.",
+                                            classifier, this)));
+                }
+            }
         }
     }
 
@@ -451,7 +482,7 @@ public class BeanInfo implements InjectionTargetInfo {
                         && bindings.stream().noneMatch(e -> e.name().equals(a.name())))
                 .forEach(a -> bindings.add(a));
         if (classInfo.superClassType() != null && !classInfo.superClassType().name().equals(DotNames.OBJECT)) {
-            ClassInfo superClass = beanDeployment.getIndex().getClassByName(classInfo.superName());
+            ClassInfo superClass = getClassByName(beanDeployment.getIndex(), classInfo.superName());
             if (superClass != null) {
                 addClassLevelBindings(superClass, bindings);
             }
@@ -538,14 +569,14 @@ public class BeanInfo implements InjectionTargetInfo {
                 Type fieldType = target.asField().type();
                 if (fieldType.kind() != org.jboss.jandex.Type.Kind.PRIMITIVE
                         && fieldType.kind() != org.jboss.jandex.Type.Kind.ARRAY) {
-                    return beanDeployment.getIndex().getClassByName(fieldType.name());
+                    return getClassByName(beanDeployment.getIndex(), fieldType.name());
                 }
                 break;
             case METHOD:
                 Type returnType = target.asMethod().returnType();
                 if (returnType.kind() != org.jboss.jandex.Type.Kind.PRIMITIVE
                         && returnType.kind() != org.jboss.jandex.Type.Kind.ARRAY) {
-                    return beanDeployment.getIndex().getClassByName(returnType.name());
+                    return getClassByName(beanDeployment.getIndex(), returnType.name());
                 }
                 break;
             default:

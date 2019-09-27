@@ -37,6 +37,7 @@ import org.opentest4j.TestAbortedException;
 
 import io.quarkus.bootstrap.BootstrapClassLoaderFactory;
 import io.quarkus.bootstrap.BootstrapException;
+import io.quarkus.bootstrap.DefineClassVisibleURLClassLoader;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.builder.BuildChainBuilder;
@@ -280,7 +281,7 @@ public class QuarkusTestExtension
                     throw new IllegalStateException("Failed to parse a deployment classpath entry " + entry, e);
                 }
             }
-            return new URLClassLoader(list.toArray(new URL[list.size()]), getClass().getClassLoader());
+            return new DefineClassVisibleURLClassLoader(list.toArray(new URL[list.size()]), getClass().getClassLoader());
         }
         try {
             return BootstrapClassLoaderFactory.newInstance()
@@ -298,14 +299,20 @@ public class QuarkusTestExtension
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
-        restAssuredURLManager.clearURL();
-        TestScopeManager.tearDown();
+        if (!failedBoot) {
+            boolean substrateTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
+            restAssuredURLManager.clearURL();
+            TestScopeManager.tearDown(substrateTest);
+        }
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        restAssuredURLManager.setURL();
-        TestScopeManager.setup();
+        if (!failedBoot) {
+            boolean substrateTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
+            restAssuredURLManager.setURL();
+            TestScopeManager.setup(substrateTest);
+        }
     }
 
     @Override
@@ -346,7 +353,7 @@ public class QuarkusTestExtension
                 }
                 store.put(ExtensionState.class.getName(), state);
 
-            } catch (RuntimeException e) {
+            } catch (Throwable e) {
                 try {
                     testResourceManager.stop();
                 } catch (Exception ex) {

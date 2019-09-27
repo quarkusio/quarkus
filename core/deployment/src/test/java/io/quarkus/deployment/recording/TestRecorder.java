@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import io.quarkus.runtime.RuntimeValue;
 
@@ -75,5 +76,14 @@ public class TestRecorder {
 
     public void object(Object obj) {
         RESULT.add(obj);
+    }
+
+    public Supplier<String> stringSupplier(String val) {
+        return new Supplier<String>() {
+            @Override
+            public String get() {
+                return val;
+            }
+        };
     }
 }

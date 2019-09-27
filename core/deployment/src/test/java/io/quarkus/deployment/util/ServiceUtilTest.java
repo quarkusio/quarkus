@@ -1,14 +1,13 @@
 
 package io.quarkus.deployment.util;
 
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.util.Set;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ServiceUtilTest {
 
@@ -33,7 +32,7 @@ public class ServiceUtilTest {
 
         assertEquals(7, classes.size());
 
-        assertThat(classes, hasItems(classNames));
+        assertThat(classes).contains(classNames);
 
     }
 }

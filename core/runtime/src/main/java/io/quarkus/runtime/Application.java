@@ -9,6 +9,8 @@ import org.graalvm.nativeimage.ImageInfo;
 import org.wildfly.common.Assert;
 import org.wildfly.common.lock.Locks;
 
+import com.oracle.svm.core.OS;
+
 import io.quarkus.runtime.graal.DiagnosticPrinter;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
@@ -184,19 +186,26 @@ public abstract class Application {
             if (ImageInfo.inImageRuntimeCode() && System.getenv(DISABLE_SIGNAL_HANDLERS) == null) {
                 final SignalHandler handler = new SignalHandler() {
                     @Override
-                    public void handle(final Signal signal) {
+                    public void handle(Signal signal) {
                         System.exit(signal.getNumber() + 0x80);
                     }
                 };
-                Signal.handle(new Signal("INT"), handler);
-                Signal.handle(new Signal("TERM"), handler);
-                Signal.handle(new Signal("HUP"), handler);
-                Signal.handle(new Signal("QUIT"), new SignalHandler() {
+                final SignalHandler quitHandler = new SignalHandler() {
                     @Override
-                    public void handle(final Signal signal) {
+                    public void handle(Signal signal) {
                         DiagnosticPrinter.printDiagnostics(System.out);
                     }
-                });
+                };
+                handleSignal("INT", handler);
+                handleSignal("TERM", handler);
+                // the HUP and QUIT signals are not defined for the Windows OpenJDK implementation:
+                // https://hg.openjdk.java.net/jdk8u/jdk8u-dev/hotspot/file/7d5c800dae75/src/os/windows/vm/jvm_windows.cpp
+                if (OS.getCurrent() == OS.WINDOWS) {
+                    handleSignal("BREAK", quitHandler);
+                } else {
+                    handleSignal("HUP", handler);
+                    handleSignal("QUIT", quitHandler);
+                }
             }
 
             final ShutdownHookThread shutdownHookThread = new ShutdownHookThread(Thread.currentThread());
@@ -234,6 +243,14 @@ public abstract class Application {
 
     private static IllegalStateException interruptedOnAwaitStop() {
         return new IllegalStateException("Interrupted while waiting for another thread to stop the application");
+    }
+
+    private static void handleSignal(final String signal, final SignalHandler handler) {
+        try {
+            Signal.handle(new Signal(signal), handler);
+        } catch (IllegalArgumentException ignored) {
+            // Do nothing
+        }
     }
 
     class ShutdownHookThread extends Thread {

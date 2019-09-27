@@ -147,10 +147,10 @@ https://docs.gradle.org/current/userguide/java_testing.html#sec:configuring_java
 Quarkus supports running Substrate tests with Gradle, but the `buildNative` task is required to be completed first.
 
 [[custom-test-configuration-profile]]
-=== Custom test configuration profile
+=== Custom test configuration profile in JVM mode
 
-By default, Quarkus tests are run using the `test` configuration profile. If you are not familiar with Quarkus configuration
-profiles, everything you need to know is explained in the
+By default, Quarkus tests in JVM mode are run using the `test` configuration profile. If you are not familiar with Quarkus
+configuration profiles, everything you need to know is explained in the
 link:application-configuration-guide.html#configuration-profiles[Configuration Profiles Documentation].
 
 It is however possible to use a custom configuration profile for your tests with the Gradle build configuration shown below.
@@ -178,6 +178,12 @@ tasks {
 ----
 
 <1> The `foo` configuration profile will be used to run the tests.
+
+[WARNING]
+====
+It is not possible to use a custom test configuration profile in native mode for now. Native tests are always run using the
+`prod` profile.
+====
 
 == Dealing with extensions
 
@@ -320,12 +326,39 @@ To create an executable that will run in a container, use the following:
 
 [source,shell]
 ----
+./gradlew buildNative
+----
+
+==== Customize the build native task
+
+There are situations where it may be required to alter the default values of the `buildNative` task (whose implementation can be found link:https://github.com/quarkusio/quarkus/blob/master/devtools/gradle/src/main/java/io/quarkus/gradle/tasks/QuarkusNative.java[here]).
+
+The easiest way to supply custom configuration is via the command line. For example to use docker to build the native image, simply add the `--docker-build=true` flag like so:
+
+[source,shell]
+----
 ./gradlew buildNative --docker-build=true
 ----
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system
 it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
+
+Another way of customizing the native build image build process is to configure the task inside the Gradle build script. If for example it is required to set the `enableHttpUrlHandler`, it can be done like so:
+
+[source,groovy]
+----
+buildNative {
+    enableHttpUrlHandler = true
+}
+----
+
+The native executable would then be produced by executing:
+
+[source,shell]
+----
+./gradlew buildNative
+----
 
 == Building Uber-Jars
 

@@ -2,19 +2,27 @@ package io.quarkus.annotation.processor.generate_doc;
 
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.hyphenate;
 
-import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.javadoc.Javadoc;
+import com.github.javaparser.javadoc.JavadocBlockTag;
 import com.github.javaparser.javadoc.description.JavadocDescription;
+import com.github.javaparser.javadoc.description.JavadocDescriptionElement;
 import com.github.javaparser.javadoc.description.JavadocInlineTag;
 
 import io.quarkus.annotation.processor.Constants;
 
 final class JavaDocParser {
+
+    private static final Pattern START_OF_LINE = Pattern.compile("^", Pattern.MULTILINE);
+    private static final Pattern REPLACE_WINDOWS_EOL = Pattern.compile("\r\n");
+    private static final Pattern REPLACE_MACOS_EOL = Pattern.compile("\r");
+
     private static final String HASH = "#";
     private static final String STAR = "*";
     private static final String S_NODE = "s";
@@ -51,139 +59,156 @@ final class JavaDocParser {
     private static final String UNDERLINE_ASCIDOC_STYLE = "[.underline]";
     private static final String LINE_THROUGH_ASCIDOC_STYLE = "[.line-through]";
 
-    public String parse(String javaDoc) {
-        if (javaDoc == null) {
+    public String parse(String javadocComment) {
+        if (javadocComment == null || javadocComment.trim().isEmpty()) {
             return Constants.EMPTY;
         }
 
-        final Document document = Jsoup.parse(javaDoc);
+        // the parser expects all the lines to start with "* "
+        // we add it as it has been previously removed
+        javadocComment = START_OF_LINE.matcher(javadocComment).replaceAll("* ");
 
-        final StringBuilder docBuilder = new StringBuilder();
-        parseJavaDoc(document.body(), docBuilder);
+        Javadoc javadoc = StaticJavaParser.parseJavadoc(javadocComment);
 
-        final String doc = docBuilder.toString();
-        if (doc.trim().isEmpty()) {
-            return Constants.EMPTY;
+        if (isAsciidoc(javadoc)) {
+            // it's Asciidoc so we just pass through
+            // it also uses platform specific EOL so we need to convert them back to \n
+            String asciidoc = javadoc.getDescription().toText();
+            asciidoc = REPLACE_WINDOWS_EOL.matcher(asciidoc).replaceAll("\n");
+            asciidoc = REPLACE_MACOS_EOL.matcher(asciidoc).replaceAll("\n");
+            return asciidoc;
         }
 
-        return doc;
+        return htmlJavadocToAsciidoc(javadoc.getDescription());
     }
 
-    private void parseJavaDoc(Node root, StringBuilder docBuilder) {
-        for (Node node : root.childNodes()) {
-            switch (node.nodeName()) {
+    private boolean isAsciidoc(Javadoc javadoc) {
+        for (JavadocBlockTag blockTag : javadoc.getBlockTags()) {
+            if ("asciidoclet".equals(blockTag.getTagName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String htmlJavadocToAsciidoc(JavadocDescription javadocDescription) {
+        StringBuilder sb = new StringBuilder();
+
+        for (JavadocDescriptionElement javadocDescriptionElement : javadocDescription.getElements()) {
+            if (javadocDescriptionElement instanceof JavadocInlineTag) {
+                JavadocInlineTag inlineTag = (JavadocInlineTag) javadocDescriptionElement;
+                String content = inlineTag.getContent().trim();
+                switch (inlineTag.getType()) {
+                    case CODE:
+                    case VALUE:
+                    case LITERAL:
+                    case SYSTEM_PROPERTY:
+                        sb.append(String.format(INLINE_JAVA_DOC_TAG_FORMAT, content));
+                        break;
+                    case LINK:
+                    case LINKPLAIN:
+                        if (content.startsWith(HASH)) {
+                            content = hyphenate(content.substring(1));
+                        }
+                        sb.append(String.format(INLINE_JAVA_DOC_TAG_FORMAT, content));
+                        break;
+                    default:
+                        sb.append(content);
+                        break;
+                }
+            } else {
+                appendHtml(sb, Jsoup.parseBodyFragment(javadocDescriptionElement.toText()));
+            }
+        }
+
+        return sb.toString().trim();
+    }
+
+    private void appendHtml(StringBuilder sb, Node node) {
+        for (Node childNode : node.childNodes()) {
+            switch (childNode.nodeName()) {
                 case PARAGRAPH_NODE:
-                    docBuilder.append(NEW_LINE);
-                    parseJavaDoc(node, docBuilder);
+                    sb.append(NEW_LINE);
+                    appendHtml(sb, childNode);
                     break;
                 case ORDERED_LIST_NODE:
                 case UN_ORDERED_LIST_NODE:
-                    parseJavaDoc(node, docBuilder);
+                    appendHtml(sb, childNode);
                     break;
                 case LIST_ITEM_NODE:
-                    final String marker = node.parent().nodeName().equals(ORDERED_LIST_NODE)
+                    final String marker = childNode.parent().nodeName().equals(ORDERED_LIST_NODE)
                             ? ORDERED_LIST_ITEM_ASCIDOC_STYLE
                             : UNORDERED_LIST_ITEM_ASCIDOC_STYLE;
-                    docBuilder.append(NEW_LINE);
-                    docBuilder.append(marker);
-                    parseJavaDoc(node, docBuilder);
+                    sb.append(NEW_LINE);
+                    sb.append(marker);
+                    appendHtml(sb, childNode);
                     break;
                 case LINK_NODE:
-                    final String link = node.attr(HREF_ATTRIBUTE);
-                    docBuilder.append(link);
+                    final String link = childNode.attr(HREF_ATTRIBUTE);
+                    sb.append(link);
                     final StringBuilder caption = new StringBuilder();
-                    parseJavaDoc(node, caption);
-                    docBuilder.append(String.format(LINK_ATTRIBUTE_FORMAT, caption.toString().trim()));
+                    appendHtml(caption, childNode);
+                    sb.append(String.format(LINK_ATTRIBUTE_FORMAT, caption.toString().trim()));
                     break;
                 case BOLD_NODE:
                 case EMPHASIS_NODE:
-                    docBuilder.append(STAR);
-                    parseJavaDoc(node, docBuilder);
-                    docBuilder.append(STAR);
+                    sb.append(STAR);
+                    appendHtml(sb, childNode);
+                    sb.append(STAR);
                     break;
                 case ITALICS_NODE:
-                    docBuilder.append(UNDERSCORE);
-                    parseJavaDoc(node, docBuilder);
-                    docBuilder.append(UNDERSCORE);
+                    sb.append(UNDERSCORE);
+                    appendHtml(sb, childNode);
+                    sb.append(UNDERSCORE);
                     break;
                 case UNDERLINE_NODE:
-                    docBuilder.append(UNDERLINE_ASCIDOC_STYLE);
-                    docBuilder.append(HASH);
-                    parseJavaDoc(node, docBuilder);
-                    docBuilder.append(HASH);
+                    sb.append(UNDERLINE_ASCIDOC_STYLE);
+                    sb.append(HASH);
+                    appendHtml(sb, childNode);
+                    sb.append(HASH);
                     break;
                 case SMALL_NODE:
-                    docBuilder.append(SMALL_ASCIDOC_STYLE);
-                    docBuilder.append(HASH);
-                    parseJavaDoc(node, docBuilder);
-                    docBuilder.append(HASH);
+                    sb.append(SMALL_ASCIDOC_STYLE);
+                    sb.append(HASH);
+                    appendHtml(sb, childNode);
+                    sb.append(HASH);
                     break;
                 case BIG_NODE:
-                    docBuilder.append(BIG_ASCIDOC_STYLE);
-                    docBuilder.append(HASH);
-                    parseJavaDoc(node, docBuilder);
-                    docBuilder.append(HASH);
+                    sb.append(BIG_ASCIDOC_STYLE);
+                    sb.append(HASH);
+                    appendHtml(sb, childNode);
+                    sb.append(HASH);
                     break;
                 case SUB_SCRIPT_NODE:
-                    docBuilder.append(SUB_SCRIPT_ASCIDOC_STYLE);
-                    parseJavaDoc(node, docBuilder);
-                    docBuilder.append(SUB_SCRIPT_ASCIDOC_STYLE);
+                    sb.append(SUB_SCRIPT_ASCIDOC_STYLE);
+                    appendHtml(sb, childNode);
+                    sb.append(SUB_SCRIPT_ASCIDOC_STYLE);
                     break;
                 case SUPER_SCRIPT_NODE:
-                    docBuilder.append(SUPER_SCRIPT_ASCIDOC_STYLE);
-                    parseJavaDoc(node, docBuilder);
-                    docBuilder.append(SUPER_SCRIPT_ASCIDOC_STYLE);
+                    sb.append(SUPER_SCRIPT_ASCIDOC_STYLE);
+                    appendHtml(sb, childNode);
+                    sb.append(SUPER_SCRIPT_ASCIDOC_STYLE);
                     break;
                 case DEL_NODE:
                 case S_NODE:
                 case STRIKE_NODE:
-                    docBuilder.append(LINE_THROUGH_ASCIDOC_STYLE);
-                    docBuilder.append(HASH);
-                    parseJavaDoc(node, docBuilder);
-                    docBuilder.append(HASH);
+                    sb.append(LINE_THROUGH_ASCIDOC_STYLE);
+                    sb.append(HASH);
+                    appendHtml(sb, childNode);
+                    sb.append(HASH);
                     break;
                 case NEW_LINE_NODE:
-                    docBuilder.append(NEW_LINE);
+                    sb.append(NEW_LINE);
                     break;
                 case TEXT_NODE:
-                    final TextNode textNode = (TextNode) node;
-                    docBuilder.append(getJavaDocDescription(textNode));
+                    final TextNode textNode = (TextNode) childNode;
+                    sb.append(textNode.text());
                     break;
-                default: {
-                    parseJavaDoc(node, docBuilder);
-                }
+                default:
+                    appendHtml(sb, childNode);
+                    break;
             }
         }
     }
 
-    private String getJavaDocDescription(TextNode node) {
-        JavadocDescription javadocDescription = JavadocDescription.parseText(node.text());
-
-        return javadocDescription
-                .getElements()
-                .stream()
-                .map((javadocDescriptionElement) -> {
-                    if (javadocDescriptionElement instanceof JavadocInlineTag) {
-                        JavadocInlineTag inlineTag = (JavadocInlineTag) javadocDescriptionElement;
-                        String content = inlineTag.getContent().trim();
-                        switch (inlineTag.getType()) {
-                            case CODE:
-                            case VALUE:
-                            case LITERAL:
-                            case SYSTEM_PROPERTY:
-                                return String.format(INLINE_JAVA_DOC_TAG_FORMAT, content);
-                            case LINK:
-                            case LINKPLAIN:
-                                if (content.startsWith(HASH)) {
-                                    content = hyphenate(content.substring(1));
-                                }
-                                return String.format(INLINE_JAVA_DOC_TAG_FORMAT, content);
-                            default:
-                                return content;
-                        }
-                    } else {
-                        return javadocDescriptionElement.toText();
-                    }
-                }).collect(Collectors.joining());
-    }
 }

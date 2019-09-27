@@ -3,6 +3,8 @@ package io.quarkus.panache.common.deployment;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import io.quarkus.deployment.bean.JavaBeanUtil;
+
 public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
 
     private final String methodName;

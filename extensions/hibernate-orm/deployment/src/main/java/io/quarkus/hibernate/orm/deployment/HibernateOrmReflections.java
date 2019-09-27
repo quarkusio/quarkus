@@ -20,6 +20,39 @@ public final class HibernateOrmReflections {
 
     @BuildStep
     public void registerCoreReflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        //Eventlisteners need to be registered for reflection to allow creation via Array#newInstance ;
+        // types need to be in synch with those declared in org.hibernate.event.spi.EventType
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.LoadEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.ResolveNaturalIdEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.InitializeCollectionEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.SaveOrUpdateEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.PersistEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.MergeEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.DeleteEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.ReplicateEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.FlushEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.AutoFlushEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.DirtyCheckEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.FlushEntityEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.ClearEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.EvictEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.LockEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.RefreshEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.PreLoadEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.PreDeleteEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.PreUpdateEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.PreInsertEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.PostLoadEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.PostDeleteEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.PostUpdateEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.PostInsertEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.PreCollectionRecreateEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.PreCollectionRemoveEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.PreCollectionUpdateEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.PostCollectionRecreateEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.PostCollectionRemoveEventListener[].class);
+        simpleConstructor(reflectiveClass, org.hibernate.event.spi.PostCollectionUpdateEventListener[].class);
+
         //Various well known needs:
         simpleConstructor(reflectiveClass, org.hibernate.tuple.entity.PojoEntityTuplizer.class);
         allConstructors(reflectiveClass, org.hibernate.tuple.component.PojoComponentTuplizer.class);
@@ -35,9 +68,6 @@ public final class HibernateOrmReflections {
         simpleConstructor(reflectiveClass,
                 org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl.class);
         simpleConstructor(reflectiveClass, EnumType.class);
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, com.arjuna.ats.jta.UserTransaction.class.getName()));
-        reflectiveClass
-                .produce(new ReflectiveClassBuildItem(true, false, com.arjuna.ats.jta.TransactionManager.class.getName()));
         simpleConstructor(reflectiveClass, MultipleLinesSqlCommandExtractor.class);
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.HqlToken.class);
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.tree.Node.class);

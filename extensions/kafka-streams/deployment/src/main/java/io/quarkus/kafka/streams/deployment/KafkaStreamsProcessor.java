@@ -27,7 +27,6 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.kafka.streams.runtime.HotReplacementInterceptor;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
@@ -39,9 +38,7 @@ class KafkaStreamsProcessor {
     private static final String STREAMS_OPTION_PREFIX = "kafka-streams.";
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void build(RecorderContext recorder,
-            BuildProducer<FeatureBuildItem> feature,
+    void build(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized,
             BuildProducer<SubstrateResourceBuildItem> nativeLibs,

@@ -1,6 +1,9 @@
 package io.quarkus.tika.runtime;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.parser.AutoDetectParser;
@@ -15,26 +18,20 @@ import io.quarkus.tika.TikaParser;
 @Recorder
 public class TikaRecorder {
 
-    public void initTikaParser(BeanContainer container, TikaConfiguration config) {
-        TikaParser parser = initializeParser(config);
+    public void initTikaParser(BeanContainer container, TikaConfiguration config, List<String> supportedParserNames) {
+        TikaParser parser = initializeParser(config, supportedParserNames);
         TikaParserProducer producer = container.instance(TikaParserProducer.class);
         producer.initialize(parser);
     }
 
-    private TikaParser initializeParser(TikaConfiguration config) {
-        // Load tika-config.xml resource
+    private TikaParser initializeParser(TikaConfiguration config, List<String> supportedParserNames) {
         TikaConfig tikaConfig = null;
-        InputStream is = getClass().getResourceAsStream(
-                config.tikaConfigPath.startsWith("/") ? config.tikaConfigPath : "/" + config.tikaConfigPath);
-        if (is != null) {
-            try (InputStream stream = is) {
-                tikaConfig = new TikaConfig(stream);
-            } catch (Exception ex) {
-                final String errorMessage = "Invalid tika-config.xml";
-                throw new TikaParseException(errorMessage, ex);
-            }
-        } else {
-            tikaConfig = TikaConfig.getDefaultConfig();
+
+        try (InputStream stream = getTikaConfigStream(config, supportedParserNames)) {
+            tikaConfig = new TikaConfig(stream);
+        } catch (Exception ex) {
+            final String errorMessage = "Invalid tika-config.xml";
+            throw new TikaParseException(errorMessage, ex);
         }
 
         // Create a native Tika Parser. AutoDetectParser is used by default but it is wrapped
@@ -45,5 +42,34 @@ public class TikaRecorder {
             nativeParser = new RecursiveParserWrapper(nativeParser, true);
         }
         return new TikaParser(nativeParser, config.appendEmbeddedContent);
+    }
+
+    private static InputStream getTikaConfigStream(TikaConfiguration config, List<String> supportedParserNames) {
+        // Load tika-config.xml resource
+        InputStream is = null;
+        if (config.tikaConfigPath.isPresent()) {
+            is = TikaRecorder.class.getResourceAsStream(
+                    config.tikaConfigPath.get().startsWith("/") ? config.tikaConfigPath.get()
+                            : "/" + config.tikaConfigPath.get());
+            if (is == null) {
+                final String errorMessage = "tika-config.xml can not be found at " + config.tikaConfigPath.get();
+                throw new TikaParseException(errorMessage);
+            }
+        } else {
+            is = generateTikaConfig(supportedParserNames);
+        }
+        return is;
+    }
+
+    private static InputStream generateTikaConfig(List<String> supportedParserNames) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<properties>");
+        sb.append("<parsers>");
+        for (String parserName : supportedParserNames) {
+            sb.append("<parser class=\"").append(parserName).append("\"/>");
+        }
+        sb.append("</parsers>");
+        sb.append("</properties>");
+        return new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8));
     }
 }

@@ -178,6 +178,16 @@
     "artifactId": "quarkus-jdbc-mariadb"
   },
   {
+    "name": "JDBC Driver - MySQL",
+    "labels": [
+      "jdbc-mysql",
+      "jdbc",
+      "mysql"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jdbc-mysql"
+  },
+  {
     "name": "JDBC Driver - PostgreSQL",
     "labels": [
       "jdbc-postgresql",
@@ -186,6 +196,17 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-jdbc-postgresql"
+  },
+  {
+    "name": "JDBC Driver - Microsoft SQL Server",
+    "labels": [
+      "jdbc-mssql",
+      "jdbc",
+      "mssql",
+      "sql-server"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jdbc-mssql"
   },
   {
     "name": "Jackson",
@@ -233,7 +254,7 @@
       "openid-connect"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-keycloak",
+    "artifactId": "quarkus-vertx-keycloak",
     "guide": "https://quarkus.io/guides/keycloak-guide"
   },
   {
@@ -293,6 +314,18 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-mongodb-client"
+  },
+  {
+    "name": "MongoDB with Panache",
+    "labels": [
+      "mongo",
+      "mongodb",
+      "nosql",
+      "datastore",
+      "panache"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-mongodb-panache"
   },
   {
     "name": "Narayana JTA - Transaction manager",
@@ -574,6 +607,15 @@
     "groupId": "io.quarkus",
     "artifactId": "quarkus-smallrye-reactive-messaging-amqp",
     "guide": "https://quarkus.io/guides/amqp-guide"
+  },
+  {
+    "name": "SmallRye Reactive Messaging - MQTT Connector",
+    "labels": [
+      "mqtt",
+      "reactive-mqtt"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-reactive-messaging-mqtt"
   },
   {
     "name": "REST Client",

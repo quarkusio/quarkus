@@ -1,9 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.runtime;
 
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.List;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.reactive.messaging.extension.MediatorManager;
@@ -20,20 +18,9 @@ public class SmallRyeReactiveMessagingRecorder {
         mediatorManager.initializeEmitter(name, strategy, bufferSize, defaultBufferSize);
     }
 
-    public void registerMediators(Map<String, String> beanClassToBeanId, BeanContainer container) {
+    public void registerMediators(List<QuarkusMediatorConfiguration> configurations, BeanContainer container) {
         MediatorManager mediatorManager = container.instance(MediatorManager.class);
-        for (Entry<String, String> entry : beanClassToBeanId.entrySet()) {
-            try {
-                Class<?> beanClass = Thread.currentThread()
-                        .getContextClassLoader()
-                        .loadClass(entry.getKey());
-                mediatorManager.analyze(beanClass, Arc.container()
-                        .bean(entry.getValue()));
-            } catch (ClassNotFoundException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
+        mediatorManager.addAnalyzed(configurations);
     }
 
 }

@@ -222,6 +222,8 @@ public class MojoTestBase {
                             content = IOUtils.toString(url, "UTF-8");
                         } else {
                             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                            // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.8
+                            conn.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
                             if (conn.getResponseCode() >= 400) {
                                 content = IOUtils.toString(conn.getErrorStream(), "UTF-8");
                             } else {
@@ -245,6 +247,8 @@ public class MojoTestBase {
                     try {
                         URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
                         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                        // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
+                        connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
                         if (connection.getResponseCode() == expectedStatus) {
                             code.set(true);
                             return true;
@@ -268,7 +272,7 @@ public class MojoTestBase {
         assertThat(logs.contains(infoLogLevel)).isTrue();
         Predicate<String> datePattern = Pattern.compile("\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2},\\d{3}\\s").asPredicate();
         assertThat(datePattern.test(logs)).isTrue();
-        assertThat(logs.contains("features: [cdi, resteasy, undertow-websockets, vertx, vertx-web]")).isTrue();
+        assertThat(logs.contains("features: [cdi, resteasy, servlet, undertow-websockets]")).isTrue();
         assertThat(logs.contains("JBoss Threads version")).isFalse();
     }
 

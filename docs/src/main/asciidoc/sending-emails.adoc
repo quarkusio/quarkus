@@ -61,9 +61,8 @@ quarkus.mailer.username=....
 quarkus.mailer.password=....
 ----
 
-The following table lists the properties that can be configured:
-
-include::generated/quarkus-mailer-impl.adoc[]
+[TIP]
+For more information about the Mailer extension configuration please refer to the <<configuration-reference, Configuration Reference>>.
 
 == Sending simple emails
 
@@ -156,7 +155,7 @@ Attachments can be created from raw bytes (as shown in the snippet) or files.
 == Sending HTML emails with inlined attachments
 
 When sending HTML email, you can add inlined attachments.
-For example, you can send an image with your email, and this image will be displayed in the mail content.
+For example, you can send an image with your email, and this image will be displayed in the mail content. If you put the image file into resources folder, you should specify the full path to the file. "e.g." "META-INF/resources/quarkus-logo.png" otherwise quarkus will lookup in the root folder of the project
 
 [source, java]
 ----
@@ -189,6 +188,7 @@ You can then write tests to verify that your emails were sent, for example, by a
 
 [source, java]
 ----
+@QuarkusTest
 class MailTest {
 
     private static final String TO = "foo@quarkus.io";
@@ -208,7 +208,7 @@ class MailTest {
         .when()
         .get("/send-email")
         .then()
-           .statusCode(200)
+           .statusCode(202)
            .body(is("OK"));
 
         // verify that it was sent
@@ -283,3 +283,9 @@ You can also create your own instance, and pass your own configuration.
 
 This guide has shown how you can send emails from a Quarkus application.
 The _mailer_ extension works in JVM and native mode.
+
+
+[[configuration-reference]]
+== Mailer Configuration Reference
+
+include::{generated-dir}/config/quarkus-mailer.adoc[opts=optional, leveloffset=+1]

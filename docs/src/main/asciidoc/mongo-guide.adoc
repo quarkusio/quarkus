@@ -209,7 +209,7 @@ In this example, we are using a single instance running on localhost:
 
 [source,properties]
 ----
-# configure the mongoDB client for a replica set of two nodes
+# configure the mongoDB client for a single instance on localhost
 quarkus.mongodb.connection-string = mongodb://localhost:27017
 ----
 
@@ -462,6 +462,9 @@ public class CodecFruitService {
 }
 ----
 
+== Simplifying MongoDB with Panache
+
+The link:mongodb-panache-guide.html[MongoDB with Panache] extension facilitates the usage of MongoDB by providing active record style entities (and repositories) like you have in link:hibernate-orm-panache-guide.html[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
 
 == Building a native executable
 

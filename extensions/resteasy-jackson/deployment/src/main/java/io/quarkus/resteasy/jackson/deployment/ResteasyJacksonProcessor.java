@@ -25,6 +25,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -39,7 +40,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.resteasy.common.deployment.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.jackson.runtime.ObjectMapperProducer;
 
 public class ResteasyJacksonProcessor {
@@ -49,7 +50,7 @@ public class ResteasyJacksonProcessor {
 
     private static final String QUARKUS_CONTEXT_RESOLVER_NAME = "io.quarkus.resteasy.jackson.runtime.QuarkusObjectMapperContextResolver";
 
-    @BuildStep
+    @BuildStep(providesCapabilities = { Capabilities.RESTEASY_JSON_EXTENSION, "io.quarkus.resteasy.jackson" })
     void build(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY_JACKSON));
     }

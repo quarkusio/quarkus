@@ -1,6 +1,5 @@
 package io.quarkus.resteasy.server.common.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_TIME;
 
 import java.lang.reflect.Modifier;
@@ -9,15 +8,17 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -27,33 +28,32 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.api.validation.ResteasyConstraintViolation;
 import org.jboss.resteasy.api.validation.ViolationReport;
+import org.jboss.resteasy.core.ResteasyDeploymentImpl;
 import org.jboss.resteasy.microprofile.config.FilterConfigSource;
-import org.jboss.resteasy.microprofile.config.FilterConfigSourceImpl;
 import org.jboss.resteasy.microprofile.config.ServletConfigSource;
-import org.jboss.resteasy.microprofile.config.ServletConfigSourceImpl;
 import org.jboss.resteasy.microprofile.config.ServletContextConfigSource;
-import org.jboss.resteasy.microprofile.config.ServletContextConfigSourceImpl;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
+import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.Transformation;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ProxyUnwrapperBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
@@ -64,8 +64,10 @@ import io.quarkus.jaxb.deployment.JaxbEnabledBuildItem;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor.ResteasyCommonConfig;
 import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
-import io.quarkus.resteasy.server.common.runtime.QuarkusInjectorFactory;
-import io.quarkus.resteasy.server.common.runtime.ResteasyServerCommonRecorder;
+import io.quarkus.resteasy.common.runtime.QuarkusInjectorFactory;
+import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
+import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
+import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -150,7 +152,10 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ResteasyServerConfigBuildItem> resteasyServerConfig,
+            BuildProducer<ResteasyDeploymentBuildItem> resteasyDeployment,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
+            List<AutoInjectAnnotationBuildItem> autoInjectAnnotations,
             List<AdditionalJaxRsResourceDefiningAnnotationBuildItem> additionalJaxRsResourceDefiningAnnotations,
             List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
             List<AdditionalJaxRsResourceMethodParamAnnotations> additionalJaxRsResourceMethodParamAnnotations,
@@ -195,7 +200,7 @@ public class ResteasyServerCommonProcessor {
             appClass = null;
         }
 
-        Set<String> scannedResources = new HashSet<>();
+        Map<DotName, ClassInfo> scannedResources = new HashMap<>();
         Set<DotName> pathInterfaces = new HashSet<>();
         Set<ClassInfo> withoutDefaultCtor = new HashSet<>();
         for (AnnotationInstance annotation : allPaths) {
@@ -204,7 +209,7 @@ public class ResteasyServerCommonProcessor {
                 if (!Modifier.isInterface(clazz.flags())) {
                     String className = clazz.name().toString();
                     if (!additionalPaths.contains(annotation)) { // scanned resources only contains real JAX-RS resources
-                        scannedResources.add(className);
+                        scannedResources.putIfAbsent(clazz.name(), clazz);
                     }
                     reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
 
@@ -223,8 +228,19 @@ public class ResteasyServerCommonProcessor {
             for (final ClassInfo implementor : implementors) {
                 String className = implementor.name().toString();
                 reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
-                scannedResources.add(className);
+                scannedResources.putIfAbsent(implementor.name(), implementor);
             }
+        }
+
+        Set<DotName> subresources = findSubresources(index, scannedResources);
+        if (!subresources.isEmpty()) {
+            for (DotName locator : subresources) {
+                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, locator.toString()));
+            }
+            // Sub-resource locators are unremovable beans
+            unremovableBeans.produce(
+                    new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(
+                            subresources.stream().map(Object::toString).collect(Collectors.toSet()))));
         }
 
         // generate default constructors for suitable concrete @Path classes that don't have them
@@ -244,24 +260,88 @@ public class ResteasyServerCommonProcessor {
 
         Map<String, String> resteasyInitParameters = new HashMap<>();
 
-        registerProviders(resteasyInitParameters, reflectiveClass, unremovableBeans, jaxrsProvidersToRegisterBuildItem);
+        ResteasyDeployment deployment = new ResteasyDeploymentImpl();
+        registerProviders(deployment, resteasyInitParameters, reflectiveClass, unremovableBeans,
+                jaxrsProvidersToRegisterBuildItem);
 
         if (!scannedResources.isEmpty()) {
+            deployment.getScannedResourceClasses()
+                    .addAll(scannedResources.keySet().stream().map(Object::toString).collect(Collectors.toList()));
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES,
-                    String.join(",", scannedResources));
+                    scannedResources.keySet().stream().map(Object::toString).collect(Collectors.joining(",")));
         }
         resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_SERVLET_MAPPING_PREFIX, path);
         if (appClass != null) {
+            deployment.setApplicationClass(appClass);
             resteasyInitParameters.put(JAX_RS_APPLICATION_PARAMETER_NAME, appClass);
         }
         resteasyInitParameters.put("resteasy.injector.factory", QuarkusInjectorFactory.class.getName());
+        deployment.setInjectorFactoryClass(QuarkusInjectorFactory.class.getName());
 
         if (commonConfig.gzip.enabled) {
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_GZIP_MAX_INPUT,
                     Long.toString(commonConfig.gzip.maxInput.asLongValue()));
         }
+        resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_UNWRAPPED_EXCEPTIONS,
+                ArcUndeclaredThrowableException.class.getName());
 
         resteasyServerConfig.produce(new ResteasyServerConfigBuildItem(path, resteasyInitParameters));
+
+        Set<DotName> autoInjectAnnotationNames = autoInjectAnnotations.stream().flatMap(a -> a.getAnnotationNames().stream())
+                .collect(Collectors.toSet());
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+
+            @Override
+            public boolean appliesTo(Kind kind) {
+                return kind == Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext transformationContext) {
+                ClassInfo clazz = transformationContext.getTarget().asClass();
+                if (clazz.classAnnotation(ResteasyDotNames.PATH) != null) {
+                    // Root resources - no need to add scope, @Path is a bean defining annotation
+                    if (clazz.classAnnotation(DotNames.TYPED) == null) {
+                        // Add @Typed(MyResource.class)
+                        transformationContext.transform().add(createTypedAnnotationInstance(clazz)).done();
+                    }
+                    return;
+                }
+                if (BuiltinScope.isIn(clazz.classAnnotations())) {
+                    // Skip classes annotated with built-in scope
+                    return;
+                }
+                if (clazz.classAnnotation(ResteasyDotNames.PROVIDER) != null) {
+                    Transformation transformation = null;
+                    if (clazz.annotations().containsKey(DotNames.INJECT)
+                            || hasAutoInjectAnnotation(autoInjectAnnotationNames, clazz)) {
+                        // A provider with an injection point but no built-in scope is @Singleton
+                        transformation = transformationContext.transform().add(BuiltinScope.SINGLETON.getName());
+                    }
+                    if (clazz.classAnnotation(DotNames.TYPED) == null) {
+                        // Add @Typed(MyProvider.class)
+                        if (transformation == null) {
+                            transformation = transformationContext.transform();
+                        }
+                        transformation.add(createTypedAnnotationInstance(clazz));
+                    }
+                    if (transformation != null) {
+                        transformation.done();
+                    }
+                } else if (subresources.contains(clazz.name())) {
+                    // Transform a class annotated with a request method designator
+                    Transformation transformation = transformationContext.transform()
+                            .add(resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName()
+                                    : BuiltinScope.DEPENDENT.getName());
+                    if (clazz.classAnnotation(DotNames.TYPED) == null) {
+                        // Add @Typed(MySubresource.class)
+                        transformation.add(createTypedAnnotationInstance(clazz));
+                    }
+                    transformation.done();
+                }
+            }
+        }));
+        resteasyDeployment.produce(new ResteasyDeploymentBuildItem(path, deployment));
     }
 
     @BuildStep
@@ -304,20 +384,6 @@ public class ResteasyServerCommonProcessor {
         }
     }
 
-    @Record(STATIC_INIT)
-    @BuildStep
-    ResteasyInjectionReadyBuildItem setupInjection(ResteasyServerCommonRecorder recorder,
-            BeanContainerBuildItem beanContainerBuildItem,
-            List<ProxyUnwrapperBuildItem> proxyUnwrappers) {
-        List<Function<Object, Object>> unwrappers = new ArrayList<>();
-        for (ProxyUnwrapperBuildItem i : proxyUnwrappers) {
-            unwrappers.add(i.getUnwrapper());
-        }
-        recorder.setupIntegration(beanContainerBuildItem.getValue(), unwrappers);
-
-        return new ResteasyInjectionReadyBuildItem();
-    }
-
     @BuildStep
     void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
         beanDefiningAnnotations
@@ -326,27 +392,6 @@ public class ResteasyServerCommonProcessor {
         beanDefiningAnnotations
                 .produce(new BeanDefiningAnnotationBuildItem(ResteasyDotNames.APPLICATION_PATH,
                         BuiltinScope.SINGLETON.getName()));
-    }
-
-    @BuildStep
-    AnnotationsTransformerBuildItem annotationTransformer() {
-        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-
-            @Override
-            public boolean appliesTo(Kind kind) {
-                return kind == Kind.CLASS;
-            }
-
-            @Override
-            public void transform(TransformationContext transformationContext) {
-                ClassInfo clazz = transformationContext.getTarget().asClass();
-                if (clazz.classAnnotation(ResteasyDotNames.PROVIDER) != null && clazz.annotations().containsKey(DotNames.INJECT)
-                        && !BuiltinScope.isIn(clazz.classAnnotations())) {
-                    // A provider with an injection point but no built-in scope is @Singleton
-                    transformationContext.transform().add(BuiltinScope.SINGLETON.getName()).done();
-                }
-            }
-        });
     }
 
     /**
@@ -359,7 +404,78 @@ public class ResteasyServerCommonProcessor {
         return new JaxbEnabledBuildItem();
     }
 
-    private static void registerProviders(Map<String, String> resteasyInitParameters,
+    private boolean hasAutoInjectAnnotation(Set<DotName> autoInjectAnnotationNames, ClassInfo clazz) {
+        for (DotName name : autoInjectAnnotationNames) {
+            List<AnnotationInstance> instances = clazz.annotations().get(name);
+            if (instances != null) {
+                for (AnnotationInstance instance : instances) {
+                    if (instance.target().kind() == Kind.FIELD) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private AnnotationInstance createTypedAnnotationInstance(ClassInfo clazz) {
+        return AnnotationInstance.create(DotNames.TYPED, clazz,
+                new AnnotationValue[] { AnnotationValue.createArrayValue("value",
+                        new AnnotationValue[] { AnnotationValue.createClassValue("value",
+                                Type.create(clazz.name(), org.jboss.jandex.Type.Kind.CLASS)) }) });
+    }
+
+    private Set<DotName> findSubresources(IndexView index, Map<DotName, ClassInfo> scannedResources) {
+        // First identify sub-resource candidates
+        Set<DotName> subresources = new HashSet<>();
+        for (DotName annotation : METHOD_ANNOTATIONS) {
+            Collection<AnnotationInstance> annotationInstances = index.getAnnotations(annotation);
+            for (AnnotationInstance annotationInstance : annotationInstances) {
+                DotName declaringClassName = annotationInstance.target().asMethod().declaringClass().name();
+                if (scannedResources.containsKey(declaringClassName)) {
+                    // Skip resource classes
+                    continue;
+                }
+                subresources.add(declaringClassName);
+            }
+        }
+        if (!subresources.isEmpty()) {
+            // Collect sub-resource locator return types
+            Set<DotName> subresourceLocatorTypes = new HashSet<>();
+            for (ClassInfo resourceClass : scannedResources.values()) {
+                ClassInfo clazz = resourceClass;
+                while (clazz != null) {
+                    for (MethodInfo method : clazz.methods()) {
+                        if (method.hasAnnotation(ResteasyDotNames.PATH)) {
+                            subresourceLocatorTypes.add(method.returnType().name());
+                        }
+                    }
+                    if (clazz.superName().equals(DotNames.OBJECT)) {
+                        clazz = null;
+                    } else {
+                        clazz = index.getClassByName(clazz.superName());
+                    }
+                }
+            }
+            // Remove false positives
+            for (Iterator<DotName> iterator = subresources.iterator(); iterator.hasNext();) {
+                DotName subresource = iterator.next();
+                for (DotName type : subresourceLocatorTypes) {
+                    // Sub-resource may be a subclass of a locator return type
+                    if (!subresource.equals(type)
+                            && index.getAllKnownSubclasses(type).stream().noneMatch(c -> c.name().equals(subresource))) {
+                        iterator.remove();
+                        break;
+                    }
+                }
+            }
+        }
+        log.trace("Sub-resources found: " + subresources);
+        return subresources;
+    }
+
+    private static void registerProviders(ResteasyDeployment deployment,
+            Map<String, String> resteasyInitParameters,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem) {
@@ -367,12 +483,16 @@ public class ResteasyServerCommonProcessor {
         if (jaxrsProvidersToRegisterBuildItem.useBuiltIn()) {
             // if we find a wildcard media type, we just use the built-in providers
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_USE_BUILTIN_PROVIDERS, "true");
+            deployment.setRegisterBuiltin(true);
 
             if (!jaxrsProvidersToRegisterBuildItem.getContributedProviders().isEmpty()) {
+                deployment.getProviderClasses().addAll(jaxrsProvidersToRegisterBuildItem.getContributedProviders());
                 resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_PROVIDERS,
                         String.join(",", jaxrsProvidersToRegisterBuildItem.getContributedProviders()));
             }
         } else {
+            deployment.setRegisterBuiltin(false);
+            deployment.getProviderClasses().addAll(jaxrsProvidersToRegisterBuildItem.getProviders());
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_USE_BUILTIN_PROVIDERS, "false");
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_PROVIDERS,
                     String.join(",", jaxrsProvidersToRegisterBuildItem.getProviders()));
@@ -386,11 +506,8 @@ public class ResteasyServerCommonProcessor {
         // special case: our config providers
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 ServletConfigSource.class,
-                ServletConfigSourceImpl.class,
                 ServletContextConfigSource.class,
-                ServletContextConfigSourceImpl.class,
-                FilterConfigSource.class,
-                FilterConfigSourceImpl.class));
+                FilterConfigSource.class));
 
         // Providers that are also beans are unremovable
         unremovableBeans.produce(new UnremovableBeanBuildItem(
@@ -403,6 +520,7 @@ public class ResteasyServerCommonProcessor {
 
         final Set<String> allowedAnnotationPrefixes = new HashSet<>(1 + additionalJaxRsResourceDefiningAnnotations.size());
         allowedAnnotationPrefixes.add(packageName(ResteasyDotNames.PATH));
+        allowedAnnotationPrefixes.add("kotlin"); // make sure the annotation that the Kotlin compiler adds don't interfere with creating a default constructor
         for (AdditionalJaxRsResourceDefiningAnnotationBuildItem additionalJaxRsResourceDefiningAnnotation : additionalJaxRsResourceDefiningAnnotations) {
             final String packageName = packageName(additionalJaxRsResourceDefiningAnnotation.getAnnotationClass());
             if (packageName != null) {

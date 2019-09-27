@@ -20,6 +20,8 @@ import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.ClaimValue;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
+import io.quarkus.security.Authenticated;
+
 @Path("/endp")
 @DenyAll
 @RequestScoped
@@ -122,6 +124,16 @@ public class RolesEndpoint {
             response = Response.ok(user.getName(), MediaType.TEXT_PLAIN).build();
         }
         return response;
+    }
+
+    @GET
+    @Path("/authenticated")
+    @Authenticated
+    public String checkAuthenticated(@Context SecurityContext sec) {
+        if (sec.getUserPrincipal() != null) {
+            return sec.getUserPrincipal().getName();
+        }
+        return "FAILED";
     }
 
     @GET

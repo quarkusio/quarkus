@@ -21,6 +21,7 @@ pr:
       - CONTRIBUTING.md
       - LICENSE.txt
       - dco.txt
+      - .github/ISSUE_TEMPLATE/*.md
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository/
@@ -87,9 +88,6 @@ stages:
               options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format'
 
   #This stage builds the Quarkus artifacts needed for native image testing
-  #but also tests JDK8 linux. While it would be more parallel to have a separate JDK8 test run,
-  #and build this run with tests skipped, this means that if there is a problem with the JVM run
-  #we do not waste time on native runs, and also uses less agent time overall
   - stage: build_artifact_for_native_stage
     displayName: 'Build for Native'
     dependsOn: cache_maven_repo_stage
@@ -99,13 +97,20 @@ stages:
         timeoutInMinutes: 60
         pool:
           vmImage: 'Ubuntu 16.04'
-
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
-
         steps:
-          - template: ci-templates/jvm-build-steps.yaml
+          - task: CacheBeta@0 #we know the very first job will have restored or created this, so this will never write built artifacts to the cache
+            inputs:
+              key: maven | bom/runtime/pom.xml
+              path: $(Pipeline.Workspace)/.m2/repository/
+              securityNamespace: cache
+            displayName: Restore Maven Cache
 
+          - task: Maven@3
+            displayName: 'Maven Build'
+            inputs:
+              goals: 'install'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-DskipTests -Dno-format'
           - publish: $(MAVEN_CACHE_FOLDER)
             artifact: BuiltMavenRepo
 
@@ -113,13 +118,20 @@ stages:
     displayName: 'Run JVM Tests'
     dependsOn: cache_maven_repo_stage
     jobs:
+
+      - job: Build_JDK8_Linux
+        displayName: 'Build JDK8 Linux'
+        timeoutInMinutes: 60
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        steps:
+          - template: ci-templates/jvm-build-steps.yaml
+
       - job: Windows_Build
         displayName: 'Windows JVM Build'
         timeoutInMinutes: 60
         pool:
           vmImage: 'vs2017-win2016'
-        variables:
-          imageName: 'quarkus-windows:$(build.buildId)'
           MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
           MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
         steps:
@@ -142,17 +154,25 @@ stages:
         displayName: 'Linux JDK11 Build'
         pool:
           vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus-jdk11:$(build.buildId)'
         steps:
           - template: ci-templates/jvm-build-steps.yaml
+            parameters:
+              jdk: '1.11'
+
+      - job: Build_JDK12_Linux
+        timeoutInMinutes: 60
+        displayName: 'Linux JDK12 Build'
+        pool:
+          vmImage: 'Ubuntu 16.04'
+        steps:
+          - template: ci-templates/jvm-build-steps.yaml
+            parameters:
+              jdk: '1.12'
 
       - job: Run_TCKs
         timeoutInMinutes: 45
         pool:
           vmImage: 'Ubuntu 16.04'
-        variables:
-          imageName: 'quarkus:$(build.buildId)'
         steps:
           - task: Maven@3
             displayName: 'Maven Install'
@@ -180,17 +200,27 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 25
           modules:
-            - jpa
             - jpa-h2
             - jpa-mariadb
             - jpa-mssql
-            - jpa-postgresql
-          name: jpa
-          postgres: true
+          name: jpa_db
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 25
+          modules:
+            - jpa
+            - jpa-postgresql
+            - jpa-mysql
+          name: jpa
+          postgres: true
+          mysql: true
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          timeoutInMinutes: 15
           modules:
             - amazon-dynamodb
             - amazon-lambda
@@ -199,6 +229,7 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 20
           modules:
             - artemis-core
             - artemis-jms
@@ -207,6 +238,7 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 20
           modules:
             - elytron-security-oauth2
             - elytron-security
@@ -216,6 +248,7 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 30
           modules:
             - flyway
             - hibernate-orm-panache
@@ -229,31 +262,42 @@ stages:
             - infinispan-cache-jpa
             - infinispan-client
             - mongodb-client
+            - mongodb-panache
             - neo4j
           name: data
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 25
           modules:
             - resteasy-jackson
             - vertx
+            - vertx-http
             - virtual-http
           name: http
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 25
           modules:
             - jackson
             - jgit
             - kogito
             - kubernetes-client
-            - tika
-            - hibernate-validator
-            - test-extension
-          name: misc
+          name: misc1
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 25
+          modules:
+            - tika
+            - hibernate-validator
+            - test-extension
+          name: misc2
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          timeoutInMinutes: 25
           modules:
             - spring-di
             - spring-web
@@ -263,6 +307,7 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 15
           modules:
             - hibernate-search-elasticsearch
           name: hibernate_search_elasticsearch

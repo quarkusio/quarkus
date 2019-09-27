@@ -6,7 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.deployment.TestClassLoader;
 
 public class SimpleClassProxyTest {
 
@@ -17,7 +19,7 @@ public class SimpleClassProxyTest {
                 .setSuperClass(SimpleClass.class)
                 .setAnchorClass(SimpleClass.class)
                 .setProxyNameSuffix("$$Proxy1")
-                .setClassLoader(SimpleClass.class.getClassLoader());
+                .setClassLoader(new TestClassLoader(SimpleClass.class.getClassLoader()));
         SimpleClass instance = new ProxyFactory<>(proxyConfiguration).newInstance(invocationHandler);
 
         assertMethod1(instance);
@@ -52,24 +54,6 @@ public class SimpleClassProxyTest {
 
     private void assertMethod4(SimpleClass instance) {
         assertThatCode(() -> instance.method4(4)).doesNotThrowAnyException();
-    }
-
-    @Test
-    public void testMultipleClassLoaders() throws InstantiationException, IllegalAccessException {
-        ClassLoader cl1 = new ClassLoader() {
-
-        };
-        ClassLoader cl2 = new ClassLoader() {
-
-        };
-        ProxyConfiguration<SimpleClass> proxyConfiguration = new ProxyConfiguration<SimpleClass>()
-                .setSuperClass(SimpleClass.class)
-                .setAnchorClass(SimpleClass.class)
-                .setProxyNameSuffix("$$Proxy2")
-                .setClassLoader(cl1);
-        ProxyFactory<SimpleClass> proxyFactory = new ProxyFactory<>(proxyConfiguration);
-        SimpleClass instance = proxyFactory.newInstance(new SimpleInvocationHandler());
-        assertThat(instance).isNotNull();
     }
 
 }

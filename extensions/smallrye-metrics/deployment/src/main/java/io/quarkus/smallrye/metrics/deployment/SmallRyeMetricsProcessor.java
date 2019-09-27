@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import javax.enterprise.context.Dependent;
 
@@ -31,6 +32,7 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -45,8 +47,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.smallrye.metrics.deployment.jandex.JandexBeanInfoAdapter;
 import io.quarkus.smallrye.metrics.deployment.jandex.JandexMemberInfoAdapter;
 import io.quarkus.smallrye.metrics.runtime.SmallRyeMetricsRecorder;
-import io.quarkus.smallrye.metrics.runtime.SmallRyeMetricsServlet;
-import io.quarkus.undertow.deployment.ServletBuildItem;
+import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.runtime.HandlerType;
 import io.smallrye.metrics.MetricProducer;
 import io.smallrye.metrics.MetricRegistries;
 import io.smallrye.metrics.MetricsRequestHandler;
@@ -57,6 +59,8 @@ import io.smallrye.metrics.interceptors.MeteredInterceptor;
 import io.smallrye.metrics.interceptors.MetricNameFactory;
 import io.smallrye.metrics.interceptors.MetricsInterceptor;
 import io.smallrye.metrics.interceptors.TimedInterceptor;
+import io.vertx.ext.web.Route;
+import io.vertx.ext.web.Router;
 
 public class SmallRyeMetricsProcessor {
     private static final Logger LOGGER = Logger.getLogger("io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsProcessor");
@@ -65,7 +69,7 @@ public class SmallRyeMetricsProcessor {
     static final class SmallRyeMetricsConfig {
 
         /**
-         * The path to the metrics Servlet.
+         * The path to the metrics handler.
          */
         @ConfigItem(defaultValue = "/metrics")
         String path;
@@ -74,16 +78,16 @@ public class SmallRyeMetricsProcessor {
     SmallRyeMetricsConfig metrics;
 
     @BuildStep
-    ServletBuildItem createServlet() {
-        ServletBuildItem servletBuildItem = ServletBuildItem.builder("metrics", SmallRyeMetricsServlet.class.getName())
-                .addMapping(metrics.path + (metrics.path.endsWith("/") ? "*" : "/*"))
-                .addInitParam("metrics.path", metrics.path)
-                .build();
-        return servletBuildItem;
+    @Record(STATIC_INIT)
+    void createRoute(BuildProducer<RouteBuildItem> routes,
+            SmallRyeMetricsRecorder recorder) {
+        Function<Router, Route> route = recorder.route(metrics.path + (metrics.path.endsWith("/") ? "*" : "/*"));
+        routes.produce(new RouteBuildItem(route, recorder.handler(metrics.path), HandlerType.BLOCKING));
     }
 
     @BuildStep
-    void beans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    void beans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         additionalBeans.produce(new AdditionalBeanBuildItem(MetricProducer.class,
                 MetricNameFactory.class,
                 MetricRegistries.class,
@@ -92,8 +96,9 @@ public class SmallRyeMetricsProcessor {
                 ConcurrentGaugeInterceptor.class,
                 CountedInterceptor.class,
                 TimedInterceptor.class,
-                MetricsRequestHandler.class,
-                SmallRyeMetricsServlet.class));
+                MetricsRequestHandler.class));
+        unremovableBeans.produce(new UnremovableBeanBuildItem(
+                new UnremovableBeanBuildItem.BeanClassNameExclusion(MetricsRequestHandler.class.getName())));
     }
 
     @BuildStep
@@ -111,20 +116,23 @@ public class SmallRyeMetricsProcessor {
                         return;
                     }
                     ClassInfo clazz = ctx.getTarget().asClass();
-                    while (clazz != null && clazz.superName() != null) {
-                        Map<DotName, List<AnnotationInstance>> annotations = clazz.annotations();
-                        if (annotations.containsKey(GAUGE) || annotations.containsKey(SmallRyeMetricsDotNames.CONCURRENT_GAUGE)
-                                || annotations.containsKey(SmallRyeMetricsDotNames.COUNTED)
-                                || annotations.containsKey(SmallRyeMetricsDotNames.METERED)
-                                || annotations.containsKey(SmallRyeMetricsDotNames.TIMED)
-                                || annotations.containsKey(SmallRyeMetricsDotNames.METRIC)) {
-                            LOGGER.debugf(
-                                    "Found metrics business methods on a class %s with no scope defined - adding @Dependent",
-                                    ctx.getTarget());
-                            ctx.transform().add(Dependent.class).done();
-                            break;
+                    if (!isJaxRsEndpoint(clazz)) {
+                        while (clazz != null && clazz.superName() != null) {
+                            Map<DotName, List<AnnotationInstance>> annotations = clazz.annotations();
+                            if (annotations.containsKey(GAUGE)
+                                    || annotations.containsKey(SmallRyeMetricsDotNames.CONCURRENT_GAUGE)
+                                    || annotations.containsKey(SmallRyeMetricsDotNames.COUNTED)
+                                    || annotations.containsKey(SmallRyeMetricsDotNames.METERED)
+                                    || annotations.containsKey(SmallRyeMetricsDotNames.TIMED)
+                                    || annotations.containsKey(SmallRyeMetricsDotNames.METRIC)) {
+                                LOGGER.debugf(
+                                        "Found metrics business methods on a class %s with no scope defined - adding @Dependent",
+                                        ctx.getTarget());
+                                ctx.transform().add(Dependent.class).done();
+                                break;
+                            }
+                            clazz = index.getIndex().getClassByName(clazz.superName());
                         }
-                        clazz = index.getIndex().getClassByName(clazz.superName());
                     }
                 }
             }
@@ -143,17 +151,25 @@ public class SmallRyeMetricsProcessor {
                     return;
                 }
 
-                for (DotName annotationName : clazz.annotations().keySet()) {
-                    if (GAUGE.equals(annotationName)) {
-                        ctx.transform().add(AnnotationInstance.create(METRICS_BINDING,
-                                ctx.getTarget(), new AnnotationValue[0]))
-                                .done();
-                        return;
+                if (clazz.annotations().keySet().contains(GAUGE)) {
+                    BuiltinScope beanScope = BuiltinScope.from(clazz);
+                    if (!isJaxRsEndpoint(clazz) && beanScope != null &&
+                            !beanScope.equals(BuiltinScope.APPLICATION) &&
+                            !beanScope.equals(BuiltinScope.SINGLETON)) {
+                        LOGGER.warnf("Bean %s declares a org.eclipse.microprofile.metrics.annotation.Gauge " +
+                                "but is of a scope that typically " +
+                                "creates multiple instances. Gauges are forbidden on beans " +
+                                "that create multiple instances, this will cause errors " +
+                                "when constructing them. Please use annotated gauges only in beans with " +
+                                "@ApplicationScoped or @Singleton scopes, or in JAX-RS endpoints.",
+                                clazz.name().toString());
                     }
+                    ctx.transform().add(AnnotationInstance.create(METRICS_BINDING,
+                            ctx.getTarget(), new AnnotationValue[0]))
+                            .done();
                 }
             }
         }));
-
     }
 
     @BuildStep
@@ -261,6 +277,11 @@ public class SmallRyeMetricsProcessor {
         for (ClassInfo subClass : index.getAllKnownSubclasses(clazz.name())) {
             collectedMetricsClasses.put(subClass.name(), subClass);
         }
+    }
+
+    private boolean isJaxRsEndpoint(ClassInfo clazz) {
+        return clazz.annotations().containsKey(SmallRyeMetricsDotNames.JAXRS_PATH) ||
+                clazz.annotations().containsKey(SmallRyeMetricsDotNames.REST_CONTROLLER);
     }
 
 }

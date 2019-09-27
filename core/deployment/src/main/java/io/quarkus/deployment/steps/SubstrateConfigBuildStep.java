@@ -14,6 +14,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
 import io.quarkus.deployment.builditem.JniBuildItem;
@@ -44,6 +45,7 @@ class SubstrateConfigBuildStep {
             List<JniBuildItem> jniBuildItems,
             List<NativeEnableAllCharsetsBuildItem> nativeEnableAllCharsetsBuildItems,
             List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
+            List<EnableAllSecurityServicesBuildItem> enableAllSecurityServicesBuildItems,
             BuildProducer<SubstrateProxyDefinitionBuildItem> proxy,
             BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
@@ -117,7 +119,13 @@ class SubstrateConfigBuildStep {
         }
         nativeImage.produce(new SubstrateSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));
 
-        if (!jniBuildItems.isEmpty()) {
+        boolean requireJni = false;
+        if (!enableAllSecurityServicesBuildItems.isEmpty()) {
+            requireJni = true;
+            nativeImage.produce(new SubstrateSystemPropertyBuildItem("quarkus.all-security-services.enable", "true"));
+        }
+
+        if (!jniBuildItems.isEmpty() || requireJni) {
             for (JniBuildItem jniBuildItem : jniBuildItems) {
                 if (jniBuildItem.getLibraryPaths() != null && !jniBuildItem.getLibraryPaths().isEmpty()) {
                     for (String path : jniBuildItem.getLibraryPaths()) {

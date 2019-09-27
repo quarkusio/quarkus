@@ -78,12 +78,14 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrarBuildItem;
 import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
 import io.quarkus.arc.processor.ContextRegistrar;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
@@ -96,11 +98,13 @@ import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.runtime.HttpSessionContext;
 import io.quarkus.undertow.runtime.ServletProducer;
+import io.quarkus.undertow.runtime.ServletRuntimeConfig;
 import io.quarkus.undertow.runtime.ServletSecurityInfoProxy;
 import io.quarkus.undertow.runtime.ServletSecurityInfoSubstitution;
 import io.quarkus.undertow.runtime.UndertowDeploymentRecorder;
 import io.quarkus.undertow.runtime.UndertowHandlersConfServletExtension;
-import io.quarkus.vertx.web.deployment.DefaultRouteBuildItem;
+import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.HttpMethodSecurityInfo;
@@ -108,7 +112,7 @@ import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.RoutingContext;
 
 //TODO: break this up, it is getting too big
 public class UndertowBuildStep {
@@ -126,6 +130,11 @@ public class UndertowBuildStep {
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
 
+    @BuildStep(providesCapabilities = Capabilities.SERVLET)
+    public FeatureBuildItem setupCapability() {
+        return new FeatureBuildItem(FeatureBuildItem.SERVLET);
+    }
+
     @BuildStep
     @Record(RUNTIME_INIT)
     public ServiceStartBuildItem boot(UndertowDeploymentRecorder recorder,
@@ -133,10 +142,12 @@ public class UndertowBuildStep {
             List<HttpHandlerWrapperBuildItem> wrappers,
             ShutdownContextBuildItem shutdown,
             Consumer<DefaultRouteBuildItem> undertowProducer,
-            ExecutorBuildItem executorBuildItem) throws Exception {
-        Handler<HttpServerRequest> ut = recorder.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
+            ExecutorBuildItem executorBuildItem, HttpConfiguration httpConfiguration,
+            ServletRuntimeConfig servletRuntimeConfig) throws Exception {
+        Handler<RoutingContext> ut = recorder.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
                 servletDeploymentManagerBuildItem.getDeploymentManager(),
-                wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()));
+                wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()), httpConfiguration,
+                servletRuntimeConfig);
 
         undertowProducer.accept(new DefaultRouteBuildItem(ut));
         return new ServiceStartBuildItem("undertow");
@@ -160,7 +171,6 @@ public class UndertowBuildStep {
      * Register the undertow-handlers.conf file
      */
     @BuildStep
-    @Record(STATIC_INIT)
     public void registerUndertowHandlersConf(BuildProducer<ServletExtensionBuildItem> producer,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFile,
@@ -270,6 +280,12 @@ public class UndertowBuildStep {
         RuntimeValue<DeploymentInfo> deployment = recorder.createDeployment("test", knownPaths.knownFiles,
                 knownPaths.knownDirectories,
                 launchMode.getLaunchMode(), shutdownContext, contextPath);
+
+        if (webMetaData.getContextParams() != null) {
+            for (ParamValueMetaData i : webMetaData.getContextParams()) {
+                recorder.addContextParam(deployment, i.getParamName(), i.getParamValue());
+            }
+        }
 
         //add servlets
         if (webMetaData.getServlets() != null) {
@@ -488,28 +504,7 @@ public class UndertowBuildStep {
                     servlet.setAsyncSupported(asyncSupported.asBoolean());
                 }
                 AnnotationValue initParamsValue = annotation.value("initParams");
-                if (initParamsValue != null) {
-                    AnnotationInstance[] initParamsAnnotations = initParamsValue.asNestedArray();
-                    if (initParamsAnnotations != null && initParamsAnnotations.length > 0) {
-                        List<ParamValueMetaData> initParams = new ArrayList<ParamValueMetaData>();
-                        for (AnnotationInstance initParamsAnnotation : initParamsAnnotations) {
-                            ParamValueMetaData initParam = new ParamValueMetaData();
-                            AnnotationValue initParamName = initParamsAnnotation.value("name");
-                            AnnotationValue initParamValue = initParamsAnnotation.value();
-                            AnnotationValue initParamDescription = initParamsAnnotation.value("description");
-                            initParam.setParamName(initParamName.asString());
-                            initParam.setParamValue(initParamValue.asString());
-                            if (initParamDescription != null) {
-                                Descriptions descriptions = getDescription(initParamDescription.asString());
-                                if (descriptions != null) {
-                                    initParam.setDescriptions(descriptions);
-                                }
-                            }
-                            initParams.add(initParam);
-                        }
-                        servlet.setInitParam(initParams);
-                    }
-                }
+                servlet.setInitParam(getInitParams(initParamsValue));
                 AnnotationValue descriptionValue = annotation.value("description");
                 AnnotationValue displayNameValue = annotation.value("displayName");
                 AnnotationValue smallIconValue = annotation.value("smallIcon");
@@ -573,28 +568,7 @@ public class UndertowBuildStep {
                     filter.setAsyncSupported(asyncSupported.asBoolean());
                 }
                 AnnotationValue initParamsValue = annotation.value("initParams");
-                if (initParamsValue != null) {
-                    AnnotationInstance[] initParamsAnnotations = initParamsValue.asNestedArray();
-                    if (initParamsAnnotations != null && initParamsAnnotations.length > 0) {
-                        List<ParamValueMetaData> initParams = new ArrayList<ParamValueMetaData>();
-                        for (AnnotationInstance initParamsAnnotation : initParamsAnnotations) {
-                            ParamValueMetaData initParam = new ParamValueMetaData();
-                            AnnotationValue initParamName = initParamsAnnotation.value("name");
-                            AnnotationValue initParamValue = initParamsAnnotation.value();
-                            AnnotationValue initParamDescription = initParamsAnnotation.value("description");
-                            initParam.setParamName(initParamName.asString());
-                            initParam.setParamValue(initParamValue.asString());
-                            if (initParamDescription != null) {
-                                Descriptions descriptions = getDescription(initParamDescription.asString());
-                                if (descriptions != null) {
-                                    initParam.setDescriptions(descriptions);
-                                }
-                            }
-                            initParams.add(initParam);
-                        }
-                        filter.setInitParam(initParams);
-                    }
-                }
+                filter.setInitParam(getInitParams(initParamsValue));
                 AnnotationValue descriptionValue = annotation.value("description");
                 AnnotationValue displayNameValue = annotation.value("displayName");
                 AnnotationValue smallIconValue = annotation.value("smallIcon");
@@ -827,6 +801,34 @@ public class UndertowBuildStep {
                 annotationMD.setServletSecurity(servletSecurity);
             }
         }
+    }
+
+    private List<ParamValueMetaData> getInitParams(AnnotationValue initParamsValue) {
+        List<ParamValueMetaData> paramValuesMetaData = new ArrayList<>();
+        if (initParamsValue == null) {
+            return paramValuesMetaData;
+        }
+
+        AnnotationInstance[] initParamsAnnotations = initParamsValue.asNestedArray();
+        if (initParamsAnnotations != null && initParamsAnnotations.length > 0) {
+            for (AnnotationInstance initParamsAnnotation : initParamsAnnotations) {
+                ParamValueMetaData initParam = new ParamValueMetaData();
+                AnnotationValue initParamName = initParamsAnnotation.value("name");
+                AnnotationValue initParamValue = initParamsAnnotation.value();
+                AnnotationValue initParamDescription = initParamsAnnotation.value("description");
+                initParam.setParamName(initParamName.asString());
+                initParam.setParamValue(initParamValue.asString());
+                if (initParamDescription != null) {
+                    Descriptions descriptions = getDescription(initParamDescription.asString());
+                    if (descriptions != null) {
+                        initParam.setDescriptions(descriptions);
+                    }
+                }
+                paramValuesMetaData.add(initParam);
+            }
+        }
+
+        return paramValuesMetaData;
     }
 
     /**

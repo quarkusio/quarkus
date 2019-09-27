@@ -51,7 +51,7 @@ public class GradleBuildFile extends BuildFile {
         write(BUILD_GRADLE_PATH, buildContent);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         propertiesContent.store(out, "Gradle properties");
-        write(GRADLE_PROPERTIES_PATH, out.toString());
+        write(GRADLE_PROPERTIES_PATH, out.toString(StandardCharsets.UTF_8.toString()));
     }
 
     public void completeFile(String groupId, String artifactId, String version) throws IOException {
@@ -143,7 +143,7 @@ public class GradleBuildFile extends BuildFile {
     }
 
     private void readLineByLine(String content, Consumer<String> lineConsumer) {
-        try (Scanner scanner = new Scanner(new ByteArrayInputStream(content.getBytes()))) {
+        try (Scanner scanner = new Scanner(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)))) {
             while (scanner.hasNextLine()) {
                 String currentLine = scanner.nextLine();
                 lineConsumer.accept(currentLine);
@@ -197,7 +197,8 @@ public class GradleBuildFile extends BuildFile {
         if (dependencies == null) {
             dependencies = new ArrayList<>();
             boolean inDependencies = false;
-            try (Scanner scanner = new Scanner(new ByteArrayInputStream(buildContent.getBytes(StandardCharsets.UTF_8)))) {
+            try (Scanner scanner = new Scanner(new ByteArrayInputStream(buildContent.getBytes(StandardCharsets.UTF_8)),
+                    StandardCharsets.UTF_8.toString())) {
                 while (scanner.hasNextLine()) {
                     String currentLine = scanner.nextLine();
                     if (currentLine.startsWith("dependencies {")) {

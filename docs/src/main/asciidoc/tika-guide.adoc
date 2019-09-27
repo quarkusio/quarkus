@@ -9,14 +9,47 @@ include::./attributes.adoc[]
 
 This guide explains how your Quarkus application can use https://tika.apache.org/[Apache Tika] to parse the documents. 
 
-https://tika.apache.org/[Apache Tika] is a content analysis toolkit which is used to parse the documents in PDF, Open Document, Excel and many other well known binary and text formats using a simple uniform API. Both the document text and properties (metadata) are available once the document has been parsed. 
+https://tika.apache.org/[Apache Tika] is a content analysis toolkit which is used to parse the documents in PDF, Open Document, Excel and many other well known binary and text formats using a simple uniform API. Both the document text and properties (metadata) are available once the document has been parsed.
+
+== Creating the Maven Project
+
+First, we need a new project. Create a new project with the following command:
+
+[source, subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=using-tika \
+    -Dextensions="tika"
+----
+
+This command generates a Maven project, importing the `tika` extension.
+
+If you already have your Quarkus project configured you can add the `tika` extension
+to your project by running the following command in your project base directory.
+
+[source,bash]
+----
+mvn quarkus:add-extension -Dextensions="tika"
+----
+
+This will add the following to your pom.xml:
+
+[source,xml]
+----
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-tika</artifactId>
+    </dependency>
+----
 
 == Configuration
 
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|quarkus.tika.tika-config-path|tika-config.xml|Path to the https://tika.apache.org/1.22/configuring.html[Tika configuration] resource. Typically a file named `tika-config.xml` is located in the root of the application resources path. The default configuration will be used if no configuration resource is available. 
+|quarkus.tika.tika-config-path||The resource path within the application artifact to the https://tika.apache.org/1.22/configuring.html[Tika configuration] resource. Typically a file named `tika-config.xml` is added to the root of the application resources path. The default configuration will be used if no configuration resource is available.
+|quarkus.tika.parsers||Comma-separated list of the abbreviated or full parser class names which have to be loaded by the extension. A `pdf` abbreviation can be used to refer to the PDF parser and custom abbreviations must be used for all other parsers. Note that this property is mutually exclusive with the `tika-config-path` property. 
 |quarkus.tika.append-embedded-content|true|The document may have other embedded documents, for example, an Excel document may include a PDF content. If such an embedded content is available then, by default, it will be appended to the content of the master document, thus, in this example, the text extracted from PDF file will be appended to the text extracted from the Excel file. This property has to be set to `false` if one needs to access the content of the master and each of the embedded documents individually.  
 |===
 

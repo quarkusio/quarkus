@@ -1,10 +1,11 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
+
 import io.quarkus.arc.BeanManagerProvider;
 import io.quarkus.arc.BeanMetadataProvider;
 import io.quarkus.arc.EventProvider;
 import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.InjectionPointProvider;
 import io.quarkus.arc.InstanceProvider;
 import io.quarkus.arc.InterceptedBeanMetadataProvider;
@@ -20,6 +21,7 @@ import java.lang.reflect.Member;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -45,31 +47,40 @@ enum BuiltinBean {
                         InjectableBean.class, Set.class, Member.class, int.class),
                 parameterizedType, qualifiers, ctx.constructor.getThis(), annotationsHandle, javaMemberHandle,
                 ctx.constructor.load(ctx.injectionPoint.getPosition()));
+        ResultHandle instanceProviderSupplier = ctx.constructor.newInstance(
+                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, instanceProvider);
         ctx.constructor.writeInstanceField(
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
-                        InjectableReferenceProvider.class.getName()),
-                ctx.constructor.getThis(), instanceProvider);
-
+                        Supplier.class.getName()),
+                ctx.constructor.getThis(), instanceProviderSupplier);
     }, BuiltinBean::isInstanceInjectionPoint),
     INJECTION_POINT(DotNames.INJECTION_POINT, ctx -> {
-        // this.injectionPointProvider1 = new InjectionPointProvider();
+        // this.injectionPointProvider1 = () -> new InjectionPointProvider();
+        ResultHandle injectionPointProvider = ctx.constructor.newInstance(
+                MethodDescriptor.ofConstructor(InjectionPointProvider.class));
+        ResultHandle injectionPointProviderSupplier = ctx.constructor.newInstance(
+                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, injectionPointProvider);
         ctx.constructor.writeInstanceField(
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
-                        InjectableReferenceProvider.class.getName()),
+                        Supplier.class.getName()),
                 ctx.constructor.getThis(),
-                ctx.constructor.newInstance(MethodDescriptor.ofConstructor(InjectionPointProvider.class)));
+                injectionPointProviderSupplier);
     }),
     BEAN(DotNames.BEAN, ctx -> {
-        // this.beanProvider1 = new BeanMetadataProvider<>();
+        // this.beanProvider1 = () -> new BeanMetadataProvider<>();
         if (ctx.targetInfo.kind() != InjectionTargetInfo.TargetKind.BEAN) {
             throw new IllegalStateException("Invalid injection target info: " + ctx.targetInfo);
         }
+        ResultHandle beanProvider = ctx.constructor.newInstance(
+                MethodDescriptor.ofConstructor(BeanMetadataProvider.class, String.class),
+                ctx.constructor.load(ctx.targetInfo.asBean().getIdentifier()));
+        ResultHandle beanProviderSupplier = ctx.constructor.newInstance(
+                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, beanProvider);
         ctx.constructor.writeInstanceField(
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
-                        InjectableReferenceProvider.class.getName()),
+                        Supplier.class.getName()),
                 ctx.constructor.getThis(),
-                ctx.constructor.newInstance(MethodDescriptor.ofConstructor(BeanMetadataProvider.class, String.class),
-                        ctx.constructor.load(ctx.targetInfo.asBean().getIdentifier())));
+                beanProviderSupplier);
     }, ip -> {
         return isCdiAndRawTypeMatches(ip, DotNames.BEAN) && ip.hasDefaultedQualifier();
     }),
@@ -77,22 +88,31 @@ enum BuiltinBean {
         if (!(ctx.targetInfo instanceof InterceptorInfo)) {
             throw new IllegalStateException("Invalid injection target info: " + ctx.targetInfo);
         }
+        ResultHandle interceptedBeanMetadataProvider = ctx.constructor
+                .newInstance(MethodDescriptor.ofConstructor(InterceptedBeanMetadataProvider.class));
+
+        ResultHandle interceptedBeanMetadataProviderSupplier = ctx.constructor.newInstance(
+                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, interceptedBeanMetadataProvider);
         ctx.constructor.writeInstanceField(
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
-                        InjectableReferenceProvider.class.getName()),
+                        Supplier.class.getName()),
                 ctx.constructor.getThis(),
-                ctx.constructor.newInstance(MethodDescriptor.ofConstructor(InterceptedBeanMetadataProvider.class)));
+                interceptedBeanMetadataProviderSupplier);
     }, ip -> {
         return isCdiAndRawTypeMatches(ip, DotNames.BEAN) && !ip.hasDefaultedQualifier()
                 && ip.getRequiredQualifiers().size() == 1
                 && ip.getRequiredQualifiers().iterator().next().name().equals(DotNames.INTERCEPTED);
     }),
     BEAN_MANAGER(DotNames.BEAN_MANAGER, ctx -> {
+        ResultHandle beanManagerProvider = ctx.constructor.newInstance(
+                MethodDescriptor.ofConstructor(BeanManagerProvider.class));
+        ResultHandle injectionPointProviderSupplier = ctx.constructor.newInstance(
+                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, beanManagerProvider);
         ctx.constructor.writeInstanceField(
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
-                        InjectableReferenceProvider.class.getName()),
+                        Supplier.class.getName()),
                 ctx.constructor.getThis(),
-                ctx.constructor.newInstance(MethodDescriptor.ofConstructor(BeanManagerProvider.class)));
+                injectionPointProviderSupplier);
     }),
     EVENT(DotNames.EVENT, ctx -> {
 
@@ -121,10 +141,12 @@ enum BuiltinBean {
                 MethodDescriptor.ofConstructor(EventProvider.class, java.lang.reflect.Type.class,
                         Set.class),
                 parameterizedType, qualifiers);
+        ResultHandle eventProviderSupplier = ctx.constructor.newInstance(
+                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, eventProvider);
         ctx.constructor.writeInstanceField(
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
-                        InjectableReferenceProvider.class.getName()),
-                ctx.constructor.getThis(), eventProvider);
+                        Supplier.class.getName()),
+                ctx.constructor.getThis(), eventProviderSupplier);
     }),
     RESOURCE(DotNames.OBJECT, ctx -> {
 
@@ -133,7 +155,7 @@ enum BuiltinBean {
         if (!ctx.injectionPoint.getRequiredQualifiers().isEmpty()) {
             for (AnnotationInstance annotation : ctx.injectionPoint.getRequiredQualifiers()) {
                 // Create annotation literal first
-                ClassInfo annotationClass = ctx.beanDeployment.getIndex().getClassByName(annotation.name());
+                ClassInfo annotationClass = getClassByName(ctx.beanDeployment.getIndex(), annotation.name());
                 ctx.constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotations,
                         ctx.annotationLiterals.process(ctx.constructor, ctx.classOutput,
                                 annotationClass, annotation,
@@ -145,10 +167,12 @@ enum BuiltinBean {
                 MethodDescriptor.ofConstructor(ResourceProvider.class, java.lang.reflect.Type.class,
                         Set.class),
                 parameterizedType, annotations);
+        ResultHandle resourceProviderSupplier = ctx.constructor.newInstance(
+                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, resourceProvider);
         ctx.constructor.writeInstanceField(
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
-                        InjectableReferenceProvider.class.getName()),
-                ctx.constructor.getThis(), resourceProvider);
+                        Supplier.class.getName()),
+                ctx.constructor.getThis(), resourceProviderSupplier);
     }, ip -> ip.getKind() == InjectionPointKind.RESOURCE),
     EVENT_METADATA(DotNames.EVENT_METADATA, ctx -> {
     }),

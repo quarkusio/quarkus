@@ -1,8 +1,10 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 
+import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InvocationContextImpl.InterceptorInvocation;
 import io.quarkus.arc.Subclass;
@@ -54,6 +56,8 @@ public class SubclassGenerator extends AbstractGenerator {
 
     static final String SUBCLASS_SUFFIX = "_Subclass";
 
+    static final String DESTROY_METHOD_NAME = "arc$destroy";
+
     private final Predicate<DotName> applicationClassPredicate;
 
     static String generatedName(DotName providerTypeName, String baseName) {
@@ -83,7 +87,7 @@ public class SubclassGenerator extends AbstractGenerator {
         ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()));
 
         Type providerType = bean.getProviderType();
-        ClassInfo providerClass = bean.getDeployment().getIndex().getClassByName(providerType.name());
+        ClassInfo providerClass = getClassByName(bean.getDeployment().getIndex(), providerType.name());
         String providerTypeName = providerClass.name().toString();
         String baseName = getBaseName(bean, beanClassName);
         String generatedName = generatedName(providerType.name(), baseName);
@@ -339,7 +343,7 @@ public class SubclassGenerator extends AbstractGenerator {
         if (addCatchException) {
             CatchBlockCreator catchOtherExceptions = tryCatch.addCatch(Exception.class);
             // and wrap them in a new RuntimeException(e)
-            catchOtherExceptions.throwException(RuntimeException.class, "Error invoking subclass method",
+            catchOtherExceptions.throwException(ArcUndeclaredThrowableException.class, "Error invoking subclass method",
                     catchOtherExceptions.getCaughtException());
         }
         // InvocationContextImpl.aroundInvoke(this, methods.get("m1"), params, interceptorChains.get("m1"), forward)
@@ -372,12 +376,12 @@ public class SubclassGenerator extends AbstractGenerator {
      * @param bean
      * @param subclass
      * @param preDestroysField
-     * @see Subclass#destroy()
      */
     protected void createDestroy(ClassOutput classOutput, BeanInfo bean, ClassCreator subclass,
             FieldDescriptor preDestroysField) {
         if (preDestroysField != null) {
-            MethodCreator destroy = subclass.getMethodCreator(MethodDescriptor.ofMethod(Subclass.class, "destroy", void.class));
+            MethodCreator destroy = subclass
+                    .getMethodCreator(MethodDescriptor.ofMethod(subclass.getClassName(), DESTROY_METHOD_NAME, void.class));
             ResultHandle predestroysHandle = destroy.readInstanceField(preDestroysField, destroy.getThis());
 
             // Interceptor bindings

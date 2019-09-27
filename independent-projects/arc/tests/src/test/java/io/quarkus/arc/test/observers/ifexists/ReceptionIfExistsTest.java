@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.observers.ifexists;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -12,14 +12,14 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.event.Observes;
 import javax.enterprise.event.Reception;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class ReceptionIfExistsTest {
 
     static final List<String> EVENTS = new CopyOnWriteArrayList<>();
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(DependentObserver.class, RequestScopedObserver.class);
 
     @Test

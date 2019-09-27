@@ -86,7 +86,7 @@ public class ModelUtils {
     }
 
     public static AppArtifact resolveAppArtifact(Path appJar) throws IOException {
-        try (FileSystem fs = FileSystems.newFileSystem(appJar, null)) {
+        try (FileSystem fs = FileSystems.newFileSystem(appJar, (ClassLoader) null)) {
             final Path metaInfMaven = fs.getPath("META-INF", "maven");
             if (Files.exists(metaInfMaven)) {
                 try (DirectoryStream<Path> groupIds = Files.newDirectoryStream(metaInfMaven)) {
@@ -114,7 +114,7 @@ public class ModelUtils {
     }
 
     public static Model readAppModel(Path appJar, AppArtifact appArtifact) throws IOException {
-        try (FileSystem fs = FileSystems.newFileSystem(appJar, null)) {
+        try (FileSystem fs = FileSystems.newFileSystem(appJar, (ClassLoader) null)) {
             final Path pomXml = fs.getPath("META-INF", "maven", appArtifact.getGroupId(), appArtifact.getArtifactId(), "pom.xml");
             if(!Files.exists(pomXml)) {
                 throw new IOException("Failed to located META-INF/maven/<groupId>/<artifactId>/pom.xml in " + appJar);
@@ -124,7 +124,7 @@ public class ModelUtils {
     }
 
     static Model readAppModel(Path appJar) throws IOException {
-        try (FileSystem fs = FileSystems.newFileSystem(appJar, null)) {
+        try (FileSystem fs = FileSystems.newFileSystem(appJar, (ClassLoader) null)) {
             final Path metaInfMaven = fs.getPath("META-INF", "maven");
             if (Files.exists(metaInfMaven)) {
                 try (DirectoryStream<Path> groupIds = Files.newDirectoryStream(metaInfMaven)) {

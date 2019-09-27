@@ -30,7 +30,7 @@ public class RestEasyDevModeTestCase {
                 .when()
                 .post("/post")
                 .then()
-                .content(Matchers.equalTo("Hello: Stuart"));
+                .body(Matchers.equalTo("Hello: Stuart"));
         test.modifySourceFile(PostResource.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
@@ -41,6 +41,6 @@ public class RestEasyDevModeTestCase {
                 .when()
                 .post("/post")
                 .then()
-                .content(Matchers.equalTo("Hi: Stuart"));
+                .body(Matchers.equalTo("Hi: Stuart"));
     }
 }

@@ -4,12 +4,14 @@ parameters:
   postgres: false
   dynamodb: false
   keycloak: false
+  mysql: false
+  timeoutInMinutes: 80
 
 
 jobs:
   - job: ${{ parameters.name }}
     displayName: ${{ join(', ', parameters.modules) }}
-    timeoutInMinutes: 80
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     pool:
       vmImage: 'Ubuntu 16.04'
     variables:
@@ -29,9 +31,17 @@ jobs:
     - ${{ if eq(parameters.keycloak, 'true') }}:
         - script: docker run --rm --publish 8180:8080 --name build-keycloak  -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -d quay.io/keycloak/keycloak
           displayName: 'start keycloak'
+    - ${{ if eq(parameters.mysql, 'true') }}:
+        - bash: |
+            sudo apt-get update &&
+            sudo apt-get -y install mysql-server libmysqlclient-dev &&
+            mysql -e "create user 'hibernate_orm_test'@'localhost' identified by 'hibernate_orm_test';" -uroot -proot &&
+            mysql -e "create database hibernate_orm_test; grant all on hibernate_orm_test.* to 'hibernate_orm_test'@'localhost';" -uroot -proot
+          displayName: 'install mysql'
+
     - task: Maven@3
       displayName: 'Maven Build'
       inputs:
         goals: 'install'
         mavenOptions: $(MAVEN_OPTS)
-        options: '-pl integration-tests/${{ join('',integration-tests/'', parameters.modules) }} -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dnative-image.xmx=6g -Dnative -Dno-format'
+        options: '-pl integration-tests/${{ join('',integration-tests/'', parameters.modules) }} -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dnative-image.xmx=6g -Dnative -Dno-format'

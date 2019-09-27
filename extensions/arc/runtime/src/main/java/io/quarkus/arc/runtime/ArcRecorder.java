@@ -47,6 +47,10 @@ public class ArcRecorder {
     public BeanContainer initBeanContainer(ArcContainer container, List<BeanContainerListener> listeners,
             Collection<String> removedBeanTypes)
             throws Exception {
+
+        if (container == null) {
+            throw new IllegalArgumentException("Arc container was null");
+        }
         BeanContainer beanContainer = new BeanContainer() {
             @Override
             public <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers) {

@@ -3,14 +3,12 @@ package io.quarkus.security.test;
 import static org.hamcrest.Matchers.equalTo;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
-import io.undertow.servlet.ServletExtension;
 
 /**
  * Tests of a CUSTOM authentication mechanism that uses the BASIC authentication headers
@@ -24,11 +22,9 @@ public class CustomAuthEmbeddedTestCase {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
-                    .addClasses(CustomAuth.class, CustomAuthExtension.class, CustomAuthFactory.class)
+                    .addClasses(CustomAuth.class)
                     .addAsResource("application-custom-auth-embedded.properties",
-                            "application.properties")
-                    .addAsManifestResource(new StringAsset(CustomAuthExtension.class.getName()),
-                            "services/" + ServletExtension.class.getName()));
+                            "application.properties"));
 
     // Basic @ServletSecurity tests
     @Test()

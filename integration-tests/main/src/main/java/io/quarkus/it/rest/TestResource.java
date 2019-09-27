@@ -293,6 +293,12 @@ public class TestResource {
         return "gzipped:" + new String(message, "UTF-8");
     }
 
+    @POST
+    @Path("/max-body-size")
+    public String echoPayload(String payload) {
+        return payload;
+    }
+
     @XmlRootElement
     public static class XmlObject {
 
@@ -382,7 +388,6 @@ public class TestResource {
         String getName();
     }
 
-    @RegisterForReflection
     public static class MyEntity {
         private String name;
         private String value;
@@ -402,6 +407,11 @@ public class TestResource {
         public void setValue(String value) {
             this.value = value;
         }
+    }
+
+    @RegisterForReflection(targets = MyEntity.class)
+    public static class EmptyClass {
+
     }
 
     public static class MyOpenApiEntityV1 {

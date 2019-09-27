@@ -58,7 +58,8 @@ public class AutoInjectFieldProcessor {
             @Override
             public void transform(TransformationContext transformationContext) {
                 FieldInfo field = transformationContext.getTarget().asField();
-                if (Modifier.isStatic(field.flags()) || field.hasAnnotation(DotNames.INJECT)) {
+                if (Modifier.isStatic(field.flags()) || field.hasAnnotation(DotNames.INJECT)
+                        || field.hasAnnotation(DotNames.PRODUCES)) {
                     return;
                 }
                 for (DotName annotation : annotations) {

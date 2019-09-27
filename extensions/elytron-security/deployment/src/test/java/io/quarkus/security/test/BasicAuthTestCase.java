@@ -18,6 +18,7 @@ public class BasicAuthTestCase {
             TestSecureServlet.class, TestApplication.class, RolesEndpointClassLevel.class,
             ParametrizedPathsResource.class, SubjectExposingResource.class
     };
+
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)

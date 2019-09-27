@@ -1,19 +1,19 @@
 package io.quarkus.annotation.processor.generate_doc;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ConfigItemTest {
 
     private ConfigItem configItem;
 
-    @Before
+    @BeforeEach
     public void setup() {
         configItem = new ConfigItem();
     }

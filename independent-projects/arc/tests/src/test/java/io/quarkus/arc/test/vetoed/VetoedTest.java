@@ -1,8 +1,8 @@
 package io.quarkus.arc.test.vetoed;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -10,12 +10,12 @@ import io.quarkus.arc.test.ArcTestContainer;
 import java.util.AbstractList;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Vetoed;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class VetoedTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Seven.class, One.class);
 
     @Test

@@ -1,14 +1,13 @@
 package io.quarkus.test.common;
 
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 import java.util.TreeSet;
 
-import org.hamcrest.CoreMatchers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class QuarkusTestResourceLifecycleManagerComparatorTest {
+class QuarkusTestResourceLifecycleManagerComparatorTest {
 
     private final QuarkusTestResourceLifecycleManager q1 = new QuarkusTestResourceLifecycleManager() {
         @Override
@@ -62,8 +61,7 @@ public class QuarkusTestResourceLifecycleManagerComparatorTest {
     };
 
     @Test
-    public void testPriorityOfQuarkusTestResourceLifecycle() {
-
+    void testPriorityOfQuarkusTestResourceLifecycle() {
         final TreeSet<QuarkusTestResourceLifecycleManager> quarkusTestResourceLifecycleManagers = new TreeSet<>(
                 new QuarkusTestResourceLifecycleManagerComparator());
 
@@ -71,10 +69,9 @@ public class QuarkusTestResourceLifecycleManagerComparatorTest {
         quarkusTestResourceLifecycleManagers.add(q2);
         quarkusTestResourceLifecycleManagers.add(q3);
 
-        assertThat(quarkusTestResourceLifecycleManagers.pollFirst(), CoreMatchers.is(q2));
-        assertThat(quarkusTestResourceLifecycleManagers.pollFirst(), CoreMatchers.is(q1));
-        assertThat(quarkusTestResourceLifecycleManagers.pollFirst(), CoreMatchers.is(q3));
-
+        assertThat(quarkusTestResourceLifecycleManagers.pollFirst()).isSameAs(q2);
+        assertThat(quarkusTestResourceLifecycleManagers.pollFirst()).isSameAs(q1);
+        assertThat(quarkusTestResourceLifecycleManagers.pollFirst()).isSameAs(q3);
     }
 
 }

@@ -25,6 +25,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String JDBC_MARIADB = "jdbc-mariadb";
     public static final String JDBC_POSTGRESQL = "jdbc-postgresql";
     public static final String JDBC_MSSQL = "jdbc-mssql";
+    public static final String JDBC_MYSQL = "jdbc-mysql";
     public static final String JGIT = "jgit";
     public static final String KAFKA_STREAMS = "kafka-streams";
     public static final String KEYCLOAK = "keycloak";
@@ -34,6 +35,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String KUBERNETES_CLIENT = "kubernetes-client";
     public static final String MAILER = "mailer";
     public static final String MONGODB_CLIENT = "mongodb-client";
+    public static final String MONGODB_PANACHE = "mongodb-panache";
     public static final String NARAYANA_JTA = "narayana-jta";
     public static final String REACTIVE_PG_CLIENT = "reactive-pg-client";
     public static final String REACTIVE_MYSQL_CLIENT = "reactive-mysql-client";
@@ -46,6 +48,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String SCHEDULER = "scheduler";
     public static final String SECURITY = "security";
     public static final String SECURITY_OAUTH2 = "security-oauth2";
+    public static final String SERVLET = "servlet";
     public static final String SMALLRYE_CONTEXT_PROPAGATION = "smallrye-context-propagation";
     public static final String SMALLRYE_FAULT_TOLERANCE = "smallrye-fault-tolerance";
     public static final String SMALLRYE_HEALTH = "smallrye-health";
@@ -60,6 +63,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String SMALLRYE_REACTIVE_STREAMS_OPERATORS = "smallrye-reactive-streams-operators";
     public static final String SMALLRYE_REACTIVE_TYPE_CONVERTERS = "smallrye-reactive-type-converters";
     public static final String SPRING_DI = "spring-di";
+    public static final String SPRING_WEB = "spring-web";
     public static final String SPRING_DATA_JPA = "spring-data-jpa";
     public static final String SWAGGER_UI = "swagger-ui";
     public static final String TIKA = "tika";

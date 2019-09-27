@@ -1,25 +1,22 @@
 package io.quarkus.amazon.lambda.resteasy.adapter.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.amazonaws.serverless.proxy.internal.LambdaContainerHandler;
 import com.amazonaws.serverless.proxy.internal.testutils.AwsProxyRequestBuilder;
@@ -33,7 +30,6 @@ import io.quarkus.amazon.lambda.resteasy.adapter.test.model.MapResponseModel;
 import io.quarkus.amazon.lambda.resteasy.adapter.test.model.SingleValueModel;
 import io.quarkus.amazon.lambda.resteasy.runtime.container.ResteasyLambdaContainerHandler;
 
-@RunWith(Parameterized.class)
 public class ResteasyParamEncodingTest {
 
     private static final String SIMPLE_ENCODED_PARAM = "p/z+3";
@@ -112,20 +108,10 @@ public class ResteasyParamEncodingTest {
 
     private static Context lambdaContext = new MockLambdaContext();
 
-    private boolean isAlb;
-
-    public ResteasyParamEncodingTest(boolean alb) {
-        isAlb = alb;
-        LambdaContainerHandler.getContainerConfig().addBinaryContentTypes(MediaType.MULTIPART_FORM_DATA);
-    }
-
-    @Parameterized.Parameters
-    public static Collection<Object> data() {
-        return Arrays.asList(new Object[] { false, true });
-    }
-
-    @BeforeClass
+    @BeforeAll
     public static void setup() {
+        LambdaContainerHandler.getContainerConfig().addBinaryContentTypes(MediaType.MULTIPART_FORM_DATA);
+
         Map<String, String> initParameters = new HashMap<>();
         initParameters.put(ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES, EchoResteasyResource.class.getName());
         initParameters.put("resteasy.servlet.mapping.prefix", "/");
@@ -134,17 +120,18 @@ public class ResteasyParamEncodingTest {
         handler = ResteasyLambdaContainerHandler.getAwsProxyHandler(initParameters);
     }
 
-    private AwsProxyRequestBuilder getRequestBuilder(String path, String method) {
+    private AwsProxyRequestBuilder getRequestBuilder(boolean isAlb, String path, String method) {
         AwsProxyRequestBuilder builder = new AwsProxyRequestBuilder(path, method);
-        if (isAlb)
+        if (isAlb) {
             builder.alb();
-
+        }
         return builder;
     }
 
-    @Test
-    public void queryString_uriInfo_echo() {
-        AwsProxyRequest request = getRequestBuilder("/echo/query-string", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void queryString_uriInfo_echo(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/query-string", "GET")
                 .json()
                 .queryString(QUERY_STRING_KEY, QUERY_STRING_NON_ENCODED_VALUE)
                 .build();
@@ -156,9 +143,10 @@ public class ResteasyParamEncodingTest {
         validateMapResponseModel(output, QUERY_STRING_KEY, QUERY_STRING_NON_ENCODED_VALUE);
     }
 
-    @Test
-    public void queryString_notEncoded_echo() {
-        AwsProxyRequest request = getRequestBuilder("/echo/query-string", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void queryString_notEncoded_echo(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/query-string", "GET")
                 .json()
                 .queryString(QUERY_STRING_KEY, QUERY_STRING_NON_ENCODED_VALUE)
                 .build();
@@ -170,10 +158,11 @@ public class ResteasyParamEncodingTest {
         validateMapResponseModel(output, QUERY_STRING_KEY, QUERY_STRING_NON_ENCODED_VALUE);
     }
 
-    @Test
-    @Ignore("We expect to only receive decoded values from API Gateway")
-    public void queryString_encoded_echo() {
-        AwsProxyRequest request = getRequestBuilder("/echo/query-string", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    @Disabled("We expect to only receive decoded values from API Gateway")
+    public void queryString_encoded_echo(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/query-string", "GET")
                 .json()
                 .queryString(QUERY_STRING_KEY, QUERY_STRING_ENCODED_VALUE)
                 .build();
@@ -185,9 +174,11 @@ public class ResteasyParamEncodingTest {
         validateMapResponseModel(output, QUERY_STRING_KEY, QUERY_STRING_NON_ENCODED_VALUE);
     }
 
-    @Test
-    public void simpleQueryParam_encoding_expectDecodedParam() {
-        AwsProxyRequest request = getRequestBuilder("/echo/decoded-param", "GET").queryString("param", SIMPLE_ENCODED_PARAM)
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void simpleQueryParam_encoding_expectDecodedParam(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/decoded-param", "GET")
+                .queryString("param", SIMPLE_ENCODED_PARAM)
                 .build();
 
         AwsProxyResponse resp = handler.proxy(request, lambdaContext);
@@ -195,9 +186,11 @@ public class ResteasyParamEncodingTest {
         validateSingleValueModel(resp, SIMPLE_ENCODED_PARAM);
     }
 
-    @Test
-    public void jsonQueryParam_encoding_expectDecodedParam() {
-        AwsProxyRequest request = getRequestBuilder("/echo/decoded-param", "GET").queryString("param", JSON_ENCODED_PARAM)
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void jsonQueryParam_encoding_expectDecodedParam(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/decoded-param", "GET")
+                .queryString("param", JSON_ENCODED_PARAM)
                 .build();
 
         AwsProxyResponse resp = handler.proxy(request, lambdaContext);
@@ -205,9 +198,11 @@ public class ResteasyParamEncodingTest {
         validateSingleValueModel(resp, JSON_ENCODED_PARAM);
     }
 
-    @Test
-    public void simpleQueryParam_encoding_expectEncodedParam() {
-        AwsProxyRequest request = getRequestBuilder("/echo/encoded-param", "GET").queryString("param", SIMPLE_ENCODED_PARAM)
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void simpleQueryParam_encoding_expectEncodedParam(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/encoded-param", "GET")
+                .queryString("param", SIMPLE_ENCODED_PARAM)
                 .build();
         String encodedVal = "";
         try {
@@ -220,9 +215,11 @@ public class ResteasyParamEncodingTest {
         validateSingleValueModel(resp, encodedVal);
     }
 
-    @Test
-    public void jsonQueryParam_encoding_expectEncodedParam() {
-        AwsProxyRequest request = getRequestBuilder("/echo/encoded-param", "GET").queryString("param", JSON_ENCODED_PARAM)
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void jsonQueryParam_encoding_expectEncodedParam(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/encoded-param", "GET")
+                .queryString("param", JSON_ENCODED_PARAM)
                 .build();
         String encodedVal = "";
         try {
@@ -235,10 +232,12 @@ public class ResteasyParamEncodingTest {
         validateSingleValueModel(resp, encodedVal);
     }
 
-    @Test
-    public void queryParam_encoding_expectFullyEncodedUrl() {
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void queryParam_encoding_expectFullyEncodedUrl(boolean isAlb) {
         String paramValue = "/+=";
-        AwsProxyRequest request = getRequestBuilder("/echo/encoded-param", "GET").queryString("param", paramValue).build();
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/encoded-param", "GET").queryString("param", paramValue)
+                .build();
         AwsProxyResponse resp = handler.proxy(request, lambdaContext);
         assertNotNull(resp);
         assertEquals(resp.getStatusCode(), 200);
@@ -246,41 +245,46 @@ public class ResteasyParamEncodingTest {
         System.out.println("body:" + resp.getBody());
     }
 
-    @Test
-    public void pathParam_encoded_routesToCorrectPath() {
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void pathParam_encoded_routesToCorrectPath(boolean isAlb) {
         String encodedParam = "http%3A%2F%2Fhelloresource.com";
         String path = "/echo/encoded-path/" + encodedParam;
-        AwsProxyRequest request = getRequestBuilder(path, "GET").build();
+        AwsProxyRequest request = getRequestBuilder(isAlb, path, "GET").build();
         AwsProxyResponse resp = handler.proxy(request, lambdaContext);
         assertNotNull(resp);
         assertEquals(resp.getStatusCode(), 200);
         validateSingleValueModel(resp, encodedParam);
     }
 
-    @Test
-    public void pathParam_encoded_returns404() {
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void pathParam_encoded_returns404(boolean isAlb) {
         String encodedParam = "http://helloresource.com";
         String path = "/echo/encoded-path/" + encodedParam;
-        AwsProxyRequest request = getRequestBuilder(path, "GET").build();
+        AwsProxyRequest request = getRequestBuilder(isAlb, path, "GET").build();
         AwsProxyResponse resp = handler.proxy(request, lambdaContext);
         assertNotNull(resp);
         assertEquals(resp.getStatusCode(), 404);
     }
 
-    @Test
-    @Ignore
-    public void queryParam_listOfString_expectCorrectLength() {
-        AwsProxyRequest request = getRequestBuilder("/echo/list-query-string", "GET").queryString("list", "v1,v2,v3").build();
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    @Disabled
+    public void queryParam_listOfString_expectCorrectLength(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/list-query-string", "GET").queryString("list", "v1,v2,v3")
+                .build();
         AwsProxyResponse resp = handler.proxy(request, lambdaContext);
         assertNotNull(resp);
         assertEquals(resp.getStatusCode(), 200);
         validateSingleValueModel(resp, "3");
     }
 
-    @Test
-    public void multipart_getFileSize_expectCorrectLength()
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void multipart_getFileSize_expectCorrectLength(boolean isAlb)
             throws IOException {
-        AwsProxyRequest request = getRequestBuilder("/echo/file-size", "POST")
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/file-size", "POST")
                 .formFilePart("file", "myfile.jpg", FILE_CONTENTS)
                 //.formFieldPart("name", QUERY_STRING_ENCODED_VALUE)
                 .build();

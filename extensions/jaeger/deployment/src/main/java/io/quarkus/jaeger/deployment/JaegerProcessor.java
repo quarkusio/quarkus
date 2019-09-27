@@ -23,12 +23,14 @@ public class JaegerProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setupTracer(JaegerDeploymentRecorder jdt) {
+    void setupTracer(JaegerDeploymentRecorder jdr) {
 
         // Indicates that this extension would like the SSL support to be enabled
         extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.JAEGER));
 
-        jdt.registerTracer(jaeger);
+        if (jaeger.enabled) {
+            jdr.registerTracer(jaeger);
+        }
     }
 
     @BuildStep

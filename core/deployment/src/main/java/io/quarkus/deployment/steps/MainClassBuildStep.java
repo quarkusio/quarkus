@@ -21,6 +21,7 @@ import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.ClassOutputBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
@@ -37,9 +38,12 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.Application;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
+import io.quarkus.runtime.SubstrateRuntimePropertiesRecorder;
 import io.quarkus.runtime.Timing;
+import io.quarkus.runtime.configuration.ProfileManager;
 
 class MainClassBuildStep {
 
@@ -61,7 +65,8 @@ class MainClassBuildStep {
             List<FeatureBuildItem> features,
             BuildProducer<ApplicationClassNameBuildItem> appClassNameProducer,
             List<BytecodeRecorderObjectLoaderBuildItem> loaders,
-            ClassOutputBuildItem classOutput) {
+            ClassOutputBuildItem classOutput,
+            LaunchModeBuildItem launchMode) {
 
         String appClassName = APP_CLASS + COUNT.incrementAndGet();
         appClassNameProducer.produce(new ApplicationClassNameBuildItem(appClassName));
@@ -123,6 +128,7 @@ class MainClassBuildStep {
             mv.invokeStaticMethod(ofMethod(System.class, "setProperty", String.class, String.class, String.class),
                     mv.load(i.getKey()), mv.load(i.getValue()));
         }
+        mv.invokeStaticMethod(ofMethod(SubstrateRuntimePropertiesRecorder.class, "doRuntime", void.class));
 
         // Set the SSL system properties
         if (!javaLibraryPathAdditionalPaths.isEmpty()) {
@@ -191,8 +197,11 @@ class MainClassBuildStep {
                 .sorted()
                 .collect(Collectors.joining(", ")));
         tryBlock.invokeStaticMethod(
-                ofMethod(Timing.class, "printStartupTime", void.class, String.class, String.class),
-                tryBlock.load(Version.getVersion()), featuresHandle);
+                ofMethod(Timing.class, "printStartupTime", void.class, String.class, String.class, String.class, boolean.class),
+                tryBlock.load(Version.getVersion()),
+                featuresHandle,
+                tryBlock.load(ProfileManager.getActiveProfile()),
+                tryBlock.load(LaunchMode.DEVELOPMENT.equals(launchMode.getLaunchMode())));
 
         cb = tryBlock.addCatch(Throwable.class);
         cb.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cb.getCaughtException());

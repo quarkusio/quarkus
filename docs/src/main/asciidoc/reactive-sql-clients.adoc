@@ -469,6 +469,6 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 |`io.vertx.axle.pgclient.PgPool`
 
 |MySQL
-|quarkus-reactive-mysql-client
+|`quarkus-reactive-mysql-client`
 |`io.vertx.axle.mysqlclient.MySQLPool`
 |===

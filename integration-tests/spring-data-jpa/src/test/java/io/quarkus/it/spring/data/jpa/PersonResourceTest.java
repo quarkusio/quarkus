@@ -23,6 +23,15 @@ public class PersonResourceTest {
             Arrays.asList("Bob", "Florence", "DeMar", null));
 
     @Test
+    void testFindAll() {
+        when().get("/person/all").then()
+                .statusCode(200)
+                .body(containsString("DeMar"))
+                .body(containsString("Florence"))
+                .body(containsString("Bob"));
+    }
+
+    @Test
     void testCount() {
         String count = when().get("/person/count").then()
                 .statusCode(200)

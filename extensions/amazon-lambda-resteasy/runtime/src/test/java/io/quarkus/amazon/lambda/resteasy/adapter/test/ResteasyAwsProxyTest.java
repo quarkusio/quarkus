@@ -1,13 +1,11 @@
 package io.quarkus.amazon.lambda.resteasy.adapter.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -19,10 +17,9 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.codec.binary.Base64;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.amazonaws.serverless.proxy.internal.LambdaContainerHandler;
 import com.amazonaws.serverless.proxy.internal.servlet.AwsServletContext;
@@ -43,7 +40,6 @@ import io.quarkus.amazon.lambda.resteasy.runtime.container.ResteasyLambdaContain
 /**
  * Unit test class for the RESTEasy AWS_PROXY default implementation
  */
-@RunWith(Parameterized.class)
 public class ResteasyAwsProxyTest {
     private static final String CUSTOM_HEADER_KEY = "x-custom-header";
     private static final String CUSTOM_HEADER_VALUE = "my-custom-value";
@@ -56,18 +52,7 @@ public class ResteasyAwsProxyTest {
 
     private static Context lambdaContext = new MockLambdaContext();
 
-    private boolean isAlb;
-
-    public ResteasyAwsProxyTest(boolean alb) {
-        isAlb = alb;
-    }
-
-    @Parameterized.Parameters
-    public static Collection<Object> data() {
-        return Arrays.asList(new Object[] { false, true });
-    }
-
-    @BeforeClass
+    @BeforeAll
     public static void setup() {
         Map<String, String> initParameters = new HashMap<>();
         initParameters.put(ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES, EchoResteasyResource.class.getName());
@@ -80,7 +65,7 @@ public class ResteasyAwsProxyTest {
         handler = ResteasyLambdaContainerHandler.getAwsProxyHandler(initParameters);
     }
 
-    private AwsProxyRequestBuilder getRequestBuilder(String path, String method) {
+    private AwsProxyRequestBuilder getRequestBuilder(boolean isAlb, String path, String method) {
         AwsProxyRequestBuilder builder = new AwsProxyRequestBuilder(path, method);
         if (isAlb)
             builder.alb();
@@ -88,9 +73,10 @@ public class ResteasyAwsProxyTest {
         return builder;
     }
 
-    @Test
-    public void alb_basicRequest_expectSuccess() {
-        AwsProxyRequest request = getRequestBuilder("/echo/headers", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void alb_basicRequest_expectSuccess(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/headers", "GET")
                 .json()
                 .header(CUSTOM_HEADER_KEY, CUSTOM_HEADER_VALUE)
                 .alb()
@@ -105,9 +91,10 @@ public class ResteasyAwsProxyTest {
         validateMapResponseModel(output);
     }
 
-    @Test
-    public void headers_getHeaders_echo() {
-        AwsProxyRequest request = getRequestBuilder("/echo/headers", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void headers_getHeaders_echo(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/headers", "GET")
                 .json()
                 .header(CUSTOM_HEADER_KEY, CUSTOM_HEADER_VALUE)
                 .build();
@@ -119,9 +106,10 @@ public class ResteasyAwsProxyTest {
         validateMapResponseModel(output);
     }
 
-    @Test
-    public void headers_servletRequest_echo() {
-        AwsProxyRequest request = getRequestBuilder("/echo/servlet-headers", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void headers_servletRequest_echo(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/servlet-headers", "GET")
                 .json()
                 .header(CUSTOM_HEADER_KEY, CUSTOM_HEADER_VALUE)
                 .build();
@@ -133,9 +121,10 @@ public class ResteasyAwsProxyTest {
         validateMapResponseModel(output);
     }
 
-    @Test
-    public void context_servletResponse_setCustomHeader() {
-        AwsProxyRequest request = getRequestBuilder("/echo/servlet-response", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void context_servletResponse_setCustomHeader(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/servlet-response", "GET")
                 .json()
                 .build();
 
@@ -144,9 +133,10 @@ public class ResteasyAwsProxyTest {
         assertTrue(output.getMultiValueHeaders().containsKey(EchoResteasyResource.SERVLET_RESP_HEADER_KEY));
     }
 
-    @Test
-    public void context_serverInfo_correctContext() {
-        AwsProxyRequest request = getRequestBuilder("/echo/servlet-context", "GET").build();
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void context_serverInfo_correctContext(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/servlet-context", "GET").build();
         AwsProxyResponse output = handler.proxy(request, lambdaContext);
         for (String header : output.getMultiValueHeaders().keySet()) {
             System.out.println(header + ": " + output.getMultiValueHeaders().getFirst(header));
@@ -157,9 +147,10 @@ public class ResteasyAwsProxyTest {
         validateSingleValueModel(output, AwsServletContext.SERVER_INFO);
     }
 
-    @Test
-    public void requestScheme_valid_expectHttps() {
-        AwsProxyRequest request = getRequestBuilder("/echo/scheme", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void requestScheme_valid_expectHttps(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/scheme", "GET")
                 .json()
                 .build();
 
@@ -170,9 +161,10 @@ public class ResteasyAwsProxyTest {
         validateSingleValueModel(output, "https");
     }
 
-    @Test
-    public void requestFilter_injectsServletRequest_expectCustomAttribute() {
-        AwsProxyRequest request = getRequestBuilder("/echo/filter-attribute", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void requestFilter_injectsServletRequest_expectCustomAttribute(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/filter-attribute", "GET")
                 .json()
                 .build();
 
@@ -183,9 +175,10 @@ public class ResteasyAwsProxyTest {
         validateSingleValueModel(output, ServletRequestFilter.FILTER_ATTRIBUTE_VALUE);
     }
 
-    @Test
-    public void authorizer_securityContext_customPrincipalSuccess() {
-        AwsProxyRequest request = getRequestBuilder("/echo/authorizer-principal", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void authorizer_securityContext_customPrincipalSuccess(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/authorizer-principal", "GET")
                 .json()
                 .authorizerPrincipal(AUTHORIZER_PRINCIPAL_ID)
                 .build();
@@ -199,9 +192,10 @@ public class ResteasyAwsProxyTest {
 
     }
 
-    @Test
-    public void authorizer_securityContext_customAuthorizerContextSuccess() {
-        AwsProxyRequest request = getRequestBuilder("/echo/authorizer-context", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void authorizer_securityContext_customAuthorizerContextSuccess(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/authorizer-context", "GET")
                 .json()
                 .authorizerPrincipal(AUTHORIZER_PRINCIPAL_ID)
                 .authorizerContextValue(CUSTOM_HEADER_KEY, CUSTOM_HEADER_VALUE)
@@ -215,17 +209,19 @@ public class ResteasyAwsProxyTest {
         validateSingleValueModel(output, CUSTOM_HEADER_VALUE);
     }
 
-    @Test
-    public void errors_unknownRoute_expect404() {
-        AwsProxyRequest request = getRequestBuilder("/echo/test33", "GET").build();
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void errors_unknownRoute_expect404(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/test33", "GET").build();
 
         AwsProxyResponse output = handler.proxy(request, lambdaContext);
         assertEquals(404, output.getStatusCode());
     }
 
-    @Test
-    public void error_contentType_invalidContentType() {
-        AwsProxyRequest request = getRequestBuilder("/echo/json-body", "POST")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void error_contentType_invalidContentType(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/json-body", "POST")
                 .header("Content-Type", "application/octet-stream")
                 .body("asdasdasd")
                 .build();
@@ -234,9 +230,10 @@ public class ResteasyAwsProxyTest {
         assertEquals(415, output.getStatusCode());
     }
 
-    @Test
-    public void error_statusCode_methodNotAllowed() {
-        AwsProxyRequest request = getRequestBuilder("/echo/status-code", "POST")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void error_statusCode_methodNotAllowed(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/status-code", "POST")
                 .json()
                 .queryString("status", "201")
                 .build();
@@ -245,11 +242,12 @@ public class ResteasyAwsProxyTest {
         assertEquals(405, output.getStatusCode());
     }
 
-    @Test
-    public void responseBody_responseWriter_validBody() throws JsonProcessingException {
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void responseBody_responseWriter_validBody(boolean isAlb) throws JsonProcessingException {
         SingleValueModel singleValueModel = new SingleValueModel();
         singleValueModel.setValue(CUSTOM_HEADER_VALUE);
-        AwsProxyRequest request = getRequestBuilder("/echo/json-body", "POST")
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/json-body", "POST")
                 .json()
                 .body(objectMapper.writeValueAsString(singleValueModel))
                 .build();
@@ -261,9 +259,10 @@ public class ResteasyAwsProxyTest {
         validateSingleValueModel(output, CUSTOM_HEADER_VALUE);
     }
 
-    @Test
-    public void statusCode_responseStatusCode_customStatusCode() {
-        AwsProxyRequest request = getRequestBuilder("/echo/status-code", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void statusCode_responseStatusCode_customStatusCode(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/status-code", "GET")
                 .json()
                 .queryString("status", "201")
                 .build();
@@ -272,18 +271,20 @@ public class ResteasyAwsProxyTest {
         assertEquals(201, output.getStatusCode());
     }
 
-    @Test
-    public void base64_binaryResponse_base64Encoding() {
-        AwsProxyRequest request = getRequestBuilder("/echo/binary", "GET").build();
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void base64_binaryResponse_base64Encoding(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/binary", "GET").build();
 
         AwsProxyResponse response = handler.proxy(request, lambdaContext);
         assertNotNull(response.getBody());
         assertTrue(Base64.isBase64(response.getBody()));
     }
 
-    @Test
-    public void exception_mapException_mapToNotImplemented() {
-        AwsProxyRequest request = getRequestBuilder("/echo/exception", "GET").build();
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void exception_mapException_mapToNotImplemented(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/exception", "GET").build();
 
         AwsProxyResponse response = handler.proxy(request, lambdaContext);
         assertNotNull(response.getBody());
@@ -291,9 +292,10 @@ public class ResteasyAwsProxyTest {
         assertEquals(Response.Status.NOT_IMPLEMENTED.getStatusCode(), response.getStatusCode());
     }
 
-    @Test
-    public void stripBasePath_route_shouldRouteCorrectly() {
-        AwsProxyRequest request = getRequestBuilder("/custompath/echo/status-code", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void stripBasePath_route_shouldRouteCorrectly(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/custompath/echo/status-code", "GET")
                 .json()
                 .queryString("status", "201")
                 .build();
@@ -303,7 +305,6 @@ public class ResteasyAwsProxyTest {
         handler.stripBasePath("");
     }
 
-    @Test
     /**
      * In the case of RESTEasy, we properly route things as the AWS library includes the
      * stripBasePath element inside the contextPath so it's automatically removed
@@ -312,8 +313,10 @@ public class ResteasyAwsProxyTest {
      * The name of this test is not really consistent with what it is doing now but
      * we keep it that way for consistency with the Jersey tests.
      */
-    public void stripBasePath_route_shouldReturn404WithStageAsContext() {
-        AwsProxyRequest request = getRequestBuilder("/custompath/echo/status-code", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void stripBasePath_route_shouldReturn404WithStageAsContext(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/custompath/echo/status-code", "GET")
                 .stage("prod")
                 .json()
                 .queryString("status", "201")
@@ -326,9 +329,10 @@ public class ResteasyAwsProxyTest {
         LambdaContainerHandler.getContainerConfig().setUseStageAsServletContext(false);
     }
 
-    @Test
-    public void stripBasePath_route_shouldReturn404() {
-        AwsProxyRequest request = getRequestBuilder("/custompath/echo/status-code", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void stripBasePath_route_shouldReturn404(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/custompath/echo/status-code", "GET")
                 .json()
                 .queryString("status", "201")
                 .build();
@@ -338,9 +342,10 @@ public class ResteasyAwsProxyTest {
         handler.stripBasePath("");
     }
 
-    @Test
-    public void securityContext_injectPrincipal_expectPrincipalName() {
-        AwsProxyRequest request = getRequestBuilder("/echo/security-context", "GET")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void securityContext_injectPrincipal_expectPrincipalName(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/security-context", "GET")
                 .authorizerPrincipal(USER_PRINCIPAL).build();
 
         AwsProxyResponse resp = handler.proxy(request, lambdaContext);
@@ -348,9 +353,10 @@ public class ResteasyAwsProxyTest {
         validateSingleValueModel(resp, USER_PRINCIPAL);
     }
 
-    @Test
-    public void emptyStream_putNullBody_expectPutToSucceed() {
-        AwsProxyRequest request = getRequestBuilder("/echo/empty-stream/" + CUSTOM_HEADER_KEY + "/test/2", "PUT")
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void emptyStream_putNullBody_expectPutToSucceed(boolean isAlb) {
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/empty-stream/" + CUSTOM_HEADER_KEY + "/test/2", "PUT")
                 .nullBody()
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .build();
@@ -359,10 +365,11 @@ public class ResteasyAwsProxyTest {
         validateSingleValueModel(resp, CUSTOM_HEADER_KEY);
     }
 
-    @Test
-    public void refererHeader_headerParam_expectCorrectInjection() {
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    public void refererHeader_headerParam_expectCorrectInjection(boolean isAlb) {
         String refererValue = "test-referer";
-        AwsProxyRequest request = getRequestBuilder("/echo/referer-header", "GET")
+        AwsProxyRequest request = getRequestBuilder(isAlb, "/echo/referer-header", "GET")
                 .nullBody()
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .header("Referer", refererValue)

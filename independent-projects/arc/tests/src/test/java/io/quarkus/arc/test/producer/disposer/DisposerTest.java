@@ -1,7 +1,7 @@
 package io.quarkus.arc.test.producer.disposer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
@@ -17,30 +17,21 @@ import javax.enterprise.inject.Disposes;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Singleton;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class DisposerTest {
 
-    @Rule
-    public RuleChain chain = RuleChain.outerRule(new TestRule() {
-        @Override
-        public Statement apply(final Statement base, Description description) {
-            return new Statement() {
+    @RegisterExtension
+    ArcTestContainer container = new ArcTestContainer(StringProducer.class, LongProducer.class, BigDecimalProducer.class,
+            MyQualifier.class);
 
-                @Override
-                public void evaluate() throws Throwable {
-                    base.evaluate();
-                    assertNotNull(BigDecimalProducer.DISPOSED.get());
-                    assertEquals(1, BigDecimalProducer.DESTROYED.get());
-                }
-            };
-        }
-    }).around(new ArcTestContainer(StringProducer.class, LongProducer.class, BigDecimalProducer.class, MyQualifier.class));
+    @AfterAll
+    public static void afterAll() {
+        assertNotNull(BigDecimalProducer.DISPOSED.get());
+        assertEquals(1, BigDecimalProducer.DESTROYED.get());
+    }
 
     @Test
     public void testDisposers() {

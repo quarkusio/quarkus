@@ -9,6 +9,7 @@ import javax.inject.Inject;
 import org.jboss.logging.Logger;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -17,6 +18,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
 import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.netty.runtime.NettyRecorder;
@@ -27,6 +29,17 @@ class NettyProcessor {
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
 
     private static final Logger log = Logger.getLogger(NettyProcessor.class);
+
+    static {
+        InternalLoggerFactory.setDefaultFactory(new JBossNettyLoggerFactory());
+    }
+
+    @BuildStep
+    public SubstrateSystemPropertyBuildItem limitMem() {
+        //in native mode we limit the size of the epoll array
+        //if the array overflows the selector just moves the overflow to a map
+        return new SubstrateSystemPropertyBuildItem("sun.nio.ch.maxUpdateArraySize", "100");
+    }
 
     @BuildStep
     SubstrateConfigBuildItem build(BuildProducer<JniBuildItem> jni) {
@@ -44,6 +57,7 @@ class NettyProcessor {
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslContext")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslClientContext")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.util.ThreadLocalInsecureRandom")
+                .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil$HexUtil")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ConscryptAlpnSslEngine")
                 .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED");
         try {

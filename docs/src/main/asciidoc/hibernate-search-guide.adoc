@@ -523,29 +523,31 @@ quarkus.datasource.username=quarkus_test
 quarkus.datasource.password=quarkus_test
 
 quarkus.hibernate-orm.database.generation=drop-and-create <3>
+quarkus.hibernate-orm.sql-load-script=import.sql <4>
 
-quarkus.hibernate-search.elasticsearch.version=7 <4>
-quarkus.hibernate-search.elasticsearch.analysis-configurer=org.acme.hibernate.search.elasticsearch.config.AnalysisConfigurer <5>
-quarkus.hibernate-search.elasticsearch.automatic-indexing.synchronization-strategy=searchable <6>
-quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.strategy=drop-and-create <7>
-quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.required-status=yellow <8>
+quarkus.hibernate-search.elasticsearch.version=7 <5>
+quarkus.hibernate-search.elasticsearch.analysis-configurer=org.acme.hibernate.search.elasticsearch.config.AnalysisConfigurer <6>
+quarkus.hibernate-search.elasticsearch.automatic-indexing.synchronization-strategy=searchable <7>
+quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.strategy=drop-and-create <8>
+quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.required-status=yellow <9>
 ----
 <1> We won't use SSL so we disable it to have a more compact native executable.
 <2> Let's create a PostgreSQL datasource.
 <3> We will drop and recreate the schema every time we start the application.
-<4> We need to tell Hibernate Search about the version of Elasticsearch we will use.
+<4> We load some initial data.
+<5> We need to tell Hibernate Search about the version of Elasticsearch we will use.
 It is important because there are significant differences between Elasticsearch mapping syntax depending on the version.
 Since the mapping is created at build time to reduce startup time, Hibernate Search cannot connect to the cluster to automatically detect the version.
-<5> We point to the custom `AnalysisConfigurer` which defines the configuration of our analyzers and normalizers.
-<6> This means that we wait for the entities to be searchable before considering a write complete.
+<6> We point to the custom `AnalysisConfigurer` which defines the configuration of our analyzers and normalizers.
+<7> This means that we wait for the entities to be searchable before considering a write complete.
 While, on a production setup, the `committed` default might be a suitable value, using `searchable` is especially important when testing as you need the entities to be searchable immediately.
-<7> Obviously, this is not for production: we drop and recreate the index every time we start the application.
-<8> We consider the `yellow` status is sufficient to connect to the Elasticsearch cluster.
+<8> Obviously, this is not for production: we drop and recreate the index every time we start the application.
+<9> We consider the `yellow` status is sufficient to connect to the Elasticsearch cluster.
 This is for testing purposes with the Elasticsearch Docker container.
 It should not be used in production.
 
-== Hibernate Search Configuration
-include::generated/quarkus-hibernate-search-elasticsearch.adoc[]
+[TIP]
+For more information about the Hibernate Search extension configuration please refer to the <<configuration-reference, Configuration Reference>>.
 
 == Creating a frontend
 
@@ -661,3 +663,7 @@ Thus we focused our efforts on it.
 
 We don't have plans to support the Lucene backend in Quarkus for now.
 
+[[configuration-reference]]
+== Hibernate Search Configuration Reference
+
+include::{generated-dir}/config/quarkus-hibernate-search-elasticsearch.adoc[leveloffset=+1, opts=optional]

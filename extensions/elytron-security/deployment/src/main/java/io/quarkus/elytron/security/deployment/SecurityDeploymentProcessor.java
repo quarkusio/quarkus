@@ -1,9 +1,5 @@
 package io.quarkus.elytron.security.deployment;
 
-import java.security.Provider;
-import java.security.Security;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -21,17 +17,15 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import io.quarkus.elytron.security.runtime.AuthConfig;
-import io.quarkus.elytron.security.runtime.DefaultRoleDecoder;
+import io.quarkus.elytron.security.runtime.ElytronPasswordIdentityProvider;
+import io.quarkus.elytron.security.runtime.ElytronRecorder;
+import io.quarkus.elytron.security.runtime.ElytronSecurityDomainManager;
+import io.quarkus.elytron.security.runtime.ElytronTokenIdentityProvider;
 import io.quarkus.elytron.security.runtime.MPRealmConfig;
 import io.quarkus.elytron.security.runtime.PropertiesRealmConfig;
 import io.quarkus.elytron.security.runtime.SecurityConfig;
-import io.quarkus.elytron.security.runtime.SecurityContextPrincipal;
-import io.quarkus.elytron.security.runtime.SecurityRecorder;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.servlet.ServletExtension;
+import io.quarkus.security.deployment.JCAProviderBuildItem;
 
 /**
  * The build time process for the security aspects of the deployment. This creates {@linkplain BuildStep}s for integration
@@ -65,12 +59,6 @@ class SecurityDeploymentProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.SECURITY);
-    }
-
-    @BuildStep
-    void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> beans) {
-        beans.produce(AdditionalBeanBuildItem.unremovableOf(SecurityContextPrincipal.class));
-        beans.produce(AdditionalBeanBuildItem.unremovableOf(DefaultRoleDecoder.class));
     }
 
     /**
@@ -110,7 +98,7 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    AuthConfigBuildItem configureFileRealmAuthConfig(SecurityRecorder recorder,
+    void configureFileRealmAuthConfig(ElytronRecorder recorder,
             BuildProducer<SubstrateResourceBuildItem> resources,
             BuildProducer<SecurityRealmBuildItem> securityRealm,
             BuildProducer<PasswordRealmBuildItem> passwordRealm) throws Exception {
@@ -122,12 +110,11 @@ class SecurityDeploymentProcessor {
             resources.produce(new SubstrateResourceBuildItem(realmConfig.users, realmConfig.roles));
             // Have the runtime recorder create the LegacyPropertiesSecurityRealm and create the build item
             RuntimeValue<SecurityRealm> realm = recorder.createRealm(realmConfig);
-            securityRealm.produce(new SecurityRealmBuildItem(realm, realmConfig.getAuthConfig()));
+            securityRealm
+                    .produce(new SecurityRealmBuildItem(realm, realmConfig.realmName, recorder.loadRealm(realm, realmConfig)));
             passwordRealm.produce(new PasswordRealmBuildItem());
             // Return the realm authentication mechanism build item
-            return new AuthConfigBuildItem(realmConfig.getAuthConfig());
         }
-        return null;
     }
 
     /**
@@ -143,7 +130,7 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    AuthConfigBuildItem configureMPRealmConfig(SecurityRecorder recorder,
+    void configureMPRealmConfig(ElytronRecorder recorder,
             BuildProducer<SecurityRealmBuildItem> securityRealm,
             BuildProducer<PasswordRealmBuildItem> passwordRealm) throws Exception {
         if (security.embedded.enabled) {
@@ -169,40 +156,41 @@ class SecurityDeploymentProcessor {
             }
 
             RuntimeValue<SecurityRealm> realm = recorder.createRealm(realmConfig);
-            securityRealm.produce(new SecurityRealmBuildItem(realm, realmConfig.getAuthConfig()));
+            securityRealm
+                    .produce(new SecurityRealmBuildItem(realm, realmConfig.realmName, recorder.loadRealm(realm, realmConfig)));
             passwordRealm.produce(new PasswordRealmBuildItem());
-            return new AuthConfigBuildItem(realmConfig.getAuthConfig());
         }
-        return null;
     }
 
     /**
      * Create the deployment SecurityDomain using the SecurityRealm and AuthConfig build items that have been created.
      *
      * @param recorder - the runtime recorder class used to access runtime behaviors
-     * @param extension - the ServletExtensionBuildItem producer used to add the Undertow identity manager and auth config
      * @param realms - the previously created SecurityRealm runtime values
      * @return the SecurityDomain runtime value build item
      * @throws Exception
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    SecurityDomainBuildItem build(SecurityRecorder recorder, List<SecurityRealmBuildItem> realms,
-            BeanContainerBuildItem beanContainer) throws Exception {
+    SecurityDomainBuildItem build(ElytronRecorder recorder, List<SecurityRealmBuildItem> realms,
+            BuildProducer<AdditionalBeanBuildItem> beans)
+            throws Exception {
         log.debugf("build, hasFile=%s, hasMP=%s", security.file.enabled, security.embedded.enabled);
         if (realms.size() > 0) {
+
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronSecurityDomainManager.class));
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronTokenIdentityProvider.class));
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronPasswordIdentityProvider.class));
+
             // Configure the SecurityDomain.Builder from the main realm
             SecurityRealmBuildItem realmBuildItem = realms.get(0);
-            AuthConfig authConfig = realmBuildItem.getAuthConfig();
-            DefaultRoleDecoder defaultRoleDecoder = recorder.createDefaultRoleDecoder(beanContainer.getValue());
             RuntimeValue<SecurityDomain.Builder> securityDomainBuilder = recorder
-                    .configureDomainBuilder(authConfig.getRealmName(), realmBuildItem.getRealm(), defaultRoleDecoder);
+                    .configureDomainBuilder(realmBuildItem.getName(), realmBuildItem.getRealm());
             // Add any additional SecurityRealms
             for (int n = 1; n < realms.size(); n++) {
                 realmBuildItem = realms.get(n);
                 RuntimeValue<SecurityRealm> realm = realmBuildItem.getRealm();
-                authConfig = realmBuildItem.getAuthConfig();
-                recorder.addRealm(securityDomainBuilder, authConfig.getRealmName(), realm);
+                recorder.addRealm(securityDomainBuilder, realmBuildItem.getName(), realm);
             }
             // Actually build the runtime value for the SecurityDomain
             RuntimeValue<SecurityDomain> securityDomain = recorder.buildDomain(securityDomainBuilder);
@@ -213,124 +201,12 @@ class SecurityDeploymentProcessor {
         return null;
     }
 
-    /**
-     * If a password based realm was created, install the security extension
-     * {@linkplain io.quarkus.elytron.security.runtime.ElytronIdentityManager}
-     *
-     * @param recorder - runtime recorder
-     * @param securityDomain - configured SecurityDomain
-     * @param identityManagerProducer - producer factory for IdentityManagerBuildItem
-     */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void configureIdentityManager(SecurityRecorder recorder, SecurityDomainBuildItem securityDomain,
-            BuildProducer<IdentityManagerBuildItem> identityManagerProducer,
-            List<PasswordRealmBuildItem> passwordRealm) {
-        if (passwordRealm.size() > 0) {
-            IdentityManager identityManager = recorder.createIdentityManager(securityDomain.getSecurityDomain());
-            identityManagerProducer.produce(new IdentityManagerBuildItem(identityManager));
+    void identityManager(ElytronRecorder recorder, SecurityDomainBuildItem securityDomain, BeanContainerBuildItem bc) {
+        if (securityDomain != null) {
+            recorder.setDomainForIdentityProvider(bc.getValue(), securityDomain.getSecurityDomain());
         }
-    }
-
-    /**
-     * Create the deployment SecurityDomain using the SecurityRealm and AuthConfig build items that have been created.
-     *
-     * @param recorder - the runtime recorder class used to access runtime behaviors
-     * @param extension - the ServletExtensionBuildItem producer used to add the Undertow identity manager and auth config
-     * @param authConfigs - the authentication method information that has been registered
-     * @return the SecurityDomain runtime value build item
-     * @throws Exception
-     */
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void addIdentityManager(SecurityRecorder recorder, BuildProducer<ServletExtensionBuildItem> extension,
-            SecurityDomainBuildItem securityDomain, List<IdentityManagerBuildItem> identityManagers,
-            List<AuthConfigBuildItem> authConfigs) {
-        // If there are no identityManagers, exit
-        if (identityManagers.size() == 0) {
-            return;
-        }
-
-        // Validate that at most one IdentityManagerBuildItem was created
-        if (identityManagers.size() > 1) {
-            throw new IllegalStateException("Multiple IdentityManagerBuildItem seen: " + identityManagers);
-        }
-        // Create the configured identity manager
-        IdentityManagerBuildItem identityManager = identityManagers.get(0);
-        // Collect all of the authentication mechanisms and create a ServletExtension to register the Undertow identity manager
-        ServletExtension idmExt = recorder.configureUndertowIdentityManager(securityDomain.getSecurityDomain(),
-                identityManager.getIdentityManager());
-        extension.produce(new ServletExtensionBuildItem(idmExt));
-    }
-
-    /**
-     * Produces a {@code ServletExtension} to configure Undertow {@code AuthConfigBuildItem} produced during the build
-     *
-     * @param recorder - the runtime recorder class used to access runtime behaviors
-     * @param extension - the ServletExtensionBuildItem producer used to add the Undertow auth config
-     * @param authConfigs - the authentication method information that has been registered
-     */
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void addLoginConfig(SecurityRecorder recorder, List<AuthConfigBuildItem> authConfigs,
-            BuildProducer<ServletExtensionBuildItem> extension) {
-        List<AuthConfig> allAuthConfigs = new ArrayList<>();
-
-        for (AuthConfigBuildItem authConfigExt : authConfigs) {
-            AuthConfig ac = authConfigExt.getAuthConfig();
-            allAuthConfigs.add(ac);
-        }
-
-        extension.produce(new ServletExtensionBuildItem(recorder.configureLoginConfig(allAuthConfigs)));
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    ServletExtensionBuildItem addSecurityContextPrincipalHandler(SecurityRecorder recorder, BeanContainerBuildItem container) {
-        log.debugf("addSecurityContextPrincipalHandler");
-        return new ServletExtensionBuildItem(recorder.configureSecurityContextPrincipalHandler(container.getValue()));
-    }
-
-    /**
-     * Register the classes for reflection in the requested named providers
-     *
-     * @param classes - ReflectiveClassBuildItem producer
-     * @param jcaProviders - JCAProviderBuildItem for requested providers
-     */
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void registerJCAProviders(BuildProducer<ReflectiveClassBuildItem> classes, List<JCAProviderBuildItem> jcaProviders) {
-        for (JCAProviderBuildItem provider : jcaProviders) {
-            List<String> providerClasses = registerProvider(provider.getProviderName());
-            for (String className : providerClasses) {
-                classes.produce(new ReflectiveClassBuildItem(true, true, className));
-                log.debugf("Register JCA class: %s", className);
-            }
-        }
-    }
-
-    /**
-     * Determine the classes that make up the provider and its services
-     *
-     * @param providerName - JCA provider name
-     * @return class names that make up the provider and its services
-     */
-    private List<String> registerProvider(String providerName) {
-        ArrayList<String> providerClasses = new ArrayList<>();
-        Provider provider = Security.getProvider(providerName);
-        providerClasses.add(provider.getClass().getName());
-        Set<Provider.Service> services = provider.getServices();
-        for (Provider.Service service : services) {
-            String serviceClass = service.getClassName();
-            providerClasses.add(serviceClass);
-            // Need to pull in the key classes
-            String supportedKeyClasses = service.getAttribute("SupportedKeyClasses");
-            if (supportedKeyClasses != null) {
-                String[] keyClasses = supportedKeyClasses.split("\\|");
-                providerClasses.addAll(Arrays.asList(keyClasses));
-            }
-        }
-        return providerClasses;
     }
 
     /**
@@ -343,16 +219,10 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void loadRealm(SecurityRecorder recorder, List<SecurityRealmBuildItem> realms) throws Exception {
+    void loadRealm(ElytronRecorder recorder, List<SecurityRealmBuildItem> realms) throws Exception {
         for (SecurityRealmBuildItem realm : realms) {
-            AuthConfig authConfig = realm.getAuthConfig();
-            if (authConfig.getType() != null) {
-                Class authType = authConfig.getType();
-                if (authType.isAssignableFrom(PropertiesRealmConfig.class)) {
-                    recorder.loadRealm(realm.getRealm(), security.file);
-                } else if (authType.isAssignableFrom(MPRealmConfig.class)) {
-                    recorder.loadRealm(realm.getRealm(), security.embedded);
-                }
+            if (realm.getRuntimeLoadTask() != null) {
+                recorder.runLoadTask(realm.getRuntimeLoadTask());
             }
         }
     }

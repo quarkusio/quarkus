@@ -1,9 +1,9 @@
 package io.quarkus.arc.test.build.extension.annotations;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -16,13 +16,14 @@ import javax.enterprise.inject.Vetoed;
 import javax.inject.Inject;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class AnnotationsTransformerTest {
 
-    @Rule
-    public ArcTestContainer container = ArcTestContainer.builder().beanClasses(Seven.class, One.class, IWantToBeABean.class)
+    @RegisterExtension
+    public ArcTestContainer container = ArcTestContainer.builder()
+            .beanClasses(Seven.class, One.class, IWantToBeABean.class)
             .annotationsTransformers(new MyTransformer(), new DisabledTransformer()).build();
 
     @Test

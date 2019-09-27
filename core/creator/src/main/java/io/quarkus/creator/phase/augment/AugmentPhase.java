@@ -38,6 +38,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
+import io.quarkus.bootstrap.DefineClassVisibleURLClassLoader;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.util.IoUtils;
@@ -288,7 +289,8 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                 cpUrls.add(resolvedDep.toUri().toURL());
             }
 
-            runnerClassLoader = new URLClassLoader(cpUrls.toArray(new URL[cpUrls.size()]), getClass().getClassLoader());
+            runnerClassLoader = new DefineClassVisibleURLClassLoader(cpUrls.toArray(new URL[cpUrls.size()]),
+                    getClass().getClassLoader());
 
             final Path wiringClassesDirectory = wiringClassesDir;
             ClassOutput classOutput = new ClassOutput() {

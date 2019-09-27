@@ -37,7 +37,7 @@
         <!-- Versions -->
         <version.cdi>2.0.SP1</version.cdi>
         <version.jandex>2.1.1.Final</version.jandex>
-        <version.junit4>4.12</version.junit4>
+        <version.junit5>5.5.2</version.junit5>
         <version.maven>3.5.2</version.maven>
         <version.assertj>3.12.2</version.assertj>
         <version.jboss-logging>3.3.2.Final</version.jboss-logging>
@@ -88,9 +88,9 @@
             </dependency>
 
             <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>${version.junit4}</version>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${version.junit5}</version>
                 <scope>test</scope>
             </dependency>
 

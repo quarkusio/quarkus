@@ -1,6 +1,7 @@
 package io.quarkus.undertow.runtime;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.security.SecureRandom;
@@ -8,11 +9,13 @@ import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
+import javax.enterprise.inject.spi.CDI;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -34,8 +37,12 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.MemorySize;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.undertow.httpcore.BufferAllocator;
 import io.undertow.httpcore.StatusCodes;
+import io.undertow.security.api.NotificationReceiver;
+import io.undertow.security.api.SecurityNotification;
 import io.undertow.server.DefaultExchangeHandler;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
@@ -57,6 +64,7 @@ import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.InstanceFactory;
 import io.undertow.servlet.api.InstanceHandle;
 import io.undertow.servlet.api.ListenerInfo;
+import io.undertow.servlet.api.LoginConfig;
 import io.undertow.servlet.api.ServletContainer;
 import io.undertow.servlet.api.ServletContainerInitializerInfo;
 import io.undertow.servlet.api.ServletInfo;
@@ -67,9 +75,10 @@ import io.undertow.servlet.handlers.ServletPathMatches;
 import io.undertow.servlet.handlers.ServletRequestContext;
 import io.undertow.servlet.spec.HttpServletRequestImpl;
 import io.undertow.util.AttachmentKey;
+import io.undertow.util.ImmediateAuthenticationMechanismFactory;
 import io.undertow.vertx.VertxHttpExchange;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * Provides the runtime methods to bootstrap Undertow. This class is present in the final uber-jar,
@@ -95,46 +104,28 @@ public class UndertowDeploymentRecorder {
     private static final AttachmentKey<InjectableContext.ContextState> REQUEST_CONTEXT = AttachmentKey
             .create(InjectableContext.ContextState.class);
 
-    /**
-     * TODO: configuration
-     */
-    protected static final int BUFFER_SIZE = 8 * 1024;
+    protected static final int DEFAULT_BUFFER_SIZE;
+    protected static final boolean DEFAULT_DIRECT_BUFFERS;
 
-    //TODO: clean this up
-    private static BufferAllocator ALLOCATOR = new BufferAllocator() {
-        @Override
-        public ByteBuf allocateBuffer() {
-            return PooledByteBufAllocator.DEFAULT.buffer(BUFFER_SIZE);
+    static {
+        long maxMemory = Runtime.getRuntime().maxMemory();
+        //smaller than 64mb of ram we use 512b buffers
+        if (maxMemory < 64 * 1024 * 1024) {
+            //use 512b buffers
+            DEFAULT_DIRECT_BUFFERS = false;
+            DEFAULT_BUFFER_SIZE = 512;
+        } else if (maxMemory < 128 * 1024 * 1024) {
+            //use 1k buffers
+            DEFAULT_DIRECT_BUFFERS = true;
+            DEFAULT_BUFFER_SIZE = 1024;
+        } else {
+            //use 16k buffers for best performance
+            //as 16k is generally the max amount of data that can be sent in a single write() call
+            DEFAULT_DIRECT_BUFFERS = true;
+            DEFAULT_BUFFER_SIZE = 1024 * 16 - 20; //the 20 is to allow some space for protocol headers, see UNDERTOW-1209
         }
 
-        @Override
-        public ByteBuf allocateBuffer(boolean direct) {
-            if (direct) {
-                return PooledByteBufAllocator.DEFAULT.directBuffer(BUFFER_SIZE);
-            } else {
-                return PooledByteBufAllocator.DEFAULT.heapBuffer(BUFFER_SIZE);
-            }
-        }
-
-        @Override
-        public ByteBuf allocateBuffer(int bufferSize) {
-            return PooledByteBufAllocator.DEFAULT.buffer(bufferSize);
-        }
-
-        @Override
-        public ByteBuf allocateBuffer(boolean direct, int bufferSize) {
-            if (direct) {
-                return PooledByteBufAllocator.DEFAULT.directBuffer(bufferSize);
-            } else {
-                return PooledByteBufAllocator.DEFAULT.heapBuffer(bufferSize);
-            }
-        }
-
-        @Override
-        public int getBufferSize() {
-            return BUFFER_SIZE;
-        }
-    };
+    }
 
     public static void setHotDeploymentResources(List<Path> resources) {
         hotDeploymentResourcePaths = resources;
@@ -180,6 +171,8 @@ public class UndertowDeploymentRecorder {
         for (HandlerWrapper i : hotDeploymentWrappers) {
             d.addOuterHandlerChainWrapper(i);
         }
+        d.addAuthenticationMechanism("QUARKUS", new ImmediateAuthenticationMechanismFactory(QuarkusAuthMechanism.INSTANCE));
+        d.setLoginConfig(new LoginConfig("QUARKUS", "QUARKUS"));
         context.addShutdownTask(new Runnable() {
             @Override
             public void run() {
@@ -187,6 +180,16 @@ public class UndertowDeploymentRecorder {
                     d.getResourceManager().close();
                 } catch (IOException e) {
                     log.error("Failed to close Servlet ResourceManager", e);
+                }
+            }
+        });
+
+        d.addNotificationReceiver(new NotificationReceiver() {
+            @Override
+            public void handleNotification(SecurityNotification notification) {
+                if (notification.getEventType() == SecurityNotification.EventType.AUTHENTICATED) {
+                    QuarkusUndertowAccount account = (QuarkusUndertowAccount) notification.getAccount();
+                    CDI.current().getBeanManager().fireEvent(account.getSecurityIdentity());
                 }
             }
         });
@@ -296,9 +299,9 @@ public class UndertowDeploymentRecorder {
         info.getValue().addInitParameter(name, value);
     }
 
-    public Handler<HttpServerRequest> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
-            DeploymentManager manager,
-            List<HandlerWrapper> wrappers) throws Exception {
+    public Handler<RoutingContext> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
+            DeploymentManager manager, List<HandlerWrapper> wrappers, HttpConfiguration httpConfiguration,
+            ServletRuntimeConfig servletRuntimeConfig) throws Exception {
 
         shutdown.addShutdownTask(new Runnable() {
             @Override
@@ -323,10 +326,18 @@ public class UndertowDeploymentRecorder {
         currentRoot = main;
 
         DefaultExchangeHandler defaultHandler = new DefaultExchangeHandler(ROOT_HANDLER);
-        return new Handler<HttpServerRequest>() {
+
+        UndertowBufferAllocator allocator = new UndertowBufferAllocator(
+                servletRuntimeConfig.directBuffers.orElse(DEFAULT_DIRECT_BUFFERS), (int) servletRuntimeConfig.bufferSize
+                        .orElse(new MemorySize(BigInteger.valueOf(DEFAULT_BUFFER_SIZE))).asLongValue());
+        return new Handler<RoutingContext>() {
             @Override
-            public void handle(HttpServerRequest event) {
-                VertxHttpExchange exchange = new VertxHttpExchange(event, ALLOCATOR, executorService);
+            public void handle(RoutingContext event) {
+                VertxHttpExchange exchange = new VertxHttpExchange(event.request(), allocator, executorService, event);
+                Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
+                if (maxBodySize.isPresent()) {
+                    exchange.setMaxEntitySize(maxBodySize.get().asLongValue());
+                }
                 defaultHandler.handle(exchange);
             }
         };
@@ -487,6 +498,10 @@ public class UndertowDeploymentRecorder {
         deployment.getValue().addServletContainerInitializer(new ServletContainerInitializerInfo(sciClass, handlesTypes));
     }
 
+    public void addContextParam(RuntimeValue<DeploymentInfo> deployment, String paramName, String paramValue) {
+        deployment.getValue().addInitParameter(paramName, paramValue);
+    }
+
     /**
      * we can't have SecureRandom in the native image heap, so we need to lazy init
      */
@@ -575,6 +590,50 @@ public class UndertowDeploymentRecorder {
         @Override
         public ServletContext get() {
             return servletContext;
+        }
+    }
+
+    private static class UndertowBufferAllocator implements BufferAllocator {
+
+        private final boolean defaultDirectBuffers;
+        private final int defaultBufferSize;
+
+        private UndertowBufferAllocator(boolean defaultDirectBuffers, int defaultBufferSize) {
+            this.defaultDirectBuffers = defaultDirectBuffers;
+            this.defaultBufferSize = defaultBufferSize;
+        }
+
+        @Override
+        public ByteBuf allocateBuffer() {
+            return allocateBuffer(defaultDirectBuffers);
+        }
+
+        @Override
+        public ByteBuf allocateBuffer(boolean direct) {
+            if (direct) {
+                return PooledByteBufAllocator.DEFAULT.directBuffer(defaultBufferSize);
+            } else {
+                return PooledByteBufAllocator.DEFAULT.heapBuffer(defaultBufferSize);
+            }
+        }
+
+        @Override
+        public ByteBuf allocateBuffer(int bufferSize) {
+            return allocateBuffer(defaultDirectBuffers, bufferSize);
+        }
+
+        @Override
+        public ByteBuf allocateBuffer(boolean direct, int bufferSize) {
+            if (direct) {
+                return PooledByteBufAllocator.DEFAULT.directBuffer(bufferSize);
+            } else {
+                return PooledByteBufAllocator.DEFAULT.heapBuffer(bufferSize);
+            }
+        }
+
+        @Override
+        public int getBufferSize() {
+            return defaultBufferSize;
         }
     }
 }

@@ -20,6 +20,7 @@ import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
+import io.quarkus.bootstrap.DefineClassVisibleURLClassLoader;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.builder.BuildChain;
@@ -115,7 +116,8 @@ public class GenerateConfigPhase implements AppCreationPhase<GenerateConfigPhase
                 cpUrls.add(resolvedDep.toUri().toURL());
             }
 
-            runnerClassLoader = new URLClassLoader(cpUrls.toArray(new URL[cpUrls.size()]), getClass().getClassLoader());
+            runnerClassLoader = new DefineClassVisibleURLClassLoader(cpUrls.toArray(new URL[cpUrls.size()]),
+                    getClass().getClassLoader());
 
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {

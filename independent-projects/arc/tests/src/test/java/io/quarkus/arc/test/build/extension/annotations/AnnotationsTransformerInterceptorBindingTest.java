@@ -1,18 +1,18 @@
 package io.quarkus.arc.test.build.extension.annotations;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.test.ArcTestContainer;
 import javax.enterprise.context.Dependent;
 import org.jboss.jandex.AnnotationTarget.Kind;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class AnnotationsTransformerInterceptorBindingTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(IWantToBeIntercepted.class, Simple.class, SimpleInterceptor.class)
             .annotationsTransformers(new SimpleTransformer())

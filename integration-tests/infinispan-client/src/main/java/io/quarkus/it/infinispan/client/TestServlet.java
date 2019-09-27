@@ -45,15 +45,16 @@ import org.infinispan.query.api.continuous.ContinuousQueryListener;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
 
-import io.quarkus.infinispan.client.runtime.Remote;
+import io.quarkus.infinispan.client.Remote;
 import io.quarkus.runtime.StartupEvent;
 
 @Path("/test")
 public class TestServlet {
     private static final Log log = LogFactory.getLog(TestServlet.class);
 
+    @SuppressWarnings("deprecation")
     @Inject
-    @Remote("default")
+    @io.quarkus.infinispan.client.runtime.Remote("default")
     RemoteCache<String, Book> cache;
 
     @Inject

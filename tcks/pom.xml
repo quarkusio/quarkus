@@ -17,6 +17,7 @@
         <module>microprofile-config</module>
         <module>microprofile-health</module>
         <module>microprofile-metrics</module>
+        <module>microprofile-reactive-messaging</module>
         <module>microprofile-rest-client</module>
         <module>microprofile-openapi</module>
     </modules>

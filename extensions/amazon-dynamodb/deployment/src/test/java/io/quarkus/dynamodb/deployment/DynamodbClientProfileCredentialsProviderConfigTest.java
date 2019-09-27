@@ -8,14 +8,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class DynamodbClientProfileCredentialsProviderConfigTest {
 
-    // Until we have a compatible version of the AWS SDK with the Netty version used in Quarkus, disable the
-    // async support.
-    //    @Inject
-    //    DynamoDbAsyncClient async;
+    @Inject
+    DynamoDbAsyncClient async;
 
     @Inject
     DynamoDbClient sync;

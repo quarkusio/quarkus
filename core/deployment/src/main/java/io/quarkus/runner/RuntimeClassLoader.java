@@ -91,7 +91,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         this.frameworkClassesPath = frameworkClassesDirectory;
         if (!Files.isDirectory(frameworkClassesDirectory)) {
             throw new IllegalStateException(
-                    "Test classes directory path does not point to an existsing directory: " + frameworkClassesPath);
+                    "Test classes directory path does not point to an existing directory: " + frameworkClassesPath);
         }
         this.transformerCache = transformerCache;
     }
@@ -305,6 +305,15 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
     @Override
     public void writeResource(String name, byte[] data) throws IOException {
         resources.put(name, data);
+    }
+
+    /**
+     * This is needed in order to easily inject classes into the classloader
+     * without having to resort to tricks (that don't work that well on new JDKs)
+     * See {@link io.quarkus.deployment.proxy.InjectIntoClassloaderClassOutput}
+     */
+    public Class<?> visibleDefineClass(String name, byte[] b, int off, int len) throws ClassFormatError {
+        return super.defineClass(name, b, off, len);
     }
 
     private void definePackage(String name) {

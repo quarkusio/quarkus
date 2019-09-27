@@ -3,6 +3,7 @@ package io.quarkus.it.dynamodb;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 
 import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -11,6 +12,7 @@ import javax.ws.rs.Produces;
 
 import org.jboss.logging.Logger;
 
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 
@@ -24,26 +26,22 @@ public class DynamoDBResource {
     @Inject
     DynamoDbClient client;
 
-    // Until we have a compatible version of the AWS SDK with the Netty version used in Quarkus, disable the
-    // async support.
-    //    @Inject
-    //    DynamoDbAsyncClient asyncClient;
+    @Inject
+    DynamoDbAsyncClient asyncClient;
 
-    // Until we have a compatible version of the AWS SDK with the Netty version used in Quarkus, disable the
-    // async support.
-    //    @GET
-    //    @Path("async")
-    //    @Produces(TEXT_PLAIN)
-    //    public CompletionStage<String> testAsync() {
-    //        LOG.info("Testing Async client with table: " + ASYNC_TABLE);
-    //        String keyValue = UUID.randomUUID().toString();
-    //        String rangeValue = UUID.randomUUID().toString();
-    //
-    //        return DynamoDBUtils.createTableIfNotExistsAsync(asyncClient, ASYNC_TABLE)
-    //                .thenCompose(t -> asyncClient.putItem(DynamoDBUtils.createPutRequest(ASYNC_TABLE, keyValue, rangeValue, "OK")))
-    //                .thenCompose(p -> asyncClient.getItem(DynamoDBUtils.createGetRequest(ASYNC_TABLE, keyValue, rangeValue)))
-    //                .thenApply(p -> p.item().get(DynamoDBUtils.PAYLOAD_NAME).s());
-    //    }
+    @GET
+    @Path("async")
+    @Produces(TEXT_PLAIN)
+    public CompletionStage<String> testAsync() {
+        LOG.info("Testing Async client with table: " + ASYNC_TABLE);
+        String keyValue = UUID.randomUUID().toString();
+        String rangeValue = UUID.randomUUID().toString();
+
+        return DynamoDBUtils.createTableIfNotExistsAsync(asyncClient, ASYNC_TABLE)
+                .thenCompose(t -> asyncClient.putItem(DynamoDBUtils.createPutRequest(ASYNC_TABLE, keyValue, rangeValue, "OK")))
+                .thenCompose(p -> asyncClient.getItem(DynamoDBUtils.createGetRequest(ASYNC_TABLE, keyValue, rangeValue)))
+                .thenApply(p -> p.item().get(DynamoDBUtils.PAYLOAD_NAME).s());
+    }
 
     @GET
     @Path("blocking")

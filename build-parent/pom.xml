@@ -27,11 +27,11 @@
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
-        <graal-sdk.version-for-documentation>19.2.0</graal-sdk.version-for-documentation>
+        <graal-sdk.version-for-documentation>19.2.0.1</graal-sdk.version-for-documentation>
         <rest-assured.version>3.3.0</rest-assured.version>
         <axle-client.version>0.0.9</axle-client.version>
         <vertx.version>3.8.1</vertx.version>
-        <artemis.version>2.9.0</artemis.version>
+        <artemis.version>2.10.0</artemis.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.28</freemarker.version>
@@ -48,15 +48,19 @@
         <supported-maven-versions>[3.5.3,)</supported-maven-versions>
 
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.6.1</proposed-maven-version>
+        <proposed-maven-version>3.6.2</proposed-maven-version>
         <maven-wrapper.version>0.7.6</maven-wrapper.version>
 
         <!-- MicroProfile TCK versions -->
         <microprofile-health-api.version>2.0.1</microprofile-health-api.version>
         <microprofile-config-api.version>1.3</microprofile-config-api.version>
         <microprofile-metrics-api.version>2.0.2</microprofile-metrics-api.version>
+        <microprofile-reactive-messaging-api.version>1.0</microprofile-reactive-messaging-api.version>
         <microprofile-rest-client-api.version>1.2.1</microprofile-rest-client-api.version>
         <microprofile-open-api.version>1.1.2</microprofile-open-api.version>
+
+        <!-- Antlr is used by the PanacheQL parser-->
+        <antlr.version>4.7.2</antlr.version>
     </properties>
 
     <dependencyManagement>
@@ -84,7 +88,7 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>${project.groupId}</groupId>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-creator</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -120,7 +124,7 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <groupId>${project.groupId}</groupId>
+                    <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
                     <version>${project.version}</version>
                 </plugin>
@@ -244,6 +248,11 @@
                         <version>${elasticsearch-server.version}</version>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <groupId>org.antlr</groupId>
+                    <artifactId>antlr4-maven-plugin</artifactId>
+                    <version>${antlr.version}</version><!-- keep it aligned with the runtime bom-->
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
@@ -252,7 +261,8 @@
         <profile>
             <id>jdk-8-classpath</id>
             <activation>
-                <jdk>[9,</jdk>
+                <!-- activate this on any JDK from 9 onwards -->
+                <jdk>[9,)</jdk>
             </activation>
             <build>
                 <plugins>

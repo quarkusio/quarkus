@@ -65,6 +65,8 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
      */
     private static final String PATH = "PATH";
 
+    private static final String DEBUG_BUILD_PROCESS_PORT = "5005";
+
     private Path outputDir;
 
     private boolean reportErrorsAtRuntime;
@@ -72,6 +74,8 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
     private boolean debugSymbols;
 
     private boolean debugBuildProcess;
+
+    private boolean publishDebugBuildProcessPort;
 
     private boolean cleanupServer;
 
@@ -103,7 +107,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private String nativeImageXmx;
 
-    private String builderImage = "quay.io/quarkus/ubi-quarkus-native-image:19.2.0";
+    private String builderImage = "quay.io/quarkus/ubi-quarkus-native-image:19.2.0.1";
 
     private String containerRuntime = "";
 
@@ -143,6 +147,11 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     public NativeImagePhase setDebugBuildProcess(boolean debugBuildProcess) {
         this.debugBuildProcess = debugBuildProcess;
+        return this;
+    }
+
+    public NativeImagePhase setPublishDebugBuildProcessPort(boolean publish) {
+        this.publishDebugBuildProcessPort = publish;
         return this;
     }
 
@@ -348,6 +357,10 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                 }
             }
             nativeImage.addAll(containerRuntimeOptions);
+            if (debugBuildProcess && publishDebugBuildProcessPort) {
+                // publish the debug port onto the host if asked for
+                nativeImage.add("--publish=" + DEBUG_BUILD_PROCESS_PORT + ":" + DEBUG_BUILD_PROCESS_PORT);
+            }
             nativeImage.add(this.builderImage);
         } else {
             if (IS_LINUX) {
@@ -426,6 +439,14 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                             : false;
                 }
 
+                if (!enableAllSecurityServices) {
+                    final String enableAllSecurityServicesFromProperties = properties
+                            .getProperty("quarkus.all-security-services.enable");
+                    enableAllSecurityServices = enableAllSecurityServicesFromProperties != null
+                            ? Boolean.parseBoolean(enableAllSecurityServicesFromProperties)
+                            : false;
+                }
+
                 if (!addAllCharsets) {
                     final String nativeEnableAllCharsetsProperty = properties.getProperty("quarkus.native.enable-all-charsets");
                     addAllCharsets = nativeEnableAllCharsetsProperty != null
@@ -466,7 +487,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                 command.add("-g");
             }
             if (debugBuildProcess) {
-                command.add("-J-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y");
+                command.add("-J-Xrunjdwp:transport=dt_socket,address=" + DEBUG_BUILD_PROCESS_PORT + ",server=y,suspend=y");
             }
             if (!disableReports) {
                 command.add("-H:+PrintAnalysisCallTree");
@@ -571,7 +592,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
         final List<String> obsoleteGraalVmVersions = Arrays.asList("1.0.0", "19.0.", "19.1.");
         final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(vmName::contains);
         if (vmVersionIsObsolete) {
-            log.error("Out of date build of GraalVM detected! Please upgrade to GraalVM 19.2.0.");
+            log.error("Out of date build of GraalVM detected! Please upgrade to GraalVM 19.2.0.1.");
             return true;
         }
         return false;
@@ -710,6 +731,9 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                         break;
                     case "debug-build-process":
                         t.setDebugBuildProcess(Boolean.parseBoolean(value));
+                        break;
+                    case "publish-debug-build-process-port":
+                        t.setPublishDebugBuildProcessPort(Boolean.parseBoolean(value));
                         break;
                     case "cleanup-server":
                         t.setCleanupServer(Boolean.parseBoolean(value));

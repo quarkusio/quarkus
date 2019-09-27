@@ -24,7 +24,7 @@ public class RolesAllowedFilter implements ContainerRequestFilter {
     private final Set<String> allowedRoles;
     private final boolean allRolesAllowed;
 
-    public RolesAllowedFilter(String[] allowedRoles) {
+    public RolesAllowedFilter(String... allowedRoles) {
         this.allowedRoles = new HashSet<>(asList(allowedRoles));
         this.allRolesAllowed = this.allowedRoles.stream().anyMatch("*"::equals);
     }

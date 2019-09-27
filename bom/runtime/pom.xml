@@ -164,7 +164,8 @@
         <mockito.version>3.0.0</mockito.version>
         <jna.version>5.3.1</jna.version>
         <antlr.version>4.7.2</antlr.version>
-        <quarkus-security.version>1.0.0.Alpha1</quarkus-security.version>
+        <quarkus-security.version>1.0.0.Alpha2</quarkus-security.version>
+        <javax.interceptor-api.version>1.2</javax.interceptor-api.version>
     </properties>
 
     <dependencyManagement>
@@ -1124,6 +1125,12 @@
                 <groupId>javax.validation</groupId>
                 <artifactId>validation-api</artifactId>
                 <version>${validation-api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>javax.interceptor</groupId>
+                <artifactId>javax.interceptor-api</artifactId>
+                <version>${javax.interceptor-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>javax.ws.rs</groupId>

@@ -71,6 +71,9 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "${native-image.debug-build-process}")
     private boolean debugBuildProcess;
 
+    @Parameter(defaultValue = "true")
+    private boolean publishDebugBuildProcessPort;
+
     @Parameter(readonly = true, required = true, defaultValue = "${project.build.finalName}")
     private String finalName;
 
@@ -354,6 +357,7 @@ public class NativeImageMojo extends AbstractMojo {
                 .setOutputDir(buildDir.toPath())
                 .setCleanupServer(cleanupServer)
                 .setDebugBuildProcess(debugBuildProcess)
+                .setPublishDebugBuildProcessPort(publishDebugBuildProcessPort)
                 .setDebugSymbols(debugSymbols)
                 .setDisableReports(disableReports)
                 .setDockerBuild(dockerBuild)

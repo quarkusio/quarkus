@@ -1,5 +1,6 @@
 package io.quarkus.netty.runtime.graal;
 
+import java.nio.ByteBuffer;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.cert.X509Certificate;
@@ -282,6 +283,17 @@ final class Target_io_netty_channel_nio_NioEventLoop {
     private static Queue<Runnable> newTaskQueue0(int maxPendingTasks) {
         return new LinkedBlockingDeque<>();
     }
+}
+
+@TargetClass(className = "io.netty.util.internal.PlatformDependent")
+final class Target_io_netty_util_internal_PlatformDependent {
+
+    @Substitute
+    public static void freeDirectBuffer(ByteBuffer buffer) {
+        //we can't free direct buffers in native mode due to a NPE
+        //noop
+    }
+
 }
 
 class NettySubstitutions {

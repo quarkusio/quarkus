@@ -59,7 +59,7 @@ class NettyProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "java.util.LinkedHashMap"));
 
         SubstrateConfigBuildItem.Builder builder = SubstrateConfigBuildItem.builder()
-                .addNativeImageSystemProperty("io.netty.noUnsafe", "true")
+                //.addNativeImageSystemProperty("io.netty.noUnsafe", "true")
                 // Use small chunks to avoid a lot of wasted space. Default is 16mb * arenas (derived from core count)
                 // Since buffers are cached to threads, the malloc overhead is temporary anyway
                 .addNativeImageSystemProperty("io.netty.allocator.maxOrder", "1")

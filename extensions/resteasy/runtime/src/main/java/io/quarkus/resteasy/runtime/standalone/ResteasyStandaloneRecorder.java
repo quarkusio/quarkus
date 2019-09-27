@@ -3,8 +3,8 @@ package io.quarkus.resteasy.runtime.standalone;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.spi.ResteasyDeployment;
@@ -122,7 +122,7 @@ public class ResteasyStandaloneRecorder {
         if (!knownPaths.isEmpty()) {
             StaticHandler staticHandler = StaticHandler.create(META_INF_RESOURCES);
             handlers.add(ctx -> {
-                if (knownPaths.contains(ctx.request().path())) {
+                if (knownPaths.contains(ctx.normalisedPath())) {
                     staticHandler.handle(ctx);
                 } else {
                     ctx.next();

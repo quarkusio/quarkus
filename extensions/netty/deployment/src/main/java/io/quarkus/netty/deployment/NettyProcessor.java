@@ -52,6 +52,9 @@ class NettyProcessor {
 
         SubstrateConfigBuildItem.Builder builder = SubstrateConfigBuildItem.builder()
                 .addNativeImageSystemProperty("io.netty.noUnsafe", "true")
+                // Use small chunks to avoid a lot of wasted space. Default is 16mb * arenas (derived from core count)
+                // Since buffers are cached to threads, the malloc overhead is temporary anyway
+                .addNativeImageSystemProperty("io.netty.allocator.maxOrder", "1")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.JdkNpnApplicationProtocolNegotiator")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslEngine")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslContext")

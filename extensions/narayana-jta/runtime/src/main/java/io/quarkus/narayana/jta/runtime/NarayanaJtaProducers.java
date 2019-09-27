@@ -18,6 +18,9 @@ import com.arjuna.ats.jta.UserTransaction;
 @Dependent
 public class NarayanaJtaProducers {
 
+    private static final javax.transaction.UserTransaction USER_TRANSACTION = UserTransaction.userTransaction();
+    private static final javax.transaction.TransactionManager TRANSACTION_MANAGER = TransactionManager.transactionManager();
+
     @Produces
     @ApplicationScoped
     public UserTransactionRegistry userTransactionRegistry() {
@@ -27,14 +30,13 @@ public class NarayanaJtaProducers {
     @Produces
     @ApplicationScoped
     public javax.transaction.UserTransaction userTransaction() {
-        return UserTransaction.userTransaction();
+        return USER_TRANSACTION;
     }
 
     @Produces
     @ApplicationScoped
     public XAResourceRecoveryRegistry xaResourceRecoveryRegistry() {
         return new RecoveryManagerService();
-
     }
 
     @Produces
@@ -46,7 +48,7 @@ public class NarayanaJtaProducers {
     @Produces
     @ApplicationScoped
     public javax.transaction.TransactionManager transactionManager() {
-        return TransactionManager.transactionManager();
+        return TRANSACTION_MANAGER;
     }
 
     @Produces

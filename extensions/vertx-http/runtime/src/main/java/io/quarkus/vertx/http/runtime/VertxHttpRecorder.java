@@ -11,6 +11,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -134,7 +135,7 @@ public class VertxHttpRecorder {
         }
     }
 
-    public void finalizeRouter(BeanContainer container, Handler<RoutingContext> defaultRouteHandler,
+    public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
             List<Filter> filterList, LaunchMode launchMode, ShutdownContext shutdown,
             RuntimeValue<Router> runtimeValue) {
         // install the default route at the end
@@ -161,12 +162,7 @@ public class VertxHttpRecorder {
         }
 
         if (defaultRouteHandler != null) {
-            router.route().handler(new Handler<RoutingContext>() {
-                @Override
-                public void handle(RoutingContext event) {
-                    defaultRouteHandler.handle(event);
-                }
-            });
+            defaultRouteHandler.accept(router.route());
         }
 
         if (launchMode == LaunchMode.DEVELOPMENT) {

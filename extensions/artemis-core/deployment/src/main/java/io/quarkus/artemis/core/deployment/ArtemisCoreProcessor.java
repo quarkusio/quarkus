@@ -28,6 +28,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 
 public class ArtemisCoreProcessor {
 
@@ -43,6 +44,12 @@ public class ArtemisCoreProcessor {
             RandomStickyConnectionLoadBalancingPolicy.class,
             RoundRobinConnectionLoadBalancingPolicy.class
     };
+
+    @BuildStep
+    SubstrateConfigBuildItem config() {
+        return SubstrateConfigBuildItem.builder()
+                .addRuntimeInitializedClass("org.apache.activemq.artemis.api.core.ActiveMQBuffers").build();
+    }
 
     @BuildStep
     void build(CombinedIndexBuildItem indexBuildItem,

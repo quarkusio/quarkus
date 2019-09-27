@@ -284,6 +284,44 @@ final class Target_io_netty_channel_nio_NioEventLoop {
     }
 }
 
+final class TimeHolder {
+
+    public static volatile long newStartTime;
+    public static volatile boolean init;
+
+}
+
+@TargetClass(className = "io.netty.util.concurrent.ScheduledFutureTask")
+final class Target_io_netty_util_concurrent_ScheduledFutureTask {
+
+    @Alias
+    private long deadlineNanos;
+
+    @Substitute
+    static long nanoTime() {
+        if (!TimeHolder.init) {
+            synchronized (TimeHolder.class) {
+                if (!TimeHolder.init) {
+                    TimeHolder.newStartTime = System.nanoTime();
+                }
+            }
+        }
+        return System.nanoTime() - TimeHolder.newStartTime;
+    }
+
+    @Substitute
+    public long delayNanos(long currentTimeNanos) {
+        if (!TimeHolder.init) {
+            synchronized (TimeHolder.class) {
+                if (!TimeHolder.init) {
+                    TimeHolder.newStartTime = System.nanoTime();
+                }
+            }
+        }
+        return Math.max(0, deadlineNanos - (currentTimeNanos - TimeHolder.newStartTime));
+    }
+}
+
 class NettySubstitutions {
 
 }

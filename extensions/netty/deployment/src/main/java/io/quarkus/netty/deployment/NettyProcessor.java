@@ -16,6 +16,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.JniBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
@@ -39,6 +40,13 @@ class NettyProcessor {
         //in native mode we limit the size of the epoll array
         //if the array overflows the selector just moves the overflow to a map
         return new SubstrateSystemPropertyBuildItem("sun.nio.ch.maxUpdateArraySize", "100");
+    }
+
+    @BuildStep
+    public SystemPropertyBuildItem limitArenaSize() {
+        //in native mode we limit the size of the epoll array
+        //if the array overflows the selector just moves the overflow to a map
+        return new SystemPropertyBuildItem("io.netty.allocator.maxOrder", "1");
     }
 
     @BuildStep

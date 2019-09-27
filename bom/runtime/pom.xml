@@ -69,7 +69,6 @@
         <graal-sdk.version>19.2.0.1</graal-sdk.version>
         <gizmo.version>1.0.0.Alpha8</gizmo.version>
         <jackson.version>2.9.10</jackson.version>
-        <commons-logging.version>1.2</commons-logging.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.8.1</commons-lang3.version>
         <commons-codec.version>1.11</commons-codec.version>
@@ -89,8 +88,6 @@
         <rxjava.version>2.2.9</rxjava.version>
         <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
         <jboss-logging-annotations.version>2.1.0.Final</jboss-logging-annotations.version>
-        <log4j.version>1.2.17</log4j.version>
-        <log4j2.version>2.11.2</log4j2.version>
         <slf4j.version>1.7.25</slf4j.version>
         <slf4j-jboss-logging.version>1.2.0.Final</slf4j-jboss-logging.version>
         <wildfly-common.version>1.5.0.Final-format-001</wildfly-common.version>
@@ -727,11 +724,6 @@
 
             <!-- Additional dependencies, keep in alphabetical order -->
             <dependency>
-                <groupId>commons-logging</groupId>
-                <artifactId>commons-logging</artifactId>
-                <version>${commons-logging.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>${commons-lang3.version}</version>
@@ -873,6 +865,10 @@
                         <groupId>com.sun.xml.bind</groupId>
                         <artifactId>jaxb-osgi</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
@@ -893,6 +889,10 @@
                         <!-- https://github.com/quarkusio/quarkus/issues/1991 -->
                         <groupId>com.sun.xml.bind</groupId>
                         <artifactId>jaxb-osgi</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -1138,11 +1138,6 @@
                 <version>${javax.ws.rs-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>log4j</groupId>
-                <artifactId>log4j</artifactId>
-                <version>${log4j.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.apache.activemq</groupId>
                 <artifactId>artemis-core-client</artifactId>
                 <version>${artemis.version}</version>
@@ -1186,21 +1181,6 @@
                 <groupId>org.apache.zookeeper</groupId>
                 <artifactId>zookeeper</artifactId>
                 <version>${zookeeper.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-api</artifactId>
-                <version>${log4j2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-core</artifactId>
-                <version>${log4j2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-slf4j-impl</artifactId>
-                <version>${log4j2.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>

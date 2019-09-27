@@ -30,10 +30,11 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.json.CustomSerDeserBuildItem;
 import io.quarkus.jsonb.JsonbConfigCustomizer;
 import io.quarkus.jsonb.JsonbProducer;
 import io.quarkus.jsonb.QuarkusJsonbComponentInstanceCreator;
+import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
+import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
 
 public class JsonbProcessor {
 
@@ -71,20 +72,20 @@ public class JsonbProcessor {
     // Generate a JsonbConfigCustomizer bean that registers each serializer / deserializer with JsonbConfig
     @BuildStep
     void generateCustomizer(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            List<CustomSerDeserBuildItem> customSerDesers) {
+            List<JsonbSerializerBuildItem> serializers,
+            List<JsonbDeserializerBuildItem> deserializers) {
 
-        if (customSerDesers.isEmpty()) {
+        if (serializers.isEmpty()) {
             return;
         }
 
         final Set<String> customSerializerClasses = new HashSet<>();
         final Set<String> customDeserializerClasses = new HashSet<>();
-        for (CustomSerDeserBuildItem customSerDeser : customSerDesers) {
-            if (customSerDeser.getJsonProvider() != CustomSerDeserBuildItem.JsonProvider.JSONB) {
-                continue;
-            }
-            customSerializerClasses.addAll(customSerDeser.getSerializerClasses());
-            customDeserializerClasses.addAll(customSerDeser.getDeserializerClasses());
+        for (JsonbSerializerBuildItem serializer : serializers) {
+            customSerializerClasses.addAll(serializer.getSerializerClassNames());
+        }
+        for (JsonbDeserializerBuildItem deserializer : deserializers) {
+            customDeserializerClasses.addAll(deserializer.getDeserializerClassNames());
         }
         if (customSerializerClasses.isEmpty() && customDeserializerClasses.isEmpty()) {
             return;

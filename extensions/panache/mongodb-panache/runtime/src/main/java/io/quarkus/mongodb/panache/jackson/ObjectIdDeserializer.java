@@ -7,9 +7,13 @@ import org.bson.types.ObjectId;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
-public class ObjectIdDeserializer extends JsonDeserializer<ObjectId> {
+public class ObjectIdDeserializer extends StdDeserializer<ObjectId> {
+
+    public ObjectIdDeserializer() {
+        super(ObjectId.class);
+    }
 
     @Override
     public ObjectId deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)

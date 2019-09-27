@@ -10,8 +10,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
@@ -20,14 +18,14 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.jackson.spi.JacksonModuleBuildItem;
+import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
+import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.PanacheMongoEntityBase;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import io.quarkus.mongodb.panache.PanacheMongoRepositoryBase;
-import io.quarkus.mongodb.panache.jackson.ObjectMapperProducer;
-import io.quarkus.mongodb.panache.jsonb.PanacheMongoJsonbContextResolver;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
-import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 
 public class PanacheResourceProcessor {
     static final DotName DOTNAME_PANACHE_REPOSITORY_BASE = DotName.createSimple(PanacheMongoRepositoryBase.class.getName());
@@ -43,19 +41,22 @@ public class PanacheResourceProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem registerJacksonSerDer(Capabilities capabilities) {
-        if (capabilities.isCapabilityPresent("io.quarkus.resteasy.jackson")) {
-            return AdditionalBeanBuildItem.unremovableOf(ObjectMapperProducer.class);
-        }
-        return null;
+    void registerJsonbSerDeser(BuildProducer<JsonbSerializerBuildItem> jsonbSerializers,
+            BuildProducer<JsonbDeserializerBuildItem> jsonbDeserializers) {
+        jsonbSerializers
+                .produce(new JsonbSerializerBuildItem(io.quarkus.mongodb.panache.jsonb.ObjectIdSerializer.class.getName()));
+        jsonbDeserializers
+                .produce(new JsonbDeserializerBuildItem(io.quarkus.mongodb.panache.jsonb.ObjectIdDeserializer.class.getName()));
     }
 
     @BuildStep
-    ResteasyJaxrsProviderBuildItem registerJsonbSerDer(Capabilities capabilities) {
-        if (capabilities.isCapabilityPresent("io.quarkus.resteasy.jsonb")) {
-            return new ResteasyJaxrsProviderBuildItem(PanacheMongoJsonbContextResolver.class.getName());
-        }
-        return null;
+    void registerJacksonSerDeser(BuildProducer<JacksonModuleBuildItem> customSerDeser) {
+        customSerDeser.produce(
+                new JacksonModuleBuildItem.Builder("ObjectIdModule")
+                        .add(io.quarkus.mongodb.panache.jackson.ObjectIdSerializer.class.getName(),
+                                io.quarkus.mongodb.panache.jackson.ObjectIdDeserializer.class.getName(),
+                                ObjectId.class.getName())
+                        .build());
     }
 
     @BuildStep

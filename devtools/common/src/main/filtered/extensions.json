@@ -343,6 +343,22 @@
     "guide": "https://quarkus.io/guides/transaction-guide"
   },
   {
+    "name": "Narayana STM - Software Transactional Memory",
+    "labels": [
+      "narayana-stm",
+      "narayana",
+      "stm",
+      "transactions",
+      "transaction",
+      "software-transactional-memory",
+      "tx",
+      "txs"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-narayana-stm",
+    "guide": "https://quarkus.io/guides/stm-guide"
+  },
+  {
     "name": "Neo4j client",
     "labels": [
       "neo4j",

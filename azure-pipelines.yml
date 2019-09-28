@@ -264,6 +264,7 @@ stages:
             - mongodb-client
             - mongodb-panache
             - neo4j
+            - narayana-stm
           name: data
 
       - template: ci-templates/native-build-steps.yaml

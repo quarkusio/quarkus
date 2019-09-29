@@ -272,6 +272,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             if (uberJar) {
                 try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep)) {
                     for (final Path root : artifactFs.getRootDirectories()) {
+                        final Path metaInfDir = root.resolve("META-INF");
                         Files.walkFileTree(root, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
                                 new SimpleFileVisitor<Path>() {
                                     @Override
@@ -288,7 +289,17 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                                             throws IOException {
                                         final String relativePath = toUri(root.relativize(file));
-                                        //if this has been transfomed we do not copy it
+                                        // if it's a signature file (under the <jar>/META-INF directory),
+                                        // then we don't add it to the uber jar
+                                        if (isBlockOrSF(relativePath) &&
+                                                file.relativize(metaInfDir).getNameCount() == 1) {
+                                            if (log.isDebugEnabled()) {
+                                                log.debug("Signature file " + file.toAbsolutePath() + " from app " +
+                                                        "dependency " + appDep + " will not be included in uberjar");
+                                            }
+                                            return FileVisitResult.CONTINUE;
+                                        }
+                                        //if this has been transformed we do not copy it
                                         boolean transformed = transformedFromThisArchive != null
                                                 && transformedFromThisArchive.contains(relativePath);
                                         if (!transformed) {
@@ -561,5 +572,16 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             toUri(b, path, seg + 1);
         }
         return b;
+    }
+
+    // same as the impl in sun.security.util.SignatureFileVerifier#isBlockOrSF()
+    private static boolean isBlockOrSF(final String s) {
+        if (s == null) {
+            return false;
+        }
+        return s.endsWith(".SF")
+                || s.endsWith(".DSA")
+                || s.endsWith(".RSA")
+                || s.endsWith(".EC");
     }
 }

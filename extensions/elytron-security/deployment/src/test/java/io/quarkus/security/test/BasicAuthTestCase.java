@@ -1,5 +1,6 @@
 package io.quarkus.security.test;
 
+import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.equalTo;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -54,6 +55,7 @@ public class BasicAuthTestCase {
     @Test
     public void testJaxrsGetFailure() {
         RestAssured.when().get("/jaxrs-secured/rolesClass").then()
+                .header("www-authenticate", containsStringIgnoringCase("basic"))
                 .statusCode(401);
     }
 

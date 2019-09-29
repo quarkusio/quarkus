@@ -386,6 +386,47 @@ NOTE: Environment variables names are following the conversion rules of link:htt
 NOTE: The `config/application.properties` features is available in development mode as well. To make use of it, `config/application.properties` needs to be placed inside the build tool's output directory (`target` for Maven and `build` for Gradle).
 Keep in mind however that any cleaning operation from the build tool like `mvn clean` or `gradle clean` will remove the `config` directory as well.
 
+== Using local configuration file during Development
+As an alternative to defining some configuration variables via host environment variables during development, you can define configuration variables in a local configuration file via a `quarkus.local-config` property.
+This is practical as it allows each member of your development team to customize and manage the development environment via a file.
+Doing so, Quarkus will load configuration variables in the given file.  The variables will have a higher priority than variable defined in a `application.properties` file but a lower priority than host environment variables.
+
+See the example below.
+
+Let's create a `.local-config.properties` file at the root of the project and add the following variable.
+
+[source,shell]
+--
+HELLO_WORLD=Hello World
+--
+
+Edit the main configuration `src/main/resources/application.properties` file so that it looks like:
+
+[source,properties]
+----
+greeting.message = ${HELLO_WORLD}
+greeting.name = quarkus
+greeting.hidden.prizeAmount=10
+greeting.hidden.recipients=Jane,John
+----
+
+Now, let's tell Quarkus to pick variables defined in the `.local-config.properties` file with the `-Dquarkus.local-config` system property as shown below.
+[source,shell]
+--
+./mvnw clean compile quarkus:dev -Dquarkus.local-config=${PWD}/.local-config.properties <1>
+--
+
+1. We start Quarkus application with a path to a local configuration file. Absolute path are also accepted.
+
+Open your browser to `http://localhost:8080/greeting` to see the `Hello World` greeting message from the local configuration file. Changes to the local configuration file will be picked by Quarkus.
+
+NOTE: Quarkus will define a new link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc[MP Config Source] for local configuration.
+
+WARNING: The `quarkus.local-config` property is not to be used in `production` environments (prefer host/global environment variables in this case).
+
+TIP: To avoid potential merge conflicts or polluting your git repository, it is advised not to commit the local configuration file.
+To onboard new developers, we recommend having an easy to modify example file containing fake values of all the possible variables.
+
 === Configuration Profiles
 
 Quarkus supports the notion of configuration profiles. These allow you to have multiple configuration in the same file and

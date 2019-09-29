@@ -258,7 +258,7 @@ public class ConfigurationSetup {
     }
 
     /**
-     * Add a config sources for {@code application.properties}.
+     * Add a config sources for {@code application.properties} and {@code local-config}.
      */
     @BuildStep
     void setUpConfigFile(BuildProducer<RunTimeConfigurationSourceBuildItem> configSourceConsumer) {
@@ -266,6 +266,8 @@ public class ConfigurationSetup {
                 ApplicationPropertiesConfigSource.InJar.class.getName(), OptionalInt.empty()));
         configSourceConsumer.produce(new RunTimeConfigurationSourceBuildItem(
                 ApplicationPropertiesConfigSource.InFileSystem.class.getName(), OptionalInt.empty()));
+        configSourceConsumer.produce(new RunTimeConfigurationSourceBuildItem(
+                ApplicationPropertiesConfigSource.LocalConfigFile.class.getName(), OptionalInt.empty()));
     }
 
     /**

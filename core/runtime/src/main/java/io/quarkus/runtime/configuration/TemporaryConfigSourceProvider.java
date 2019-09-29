@@ -12,6 +12,7 @@ public class TemporaryConfigSourceProvider implements ConfigSourceProvider {
     public Iterable<ConfigSource> getConfigSources(final ClassLoader forClassLoader) {
         return Arrays.asList(
                 new ApplicationPropertiesConfigSource.InJar(),
-                new ApplicationPropertiesConfigSource.InFileSystem());
+                new ApplicationPropertiesConfigSource.InFileSystem(),
+                new ApplicationPropertiesConfigSource.LocalConfigFile());
     }
 }

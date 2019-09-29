@@ -14,7 +14,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
+
+import org.jboss.logging.Logger;
 
 import io.smallrye.config.PropertiesConfigSource;
 
@@ -23,7 +26,6 @@ import io.smallrye.config.PropertiesConfigSource;
  */
 public abstract class ApplicationPropertiesConfigSource extends PropertiesConfigSource {
     private static final long serialVersionUID = -4694780118527396798L;
-
     static final String APPLICATION_PROPERTIES = "application.properties";
 
     ApplicationPropertiesConfigSource(InputStream is, int ordinal) {
@@ -85,6 +87,46 @@ public abstract class ApplicationPropertiesConfigSource extends PropertiesConfig
             } else {
                 return null;
             }
+        }
+    }
+
+    public static final class LocalConfigFile extends ApplicationPropertiesConfigSource {
+        private static final Logger LOGGER = Logger.getLogger(LocalConfigFile.class.getName());
+
+        public LocalConfigFile() {
+            super(openStream(), 290);
+        }
+
+        private static InputStream openStream() {
+            final Optional<String> localConfigFile = getLocalConfigFilename();
+            if (localConfigFile.isPresent()) {
+
+                final Path localConfigFilePath = Paths.get(localConfigFile.get());
+
+                if (Files.notExists(localConfigFilePath)) {
+                    LOGGER.warnf("Supplied local configuration file %s does not exist.", localConfigFilePath);
+                    return null;
+                }
+
+                try {
+                    return Files.newInputStream(localConfigFilePath);
+                } catch (NoSuchFileException | FileNotFoundException e) {
+                    return null;
+                } catch (IOException e) {
+                    throw new IOError(e);
+                }
+            }
+
+            return null;
+        }
+
+        public static Optional<String> getLocalConfigFilename() {
+            final String envFile = System.getProperty("quarkus.local-config");
+            if (envFile == null) {
+                return Optional.empty();
+            }
+
+            return Optional.of(envFile);
         }
     }
 }

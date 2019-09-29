@@ -212,7 +212,31 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
-    public void testThatClassFileAreCleanedUp() throws MavenInvocationException, IOException, InterruptedException {
+    public void testLocalDevConfig() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic", "projects/project-classic-local-dev-config-run");
+
+        File source = new File(testDir, ".local-config");
+        String greeting = "hello world";
+        String env = "GREETING=" + greeting;
+        FileUtils.write(source, env, Charset.forName("UTF-8"));
+        runAndCheck("-Dquarkus.local-config=" + source.getAbsolutePath());
+
+        // Wait until we get "hello world"
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello/greeting").contains(greeting));
+
+        String newGreeting = "Mambo";
+        filter(source, ImmutableMap.of(env, "GREETING=" + newGreeting + ""));
+
+        // wait for new swahili greeting
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello/greeting").contains(newGreeting));
+    }
+
+    @Test
+    public void testThatClassFileAreCleanedUp() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-class-file-deletion");
 
         File source = new File(testDir, "src/main/java/org/acme/ClassDeletionResource.java");

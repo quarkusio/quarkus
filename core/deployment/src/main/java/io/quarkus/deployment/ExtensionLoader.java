@@ -207,8 +207,8 @@ public final class ExtensionLoader {
         final DefaultValuesConfigurationSource defaultSource = new DefaultValuesConfigurationSource(
                 buildTimeConfig.getLeafPatterns());
         final PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
-
-        builder.withSources(inJar, defaultSource, pcs);
+        final ApplicationPropertiesConfigSource.LocalConfigFile localConfigSource = new ApplicationPropertiesConfigSource.LocalConfigFile();
+        builder.withSources(inJar, defaultSource, pcs, localConfigSource);
 
         // populate builder with all converters loaded from ServiceLoader
         ConverterSupport.populateConverters(builder);

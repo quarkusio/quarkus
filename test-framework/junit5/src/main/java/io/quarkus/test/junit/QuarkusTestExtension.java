@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -60,6 +61,9 @@ import io.quarkus.test.common.TestInstantiator;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback;
+import io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback;
+import io.quarkus.test.junit.chain.TestBuildChainCustomizerConsumer;
 
 public class QuarkusTestExtension
         implements BeforeEachCallback, AfterEachCallback, TestInstanceFactory, BeforeAllCallback {
@@ -69,6 +73,9 @@ public class QuarkusTestExtension
     private static boolean failedBoot;
 
     private final RestAssuredURLManager restAssuredURLManager = new RestAssuredURLManager(false);
+
+    private List<QuarkusTestBeforeEachCallback> beforeEachCallbacks = new ArrayList<>();
+    private List<QuarkusTestAfterEachCallback> afterEachCallbacks = new ArrayList<>();
 
     private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
 
@@ -102,7 +109,7 @@ public class QuarkusTestExtension
             }
         }
 
-        RuntimeRunner runtimeRunner = runnerBuilder
+        RuntimeRunner.Builder builder = runnerBuilder
                 .setLaunchMode(LaunchMode.TEST)
                 .setClassLoader(appCl)
                 .setTarget(appClassLocation)
@@ -230,7 +237,14 @@ public class QuarkusTestExtension
                         }).produces(TestAnnotationBuildItem.class)
                                 .build();
                     }
-                })
+                });
+
+        ServiceLoader<TestBuildChainCustomizerConsumer> testBuildStepProducers = ServiceLoader
+                .load(TestBuildChainCustomizerConsumer.class);
+        for (TestBuildChainCustomizerConsumer customizerConsumer : testBuildStepProducers) {
+            builder.addChainCustomizer(customizerConsumer);
+        }
+        RuntimeRunner runtimeRunner = builder
                 .build();
         runtimeRunner.run();
 
@@ -253,6 +267,18 @@ public class QuarkusTestExtension
                 }
             }
         }, "Quarkus Test Cleanup Shutdown task"));
+
+        ServiceLoader<QuarkusTestBeforeEachCallback> quarkusTestBeforeEachLoader = ServiceLoader
+                .load(QuarkusTestBeforeEachCallback.class);
+        for (QuarkusTestBeforeEachCallback quarkusTestBeforeEachCallback : quarkusTestBeforeEachLoader) {
+            beforeEachCallbacks.add(quarkusTestBeforeEachCallback);
+        }
+        ServiceLoader<QuarkusTestAfterEachCallback> quarkusTestAfterEachLoader = ServiceLoader
+                .load(QuarkusTestAfterEachCallback.class);
+        for (QuarkusTestAfterEachCallback quarkusTestAfterEach : quarkusTestAfterEachLoader) {
+            afterEachCallbacks.add(quarkusTestAfterEach);
+        }
+
         return new ExtensionState(testResourceManager, shutdownTask, false);
     }
 
@@ -303,6 +329,9 @@ public class QuarkusTestExtension
             boolean substrateTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
             restAssuredURLManager.clearURL();
             TestScopeManager.tearDown(substrateTest);
+            for (QuarkusTestAfterEachCallback afterEachCallback : afterEachCallbacks) {
+                afterEachCallback.afterEach(context, substrateTest);
+            }
         }
     }
 
@@ -312,6 +341,9 @@ public class QuarkusTestExtension
             boolean substrateTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
             restAssuredURLManager.setURL();
             TestScopeManager.setup(substrateTest);
+            for (QuarkusTestBeforeEachCallback beforeEachCallback : beforeEachCallbacks) {
+                beforeEachCallback.beforeEach(context, substrateTest);
+            }
         }
     }
 

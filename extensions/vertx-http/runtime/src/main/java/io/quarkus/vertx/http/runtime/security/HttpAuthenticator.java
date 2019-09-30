@@ -2,7 +2,6 @@ package io.quarkus.vertx.http.runtime.security;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -67,13 +66,7 @@ public class HttpAuthenticator {
         if (mechanism == null) {
             return CompletableFuture.completedFuture(null);
         }
-        return mechanism.authenticate(routingContext, identityProviderManager)
-                .thenApply(new Function<SecurityIdentity, SecurityIdentity>() {
-                    @Override
-                    public SecurityIdentity apply(SecurityIdentity identity) {
-                        return identity;
-                    }
-                });
+        return mechanism.authenticate(routingContext, identityProviderManager);
     }
 
     /**

@@ -16,7 +16,7 @@ import io.quarkus.runtime.ThreadPoolConfig;
 public class ThreadPoolSetup {
 
     @BuildStep
-    @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
+    @Record(value = ExecutionTime.RUNTIME_INIT)
     public ExecutorBuildItem createExecutor(ExecutorRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             ThreadPoolConfig threadPoolConfig) {

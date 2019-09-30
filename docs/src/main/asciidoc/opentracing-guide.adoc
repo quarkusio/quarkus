@@ -95,8 +95,9 @@ quarkus.jaeger.endpoint=http://localhost:14268/api/traces
 
 The second approach is to supply the properties as https://www.jaegertracing.io/docs/latest/client-features/[environment variables]. These can be specified as `jvm.args` as shown in the following section.
 
-1) If the `quarkus.jaeger.service-name` property (or `JAEGER_SERVICE_NAME` environment variable) is not provided then a "no-op" tracer will be configured, resulting in no tracing data being reported to the backend.
-2 and 3) Setup a sampler, that uses a constant sampling strategy and samples all requests. Set sampler-param to somewhere between 0 and 1, if you do not wish to sample all requests.
+<1> If the `quarkus.jaeger.service-name` property (or `JAEGER_SERVICE_NAME` environment variable) is not provided then a "no-op" tracer will be configured, resulting in no tracing data being reported to the backend.
+<2> Setup a sampler, that uses a constant sampling strategy.
+<3> Sample all requests. Set sampler-param to somewhere between 0 and 1, e.g. 0.50, if you do not wish to sample all requests.
 
 NOTE: Currently the tracer can only be configured to report spans directly to the collector via HTTP, using the `quarkus.jaeger.endpoint` property (or `JAEGER_ENDPOINT` environment variable). Support for using the Jaeger agent, via UDP, will be available in a future version.
 

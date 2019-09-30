@@ -1,6 +1,6 @@
 package io.quarkus.cli.commands;
 
-import static io.quarkus.generators.ProjectGenerator.BUILD_TOOL;
+import static io.quarkus.generators.ProjectGenerator.BUILD_FILE;
 import static io.quarkus.generators.ProjectGenerator.CLASS_NAME;
 import static io.quarkus.generators.ProjectGenerator.IS_SPRING;
 import static io.quarkus.generators.ProjectGenerator.PACKAGE_NAME;
@@ -18,7 +18,7 @@ import java.util.Set;
 
 import org.apache.maven.model.Model;
 
-import io.quarkus.cli.commands.file.GradleBuildFile;
+import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.file.MavenBuildFile;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.generators.BuildTool;
@@ -37,7 +37,8 @@ public class CreateProject {
     private String artifactId;
     private String version = getPluginVersion();
     private SourceType sourceType = SourceType.JAVA;
-    private BuildTool buildTool = BuildTool.MAVEN;
+    private BuildFile buildFile;
+    private BuildTool buildTool;
     private String className;
     private Set<String> extensions;
 
@@ -77,6 +78,11 @@ public class CreateProject {
         return this;
     }
 
+    public CreateProject buildFile(BuildFile buildFile) {
+        this.buildFile = buildFile;
+        return this;
+    }
+
     public CreateProject buildTool(BuildTool buildTool) {
         this.buildTool = buildTool;
         return this;
@@ -98,7 +104,7 @@ public class CreateProject {
         context.put(PROJECT_VERSION, version);
         context.put(QUARKUS_VERSION, getPluginVersion());
         context.put(SOURCE_TYPE, sourceType);
-        context.put(BUILD_TOOL, buildTool);
+        context.put(BUILD_FILE, getBuildFile());
 
         if (extensions != null && extensions.stream().anyMatch(e -> e.toLowerCase().contains("spring-web"))) {
             context.put(IS_SPRING, Boolean.TRUE);
@@ -117,13 +123,23 @@ public class CreateProject {
 
         ProjectGeneratorRegistry.get(BasicRestProjectGenerator.NAME).generate(writer, context);
 
-        if (BuildTool.GRADLE.equals(buildTool)) {
-            new GradleBuildFile(writer).completeFile(groupId, artifactId, version);
-        } else {
-            new MavenBuildFile(writer).completeFile();
+        // call close at the end to save file
+        try (BuildFile buildFile = getBuildFile()) {
+            buildFile.completeFile(groupId, artifactId, version);
         }
 
         return true;
+    }
+
+    private BuildFile getBuildFile() throws IOException {
+        if (buildFile == null) {
+            if (buildTool == null) {
+                buildFile = new MavenBuildFile(writer);
+            } else {
+                buildFile = buildTool.createBuildFile(writer);
+            }
+        }
+        return buildFile;
     }
 
     public static SourceType determineSourceType(Set<String> extensions) {

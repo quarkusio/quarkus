@@ -1,33 +1,24 @@
-// this block is necessary to make enforcedPlatform work for Quarkus plugin available
-// only locally (snapshot) that is also importing the Quarkus BOM
-buildscript {
-    repositories {
-        mavenLocal()
-    }
-    dependencies {
-        classpath "io.quarkus:quarkus-gradle-plugin:${quarkusVersion}"
-    }
-}
+
 
 plugins {
     id 'java'
 }
 
-apply plugin: 'io.quarkus'
-
 repositories {
-     mavenLocal()
-     mavenCentral()
+    maven {
+        url uri(System.getenv('MAVEN_LOCAL_REPO'))
+    }
+    mavenCentral()
 }
 
 dependencies {
-	implementation 'io.quarkus:quarkus-jsonp:0.20.0'
+    implementation 'io.quarkus:quarkus-jsonp'
     implementation 'io.quarkus:quarkus-jsonb'
     constraints {
         implementation("io.quarkus:quarkus-jsonb:0.10.0") {
             because("to test constraints")
         }
-	}
+    }
     implementation enforcedPlatform("io.quarkus:quarkus-bom:${quarkusVersion}")
     implementation 'io.quarkus:quarkus-resteasy'
 

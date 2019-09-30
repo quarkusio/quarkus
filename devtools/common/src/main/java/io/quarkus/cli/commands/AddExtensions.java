@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.apache.maven.model.Dependency;
 
 import io.quarkus.cli.commands.file.BuildFile;
+import io.quarkus.cli.commands.file.MavenBuildFile;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.generators.BuildTool;
@@ -25,11 +26,15 @@ public class AddExtensions {
     private final static Printer PRINTER = new Printer();
 
     public AddExtensions(final ProjectWriter writer) throws IOException {
-        this(writer, BuildTool.MAVEN);
+        this(new MavenBuildFile(writer));
     }
 
     public AddExtensions(final ProjectWriter writer, final BuildTool buildTool) throws IOException {
-        this.buildFile = buildTool.getBuildFile(writer);
+        this.buildFile = buildTool.createBuildFile(writer);
+    }
+
+    public AddExtensions(final BuildFile buildFile) throws IOException {
+        this.buildFile = buildFile;
     }
 
     /**
@@ -224,7 +229,7 @@ public class AddExtensions {
         }
 
         if (updated) {
-            buildFile.write();
+            buildFile.close();
         }
 
         return new AddExtensionResult(updated, success);

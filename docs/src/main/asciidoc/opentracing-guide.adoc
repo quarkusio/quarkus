@@ -167,3 +167,9 @@ quarkus.datasource.driver=io.opentracing.contrib.jdbc.TracingDriver
 # configure Hibernate dialect
 quarkus.hibernate-orm.dialect=org.hibernate.dialect.PostgreSQLDialect
 ----
+
+[[configuration-reference]]
+== Jaeger Configuration Reference
+
+include::{generated-dir}/config/quarkus-jaeger.adoc[leveloffset=+1, opts=optional]
+

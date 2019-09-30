@@ -82,6 +82,7 @@
         <module>narayana-stm</module>
         <module>narayana-jta</module>
         <module>elytron-security-jdbc</module>
+        <module>vertx-graphql</module>
     </modules>
 
     <build>

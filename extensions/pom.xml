@@ -126,6 +126,7 @@
 
         <!-- vault -->
         <module>vault</module>
+        <module>vertx-graphql</module>
     </modules>
 
     <!-- Unfortunately the config below introduces a build dependency on the maven plugin

@@ -13,6 +13,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Delete;
+import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.jdk.JDK11OrLater;
@@ -282,6 +283,22 @@ final class Target_io_netty_channel_nio_NioEventLoop {
     private static Queue<Runnable> newTaskQueue0(int maxPendingTasks) {
         return new LinkedBlockingDeque<>();
     }
+}
+
+@TargetClass(className = "io.netty.buffer.AbstractReferenceCountedByteBuf")
+final class Target_io_netty_buffer_AbstractReferenceCountedByteBuf {
+
+    @Alias
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FieldOffset, name = "refCnt")
+    private static long REFCNT_FIELD_OFFSET;
+}
+
+@TargetClass(className = "io.netty.util.AbstractReferenceCounted")
+final class Target_io_netty_util_AbstractReferenceCounted {
+
+    @Alias
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FieldOffset, name = "refCnt")
+    private static long REFCNT_FIELD_OFFSET;
 }
 
 class NettySubstitutions {

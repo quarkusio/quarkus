@@ -6,6 +6,7 @@ import java.util.function.Function;
 
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.quarkus.vertx.http.runtime.BodyConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.quarkus.vertx.web.Route;
@@ -71,6 +72,12 @@ public class VertxWebRecorder {
                 if (maxBodySize.isPresent()) {
                     bodyHandler.setBodyLimit(maxBodySize.get().asLongValue());
                 }
+                final BodyConfig bodyConfig = httpConfiguration.body;
+                bodyHandler.setHandleFileUploads(bodyConfig.handleFileUploads);
+                bodyHandler.setUploadsDirectory(bodyConfig.uploadsDirectory);
+                bodyHandler.setDeleteUploadedFilesOnEnd(bodyConfig.deleteUploadedFilesOnEnd);
+                bodyHandler.setMergeFormAttributes(bodyConfig.mergeFormAttributes);
+                bodyHandler.setPreallocateBodyBuffer(bodyConfig.preallocateBodyBuffer);
 
                 route.handler(bodyHandler);
                 return route;

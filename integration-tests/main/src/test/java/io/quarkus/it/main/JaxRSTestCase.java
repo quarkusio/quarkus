@@ -211,4 +211,28 @@ public class JaxRSTestCase {
                 .post("/test/max-body-size")
                 .then().statusCode(200);
     }
+
+    @Test
+    public void testSSE() throws Exception {
+        RestAssured.when().get("/sse/stream")
+                .then()
+                .contentType("text/event-stream")
+                .body(containsString("0"),
+                        containsString("1"),
+                        containsString("2"));
+
+        RestAssured.when().get("/sse/stream-html")
+                .then()
+                .contentType("text/event-stream")
+                .body(containsString("<html><body>0</body></html>"),
+                        containsString("<html><body>1</body></html>"),
+                        containsString("<html><body>2</body></html>"));
+
+        RestAssured.when().get("/sse/stream-xml")
+                .then()
+                .contentType("text/event-stream")
+                .body(containsString("<settings><foo bar=\"0\"/></settings>"),
+                        containsString("<settings><foo bar=\"1\"/></settings>"),
+                        containsString("<settings><foo bar=\"2\"/></settings>"));
+    }
 }

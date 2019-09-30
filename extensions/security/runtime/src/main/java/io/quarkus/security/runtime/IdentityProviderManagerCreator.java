@@ -45,6 +45,7 @@ public class IdentityProviderManagerCreator {
         builder.setBlockingExecutor(new Executor() {
             @Override
             public void execute(Runnable command) {
+                //TODO: should we be using vert.x blocking tasks here? We really should only have a single thread pool
                 ExecutorRecorder.getCurrent().execute(command);
             }
         });

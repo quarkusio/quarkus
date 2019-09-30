@@ -1,7 +1,6 @@
 package io.quarkus.elytron.security.jdbc;
 
 import java.security.Provider;
-import java.security.Security;
 import java.util.function.Supplier;
 
 import javax.sql.DataSource;
@@ -27,8 +26,12 @@ public class JdbcRecorder {
      * @return - runtime value wrapper for the SecurityRealm
      */
     public RuntimeValue<SecurityRealm> createRealm(JdbcSecurityRealmConfig config) {
-        Supplier<Provider[]> providers = () -> new Provider[] { new WildFlyElytronProvider() };
-        Security.addProvider(new WildFlyElytronProvider());
+        Supplier<Provider[]> providers = new Supplier<Provider[]>() {
+            @Override
+            public Provider[] get() {
+                return new Provider[] { new WildFlyElytronProvider() };
+            }
+        };
         JdbcSecurityRealmBuilder builder = JdbcSecurityRealm.builder().setProviders(providers);
         PrincipalQueriesConfig principalQueries = config.principalQueries;
         registerPrincipalQuery(principalQueries.defaultPrincipalQuery, builder);

@@ -35,7 +35,6 @@ class ElytronSecurityJdbcProcessor {
      *
      * @param recorder - runtime security recorder
      * @param securityRealm - the producer factory for the SecurityRealmBuildItem
-     *        // * @param beanContainer - ensure CDI bean container is ready
      * @param dataSourceInitialized - ensure that Agroal DataSource is initialized first
      * @throws Exception - on any failure
      */

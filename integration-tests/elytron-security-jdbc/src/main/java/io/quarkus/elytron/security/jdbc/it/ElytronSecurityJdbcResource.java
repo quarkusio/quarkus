@@ -21,28 +21,28 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-@Path("/elytron-security-jdbc")
+@Path("/api")
 @ApplicationScoped
 public class ElytronSecurityJdbcResource {
 
-  @GET
-  @Path("/anonymous")
-  public String anonymous() {
-    return "anonymous";
-  }
+    @GET
+    @Path("/anonymous")
+    public String anonymous() {
+        return "anonymous";
+    }
 
-  @GET
-  @Path("/authenticated")
-  @RolesAllowed("user")
-  public String authenticated() {
-    return "authenticated";
-  }
+    @GET
+    @Path("/authenticated")
+    @RolesAllowed("user")
+    public String authenticated() {
+        return "authenticated";
+    }
 
-  @GET
-  @Path("/forbidden")
-  @RolesAllowed("admin")
-  public String forbidden() {
-    return "forbidden";
-  }
+    @GET
+    @Path("/forbidden")
+    @RolesAllowed("admin")
+    public String forbidden() {
+        return "forbidden";
+    }
 
 }

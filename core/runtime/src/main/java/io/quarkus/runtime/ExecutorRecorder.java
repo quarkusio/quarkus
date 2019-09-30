@@ -37,6 +37,7 @@ public class ExecutorRecorder {
     public ExecutorService setupRunTime(ShutdownContext shutdownContext, ThreadPoolConfig threadPoolConfig,
             LaunchMode launchMode) {
         if (devModeExecutor != null) {
+            current = devModeExecutor;
             return devModeExecutor;
         }
         final EnhancedQueueExecutor underlying = createExecutor(threadPoolConfig);

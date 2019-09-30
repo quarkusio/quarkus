@@ -241,7 +241,7 @@ metadata:
   name: <applicationName>
   namespace: <namespace>
 rules:
-  - apiGroups: ["", "extensions"]
+  - apiGroups: [""]
     resources: ["pods"]
     verbs: ["list"]
 

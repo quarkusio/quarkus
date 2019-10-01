@@ -1480,6 +1480,11 @@
                 <version>${narayana.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.jboss.narayana.stm</groupId>
+                <artifactId>stm</artifactId>
+                <version>${narayana.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-core</artifactId>
                 <version>${resteasy.version}</version>
@@ -2342,6 +2347,11 @@
                         <artifactId>spring-jcl</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-narayana-stm</artifactId>
+                <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

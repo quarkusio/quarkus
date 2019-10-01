@@ -64,6 +64,7 @@
 
         <!-- Data access and validation -->
         <module>narayana-jta</module>
+        <module>narayana-stm</module>
         <module>agroal</module>
         <module>jdbc</module>
         <module>hibernate-orm</module>

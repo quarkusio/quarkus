@@ -33,6 +33,7 @@ import org.kie.internal.kogito.codegen.Generated;
 import org.kie.kogito.Model;
 import org.kie.kogito.codegen.ApplicationGenerator;
 import org.kie.kogito.codegen.GeneratedFile;
+import org.kie.kogito.codegen.decision.DecisionCodegen;
 import org.kie.kogito.codegen.di.CDIDependencyInjectionAnnotator;
 import org.kie.kogito.codegen.process.ProcessCodegen;
 import org.kie.kogito.codegen.process.persistence.PersistenceGenerator;
@@ -143,9 +144,10 @@ public class KogitoAssetsProcessor {
 
         boolean generateRuleUnits = true;
         boolean generateProcesses = true;
+        boolean generateDecisions = true;
 
         ApplicationGenerator appGen = createApplicationGenerator(projectPath, launchMode.getLaunchMode(), generateRuleUnits,
-                generateProcesses, combinedIndexBuildItem);
+                generateProcesses, generateDecisions, combinedIndexBuildItem);
         Collection<GeneratedFile> generatedFiles = appGen.generate();
 
         if (!generatedFiles.isEmpty()) {
@@ -261,7 +263,10 @@ public class KogitoAssetsProcessor {
     }
 
     private ApplicationGenerator createApplicationGenerator(Path projectPath, LaunchMode launchMode,
-            boolean generateRuleUnits, boolean generateProcesses, CombinedIndexBuildItem combinedIndexBuildItem)
+            boolean generateRuleUnits,
+            boolean generateProcesses,
+            boolean generateDecisions,
+            CombinedIndexBuildItem combinedIndexBuildItem)
             throws IOException {
 
         Path srcPath = projectPath.resolve("src");
@@ -294,6 +299,10 @@ public class KogitoAssetsProcessor {
             appGen.withGenerator(ProcessCodegen.ofPath(projectPath))
                     .withPersistence(usePersistence)
                     .withClassLoader(Thread.currentThread().getContextClassLoader());
+        }
+
+        if (generateDecisions) {
+            appGen.withGenerator(DecisionCodegen.ofPath(projectPath));
         }
 
         return appGen;

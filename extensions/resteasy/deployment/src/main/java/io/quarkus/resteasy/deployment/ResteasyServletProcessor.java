@@ -30,6 +30,7 @@ import io.quarkus.resteasy.server.common.deployment.ResteasyServerConfigBuildIte
 import io.quarkus.undertow.deployment.FilterBuildItem;
 import io.quarkus.undertow.deployment.ServletBuildItem;
 import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
+import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 
 /**
  * Processor that finds JAX-RS classes in the deployment
@@ -43,9 +44,10 @@ public class ResteasyServletProcessor {
 
     @BuildStep
     public void jaxrsConfig(Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
-            BuildProducer<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig) {
+            BuildProducer<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig, HttpRootPathBuildItem httpRootPathBuildItem) {
         if (resteasyServerConfig.isPresent()) {
-            resteasyJaxrsConfig.produce(new ResteasyJaxrsConfigBuildItem(resteasyServerConfig.get().getPath()));
+            resteasyJaxrsConfig.produce(
+                    new ResteasyJaxrsConfigBuildItem(httpRootPathBuildItem.adjustPath(resteasyServerConfig.get().getPath())));
         }
     }
 

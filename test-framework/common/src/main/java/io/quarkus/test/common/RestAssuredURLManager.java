@@ -81,7 +81,7 @@ public class RestAssuredURLManager {
         if (basePathField != null) {
             try {
                 oldBasePath = (String) basePathField.get(null);
-                Optional<String> basePath = ConfigProvider.getConfig().getOptionalValue("quarkus.servlet.context-path",
+                Optional<String> basePath = ConfigProvider.getConfig().getOptionalValue("quarkus.http.root-path",
                         String.class);
                 if (basePath.isPresent()) {
                     basePathField.set(null, basePath.get());

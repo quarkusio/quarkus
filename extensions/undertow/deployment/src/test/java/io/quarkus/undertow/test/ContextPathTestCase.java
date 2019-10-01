@@ -1,8 +1,6 @@
 package io.quarkus.undertow.test;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -11,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
 
 public class ContextPathTestCase {
@@ -24,15 +21,9 @@ public class ContextPathTestCase {
                     .addClasses(TestServlet.class)
                     .addAsResource(new StringAsset("quarkus.servlet.context-path=" + CONTEXT_PATH), "application.properties"));
 
-    @TestHTTPResource
-    String url;
-
     @Test
     public void testServlet() {
-        assertTrue(System.getProperty("test.url").endsWith(CONTEXT_PATH));
-        assertTrue(url.endsWith(CONTEXT_PATH + "/"));
-        assertEquals(CONTEXT_PATH, RestAssured.basePath);
-        RestAssured.when().get("/test").then()
+        RestAssured.when().get("/foo/test").then()
                 .statusCode(200)
                 .body(is("test servlet"));
     }

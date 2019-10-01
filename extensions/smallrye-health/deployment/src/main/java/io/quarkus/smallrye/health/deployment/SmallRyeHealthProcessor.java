@@ -75,11 +75,11 @@ class SmallRyeHealthProcessor {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_HEALTH));
 
         // Register the health handler
-        routes.produce(new RouteBuildItem(recorder.route(health.rootPath), new SmallRyeHealthHandler()));
+        routes.produce(new RouteBuildItem(health.rootPath, new SmallRyeHealthHandler()));
         routes.produce(
-                new RouteBuildItem(recorder.route(health.rootPath + health.livenessPath), new SmallRyeLivenessHandler()));
+                new RouteBuildItem(health.rootPath + health.livenessPath, new SmallRyeLivenessHandler()));
         routes.produce(
-                new RouteBuildItem(recorder.route(health.rootPath + health.readinessPath), new SmallRyeReadinessHandler()));
+                new RouteBuildItem(health.rootPath + health.readinessPath, new SmallRyeReadinessHandler()));
 
         // Make ArC discover the beans marked with the @Health qualifier
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH));

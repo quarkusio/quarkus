@@ -4,12 +4,13 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.util.function.BooleanSupplier;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-@TargetClass(Field.class)
+@TargetClass(value = Field.class, onlyWith = GraalVersion19_2.class)
 final class FieldReplacement {
 
     @Alias
@@ -52,4 +53,11 @@ final class FieldReplacement {
         };
     }
 
+}
+
+final class GraalVersion19_2 implements BooleanSupplier {
+    public boolean getAsBoolean() {
+        final String version = System.getProperty("org.graalvm.version");
+        return version.startsWith("19.2.");
+    }
 }

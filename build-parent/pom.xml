@@ -58,7 +58,7 @@
         <microprofile-reactive-messaging-api.version>1.0</microprofile-reactive-messaging-api.version>
         <microprofile-rest-client-api.version>1.2.1</microprofile-rest-client-api.version>
         <microprofile-open-api.version>1.1.2</microprofile-open-api.version>
-
+        <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
         <!-- Antlr is used by the PanacheQL parser-->
         <antlr.version>4.7.2</antlr.version>
     </properties>

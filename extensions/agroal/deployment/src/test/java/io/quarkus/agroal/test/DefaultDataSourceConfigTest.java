@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionFactoryConfiguration;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
+import io.agroal.narayana.NarayanaTransactionIntegration;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class DefaultDataSourceConfigTest {
@@ -56,6 +57,7 @@ public class DefaultDataSourceConfigTest {
         assertEquals(leakDetectionInterval, configuration.leakTimeout());
         assertEquals(idleRemovalInterval, configuration.reapTimeout());
         assertEquals(maxLifetime, configuration.maxLifetime());
+        assertTrue(configuration.transactionIntegration() instanceof NarayanaTransactionIntegration);
         assertEquals(AgroalConnectionFactoryConfiguration.TransactionIsolation.SERIALIZABLE,
                 agroalConnectionFactoryConfiguration.jdbcTransactionIsolation());
         assertTrue(dataSource.getConfiguration().metricsEnabled());

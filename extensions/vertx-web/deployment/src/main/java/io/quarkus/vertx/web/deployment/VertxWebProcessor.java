@@ -153,7 +153,7 @@ class VertxWebProcessor {
                             handlerType = HandlerType.FAILURE;
                             break;
                         default:
-                            throw new IllegalStateException("Unkown type " + typeString);
+                            throw new IllegalStateException("Unknown type " + typeString);
                     }
                 }
                 routeProducer.produce(new RouteBuildItem(routeFunction, routingHandler, handlerType));

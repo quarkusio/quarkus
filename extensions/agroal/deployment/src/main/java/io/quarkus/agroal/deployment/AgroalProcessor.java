@@ -25,7 +25,6 @@ import io.quarkus.agroal.runtime.AgroalBuildTimeConfig;
 import io.quarkus.agroal.runtime.AgroalRecorder;
 import io.quarkus.agroal.runtime.AgroalRuntimeConfig;
 import io.quarkus.agroal.runtime.DataSourceBuildTimeConfig;
-import io.quarkus.agroal.runtime.health.DataSourceHealthCheck;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -248,6 +247,7 @@ class AgroalProcessor {
 
     @BuildStep
     HealthBuildItem addHealthCheck(AgroalBuildTimeConfig agroalBuildTimeConfig) {
-        return new HealthBuildItem(DataSourceHealthCheck.class, agroalBuildTimeConfig.healthEnabled);
+        return new HealthBuildItem("io.quarkus.agroal.runtime.health.DataSourceHealthCheck",
+                agroalBuildTimeConfig.healthEnabled, "datasource");
     }
 }

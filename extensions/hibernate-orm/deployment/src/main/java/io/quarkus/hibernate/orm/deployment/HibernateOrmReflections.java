@@ -130,6 +130,14 @@ public final class HibernateOrmReflections {
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.tree.BinaryArithmeticOperatorNode.class);
         simpleConstructor(reflectiveClass, CommonToken.class);
 
+        // Support for @OrderBy
+        simpleConstructor(reflectiveClass, org.hibernate.sql.ordering.antlr.NodeSupport.class);
+        simpleConstructor(reflectiveClass, org.hibernate.sql.ordering.antlr.OrderByFragment.class);
+        simpleConstructor(reflectiveClass, org.hibernate.sql.ordering.antlr.SortSpecification.class);
+        simpleConstructor(reflectiveClass, org.hibernate.sql.ordering.antlr.OrderingSpecification.class);
+        simpleConstructor(reflectiveClass, org.hibernate.sql.ordering.antlr.CollationSpecification.class);
+        simpleConstructor(reflectiveClass, org.hibernate.sql.ordering.antlr.SortKey.class);
+
         //The CoreMessageLogger is sometimes looked up without it necessarily being a field, so we're
         //not processing it the same way as other Logger lookups.
         simpleConstructor(reflectiveClass, "org.hibernate.internal.CoreMessageLogger_$logger");

@@ -16,7 +16,7 @@ import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.runtime.ElytronPropertiesFileRecorder;
 import io.quarkus.elytron.security.runtime.MPRealmConfig;
 import io.quarkus.elytron.security.runtime.PropertiesRealmConfig;
-import io.quarkus.elytron.security.runtime.UsersConfig;
+import io.quarkus.elytron.security.runtime.SecurityUsersConfig;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
@@ -39,7 +39,7 @@ class ElytronPropertiesProcessor {
     /** Prefix for the user to password mapping properties */
     private static final String ROLES_PREFIX = "quarkus.security.embedded.roles";
 
-    UsersConfig propertiesConfig;
+    SecurityUsersConfig propertiesConfig;
 
     @BuildStep
     FeatureBuildItem feature() {

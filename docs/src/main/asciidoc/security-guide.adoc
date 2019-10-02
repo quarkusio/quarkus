@@ -94,7 +94,7 @@ Please see the linked documents above for details on how to setup the various ex
 ### Registering Security Providers
 When running in native mode the default behavior for Graal native image generation is to only include the main "SUN" provider
 unless you have enabled SSL, in which case all security providers are registered. If you are not using SSL, then you can selectively
-register security providers by name using the `quarkus.users.security-providers` property. The following example illustrates
+register security providers by name using the `quarkus.security.users.security-providers` property. The following example illustrates
 configuration to register the "SunRsaSign" and "SunJCE" security providers:
 
 .Example Security Providers Configuration

@@ -7,8 +7,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 /**
  *
  */
-@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public final class UsersConfig {
+@ConfigRoot(name = "security.users", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+public final class SecurityUsersConfig {
     /**
      * The configuration for the {@linkplain org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm}
      */

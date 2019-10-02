@@ -103,8 +103,8 @@ public class UsersResource {
 
         private final String userName;
 
-        User(SecurityIdentity securityContext) {
-            this.userName = securityContext.getPrincipal().getName();
+        User(SecurityIdentity securityIdentity) {
+            this.userName = securityIdentity.getPrincipal().getName();
         }
 
         public String getUserName() {

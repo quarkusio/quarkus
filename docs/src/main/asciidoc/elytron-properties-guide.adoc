@@ -95,6 +95,7 @@ The embedded realm also supports mapping of users to password and users to roles
 |quarkus.users.embedded.enabled|false|Determine whether security via the embedded realm is enabled.
 |quarkus.users.embedded.auth-mechanism|BASIC|Name of authentication mechanism to use
 |quarkus.users.embedded.realm-name|Quarkus|Name to assign the security realm
+|quarkus.users.embedded.plain-text|false|If this is true passwords are plain text, otherwise they must be in the form MD5( username : realm : password )
 |quarkus.users.embedded.users.*|none|Prefix for the properties that specify user to password mappings; see <<Embedded Users>>
 |quarkus.users.embedded.roles.*|none|Prefix for the properties that specify user to role mappings; see <<Embedded Roles>>
 |===
@@ -115,6 +116,11 @@ quarkus.users.embedded.roles.jdoe=NoRolesUser
 quarkus.users.embedded.roles.noadmin=user
 quarkus.users.embedded.auth-mechanism=BASIC
 ----
+
+As with the first example this file has the usernames and passwords stored in plain text, which is not recommended. If plain-text is set to false
+(or omitted) in the config then passwords must be stored in the form `MD5 ( username : realm : password )`. This can
+be generated for the first example above by running the command `echo -n scott:MyRealm:jb0ss | md5` from the command line.
+
 
 #### Embedded Users
 The user to password mappings are specified in the `application.properties` file by property names of the form `quarkus.users.embedded.users.<user>=<password>`. The following <<password-example>> illustrates the syntax with the 4 user to password mappings shown in lines 2-5:

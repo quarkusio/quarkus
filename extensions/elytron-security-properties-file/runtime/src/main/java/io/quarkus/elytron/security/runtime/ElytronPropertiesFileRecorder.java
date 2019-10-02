@@ -2,6 +2,7 @@ package io.quarkus.elytron.security.runtime;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.Provider;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,6 +11,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
+import org.wildfly.common.iteration.ByteIterator;
 import org.wildfly.security.WildFlyElytronProvider;
 import org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm;
 import org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm;
@@ -20,7 +22,12 @@ import org.wildfly.security.authz.Attributes;
 import org.wildfly.security.authz.MapAttributes;
 import org.wildfly.security.credential.Credential;
 import org.wildfly.security.credential.PasswordCredential;
+import org.wildfly.security.password.Password;
+import org.wildfly.security.password.PasswordFactory;
+import org.wildfly.security.password.WildFlyElytronPasswordProvider;
 import org.wildfly.security.password.interfaces.ClearPassword;
+import org.wildfly.security.password.interfaces.DigestPassword;
+import org.wildfly.security.password.spec.DigestPasswordSpec;
 
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -93,11 +100,27 @@ public class ElytronPropertiesFileRecorder {
                 Map<String, String> roleInfo = config.getRoles();
                 log.debugf("RoleInfoMap: %s%n", roleInfo);
                 for (Map.Entry<String, String> userPasswordEntry : userInfo.entrySet()) {
+                    Password password;
                     String user = userPasswordEntry.getKey();
-                    ClearPassword clear = ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR,
-                            userPasswordEntry.getValue().toCharArray());
 
-                    PasswordCredential passwordCred = new PasswordCredential(clear);
+                    if (config.plainText) {
+                        password = ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR,
+                                userPasswordEntry.getValue().toCharArray());
+                    } else {
+                        try {
+                            byte[] hashed = ByteIterator.ofBytes(userPasswordEntry.getValue().getBytes(StandardCharsets.UTF_8))
+                                    .asUtf8String().hexDecode().drain();
+
+                            password = PasswordFactory
+                                    .getInstance(DigestPassword.ALGORITHM_DIGEST_MD5, new WildFlyElytronPasswordProvider())
+                                    .generatePassword(new DigestPasswordSpec(user, config.realmName, hashed));
+                        } catch (Exception e) {
+                            throw new RuntimeException("Unable to register password for user:" + user
+                                    + " make sure it is a valid hex encoded MD5 hash", e);
+                        }
+                    }
+
+                    PasswordCredential passwordCred = new PasswordCredential(password);
                     List<Credential> credentials = new ArrayList<>();
                     credentials.add(passwordCred);
                     String rawRoles = roleInfo.get(user);

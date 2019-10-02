@@ -19,6 +19,12 @@ public class MPRealmConfig {
     public String realmName;
 
     /**
+     * If the properties are stored in plain text. If this is false (the default) then it is expected
+     * that the passwords are of the form HEX( MD5( username ":" realm ":" password ) )
+     */
+    @ConfigItem
+    public boolean plainText;
+    /**
      * If the embedded store is enabled.
      */
     @ConfigItem

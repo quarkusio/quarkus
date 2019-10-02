@@ -64,7 +64,7 @@ public class SubjectExposingResource {
 <4> This call to obtain the user principal will return null if the caller is unauthenticated, non-null if the caller is authenticated.
 <5> The `/subject/denied` endpoint disallows any access regardless of whether the call is authenticated by specifying the `@DenyAll` annotation.
 
-# Security implementations
+## Security implementations
 
 Quarkus comes with several different Security extensions that provide different functionality. This functionality is
 very much a work in progress, so this list will be expanded over the coming weeks.
@@ -91,7 +91,7 @@ very much a work in progress, so this list will be expanded over the coming week
 Please see the linked documents above for details on how to setup the various extensions.
 
 
-#### Registering Security Providers
+### Registering Security Providers
 When running in native mode the default behavior for Graal native image generation is to only include the main "SUN" provider
 unless you have enabled SSL, in which case all security providers are registered. If you are not using SSL, then you can selectively
 register security providers by name using the `quarkus.users.security-providers` property. The following example illustrates

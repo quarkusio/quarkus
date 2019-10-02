@@ -9,7 +9,7 @@ import io.quarkus.test.QuarkusUnitTest;
 /**
  * Tests of a CUSTOM authentication mechanism that uses the BASIC authentication headers
  */
-public class CustomAuthEmbeddedTestCase extends CustomAuthEmbeddedBase {
+public class CustomAuthEmbeddedEncryptedTestCase extends CustomAuthEmbeddedBase {
     static Class[] testClasses = {
             TestSecureServlet.class, TestApplication.class, RolesEndpointClassLevel.class,
             ParametrizedPathsResource.class, SubjectExposingResource.class
@@ -19,6 +19,6 @@ public class CustomAuthEmbeddedTestCase extends CustomAuthEmbeddedBase {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
                     .addClasses(CustomAuth.class)
-                    .addAsResource("application-custom-auth-embedded.properties",
+                    .addAsResource("application-custom-auth-embedded-encrypted.properties",
                             "application.properties"));
 }

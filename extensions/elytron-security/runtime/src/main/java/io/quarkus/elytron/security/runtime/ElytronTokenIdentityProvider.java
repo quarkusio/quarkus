@@ -59,6 +59,9 @@ public class ElytronTokenIdentityProvider implements IdentityProvider<TokenAuthe
                     return builder.build();
                 } catch (RealmUnavailableException e) {
                     throw new RuntimeException(e);
+                } catch (SecurityException e) {
+                    log.debug("Authentication failed", e);
+                    throw new AuthenticationFailedException();
                 }
             }
         });

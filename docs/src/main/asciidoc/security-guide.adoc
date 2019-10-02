@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-Quarkus comes with build in securuty to allow for RBAC based on thecommon security annotations `@RolesAllowed`,
+Quarkus comes with build in security to allow for RBAC based on the common security annotations `@RolesAllowed`,
 `@DenyAll`, `@PermitAll` on REST endpoints. An example of an endpoint that makes use of both JAX-RS and Common
 Security annotations to describe and secure its endpoints is given in <<subject-example>>. Quarkus also provides
 the `io.quarkus.security.Authenticated` annotation that will permit any authenticated user to access the resource
@@ -77,11 +77,11 @@ very much a work in progress, so this list will be expanded over the coming week
 |link:elytron-properties-guide.html[quarkus-elytron-security-properties-file]
 |Provides support for simples properties files that can be used for testing security. This supports both embedding user info in `application.properties` and standalone properties files.
 
-|link:oauth2-guide.html[quarkus-elytron-security-oath2]
-|Provides support for OAth2 flows using Elytron. This extension will likely be deprecated soon and replaced by a reactive Vert.x version.
+|link:oauth2-guide.html[quarkus-elytron-security-oauth2]
+|Provides support for OAuth2 flows using Elytron. This extension will likely be deprecated soon and replaced by a reactive Vert.x version.
 
 |link:jwt-guide.html[quarkus-smallrye-jwt]
-|A Microprofile JWT implementation that provides support for authenticating use Json Web Tokens. This also allows you to inject the token and claims into the application as per the MP JWT spec.
+|A Microprofile JWT implementation that provides support for authenticating using Json Web Tokens. This also allows you to inject the token and claims into the application as per the MP JWT spec.
 
 |link:keycloak-guide.html[quarkus-vertx-keycloak]
 |Provides support for authenticating via Keycloak's OpenID connect implementation.

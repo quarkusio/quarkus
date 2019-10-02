@@ -14,7 +14,7 @@ plaintext passwords are supported.
 Add the following to your `pom.xml`:
 
 [source,xml]
---
+----
 <dependencies>
     <!-- Elytron Security extension -->
     <dependency>
@@ -22,13 +22,15 @@ Add the following to your `pom.xml`:
         <artifactId>quarkus-elytron-security-properties-file</artifactId>
     </dependency>
 </dependencies>
---
+----
 
-## Configuration
+== Configuration
+
 The elytron-security-properties-file extension currently supports two different realms for the storage of authentication
 and authorization information. Both support storage of this information in properties type files. The next two sections detail the specific configuration properties.
 
-### Property Files Realm Configuration
+=== Property Files Realm Configuration
+
 The property files realm supports mapping of users to password and users to roles with a combination of properties files. To enable and configure it, the following configuration properties are used:
 
 |===
@@ -42,27 +44,28 @@ The property files realm supports mapping of users to password and users to role
 
 .example application.properties file section for property files realm
 [source,properties]
---
+----
 quarkus.users.file.enabled=true
 quarkus.users.file.users=test-users.properties
 quarkus.users.file.roles=test-roles.properties
 quarkus.users.file.auth-mechanism=BASIC
 quarkus.users.file.realm-name=MyRealm
 quarkus.users.file.plain-test=true
---
+----
 
 ==== Users.properties
+
 The `quarkus.users.file.users` configuration property specifies a classpath resource which is a properties file with a user to password mapping, one per line. The following <<test-users-example>> illustrates the format:
 
 [#test-users-example]
 .example test-users.properties file
 [source,properties]
---
+----
 scott=jb0ss <1>
 jdoe=p4ssw0rd <2>
 stuart=test
 noadmin=n0Adm1n
---
+----
 <1> User `scott` has password defined as `jb0ss`
 <2> User `jdoe` has password defined as `p4ssw0rd`
 
@@ -70,24 +73,24 @@ This file has the usernames and passwords stored in plain text, which is not rec
 (or omitted) in the config then passwords must be stored in the form `MD5 ( username : realm : password )`. This can
 be generated for the first example above by running the command `echo -n scott:MyRealm:jb0ss | md5` from the command line.
 
-
 ==== Roles.properties
 
 .example test-roles.properties file
 [source,properties]
---
+----
 scott=Admin,admin,Tester,user <1>
 jdoe=NoRolesUser <2>
 stuart=admin,user <3>
 noadmin=user
---
+----
 <1> User `scott` has been assigned the roles `Admin`, `admin`, `Tester` and `user`
 <2> User `jdoe` has been assigned the role `NoRolesUser`
 <3> User `stuart` has been assigned the roles `admin` and `user`.
 
 Given these role mappings, only user `scott` would be allowed to access the `/subject/secured` endpoint from the <<subject-example>>.
 
-### Embedded Realm Configuration
+=== Embedded Realm Configuration
+
 The embedded realm also supports mapping of users to password and users to roles. It uses the main application.properties Quarkus configuration file to embed this information. To enable and configure it, the following configuration properties are used:
 
 |===
@@ -122,7 +125,8 @@ As with the first example this file has the usernames and passwords stored in pl
 be generated for the first example above by running the command `echo -n scott:MyRealm:jb0ss | md5` from the command line.
 
 
-#### Embedded Users
+==== Embedded Users
+
 The user to password mappings are specified in the `application.properties` file by property names of the form `quarkus.users.embedded.users.<user>=<password>`. The following <<password-example>> illustrates the syntax with the 4 user to password mappings shown in lines 2-5:
 
 [#password-example]
@@ -142,7 +146,8 @@ quarkus.users.embedded.roles.noadmin=user
 <1> User `scott` has password `jb0ss`
 <2> User `stuart` has password `test`
 
-#### Embedded Roles
+==== Embedded Roles
+
 The user to role mappings are specified in the `application.properties` file by property names of the form `quarkus.users.embedded.roles.<user>=role1[,role2[,role3[,...]]]`. The following <<roles-example>> illustrates the syntax with the 4 user to role mappings shown in lines 6-9:
 
 [#roles-example]

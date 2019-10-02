@@ -191,6 +191,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import org.jboss.resteasy.annotations.SseElementType;
 
 /**
  * A simple resource retrieving the in-memory "my-data-stream" and sending the items as server-sent events.
@@ -202,22 +203,18 @@ public class PriceResource {
     @Stream("my-data-stream") Publisher<Double> prices; // <1>
 
     @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String hello() {
-        return "hello";
-    }
-
-    @GET
     @Path("/stream")
-    @Produces(MediaType.SERVER_SENT_EVENTS)             // <2>
-    public Publisher<Double> stream() {                 // <3>
+    @Produces(MediaType.SERVER_SENT_EVENTS) // <2>
+    @SseElementType("text/plain") // <3>
+    public Publisher<Double> stream() { // <4>
         return prices;
     }
 }
 ----
 <1> Injects the `my-data-stream` stream using the `@Stream` qualifier
 <2> Indicates that the content is sent using `Server Sent Events`
-<3> Returns the stream (_Reactive Stream_)
+<3> Indicates that the data contained within the server sent events, is of type `text/plain`
+<4> Returns the stream (_Reactive Stream_)
 
 == Configuring the Kafka connector
 

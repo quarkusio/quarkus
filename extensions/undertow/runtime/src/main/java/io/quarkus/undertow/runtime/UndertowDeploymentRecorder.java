@@ -316,7 +316,7 @@ public class UndertowDeploymentRecorder {
         return new Handler<HttpServerRequest>() {
             @Override
             public void handle(HttpServerRequest event) {
-                VertxHttpExchange exchange = new VertxHttpExchange(event, allocator, executorService);
+                VertxHttpExchange exchange = new VertxHttpExchange(event, allocator, executorService, null);
                 Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
                 if (maxBodySize.isPresent()) {
                     exchange.setMaxEntitySize(maxBodySize.get().asLongValue());

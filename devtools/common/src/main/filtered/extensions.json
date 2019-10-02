@@ -459,13 +459,13 @@
     "guide": "https://quarkus.io/guides/scheduled-guide"
   },
   {
-    "name": "Security",
+    "name": "Properties File based Security",
     "labels": [
       "security"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-elytron-security",
-    "guide": "https://quarkus.io/guides/security-guide"
+    "artifactId": "quarkus-elytron-security-properties-file",
+    "guide": "https://quarkus.io/guides/elytron-properties-guide"
   },
   {
     "name": "Security OAuth2",

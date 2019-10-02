@@ -23,7 +23,6 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
  * This is an interim class that provides a mapping between the existing Elytron implementations and the
  * new Quarkus API's.
  *
- * This should be removed once we no longer depend on Elytron
  */
 @ApplicationScoped
 public class ElytronTokenIdentityProvider implements IdentityProvider<TokenAuthenticationRequest> {

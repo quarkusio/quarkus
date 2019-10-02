@@ -23,6 +23,23 @@ public class SecurityProcessor {
 
     private static final Logger log = Logger.getLogger(SecurityProcessor.class);
 
+    SecurityConfig security;
+
+    /**
+     * Register the Elytron-provided password factory SPI implementation
+     *
+     */
+    @BuildStep
+    void services(BuildProducer<JCAProviderBuildItem> jcaProviders) {
+        // Create JCAProviderBuildItems for any configured provider names
+        if (security.securityProviders != null) {
+            for (String providerName : security.securityProviders) {
+                jcaProviders.produce(new JCAProviderBuildItem(providerName));
+                log.debugf("Added providerName: %s", providerName);
+            }
+        }
+    }
+
     /**
      * Register the classes for reflection in the requested named providers
      *

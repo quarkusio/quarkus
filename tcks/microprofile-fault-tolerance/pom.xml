@@ -31,6 +31,8 @@
                     <excludes>
                         <!-- Waiting on https://github.com/eclipse/microprofile-fault-tolerance/pull/450 -->
                         <exclude>org.eclipse.microprofile.fault.tolerance.tck.bulkhead.BulkheadAsynchTest</exclude>
+                        <!-- We do not support enablement via beans.xml -->
+                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.interceptor.xmlInterceptorEnabling.FaultToleranceInterceptorEnableByXmlTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>

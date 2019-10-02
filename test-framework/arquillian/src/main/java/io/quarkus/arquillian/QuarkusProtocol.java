@@ -66,8 +66,16 @@ class QuarkusProtocol implements Protocol<QuarkusProtocolConfiguration> {
                 @Override
                 public void invoke(Object... parameters) throws Throwable {
                     Object actualTestInstance = QuarkusDeployableContainer.testInstance;
-                    Method actualMethod = actualTestInstance.getClass().getMethod(getMethod().getName(),
-                            convertToTCCL(getMethod().getParameterTypes()));
+                    Method actualMethod = null;
+                    try {
+                        actualMethod = actualTestInstance.getClass().getMethod(getMethod().getName(),
+                                convertToTCCL(getMethod().getParameterTypes()));
+                    } catch (NoSuchMethodException e) {
+                        // the method should still be present, just not public, let's try declared methods
+                        actualMethod = actualTestInstance.getClass().getDeclaredMethod(getMethod().getName(),
+                                convertToTCCL(getMethod().getParameterTypes()));
+                        actualMethod.setAccessible(true);
+                    }
                     try {
                         actualMethod.invoke(actualTestInstance, parameters);
                     } catch (InvocationTargetException e) {

@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import java.util.concurrent.CompletionException;
 import java.util.function.BiFunction;
 
 import javax.enterprise.inject.spi.CDI;
@@ -25,6 +26,9 @@ public class HttpSecurityRecorder {
                     @Override
                     public Object apply(SecurityIdentity identity, Throwable throwable) {
                         if (throwable != null) {
+                            while (throwable instanceof CompletionException && throwable.getCause() != null) {
+                                throwable = throwable.getCause();
+                            }
                             //auth failed
                             if (throwable instanceof AuthenticationFailedException) {
                                 authenticator.sendChallenge(event, new Runnable() {

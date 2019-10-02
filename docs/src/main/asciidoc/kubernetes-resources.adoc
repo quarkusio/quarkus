@@ -139,3 +139,36 @@ By default the Kubernetes resources do not contain readiness and liveness probes
 
 The values of the generated probes will be determined by the configured health properties: `quarkus.smallrye-health.root-path`, `quarkus.smallrye-health.liveness-path` and `quarkus.smallrye-health.readiness-path`.
 More information about the health extension can be found in the relevant link:health-guide[guide].
+
+== Tuning the generated resources using application.properties
+
+The Kubernetes extension allows tuning the generated manifest, using the `application.properties` file.
+Here are some examples:
+
+=== Changing the number of replicas:
+To change the number of replicas from 1 to  3:
+
+[source]
+----
+dekorate.kubernetes.replicas=3 
+----
+
+=== Adding labels:
+To add a new label to all generated resources, say `foo=bar`:
+
+[source]
+----
+dekorate.kubernetes.labels[0].key=foo
+dekorate.kubernetes.labels[0].value=bar
+----
+
+=== Customizing the readiness probe:
+To set the initial delay of the probe to 20 seconds and the period to 45:
+
+[source]
+----
+dekorate.kubernetes.readinessProbe.initialDelaySeconds=20
+dekorate.kubernetes.readinessProbe.periodSeconds=45
+----
+
+Here you can find a complete reference to all the available https://github.com/dekorateio/dekorate/blob/master/config.md[configuration options].

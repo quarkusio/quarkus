@@ -70,7 +70,9 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
 
         } catch (ParseException | MalformedClaimException e) {
             log.debug("Authentication failed", e);
-            throw new AuthenticationFailedException();
+            CompletableFuture<SecurityIdentity> cf = new CompletableFuture<SecurityIdentity>();
+            cf.completeExceptionally(new AuthenticationFailedException());
+            return cf;
         }
     }
 }

@@ -48,6 +48,7 @@ quarkus.users.file.users=test-users.properties
 quarkus.users.file.roles=test-roles.properties
 quarkus.users.file.auth-mechanism=BASIC
 quarkus.users.file.realm-name=MyRealm
+quarkus.users.file.plain-test=true
 --
 
 ==== Users.properties
@@ -64,6 +65,10 @@ noadmin=n0Adm1n
 --
 <1> User `scott` has password defined as `jb0ss`
 <2> User `jdoe` has password defined as `p4ssw0rd`
+
+This file has the usernames and passwords stored in plain text, which is not recommended. If plain-text is set to false
+(or omitted) in the config then passwords must be stored in the form `MD5 ( username : realm : password )`. This can
+be generated for the first example above by running the command `echo -n scott:MyRealm:jb0ss | md5` from the command line.
 
 
 ==== Roles.properties

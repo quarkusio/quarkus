@@ -1,7 +1,5 @@
 package io.quarkus.elytron.security.runtime;
 
-import java.util.List;
-
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -9,8 +7,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 /**
  *
  */
-@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public final class SecurityConfig {
+@ConfigRoot(name = "security.users", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+public final class SecurityUsersConfig {
     /**
      * The configuration for the {@linkplain org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm}
      */
@@ -22,9 +20,4 @@ public final class SecurityConfig {
     @ConfigItem
     public MPRealmConfig embedded;
 
-    /**
-     * List of security providers to enable for reflection
-     */
-    @ConfigItem
-    public List<String> securityProviders;
 }

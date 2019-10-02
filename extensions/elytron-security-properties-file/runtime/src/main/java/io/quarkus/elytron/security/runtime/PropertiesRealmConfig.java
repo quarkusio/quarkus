@@ -18,7 +18,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class PropertiesRealmConfig {
 
     /**
-     * The authentication mechanism
+     * The realm name. This is used when generating a hashed password
      */
     @ConfigItem(defaultValue = "Quarkus")
     public String realmName;
@@ -28,6 +28,13 @@ public class PropertiesRealmConfig {
      */
     @ConfigItem
     public boolean enabled;
+
+    /**
+     * If the properties are stored in plain text. If this is false (the default) then it is expected
+     * that the passwords are of the form HEX( MD5( username ":" realm ":" password ) )
+     */
+    @ConfigItem
+    public boolean plainText;
 
     /**
      * The location of the users property resource

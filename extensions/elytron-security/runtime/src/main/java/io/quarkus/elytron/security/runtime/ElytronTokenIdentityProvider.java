@@ -23,7 +23,6 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
  * This is an interim class that provides a mapping between the existing Elytron implementations and the
  * new Quarkus API's.
  *
- * This should be removed once we no longer depend on Elytron
  */
 @ApplicationScoped
 public class ElytronTokenIdentityProvider implements IdentityProvider<TokenAuthenticationRequest> {
@@ -60,6 +59,9 @@ public class ElytronTokenIdentityProvider implements IdentityProvider<TokenAuthe
                     return builder.build();
                 } catch (RealmUnavailableException e) {
                     throw new RuntimeException(e);
+                } catch (SecurityException e) {
+                    log.debug("Authentication failed", e);
+                    throw new AuthenticationFailedException();
                 }
             }
         });

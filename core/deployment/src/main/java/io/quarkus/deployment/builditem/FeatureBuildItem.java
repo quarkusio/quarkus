@@ -48,6 +48,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String SCALA = "scala";
     public static final String SCHEDULER = "scheduler";
     public static final String SECURITY = "security";
+    public static final String SECURITY_PROPERTIES_FILE = "security-properties-file";
     public static final String SECURITY_OAUTH2 = "security-oauth2";
     public static final String SERVLET = "servlet";
     public static final String SMALLRYE_CONTEXT_PROPAGATION = "smallrye-context-propagation";

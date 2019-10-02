@@ -36,7 +36,7 @@ public class VertxWebRecorder {
     }
 
     public Function<Router, io.vertx.ext.web.Route> createRouteFunction(Route routeAnnotation,
-            HttpConfiguration httpConfiguration) {
+            Handler<RoutingContext> bodyHandler) {
         return new Function<Router, io.vertx.ext.web.Route>() {
             @Override
             public io.vertx.ext.web.Route apply(Router router) {
@@ -66,22 +66,24 @@ public class VertxWebRecorder {
                         route.consumes(consumes);
                     }
                 }
-
-                BodyHandler bodyHandler = BodyHandler.create();
-                Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
-                if (maxBodySize.isPresent()) {
-                    bodyHandler.setBodyLimit(maxBodySize.get().asLongValue());
-                }
-                final BodyConfig bodyConfig = httpConfiguration.body;
-                bodyHandler.setHandleFileUploads(bodyConfig.handleFileUploads);
-                bodyHandler.setUploadsDirectory(bodyConfig.uploadsDirectory);
-                bodyHandler.setDeleteUploadedFilesOnEnd(bodyConfig.deleteUploadedFilesOnEnd);
-                bodyHandler.setMergeFormAttributes(bodyConfig.mergeFormAttributes);
-                bodyHandler.setPreallocateBodyBuffer(bodyConfig.preallocateBodyBuffer);
-
                 route.handler(bodyHandler);
                 return route;
             }
         };
+    }
+
+    public Handler<RoutingContext> createBodyHandler(HttpConfiguration httpConfiguration) {
+        BodyHandler bodyHandler = BodyHandler.create();
+        Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
+        if (maxBodySize.isPresent()) {
+            bodyHandler.setBodyLimit(maxBodySize.get().asLongValue());
+        }
+        final BodyConfig bodyConfig = httpConfiguration.body;
+        bodyHandler.setHandleFileUploads(bodyConfig.handleFileUploads);
+        bodyHandler.setUploadsDirectory(bodyConfig.uploadsDirectory);
+        bodyHandler.setDeleteUploadedFilesOnEnd(bodyConfig.deleteUploadedFilesOnEnd);
+        bodyHandler.setMergeFormAttributes(bodyConfig.mergeFormAttributes);
+        bodyHandler.setPreallocateBodyBuffer(bodyConfig.preallocateBodyBuffer);
+        return bodyHandler;
     }
 }

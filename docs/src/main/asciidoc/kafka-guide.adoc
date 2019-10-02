@@ -213,7 +213,7 @@ public class PriceResource {
 ----
 <1> Injects the `my-data-stream` stream using the `@Stream` qualifier
 <2> Indicates that the content is sent using `Server Sent Events`
-<3> Indicates that the data contained within the server sent events, is of type `text/plain`
+<3> Indicates that the data contained within the server sent events is of type `text/plain`
 <4> Returns the stream (_Reactive Stream_)
 
 == Configuring the Kafka connector

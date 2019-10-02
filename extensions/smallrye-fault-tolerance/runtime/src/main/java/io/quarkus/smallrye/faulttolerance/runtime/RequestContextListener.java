@@ -20,23 +20,29 @@ public class RequestContextListener implements CommandListener {
     @Override
     public void beforeExecution(FaultToleranceOperation operation) {
         ArcContainer arc = Arc.container();
-        ManagedContext requestContext = arc.requestContext();
-        if (operation.isAsync() && !requestContext.isActive()) {
-            requestContext.activate();
-            this.didActivate.set(Boolean.TRUE);
+        if (arc != null && arc.isRunning()) {
+            ManagedContext requestContext = arc.requestContext();
+            if (operation.isAsync() && !requestContext.isActive()) {
+                requestContext.activate();
+                this.didActivate.set(Boolean.TRUE);
+            }
         }
     }
 
     @Override
     public void afterExecution(FaultToleranceOperation operation) {
+        if (didActivate.get() == null) {
+            // TODO how can this even happen?
+            return;
+        }
         if (didActivate.get()) {
-            try {
+            ArcContainer arc = Arc.container();
+            if (arc != null && arc.isRunning()) {
                 ManagedContext requestContext = Arc.container().requestContext();
                 requestContext.terminate();
                 requestContext.deactivate();
-            } finally {
-                this.didActivate.set(Boolean.FALSE);
             }
+            this.didActivate.set(Boolean.FALSE);
         }
     }
 }

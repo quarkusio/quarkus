@@ -8,7 +8,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 
 /**
  * Note that we cannot use event.getExecutor().invoke() directly because the callbacks would be invoked upon the original test
@@ -37,6 +39,28 @@ public class QuarkusTestNgCallbacks {
             List<Method> afterClasses = new ArrayList<>();
             collectCallbacks(testInstance.getClass(), afterClasses, AfterClass.class);
             for (Method afterClass : afterClasses) {
+                afterClass.invoke(testInstance);
+            }
+        }
+    }
+
+    static void invokeTestNgAfterMethods() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+        Object testInstance = QuarkusDeployableContainer.testInstance;
+        if (testInstance != null) {
+            List<Method> afterMethods = new ArrayList<>();
+            collectCallbacks(testInstance.getClass(), afterMethods, AfterMethod.class);
+            for (Method afterClass : afterMethods) {
+                afterClass.invoke(testInstance);
+            }
+        }
+    }
+
+    static void invokeTestNgBeforeMethods() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+        Object testInstance = QuarkusDeployableContainer.testInstance;
+        if (testInstance != null) {
+            List<Method> beforeMethods = new ArrayList<>();
+            collectCallbacks(testInstance.getClass(), beforeMethods, BeforeMethod.class);
+            for (Method afterClass : beforeMethods) {
                 afterClass.invoke(testInstance);
             }
         }

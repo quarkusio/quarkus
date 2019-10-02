@@ -3,6 +3,7 @@
  */
 package io.quarkus.cli.commands.writer;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -69,6 +70,16 @@ public class ZipProjectWriter implements ProjectWriter {
             zos.closeEntry();
         }
 
+    }
+
+    @Override
+    public File getProjectFolder() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean hasFile() {
+        return false;
     }
 
 }

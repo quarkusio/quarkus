@@ -129,7 +129,7 @@ public class VertxHttpResponse implements HttpResponse {
 
     public void finish() throws IOException {
         checkException();
-        if (finished)
+        if (finished || response.ended())
             return;
         try {
             if (os != null) {

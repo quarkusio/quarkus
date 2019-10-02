@@ -58,6 +58,8 @@
         <microprofile-reactive-messaging-api.version>1.0</microprofile-reactive-messaging-api.version>
         <microprofile-rest-client-api.version>1.2.1</microprofile-rest-client-api.version>
         <microprofile-open-api.version>1.1.2</microprofile-open-api.version>
+        <microprofile-opentracing-api.version>1.3.1</microprofile-opentracing-api.version>
+        <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
 
         <!-- Antlr is used by the PanacheQL parser-->
         <antlr.version>4.7.2</antlr.version>
@@ -183,6 +185,21 @@
                                             <exclude>jakarta.json:jakarta.json-api</exclude>
                                             <!-- Ensure none of the deps use netty-all. This forces deps to use more fine grained netty artifacts -->
                                             <exclude>io.netty:netty-all</exclude>
+                                            <!-- Ban Log4J (use org.jboss.logmanager:log4j-jboss-logmanager instead) -->
+                                            <exclude>log4j:log4j</exclude>
+                                            <exclude>org.apache.logging.log4j:log4j-api</exclude>
+                                            <exclude>org.apache.logging.log4j:log4j-core</exclude>
+                                            <exclude>org.apache.logging.log4j:log4j-slf4j-impl</exclude>
+                                            <!-- Ban commons-logging (use org.jboss.logging:commons-logging-jboss-logging instead) -->
+                                            <exclude>commons-logging:commons-logging</exclude>
+                                            <exclude>commons-logging:commons-logging-api</exclude>
+                                            <exclude>org.springframework:spring-jcl</exclude>
+                                            <!-- Ban SLF4j implementations (use org.jboss.slf4j:slf4j-jboss-logmanager instead) -->
+                                            <exclude>org.slf4j:slf4j-simple</exclude>
+                                            <exclude>org.slf4j:slf4j-nop</exclude>
+                                            <exclude>org.slf4j:slf4j-jdk14</exclude>
+                                            <exclude>org.slf4j:slf4j-log4j12</exclude>
+                                            <exclude>org.slf4j:slf4j-log4j13</exclude>
                                         </excludes>
                                     </bannedDependencies>
                                 </rules>

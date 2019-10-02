@@ -343,6 +343,22 @@
     "guide": "https://quarkus.io/guides/transaction-guide"
   },
   {
+    "name": "Narayana STM - Software Transactional Memory",
+    "labels": [
+      "narayana-stm",
+      "narayana",
+      "stm",
+      "transactions",
+      "transaction",
+      "software-transactional-memory",
+      "tx",
+      "txs"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-narayana-stm",
+    "guide": "https://quarkus.io/guides/stm-guide"
+  },
+  {
     "name": "Neo4j client",
     "labels": [
       "neo4j",
@@ -443,13 +459,13 @@
     "guide": "https://quarkus.io/guides/scheduled-guide"
   },
   {
-    "name": "Security",
+    "name": "Properties File based Security",
     "labels": [
       "security"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-elytron-security",
-    "guide": "https://quarkus.io/guides/security-guide"
+    "artifactId": "quarkus-elytron-security-properties-file",
+    "guide": "https://quarkus.io/guides/elytron-properties-guide"
   },
   {
     "name": "Security OAuth2",

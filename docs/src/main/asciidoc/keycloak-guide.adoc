@@ -34,7 +34,6 @@ In this example, we build a very simple microservice which offers three endpoint
 
 * `/api/users/me`
 * `/api/admin`
-* `/api/confidential`
 
 These endpoints are protected and can only be accessed if a client is sending a bearer token along with the request, which must be valid (e.g.: signature, expiration and audience) and trusted by the microservice.
 
@@ -43,8 +42,6 @@ The bearer token is issued by a Keycloak Server and represents the subject to wh
 The `/api/users/me` endpoint can be accessed by any user with a valid token. As a response, it returns a JSON document with details about the user where these details are obtained from the information carried on the token.
 
 The `/api/admin` endpoint is protected with RBAC (Role-Based Access Control) where only users granted with the `admin` role can access. At this endpoint, we use the `@RolesAllowed` annotation to declaratively enforce the access constraint.
-
-The `/api/confidential` endpoint is also protected with RBAC. However, instead of using a declarative approach, we are externalizing authorization where the decision to whether or not access should be granted is delegated to policies managed in the Keycloak Server.
 
 == Solution
 
@@ -86,12 +83,12 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.annotations.cache.NoCache;
-import org.keycloak.KeycloakSecurityContext;
+import io.quarkus.security.identity.SecurityIdentity;
 
 public class UsersResource {
 
     @Inject
-    KeycloakSecurityContext keycloakSecurityContext;
+    SecurityIdentity securityIdentity;
 
     @GET
     @Path("/me")
@@ -99,15 +96,15 @@ public class UsersResource {
     @Produces(MediaType.APPLICATION_JSON)
     @NoCache
     public User me() {
-        return new User(keycloakSecurityContext);
+        return new User(securityIdentity);
     }
 
     public class User {
 
         private final String userName;
 
-        User(KeycloakSecurityContext securityContext) {
-            this.userName = securityContext.getToken().getPreferredUsername();
+        User(SecurityIdentity securityIdentity) {
+            this.userName = securityIdentity.getPrincipal().getName();
         }
 
         public String getUserName() {
@@ -151,30 +148,6 @@ public class AdminResource {
 }
 ----
 
-For last, the `/api/confidential` endpoint. As you can see from the source code below, there is no explicit access control defined to this endpoint. The Keycloak extension will enforce access to this endpoint based on the policies defined in the Keycloak Server:
-
-[source,java]
-----
-package org.acme.keycloak;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-@Path("/api/confidential")
-public class ConfidentialResource {
-
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String confidential() {
-        return "confidential";
-    }
-}
-----
-
-For now, don't worry about how the extension enforces access to the `/api/confidential`. Just keep in mind that there are some configuration that we need to define to make this happen.
-
 == Configuring the application
 
 The Keycloak extension allows you to define the adapter configuration using either the `application.properties` file or using a `keycloak.json`. Both files should be located at the `src/main/resources` directory.
@@ -192,24 +165,6 @@ quarkus.keycloak.policy-enforcer.enable=true
 quarkus.keycloak.policy-enforcer.enforcement-mode=PERMISSIVE
 ----
 
-=== Configuring using the keycloak.json file
-
-[source,json]
-----
-{
-  "realm": "quarkus",
-  "auth-server-url": "http://localhost:8180/auth",
-  "resource": "backend-service",
-  "bearer-only" : true,
-  "credentials": {
-    "secret": "secret"
-  },
-  "policy-enforcer": {
-    "enforcement-mode": "PERMISSIVE"
-  }
-}
-----
-
 === Configuring CORS
 
 If you plan to consume this application from a Web Application running on a different domain, you will need to configure CORS (Cross-origin resource sharing). The Keycloak extension have an option for that :
@@ -217,16 +172,6 @@ If you plan to consume this application from a Web Application running on a diff
 [source,properties]
 ----
 quarkus.keycloak.enable-cors=true
-----
-
-Or if you are using the `keycloak.json` format :
-
-[source,json]
-----
-{
-  ...
-  "enable-cors" : true
-}
 ----
 
 For most use case that will be enough but if you need a more fined-grained CORS configuration you can set these different options :
@@ -237,18 +182,6 @@ quarkus.keycloak.cors-max-age=1000
 quarkus.keycloak.cors-allowed-methods=POST, PUT, DELETE, GET
 quarkus.keycloak.cors-exposed-headers=WWW-Authenticate, My-custom-exposed-Header
 ----
-
-
-[source,json]
-----
-{
-  "cors-max-age" : 1000,
-  "cors-allowed-methods" : "POST, PUT, DELETE, GET",
-  "cors-exposed-headers" : "WWW-Authenticate, My-custom-exposed-Header"
-}
-----
-
-For more details about this file and all the supported options, please take a look at https://www.keycloak.org/docs/latest/securing_apps/index.html#_java_adapter_config[Keycloak Adapter Config].
 
 == Starting and Configuring the Keycloak Server
 
@@ -370,48 +303,6 @@ export access_token=$(\
  -d 'username=jdoe&password=jdoe&grant_type=password' | jq --raw-output '.access_token' \
 )
 ```
-
-== Multi-Tenant Deployments
-
-The Keycloak Quarkus Extension also supports multitenancy. This capability is specially useful if your service is serving different
-tenants each one referencing a specific Keycloak Realm and configuration.
-
-Multitenancy is all about dynamically choosing the proper configuration depending on the characteristics of incoming requests. This is accomplished
-by implementing the `KeycloakConfigResolver` interface as follows:
-
-[source,java]
-----
-package org.acme.keycloak;
-
-import javax.enterprise.context.ApplicationScoped;
-
-import org.keycloak.adapters.KeycloakConfigResolver;
-import org.keycloak.adapters.KeycloakDeployment;
-import org.keycloak.adapters.spi.HttpFacade;
-
-@ApplicationScoped
-public class TenantConfigResolver implements KeycloakConfigResolver {
-    @Override
-    public KeycloakDeployment resolve(HttpFacade.Request facade) {
-        String tenant = facade.getHeader("tenant");
-
-        switch (tenant) {
-            case "tenant-1":
-                // create a deployment config for tenant-1
-            case "tenant-2":
-                // create a deployment config for tenant-1
-            case "tenant-3":
-                // create a deployment config for tenant-1
-        }
-
-        // if not resolved, returning null means using the default configuration from keycloak.json
-        return null;
-    }
-}
-----
-
-A `KeycloakConfigResolver` is responsible to produce a `KeycloakDeployment` defining the configuration that should be used to process
-incoming requests, so that you can dynamically change the realm or any other configuration on a per-request basis.
 
 == References
 

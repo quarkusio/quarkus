@@ -37,6 +37,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String MONGODB_CLIENT = "mongodb-client";
     public static final String MONGODB_PANACHE = "mongodb-panache";
     public static final String NARAYANA_JTA = "narayana-jta";
+    public static final String NARAYANA_STM = "narayana-stm";
     public static final String REACTIVE_PG_CLIENT = "reactive-pg-client";
     public static final String REACTIVE_MYSQL_CLIENT = "reactive-mysql-client";
     public static final String NEO4J = "neo4j";
@@ -47,6 +48,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String SCALA = "scala";
     public static final String SCHEDULER = "scheduler";
     public static final String SECURITY = "security";
+    public static final String SECURITY_PROPERTIES_FILE = "security-properties-file";
     public static final String SECURITY_OAUTH2 = "security-oauth2";
     public static final String SERVLET = "servlet";
     public static final String SMALLRYE_CONTEXT_PROPAGATION = "smallrye-context-propagation";

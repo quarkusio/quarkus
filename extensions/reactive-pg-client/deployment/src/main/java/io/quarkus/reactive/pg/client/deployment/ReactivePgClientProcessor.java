@@ -10,6 +10,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.reactive.pg.client.runtime.DataSourceConfig;
 import io.quarkus.reactive.pg.client.runtime.PgPoolConfig;
 import io.quarkus.reactive.pg.client.runtime.PgPoolProducer;
@@ -25,6 +26,12 @@ class ReactivePgClientProcessor {
     @BuildStep
     AdditionalBeanBuildItem registerBean() {
         return AdditionalBeanBuildItem.unremovableOf(PgPoolProducer.class);
+    }
+
+    @BuildStep
+    SubstrateConfigBuildItem config() {
+        return SubstrateConfigBuildItem.builder().addRuntimeInitializedClass("io.vertx.pgclient.impl.codec.StartupMessage")
+                .build();
     }
 
     @BuildStep

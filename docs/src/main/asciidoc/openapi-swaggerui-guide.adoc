@@ -284,7 +284,7 @@ quarkus.smallrye-openapi.path=/swagger
 
 Hit `CTRL+C` to stop the application.
 
-== Loading OpenAPI Schama From Static Files
+== Loading OpenAPI Schema From Static Files
 
 Instead of dynamically creating OpenAPI schemas from annotation scanning, Quarkus also supports serving static OpenAPI documents.
 The static file to serve must be a valid document conforming to the https://swagger.io/docs/specification[OpenAPI specification].

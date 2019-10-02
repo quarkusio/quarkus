@@ -51,6 +51,17 @@
         <dependency>
             <groupId>org.infinispan</groupId>
             <artifactId>infinispan-remote-query-server</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>commons-logging-jboss-logging</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

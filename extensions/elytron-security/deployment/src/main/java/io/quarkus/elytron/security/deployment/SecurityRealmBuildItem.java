@@ -7,7 +7,7 @@ import io.quarkus.runtime.RuntimeValue;
 
 /**
  * A build item for the {@linkplain SecurityRealm} runtime values created for the deployment. These are combined into a
- * single {@linkplain org.wildfly.security.auth.server.SecurityDomain} by the {@linkplain SecurityDeploymentProcessor}.
+ * single {@linkplain org.wildfly.security.auth.server.SecurityDomain} by the {@linkplain ElytronDeploymentProcessor}.
  */
 public final class SecurityRealmBuildItem extends MultiBuildItem {
     private final RuntimeValue<SecurityRealm> realm;

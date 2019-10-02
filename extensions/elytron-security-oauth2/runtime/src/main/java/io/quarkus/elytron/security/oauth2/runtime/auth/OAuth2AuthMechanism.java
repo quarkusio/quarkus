@@ -5,14 +5,15 @@ import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import org.jboss.logging.Logger;
+
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.vertx.http.runtime.security.HTTPAuthenticationMechanism;
-import io.undertow.UndertowLogger;
-import io.undertow.httpcore.HttpHeaderNames;
-import io.undertow.httpcore.StatusCodes;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -20,6 +21,8 @@ import io.vertx.ext.web.RoutingContext;
  */
 @ApplicationScoped
 public class OAuth2AuthMechanism implements HTTPAuthenticationMechanism {
+
+    private static final Logger log = Logger.getLogger(OAuth2AuthMechanism.class);
 
     /**
      * Extract the Authorization header and validate the bearer token if it exists. If it does, and is validated, this
@@ -48,8 +51,8 @@ public class OAuth2AuthMechanism implements HTTPAuthenticationMechanism {
     @Override
     public CompletionStage<Boolean> sendChallenge(RoutingContext context) {
         context.response().headers().set(HttpHeaderNames.WWW_AUTHENTICATE, "Bearer {token}");
-        context.response().setStatusCode(StatusCodes.UNAUTHORIZED);
-        UndertowLogger.SECURITY_LOGGER.debugf("Sending Bearer {token} challenge for %s", context);
+        context.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code());
+        log.debugf("Sending Bearer {token} challenge for %s", context);
         return CompletableFuture.completedFuture(true);
     }
 }

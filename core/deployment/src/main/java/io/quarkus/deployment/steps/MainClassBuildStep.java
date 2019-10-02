@@ -17,6 +17,7 @@ import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
+import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.ClassOutputBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -66,7 +67,8 @@ class MainClassBuildStep {
             BuildProducer<ApplicationClassNameBuildItem> appClassNameProducer,
             List<BytecodeRecorderObjectLoaderBuildItem> loaders,
             ClassOutputBuildItem classOutput,
-            LaunchModeBuildItem launchMode) {
+            LaunchModeBuildItem launchMode,
+            ApplicationInfoBuildItem applicationInfo) {
 
         String appClassName = APP_CLASS + COUNT.incrementAndGet();
         appClassNameProducer.produce(new ApplicationClassNameBuildItem(appClassName));
@@ -197,7 +199,10 @@ class MainClassBuildStep {
                 .sorted()
                 .collect(Collectors.joining(", ")));
         tryBlock.invokeStaticMethod(
-                ofMethod(Timing.class, "printStartupTime", void.class, String.class, String.class, String.class, boolean.class),
+                ofMethod(Timing.class, "printStartupTime", void.class, String.class, String.class, String.class, String.class,
+                        String.class, boolean.class),
+                tryBlock.load(applicationInfo.getName()),
+                tryBlock.load(applicationInfo.getVersion()),
                 tryBlock.load(Version.getVersion()),
                 featuresHandle,
                 tryBlock.load(ProfileManager.getActiveProfile()),

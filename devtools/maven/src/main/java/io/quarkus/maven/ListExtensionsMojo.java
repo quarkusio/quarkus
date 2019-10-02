@@ -1,5 +1,6 @@
 package io.quarkus.maven;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.apache.maven.plugin.AbstractMojo;
@@ -9,8 +10,10 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
 import io.quarkus.cli.commands.ListExtensions;
+import io.quarkus.cli.commands.file.BuildFile;
+import io.quarkus.cli.commands.file.GradleBuildFile;
+import io.quarkus.cli.commands.file.MavenBuildFile;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.generators.BuildTool;
 
 /**
  * List the available extensions.
@@ -50,12 +53,19 @@ public class ListExtensionsMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException {
         try {
             FileProjectWriter writer = null;
+            BuildFile buildFile = null;
             // Even when we have no pom, the project is not null, but it's set to `org.apache.maven:standalone-pom:1`
             // So we need to also check for the project's file (the pom.xml file).
             if (project != null && project.getFile() != null) {
                 writer = new FileProjectWriter(project.getBasedir());
+                if (new File(project.getBasedir(), "build.gradle").exists()
+                        || new File(project.getBasedir(), "build.gradle.kts").exists()) {
+                    buildFile = new GradleBuildFile(writer);
+                } else {
+                    buildFile = new MavenBuildFile(writer);
+                }
             }
-            new ListExtensions(writer, BuildTool.MAVEN).listExtensions(all, format,
+            new ListExtensions(buildFile).listExtensions(all, format,
                     searchPattern);
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to list extensions", e);

@@ -16,9 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.Dependency;
 
 import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.dependencies.Extension;
-import io.quarkus.generators.BuildTool;
 
 public class ListExtensions {
     private static final String FULL_FORMAT = "%-8s %-50s %-50s %-25s%n%s";
@@ -26,13 +24,13 @@ public class ListExtensions {
     private static final String NAME_FORMAT = "%-50s";
     private BuildFile buildFile = null;
 
-    public ListExtensions(final ProjectWriter writer, final BuildTool buildTool) throws IOException {
-        if (writer != null) {
-            this.buildFile = buildTool.getBuildFile(writer);
+    public ListExtensions(final BuildFile buildFile) throws IOException {
+        if (buildFile != null) {
+            this.buildFile = buildFile;
         }
     }
 
-    public void listExtensions(boolean all, String format, String search) {
+    public void listExtensions(boolean all, String format, String search) throws IOException {
         final Map<String, Dependency> installed = findInstalled();
 
         Stream<Extension> extensionsStream = loadExtensions().stream();
@@ -73,7 +71,7 @@ public class ListExtensions {
         }
     }
 
-    public Map<String, Dependency> findInstalled() {
+    public Map<String, Dependency> findInstalled() throws IOException {
         if (buildFile != null) {
             return buildFile.findInstalled();
         } else {
@@ -126,7 +124,12 @@ public class ListExtensions {
     private String extractVersion(final Dependency dependency) {
         String version = dependency != null ? dependency.getVersion() : null;
         if (version != null && version.startsWith("$")) {
-            final String value = (String) buildFile.getProperty(propertyName(version));
+            String value = null;
+            try {
+                value = (String) buildFile.getProperty(propertyName(version));
+            } catch (IOException e) {
+                // ignore this error.
+            }
             if (value != null) {
                 version = value;
             }

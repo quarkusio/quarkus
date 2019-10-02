@@ -23,7 +23,7 @@ This section is a work in progress and gathers the philosophy under which extens
 
 === Why an extension framework
 
-Quarkus’s mission is to transform your entire application including the libraries it uses, into an artifact optimized for GraalVM.
+Quarkus’s mission is to transform your entire application including the libraries it uses, into an artifact that uses significantly less resources than traditional approaches. These can then be used to build native applications using GraalVM.
 To do this you need to analyze and understand the full "closed world" of the application.
 Without the full and complete context, the best that can be achieved is partial and limited generic support.
 By using the Quarkus extension approach, we can bring Java applications in line with memory footprint constrained environments like Kubernetes or cloud platforms.

@@ -11,6 +11,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -36,7 +37,13 @@ import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.Filters;
-import io.vertx.core.*;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Verticle;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
@@ -62,6 +69,12 @@ public class VertxHttpRecorder {
     private static volatile Router router;
 
     private static volatile Runnable closeTask;
+    private static final Runnable cleanupRouterTask = new Runnable() {
+        @Override
+        public void run() {
+            router = null;
+        }
+    };
 
     public static void setHotReplacement(Handler<RoutingContext> handler) {
         hotReplacementHandler = handler;
@@ -70,7 +83,7 @@ public class VertxHttpRecorder {
     public static void shutDownDevMode() {
         closeTask.run();
         closeTask = null;
-        router = null;
+        cleanupRouterTask.run();
         hotReplacementHandler = null;
     }
 
@@ -101,12 +114,15 @@ public class VertxHttpRecorder {
         }
     }
 
-    public RuntimeValue<Router> initializeRouter(RuntimeValue<Vertx> vertxRuntimeValue) {
+    public RuntimeValue<Router> initializeRouter(final RuntimeValue<Vertx> vertxRuntimeValue,
+            final LaunchMode launchMode, final ShutdownContext shutdownContext) {
 
         Vertx vertx = vertxRuntimeValue.getValue();
-
         if (router == null) {
             router = Router.router(vertx);
+            if (launchMode != LaunchMode.DEVELOPMENT) {
+                shutdownContext.addShutdownTask(cleanupRouterTask);
+            }
             if (hotReplacementHandler != null) {
                 router.route().handler(hotReplacementHandler);
             }
@@ -134,7 +150,7 @@ public class VertxHttpRecorder {
         }
     }
 
-    public void finalizeRouter(BeanContainer container, Handler<RoutingContext> defaultRouteHandler,
+    public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
             List<Filter> filterList, LaunchMode launchMode, ShutdownContext shutdown,
             RuntimeValue<Router> runtimeValue) {
         // install the default route at the end
@@ -161,12 +177,7 @@ public class VertxHttpRecorder {
         }
 
         if (defaultRouteHandler != null) {
-            router.route().handler(new Handler<RoutingContext>() {
-                @Override
-                public void handle(RoutingContext event) {
-                    defaultRouteHandler.handle(event);
-                }
-            });
+            defaultRouteHandler.accept(router.route());
         }
 
         if (launchMode == LaunchMode.DEVELOPMENT) {
@@ -189,6 +200,7 @@ public class VertxHttpRecorder {
             Supplier<Integer> eventLoops)
             throws IOException {
         // Http server configuration
+        router.route().last().failureHandler(new QuarkusErrorHandler(launchMode.isDevOrTest()));
         HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode);
         HttpServerOptions sslConfig = createSslOptions(httpConfiguration, launchMode);
 
@@ -244,7 +256,6 @@ public class VertxHttpRecorder {
                                 throw new RuntimeException(e);
                             }
                         }
-                        router = null;
                         closeTask = null;
                     }
                 }

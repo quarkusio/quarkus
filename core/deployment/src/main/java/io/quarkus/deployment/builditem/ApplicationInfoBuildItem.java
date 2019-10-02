@@ -4,7 +4,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
 
 public final class ApplicationInfoBuildItem extends SimpleBuildItem {
 
-    public static final String UNSET_VALUE = "<<unset>>";
+    private static final String UNSET_VALUE = "<<unset>>";
 
     private final String name;
     private final String version;
@@ -15,10 +15,10 @@ public final class ApplicationInfoBuildItem extends SimpleBuildItem {
     }
 
     public String getName() {
-        return name;
+        return name == null ? UNSET_VALUE : name;
     }
 
     public String getVersion() {
-        return version;
+        return version == null ? UNSET_VALUE : version;
     }
 }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-build-parent</artifactId>
@@ -19,6 +20,15 @@
         <gradle.task>build</gradle.task>
         <skip.gradle.build>false</skip.gradle.build>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>gradle-official-repository</id>
+            <name>Gradle Official Repository</name>
+            <url>https://repo.gradle.org/gradle/libs-releases-local/</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <!-- Special -->
         <!-- NOT <scope>import</scope> because this is for the maven-dependency-plugin -->
@@ -59,6 +69,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-creator</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-model</artifactId>
         </dependency>
 
         <!-- Test -->
@@ -116,6 +131,9 @@
                                 <argument>-Pdescription=${project.description}</argument>
                                 <argument>-S</argument>
                             </arguments>
+                            <environmentVariables>
+                                <MAVEN_LOCAL_REPO>${settings.localRepository}</MAVEN_LOCAL_REPO>
+                            </environmentVariables>
                             <skip>${skip.gradle.build}</skip>
                         </configuration>
                         <goals>

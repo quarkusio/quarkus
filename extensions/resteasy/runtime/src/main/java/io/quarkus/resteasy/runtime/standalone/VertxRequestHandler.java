@@ -75,14 +75,15 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             association.setIdentity(user.getSecurityIdentity());
         }
         try {
-            dispatch(request.request(), is, output);
+            dispatch(request, is, output);
         } finally {
             requestContext.terminate();
         }
     }
 
-    private void dispatch(HttpServerRequest request, InputStream is, VertxOutput output) {
+    private void dispatch(RoutingContext routingContext, InputStream is, VertxOutput output) {
         Context ctx = vertx.getOrCreateContext();
+        HttpServerRequest request = routingContext.request();
         ResteasyUriInfo uriInfo = VertxUtil.extractUriInfo(request, servletMappingPrefix);
         ResteasyHttpHeaders headers = VertxUtil.extractHttpHeaders(request);
         HttpServerResponse response = request.response();
@@ -93,6 +94,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         vertxRequest.setInputStream(is);
         try {
             ResteasyContext.pushContext(SecurityContext.class, new QuarkusResteasySecurityContext(request));
+            ResteasyContext.pushContext(RoutingContext.class, routingContext);
             dispatcher.service(ctx, request, response, vertxRequest, vertxResponse, true);
         } catch (Failure e1) {
             vertxResponse.setStatus(e1.getErrorCode());

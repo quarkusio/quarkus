@@ -76,7 +76,8 @@ class InstanceImpl<T> implements Instance<T> {
     public T get() {
         Set<InjectableBean<?>> beans = beans();
         if (beans.isEmpty()) {
-            throw new UnsatisfiedResolutionException();
+            throw new UnsatisfiedResolutionException(
+                    "No bean found for required type [" + requiredType + "] and qualifiers [" + requiredQualifiers + "]");
         } else if (beans.size() > 1) {
             throw new AmbiguousResolutionException("Beans: " + beans.toString());
         }

@@ -21,9 +21,10 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String HIBERNATE_SEARCH_ELASTICSEARCH = "hibernate-search-elasticsearch";
     public static final String INFINISPAN_CLIENT = "infinispan-client";
     public static final String JAEGER = "jaeger";
+    public static final String JDBC_DERBY = "jdbc-derby";
     public static final String JDBC_H2 = "jdbc-h2";
-    public static final String JDBC_MARIADB = "jdbc-mariadb";
     public static final String JDBC_POSTGRESQL = "jdbc-postgresql";
+    public static final String JDBC_MARIADB = "jdbc-mariadb";
     public static final String JDBC_MSSQL = "jdbc-mssql";
     public static final String JDBC_MYSQL = "jdbc-mysql";
     public static final String JGIT = "jgit";

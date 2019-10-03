@@ -27,6 +27,7 @@ import javax.persistence.spi.PersistenceUnitTransactionType;
 
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.dialect.DerbyTenSevenDialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
 import org.hibernate.integrator.spi.Integrator;
@@ -516,6 +517,9 @@ public final class HibernateOrmProcessor {
 
         if (resolvedDriver.contains("com.mysql.cj.jdbc.Driver")) {
             return Optional.of(MySQL8Dialect.class.getName());
+        }
+        if (resolvedDriver.contains("org.apache.derby.jdbc.ClientDriver")) {
+            return Optional.of((DerbyTenSevenDialect.class.getName()));
         }
 
         String error = driver.isPresent()

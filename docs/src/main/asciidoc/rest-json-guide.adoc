@@ -186,28 +186,60 @@ They are analyzed at build time and Quarkus restricts the number of JAX-RS provi
 It allows to reduce the size of the native executable.
 ====
 
-=== More on our Jackson support
+=== Configuring JSON support
 
-As stated above, Quarkus provides the option of using https://github.com/FasterXML/jackson[Jackson] instead of JSON-B via the use of the `quarkus-resteasy-jackson` extension.
+==== JSON-B
 
-When using Jackson, Quarkus allows users to customize the `ObjectMapper` very easily - all that needs to be done is to configure a CDI producer bean like so:
+Quarkus makes it very easy to configure various JSON-B settings via CDI beans. The simplest (and suggested) approach is to define a CDI bean of type `io.quarkus.jsonb.JsonbConfigCustomizer`
+inside of which any JSON-B configuration can be applied.
+
+If for example a custom serializer named `FooSerializer` for type `com.example.Foo` needs to be registered with JSON-B, the addition of a bean like the following would suffice:
 
 [source,java]
 ----
-@ApplicationScoped
-public class CustomObjectMapperConfig {
+import io.quarkus.jsonb.JsonbConfigCustomizer;
+import javax.inject.Singleton;
+import javax.json.bind.JsonbConfig;
+import javax.json.bind.serializer.JsonbSerializer;
 
-    @Singleton
-    @Produces
-    public ObjectMapper objectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        // perform configuration
-        return objectMapper;
+@Singleton
+public class FooSerializerRegistrationCustomizer implements JsonbConfigCustomizer {
+
+    public void customize(JsonbConfig config) {
+        config.withSerializers(new FooSerializer());
     }
 }
 ----
 
-If no such bean is provided, a default `ObjectMapper` is used.
+A more advanced option would be to directly provide a bean of `javax.json.bind.JsonbConfig` or in the extreme case to provide a bean of type `javax.json.bind.Jsonb`.
+If the latter approach is leveraged it is very important to manually inject and apply all `io.quarkus.jsonb.JsonbConfigCustomizer` beans in the CDI producer that produces `javax.json.bind.Jsonb`.
+Failure to do so will prevent JSON-B specific customizations provided by various extensions from being applied.
+
+==== Jackson
+
+As stated above, Quarkus provides the option of using https://github.com/FasterXML/jackson[Jackson] instead of JSON-B via the use of the `quarkus-resteasy-jackson` extension.
+
+Following the same approach as described in the previous section, Jackson's `ObjectMapper` can be configured using a `io.quarkus.jackson.ObjectMapperCustomizer` bean.
+An example where a custom module needs to be registered would like so:
+
+[source,java]
+----
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.jackson.ObjectMapperCustomizer;
+import javax.inject.Singleton;
+
+@Singleton
+public class RegisterCustomModuleCustomizer implements ObjectMapperCustomizer {
+
+    public void customize(ObjectMapper mapper) {
+        mapper.registerModule(new CustomModule());
+    }
+}
+----
+
+Users can even provide their own `ObjectMapper` bean if they so choose.
+If this is done, it is very important to manually inject and apply all `io.quarkus.jackson.ObjectMapperCustomizer` beans in the CDI producer that produces `ObjectMapper`.
+Failure to do so will prevent Jackson specific customizations provided by various extensions from being applied.
 
 == Creating a frontend
 

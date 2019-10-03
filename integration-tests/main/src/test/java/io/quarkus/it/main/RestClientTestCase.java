@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
@@ -17,6 +18,10 @@ import io.restassured.path.json.JsonPath;
 public class RestClientTestCase {
 
     public static final String HEADER_NAME = "header-name";
+
+    // this is required, otherwise the test.url system property is never set
+    @TestHTTPResource
+    private String url;
 
     @Test
     public void testMicroprofileClient() {

@@ -347,7 +347,7 @@ public class QuarkusDevModeTest
                 if (fm > currentTime) {
                     return;
                 }
-                Thread.sleep(50);
+                Thread.sleep(200);
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

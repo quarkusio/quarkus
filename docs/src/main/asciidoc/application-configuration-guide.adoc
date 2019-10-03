@@ -204,7 +204,7 @@ public class GreetingConfiguration {
     }
 }
 ----
-<1> `prefix` is optional. If not set then the prefix to be used will be determined by the class name. In this case it would still be `greeting` (since the `Properties` suffix is removed). If the class were named `GreetingExtraProperties` then the resulting default prefix would be `greeting-extra`.
+<1> `prefix` is optional. If not set then the prefix to be used will be determined by the class name. In this case it would still be `greeting` (since the `Configuration` suffix is removed). If the class were named `GreetingExtraConfiguration` then the resulting default prefix would be `greeting-extra`.
 <2> `!` will be the default value if `greeting.suffix` is not set
 
 This class could then be injected into the `GreetingResource` using the familiar CDI `@Inject` annotation like so:

@@ -68,8 +68,8 @@ class SmallRyeJwtProcessor {
         removable.addBeanClass(RawClaimTypeProducer.class);
         removable.addBeanClass(JsonValueProducer.class);
         removable.addBeanClass(JwtPrincipalProducer.class);
+        removable.addBeanClass(Claim.class);
         additionalBeans.produce(removable.build());
-        additionalBeans.produce(new AdditionalBeanBuildItem(Claim.class));
     }
 
     /**

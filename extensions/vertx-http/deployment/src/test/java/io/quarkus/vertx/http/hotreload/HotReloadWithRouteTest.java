@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
-public class HotReloadTest {
+public class HotReloadWithRouteTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()

@@ -98,7 +98,7 @@ public class VertxHttpRecorder {
 
             router = Router.router(VertxCoreRecorder.getWebVertx());
             if (hotReplacementHandler != null) {
-                router.route().blockingHandler(hotReplacementHandler);
+                router.route().order(Integer.MIN_VALUE).blockingHandler(hotReplacementHandler);
             }
 
             //we can't really do
@@ -118,13 +118,14 @@ public class VertxHttpRecorder {
             final LaunchMode launchMode, final ShutdownContext shutdownContext) {
 
         Vertx vertx = vertxRuntimeValue.getValue();
+
         if (router == null) {
             router = Router.router(vertx);
             if (launchMode != LaunchMode.DEVELOPMENT) {
                 shutdownContext.addShutdownTask(cleanupRouterTask);
             }
             if (hotReplacementHandler != null) {
-                router.route().handler(hotReplacementHandler);
+                router.route().order(Integer.MIN_VALUE).handler(hotReplacementHandler);
             }
         }
 

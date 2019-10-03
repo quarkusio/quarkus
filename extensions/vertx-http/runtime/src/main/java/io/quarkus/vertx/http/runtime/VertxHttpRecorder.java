@@ -500,9 +500,6 @@ public class VertxHttpRecorder {
     public static VirtualAddress VIRTUAL_HTTP = new VirtualAddress("netty-virtual-http");
 
     private static void initializeVirtual(Vertx vertxRuntime) {
-        if (virtualBootstrap != null) {
-            return;
-        }
         VertxInternal vertx = (VertxInternal) vertxRuntime;
         virtualBootstrap = new ServerBootstrap();
 

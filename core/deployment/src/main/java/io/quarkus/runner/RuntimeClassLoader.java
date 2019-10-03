@@ -425,11 +425,16 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
     private URL findApplicationResource(String name) {
         Path resourcePath = null;
 
-        for (Path i : applicationClassDirectories) {
-            resourcePath = i.resolve(name);
-            if (Files.exists(resourcePath)) {
-                break;
+        try {
+            for (Path i : applicationClassDirectories) {
+                resourcePath = i.resolve(name);
+                if (Files.exists(resourcePath)) {
+                    break;
+                }
             }
+        } catch (Exception e) {
+            log.debugf(e, "Exception resolving path %s", name);
+            //ignore
         }
         try {
             return resourcePath != null && Files.exists(resourcePath) ? resourcePath.toUri()

@@ -63,7 +63,7 @@ public class AmazonLambdaApi {
         return System.getenv("AWS_LAMBDA_FUNCTION_VERSION");
     }
 
-    private static String runtimeApi() {
+    public static String runtimeApi() {
         String testApi = System.getProperty(QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API);
         if (testApi != null) {
             return testApi;

@@ -80,7 +80,7 @@ class VertxHttpProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     ServiceStartBuildItem finalizeRouter(
             VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer,
-            Optional<RequireVirtualHttpBuildItem> requireVirtual,
+            List<RequireVirtualHttpBuildItem> requireVirtual,
             InternalWebVertxBuildItem vertx,
             LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, List<DefaultRouteBuildItem> defaultRoutes,
             List<FilterBuildItem> filters, VertxWebRouterBuildItem router, EventLoopCountBuildItem eventLoopCountBuildItem,
@@ -106,7 +106,7 @@ class VertxHttpProcessor {
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters, vertx.getVertx(), router.getRouter(), httpBuildTimeConfig.rootPath, launchMode.getLaunchMode());
 
-        boolean startVirtual = requireVirtual.isPresent() || httpConfiguration.virtual;
+        boolean startVirtual = !requireVirtual.isEmpty() || httpConfiguration.virtual;
         // start http socket in dev/test mode even if virtual http is required
         boolean startSocket = !startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL;
         recorder.startServer(vertx.getVertx(), shutdown,

@@ -34,6 +34,10 @@ public class AmazonLambdaRecorder {
             ShutdownContext context,
             LambdaConfig config,
             BeanContainer beanContainer) {
+        if (AmazonLambdaApi.runtimeApi() == null) {
+            log.warn("No AWS Lambda Endpoint defined, assuming a dev/test environment, not starting lambda loop");
+            return;
+        }
         Class<? extends RequestHandler<?, ?>> handlerClass;
         if (config.handler.isPresent()) {
             handlerClass = namedHandlerClasses.get(config.handler.get());

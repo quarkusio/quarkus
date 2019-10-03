@@ -103,6 +103,7 @@
 
         <!-- Integrations -->
         <module>amazon-lambda</module>
+        <module>amazon-lambda-http</module>
         <module>amazon-lambda-resteasy</module>
         <module>amazon-dynamodb</module>
         <module>azure-functions-http</module>

@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.Optional;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
@@ -166,14 +166,14 @@ public class ResteasyStandaloneBuildStep {
             InternalWebVertxBuildItem vertx,
             BeanContainerBuildItem beanContainer,
             ResteasyStandaloneBuildItem standalone,
-            Optional<RequireVirtualHttpBuildItem> requireVirtual) throws Exception {
+            List<RequireVirtualHttpBuildItem> requireVirtual) throws Exception {
 
         if (standalone == null) {
             return;
         }
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY));
 
-        boolean isVirtual = requireVirtual.isPresent();
+        boolean isVirtual = !requireVirtual.isEmpty();
         Consumer<Route> ut = recorder.start(vertx.getVertx(),
                 shutdown,
                 beanContainer.getValue(),

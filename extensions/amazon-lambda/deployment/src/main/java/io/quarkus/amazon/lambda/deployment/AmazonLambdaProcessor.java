@@ -28,6 +28,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
@@ -107,6 +108,7 @@ public final class AmazonLambdaProcessor {
             AmazonLambdaRecorder recorder,
             LambdaConfig config,
             RecorderContext context,
+            LaunchModeBuildItem launchMode,
             ShutdownContextBuildItem shutdownContextBuildItem) throws IOException {
         List<Class<? extends RequestHandler<?, ?>>> unnamed = new ArrayList<>();
         Map<String, Class<? extends RequestHandler<?, ?>>> named = new HashMap<>();

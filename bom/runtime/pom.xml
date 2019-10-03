@@ -127,7 +127,7 @@
         <scala.version>2.12.8</scala.version>
         <tika.version>1.21</tika.version>
         <aws-lambda-java.version>1.1.0</aws-lambda-java.version>
-        <aws-lambda-java-events.version>2.2.5</aws-lambda-java-events.version>
+        <aws-lambda-java-events.version>2.2.7</aws-lambda-java-events.version>
         <aws-lambda-serverless-java-container.version>1.3.1</aws-lambda-serverless-java-container.version>
         <awssdk.version>2.8.0</awssdk.version>
         <azure-functions-java-library.version>1.3.0</azure-functions-java-library.version>
@@ -164,6 +164,7 @@
         <antlr.version>4.7.2</antlr.version>
         <quarkus-security.version>1.0.0.Alpha2</quarkus-security.version>
         <javax.interceptor-api.version>1.2</javax.interceptor-api.version>
+        <httpmime.version>4.5.10</httpmime.version>
     </properties>
 
     <dependencyManagement>
@@ -606,6 +607,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-amazon-lambda</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-amazon-lambda-http</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1187,6 +1193,11 @@
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore</artifactId>
                 <version>${httpcore.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpmime</artifactId>
+                <version>${httpmime.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.kafka</groupId>
@@ -2160,6 +2171,12 @@
                 <groupId>com.amazonaws.serverless</groupId>
                 <artifactId>aws-serverless-java-container-core</artifactId>
                 <version>${aws-lambda-serverless-java-container.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>

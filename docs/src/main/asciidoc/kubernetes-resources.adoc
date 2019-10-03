@@ -56,7 +56,7 @@ By using the following configuration for example:
 
 [source]
 ----
-quarkus.kubernetes.group=yourDockerUsername # this is optional and defaults to your username if not set
+kubernetes.group=yourDockerUsername # this is optional and defaults to your username if not set
 quarkus.application.name=test-quarkus-app # this is also optional and defaults to the project name if not set
 ----
 
@@ -150,7 +150,7 @@ To change the number of replicas from 1 to  3:
 
 [source]
 ----
-dekorate.kubernetes.replicas=3 
+kubernetes.replicas=3 
 ----
 
 === Adding labels:
@@ -158,8 +158,8 @@ To add a new label to all generated resources, say `foo=bar`:
 
 [source]
 ----
-dekorate.kubernetes.labels[0].key=foo
-dekorate.kubernetes.labels[0].value=bar
+kubernetes.labels[0].key=foo
+kubernetes.labels[0].value=bar
 ----
 
 === Customizing the readiness probe:
@@ -167,8 +167,9 @@ To set the initial delay of the probe to 20 seconds and the period to 45:
 
 [source]
 ----
-dekorate.kubernetes.readinessProbe.initialDelaySeconds=20
-dekorate.kubernetes.readinessProbe.periodSeconds=45
+kubernetes.readiness-probe.initial-delay-seconds=20
+kubernetes.readiness-probe.period-seconds=45
 ----
 
 Here you can find a complete reference to all the available https://github.com/dekorateio/dekorate/blob/master/config.md[configuration options].
+Please note that in the link above all property names are prefixed with `dekorate` which is not the case for this extension.

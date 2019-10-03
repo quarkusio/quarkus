@@ -28,6 +28,7 @@ import io.dekorate.processor.SimpleFileWriter;
 import io.dekorate.project.FileProjectFactory;
 import io.dekorate.project.Project;
 import io.dekorate.utils.Maps;
+import io.dekorate.utils.Strings;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -40,7 +41,8 @@ import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 
 class KubernetesProcessor {
 
-    private static final String PROPERTY_PREFIX = "dekorate";
+    private static final String PROPERTY_PREFIX = "dekorate.";
+    private static final String ALLOWED_GENERATOR = "kubernetes";
 
     @Inject
     BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer;
@@ -74,8 +76,8 @@ class KubernetesProcessor {
 
         Config config = ConfigProvider.getConfig();
         Map<String, Object> configAsMap = StreamSupport.stream(config.getPropertyNames().spliterator(), false)
-                .filter(k -> k.startsWith(PROPERTY_PREFIX))
-                .collect(Collectors.toMap(k -> k, k -> config.getValue(k, String.class)));
+                .filter(k -> ALLOWED_GENERATOR.equals(generatorName(k)))
+                .collect(Collectors.toMap(k -> PROPERTY_PREFIX + k, k -> config.getValue(k, String.class)));
 
         final SessionWriter sessionWriter = new SimpleFileWriter(root, false);
         Project project = FileProjectFactory.create(new File("."));
@@ -160,6 +162,19 @@ class KubernetesProcessor {
         final Map<String, Object> generatorInput = new HashMap<>();
         generatorInput.put(KubernetesApplication.class.getName(), kubernetesProperties);
         generator.add(generatorInput);
+    }
+
+    /**
+     * Returns the name of the generators that can handle the specified key.
+     * 
+     * @param key The key.
+     * @return The generator name or null if the key format is unexpected.
+     */
+    private static String generatorName(String key) {
+        if (Strings.isNullOrEmpty(key) || !key.contains(".")) {
+            return null;
+        }
+        return key.substring(0, key.indexOf("."));
     }
 
     private <T> T[] toArray(List<T> list) {

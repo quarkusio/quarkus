@@ -131,13 +131,15 @@ class VertxWebProcessor {
                 generatedClass.produce(new GeneratedClassBuildItem(true, name, data));
             }
         };
+        Handler<RoutingContext> bodyHandler = recorder.createBodyHandler(httpConfiguration);
+
         for (AnnotatedRouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
             String handlerClass = generateHandler(businessMethod.getBean(), businessMethod.getMethod(), classOutput);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
             Handler<RoutingContext> routingHandler = recorder.createHandler(handlerClass);
             for (AnnotationInstance routeAnnotation : businessMethod.getRoutes()) {
                 Route route = annotationProxy.builder(routeAnnotation, Route.class).build(classOutput);
-                Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(route, httpConfiguration);
+                Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(route, bodyHandler);
                 AnnotationValue typeValue = routeAnnotation.value("type");
                 HandlerType handlerType = HandlerType.NORMAL;
                 if (typeValue != null) {

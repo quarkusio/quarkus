@@ -109,9 +109,9 @@ cd quarkus
 
 The default build does not create native images, which is quite time consuming.
 
-Note that the full build with all tests is quite slow, you will usually want to build with ``-DskipTests`. This will also
+Note that the full build with all tests is quite slow, you will usually want to build with `-DskipTests`. This will also
 skip creation of the integration-test runner jars. If you want to skip tests but still create the runners you can set
-`-DskipTests -Dquarkus.build.skip=fase`
+`-DskipTests -Dquarkus.build.skip=false`
 
 You can build and test native images in the integration tests supporting it by using `./mvnw install -Dnative`.
 

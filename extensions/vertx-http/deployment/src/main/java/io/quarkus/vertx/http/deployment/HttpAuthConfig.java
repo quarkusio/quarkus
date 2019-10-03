@@ -1,7 +1,6 @@
 package io.quarkus.vertx.http.deployment;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
+import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
@@ -18,18 +17,18 @@ public class HttpAuthConfig {
      * is present that supports {@link io.quarkus.security.identity.request.TokenAuthenticationRequest} in which case
      * form auth will be the default.
      */
-    @ConfigProperty(defaultValue = "false")
+    @ConfigItem
     public boolean basic;
 
     /**
      * If form auth should be enabled.
      */
-    @ConfigProperty(defaultValue = "false")
+    @ConfigItem
     public boolean form;
 
     /**
      * The authentication realm
      */
-    @ConfigProperty(name = "realm", defaultValue = "Quarkus")
+    @ConfigItem(defaultValue = "Quarkus")
     public String realm;
 }

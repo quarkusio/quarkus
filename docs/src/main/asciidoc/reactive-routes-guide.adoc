@@ -126,7 +126,7 @@ Check the https://vertx.io/docs/vertx-web/java/#_basic_vert_x_web_concepts[Vert.
 [NOTE]
 ====
 `Router` access is provided by the `quarkus-vertx-http` extension.
-If you use `quarkus-reasteasy` or `quarkus-vertx-web`, the extension will be added automatically.
+If you use `quarkus-resteasy` or `quarkus-vertx-web`, the extension will be added automatically.
 ====
 
 == Intercepting HTTP requests
@@ -164,5 +164,5 @@ The second parameter is the priority used to sort the filters Highest priority a
 
 == Conclusion
 
-This guide has introduced how you can use reactive routes to define HTTP endpoint.
-It also describes the structure of the Quarkus HTTP layer and how to write filters.
+This guide has introduced how you can use reactive routes to define an HTTP endpoint.
+It also describes the structure of the Quarkus HTTP layer and how to wr ite filters.

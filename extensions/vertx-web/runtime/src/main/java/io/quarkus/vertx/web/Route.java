@@ -38,7 +38,7 @@ public @interface Route {
 
     /**
      *
-     * @see io.quarkus.vertx.web.Route#method(HttpMethod)
+     * @see Route#methods()
      * @return the HTTP methods
      */
     HttpMethod[] methods() default {};
@@ -50,11 +50,11 @@ public @interface Route {
     HandlerType type() default HandlerType.NORMAL;
 
     /**
-     * If set to {@link Integer#MIN_VALUE} the order of the route is not modified.
+     * If set to a positive number, it indicates the place of the route in the chain.
      * 
-     * @see io.quarkus.vertx.web.Route#order(int)
+     * @see Route#order()
      */
-    int order() default Integer.MIN_VALUE;
+    int order() default 0;
 
     /**
      *

@@ -1,0 +1,168 @@
+= Using Reactive Routes
+
+Reactive routes propose an alternative approach to implement HTTP endpoints where you declare and chain _routes_.
+This approach became very popular in the JavaScript world, with frameworks like Express.Js or Hapi.
+Quarkus also offers the possibility to use reactive routes.
+You can implement REST API with routes only or combine them with JAX-RS resources and servlets.
+
+The code presented in this guide is available in this https://github.com/quarkusio/quarkus-quickstarts[Github repository] under the https://github.com/quarkusio/quarkus-quickstarts/tree/master/using-reactive-routes[`using-reactive-routes` directory]
+
+== Quarkus HTTP
+
+Before going further, let's have a look at the HTTP layer of Quarkus.
+Quarkus HTTP support is based on a non-blocking and reactive engine (Eclipse Vert.x and Netty).
+All the HTTP requests your application receive are handled by _event loops_ (IO Thread) and then are routed towards the code that manages the request.
+Depending on the destination, it can invoke the code managing the request on a worker thread (Servlet, Jax-RS) or use the IO Thread (reactive route).
+Note that because of this, a reactive route must be non-blocking or explicitly declare its blocking nature (which would result by being called on a worker thread).
+
+image::http-architecture.png[alt=Quarkus HTTP Architecture]
+
+== Declaring reactive routes
+
+The first way to use reactive routes is to use the `@Route` annotation.
+To have access to this annotation, you need to add the `quarkus-vertx-web` extension:
+
+In your `pom.xml` file, add:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-vertx-web</artifactId>
+</dependency>
+----
+
+Then in a _bean_, you can use the `@Route` annotation as follows:
+
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+import io.quarkus.vertx.web.Route;
+import io.quarkus.vertx.web.RoutingExchange;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.ext.web.RoutingContext;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class MyDeclarativeRoutes {
+
+
+    @Route(path = "/", methods = HttpMethod.GET)
+    public void handle(RoutingContext rc) {
+        rc.response().end("hello");
+    }
+
+    @Route(path = "/hello", methods = HttpMethod.GET)
+    public void greetings(RoutingContext rc) {
+        String name = rc.request().getParam("name");
+        if (name == null) {
+            name = "world";
+        }
+        rc.response().end("hello " + name);
+    }
+}
+----
+
+The `@Route` annotation indicates that the method is a reactive route.
+Again, by default, the code contained in the method must not block.
+The method gets a https://vertx.io/docs/apidocs/io/vertx/ext/web/RoutingContext.html[`RoutingContext`] as a parameter.
+From the `RoutingContext` you can retrieve the HTTP request (using `request()`) and write the response using `response().end(...)`.
+
+More details about using the `RoutingContext` is available in the https://vertx.io/docs/vertx-web/java/[Vert.x Web documentation].
+
+The `@Route` annotation allows to configure:
+
+* The `path` - using the https://vertx.io/docs/vertx-web/java/#_capturing_path_parameters[Vert.x Web format]
+* The `regex` - when `path` is not used.
+See https://vertx.io/docs/vertx-web/java/#_routing_with_regular_expressions[for more details]
+* The `methods` - the HTTP verb triggering the route such as `GET`, `POST`...
+* The `type` - it can be _normal_ (non-blocking), _blocking_ (method dispatched on a worker thread), or _failure_ to indicate that this route is called on failures
+* The `order` - the order of the route when several routes are involved in handling the incoming request.
+Must be positive for regular user routes.
+* The produced and consumed mime types using `produces`, and `consumes`
+
+For instance, you can declare a blocking route as follows:
+
+[source,java]
+----
+@Route(methods = HttpMethod.POST, path = "/post", type = Route.HandlerType.BLOCKING)
+public void blocking(RoutingContext rc) {
+    // ...
+}
+----
+
+You can also declare several routes for a single method using `@Routes`:
+
+[source,java]
+----
+@Route.Routes({
+    @Route(path = "/first"),
+    @Route(path = "/second")
+})
+public void route(RoutingContext rc) {
+    // ...
+}
+----
+
+Each route can use different paths, methods...
+
+== Using the Vert.x Web Router
+
+You can also register your route directly on the _HTTP routing layer_ by registering routes directly on the `Router` object.
+To retrieve the `Router` instance at startup:
+
+[source,java]
+----
+public void init(@Observes Router router) {
+    router.get("/my-route").handler(rc -> rc.response().end("Hello from my route"));
+}
+----
+
+Check the https://vertx.io/docs/vertx-web/java/#_basic_vert_x_web_concepts[Vert.x Web documentation] to know more about the route registration, options, and available handlers.
+
+
+[NOTE]
+====
+`Router` access is provided by the `quarkus-vertx-http` extension.
+If you use `quarkus-reasteasy` or `quarkus-vertx-web`, the extension will be added automatically.
+====
+
+== Intercepting HTTP requests
+
+You can also register filters that would intercept incoming HTTP requests.
+Note that these filters are also applied for servlets, JAX-RS resources, and reactive routes.
+
+For example, the following code snippet registers a filter adding an HTTP header:
+
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+import io.quarkus.vertx.http.runtime.filters.Filters;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
+
+@ApplicationScoped
+public class MyFilter {
+
+    public void registerMyFilter(@Observes Filters filters) {
+        filters.register(rc -> {
+            rc.response().putHeader("X-Header", "intercepting the request");
+            rc.next();
+        }, 100);
+    }
+}
+----
+
+The registration is done using `Filters.register`.
+The first parameter is the handler receiving the `RoutingContext`.
+The handler is likely required to call the `next()` method to continue to chain.
+The second parameter is the priority used to sort the filters Highest priority are called first.
+
+== Conclusion
+
+This guide has introduced how you can use reactive routes to define HTTP endpoint.
+It also describes the structure of the Quarkus HTTP layer and how to write filters.

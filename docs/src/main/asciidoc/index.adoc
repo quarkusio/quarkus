@@ -51,6 +51,7 @@ include::quarkus-intro.adoc[tag=intro]
 * link:mongo-guide.html[Using MongoDB]
 * link:mongodb-panache-guide.html[Simplified MongoDB with Panache]
 * link:artemis-jms-guide.html[Using Artemis JMS Client]
+* link:reactive-routes-guide.adoc[Using Reactive Routes]
 
 * link:faq.html[FAQs]
 

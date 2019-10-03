@@ -17,6 +17,7 @@
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
+        <quarkus.build.skip>${skipTests}</quarkus.build.skip>
     </properties>
 
     <modules>
@@ -88,6 +89,7 @@
                     <version>${project.version}</version>
                     <configuration>
                         <noDeps>true</noDeps>
+                        <skip>${quarkus.build.skip}</skip>
                     </configuration>
                 </plugin>
             </plugins>

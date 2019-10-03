@@ -96,7 +96,7 @@ public class DevMojo extends AbstractMojo {
      * </tr>
      * <tr>
      * <td><b>{port}</b></td>
-     * <td>The JVM is started in debug mode and suspends until a debugger is attached to {port}</td>
+     * <td>The JVM is started in debug mode without suspending and will listen on {port}</td>
      * </tr>
      * </table>
      */
@@ -213,7 +213,7 @@ public class DevMojo extends AbstractMojo {
                         throw new MojoFailureException("The specified debug port must be greater than 0");
                     }
                     args.add("-Xdebug");
-                    args.add("-Xrunjdwp:transport=dt_socket,address=" + port + ",server=y,suspend=y");
+                    args.add("-Xrunjdwp:transport=dt_socket,address=" + port + ",server=y,suspend=n");
                 } catch (NumberFormatException e) {
                     throw new MojoFailureException(
                             "Invalid value for debug parameter: " + debug + " must be true|false|client|{port}");

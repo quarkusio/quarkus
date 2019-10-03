@@ -1,4 +1,4 @@
-package io.quarkus.reactivemessaging.http;
+package io.quarkus.reactivemessaging.http.runtime;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 

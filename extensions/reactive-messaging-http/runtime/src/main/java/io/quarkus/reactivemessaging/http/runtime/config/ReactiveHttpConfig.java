@@ -1,4 +1,4 @@
-package io.quarkus.reactivemessaging.http.config;
+package io.quarkus.reactivemessaging.http.runtime.config;
 
 import static java.util.regex.Pattern.quote;
 
@@ -14,8 +14,8 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
-import io.quarkus.reactivemessaging.http.QuarkusHttpConnector;
-import io.quarkus.reactivemessaging.http.QuarkusWebsocketConnector;
+import io.quarkus.reactivemessaging.http.runtime.QuarkusHttpConnector;
+import io.quarkus.reactivemessaging.http.runtime.QuarkusWebsocketConnector;
 
 /**
  * ms@author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com

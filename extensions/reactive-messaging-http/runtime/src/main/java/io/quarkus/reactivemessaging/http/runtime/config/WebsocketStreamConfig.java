@@ -1,4 +1,4 @@
-package io.quarkus.reactivemessaging.http.config;
+package io.quarkus.reactivemessaging.http.runtime.config;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com

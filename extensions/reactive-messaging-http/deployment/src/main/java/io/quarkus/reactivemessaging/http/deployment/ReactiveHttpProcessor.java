@@ -1,4 +1,4 @@
-package io.quarkus.reactivemessaging.http;
+package io.quarkus.reactivemessaging.http.deployment;
 
 import java.util.List;
 
@@ -10,9 +10,13 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.reactivemessaging.http.config.HttpStreamConfig;
-import io.quarkus.reactivemessaging.http.config.ReactiveHttpConfig;
-import io.quarkus.reactivemessaging.http.config.WebsocketStreamConfig;
+import io.quarkus.reactivemessaging.http.runtime.QuarkusHttpConnector;
+import io.quarkus.reactivemessaging.http.runtime.QuarkusWebsocketConnector;
+import io.quarkus.reactivemessaging.http.runtime.ReactiveHttpHandlerBean;
+import io.quarkus.reactivemessaging.http.runtime.ReactiveHttpRecorder;
+import io.quarkus.reactivemessaging.http.runtime.config.HttpStreamConfig;
+import io.quarkus.reactivemessaging.http.runtime.config.ReactiveHttpConfig;
+import io.quarkus.reactivemessaging.http.runtime.config.WebsocketStreamConfig;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;

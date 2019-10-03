@@ -1,4 +1,4 @@
-package io.quarkus.reactivemessaging.http;
+package io.quarkus.reactivemessaging.http.runtime;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,9 +7,9 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import io.quarkus.reactivemessaging.http.config.HttpStreamConfig;
-import io.quarkus.reactivemessaging.http.config.ReactiveHttpConfig;
-import io.quarkus.reactivemessaging.http.config.WebsocketStreamConfig;
+import io.quarkus.reactivemessaging.http.runtime.config.HttpStreamConfig;
+import io.quarkus.reactivemessaging.http.runtime.config.ReactiveHttpConfig;
+import io.quarkus.reactivemessaging.http.runtime.config.WebsocketStreamConfig;
 import io.reactivex.processors.BehaviorProcessor;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.RoutingContext;

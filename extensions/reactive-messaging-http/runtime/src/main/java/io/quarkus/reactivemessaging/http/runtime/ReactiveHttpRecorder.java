@@ -1,4 +1,4 @@
-package io.quarkus.reactivemessaging.http;
+package io.quarkus.reactivemessaging.http.runtime;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.annotations.Recorder;

@@ -1,4 +1,4 @@
-package io.quarkus.reactivemessaging.http.config;
+package io.quarkus.reactivemessaging.http.runtime.config;
 
 import io.vertx.core.http.HttpMethod;
 

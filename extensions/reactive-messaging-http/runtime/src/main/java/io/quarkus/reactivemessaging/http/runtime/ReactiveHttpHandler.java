@@ -1,4 +1,4 @@
-package io.quarkus.reactivemessaging.http;
+package io.quarkus.reactivemessaging.http.runtime;
 
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;

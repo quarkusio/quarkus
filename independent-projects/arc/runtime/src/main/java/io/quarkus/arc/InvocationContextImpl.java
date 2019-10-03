@@ -4,10 +4,13 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -15,6 +18,8 @@ import javax.enterprise.inject.spi.InterceptionType;
 import javax.interceptor.InvocationContext;
 
 /**
+ * This object is not thread-safe and should never be used concurrently. Hovewer, the state should be safely propagated accross
+ * threads.
  *
  * @author Martin Kouba
  */
@@ -82,9 +87,9 @@ public class InvocationContextImpl implements InvocationContext {
 
     private final Constructor<?> constructor;
 
-    private Object[] args;
+    private final List<Object> args;
 
-    private int position;
+    private final AtomicInteger position;
 
     private final Map<String, Object> contextData;
 
@@ -113,8 +118,8 @@ public class InvocationContextImpl implements InvocationContext {
         this.target = new AtomicReference<>(target);
         this.method = method;
         this.constructor = constructor;
-        this.args = args;
-        this.position = 0;
+        this.args = args != null ? new CopyOnWriteArrayList<>(args) : new CopyOnWriteArrayList<>();
+        this.position = new AtomicInteger(0);
         this.chain = chain;
         this.aroundInvokeForward = aroundInvokeForward;
         this.aroundConstructForward = aroundConstructForward;
@@ -124,15 +129,14 @@ public class InvocationContextImpl implements InvocationContext {
     }
 
     boolean hasNextInterceptor() {
-        return position < chain.size();
+        return position.get() < chain.size();
     }
 
     protected Object invokeNext() throws Exception {
-        int oldPosition = position;
         try {
-            return chain.get(position++).invoke(this);
+            return chain.get(position.getAndIncrement()).invoke(this);
         } finally {
-            position = oldPosition;
+            position.decrementAndGet();
         }
     }
 
@@ -192,7 +196,7 @@ public class InvocationContextImpl implements InvocationContext {
         if (args == null) {
             throw new IllegalStateException();
         }
-        return args;
+        return args.toArray();
     }
 
     @Override
@@ -200,7 +204,9 @@ public class InvocationContextImpl implements InvocationContext {
         if (args == null) {
             throw new IllegalStateException();
         }
-        this.args = params;
+        // This is not very effective but the method is not called very often 
+        this.args.clear();
+        Collections.addAll(this.args, params);
     }
 
     @Override

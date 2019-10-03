@@ -4,7 +4,6 @@ import static io.quarkus.test.common.PathTestHelper.getAppClassLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.Closeable;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -112,9 +111,7 @@ public class QuarkusTestExtension
                     public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {
                         Path location = testWiringClassesDir.resolve(className.replace('.', '/') + ".class");
                         Files.createDirectories(location.getParent());
-                        try (FileOutputStream out = new FileOutputStream(location.toFile())) {
-                            out.write(data);
-                        }
+                        Files.write(location, data);
                         shutdownTasks.add(new DeleteRunnable(location));
                     }
 
@@ -122,9 +119,7 @@ public class QuarkusTestExtension
                     public void writeResource(String name, byte[] data) throws IOException {
                         Path location = testWiringClassesDir.resolve(name);
                         Files.createDirectories(location.getParent());
-                        try (FileOutputStream out = new FileOutputStream(location.toFile())) {
-                            out.write(data);
-                        }
+                        Files.write(location, data);
                         shutdownTasks.add(new DeleteRunnable(location));
                     }
                 })
@@ -192,9 +187,7 @@ public class QuarkusTestExtension
 
                                 Path location = testWiringClassesDir.resolve(resourceName);
                                 Files.createDirectories(location.getParent());
-                                try (FileOutputStream out = new FileOutputStream(location.toFile())) {
-                                    out.write(cw.toByteArray());
-                                }
+                                Files.write(location, cw.toByteArray());
                                 shutdownTasks.add(new DeleteRunnable(location));
                             } catch (IOException ex) {
                                 ex.printStackTrace();

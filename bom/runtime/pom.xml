@@ -325,7 +325,7 @@
 
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-vertx-keycloak</artifactId>
+                <artifactId>quarkus-oidc</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

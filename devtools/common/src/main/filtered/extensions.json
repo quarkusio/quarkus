@@ -247,15 +247,14 @@
     "artifactId": "quarkus-jsonp"
   },
   {
-    "name": "Keycloak",
+    "name": "OpenID Connect",
     "labels": [
-      "keycloak",
       "oauth2",
       "openid-connect"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-vertx-keycloak",
-    "guide": "https://quarkus.io/guides/keycloak-guide"
+    "artifactId": "quarkus-oidc",
+    "guide": "https://quarkus.io/guides/oidc-guide"
   },
   {
     "name": "Kogito",

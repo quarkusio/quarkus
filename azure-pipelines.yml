@@ -242,7 +242,7 @@ stages:
           modules:
             - elytron-security-oauth2
             - elytron-security
-            - keycloak
+            - oidc
           name: security
           keycloak: true
 

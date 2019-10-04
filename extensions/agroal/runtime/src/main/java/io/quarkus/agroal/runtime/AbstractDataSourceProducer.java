@@ -101,6 +101,7 @@ public abstract class AbstractDataSourceProducer {
                 .connectionFactoryConfiguration();
         agroalConnectionFactoryConfigurationSupplier.jdbcUrl(url);
         agroalConnectionFactoryConfigurationSupplier.connectionProviderClass(driver);
+        agroalConnectionFactoryConfigurationSupplier.trackJdbcResources(dataSourceRuntimeConfig.detectStatementLeaks);
 
         if (dataSourceRuntimeConfig.transactionIsolationLevel.isPresent()) {
             agroalConnectionFactoryConfigurationSupplier

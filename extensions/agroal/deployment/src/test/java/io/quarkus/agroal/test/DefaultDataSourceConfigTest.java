@@ -60,6 +60,7 @@ public class DefaultDataSourceConfigTest {
         assertTrue(configuration.transactionIntegration() instanceof NarayanaTransactionIntegration);
         assertEquals(AgroalConnectionFactoryConfiguration.TransactionIsolation.SERIALIZABLE,
                 agroalConnectionFactoryConfiguration.jdbcTransactionIsolation());
+        assertTrue(agroalConnectionFactoryConfiguration.trackJdbcResources());
         assertTrue(dataSource.getConfiguration().metricsEnabled());
         assertEquals(newConnectionSql, agroalConnectionFactoryConfiguration.initialSql());
         try (Connection connection = dataSource.getConnection()) {

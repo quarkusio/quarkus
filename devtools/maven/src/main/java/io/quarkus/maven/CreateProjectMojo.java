@@ -183,8 +183,17 @@ public class CreateProjectMojo extends AbstractMojo {
 
     private void createGradleWrapper(File projectDirectory) {
         try {
-            Runtime.getRuntime().exec("gradle wrapper", new String[0], projectDirectory);
-        } catch (IOException e) {
+            ProcessBuilder pb = new ProcessBuilder("gradle", "wrapper").directory(projectDirectory)
+                    .inheritIO();
+            Process x = pb.start();
+
+            x.waitFor();
+
+            if (x.exitValue() != 0) {
+                getLog().error("Unable to install the Gradle wrapper (./gradlew) in project. See log for details.");
+            }
+
+        } catch (InterruptedException | IOException e) {
             // no reason to fail if the wrapper could not be created
             getLog().error(
                     "Unable to install the Gradle wrapper (./gradlew) in the project. You need to have gradle installed to generate the wrapper files.",

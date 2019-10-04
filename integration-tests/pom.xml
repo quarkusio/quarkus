@@ -44,6 +44,8 @@
         <module>infinispan-cache-jpa</module>
         <module>elytron-security</module>
         <module>elytron-security-oauth2</module>
+        <module>elytron-resteasy</module>
+        <module>elytron-undertow</module>
         <module>flyway</module>
         <module>oidc</module>
         <module>reactive-pg-client</module>

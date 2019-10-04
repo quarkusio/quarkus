@@ -1,19 +1,8 @@
-// this block is necessary to make enforcedPlatform work for Quarkus plugin available
-// only locally (snapshot) that is also importing the Quarkus BOM
-buildscript {
-    repositories {
-        mavenLocal()
-    }
-    dependencies {
-        classpath "io.quarkus:quarkus-gradle-plugin:${quarkusVersion}"
-    }
-}
 
 plugins {
     id 'scala'
+    id 'io.quarkus'
 }
-
-apply plugin: 'io.quarkus'
 
 repositories {
      mavenLocal()

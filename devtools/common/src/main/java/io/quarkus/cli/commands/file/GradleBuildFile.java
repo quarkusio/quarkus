@@ -67,21 +67,23 @@ public class GradleBuildFile extends BuildFile {
 
     private void completeBuildContent(String groupId, String version) {
         StringBuilder res = new StringBuilder(buildContent);
-        if (!buildContent.contains("io.quarkus:quarkus-gradle-plugin")) {
+
+        if (!buildContent.contains("plugins {")) {
             res.append(System.lineSeparator());
-            res.append("buildscript {").append(System.lineSeparator());
-            res.append("    repositories {").append(System.lineSeparator());
-            res.append("        mavenLocal()").append(System.lineSeparator());
-            res.append("    }").append(System.lineSeparator());
-            res.append("    dependencies {").append(System.lineSeparator());
-            res.append("        classpath \"io.quarkus:quarkus-gradle-plugin:").append(getPluginVersion()).append("\"")
-                    .append(System.lineSeparator());
-            res.append("    }").append(System.lineSeparator());
+            res.append("plugins {").append(System.lineSeparator());
+            res.append("    id 'java'").append(System.lineSeparator());
+            res.append("    id 'io.quarkus'").append(System.lineSeparator());
             res.append("}").append(System.lineSeparator());
         }
-        if (!buildContent.contains("apply plugin: 'io.quarkus'") && !buildContent.contains("id 'io.quarkus'")) {
-            res.append(System.lineSeparator()).append("apply plugin: 'io.quarkus'").append(System.lineSeparator());
+
+        if (!buildContent.contains("repositories {")) {
+            res.append(System.lineSeparator());
+            res.append("repositories {").append(System.lineSeparator());
+            res.append("    mavenLocal()").append(System.lineSeparator());
+            res.append("    mavenCentral()").append(System.lineSeparator());
+            res.append("}").append(System.lineSeparator());
         }
+
         if (!containsBOM()) {
             res.append(System.lineSeparator());
             res.append("dependencies {").append(System.lineSeparator());
@@ -103,6 +105,7 @@ public class GradleBuildFile extends BuildFile {
             res.append(System.lineSeparator()).append(versionLine)
                     .append(System.lineSeparator());
         }
+
         buildContent = res.toString();
     }
 

@@ -1,5 +1,8 @@
 package io.quarkus.annotation.processor.generate_doc;
 
+import java.io.IOException;
+import java.io.Writer;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -54,14 +57,12 @@ final public class ConfigDocItem implements ConfigDocElement, Comparable<ConfigD
     }
 
     @Override
-    public String accept(DocFormatter docFormatter) {
+    public void accept(Writer writer, DocFormatter docFormatter) throws IOException {
         if (isConfigSection()) {
-            return configDocSection.accept(docFormatter);
+            configDocSection.accept(writer, docFormatter);
         } else if (isConfigKey()) {
-            return configDocKey.accept(docFormatter);
+            configDocKey.accept(writer, docFormatter);
         }
-
-        return "";
     }
 
     @JsonIgnore
@@ -104,4 +105,23 @@ final public class ConfigDocItem implements ConfigDocElement, Comparable<ConfigD
 
         return compare(item);
     }
+
+    public boolean hasDurationInformationNote() {
+        if (isConfigKey()) {
+            return DocGeneratorUtil.hasDurationInformationNote(configDocKey);
+        } else if (isConfigSection()) {
+            return configDocSection.hasDurationInformationNote();
+        }
+        return false;
+    }
+
+    public boolean hasMemoryInformationNote() {
+        if (isConfigKey()) {
+            return DocGeneratorUtil.hasMemoryInformationNote(configDocKey);
+        } else if (isConfigSection()) {
+            return configDocSection.hasMemoryInformationNote();
+        }
+        return false;
+    }
+
 }

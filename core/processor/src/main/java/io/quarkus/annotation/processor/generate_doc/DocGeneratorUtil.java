@@ -247,6 +247,14 @@ class DocGeneratorUtil {
         return Constants.EMPTY;
     }
 
+    static boolean hasDurationInformationNote(ConfigDocKey configDocKey) {
+        return configDocKey.hasType() && configDocKey.getType().equals(Duration.class.getName());
+    }
+
+    static boolean hasMemoryInformationNote(ConfigDocKey configDocKey) {
+        return configDocKey.hasType() && configDocKey.getType().equals(Constants.MEMORY_SIZE_TYPE);
+    }
+
     /**
      * Guess extension name from given configuration root file
      */

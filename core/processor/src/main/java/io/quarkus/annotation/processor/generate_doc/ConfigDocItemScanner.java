@@ -218,6 +218,7 @@ final public class ConfigDocItemScanner {
 
             String name = Constants.EMPTY;
             String defaultValue = Constants.NO_DEFAULT;
+            String defaultValueDoc = Constants.EMPTY;
             final TypeMirror typeMirror = enclosedElement.asType();
             String type = typeMirror.toString();
             List<String> acceptedValues = null;
@@ -257,16 +258,21 @@ final public class ConfigDocItemScanner {
                                 }
                             } else if ("defaultValue()".equals(key)) {
                                 defaultValue = value;
+                            } else if ("defaultValueDocumentation()".equals(key)) {
+                                defaultValueDoc = value;
                             }
                         }
                     }
                 } else if (annotationName.equals(Constants.ANNOTATION_CONFIG_DOC_SECTION)) {
+                    final JavaDocParser.SectionHolder sectionHolder = javaDocParser.parseConfigSection(rawJavaDoc,
+                            sectionLevel);
+
                     configSection = new ConfigDocSection();
-                    configSection.setName(hyphenatedFieldName);
-                    configSection.setConfigPhase(configPhase);
                     configSection.setWithinAMap(withinAMap);
-                    final String sectionDetails = javaDocParser.parseConfigSection(rawJavaDoc, sectionLevel);
-                    configSection.setSectionDetails(sectionDetails);
+                    configSection.setConfigPhase(configPhase);
+                    configSection.setName(parentName + Constants.DOT + hyphenatedFieldName);
+                    configSection.setSectionDetails(sectionHolder.details);
+                    configSection.setSectionDetailsTitle(sectionHolder.title);
                 }
             }
 
@@ -276,6 +282,9 @@ final public class ConfigDocItemScanner {
 
             if (Constants.NO_DEFAULT.equals(defaultValue)) {
                 defaultValue = Constants.EMPTY;
+            }
+            if (Constants.EMPTY.equals(defaultValue)) {
+                defaultValue = defaultValueDoc;
             }
 
             if (isConfigGroup) {

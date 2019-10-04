@@ -1,8 +1,9 @@
 package io.quarkus.annotation.processor.generate_doc;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.io.Writer;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -10,8 +11,6 @@ import java.util.Map;
 import io.quarkus.annotation.processor.Constants;
 
 final public class ConfigDocWriter {
-    private static final String DOC_DOUBLE_NEWLINE_SEPARATOR = "\n\n";
-    private final DocFormatter descriptiveDocFormatter = new DescriptiveDocFormatter();
     private final DocFormatter summaryTableDocFormatter = new SummaryTableDocFormatter();
 
     /**
@@ -25,8 +24,7 @@ final public class ConfigDocWriter {
 
             sort(configDocItems);
 
-            final String doc = generateDocumentation(configDocItems);
-            Files.write(Constants.GENERATED_DOCS_PATH.resolve(extensionFileName), doc.getBytes(StandardCharsets.UTF_8));
+            generateDocumentation(Constants.GENERATED_DOCS_PATH.resolve(extensionFileName), configDocItems);
         }
     }
 
@@ -50,23 +48,29 @@ final public class ConfigDocWriter {
     /**
      * Generate documentation in a summary table and descriptive format
      *
+     * @param targetPath
      * @param configDocItems
-     * @return - generated output
+     * @throws IOException
      */
-    private String generateDocumentation(List<ConfigDocItem> configDocItems) {
-        final StringBuilder doc = new StringBuilder(summaryTableDocFormatter.format(configDocItems));
-        doc.append(DOC_DOUBLE_NEWLINE_SEPARATOR);
-        doc.append(descriptiveDocFormatter.format(configDocItems));
-        final String generatedDoc = doc.toString();
+    private void generateDocumentation(Path targetPath, List<ConfigDocItem> configDocItems) throws IOException {
+        try (Writer writer = Files.newBufferedWriter(targetPath)) {
+            summaryTableDocFormatter.format(writer, configDocItems);
 
-        if (generatedDoc.contains(Constants.DURATION_INFORMATION)) {
-            doc.append(Constants.DURATION_FORMAT_NOTE);
+            boolean hasDuration = false, hasMemory = false;
+            for (ConfigDocItem item : configDocItems) {
+                if (item.hasDurationInformationNote())
+                    hasDuration = true;
+                if (item.hasMemoryInformationNote())
+                    hasMemory = true;
+
+            }
+            if (hasDuration) {
+                writer.append(Constants.DURATION_FORMAT_NOTE);
+            }
+
+            if (hasMemory) {
+                writer.append(Constants.MEMORY_SIZE_FORMAT_NOTE);
+            }
         }
-
-        if (generatedDoc.contains(Constants.MEMORY_SIZE_INFORMATION)) {
-            doc.append(Constants.MEMORY_SIZE_FORMAT_NOTE);
-        }
-
-        return doc.toString();
     }
 }

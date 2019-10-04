@@ -72,7 +72,7 @@ public class HibernateOrmConfig {
      * @asciidoclet
      */
     // @formatter:on
-    @ConfigItem
+    @ConfigItem(defaultValueDocumentation = "import.sql (DEV,TEST)")
     public Optional<String> sqlLoadScript;
 
     /**
@@ -245,10 +245,8 @@ public class HibernateOrmConfig {
 
         /**
          * Whether JDBC warnings should be collected and logged.
-         * <p>
-         * Default value depends on the dialect.
          */
-        @ConfigItem
+        @ConfigItem(defaultValueDocumentation = "depends on dialect")
         public Optional<Boolean> jdbcWarnings;
 
         public boolean isAnyPropertySet() {

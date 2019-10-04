@@ -1,5 +1,7 @@
 package io.quarkus.annotation.processor.generate_doc;
 
+import java.io.IOException;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -8,6 +10,7 @@ final public class ConfigDocSection implements ConfigDocElement, Comparable<Conf
     private String name;
     private boolean withinAMap;
     private String sectionDetails;
+    private String sectionDetailsTitle;
     private ConfigPhase configPhase;
     private List<ConfigDocItem> configDocItems = new ArrayList<>();
 
@@ -46,6 +49,14 @@ final public class ConfigDocSection implements ConfigDocElement, Comparable<Conf
         this.sectionDetails = sectionDetails;
     }
 
+    public String getSectionDetailsTitle() {
+        return sectionDetailsTitle;
+    }
+
+    public void setSectionDetailsTitle(String sectionDetailsTitle) {
+        this.sectionDetailsTitle = sectionDetailsTitle;
+    }
+
     public List<ConfigDocItem> getConfigDocItems() {
         return configDocItems;
     }
@@ -55,8 +66,8 @@ final public class ConfigDocSection implements ConfigDocElement, Comparable<Conf
     }
 
     @Override
-    public String accept(DocFormatter docFormatter) {
-        return docFormatter.format(this);
+    public void accept(Writer writer, DocFormatter docFormatter) throws IOException {
+        docFormatter.format(writer, this);
     }
 
     @Override
@@ -92,5 +103,21 @@ final public class ConfigDocSection implements ConfigDocElement, Comparable<Conf
                 ", configPhase=" + configPhase +
                 ", configDocItems=" + configDocItems +
                 '}';
+    }
+
+    public boolean hasDurationInformationNote() {
+        for (ConfigDocItem item : configDocItems) {
+            if (item.hasDurationInformationNote())
+                return true;
+        }
+        return false;
+    }
+
+    public boolean hasMemoryInformationNote() {
+        for (ConfigDocItem item : configDocItems) {
+            if (item.hasMemoryInformationNote())
+                return true;
+        }
+        return false;
     }
 }

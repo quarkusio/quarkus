@@ -32,6 +32,7 @@ import io.quarkus.resteasy.runtime.standalone.ResteasyStandaloneRecorder;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
 import io.quarkus.vertx.core.deployment.InternalWebVertxBuildItem;
 import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
+import io.quarkus.vertx.http.deployment.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 import io.vertx.ext.web.Route;
 
@@ -51,12 +52,18 @@ public class ResteasyStandaloneBuildStep {
             ResteasyDeploymentBuildItem deployment,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             ResteasyInjectionReadyBuildItem resteasyInjectionReady,
+            HttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<ResteasyStandaloneBuildItem> standalone) throws Exception {
         if (deployment == null || capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
             return;
         }
+
+        String rootPath = deployment.getRootPath();
+        if (!httpBuildTimeConfig.rootPath.equals("/")) {
+            rootPath = httpBuildTimeConfig.rootPath + rootPath;
+        }
         Set<String> knownPaths = getClasspathResources(applicationArchivesBuildItem);
-        recorder.staticInit(deployment.getDeployment(), deployment.getRootPath(), knownPaths);
+        recorder.staticInit(deployment.getDeployment(), rootPath, knownPaths);
         standalone.produce(new ResteasyStandaloneBuildItem());
 
     }

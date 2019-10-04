@@ -36,6 +36,11 @@ class VertxHttpProcessor {
     HttpConfiguration httpConfiguration;
 
     @BuildStep
+    HttpRootPathBuildItem httpRoot(HttpBuildTimeConfig config) {
+        return new HttpRootPathBuildItem(config.rootPath);
+    }
+
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     FilterBuildItem cors(CORSRecorder recorder, HttpConfiguration configuration) {
         return new FilterBuildItem(recorder.corsHandler(configuration), 100);
@@ -78,7 +83,8 @@ class VertxHttpProcessor {
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
             InternalWebVertxBuildItem vertx,
             LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, List<DefaultRouteBuildItem> defaultRoutes,
-            List<FilterBuildItem> filters, VertxWebRouterBuildItem router, EventLoopCountBuildItem eventLoopCountBuildItem)
+            List<FilterBuildItem> filters, VertxWebRouterBuildItem router, EventLoopCountBuildItem eventLoopCountBuildItem,
+            HttpBuildTimeConfig httpBuildTimeConfig)
             throws BuildException, IOException {
         Optional<DefaultRouteBuildItem> defaultRoute;
         if (defaultRoutes == null || defaultRoutes.isEmpty()) {
@@ -98,8 +104,7 @@ class VertxHttpProcessor {
 
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
-                listOfFilters,
-                launchMode.getLaunchMode(), shutdown, router.getRouter());
+                listOfFilters, vertx.getVertx(), router.getRouter(), httpBuildTimeConfig.rootPath, launchMode.getLaunchMode());
 
         boolean startVirtual = requireVirtual.isPresent() || httpConfiguration.virtual;
         // start http socket in dev/test mode even if virtual http is required

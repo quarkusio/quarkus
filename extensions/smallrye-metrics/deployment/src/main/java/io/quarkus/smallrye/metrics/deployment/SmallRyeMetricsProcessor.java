@@ -47,6 +47,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.smallrye.metrics.deployment.jandex.JandexBeanInfoAdapter;
 import io.quarkus.smallrye.metrics.deployment.jandex.JandexMemberInfoAdapter;
 import io.quarkus.smallrye.metrics.runtime.SmallRyeMetricsRecorder;
+import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.smallrye.metrics.MetricProducer;
@@ -80,9 +81,10 @@ public class SmallRyeMetricsProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     void createRoute(BuildProducer<RouteBuildItem> routes,
-            SmallRyeMetricsRecorder recorder) {
+            SmallRyeMetricsRecorder recorder,
+            HttpRootPathBuildItem httpRoot) {
         Function<Router, Route> route = recorder.route(metrics.path + (metrics.path.endsWith("/") ? "*" : "/*"));
-        routes.produce(new RouteBuildItem(route, recorder.handler(metrics.path), HandlerType.BLOCKING));
+        routes.produce(new RouteBuildItem(route, recorder.handler(httpRoot.adjustPath(metrics.path)), HandlerType.BLOCKING));
     }
 
     @BuildStep

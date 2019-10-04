@@ -1,10 +1,10 @@
-# Hibernate Search example with ElasticSearch
+# Hibernate Search example with Elasticsearch
 
 ## Running the tests
 
 By default, the tests of this module are disabled.
 
-To run the tests in a standard JVM with ElasticSearch started in the JVM, you can run the following command:
+To run the tests in a standard JVM with Elasticsearch started in the JVM, you can run the following command:
 
 ```
 mvn clean install -Dtest-elasticsearch

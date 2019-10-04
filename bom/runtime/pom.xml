@@ -1458,6 +1458,11 @@
                 <version>${jboss-logging-annotations.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.jboss.logging</groupId>
+                <artifactId>jboss-logging-processor</artifactId>
+                <version>${jboss-logging-annotations.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.jboss.metadata</groupId>
                 <artifactId>jboss-metadata-web</artifactId>
                 <version>${jboss-metadata-web.version}</version>

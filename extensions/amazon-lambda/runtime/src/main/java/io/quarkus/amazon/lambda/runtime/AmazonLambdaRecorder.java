@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
@@ -18,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.Application;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -28,10 +29,34 @@ public class AmazonLambdaRecorder {
     private static final Logger log = Logger.getLogger(AmazonLambdaRecorder.class);
 
     @SuppressWarnings("rawtypes")
-    public void start(Class<? extends RequestHandler<?, ?>> handlerClass,
+    public void start(List<Class<? extends RequestHandler<?, ?>>> unamedHandlerClasses,
+            Map<String, Class<? extends RequestHandler<?, ?>>> namedHandlerClasses,
             ShutdownContext context,
-            RuntimeValue<Class<?>> handlerType,
+            LambdaConfig config,
             BeanContainer beanContainer) {
+        Class<? extends RequestHandler<?, ?>> handlerClass;
+        if (config.handler.isPresent()) {
+            handlerClass = namedHandlerClasses.get(config.handler.get());
+            if (handlerClass == null) {
+                throw new RuntimeException("Unable to find handler class with name " + config.handler.get()
+                        + " make sure there is a handler class in the deployment with the correct @Named annotation");
+            }
+        } else {
+            if (unamedHandlerClasses.isEmpty()) {
+                if (namedHandlerClasses.size() == 1) {
+                    handlerClass = namedHandlerClasses.values().iterator().next();
+                } else {
+                    throw new RuntimeException("Unable to find handler class, make sure your deployment includes a "
+                            + RequestHandler.class.getName() + " implementation");
+                }
+            } else if (unamedHandlerClasses.size() > 1) {
+                throw new RuntimeException(
+                        "Multiple handler classes, either specify the quarkus.lambda.handler property, or make sure there is only a single"
+                                + RequestHandler.class.getName() + " implementation in the deployment");
+            } else {
+                handlerClass = unamedHandlerClasses.get(0);
+            }
+        }
 
         RequestHandler handler = beanContainer.instance(handlerClass);
 
@@ -39,7 +64,10 @@ public class AmazonLambdaRecorder {
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
         AtomicBoolean running = new AtomicBoolean(true);
-        ObjectReader objectReader = mapper.readerFor(handlerType.getValue());
+
+        Class<?> handlerType = discoverParameterTypes(handlerClass);
+
+        ObjectReader objectReader = mapper.readerFor(handlerType);
         ObjectReader cognitoIdReader = mapper.readerFor(CognitoIdentity.class);
         ObjectReader clientCtxReader = mapper.readerFor(ClientContext.class);
 
@@ -120,7 +148,7 @@ public class AmazonLambdaRecorder {
         }
     }
 
-    public RuntimeValue<Class<?>> discoverParameterTypes(Class<? extends RequestHandler<?, ?>> handlerClass) {
+    private Class<?> discoverParameterTypes(Class<? extends RequestHandler<?, ?>> handlerClass) {
         final Method[] methods = handlerClass.getMethods();
         Method method = null;
         for (int i = 0; i < methods.length && method == null; i++) {
@@ -134,7 +162,7 @@ public class AmazonLambdaRecorder {
         if (method == null) {
             method = methods[0];
         }
-        return new RuntimeValue<>(method.getParameterTypes()[0]);
+        return method.getParameterTypes()[0];
     }
 
 }

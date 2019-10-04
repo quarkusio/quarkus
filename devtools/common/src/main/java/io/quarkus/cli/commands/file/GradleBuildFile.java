@@ -30,18 +30,6 @@ public class GradleBuildFile extends BuildFile {
 
     public GradleBuildFile(ProjectWriter writer) throws IOException {
         super(writer, BuildTool.GRADLE);
-        if (writer.exists(SETTINGS_GRADLE_PATH)) {
-            final byte[] settings = writer.getContent(SETTINGS_GRADLE_PATH);
-            settingsContent = new String(settings, StandardCharsets.UTF_8);
-        }
-        if (writer.exists(BUILD_GRADLE_PATH)) {
-            final byte[] build = writer.getContent(BUILD_GRADLE_PATH);
-            buildContent = new String(build, StandardCharsets.UTF_8);
-        }
-        if (writer.exists(GRADLE_PROPERTIES_PATH)) {
-            final byte[] properties = writer.getContent(GRADLE_PROPERTIES_PATH);
-            propertiesContent.load(new ByteArrayInputStream(properties));
-        }
     }
 
     @Override
@@ -55,9 +43,25 @@ public class GradleBuildFile extends BuildFile {
 
     @Override
     public void completeFile(String groupId, String artifactId, String version) throws IOException {
+        init();
         completeSettingsContent(artifactId);
         completeBuildContent(groupId, version);
-        completeProperties(artifactId);
+        completeProperties();
+    }
+
+    protected void init() throws IOException {
+        if (getWriter().exists(SETTINGS_GRADLE_PATH)) {
+            final byte[] settings = getWriter().getContent(SETTINGS_GRADLE_PATH);
+            settingsContent = new String(settings, StandardCharsets.UTF_8);
+        }
+        if (getWriter().exists(BUILD_GRADLE_PATH)) {
+            final byte[] build = getWriter().getContent(BUILD_GRADLE_PATH);
+            buildContent = new String(build, StandardCharsets.UTF_8);
+        }
+        if (getWriter().exists(GRADLE_PROPERTIES_PATH)) {
+            final byte[] properties = getWriter().getContent(GRADLE_PROPERTIES_PATH);
+            propertiesContent.load(new ByteArrayInputStream(properties));
+        }
     }
 
     private void completeBuildContent(String groupId, String version) {
@@ -128,7 +132,7 @@ public class GradleBuildFile extends BuildFile {
         settingsContent = res.toString();
     }
 
-    private void completeProperties(String artifactId) {
+    private void completeProperties() {
         if (propertiesContent.getProperty("quarkusVersion") == null) {
             propertiesContent.setProperty("quarkusVersion", getPluginVersion());
         }

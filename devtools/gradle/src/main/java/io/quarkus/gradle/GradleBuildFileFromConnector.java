@@ -22,6 +22,8 @@ public class GradleBuildFileFromConnector extends GradleBuildFile {
 
     public GradleBuildFileFromConnector(ProjectWriter writer) throws IOException {
         super(writer);
+        // we need to initialize here since there is no other single point of entry
+        init();
     }
 
     @Override

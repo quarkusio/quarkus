@@ -1,5 +1,6 @@
 package io.quarkus.maven;
 
+import static io.quarkus.generators.ProjectGenerator.BUILD_FILE;
 import static org.fusesource.jansi.Ansi.ansi;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.artifactId;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
@@ -39,6 +40,7 @@ import org.fusesource.jansi.Ansi;
 import io.quarkus.cli.commands.AddExtensionResult;
 import io.quarkus.cli.commands.AddExtensions;
 import io.quarkus.cli.commands.CreateProject;
+import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.SourceType;
@@ -160,7 +162,7 @@ public class CreateProjectMojo extends AbstractMojo {
             File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
             File buildFile = new File(createdDependenciesBuildFile.getAbsolutePath());
             if (success) {
-                AddExtensionResult result = new AddExtensions(new FileProjectWriter(buildFile.getParentFile()), buildToolEnum)
+                AddExtensionResult result = new AddExtensions((BuildFile) context.get(BUILD_FILE))
                         .addExtensions(extensions);
                 if (!result.succeeded()) {
                     success = false;

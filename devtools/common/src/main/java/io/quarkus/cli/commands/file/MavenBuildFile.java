@@ -40,7 +40,6 @@ public class MavenBuildFile extends BuildFile {
 
     public MavenBuildFile(ProjectWriter writer) throws IOException {
         super(writer, BuildTool.MAVEN);
-        initModel();
     }
 
     private void initModel() throws IOException {

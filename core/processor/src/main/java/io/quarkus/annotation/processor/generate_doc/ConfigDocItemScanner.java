@@ -265,8 +265,10 @@ final public class ConfigDocItemScanner {
                     configSection.setName(hyphenatedFieldName);
                     configSection.setConfigPhase(configPhase);
                     configSection.setWithinAMap(withinAMap);
-                    final String sectionDetails = javaDocParser.parseConfigSection(rawJavaDoc, sectionLevel);
+                    final String sectionDetails = javaDocParser.parseConfigSection(rawJavaDoc, sectionLevel, true);
                     configSection.setSectionDetails(sectionDetails);
+                    final String sectionTitle = javaDocParser.parseConfigSection(rawJavaDoc, sectionLevel, false);
+                    configSection.setSectionDetailsTitle(sectionTitle);
                 }
             }
 

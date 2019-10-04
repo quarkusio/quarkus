@@ -7,6 +7,7 @@ import io.quarkus.annotation.processor.Constants;
 final class SummaryTableDocFormatter implements DocFormatter {
     private static final String TABLE_CLOSING_TAG = "\n|===";
     private static final String TABLE_ROW_FORMAT = "\n\n|<<%s, %s>>\n\n%s|%s %s\n|%s\n| %s";
+    private static final String TABLE_SECTION_ROW_FORMAT = "\n\n4+h|%s";
     private static final String TABLE_HEADER_FORMAT = "== Summary\n%s\n[.configuration-reference, cols=\"65,.^17,.^13,^.^5\"]\n|===\n|Configuration property|Type|Default|Lifecycle";
 
     /**
@@ -61,6 +62,7 @@ final class SummaryTableDocFormatter implements DocFormatter {
     @Override
     public String format(ConfigDocSection configDocSection) {
         final StringBuilder generatedAsciiDoc = new StringBuilder();
+        generatedAsciiDoc.append(String.format(TABLE_SECTION_ROW_FORMAT, configDocSection.getSectionDetailsTitle()));
         for (ConfigDocItem configDocItem : configDocSection.getConfigDocItems()) {
             generatedAsciiDoc.append(configDocItem.accept(this));
         }

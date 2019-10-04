@@ -8,6 +8,7 @@ final public class ConfigDocSection implements ConfigDocElement, Comparable<Conf
     private String name;
     private boolean withinAMap;
     private String sectionDetails;
+    private String sectionDetailsTitle;
     private ConfigPhase configPhase;
     private List<ConfigDocItem> configDocItems = new ArrayList<>();
 
@@ -44,6 +45,14 @@ final public class ConfigDocSection implements ConfigDocElement, Comparable<Conf
 
     public void setSectionDetails(String sectionDetails) {
         this.sectionDetails = sectionDetails;
+    }
+
+    public String getSectionDetailsTitle() {
+        return sectionDetailsTitle;
+    }
+
+    public void setSectionDetailsTitle(String sectionDetailsTitle) {
+        this.sectionDetailsTitle = sectionDetailsTitle;
     }
 
     public List<ConfigDocItem> getConfigDocItems() {

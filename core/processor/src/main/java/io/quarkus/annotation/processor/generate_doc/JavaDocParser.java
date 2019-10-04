@@ -78,7 +78,7 @@ final class JavaDocParser {
         return htmlJavadocToAsciidoc(javadoc.getDescription());
     }
 
-    public String parseConfigSection(String javadocComment, int sectionLevel) {
+    public String parseConfigSection(String javadocComment, int sectionLevel, boolean includeDetails) {
         if (javadocComment == null || javadocComment.trim().isEmpty()) {
             return Constants.EMPTY;
         }
@@ -92,19 +92,19 @@ final class JavaDocParser {
             return handleEolInAsciidoc(javadoc);
         }
 
-        return generateConfigSection(javadoc, sectionLevel);
+        return generateConfigSection(javadoc, sectionLevel, includeDetails);
     }
 
-    private String generateConfigSection(Javadoc javadoc, int sectionLevel) {
+    private String generateConfigSection(Javadoc javadoc, int sectionLevel, boolean includeDetails) {
         final String generatedAsciiDoc = htmlJavadocToAsciidoc(javadoc.getDescription());
         if (generatedAsciiDoc.trim().isEmpty()) {
             return Constants.EMPTY;
         }
 
-        final String beginSection = IntStream
+        final String beginSection = includeDetails ? IntStream
                 .rangeClosed(0, Math.max(0, sectionLevel))
                 .mapToObj(x -> "=").collect(Collectors.joining())
-                + " ";
+                + " " : "";
 
         final int endOfTitleIndex = generatedAsciiDoc.indexOf(Constants.DOT);
         if (endOfTitleIndex == -1) {
@@ -113,7 +113,7 @@ final class JavaDocParser {
             final String title = beginSection + generatedAsciiDoc.substring(0, endOfTitleIndex).trim();
             final String introduction = generatedAsciiDoc.substring(endOfTitleIndex + 1).trim();
 
-            if (introduction.isEmpty()) {
+            if (introduction.isEmpty() || !includeDetails) {
                 return title;
             } else {
                 return title + "\n\n" + introduction;

@@ -126,6 +126,11 @@ public final class BeanConfigurator<T> {
         return this;
     }
 
+    public BeanConfigurator<T> addType(Type type) {
+        this.types.add(type);
+        return this;
+    }
+
     public BeanConfigurator<T> addQualifier(DotName annotationName) {
         this.qualifiers.add(AnnotationInstance.create(annotationName, null, new AnnotationValue[] {}));
         return this;

@@ -18,6 +18,7 @@ import org.jboss.arquillian.container.spi.client.container.LifecycleException;
 import org.jboss.arquillian.container.spi.client.protocol.ProtocolDescription;
 import org.jboss.arquillian.container.spi.client.protocol.metadata.HTTPContext;
 import org.jboss.arquillian.container.spi.client.protocol.metadata.ProtocolMetaData;
+import org.jboss.arquillian.container.spi.client.protocol.metadata.Servlet;
 import org.jboss.arquillian.container.spi.context.annotation.DeploymentScoped;
 import org.jboss.arquillian.core.api.Instance;
 import org.jboss.arquillian.core.api.InstanceProducer;
@@ -198,7 +199,10 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
 
         ProtocolMetaData metadata = new ProtocolMetaData();
         URI uri = URI.create(TestHTTPResourceManager.getUri());
-        metadata.addContext(new HTTPContext(uri.getHost(), uri.getPort()));
+        HTTPContext httpContext = new HTTPContext(uri.getHost(), uri.getPort());
+        // This is to work around https://github.com/arquillian/arquillian-core/issues/216
+        httpContext.add(new Servlet("dummy", "/"));
+        metadata.addContext(httpContext);
         return metadata;
     }
 

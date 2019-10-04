@@ -78,9 +78,9 @@ final class JavaDocParser {
         return htmlJavadocToAsciidoc(javadoc.getDescription());
     }
 
-    public String parseConfigSection(String javadocComment, int sectionLevel, boolean includeDetails) {
+    public SectionHolder parseConfigSection(String javadocComment, int sectionLevel) {
         if (javadocComment == null || javadocComment.trim().isEmpty()) {
-            return Constants.EMPTY;
+            return new SectionHolder(Constants.EMPTY, Constants.EMPTY);
         }
 
         // the parser expects all the lines to start with "* "
@@ -89,35 +89,35 @@ final class JavaDocParser {
         Javadoc javadoc = StaticJavaParser.parseJavadoc(javadocComment);
 
         if (isAsciidoc(javadoc)) {
-            return handleEolInAsciidoc(javadoc);
+            final String details = handleEolInAsciidoc(javadoc);
+            final int endOfTitleIndex = details.indexOf(Constants.DOT);
+            final String title = details.substring(0, endOfTitleIndex).replaceAll("^([^\\w])+", Constants.EMPTY).trim();
+            return new SectionHolder(title, details);
         }
 
-        return generateConfigSection(javadoc, sectionLevel, includeDetails);
+        return generateConfigSection(javadoc, sectionLevel);
     }
 
-    private String generateConfigSection(Javadoc javadoc, int sectionLevel, boolean includeDetails) {
+    private SectionHolder generateConfigSection(Javadoc javadoc, int sectionLevel) {
         final String generatedAsciiDoc = htmlJavadocToAsciidoc(javadoc.getDescription());
-        if (generatedAsciiDoc.trim().isEmpty()) {
-            return Constants.EMPTY;
+        if (generatedAsciiDoc.isEmpty()) {
+            return new SectionHolder(Constants.EMPTY, Constants.EMPTY);
         }
 
-        final String beginSection = includeDetails ? IntStream
+        final String beginSectionDetails = IntStream
                 .rangeClosed(0, Math.max(0, sectionLevel))
                 .mapToObj(x -> "=").collect(Collectors.joining())
-                + " " : "";
+                + " ";
 
         final int endOfTitleIndex = generatedAsciiDoc.indexOf(Constants.DOT);
         if (endOfTitleIndex == -1) {
-            return beginSection + generatedAsciiDoc;
+            return new SectionHolder(generatedAsciiDoc.trim(), beginSectionDetails + generatedAsciiDoc);
         } else {
-            final String title = beginSection + generatedAsciiDoc.substring(0, endOfTitleIndex).trim();
+            final String title = generatedAsciiDoc.substring(0, endOfTitleIndex).trim();
             final String introduction = generatedAsciiDoc.substring(endOfTitleIndex + 1).trim();
+            final String details = beginSectionDetails + title + "\n\n" + introduction;
 
-            if (introduction.isEmpty() || !includeDetails) {
-                return title;
-            } else {
-                return title + "\n\n" + introduction;
-            }
+            return new SectionHolder(title, details.trim());
         }
     }
 
@@ -259,4 +259,13 @@ final class JavaDocParser {
         }
     }
 
+    static class SectionHolder {
+        final String title;
+        final String details;
+
+        public SectionHolder(String title, String details) {
+            this.title = title;
+            this.details = details;
+        }
+    }
 }

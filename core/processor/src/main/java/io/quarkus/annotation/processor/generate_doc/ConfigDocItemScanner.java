@@ -261,14 +261,15 @@ final public class ConfigDocItemScanner {
                         }
                     }
                 } else if (annotationName.equals(Constants.ANNOTATION_CONFIG_DOC_SECTION)) {
+                    final JavaDocParser.SectionHolder sectionHolder = javaDocParser.parseConfigSection(rawJavaDoc,
+                            sectionLevel);
+
                     configSection = new ConfigDocSection();
-                    configSection.setName(hyphenatedFieldName);
-                    configSection.setConfigPhase(configPhase);
                     configSection.setWithinAMap(withinAMap);
-                    final String sectionDetails = javaDocParser.parseConfigSection(rawJavaDoc, sectionLevel, true);
-                    configSection.setSectionDetails(sectionDetails);
-                    final String sectionTitle = javaDocParser.parseConfigSection(rawJavaDoc, sectionLevel, false);
-                    configSection.setSectionDetailsTitle(sectionTitle);
+                    configSection.setConfigPhase(configPhase);
+                    configSection.setName(parentName + Constants.DOT + hyphenatedFieldName);
+                    configSection.setSectionDetails(sectionHolder.details);
+                    configSection.setSectionDetailsTitle(sectionHolder.title);
                 }
             }
 

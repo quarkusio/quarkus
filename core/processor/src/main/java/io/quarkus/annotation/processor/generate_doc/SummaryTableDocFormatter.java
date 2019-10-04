@@ -6,8 +6,9 @@ import io.quarkus.annotation.processor.Constants;
 
 final class SummaryTableDocFormatter implements DocFormatter {
     private static final String TABLE_CLOSING_TAG = "\n|===";
+    private static final String TABLE_SECTION_ROW_FORMAT = "\n\n4+h|%s %s";
     private static final String TABLE_ROW_FORMAT = "\n\n|<<%s, %s>>\n\n%s|%s %s\n|%s\n| %s";
-    private static final String TABLE_SECTION_ROW_FORMAT = "\n\n4+h|%s";
+    private static final String MORE_INFO_ABOUT_SECTION_FORMAT = "link:#%s[icon:plus-circle[], title=More information about %s]";
     private static final String TABLE_HEADER_FORMAT = "== Summary\n%s\n[.configuration-reference, cols=\"65,.^17,.^13,^.^5\"]\n|===\n|Configuration property|Type|Default|Lifecycle";
 
     /**
@@ -52,7 +53,7 @@ final class SummaryTableDocFormatter implements DocFormatter {
         final String typeDetail = DocGeneratorUtil.getTypeFormatInformationNote(configDocKey);
         final String defaultValue = configDocKey.getDefaultValue();
         return String.format(TABLE_ROW_FORMAT,
-                getAnchor(configDocKey), configDocKey.getKey(),
+                getAnchor(configDocKey.getKey()), configDocKey.getKey(),
                 firstLineDoc,
                 typeContent, typeDetail,
                 defaultValue.isEmpty() ? Constants.EMPTY : String.format("`%s`", defaultValue),
@@ -61,8 +62,12 @@ final class SummaryTableDocFormatter implements DocFormatter {
 
     @Override
     public String format(ConfigDocSection configDocSection) {
-        final StringBuilder generatedAsciiDoc = new StringBuilder();
-        generatedAsciiDoc.append(String.format(TABLE_SECTION_ROW_FORMAT, configDocSection.getSectionDetailsTitle()));
+        final String moreInfoAboutSection = String.format(MORE_INFO_ABOUT_SECTION_FORMAT, getAnchor(configDocSection.getName()),
+                configDocSection.getSectionDetailsTitle());
+        final String sectionRow = String.format(TABLE_SECTION_ROW_FORMAT, configDocSection.getSectionDetailsTitle(),
+                moreInfoAboutSection);
+        final StringBuilder generatedAsciiDoc = new StringBuilder(sectionRow);
+
         for (ConfigDocItem configDocItem : configDocSection.getConfigDocItems()) {
             generatedAsciiDoc.append(configDocItem.accept(this));
         }

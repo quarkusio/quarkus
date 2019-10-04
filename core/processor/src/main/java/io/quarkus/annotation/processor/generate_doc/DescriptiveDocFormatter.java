@@ -31,7 +31,8 @@ final class DescriptiveDocFormatter implements DocFormatter {
     public String format(ConfigDocKey configDocKey) {
         final StringBuilder configItemDoc = new StringBuilder();
 
-        final String basicDescription = String.format(BASIC_DESCRIPTION_FORMAT, getAnchor(configDocKey), configDocKey.getKey(),
+        final String basicDescription = String.format(BASIC_DESCRIPTION_FORMAT, getAnchor(configDocKey.getKey()),
+                configDocKey.getKey(),
                 configDocKey.getConfigPhase().getIllustration(), configDocKey.getConfigDoc());
         configItemDoc.append(basicDescription);
 
@@ -54,8 +55,12 @@ final class DescriptiveDocFormatter implements DocFormatter {
 
     @Override
     public String format(ConfigDocSection configDocSection) {
-        final StringBuilder generatedAsciiDoc = new StringBuilder(configDocSection.getSectionDetails());
-        generatedAsciiDoc.append("\n\n");
+        final String sectionAnchor = String.format("[[%s]]\n", getAnchor(configDocSection.getName()));
+        final String sectionDetails = String.format("%s\n\n", configDocSection.getSectionDetails());
+
+        final StringBuilder generatedAsciiDoc = new StringBuilder(sectionAnchor);
+        generatedAsciiDoc.append(sectionDetails);
+
         for (ConfigDocItem configDocItem : configDocSection.getConfigDocItems()) {
             generatedAsciiDoc.append(configDocItem.accept(this));
         }

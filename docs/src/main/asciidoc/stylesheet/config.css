@@ -1,0 +1,62 @@
+.hidden {
+    display: none;
+}
+
+.configuration-highlight {
+    background-color: yellow;
+    color: black;
+}
+
+table.configuration-reference caption {
+    color: inherit;
+}
+
+.configuration-legend input{
+    float: right;
+}
+
+.description {
+    margin-left: 15px;
+}
+
+.description-collapsed {
+    height: 1.4em;
+    overflow: hidden;
+}
+
+.description-decoration {
+    height: 10px;
+    margin: 0px;
+    padding: 0px;
+    text-align: center;
+    margin-top: -12px;
+    color: gray;
+}
+
+.description-decoration i {
+    font-size: 6px;
+}
+
+a.link-collapsible {
+    float: right;
+}
+
+a.link-collapsible i.fa {
+    margin: 0 4px;
+    font-size: 8px;
+}
+
+tr.row-collapsible td {
+   cursor: pointer;
+}
+
+td.tableblock>.content>:last-child {
+    margin-bottom: inherit;
+}
+
+.configuration-legend p,
+.configuration-legend input,
+table.configuration-reference p,
+table.configuration-reference pre code {
+    font-size: 1.2rem;
+}

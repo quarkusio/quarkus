@@ -1,7 +1,10 @@
 package io.quarkus.annotation.processor.generate_doc;
 
+import java.io.IOException;
+import java.io.Writer;
+
 public interface ConfigDocElement {
-    String accept(DocFormatter docFormatter);
+    void accept(Writer writer, DocFormatter docFormatter) throws IOException;
 
     ConfigPhase getConfigPhase();
 

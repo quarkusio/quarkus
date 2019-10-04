@@ -1,5 +1,7 @@
 package io.quarkus.annotation.processor.generate_doc;
 
+import java.io.IOException;
+import java.io.Writer;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -118,8 +120,8 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
     }
 
     @Override
-    public String accept(DocFormatter docFormatter) {
-        return docFormatter.format(this);
+    public void accept(Writer writer, DocFormatter docFormatter) throws IOException {
+        docFormatter.format(writer, this);
     }
 
     @Override

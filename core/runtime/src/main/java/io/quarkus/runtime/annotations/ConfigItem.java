@@ -53,4 +53,12 @@ public @interface ConfigItem {
      * @return the default value
      */
     String defaultValue() default NO_DEFAULT;
+
+    /**
+     * Specify the default value documentation, when it cannot be expressed by {@link #defaultValue()}. For example,
+     * if your default only exists for the DEV mode, you can use {@code "true (DEV)"}.
+     *
+     * @return the default value documentation
+     */
+    String defaultValueDocumentation() default "";
 }

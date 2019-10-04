@@ -183,8 +183,9 @@ public class CreateProjectMojo extends AbstractMojo {
 
     private void createGradleWrapper(File projectDirectory) {
         try {
-            ProcessBuilder pb = new ProcessBuilder("gradle", "wrapper").directory(projectDirectory)
-                    .inheritIO();
+            ProcessBuilder pb = new ProcessBuilder("gradle", "wrapper",
+                    "--gradle-version=" + MojoUtils.getGradleWrapperVersion()).directory(projectDirectory)
+                            .inheritIO();
             Process x = pb.start();
 
             x.waitFor();

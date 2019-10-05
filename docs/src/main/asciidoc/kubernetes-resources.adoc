@@ -56,7 +56,7 @@ By using the following configuration for example:
 
 [source]
 ----
-kubernetes.group=yourDockerUsername # this is optional and defaults to your username if not set
+kubernetes.group=yourDockerUsername # this is optional and defaults to your username if not set. 
 quarkus.application.name=test-quarkus-app # this is also optional and defaults to the project name if not set
 ----
 
@@ -153,6 +153,18 @@ To change the number of replicas from 1 to  3:
 kubernetes.replicas=3 
 ----
 
+=== Defining a docker registry and repository
+
+The docker registry and the user of the docker image can be specified, with the following properties:
+
+[source]
+----
+kubernetes.group=myUser 
+kubernetes.registry=http://my.docker-registry.net 
+----
+
+Note: These options used to be `quarkus.kubernetes.docker.registry` and `quarkus.kubernetes.group` respectively.
+
 === Adding labels:
 To add a new label to all generated resources, say `foo=bar`:
 
@@ -171,5 +183,213 @@ kubernetes.readiness-probe.initial-delay-seconds=20
 kubernetes.readiness-probe.period-seconds=45
 ----
 
-Here you can find a complete reference to all the available https://github.com/dekorateio/dekorate/blob/master/config.md[configuration options].
-Please note that in the link above all property names are prefixed with `dekorate` which is not the case for this extension.
+Here you can find a complete reference to all the available configuration options:
+
+==== Configuration options
+
+The table below describe all the available configuration options.
+
+.Kubernetes
+|====
+| Property                               | Type                                          | Description | Default Value                            
+| kubernetes.group                       | String                                        |             |                                          
+| kubernetes.name                        | String                                        |             |                                          
+| kubernetes.version                     | String                                        |             |                                          
+| kubernetes.init-containers              | Container[]                                   |             |                                          
+| kubernetes.labels                      | Label[]                                       |             |                                          
+| kubernetes.annotations                 | Annotation[]                                  |             |                                          
+| kubernetes.env-vars                     | Env[]                                         |             |                                          
+| kubernetes.working-dir                  | String                                        |             |                                          
+| kubernetes.command                     | String[]                                      |             |                                          
+| kubernetes.arguments                   | String[]                                      |             |                                          
+| kubernetes.replicas                    | int                                           |             | 1                                        
+| kubernetes.service-account              | String                                        |             |                                          
+| kubernetes.host                        | String                                        |             |                                          
+| kubernetes.ports                       | Port[]                                        |             |                                          
+| kubernetes.service-type                 | ServiceType                                   |             | ClusterIP                                
+| kubernetes.pvc-volumes                  | PersistentVolumeClaimVolume[]                 |             |                                          
+| kubernetes.secret-volumes               | SecretVolume[]                                |             |                                          
+| kubernetes.config-map-volumes            | ConfigMapVolume[]                             |             |                                          
+| kubernetes.git-repo-volumes              | GitRepoVolume[]                               |             |                                          
+| kubernetes.aws-elastic-block-store-volumes | AwsElasticBlockStoreVolume[]                  |             |                                          
+| kubernetes.azure-disk-volumes            | AzureDiskVolume[]                             |             |                                          
+| kubernetes.azure-file-volumes            | AzureFileVolume[]                             |             |                                          
+| kubernetes.mounts                      | Mount[]                                       |             |                                          
+| kubernetes.image-pull-policy             | ImagePullPolicy                               |             | IfNotPresent                             
+| kubernetes.image-pull-secrets            | String[]                                      |             |                                          
+| kubernetes.liveness-probe               | Probe                                         |             | 
+| kubernetes.readiness-probe              | Probe                                         |             | 
+| kubernetes.sidecars                    | Container[]                                   |             |                                          
+| kubernetes.expose                      | boolean                                       |             | false                                    
+| kubernetes.docker-file                  | String                                        |             | Dockerfile                               
+| kubernetes.registry                    | String                                        |             |                                          
+| kubernetes.auto-deploy-enabled           | boolean                                       |             | false                                    
+|====
+
+Properties that use non standard types, can be referenced by expanding the property.
+For example to define a `kubernetes-readiness-probe` which is of type `Probe`:
+
+[source]
+----
+kubernetes.readiness-probe.initial-delay-seconds=20
+kubernetes.readiness-probe.period-seconds=45
+----
+
+In this example `initial-delay` and `period-seconds` are fields of the type `Probe`.
+Below you will find tables describing all available types.
+
+
+===== Basic Types
+
+.Annotation
+|====
+| Property | Type   | Description | Default Value 
+| key      | String |             |               
+| value    | String |             |               
+|====
+
+
+.Label
+|====
+| Property | Type   | Description | Default Value 
+| key      | String |             |               
+| value    | String |             |               
+|====
+
+
+.Env
+|====
+| Property  | Type   | Description | Default Value
+| name      | String |             |              
+| value     | String |             |              
+| secret    | String |             |              
+| configmap | String |             |              
+| field     | String |             |              
+|====
+
+.Probe
+|====
+| Property            | Type   | Description | Default Value 
+|---------------------+--------+-------------+---------------
+| http-action-path      | String |             |               
+| exec-action          | String |             |               
+| tcp-socket-action     | String |             |               
+| initial-delay-seconds | int    |             |             0 
+| period-seconds       | int    |             |            30 
+| timeout-seconds      | int    |             |            10 
+|====
+
+.Port
+|====
+| Property      | Type     | Description | Default Value 
+| name          | String   |             |               
+| container-port | int      |             |               
+| hostPort      | int      |             | 0             
+| path          | String   |             | /             
+| protocol      | Protocol |             | TCP           
+|====
+
+.Container
+|====
+| Property        | Type                                    | Description | Default Value                            
+| image           | String                                  |             |                                          
+| name            | String                                  |             |                                          
+| env-vars         | Env[]                                   |             |                                          
+| working-dir      | String                                  |             |                                          
+| command         | String[]                                |             |                                          
+| arguments       | String[]                                |             |                                          
+| ports           | Port[]                                  |             |                                          
+| mounts          | Mount[]                                 |             |                                          
+| image-pull-policy | ImagePullPolicy                         |             | IfNotPresent                             
+| liveness-probe   | Probe                                   |             |                                          
+| readiness-probe  | Probe                                   |             |                                          
+|====
+
+
+== Mounts and Volumes
+
+.Mount
+|====
+| Property | Type    | Description | Default Value 
+| name     | String  |             |               
+| path     | String  |             |               
+| sub-path  | String  |             |               
+| read-only | boolean |             | false         
+|====
+
+.ConfigMapVolume
+|====
+| Property      | Type    | Description | Default Value 
+| volume-name    | String  |             |               
+| config-map-name | String  |             |               
+| default-mode   | int     |             | 384           
+| optional      | boolean |             | false         
+|====
+
+.SecretVolume
+|====
+| Property    | Type    | Description | Default Value 
+| volume-name  | String  |             |               
+| secret-name  | String  |             |               
+| default-mode | int     |             | 384           
+| optional    | boolean |             | false         
+|====
+
+
+.AzureDiskVolume
+|====
+| Property    | Type    | Description | Default Value 
+| volume-name  | String  |             |               
+| disk-name    | String  |             |               
+| disk-uri     | String  |             |               
+| kind        | String  |             | Managed       
+| caching-mode | String  |             | ReadWrite     
+| fs-type      | String  |             | ext4          
+| read-only    | boolean |             | false         
+|====
+
+.AwsElasticBlockStoreVolume
+|====
+| Property   | Type    | Description | Default Value 
+| volume-name | String  |             |               
+| volume-id   | String  |             |               
+| partition  | int     |             |               
+| fs-type     | String  |             | ext4          
+| read-only   | boolean |             | false         
+|====
+
+.GitRepoVolume
+|====
+| Property   | Type   | Description | Default Value 
+| volume-name | String |             |               
+| repository | String |             |               
+| directory  | String |             |               
+| revision   | String |             |               
+|====
+
+.PersistentVolumeClaimVolume
+|====
+| Property   | Type    | Description | Default Value
+| volume-name | String  |             |              
+| claim-name  | String  |             |              
+| read-only   | boolean |             | false        
+|====
+.AzureFileVolume
+|====
+| Property   | Type    | Description | Default Value
+| volume-name | String  |             |              
+| share-name  | String  |             |              
+| secret-name | String  |             |              
+| read-only   | boolean |             | false        
+|====
+
+== Docker
+
+.Docker 
+|====
+| Property | Type | Description | Default Value 
+| docker-file | String |   | Dockerfile 
+| registry | String |   |  |
+| auto-push-enabled | boolean |   | false 
+| auto-build-enabled | boolean |   | false 
+|====

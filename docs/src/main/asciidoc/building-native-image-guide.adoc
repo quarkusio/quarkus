@@ -25,8 +25,8 @@ To complete this guide, you need:
 Using the community edition is enough.
 Version {graalvm-version} is required.
 * The `GRAALVM_HOME` environment variable configured appropriately
-* The `native-image` tool must be installed; this can be done by running `gu install native-image` from your GraalVM
-directory
+* The `native-image` tool must be installed; this can be done by running `./gu install native-image` from your GraalVM
+`bin` directory
 * Apache Maven 3.5.3+
 * A working C developer environment (see the note below for details)
 * A running Docker

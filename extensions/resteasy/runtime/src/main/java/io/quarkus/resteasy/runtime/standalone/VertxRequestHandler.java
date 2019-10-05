@@ -58,7 +58,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     public void handle(RoutingContext request) {
         // have to create input stream here.  Cannot execute in another thread
         // otherwise request handlers may not get set up before request ends
-        VertxInputStream is ;
+        VertxInputStream is;
         try {
             is = new VertxInputStream(request.request());
         } catch (IOException e) {

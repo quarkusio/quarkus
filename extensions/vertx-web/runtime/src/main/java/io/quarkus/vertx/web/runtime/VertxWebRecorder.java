@@ -84,6 +84,12 @@ public class VertxWebRecorder {
         bodyHandler.setDeleteUploadedFilesOnEnd(bodyConfig.deleteUploadedFilesOnEnd);
         bodyHandler.setMergeFormAttributes(bodyConfig.mergeFormAttributes);
         bodyHandler.setPreallocateBodyBuffer(bodyConfig.preallocateBodyBuffer);
-        return bodyHandler;
+        return new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext event) {
+                event.request().resume();
+                bodyHandler.handle(event);
+            }
+        };
     }
 }

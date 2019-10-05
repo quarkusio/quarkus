@@ -53,7 +53,7 @@ public class VertxWebRecorder {
                         route.method(method);
                     }
                 }
-                if (routeAnnotation.order() != Integer.MIN_VALUE) {
+                if (routeAnnotation.order() > 0) {
                     route.order(routeAnnotation.order());
                 }
                 if (routeAnnotation.produces().length > 0) {

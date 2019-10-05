@@ -17,16 +17,18 @@ final class Produce {
 
     Produce combine(final Constraint constraint, final ProduceFlags flags) {
         final Constraint outputConstraint;
-        final ProduceFlags outputFlags;
+        ProduceFlags outputFlags;
         if (constraint == Constraint.REAL || this.constraint == Constraint.REAL) {
             outputConstraint = Constraint.REAL;
         } else {
             outputConstraint = Constraint.ORDER_ONLY;
         }
+        outputFlags = flags.with(this.flags);
         if (!flags.contains(ProduceFlag.WEAK) || !this.flags.contains(ProduceFlag.WEAK)) {
-            outputFlags = flags.with(this.flags).without(ProduceFlag.WEAK);
-        } else {
-            outputFlags = flags.with(this.flags);
+            outputFlags = outputFlags.without(ProduceFlag.WEAK);
+        }
+        if (!flags.contains(ProduceFlag.OVERRIDABLE) || !this.flags.contains(ProduceFlag.OVERRIDABLE)) {
+            outputFlags = outputFlags.without(ProduceFlag.OVERRIDABLE);
         }
         return new Produce(stepBuilder, itemId, outputConstraint, outputFlags);
     }
@@ -45,5 +47,9 @@ final class Produce {
 
     ProduceFlags getFlags() {
         return flags;
+    }
+
+    boolean isOverridable() {
+        return flags.contains(ProduceFlag.OVERRIDABLE);
     }
 }

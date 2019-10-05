@@ -25,6 +25,18 @@ public class RestClientTestCase {
     }
 
     @Test
+    public void testMicroprofileClientConfigKeyIntegration() {
+        RestAssured.when().get("/client/annotation/configKey").then()
+                .body(is("TEST"));
+    }
+
+    @Test
+    public void testMicroprofileClientBaseUriConfigKeyIntegration() {
+        RestAssured.when().get("/client/annotation/baseUriConfigKey").then()
+                .body(is("TEST"));
+    }
+
+    @Test
     public void testMicroprofileClientCDIIntegration() {
         RestAssured.when().get("/client/cdi").then()
                 .body(is("TEST"));

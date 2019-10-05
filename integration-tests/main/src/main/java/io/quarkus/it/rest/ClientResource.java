@@ -26,6 +26,26 @@ public class ClientResource {
     @RestClient
     RestClientInterface restClientInterface;
 
+    @Inject
+    @RestClient
+    RestClientConfigKeyInterface restClientConfigKeyInterface;
+
+    @Inject
+    @RestClient
+    RestClientBaseUriConfigKeyInterface restClientBaseUriConfigKeyInterface;
+
+    @GET
+    @Path("/annotation/configKey")
+    public String configKey() {
+        return restClientConfigKeyInterface.get();
+    }
+
+    @GET
+    @Path("/annotation/baseUriConfigKey")
+    public String baseUriConfigKey() {
+        return restClientBaseUriConfigKeyInterface.get();
+    }
+
     @GET
     @Path("/manual")
     public String manual() throws Exception {

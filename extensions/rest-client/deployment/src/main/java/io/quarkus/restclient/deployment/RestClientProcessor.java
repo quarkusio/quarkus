@@ -212,10 +212,11 @@ class RestClientProcessor {
                     configurator.creator(m -> {
                         // return new RestClientBase(proxyType, baseUri).create();
                         ResultHandle interfaceHandle = m.loadClass(restClientName.toString());
-                        ResultHandle baseUriHandle = m.load(getBaseUri(entry.getValue()));
+                        ResultHandle baseUriHandle = m.load(getAnnotationParameter(entry.getValue(), "baseUri"));
+                        ResultHandle configKeyHandle = m.load(getAnnotationParameter(entry.getValue(), "configKey"));
                         ResultHandle baseHandle = m.newInstance(
-                                MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class),
-                                interfaceHandle, baseUriHandle);
+                                MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class, String.class),
+                                interfaceHandle, baseUriHandle, configKeyHandle);
                         ResultHandle ret = m.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
                         m.returnValue(ret);
@@ -262,13 +263,13 @@ class RestClientProcessor {
         return scopeInfo;
     }
 
-    private String getBaseUri(ClassInfo classInfo) {
+    private String getAnnotationParameter(ClassInfo classInfo, String parameterName) {
         AnnotationInstance instance = classInfo.classAnnotation(REGISTER_REST_CLIENT);
         if (instance == null) {
             return "";
         }
 
-        AnnotationValue value = instance.value("baseUri");
+        AnnotationValue value = instance.value(parameterName);
         if (value == null) {
             return "";
         }

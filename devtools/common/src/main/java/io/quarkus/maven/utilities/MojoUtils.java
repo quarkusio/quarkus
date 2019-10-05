@@ -83,6 +83,10 @@ public class MojoUtils {
         return get("maven-wrapper-version");
     }
 
+    public static String getGradleWrapperVersion() {
+        return get("gradle-wrapper-version");
+    }
+
     private static void loadProperties() {
         URL url = MojoUtils.class.getClassLoader().getResource("quarkus.properties");
         Objects.requireNonNull(url);

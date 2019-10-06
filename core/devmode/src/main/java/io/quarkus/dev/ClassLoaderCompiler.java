@@ -137,7 +137,10 @@ public class ClassLoaderCompiler {
                                     new File(i.getProjectDirectory()),
                                     new File(sourcePath),
                                     new File(i.getClassesPath()),
-                                    context.getSourceEncoding()));
+                                    context.getSourceEncoding(),
+                                    context.getCompilerOptions(),
+                                    context.getSourceJavaVersion(),
+                                    context.getTargetJvmVersion()));
                 });
             }
         }

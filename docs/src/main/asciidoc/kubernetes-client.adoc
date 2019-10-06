@@ -28,10 +28,10 @@ This will add the following to your pom.xml:
 
 [source,xml]
 ----
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-kubernetes-client</artifactId>
-    </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-kubernetes-client</artifactId>
+</dependency>
 ----
 
 == Usage
@@ -45,7 +45,7 @@ quarkus.kubernetes-client.trust-certs=false
 quarkus.kubernetes-client.namespace=default
 ----
 
-Note that the full list of properties is available in the [KubernetesClientBuildConfig](https://github.com/quarkusio/quarkus/blob/master/extensions/kubernetes-client/runtime/src/main/java/io/quarkus/kubernetes/client/runtime/KubernetesClientBuildConfig.java) class.
+Note that the full list of properties is available in the https://github.com/quarkusio/quarkus/blob/master/extensions/kubernetes-client/runtime/src/main/java/io/quarkus/kubernetes/client/runtime/KubernetesClientBuildConfig.java[KubernetesClientBuildConfig] class.
 
 === Overriding
 
@@ -132,32 +132,32 @@ Note that to take advantage of these features, the `quarkus-test-kubernetes-clie
 
 [source,xml]
 ----
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-test-kubernetes-client</artifactId>
-        <scope>test</scope>
-    </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-kubernetes-client</artifactId>
+    <scope>test</scope>
+</dependency>
 ----
 
 == Note on implementing the Watcher interface
 
 Due to the restrictions imposed by GraalVM, extra care needs to be taken when implementing a `io.fabric8.kubernetes.client.Watcher` if the application is intended to work in native mode.
-Essentially every `Watcher` implementation needs to specify the Kubernetes model class that it handles via the `Watcher`&#8217;s generic type at class definition time.
-To better understand this, suppose we want to watch for changes to Kubernetes `Pod` resources. There are a couple ways to write such a Watcher that are guaranteed to work in native:
+Essentially every `Watcher` implementation needs to specify the Kubernetes model class that it handles via the ``Watcher``'s generic type at class definition time.
+To better understand this, suppose we want to watch for changes to Kubernetes `Pod` resources. There are a couple ways to write such a `Watcher` that are guaranteed to work in native:
 
 [source%nowrap,java]
 ----
 client.pods().watch(new Watcher<Pod>() {
-      @Override
-      public void eventReceived(Action action, Pod pod) {
+    @Override
+    public void eventReceived(Action action, Pod pod) {
         // do something
-      }
+    }
 
-      @Override
-      public void onClose(KubernetesClientException e) {
+    @Override
+    public void onClose(KubernetesClientException e) {
         // do something
-      }
-    });
+    }
+});
 ----
 
 or
@@ -165,15 +165,15 @@ or
 [source%nowrap,java]
 ----
 public class PodResourceWatcher implements Watcher<Pod> {
-      @Override
-      public void eventReceived(Action action, Pod pod) {
+    @Override
+    public void eventReceived(Action action, Pod pod) {
         // do something
-      }
+    }
 
-      @Override
-      public void onClose(KubernetesClientException e) {
+    @Override
+    public void onClose(KubernetesClientException e) {
         // do something
-      }
+    }
 }
 
 ...
@@ -193,10 +193,10 @@ public abstract class MyWatcher<S> implements Watcher<S> {
 
 
 client.pods().watch(new MyWatcher<Pod>() {
-  @Override
-  public void eventReceived(Action action, Pod pod) {
-    // do something
-  }
+    @Override
+    public void eventReceived(Action action, Pod pod) {
+        // do something
+    }
 });
 ----
 
@@ -206,15 +206,15 @@ thus making Quarkus unable to properly determine the Kubernetes model class for 
 [source%nowrap,java]
 ----
 public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
-      @Override
-      public void eventReceived(Action action, T resource) {
+    @Override
+    public void eventReceived(Action action, T resource) {
         // do something
-      }
+    }
 
-      @Override
-      public void onClose(KubernetesClientException e) {
+    @Override
+    public void onClose(KubernetesClientException e) {
         // do something
-      }
+    }
 }
 
 client.pods().watch(new ResourceWatcher<Pod>());
@@ -223,8 +223,8 @@ client.pods().watch(new ResourceWatcher<Pod>());
 
 == Access to the Kubernetes API
 
-In many cases in order to access the Kubernetes API server a ServiceAccount, Role and RoleBinding will be necessary.
-An example that allows listing all pods could look something like this
+In many cases in order to access the Kubernetes API server a `ServiceAccount`, `Role` and `RoleBinding` will be necessary.
+An example that allows listing all pods could look something like this:
 
 [source,yaml]
 ----
@@ -260,5 +260,5 @@ subjects:
     namespace: <namespace>
 ----
 
-Replace <applicationName> and <namespace> with your values.
+Replace `<applicationName>` and `<namespace>` with your values.
 Have a look at https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/[Configure Service Accounts for Pods] to get further information.

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.jar.Attributes;
@@ -102,6 +103,28 @@ public class DevMojo extends AbstractMojo {
      */
     @Parameter(defaultValue = "${debug}")
     private String debug;
+
+    /**
+     * Whether or not the JVM launch, in debug mode, should be suspended. This parameter is only
+     * relevant when the JVM is launched in {@link #debug debug mode}. This parameter supports the
+     * following values (all the allowed values are case insensitive):
+     * <table>
+     * <th>
+     * <td>Value</td>
+     * <td>Effect</td>
+     * </th>
+     * <tr>
+     * <td>y or true</td>
+     * <td>The debug mode JVM launch is suspended</td>
+     * </tr>
+     * <tr>
+     * <td>n or false</td>
+     * <td>The debug mode JVM is started without suspending</td>
+     * </tr>
+     * </table>
+     */
+    @Parameter(defaultValue = "${suspend}")
+    private String suspend;
 
     @Parameter(defaultValue = "${project.build.directory}")
     private File buildDir;
@@ -191,6 +214,26 @@ public class DevMojo extends AbstractMojo {
             String javaTool = JavaBinFinder.findBin();
             getLog().debug("Using javaTool: " + javaTool);
             args.add(javaTool);
+            String debugSuspend = "n";
+            if (this.suspend != null) {
+                switch (this.suspend.toLowerCase(Locale.ENGLISH)) {
+                    case "n":
+                    case "false": {
+                        debugSuspend = "n";
+                        break;
+                    }
+                    case "y":
+                    case "true": {
+                        debugSuspend = "y";
+                        break;
+                    }
+                    default: {
+                        getLog().warn(
+                                "Ignoring invalid value \"" + suspend + "\" for \"suspend\" param and defaulting to \"n\"");
+                        break;
+                    }
+                }
+            }
             if (debug == null) {
                 // debug mode not specified
                 // make sure 5005 is not used, we don't want to just fail if something else is using it
@@ -198,14 +241,14 @@ public class DevMojo extends AbstractMojo {
                     getLog().error("Port 5005 in use, not starting in debug mode");
                 } catch (IOException e) {
                     args.add("-Xdebug");
-                    args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=n");
+                    args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=" + debugSuspend);
                 }
             } else if (debug.toLowerCase().equals("client")) {
                 args.add("-Xdebug");
-                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=n");
+                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=" + debugSuspend);
             } else if (debug.toLowerCase().equals("true")) {
                 args.add("-Xdebug");
-                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=y,suspend=y");
+                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=y,suspend=" + debugSuspend);
             } else if (!debug.toLowerCase().equals("false")) {
                 try {
                     int port = Integer.parseInt(debug);
@@ -213,7 +256,7 @@ public class DevMojo extends AbstractMojo {
                         throw new MojoFailureException("The specified debug port must be greater than 0");
                     }
                     args.add("-Xdebug");
-                    args.add("-Xrunjdwp:transport=dt_socket,address=" + port + ",server=y,suspend=y");
+                    args.add("-Xrunjdwp:transport=dt_socket,address=" + port + ",server=y,suspend=" + debugSuspend);
                 } catch (NumberFormatException e) {
                     throw new MojoFailureException(
                             "Invalid value for debug parameter: " + debug + " must be true|false|client|{port}");

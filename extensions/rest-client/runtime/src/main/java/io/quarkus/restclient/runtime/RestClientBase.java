@@ -16,12 +16,14 @@ public class RestClientBase {
 
     private final Class<?> proxyType;
     private final String baseUriFromAnnotation;
+    private final String propertyPrefixFromAnnotation;
 
     private final Config config;
 
-    public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation) {
+    public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String propertyPrefixFromAnnotation) {
         this.proxyType = proxyType;
         this.baseUriFromAnnotation = baseUriFromAnnotation;
+        this.propertyPrefixFromAnnotation = propertyPrefixFromAnnotation;
         this.config = ConfigProvider.getConfig();
     }
 
@@ -42,17 +44,21 @@ public class RestClientBase {
     }
 
     private String getBaseUrl() {
-        String propertyName = String.format(REST_URI_FORMAT, proxyType.getName());
+        String prefix = proxyType.getName();
+        if (propertyPrefixFromAnnotation != null && !propertyPrefixFromAnnotation.isEmpty()) {
+            prefix = propertyPrefixFromAnnotation;
+        }
+        String propertyName = String.format(REST_URI_FORMAT, prefix);
         Optional<String> propertyOptional = config.getOptionalValue(propertyName, String.class);
         if (!propertyOptional.isPresent()) {
-            propertyName = String.format(REST_URL_FORMAT, proxyType.getName());
+            propertyName = String.format(REST_URL_FORMAT, prefix);
             propertyOptional = config.getOptionalValue(propertyName, String.class);
         }
         if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
                 && !propertyOptional.isPresent()) {
             throw new IllegalArgumentException(
                     String.format(
-                            "Unable to determine the proper baseUrl/baseUri. Consider registering using @RegisterRestClient(baseUri=\"someuri\"), or by adding '%s' to your Quarkus configuration",
+                            "Unable to determine the proper baseUrl/baseUri. Consider registering using @RegisterRestClient(baseUri=\"someuri\", configKey=\"orkey\"), or by adding '%s' to your Quarkus configuration",
                             propertyName));
         }
         return propertyOptional.orElse(baseUriFromAnnotation);

@@ -7,8 +7,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 /**
  * These substitutions need to be revisited on each new Quarkus/GraalVM release, as some methods may become
- * supported. The better option currently is to use -H:+ReportUnsupportedElementsAtRuntime, which moves potential issue
- * to run time
+ * supported.
  *
  * @author Bela Ban
  * @since 1.0.0

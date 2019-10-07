@@ -24,7 +24,7 @@ final class SubstituteGlobalComponentRegistry {
 
     @Substitute
     protected synchronized void addShutdownHook() {
-        // Don't do anything or do we want to?
+        // Don't install any shutdown hook
     }
 }
 

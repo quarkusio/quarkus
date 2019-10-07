@@ -144,7 +144,7 @@
             <value media-type="application/x-java-object"/>
          </encoding>
          <locking acquire-timeout="30000" concurrency-level="2000" isolation="NONE" striping="true"/>
-         <transaction mode="FULL_XA" stop-timeout="60000" locking="OPTIMISTIC" transaction-manager-lookup="org.infinispan.transaction.lookup.EmbeddedTransactionManagerLookup" complete-timeout="34000" reaper-interval="35000" auto-commit="true" />
+         <transaction mode="FULL_XA" stop-timeout="60000" locking="OPTIMISTIC" complete-timeout="34000" reaper-interval="35000" auto-commit="true" />
          <expiration interval="10000" lifespan="10000" max-idle="10000"/>
          <persistence passivation="false" availability-interval="2000" connection-attempts="5" connection-interval="100">
             <file-store path="path" relative-to="java.io.tmpdir" shared="false" fetch-state="false" preload="true" purge="false">
@@ -321,7 +321,7 @@
       <!-- template configurations -->
       <local-cache-configuration name="local-template" module="org.infinispan" statistics="true">
          <locking acquire-timeout="30000" concurrency-level="2000" isolation="NONE" striping="true"/>
-         <transaction mode="FULL_XA" stop-timeout="60000" locking="OPTIMISTIC" transaction-manager-lookup="org.infinispan.transaction.lookup.EmbeddedTransactionManagerLookup" complete-timeout="34000" reaper-interval="35000" auto-commit="true" />
+         <transaction mode="FULL_XA" stop-timeout="60000" locking="OPTIMISTIC" complete-timeout="34000" reaper-interval="35000" auto-commit="true" />
          <expiration interval="10000" lifespan="10" max-idle="10"/>
          <persistence passivation="false">
             <file-store path="path" relative-to="java.io.tmpdir" shared="false" fetch-state="false" preload="true" purge="false">

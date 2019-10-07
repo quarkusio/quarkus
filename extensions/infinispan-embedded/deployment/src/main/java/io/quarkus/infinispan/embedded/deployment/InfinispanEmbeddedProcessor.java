@@ -1,19 +1,3 @@
-/*
- * Copyright 2019 Red Hat, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.quarkus.infinispan.embedded.deployment;
 
 import java.util.ArrayList;
@@ -28,7 +12,6 @@ import java.util.Set;
 import org.infinispan.commons.marshall.AbstractExternalizer;
 import org.infinispan.commons.marshall.AdvancedExternalizer;
 import org.infinispan.commons.marshall.SerializeWith;
-import org.infinispan.commons.tx.lookup.TransactionManagerLookup;
 import org.infinispan.configuration.cache.StoreConfiguration;
 import org.infinispan.configuration.cache.StoreConfigurationBuilder;
 import org.infinispan.configuration.parsing.ConfigurationParser;
@@ -42,8 +25,6 @@ import org.infinispan.notifications.Listener;
 import org.infinispan.persistence.spi.CacheLoader;
 import org.infinispan.persistence.spi.CacheWriter;
 import org.infinispan.remoting.transport.jgroups.JGroupsTransport;
-import org.infinispan.transaction.lookup.EmbeddedTransactionManagerLookup;
-import org.infinispan.transaction.lookup.JBossStandaloneJTAManagerLookup;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -56,7 +37,6 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -78,15 +58,6 @@ class InfinispanEmbeddedProcessor {
         indexDependency.produce(new IndexDependencyBuildItem("org.jgroups", "jgroups"));
         indexDependency.produce(new IndexDependencyBuildItem("org.infinispan", "infinispan-commons"));
         indexDependency.produce(new IndexDependencyBuildItem("org.infinispan", "infinispan-core"));
-    }
-
-    @BuildStep
-    void allowReflectionForTransactions(Capabilities capabilities, BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        if (capabilities.isCapabilityPresent(Capabilities.TRANSACTIONS)) {
-            // Our JBossStandaloneJTAManagerLookup uses reflection on these
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "com.arjuna.ats.jta.TransactionManager"));
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "com.arjuna.ats.jta.UserTransaction"));
-        }
     }
 
     @BuildStep
@@ -151,10 +122,6 @@ class InfinispanEmbeddedProcessor {
         // Add all the JGroups Property Converters
         addReflectionForClass(PropertyConverter.class, true, combinedIndex, reflectiveClass, excludedClasses);
 
-        // Just add the JBossAS and Embedded TransactionManagerLookups
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, JBossStandaloneJTAManagerLookup.class));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, EmbeddedTransactionManagerLookup.class));
-
         // Add all consistent hash factories
         addReflectionForClass(ConsistentHashFactory.class, true, combinedIndex, reflectiveClass, excludedClasses);
 
@@ -210,9 +177,6 @@ class InfinispanEmbeddedProcessor {
         // Due to the index not containing AbstractExternalizer it doesn't know that it implements AdvancedExternalizer
         // thus we also have to include classes that extend AbstractExternalizer
         addReflectionForClass(AbstractExternalizer.class, false, appOnlyIndex, reflectiveClass, Collections.emptySet());
-
-        // Add user based transaction manager lookups
-        addReflectionForClass(TransactionManagerLookup.class, true, appOnlyIndex, reflectiveClass, Collections.emptySet());
     }
 
     private void addReflectionForClass(Class<?> classToUse, boolean isInterface, IndexView indexView,

@@ -132,6 +132,9 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.sourceDirectory}")
     private File sourceDir;
 
+    @Parameter(defaultValue = "${project.build.directory}")
+    private File workingDir;
+
     @Parameter(defaultValue = "${jvm.args}")
     private String jvmArgs;
 
@@ -404,7 +407,7 @@ public class DevMojo extends AbstractMojo {
             pb.redirectError(ProcessBuilder.Redirect.INHERIT);
             pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
             pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
-            pb.directory(outputDirectory);
+            pb.directory(workingDir);
             Process p = pb.start();
 
             //https://github.com/quarkusio/quarkus/issues/232

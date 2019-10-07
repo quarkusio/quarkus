@@ -30,6 +30,8 @@ public class QuarkusPluginExtension {
 
     private String sourceDir;
 
+    private String workingDir;
+
     private String outputConfigDirectory;
 
     public QuarkusPluginExtension(Project project) {
@@ -78,6 +80,18 @@ public class QuarkusPluginExtension {
 
     public void setSourceDir(String sourceDir) {
         this.sourceDir = sourceDir;
+    }
+
+    public File workingDir() {
+        if (workingDir == null) {
+            workingDir = outputDirectory().getPath();
+        }
+
+        return new File(workingDir);
+    }
+
+    public void setWorkingDir(String workingDir) {
+        this.workingDir = workingDir;
     }
 
     public File wiringClassesDirectory() {

@@ -60,7 +60,6 @@ import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildIte
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import io.quarkus.jaxb.deployment.JaxbEnabledBuildItem;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor.ResteasyCommonConfig;
 import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
@@ -392,16 +391,6 @@ public class ResteasyServerCommonProcessor {
         beanDefiningAnnotations
                 .produce(new BeanDefiningAnnotationBuildItem(ResteasyDotNames.APPLICATION_PATH,
                         BuiltinScope.SINGLETON.getName()));
-    }
-
-    /**
-     * Indicates that JAXB support should be enabled
-     *
-     * @return
-     */
-    @BuildStep
-    JaxbEnabledBuildItem enableJaxb() {
-        return new JaxbEnabledBuildItem();
     }
 
     private boolean hasAutoInjectAnnotation(Set<DotName> autoInjectAnnotationNames, ClassInfo clazz) {

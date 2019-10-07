@@ -124,12 +124,7 @@ class JaxbProcessor {
     void process(BuildProducer<SubstrateSystemPropertyBuildItem> substrateProps,
             BuildProducer<ServiceProviderBuildItem> providerItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            List<JaxbFileRootBuildItem> fileRoots,
-            List<JaxbEnabledBuildItem> enabled) {
-
-        if (enabled.isEmpty()) {
-            return;
-        }
+            List<JaxbFileRootBuildItem> fileRoots) {
 
         IndexView index = combinedIndexBuildItem.getIndex();
 

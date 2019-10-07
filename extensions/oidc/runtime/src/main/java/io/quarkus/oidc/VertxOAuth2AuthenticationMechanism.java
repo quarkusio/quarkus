@@ -75,7 +75,7 @@ public class VertxOAuth2AuthenticationMechanism implements HTTPAuthenticationMec
         }
 
         String token = authorization.substring(idx + 1);
-        return identityProviderManager.authenticate(new TokenAuthenticationRequest(new TokenCredential(token, "oauth2")));
+        return identityProviderManager.authenticate(new TokenAuthenticationRequest(new TokenCredential(token, BEARER)));
     }
 
     @Override

@@ -191,7 +191,7 @@ public class ResteasyCommonProcessor {
     private boolean restJsonSupportNeeded(CombinedIndexBuildItem indexBuildItem, DotName mediaTypeAnnotation) {
         for (AnnotationInstance annotationInstance : indexBuildItem.getIndex().getAnnotations(mediaTypeAnnotation)) {
             final AnnotationValue annotationValue = annotationInstance.value();
-            if (annotationInstance == null) {
+            if (annotationValue == null) {
                 continue;
             }
 

@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.producer.primitive;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
@@ -8,13 +8,14 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class PrimitiveProducerTest {
 
-    @Rule
-    public ArcTestContainer container = new ArcTestContainer(IntProducer.class, LongProducer.class, StringArrayProducer.class,
+    @RegisterExtension
+    public ArcTestContainer container = new ArcTestContainer(IntProducer.class, LongProducer.class,
+            StringArrayProducer.class,
             PrimitiveConsumer.class);
 
     @Test

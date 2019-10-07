@@ -2,7 +2,8 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.Basics.index;
 import static io.quarkus.arc.processor.Basics.name;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.arc.processor.types.Bar;
 import io.quarkus.arc.processor.types.Foo;
@@ -19,8 +20,7 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -33,7 +33,7 @@ public class BeanInfoInjectionsTest {
 
         Index index = index(Foo.class, Bar.class, FooQualifier.class, AbstractList.class, AbstractCollection.class,
                 Collection.class, List.class,
-                Iterable.class);
+                Iterable.class, Object.class, String.class);
         DotName barName = name(Bar.class);
         ClassInfo barClass = index.getClassByName(barName);
         Type fooType = Type.create(name(Foo.class), Kind.CLASS);
@@ -66,7 +66,7 @@ public class BeanInfoInjectionsTest {
                 assertEquals(listStringType, injection.injectionPoints.get(1).getRequiredType());
                 assertEquals(fooType, injection.injectionPoints.get(0).getRequiredType());
             } else {
-                Assert.fail();
+                fail();
             }
 
         }

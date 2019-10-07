@@ -4,10 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URLClassLoader;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -21,6 +18,7 @@ import org.jboss.arquillian.container.spi.client.container.LifecycleException;
 import org.jboss.arquillian.container.spi.client.protocol.ProtocolDescription;
 import org.jboss.arquillian.container.spi.client.protocol.metadata.HTTPContext;
 import org.jboss.arquillian.container.spi.client.protocol.metadata.ProtocolMetaData;
+import org.jboss.arquillian.container.spi.client.protocol.metadata.Servlet;
 import org.jboss.arquillian.container.spi.context.annotation.DeploymentScoped;
 import org.jboss.arquillian.core.api.Instance;
 import org.jboss.arquillian.core.api.InstanceProducer;
@@ -108,7 +106,20 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
                 }
                 //META-INF -> archive/META-INF/
                 if (Files.exists(tmpLocation.resolve("META-INF"))) {
-                    Files.move(tmpLocation.resolve("META-INF"), appLocation.resolve("META-INF"));
+                    if (Files.exists(appLocation.resolve("META-INF"))) {
+                        // Target directory not empty.
+                        Files.walk(tmpLocation.resolve("META-INF"), 2).forEach(p -> {
+                            try {
+                                Files.createFile(p);
+                            } catch (FileAlreadyExistsException faee) {
+                                // Do Nothing
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                    } else {
+                        Files.move(tmpLocation.resolve("META-INF"), appLocation.resolve("META-INF"));
+                    }
                 }
                 //WEB-INF -> archive/WEB-INF
                 if (Files.exists(tmpLocation.resolve("WEB-INF"))) {
@@ -188,7 +199,10 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
 
         ProtocolMetaData metadata = new ProtocolMetaData();
         URI uri = URI.create(TestHTTPResourceManager.getUri());
-        metadata.addContext(new HTTPContext(uri.getHost(), uri.getPort()));
+        HTTPContext httpContext = new HTTPContext(uri.getHost(), uri.getPort());
+        // This is to work around https://github.com/arquillian/arquillian-core/issues/216
+        httpContext.add(new Servlet("dummy", "/"));
+        metadata.addContext(httpContext);
         return metadata;
     }
 

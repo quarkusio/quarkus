@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -14,13 +15,28 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.ObjectMapperProducer;
+import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 
 public class JacksonProcessor {
 
@@ -32,6 +48,9 @@ public class JacksonProcessor {
 
     @Inject
     BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass;
+
+    @Inject
+    BuildProducer<AdditionalBeanBuildItem> additionalBeans;
 
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
@@ -71,6 +90,9 @@ public class JacksonProcessor {
                 }
             }
         }
+
+        // this needs to be registered manually since the runtime module is not indexed by Jandex
+        additionalBeans.produce(new AdditionalBeanBuildItem(ObjectMapperProducer.class));
     }
 
     private void addReflectiveHierarchyClass(DotName className) {
@@ -80,5 +102,81 @@ public class JacksonProcessor {
 
     private void addReflectiveClass(boolean methods, boolean fields, String... className) {
         reflectiveClass.produce(new ReflectiveClassBuildItem(methods, fields, className));
+    }
+
+    // Generate a ObjectMapperCustomizer bean that registers each serializer / deserializer with ObjectMapper
+    @BuildStep
+    void generateCustomizer(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
+            List<JacksonModuleBuildItem> jacksonModules) {
+
+        if (jacksonModules.isEmpty()) {
+            return;
+        }
+
+        ClassOutput classOutput = new ClassOutput() {
+            @Override
+            public void write(String name, byte[] data) {
+                generatedBeans.produce(new GeneratedBeanBuildItem(name, data));
+            }
+        };
+
+        try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
+                .className("io.quarkus.jackson.customizer.RegisterSerializersAndDeserializersCustomizer")
+                .interfaces(ObjectMapperCustomizer.class.getName())
+                .build()) {
+            classCreator.addAnnotation(Singleton.class);
+
+            try (MethodCreator customize = classCreator.getMethodCreator("customize", void.class, ObjectMapper.class)) {
+                ResultHandle objectMapper = customize.getMethodParam(0);
+
+                for (JacksonModuleBuildItem jacksonModule : jacksonModules) {
+                    if (jacksonModule.getItems().isEmpty()) {
+                        continue;
+                    }
+
+                    /*
+                     * Create code similar to the following:
+                     *
+                     * SimpleModule module = new SimpleModule("somename");
+                     * module.addSerializer(Foo.class, new FooSerializer());
+                     * module.addDeserializer(Foo.class, new FooDeserializer());
+                     * objectMapper.registerModule(module);
+                     */
+                    ResultHandle module = customize.newInstance(
+                            MethodDescriptor.ofConstructor(SimpleModule.class, String.class),
+                            customize.load(jacksonModule.getName()));
+
+                    for (JacksonModuleBuildItem.Item item : jacksonModule.getItems()) {
+                        ResultHandle targetClass = customize.loadClass(item.getTargetClassName());
+
+                        String serializerClassName = item.getSerializerClassName();
+                        if (serializerClassName != null && !serializerClassName.isEmpty()) {
+                            ResultHandle serializer = customize.newInstance(
+                                    MethodDescriptor.ofConstructor(serializerClassName));
+                            customize.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(SimpleModule.class, "addSerializer", SimpleModule.class,
+                                            Class.class, JsonSerializer.class),
+                                    module, targetClass, serializer);
+                        }
+
+                        String deserializerClassName = item.getDeserializerClassName();
+                        if (deserializerClassName != null && !deserializerClassName.isEmpty()) {
+                            ResultHandle deserializer = customize.newInstance(
+                                    MethodDescriptor.ofConstructor(deserializerClassName));
+                            customize.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(SimpleModule.class, "addDeserializer", SimpleModule.class,
+                                            Class.class, JsonDeserializer.class),
+                                    module, targetClass, deserializer);
+                        }
+                    }
+
+                    customize.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(ObjectMapper.class, "registerModule", ObjectMapper.class, Module.class),
+                            objectMapper, module);
+                }
+
+                customize.returnValue(null);
+            }
+        }
     }
 }

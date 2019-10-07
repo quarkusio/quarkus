@@ -10,8 +10,6 @@ import org.apache.activemq.artemis.api.core.client.loadbalance.RandomStickyConne
 import org.apache.activemq.artemis.api.core.client.loadbalance.RoundRobinConnectionLoadBalancingPolicy;
 import org.apache.activemq.artemis.core.remoting.impl.netty.NettyConnectorFactory;
 import org.apache.activemq.artemis.spi.core.remoting.ConnectorFactory;
-import org.apache.commons.logging.impl.Jdk14Logger;
-import org.apache.commons.logging.impl.LogFactoryImpl;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
@@ -28,6 +26,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 
 public class ArtemisCoreProcessor {
 
@@ -45,11 +44,14 @@ public class ArtemisCoreProcessor {
     };
 
     @BuildStep
+    SubstrateConfigBuildItem config() {
+        return SubstrateConfigBuildItem.builder()
+                .addRuntimeInitializedClass("org.apache.activemq.artemis.api.core.ActiveMQBuffers").build();
+    }
+
+    @BuildStep
     void build(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                LogFactoryImpl.class.getName(), Jdk14Logger.class.getName()));
 
         Collection<ClassInfo> connectorFactories = indexBuildItem.getIndex()
                 .getAllKnownImplementors(DotName.createSimple(ConnectorFactory.class.getName()));

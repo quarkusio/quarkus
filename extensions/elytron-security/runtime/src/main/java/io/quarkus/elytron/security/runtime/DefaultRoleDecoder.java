@@ -2,10 +2,6 @@ package io.quarkus.elytron.security.runtime;
 
 import java.util.HashSet;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
-
 import org.wildfly.security.authz.Attributes;
 import org.wildfly.security.authz.AuthorizationIdentity;
 import org.wildfly.security.authz.RoleDecoder;
@@ -17,23 +13,13 @@ import org.wildfly.security.authz.Roles;
  * an application specific implementation of {@link RoleDecoder}, if provided.
  * 
  */
-@ApplicationScoped
 public class DefaultRoleDecoder implements RoleDecoder {
 
     private static final String DEFAULT_ATTRIBUTE_NAME = "groups";
 
-    @Inject
-    private Instance<RoleDecoder> instances;
-
     @Override
     public Roles decodeRoles(AuthorizationIdentity authorizationIdentity) {
-        RoleDecoder delegate = getDelegate();
-
-        if (delegate == null) {
-            return fromDefaultAttribute(authorizationIdentity);
-        }
-
-        return delegate.decodeRoles(authorizationIdentity);
+        return fromDefaultAttribute(authorizationIdentity);
     }
 
     private Roles fromDefaultAttribute(AuthorizationIdentity authorizationIdentity) {
@@ -44,10 +30,5 @@ public class DefaultRoleDecoder implements RoleDecoder {
         }
 
         return Roles.fromSet(new HashSet<>(groups));
-    }
-
-    private RoleDecoder getDelegate() {
-        return instances.stream().filter(roleDecoder -> !DefaultRoleDecoder.class.isInstance(roleDecoder)).findAny()
-                .orElse(null);
     }
 }

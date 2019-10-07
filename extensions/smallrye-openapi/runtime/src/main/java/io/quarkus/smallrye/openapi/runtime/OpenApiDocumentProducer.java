@@ -36,7 +36,7 @@ public class OpenApiDocumentProducer {
     @PostConstruct
     void create() throws IOException {
         try (InputStream is = getClass().getClassLoader()
-                .getResourceAsStream(OpenApiServlet.BASE_NAME + OpenApiSerializer.Format.JSON)) {
+                .getResourceAsStream(OpenApiHandler.BASE_NAME + OpenApiSerializer.Format.JSON)) {
             if (is != null) {
                 try (OpenApiStaticFile staticFile = new OpenApiStaticFile(is, OpenApiSerializer.Format.JSON)) {
                     Config config = ConfigProvider.getConfig();

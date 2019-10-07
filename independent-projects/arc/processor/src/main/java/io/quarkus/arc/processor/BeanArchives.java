@@ -1,5 +1,7 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByNameNoLogging;
+
 import io.quarkus.arc.ActivateRequestContextInterceptor;
 import io.quarkus.arc.InjectableRequestContextController;
 import java.io.IOException;
@@ -39,7 +41,7 @@ public final class BeanArchives {
     private static final Logger LOGGER = Logger.getLogger(BeanArchives.class);
 
     /**
-     * 
+     *
      * @param applicationIndexes
      * @return the final bean archive index
      */
@@ -98,7 +100,7 @@ public final class BeanArchives {
 
         @Override
         public ClassInfo getClassByName(DotName className) {
-            ClassInfo classInfo = index.getClassByName(className);
+            ClassInfo classInfo = getClassByNameNoLogging(index, className);
             if (classInfo == null) {
                 classInfo = additionalClasses.computeIfAbsent(className, this::computeAdditional).orElse(null);
             }

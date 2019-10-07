@@ -13,6 +13,11 @@
           <name>JBoss Maven Central proxy</name>
           <url>https://repository.jboss.org/nexus/content/repositories/central/</url>
         </repository>
+        <repository>
+            <id>gradle-official-repository</id>
+            <name>Gradle Official Repository</name>
+            <url>https://repo.gradle.org/gradle/libs-releases-local/</url>
+        </repository>
       </repositories>
       <pluginRepositories>
         <pluginRepository>

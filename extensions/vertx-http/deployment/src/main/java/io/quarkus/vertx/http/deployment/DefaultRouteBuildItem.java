@@ -1,21 +1,32 @@
 package io.quarkus.vertx.http.deployment;
 
+import java.util.function.Consumer;
+
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.vertx.http.runtime.HandlerConsumer;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.Route;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * A build item that represents a handler for the default route
  */
 public final class DefaultRouteBuildItem extends MultiBuildItem {
 
-    private final Handler<HttpServerRequest> handler;
+    private final Consumer<Route> route;
 
-    public DefaultRouteBuildItem(Handler<HttpServerRequest> handler) {
-        this.handler = handler;
+    public DefaultRouteBuildItem(Handler<RoutingContext> handler) {
+        HandlerConsumer route = new HandlerConsumer();
+        route.setHandler(handler);
+        this.route = route;
     }
 
-    public Handler<HttpServerRequest> getHandler() {
-        return handler;
+    public DefaultRouteBuildItem(Consumer<Route> route) {
+        this.route = route;
     }
+
+    public Consumer<Route> getRoute() {
+        return route;
+    }
+
 }

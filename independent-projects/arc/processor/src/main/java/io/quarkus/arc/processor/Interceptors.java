@@ -5,8 +5,11 @@ import java.util.Set;
 import javax.enterprise.inject.spi.DefinitionException;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.logging.Logger;
 
 final class Interceptors {
+
+    static final Logger LOGGER = Logger.getLogger(Interceptors.class);
 
     private Interceptors() {
     }
@@ -21,6 +24,7 @@ final class Interceptors {
             InjectionPointModifier transformer, AnnotationStore store) {
         Set<AnnotationInstance> bindings = new HashSet<>();
         Integer priority = 0;
+        boolean priorityDeclared = false;
         for (AnnotationInstance annotation : store.getAnnotations(interceptorClass)) {
             if (beanDeployment.getInterceptorBinding(annotation.name()) != null) {
                 bindings.add(annotation);
@@ -32,10 +36,15 @@ final class Interceptors {
                 }
             } else if (annotation.name().equals(DotNames.PRIORITY)) {
                 priority = annotation.value().asInt();
+                priorityDeclared = true;
             }
         }
         if (bindings.isEmpty()) {
             throw new DefinitionException("Interceptor has no bindings: " + interceptorClass);
+        }
+        if (!priorityDeclared) {
+            LOGGER.info("An interceptor " + interceptorClass + " does not declare any @Priority. " +
+                    "It will be assigned a default priority value of 0.");
         }
         return new InterceptorInfo(interceptorClass, beanDeployment, bindings,
                 Injection.forBean(interceptorClass, null, beanDeployment, transformer), priority);

@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.build.extension.validator;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.BeanCreator;
@@ -19,13 +19,14 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class BeanDeploymentValidatorTest {
 
-    @Rule
-    public ArcTestContainer container = ArcTestContainer.builder().beanClasses(Alpha.class).beanRegistrars(new TestRegistrar())
+    @RegisterExtension
+    public ArcTestContainer container = ArcTestContainer.builder().beanClasses(Alpha.class)
+            .beanRegistrars(new TestRegistrar())
             .beanDeploymentValidators(new TestValidator()).build();
 
     @Test

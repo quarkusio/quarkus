@@ -22,6 +22,10 @@
             <artifactId>quarkus-vertx-http</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus.security</groupId>
+            <artifactId>quarkus-security</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.oracle.substratevm</groupId>
             <artifactId>svm</artifactId>
         </dependency>

@@ -1,7 +1,7 @@
 package io.quarkus.arc.test.clientproxy;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
@@ -9,12 +9,12 @@ import io.quarkus.arc.test.ArcTestContainer;
 import java.io.IOException;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class ClientProxyGetContextualInstanceTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Moo.class);
 
     @Test

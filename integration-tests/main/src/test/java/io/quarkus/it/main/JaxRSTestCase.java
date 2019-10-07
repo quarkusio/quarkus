@@ -1,8 +1,8 @@
 package io.quarkus.it.main;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyString;
 
 import java.io.ByteArrayOutputStream;
 import java.util.zip.GZIPOutputStream;
@@ -162,13 +162,13 @@ public class JaxRSTestCase {
     @Test
     public void testOpenApiResponsesWithNoContent() {
         RestAssured.when().get("/test/openapi/no-content/api-responses").then()
-                .body(isEmptyString());
+                .body(emptyString());
     }
 
     @Test
     public void testOpenApiResponseWithNoContent() {
         RestAssured.when().get("/test/openapi/no-content/api-response").then()
-                .body(isEmptyString());
+                .body(emptyString());
     }
 
     @Test
@@ -210,5 +210,29 @@ public class JaxRSTestCase {
                 .body("Hello Quarkus")
                 .post("/test/max-body-size")
                 .then().statusCode(200);
+    }
+
+    @Test
+    public void testSSE() throws Exception {
+        RestAssured.when().get("/sse/stream")
+                .then()
+                .contentType("text/event-stream")
+                .body(containsString("0"),
+                        containsString("1"),
+                        containsString("2"));
+
+        RestAssured.when().get("/sse/stream-html")
+                .then()
+                .contentType("text/event-stream")
+                .body(containsString("<html><body>0</body></html>"),
+                        containsString("<html><body>1</body></html>"),
+                        containsString("<html><body>2</body></html>"));
+
+        RestAssured.when().get("/sse/stream-xml")
+                .then()
+                .contentType("text/event-stream")
+                .body(containsString("<settings><foo bar=\"0\"/></settings>"),
+                        containsString("<settings><foo bar=\"1\"/></settings>"),
+                        containsString("<settings><foo bar=\"2\"/></settings>"));
     }
 }

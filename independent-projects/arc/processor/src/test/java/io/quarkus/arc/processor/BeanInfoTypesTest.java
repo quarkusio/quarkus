@@ -2,8 +2,8 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.Basics.index;
 import static io.quarkus.arc.processor.Basics.name;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.processor.types.Bar;
 import io.quarkus.arc.processor.types.Foo;
@@ -20,7 +20,7 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -33,7 +33,7 @@ public class BeanInfoTypesTest {
 
         Index index = index(Foo.class, Bar.class, FooQualifier.class, AbstractList.class, AbstractCollection.class,
                 Collection.class, List.class,
-                Iterable.class);
+                Iterable.class, Object.class, String.class);
 
         BeanDeployment deployment = new BeanDeployment(index, null, null);
         DotName fooName = name(Foo.class);
@@ -41,8 +41,8 @@ public class BeanInfoTypesTest {
         ClassInfo fooClass = index.getClassByName(fooName);
         BeanInfo fooBean = Beans.createClassBean(fooClass, deployment, null);
         Set<Type> types = fooBean.getTypes();
-        // Foo, AbstractList<String>, AbstractCollection<String>, List<String>, Collection<String>, Iterable<String>
-        assertEquals(6, types.size());
+        // Foo, AbstractList<String>, AbstractCollection<String>, List<String>, Collection<String>, Iterable<String>, Object
+        assertEquals(7, types.size());
         assertTrue(types.contains(Type.create(fooName, Kind.CLASS)));
         assertTrue(types.contains(ParameterizedType.create(name(AbstractList.class),
                 new Type[] { Type.create(name(String.class), Kind.CLASS) }, null)));

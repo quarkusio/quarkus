@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-elytron-security-parent</artifactId>
-    <name>Quarkus - Security</name>
+    <name>Quarkus - Elytron Security</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

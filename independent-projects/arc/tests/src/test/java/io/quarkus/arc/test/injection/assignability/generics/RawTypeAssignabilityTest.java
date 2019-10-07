@@ -7,23 +7,23 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.Vetoed;
 import javax.inject.Inject;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class RawTypeAssignabilityTest {
 
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(MyProducer.class, MyConsumer.class, Foo.class);
 
     @Test
     public void testAssignabilityWithRawType() {
         ArcContainer container = Arc.container();
         MyConsumer consumer = container.instance(MyConsumer.class).get();
-        Assert.assertEquals(String.class.toString(), consumer.pingRaw());
-        Assert.assertEquals(String.class.toString(), consumer.pingObject());
-        Assert.assertEquals(Long.class.toString(), consumer.pingLong());
-        Assert.assertEquals(Long.class.toString(), consumer.pingWild());
+        Assertions.assertEquals(String.class.toString(), consumer.pingRaw());
+        Assertions.assertEquals(String.class.toString(), consumer.pingObject());
+        Assertions.assertEquals(Long.class.toString(), consumer.pingLong());
+        Assertions.assertEquals(Long.class.toString(), consumer.pingWild());
     }
 
     @ApplicationScoped

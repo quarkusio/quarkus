@@ -4,6 +4,7 @@
 package io.quarkus.cli.commands.writer;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -22,4 +23,8 @@ public interface ProjectWriter extends Closeable {
     String mkdirs(String path) throws IOException;
 
     boolean exists(String path);
+
+    File getProjectFolder();
+
+    boolean hasFile();
 }

@@ -17,6 +17,7 @@ compileJava   {
 repositories {
     maven { url 'target/dependencies/' }
     mavenCentral()
+    maven { url 'https://repo.gradle.org/gradle/libs-releases-local/' }
 }
 
 dependencies {
@@ -25,6 +26,7 @@ dependencies {
     compile "io.quarkus:quarkus-devtools-common-core:${version}"
     compile "io.quarkus:quarkus-development-mode:${version}"
     compile "io.quarkus:quarkus-creator:${version}"
+    compile "org.gradle:gradle-tooling-api:5.5.1"
 
     testCompile 'org.junit.jupiter:junit-jupiter-api:5.4.1'
     testCompile 'org.junit.jupiter:junit-jupiter-params:5.4.1'

@@ -16,8 +16,6 @@ import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.ext.Providers;
 
-import org.apache.commons.logging.impl.Jdk14Logger;
-import org.apache.commons.logging.impl.LogFactoryImpl;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -69,6 +67,7 @@ import io.quarkus.restclient.runtime.RestClientBase;
 import io.quarkus.restclient.runtime.RestClientRecorder;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
+import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 
 class RestClientProcessor {
     private static final Logger log = Logger.getLogger(RestClientProcessor.class);
@@ -110,8 +109,6 @@ class RestClientProcessor {
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                LogFactoryImpl.class.getName(),
-                Jdk14Logger.class.getName(),
                 DefaultResponseExceptionMapper.class.getName(),
                 AsyncInterceptorRxInvokerProvider.class.getName(),
                 ResteasyProviderFactoryImpl.class.getName(),
@@ -284,8 +281,11 @@ class RestClientProcessor {
     void registerProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
+            ResteasyInjectionReadyBuildItem injectorFactory,
             RestClientRecorder restClientRecorder) {
-        restClientRecorder.initializeResteasyProviderFactory(jaxrsProvidersToRegisterBuildItem.useBuiltIn(),
+
+        restClientRecorder.initializeResteasyProviderFactory(injectorFactory.getInjectorFactory(),
+                jaxrsProvidersToRegisterBuildItem.useBuiltIn(),
                 jaxrsProvidersToRegisterBuildItem.getProviders(), jaxrsProvidersToRegisterBuildItem.getContributedProviders());
 
         // register the providers for reflection

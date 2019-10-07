@@ -1,5 +1,9 @@
 package io.quarkus.arc.test.builtin.beans;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.CreationalContextImpl;
 import io.quarkus.arc.test.ArcTestContainer;
@@ -23,25 +27,26 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.util.AnnotationLiteral;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Qualifier;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class BuiltInBeansAreResolvableTest {
 
-    @Rule
-    public ArcTestContainer container = ArcTestContainer.builder().beanClasses(DummyBean.class, DummyQualifier.class).build();
+    @RegisterExtension
+    public ArcTestContainer container = ArcTestContainer.builder()
+            .beanClasses(DummyBean.class, DummyQualifier.class)
+            .build();
 
     @Test
     public void testBeanManagerBean() {
         // use dynamic resolution to test it
         Instance<Object> instance = Arc.container().beanManager().createInstance();
         // basic BM is resolvable
-        Assert.assertTrue(instance.select(BeanManager.class).isResolvable());
+        assertTrue(instance.select(BeanManager.class).isResolvable());
         // invoke something on the BM
-        Assert.assertEquals(1, instance.select(BeanManager.class).get().getBeans(DummyBean.class).size());
+        assertEquals(1, instance.select(BeanManager.class).get().getBeans(DummyBean.class).size());
         // you shouldn't be able to select BM with qualifiers
-        Assert.assertFalse(instance.select(BeanManager.class, new DummyQualifier.Literal()).isResolvable());
+        assertFalse(instance.select(BeanManager.class, new DummyQualifier.Literal()).isResolvable());
     }
 
     @Test
@@ -50,32 +55,32 @@ public class BuiltInBeansAreResolvableTest {
         Instance<Object> instance = Arc.container().beanManager().createInstance();
         // event with no qualifier and raw type
         Instance<Event> rawNoQualifier = instance.select(Event.class);
-        Assert.assertTrue(rawNoQualifier.isResolvable());
+        assertTrue(rawNoQualifier.isResolvable());
         DummyBean.resetCounters();
         rawNoQualifier.get().fire(new Object());
-        Assert.assertEquals(0, DummyBean.noQualifiers);
-        Assert.assertEquals(0, DummyBean.qualifierTimesTriggered);
-        Assert.assertEquals(1, DummyBean.objectTimesTriggered);
+        assertEquals(0, DummyBean.noQualifiers);
+        assertEquals(0, DummyBean.qualifierTimesTriggered);
+        assertEquals(1, DummyBean.objectTimesTriggered);
 
         // event with type and no qualifier
         Instance<Event<String>> typedEventNoQualifier = instance.select(new TypeLiteral<Event<String>>() {
         });
-        Assert.assertTrue(typedEventNoQualifier.isResolvable());
+        assertTrue(typedEventNoQualifier.isResolvable());
         DummyBean.resetCounters();
         typedEventNoQualifier.get().fire("foo");
-        Assert.assertEquals(1, DummyBean.noQualifiers);
-        Assert.assertEquals(0, DummyBean.qualifierTimesTriggered);
-        Assert.assertEquals(1, DummyBean.objectTimesTriggered);
+        assertEquals(1, DummyBean.noQualifiers);
+        assertEquals(0, DummyBean.qualifierTimesTriggered);
+        assertEquals(1, DummyBean.objectTimesTriggered);
 
         // event with type and qualifier
         Instance<Event<String>> typedEventWithQualifier = instance.select(new TypeLiteral<Event<String>>() {
         }, new DummyQualifier.Literal());
-        Assert.assertTrue(typedEventWithQualifier.isResolvable());
+        assertTrue(typedEventWithQualifier.isResolvable());
         DummyBean.resetCounters();
         typedEventWithQualifier.get().fire("foo");
-        Assert.assertEquals(1, DummyBean.noQualifiers);
-        Assert.assertEquals(1, DummyBean.qualifierTimesTriggered);
-        Assert.assertEquals(1, DummyBean.objectTimesTriggered);
+        assertEquals(1, DummyBean.noQualifiers);
+        assertEquals(1, DummyBean.qualifierTimesTriggered);
+        assertEquals(1, DummyBean.objectTimesTriggered);
 
     }
 
@@ -85,13 +90,13 @@ public class BuiltInBeansAreResolvableTest {
 
         // verify all selections have a backing bean
         Set<Bean<?>> instanceBeans = bm.getBeans(Instance.class);
-        Assert.assertEquals(1, instanceBeans.size());
+        assertEquals(1, instanceBeans.size());
         Set<Bean<?>> typedInstanceBeans = bm.getBeans(new TypeLiteral<Instance<DummyBean>>() {
         }.getType());
-        Assert.assertEquals(1, typedInstanceBeans.size());
+        assertEquals(1, typedInstanceBeans.size());
         Set<Bean<?>> typedQualifiedInstanceBean = bm.getBeans(new TypeLiteral<Instance<DummyBean>>() {
         }.getType(), new DummyQualifier.Literal());
-        Assert.assertEquals(1, typedQualifiedInstanceBean.size());
+        assertEquals(1, typedQualifiedInstanceBean.size());
 
         InjectionPoint dummyIp = new InjectionPoint() {
 
@@ -173,12 +178,12 @@ public class BuiltInBeansAreResolvableTest {
 
         Instance<DummyBean> dummyInstance = (Instance<DummyBean>) bm.getInjectableReference(dummyIp,
                 new CreationalContextImpl<>(null));
-        Assert.assertFalse(dummyInstance.isResolvable()); // not resolvable, no qualifier
+        assertFalse(dummyInstance.isResolvable()); // not resolvable, no qualifier
         dummyInstance.select(new DummyQualifier.Literal()).get().ping();
 
         Instance<DummyBean> dummyInstanceWithQualifier = (Instance<DummyBean>) bm.getInjectableReference(dummyIpWithQualifiers,
                 new CreationalContextImpl<>(null));
-        Assert.assertTrue(dummyInstanceWithQualifier.isResolvable()); // resolvable, qualifier is present
+        assertTrue(dummyInstanceWithQualifier.isResolvable()); // resolvable, qualifier is present
         dummyInstanceWithQualifier.get().ping();
     }
 
@@ -218,6 +223,8 @@ public class BuiltInBeansAreResolvableTest {
         }
 
         public void ping() {
-        };
+        }
+
+        ;
     }
 }

@@ -3,6 +3,7 @@ package io.quarkus.runtime;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -29,7 +30,9 @@ public class ExecutorRecorder {
      * In dev mode for now we need the executor to last for the life of the app, as it is used by Undertow. This will likely
      * change
      */
-    static CleanableExecutor devModeExecutor;
+    static volatile CleanableExecutor devModeExecutor;
+
+    private static volatile Executor current;
 
     public ExecutorService setupRunTime(ShutdownContext shutdownContext, ThreadPoolConfig threadPoolConfig,
             LaunchMode launchMode) {
@@ -53,6 +56,7 @@ public class ExecutorRecorder {
             shutdownContext.addShutdownTask(shutdownTask);
             executor = underlying;
         }
+        current = executor;
         return executor;
     }
 
@@ -61,6 +65,7 @@ public class ExecutorRecorder {
         Runnable task = createShutdownTask(config, underlying);
         devModeExecutor = new CleanableExecutor(underlying);
         Runtime.getRuntime().addShutdownHook(new Thread(task, "Executor shutdown thread"));
+        current = devModeExecutor;
         return devModeExecutor;
     }
 
@@ -162,4 +167,7 @@ public class ExecutorRecorder {
         return builder.build();
     }
 
+    public static Executor getCurrent() {
+        return current;
+    }
 }

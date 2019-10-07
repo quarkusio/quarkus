@@ -296,6 +296,15 @@ error along with the health check response.
         }
 ----
 
+== Extension health checks
+
+Some extension may provide default health checks, including the extension will automatically register its health checks.
+
+For example, `quarkus-agroal` that is used to manage Quarkus datasource(s) automatically register a readiness health check
+that will validate each datasources: link:datasource-guide.html#datasource-health-check[Datasource Health Check].
+
+You can disable extension health check via the property `quarkus.health.extensions.enabled` so none will be automatically registered.
+
 == Conclusion
 
 MicroProfile Health provides a way for your application to distribute information 

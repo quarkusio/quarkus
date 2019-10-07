@@ -1,8 +1,8 @@
 package io.quarkus.arc.test.injection.assignability.generics;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
@@ -18,13 +18,14 @@ import javax.enterprise.event.ObservesAsync;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Inject;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class AssignabilityWithGenericsTest {
 
-    @Rule
-    public ArcTestContainer container = new ArcTestContainer(Car.class, Engine.class, PetrolEngine.class, Vehicle.class,
+    @RegisterExtension
+    public ArcTestContainer container = new ArcTestContainer(Car.class, Engine.class, PetrolEngine.class,
+            Vehicle.class,
             StringListConsumer.class, ListConsumer.class, ProducerBean.class, DefinitelyNotBar.class,
             Bar.class, GenericInterface.class, AlmostCompleteBean.class, ActualBean.class,
             BetaFace.class, GammaFace.class, GammaImpl.class, AbstractAlpha.class, AlphaImpl.class,

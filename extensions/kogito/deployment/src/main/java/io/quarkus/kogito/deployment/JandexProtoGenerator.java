@@ -142,6 +142,8 @@ public class JandexProtoGenerator implements ProtoGenerator<ClassInfo> {
                     .orElseThrow(() -> new IllegalStateException("Unable to find model message"));
             modelMessage.addField("repeated", "org.kie.kogito.index.model.ProcessInstanceMeta", "processInstances")
                     .setComment("@Field(store = Store.YES, analyze = Analyze.YES)");
+            modelMessage.addField("repeated", "org.kie.kogito.index.model.UserTaskInstanceMeta", "userTasks")
+                    .setComment("@Field(store = Store.YES, analyze = Analyze.YES)");
 
             Path protoFilePath = Paths.get(targetDirectory, "classes", "/persistence/" + processId + ".proto");
 

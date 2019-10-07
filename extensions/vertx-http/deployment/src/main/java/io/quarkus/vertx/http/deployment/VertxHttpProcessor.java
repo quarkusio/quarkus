@@ -22,11 +22,13 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.core.deployment.InternalWebVertxBuildItem;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
+import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.vertx.ext.web.Router;
 
 class VertxHttpProcessor {
@@ -34,9 +36,14 @@ class VertxHttpProcessor {
     HttpConfiguration httpConfiguration;
 
     @BuildStep
+    HttpRootPathBuildItem httpRoot(HttpBuildTimeConfig config) {
+        return new HttpRootPathBuildItem(config.rootPath);
+    }
+
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     FilterBuildItem cors(CORSRecorder recorder, HttpConfiguration configuration) {
-        return new FilterBuildItem(recorder.corsHandler(configuration));
+        return new FilterBuildItem(recorder.corsHandler(configuration), 100);
     }
 
     @BuildStep
@@ -56,26 +63,29 @@ class VertxHttpProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     VertxWebRouterBuildItem initializeRouter(VertxHttpRecorder recorder,
-            LaunchModeBuildItem launchMode,
-            ShutdownContextBuildItem shutdown,
             InternalWebVertxBuildItem vertx,
-            Optional<RequireVirtualHttpBuildItem> requireVirtual) throws IOException {
+            List<RouteBuildItem> routes, LaunchModeBuildItem launchModeBuildItem,
+            ShutdownContextBuildItem shutdown) {
 
-        boolean startVirtual = requireVirtual.isPresent() || httpConfiguration.virtual;
-        // start http socket in dev/test mode even if virtual http is required
-        boolean startSocket = !startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL;
-        RuntimeValue<Router> router = recorder.initializeRouter(vertx.getVertx(), shutdown,
-                httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket);
+        RuntimeValue<Router> router = recorder.initializeRouter(vertx.getVertx(), launchModeBuildItem.getLaunchMode(),
+                shutdown);
+        for (RouteBuildItem route : routes) {
+            recorder.addRoute(router, route.getRouteFunction(), route.getHandler(), route.getType());
+        }
 
         return new VertxWebRouterBuildItem(router);
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem finalizeRouter(VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer,
+    ServiceStartBuildItem finalizeRouter(
+            VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer,
+            Optional<RequireVirtualHttpBuildItem> requireVirtual,
+            InternalWebVertxBuildItem vertx,
             LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, List<DefaultRouteBuildItem> defaultRoutes,
-            List<FilterBuildItem> filters, VertxWebRouterBuildItem router,
-            List<AdditionalRoutesInstalledBuildItem> additionalRoutesInstalled) throws BuildException {
+            List<FilterBuildItem> filters, VertxWebRouterBuildItem router, EventLoopCountBuildItem eventLoopCountBuildItem,
+            HttpBuildTimeConfig httpBuildTimeConfig)
+            throws BuildException, IOException {
         Optional<DefaultRouteBuildItem> defaultRoute;
         if (defaultRoutes == null || defaultRoutes.isEmpty()) {
             defaultRoute = Optional.empty();
@@ -87,9 +97,21 @@ class VertxHttpProcessor {
                 defaultRoute = Optional.of(defaultRoutes.get(0));
             }
         }
-        recorder.finalizeRouter(beanContainer.getValue(), defaultRoute.map(DefaultRouteBuildItem::getHandler).orElse(null),
-                filters.stream().map(FilterBuildItem::getHandler).collect(Collectors.toList()),
-                launchMode.getLaunchMode(), shutdown);
+
+        List<Filter> listOfFilters = filters.stream()
+                .filter(f -> f.getHandler() != null)
+                .map(FilterBuildItem::toFilter).collect(Collectors.toList());
+
+        recorder.finalizeRouter(beanContainer.getValue(),
+                defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
+                listOfFilters, vertx.getVertx(), router.getRouter(), httpBuildTimeConfig.rootPath, launchMode.getLaunchMode());
+
+        boolean startVirtual = requireVirtual.isPresent() || httpConfiguration.virtual;
+        // start http socket in dev/test mode even if virtual http is required
+        boolean startSocket = !startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL;
+        recorder.startServer(vertx.getVertx(), shutdown,
+                httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket,
+                eventLoopCountBuildItem.getEventLoopCount());
 
         return new ServiceStartBuildItem("vertx-http");
     }

@@ -17,16 +17,24 @@ public class VertxBlockingOutput implements VertxOutput {
     protected boolean waitingForDrain;
     protected boolean drainHandlerRegistered;
     protected final HttpServerRequest request;
+    protected boolean first = true;
+    protected Throwable throwable;
 
     public VertxBlockingOutput(HttpServerRequest request) {
         this.request = request;
         request.response().exceptionHandler(new Handler<Throwable>() {
             @Override
             public void handle(Throwable event) {
+                throwable = event;
                 log.debugf(event, "IO Exception ");
                 //TODO: do we need this?
                 terminateResponse();
                 request.connection().close();
+                synchronized (request.connection()) {
+                    if (waitingForDrain) {
+                        request.connection().notify();
+                    }
+                }
             }
         });
 
@@ -75,8 +83,15 @@ public class VertxBlockingOutput implements VertxOutput {
     }
 
     private void awaitWriteable() throws IOException {
+        if (first) {
+            first = false;
+            return;
+        }
         assert Thread.holdsLock(request.connection());
         while (request.response().writeQueueFull()) {
+            if (throwable != null) {
+                throw new IOException(throwable);
+            }
             if (Context.isOnEventLoopThread()) {
                 throw new IOException("Attempting a blocking write on io thread");
             }

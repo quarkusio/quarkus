@@ -25,8 +25,14 @@ public class ServletTestCase {
 
     @Test
     public void testStaticResource() {
-        RestAssured.when().get("/filter").then()
-                .body(containsString("A Filter"));
+        RestAssured.when().get("/index.html").then()
+                .body(containsString("A HTML page"));
+    }
+
+    @Test
+    public void testStaticResourceSubdir() {
+        RestAssured.when().get("/subdir/index.html").then()
+                .body(containsString("A HTML page"));
     }
 
     @Test

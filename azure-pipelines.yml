@@ -206,7 +206,6 @@ stages:
             - jpa-mariadb
             - jpa-mssql
           name: jpa_db
-          postgres: true
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
@@ -214,8 +213,10 @@ stages:
           modules:
             - jpa
             - jpa-postgresql
+            - jpa-mysql
           name: jpa
           postgres: true
+          mysql: true
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
@@ -241,7 +242,7 @@ stages:
           modules:
             - elytron-security-oauth2
             - elytron-security
-            - keycloak
+            - oidc
           name: security
           keycloak: true
 
@@ -261,15 +262,18 @@ stages:
             - infinispan-cache-jpa
             - infinispan-client
             - mongodb-client
+            - mongodb-panache
             - neo4j
+            - narayana-stm
           name: data
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          timeoutInMinutes: 15
+          timeoutInMinutes: 25
           modules:
             - resteasy-jackson
             - vertx
+            - vertx-http
             - virtual-http
           name: http
 

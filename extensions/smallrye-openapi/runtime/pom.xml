@@ -30,7 +30,7 @@
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-undertow</artifactId>
+      <artifactId>quarkus-vertx-http</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>

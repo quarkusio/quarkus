@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.health.deployment;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.microprofile.health.Health;
@@ -22,11 +23,12 @@ import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.quarkus.smallrye.health.runtime.SmallRyeHealthHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthRecorder;
-import io.quarkus.smallrye.health.runtime.SmallRyeHealthServlet;
-import io.quarkus.smallrye.health.runtime.SmallRyeLivenessServlet;
-import io.quarkus.smallrye.health.runtime.SmallRyeReadinessServlet;
-import io.quarkus.undertow.deployment.ServletBuildItem;
+import io.quarkus.smallrye.health.runtime.SmallRyeLivenessHandler;
+import io.quarkus.smallrye.health.runtime.SmallRyeReadinessHandler;
+import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.smallrye.health.SmallRyeHealthReporter;
 
 class SmallRyeHealthProcessor {
@@ -41,6 +43,8 @@ class SmallRyeHealthProcessor {
      * The configuration for health checking.
      */
     SmallRyeHealthConfig health;
+
+    HealthBuildTimeConfig config;
 
     @ConfigRoot(name = "smallrye-health")
     static final class SmallRyeHealthConfig {
@@ -64,30 +68,34 @@ class SmallRyeHealthProcessor {
     }
 
     @BuildStep
+    void healthCheck(BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer,
+            List<HealthBuildItem> healthBuildItems) {
+        if (config.extensionsEnabled) {
+            for (HealthBuildItem buildItem : healthBuildItems) {
+                if (buildItem.isEnabled()) {
+                    buildItemBuildProducer.produce(new AdditionalBeanBuildItem(buildItem.getHealthCheckClass()));
+                }
+            }
+        }
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     @SuppressWarnings("unchecked")
     void build(SmallRyeHealthRecorder recorder, RecorderContext recorderContext,
             BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<ServletBuildItem> servlet,
+            BuildProducer<RouteBuildItem> routes,
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotation) throws IOException {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_HEALTH));
 
-        // Register the health servlet
-        ServletBuildItem servletBuildItem = ServletBuildItem.builder("health", SmallRyeHealthServlet.class.getName())
-                .addMapping(health.rootPath).build();
-        servlet.produce(servletBuildItem);
-
-        // Register the liveness servlet
-        ServletBuildItem liveServletBuildItem = ServletBuildItem.builder("liveness", SmallRyeLivenessServlet.class.getName())
-                .addMapping(health.rootPath + health.livenessPath).build();
-        servlet.produce(liveServletBuildItem);
-
-        // Register the readiness servlet
-        ServletBuildItem readyServletBuildItem = ServletBuildItem.builder("readiness", SmallRyeReadinessServlet.class.getName())
-                .addMapping(health.rootPath + health.readinessPath).build();
-        servlet.produce(readyServletBuildItem);
+        // Register the health handler
+        routes.produce(new RouteBuildItem(health.rootPath, new SmallRyeHealthHandler()));
+        routes.produce(
+                new RouteBuildItem(health.rootPath + health.livenessPath, new SmallRyeLivenessHandler()));
+        routes.produce(
+                new RouteBuildItem(health.rootPath + health.readinessPath, new SmallRyeReadinessHandler()));
 
         // Make ArC discover the beans marked with the @Health qualifier
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH));
@@ -99,10 +107,7 @@ class SmallRyeHealthProcessor {
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(READINESS));
 
         // Add additional beans
-        additionalBean.produce(new AdditionalBeanBuildItem(SmallRyeHealthReporter.class,
-                SmallRyeHealthServlet.class,
-                SmallRyeLivenessServlet.class,
-                SmallRyeReadinessServlet.class));
+        additionalBean.produce(new AdditionalBeanBuildItem(SmallRyeHealthReporter.class));
 
         // Discover and register the HealthCheckResponseProvider
         Set<String> providers = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),

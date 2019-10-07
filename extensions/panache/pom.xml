@@ -16,6 +16,8 @@
     <modules>
         <module>panache-common</module>
         <module>hibernate-orm-panache</module>
+        <module>mongodb-panache</module>
+        <module>panacheql</module>
     </modules>
 
 

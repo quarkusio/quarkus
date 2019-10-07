@@ -1,40 +1,24 @@
 package io.quarkus.arc.test.injection.erroneous;
 
-import static org.junit.Assert.fail;
-
 import io.quarkus.arc.test.ArcTestContainer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.wildfly.common.Assert;
 
 public class CircularInjectionNotSupportedTest {
 
-    @Rule
-    public RuleChain chain = RuleChain.outerRule(new TestRule() {
-        @Override
-        public Statement apply(Statement base, Description description) {
-            return new Statement() {
-                @Override
-                public void evaluate() throws Throwable {
-                    try {
-                        base.evaluate();
-                        fail("Expected an IllegalStateException to be thrown, but it wasn't");
-                    } catch (IllegalStateException e) {
-                        // expected failure on ISE due to circular dependency
-                    }
-                }
-            };
-        }
-    }).around(new ArcTestContainer(Foo.class, AbstractServiceImpl.class, ActualServiceImpl.class));
+    @RegisterExtension
+    ArcTestContainer container = ArcTestContainer.builder().beanClasses(Foo.class, AbstractServiceImpl.class,
+            ActualServiceImpl.class).shouldFail().build();
 
     @Test
     public void testExceptionThrown() {
-        // throws exception during deployment
+        Throwable error = container.getFailure();
+        Assertions.assertNotNull(error);
+        Assert.assertTrue(error instanceof IllegalStateException);
     }
 
     static abstract class AbstractServiceImpl {

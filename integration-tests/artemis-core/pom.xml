@@ -51,7 +51,16 @@
                     <groupId>org.jboss.logmanager</groupId>
                     <artifactId>jboss-logmanager</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>commons-logging-jboss-logging</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -99,7 +108,7 @@
                         </executions>
                     </plugin>
                     <plugin>
-                        <groupId>${project.groupId}</groupId>
+                        <groupId>io.quarkus</groupId>
                         <artifactId>quarkus-maven-plugin</artifactId>
                         <executions>
                             <execution>

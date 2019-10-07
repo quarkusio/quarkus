@@ -1,19 +1,12 @@
 package io.quarkus.vertx.web.runtime;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.function.Function;
 
-import javax.enterprise.event.Event;
-
-import org.jboss.logging.Logger;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.quarkus.vertx.http.runtime.BodyConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.quarkus.vertx.web.Route;
@@ -26,87 +19,8 @@ import io.vertx.ext.web.handler.BodyHandler;
 @Recorder
 public class VertxWebRecorder {
 
-    private static final Logger LOGGER = Logger.getLogger(VertxWebRecorder.class.getName());
-
-    public void addAdditionalRoutes(RuntimeValue<Router> routerRuntimeValue, Map<String, List<Route>> routeHandlers,
-            List<Handler<RoutingContext>> filters, HttpConfiguration httpConfiguration) {
-        Router router = routerRuntimeValue.getValue();
-
-        for (Entry<String, List<Route>> entry : routeHandlers.entrySet()) {
-            Handler<RoutingContext> handler = createHandler(entry.getKey());
-            for (Route route : entry.getValue()) {
-                addRoute(router, handler, route, filters, httpConfiguration);
-            }
-        }
-        // Make it also possible to register the route handlers programmatically
-        Event<Object> event = Arc.container().beanManager().getEvent();
-        event.select(Router.class).fire(router);
-    }
-
-    private io.vertx.ext.web.Route addRoute(Router router, Handler<RoutingContext> handler, Route routeAnnotation,
-            List<Handler<RoutingContext>> filters, HttpConfiguration httpConfiguration) {
-        io.vertx.ext.web.Route route;
-        if (!routeAnnotation.regex().isEmpty()) {
-            route = router.routeWithRegex(routeAnnotation.regex());
-        } else if (!routeAnnotation.path().isEmpty()) {
-            route = router.route(routeAnnotation.path());
-        } else {
-            route = router.route();
-        }
-        if (routeAnnotation.methods().length > 0) {
-            for (HttpMethod method : routeAnnotation.methods()) {
-                route.method(method);
-            }
-        }
-        if (routeAnnotation.order() != Integer.MIN_VALUE) {
-            route.order(routeAnnotation.order());
-        }
-        if (routeAnnotation.produces().length > 0) {
-            for (String produces : routeAnnotation.produces()) {
-                route.produces(produces);
-            }
-        }
-        if (routeAnnotation.consumes().length > 0) {
-            for (String consumes : routeAnnotation.consumes()) {
-                route.consumes(consumes);
-            }
-        }
-
-        // we add the filters to each route
-        for (Handler<RoutingContext> i : filters) {
-            if (i != null) {
-                route.handler(i);
-            }
-        }
-
-        BodyHandler bodyHandler = BodyHandler.create();
-        Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
-        if (maxBodySize.isPresent()) {
-            bodyHandler.setBodyLimit(maxBodySize.get().asLongValue());
-        }
-
-        route.handler(bodyHandler);
-
-        switch (routeAnnotation.type()) {
-            case NORMAL:
-                route.handler(handler);
-                break;
-            case BLOCKING:
-                // We don't mind if blocking handlers are executed in parallel
-                route.blockingHandler(handler, false);
-                break;
-            case FAILURE:
-                route.failureHandler(handler);
-                break;
-            default:
-                throw new IllegalStateException("Unsupported handler type: " + routeAnnotation.type());
-        }
-        LOGGER.debugf("Route registered for %s", routeAnnotation);
-        return route;
-    }
-
     @SuppressWarnings("unchecked")
-    private Handler<RoutingContext> createHandler(String handlerClassName) {
+    public Handler<RoutingContext> createHandler(String handlerClassName) {
         try {
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             if (cl == null) {
@@ -119,5 +33,57 @@ public class VertxWebRecorder {
                 | InvocationTargetException e) {
             throw new IllegalStateException("Unable to create invoker: " + handlerClassName, e);
         }
+    }
+
+    public Function<Router, io.vertx.ext.web.Route> createRouteFunction(Route routeAnnotation,
+            Handler<RoutingContext> bodyHandler) {
+        return new Function<Router, io.vertx.ext.web.Route>() {
+            @Override
+            public io.vertx.ext.web.Route apply(Router router) {
+                io.vertx.ext.web.Route route;
+                if (!routeAnnotation.regex().isEmpty()) {
+                    route = router.routeWithRegex(routeAnnotation.regex());
+                } else if (!routeAnnotation.path().isEmpty()) {
+                    route = router.route(routeAnnotation.path());
+                } else {
+                    route = router.route();
+                }
+                if (routeAnnotation.methods().length > 0) {
+                    for (HttpMethod method : routeAnnotation.methods()) {
+                        route.method(method);
+                    }
+                }
+                if (routeAnnotation.order() > 0) {
+                    route.order(routeAnnotation.order());
+                }
+                if (routeAnnotation.produces().length > 0) {
+                    for (String produces : routeAnnotation.produces()) {
+                        route.produces(produces);
+                    }
+                }
+                if (routeAnnotation.consumes().length > 0) {
+                    for (String consumes : routeAnnotation.consumes()) {
+                        route.consumes(consumes);
+                    }
+                }
+                route.handler(bodyHandler);
+                return route;
+            }
+        };
+    }
+
+    public Handler<RoutingContext> createBodyHandler(HttpConfiguration httpConfiguration) {
+        BodyHandler bodyHandler = BodyHandler.create();
+        Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
+        if (maxBodySize.isPresent()) {
+            bodyHandler.setBodyLimit(maxBodySize.get().asLongValue());
+        }
+        final BodyConfig bodyConfig = httpConfiguration.body;
+        bodyHandler.setHandleFileUploads(bodyConfig.handleFileUploads);
+        bodyHandler.setUploadsDirectory(bodyConfig.uploadsDirectory);
+        bodyHandler.setDeleteUploadedFilesOnEnd(bodyConfig.deleteUploadedFilesOnEnd);
+        bodyHandler.setMergeFormAttributes(bodyConfig.mergeFormAttributes);
+        bodyHandler.setPreallocateBodyBuffer(bodyConfig.preallocateBodyBuffer);
+        return bodyHandler;
     }
 }

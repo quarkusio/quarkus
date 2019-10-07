@@ -74,7 +74,7 @@ public class VertxHotReplacementSetup implements HotReplacementSetup {
                     boolean restart = event.result();
                     if (restart) {
                         routingContext.request().headers().set(HEADER_NAME, "true");
-                        VertxHttpRecorder.getRouter().handle(routingContext.request());
+                        VertxHttpRecorder.getRootHandler().handle(routingContext.request());
                     } else {
                         routingContext.next();
                     }

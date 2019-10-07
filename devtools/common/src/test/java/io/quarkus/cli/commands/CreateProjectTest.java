@@ -33,9 +33,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import io.quarkus.cli.commands.file.GradleBuildFile;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.cli.commands.writer.ZipProjectWriter;
-import io.quarkus.generators.BuildTool;
 import io.quarkus.maven.utilities.MojoUtils;
 
 public class CreateProjectTest {
@@ -59,10 +59,11 @@ public class CreateProjectTest {
     public void createGradle() throws IOException {
         final File file = new File("target/basic-rest-gradle");
         delete(file);
-        final CreateProject createProject = new CreateProject(new FileProjectWriter(file)).groupId("io.quarkus")
+        FileProjectWriter writer = new FileProjectWriter(file);
+        final CreateProject createProject = new CreateProject(writer).groupId("io.quarkus")
                 .artifactId("basic-rest")
                 .version("1.0.0-SNAPSHOT")
-                .buildTool(BuildTool.GRADLE);
+                .buildFile(new GradleBuildFile(writer));
 
         Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
 
@@ -85,10 +86,11 @@ public class CreateProjectTest {
         final File settingsGradle = new File(testDir, "settings.gradle");
         settingsGradle.createNewFile();
 
-        final CreateProject createProject = new CreateProject(new FileProjectWriter(testDir)).groupId("io.quarkus")
+        FileProjectWriter writer = new FileProjectWriter(testDir);
+        final CreateProject createProject = new CreateProject(writer).groupId("io.quarkus")
                 .artifactId("basic-rest")
                 .version("1.0.0-SNAPSHOT")
-                .buildTool(BuildTool.GRADLE);
+                .buildFile(new GradleBuildFile(writer));
 
         Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
 

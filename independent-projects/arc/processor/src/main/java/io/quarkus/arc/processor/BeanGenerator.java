@@ -1,5 +1,6 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
@@ -384,6 +385,9 @@ public class BeanGenerator extends AbstractGenerator {
         if (qualifiers != null) {
             implementGetQualifiers(bean, beanCreator, qualifiers.getFieldDescriptor());
         }
+        if (bean.isAlternative()) {
+            implementGetAlternativePriority(bean, beanCreator);
+        }
         implementGetDeclaringBean(beanCreator);
         if (stereotypes != null) {
             implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
@@ -460,6 +464,9 @@ public class BeanGenerator extends AbstractGenerator {
         }
         if (qualifiers != null) {
             implementGetQualifiers(bean, beanCreator, qualifiers.getFieldDescriptor());
+        }
+        if (bean.isAlternative()) {
+            implementGetAlternativePriority(bean, beanCreator);
         }
         implementGetDeclaringBean(beanCreator);
         if (stereotypes != null) {
@@ -575,6 +582,7 @@ public class BeanGenerator extends AbstractGenerator {
                                 constructor,
                                 injectionPointToProviderField.get(injectionPoint), annotationLiterals, bean));
             } else {
+
                 if (BuiltinScope.DEPENDENT.is(injectionPoint.getResolvedBean().getScope()) && (injectionPoint.getResolvedBean()
                         .getAllInjectionPoints().stream()
                         .anyMatch(ip -> BuiltinBean.INJECTION_POINT.getRawTypeDotName().equals(ip.getRequiredType().name()))
@@ -974,15 +982,16 @@ public class BeanGenerator extends AbstractGenerator {
 
             // Perform field and initializer injections
             for (Injection fieldInjection : fieldInjections) {
+                TryBlock tryBlock = create.tryBlock();
                 InjectionPointInfo injectionPoint = fieldInjection.injectionPoints.get(0);
-                ResultHandle providerSupplierHandle = create.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
+                ResultHandle providerSupplierHandle = tryBlock.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
                         injectionPointToProviderSupplierField.get(injectionPoint), Supplier.class.getName()),
-                        create.getThis());
-                ResultHandle providerHandle = create.invokeInterfaceMethod(
+                        tryBlock.getThis());
+                ResultHandle providerHandle = tryBlock.invokeInterfaceMethod(
                         MethodDescriptors.SUPPLIER_GET, providerSupplierHandle);
-                ResultHandle childCtxHandle = create.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
-                        providerHandle, create.getMethodParam(0));
-                ResultHandle referenceHandle = create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
+                ResultHandle childCtxHandle = tryBlock.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
+                        providerHandle, tryBlock.getMethodParam(0));
+                ResultHandle referenceHandle = tryBlock.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
                         providerHandle, childCtxHandle);
 
                 FieldInfo injectedField = fieldInjection.target.asField();
@@ -993,18 +1002,21 @@ public class BeanGenerator extends AbstractGenerator {
                                         fieldInjection.target.asField().name()));
                     }
                     reflectionRegistration.registerField(injectedField);
-                    create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_WRITE_FIELD,
-                            create.loadClass(injectedField.declaringClass().name().toString()),
-                            create.load(injectedField.name()), instanceHandle, referenceHandle);
+                    tryBlock.invokeStaticMethod(MethodDescriptors.REFLECTIONS_WRITE_FIELD,
+                            tryBlock.loadClass(injectedField.declaringClass().name().toString()),
+                            tryBlock.load(injectedField.name()), instanceHandle, referenceHandle);
 
                 } else {
                     // We cannot use injectionPoint.getRequiredType() because it might be a resolved parameterize type and we could get NoSuchFieldError
                     String fieldType = injectionPoint.getTarget().asField().type().name().toString();
-                    create.writeInstanceField(
+                    tryBlock.writeInstanceField(
                             FieldDescriptor.of(providerTypeName, injectedField.name(),
                                     fieldType),
                             instanceHandle, referenceHandle);
                 }
+                CatchBlockCreator catchBlock = tryBlock.addCatch(RuntimeException.class);
+                catchBlock.throwException(RuntimeException.class, "Error injecting " + fieldInjection.target,
+                        catchBlock.getCaughtException());
             }
             for (Injection methodInjection : methodInjections) {
                 ResultHandle[] referenceHandles = new ResultHandle[methodInjection.injectionPoints.size()];
@@ -1579,7 +1591,7 @@ public class BeanGenerator extends AbstractGenerator {
                         constructor.readStaticField(FieldDescriptor.of(InjectLiteral.class, "INSTANCE", InjectLiteral.class)));
             } else {
                 // Create annotation literal if needed
-                ClassInfo literalClass = beanDeployment.getIndex().getClassByName(annotation.name());
+                ClassInfo literalClass = getClassByName(beanDeployment.getIndex(), annotation.name());
                 constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotationsHandle,
                         annotationLiterals.process(constructor,
                                 classOutput, literalClass, annotation,

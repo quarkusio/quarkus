@@ -191,29 +191,33 @@ public final class BuildChainBuilder {
             for (Map.Entry<ItemId, Produce> entry : stepProduces.entrySet()) {
                 final ItemId id = entry.getKey();
                 final List<Produce> list = allProduces.computeIfAbsent(id, x -> new ArrayList<>(2));
-                if (!id.isMulti() && entry.getValue().getConstraint() == Constraint.REAL) {
+                final Produce toBeAdded = entry.getValue();
+                if (!id.isMulti() && toBeAdded.getConstraint() == Constraint.REAL) {
                     // ensure only one producer
                     if (initialIds.contains(id)) {
                         final ChainBuildException cbe = new ChainBuildException(
                                 "Item " + id + " cannot be produced here (it is an initial resource) ("
-                                        + entry.getValue().getStepBuilder().getBuildStep() + ")");
-                        cbe.setStackTrace(steps.get(entry.getValue().getStepBuilder()));
+                                        + toBeAdded.getStepBuilder().getBuildStep() + ")");
+                        cbe.setStackTrace(steps.get(toBeAdded.getStepBuilder()));
                         throw cbe;
                     }
+                    final boolean overridable = toBeAdded.isOverridable();
                     for (Produce produce : list) {
-                        if (produce.getConstraint() == Constraint.REAL) {
+                        if (produce.getConstraint() == Constraint.REAL
+                                && produce.isOverridable() == overridable) {
                             final Throwable cause = new Throwable("This is the location of the conflicting producer ("
-                                    + entry.getValue().getStepBuilder().getBuildStep() + ")");
-                            cause.setStackTrace(steps.get(entry.getValue().getStepBuilder()));
+                                    + toBeAdded.getStepBuilder().getBuildStep() + ")");
+                            cause.setStackTrace(steps.get(toBeAdded.getStepBuilder()));
                             final ChainBuildException cbe = new ChainBuildException(
-                                    "Multiple producers of item " + id + " (" + produce.getStepBuilder().getBuildStep() + ")",
+                                    String.format("Multiple %s" + "producers of item %s (%s)",
+                                            overridable ? "overridable " : "", id, produce.getStepBuilder().getBuildStep()),
                                     cause);
                             cbe.setStackTrace(steps.get(produce.getStepBuilder()));
                             throw cbe;
                         }
                     }
                 }
-                list.add(entry.getValue());
+                list.add(toBeAdded);
             }
         }
         final Set<BuildStepBuilder> included = new HashSet<>();
@@ -390,15 +394,37 @@ public final class BuildChainBuilder {
     private void addOne(final Map<ItemId, List<Produce>> allProduces, final Set<BuildStepBuilder> included,
             final ArrayDeque<BuildStepBuilder> toAdd, final ItemId idToAdd, Set<Produce> dependencies)
             throws ChainBuildException {
+        boolean modified = false;
         for (Produce produce : allProduces.getOrDefault(idToAdd, Collections.emptyList())) {
             final BuildStepBuilder stepBuilder = produce.getStepBuilder();
-            if (!produce.getFlags().contains(ProduceFlag.WEAK)) {
-                if (included.add(stepBuilder)) {
-                    // recursively add
-                    toAdd.addLast(stepBuilder);
+            // if overridable, add in second pass only if this pass didn't add any producers
+            if (!produce.getFlags().contains(ProduceFlag.OVERRIDABLE)) {
+                if (!produce.getFlags().contains(ProduceFlag.WEAK)) {
+                    if (included.add(stepBuilder)) {
+                        // recursively add
+                        toAdd.addLast(stepBuilder);
+                    }
                 }
+                dependencies.add(produce);
+                modified = true;
             }
-            dependencies.add(produce);
+        }
+        if (modified) {
+            // someone has produced this item non-overridably
+            return;
+        }
+        for (Produce produce : allProduces.getOrDefault(idToAdd, Collections.emptyList())) {
+            final BuildStepBuilder stepBuilder = produce.getStepBuilder();
+            // if overridable, add in this pass only if the first pass didn't add any producers
+            if (produce.getFlags().contains(ProduceFlag.OVERRIDABLE)) {
+                if (!produce.getFlags().contains(ProduceFlag.WEAK)) {
+                    if (included.add(stepBuilder)) {
+                        // recursively add
+                        toAdd.addLast(stepBuilder);
+                    }
+                }
+                dependencies.add(produce);
+            }
         }
     }
 

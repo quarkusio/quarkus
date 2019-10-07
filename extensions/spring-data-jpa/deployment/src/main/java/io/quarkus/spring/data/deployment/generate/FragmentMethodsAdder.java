@@ -1,7 +1,5 @@
 package io.quarkus.spring.data.deployment.generate;
 
-import java.lang.annotation.Annotation;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -11,9 +9,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
@@ -33,14 +28,8 @@ public class FragmentMethodsAdder {
     public void add(ClassCreator classCreator, String generatedClassName,
             List<DotName> customInterfaceNamesToImplement, Map<String, FieldDescriptor> customImplNameToHandle) {
         for (DotName customInterfaceToImplement : customInterfaceNamesToImplement) {
-            Collection<ClassInfo> knownImplementors = index.getAllKnownImplementors(customInterfaceToImplement);
-            if (knownImplementors.size() != 1) {
-                throw new IllegalArgumentException(
-                        "Interface " + customInterfaceToImplement + " must contain a single implementation which is a bean");
-            }
-
-            ClassInfo customInterfaceImpl = knownImplementors.iterator().next();
-            String customImplementationClassName = customInterfaceImpl.name().toString();
+            String customImplementationClassName = FragmentMethodsUtil
+                    .getImplementationDotName(customInterfaceToImplement, index).toString();
             fragmentImplClassResolvedCallback.accept(customImplementationClassName);
 
             ClassInfo customInterfaceToImplementClassInfo = index.getClassByName(customInterfaceToImplement);
@@ -65,18 +54,8 @@ public class FragmentMethodsAdder {
                 if (!classCreator.getExistingMethods().contains(methodDescriptor)) {
                     try (MethodCreator methodCreator = classCreator.getMethodCreator(methodDescriptor)) {
                         // obtain the bean from Arc
-                        ResultHandle arcContainer = methodCreator
-                                .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-                        ResultHandle implClass = methodCreator.readInstanceField(
+                        ResultHandle bean = methodCreator.readInstanceField(
                                 customImplNameToHandle.get(customImplementationClassName), methodCreator.getThis());
-                        ResultHandle instanceHandle = methodCreator.invokeInterfaceMethod(
-                                MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
-                                        Annotation[].class),
-                                arcContainer, implClass, methodCreator.loadNull());
-                        ResultHandle get = methodCreator.invokeInterfaceMethod(
-                                MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
-                                instanceHandle);
-                        ResultHandle bean = methodCreator.checkCast(get, customImplementationClassName);
 
                         ResultHandle[] methodParameterHandles = new ResultHandle[methodToImplement.parameters().size()];
                         for (int i = 0; i < methodToImplement.parameters().size(); i++) {

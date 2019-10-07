@@ -1,5 +1,7 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
+
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -67,7 +69,7 @@ public final class BeanConfigurator<T> {
      */
     BeanConfigurator(DotName implClassName, BeanDeployment beanDeployment, Consumer<BeanInfo> beanConsumer) {
         this.consumed = new AtomicBoolean(false);
-        this.implClass = beanDeployment.getIndex().getClassByName(Objects.requireNonNull(implClassName));
+        this.implClass = getClassByName(beanDeployment.getIndex(), Objects.requireNonNull(implClassName));
         this.beanDeployment = beanDeployment;
         this.beanConsumer = beanConsumer;
         this.types = new HashSet<>();
@@ -121,6 +123,11 @@ public final class BeanConfigurator<T> {
 
     public BeanConfigurator<T> addType(DotName className) {
         this.types.add(Type.create(className, Kind.CLASS));
+        return this;
+    }
+
+    public BeanConfigurator<T> addType(Type type) {
+        this.types.add(type);
         return this;
     }
 

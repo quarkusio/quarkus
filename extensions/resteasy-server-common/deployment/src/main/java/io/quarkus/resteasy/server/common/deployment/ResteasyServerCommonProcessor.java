@@ -1,6 +1,5 @@
 package io.quarkus.resteasy.server.common.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_TIME;
 
 import java.lang.reflect.Modifier;
@@ -14,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -45,7 +43,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
@@ -55,10 +52,8 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Transformation;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ProxyUnwrapperBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
@@ -69,8 +64,7 @@ import io.quarkus.jaxb.deployment.JaxbEnabledBuildItem;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor.ResteasyCommonConfig;
 import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
-import io.quarkus.resteasy.server.common.runtime.QuarkusInjectorFactory;
-import io.quarkus.resteasy.server.common.runtime.ResteasyServerCommonRecorder;
+import io.quarkus.resteasy.common.runtime.QuarkusInjectorFactory;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
@@ -388,20 +382,6 @@ public class ResteasyServerCommonProcessor {
             }
             additionalBeans.produce(builder.build());
         }
-    }
-
-    @Record(STATIC_INIT)
-    @BuildStep
-    ResteasyInjectionReadyBuildItem setupInjection(ResteasyServerCommonRecorder recorder,
-            BeanContainerBuildItem beanContainerBuildItem,
-            List<ProxyUnwrapperBuildItem> proxyUnwrappers) {
-        List<Function<Object, Object>> unwrappers = new ArrayList<>();
-        for (ProxyUnwrapperBuildItem i : proxyUnwrappers) {
-            unwrappers.add(i.getUnwrapper());
-        }
-        recorder.setupIntegration(beanContainerBuildItem.getValue(), unwrappers);
-
-        return new ResteasyInjectionReadyBuildItem();
     }
 
     @BuildStep

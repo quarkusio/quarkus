@@ -54,8 +54,12 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Overridable;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.annotations.Weak;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.BuildTimeConfigurationBuildItem;
 import io.quarkus.deployment.builditem.BuildTimeRunTimeFixedConfigurationBuildItem;
@@ -279,6 +283,8 @@ public final class ExtensionLoader {
             for (Parameter parameter : ctorParameters) {
                 Type parameterType = parameter.getParameterizedType();
                 final Class<?> parameterClass = parameter.getType();
+                final boolean weak = parameter.isAnnotationPresent(Weak.class);
+                final boolean overridable = parameter.isAnnotationPresent(Overridable.class);
                 if (rawTypeExtends(parameterType, SimpleBuildItem.class)) {
                     final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOf(parameterType)
                             .asSubclass(SimpleBuildItem.class);
@@ -292,12 +298,38 @@ public final class ExtensionLoader {
                 } else if (isConsumerOf(parameterType, BuildItem.class)) {
                     final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
                             .asSubclass(BuildItem.class);
-                    stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
+                    if (overridable) {
+                        if (weak) {
+                            stepConfig = stepConfig
+                                    .andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE, ProduceFlag.WEAK));
+                        } else {
+                            stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE));
+                        }
+                    } else {
+                        if (weak) {
+                            stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.WEAK));
+                        } else {
+                            stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
+                        }
+                    }
                     ctorParamFns.add(bc -> (Consumer<? extends BuildItem>) bc::produce);
                 } else if (isBuildProducerOf(parameterType, BuildItem.class)) {
                     final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
                             .asSubclass(BuildItem.class);
-                    stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
+                    if (overridable) {
+                        if (weak) {
+                            stepConfig = stepConfig
+                                    .andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE, ProduceFlag.WEAK));
+                        } else {
+                            stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE));
+                        }
+                    } else {
+                        if (weak) {
+                            stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.WEAK));
+                        } else {
+                            stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
+                        }
+                    }
                     ctorParamFns.add(bc -> (BuildProducer<? extends BuildItem>) bc::produce);
                 } else if (isOptionalOf(parameterType, SimpleBuildItem.class)) {
                     final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
@@ -360,6 +392,8 @@ public final class ExtensionLoader {
             // next, determine the type
             final Type fieldType = field.getGenericType();
             final Class<?> fieldClass = field.getType();
+            final boolean weak = field.isAnnotationPresent(Weak.class);
+            final boolean overridable = field.isAnnotationPresent(Overridable.class);
             if (rawTypeExtends(fieldType, SimpleBuildItem.class)) {
                 final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOf(fieldType).asSubclass(SimpleBuildItem.class);
                 stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
@@ -373,12 +407,38 @@ public final class ExtensionLoader {
                         .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.consumeMulti(buildItemClass)));
             } else if (isConsumerOf(fieldType, BuildItem.class)) {
                 final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0).asSubclass(BuildItem.class);
-                stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
+                if (overridable) {
+                    if (weak) {
+                        stepConfig = stepConfig
+                                .andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE, ProduceFlag.WEAK));
+                    } else {
+                        stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE));
+                    }
+                } else {
+                    if (weak) {
+                        stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.WEAK));
+                    } else {
+                        stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
+                    }
+                }
                 stepInstanceSetup = stepInstanceSetup
                         .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, (Consumer<? extends BuildItem>) bc::produce));
             } else if (isBuildProducerOf(fieldType, BuildItem.class)) {
                 final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0).asSubclass(BuildItem.class);
-                stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
+                if (overridable) {
+                    if (weak) {
+                        stepConfig = stepConfig
+                                .andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE, ProduceFlag.WEAK));
+                    } else {
+                        stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE));
+                    }
+                } else {
+                    if (weak) {
+                        stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.WEAK));
+                    } else {
+                        stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
+                    }
+                }
                 stepInstanceSetup = stepInstanceSetup.andThen(
                         (bc, o) -> ReflectUtil.setFieldVal(field, o, (BuildProducer<? extends BuildItem>) bc::produce));
             } else if (isOptionalOf(fieldType, SimpleBuildItem.class)) {
@@ -606,6 +666,8 @@ public final class ExtensionLoader {
             } else {
                 methodParamFns = new ArrayList<>(methodParameters.length);
                 for (Parameter parameter : methodParameters) {
+                    final boolean weak = parameter.isAnnotationPresent(Weak.class);
+                    final boolean overridable = parameter.isAnnotationPresent(Overridable.class);
                     final Type parameterType = parameter.getParameterizedType();
                     final Class<?> parameterClass = parameter.getType();
                     if (rawTypeExtends(parameterType, SimpleBuildItem.class)) {
@@ -621,12 +683,42 @@ public final class ExtensionLoader {
                     } else if (isConsumerOf(parameterType, BuildItem.class)) {
                         final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
                                 .asSubclass(BuildItem.class);
-                        methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(buildItemClass));
+                        if (overridable) {
+                            if (weak) {
+                                methodStepConfig = methodStepConfig.andThen(
+                                        bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE, ProduceFlag.WEAK));
+                            } else {
+                                methodStepConfig = methodStepConfig
+                                        .andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE));
+                            }
+                        } else {
+                            if (weak) {
+                                methodStepConfig = methodStepConfig
+                                        .andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.WEAK));
+                            } else {
+                                methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(buildItemClass));
+                            }
+                        }
                         methodParamFns.add((bc, bri) -> (Consumer<? extends BuildItem>) bc::produce);
                     } else if (isBuildProducerOf(parameterType, BuildItem.class)) {
                         final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
                                 .asSubclass(BuildItem.class);
-                        methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(buildItemClass));
+                        if (overridable) {
+                            if (weak) {
+                                methodStepConfig = methodStepConfig.andThen(
+                                        bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE, ProduceFlag.WEAK));
+                            } else {
+                                methodStepConfig = methodStepConfig
+                                        .andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.OVERRIDABLE));
+                            }
+                        } else {
+                            if (weak) {
+                                methodStepConfig = methodStepConfig
+                                        .andThen(bsb -> bsb.produces(buildItemClass, ProduceFlag.WEAK));
+                            } else {
+                                methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(buildItemClass));
+                            }
+                        }
                         methodParamFns.add((bc, bri) -> (BuildProducer<? extends BuildItem>) bc::produce);
                     } else if (isOptionalOf(parameterType, SimpleBuildItem.class)) {
                         final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
@@ -698,22 +790,63 @@ public final class ExtensionLoader {
 
             final BiConsumer<BuildContext, Object> resultConsumer;
             final Type returnType = method.getGenericReturnType();
+            final boolean weak = method.isAnnotationPresent(Weak.class);
+            final boolean overridable = method.isAnnotationPresent(Overridable.class);
             if (rawTypeIs(returnType, void.class)) {
                 resultConsumer = Functions.discardingBiConsumer();
             } else if (rawTypeExtends(returnType, BuildItem.class)) {
-                methodStepConfig = methodStepConfig
-                        .andThen(bsb -> bsb.produces(method.getReturnType().asSubclass(BuildItem.class)));
+                final Class<? extends BuildItem> type = method.getReturnType().asSubclass(BuildItem.class);
+                if (overridable) {
+                    if (weak) {
+                        methodStepConfig = methodStepConfig
+                                .andThen(bsb -> bsb.produces(type, ProduceFlag.OVERRIDABLE, ProduceFlag.WEAK));
+                    } else {
+                        methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(type, ProduceFlag.OVERRIDABLE));
+                    }
+                } else {
+                    if (weak) {
+                        methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(type, ProduceFlag.WEAK));
+                    } else {
+                        methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(type));
+                    }
+                }
                 resultConsumer = (bc, o) -> {
                     if (o != null)
                         bc.produce((BuildItem) o);
                 };
             } else if (isOptionalOf(returnType, BuildItem.class)) {
-                methodStepConfig = methodStepConfig
-                        .andThen(bsb -> bsb.produces(rawTypeOfParameter(returnType, 0).asSubclass(BuildItem.class)));
+                final Class<? extends BuildItem> type = rawTypeOfParameter(returnType, 0).asSubclass(BuildItem.class);
+                if (overridable) {
+                    if (weak) {
+                        methodStepConfig = methodStepConfig
+                                .andThen(bsb -> bsb.produces(type, ProduceFlag.OVERRIDABLE, ProduceFlag.WEAK));
+                    } else {
+                        methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(type, ProduceFlag.OVERRIDABLE));
+                    }
+                } else {
+                    if (weak) {
+                        methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(type, ProduceFlag.WEAK));
+                    } else {
+                        methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(type));
+                    }
+                }
                 resultConsumer = (bc, o) -> ((Optional<? extends BuildItem>) o).ifPresent(bc::produce);
             } else if (isListOf(returnType, MultiBuildItem.class)) {
-                methodStepConfig = methodStepConfig
-                        .andThen(bsb -> bsb.produces(rawTypeOfParameter(returnType, 0).asSubclass(MultiBuildItem.class)));
+                final Class<? extends MultiBuildItem> type = rawTypeOfParameter(returnType, 0).asSubclass(MultiBuildItem.class);
+                if (overridable) {
+                    if (weak) {
+                        methodStepConfig = methodStepConfig
+                                .andThen(bsb -> bsb.produces(type, ProduceFlag.OVERRIDABLE, ProduceFlag.WEAK));
+                    } else {
+                        methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(type, ProduceFlag.OVERRIDABLE));
+                    }
+                } else {
+                    if (weak) {
+                        methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(type, ProduceFlag.WEAK));
+                    } else {
+                        methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(type));
+                    }
+                }
                 resultConsumer = (bc, o) -> {
                     if (o != null)
                         bc.produce((List<? extends MultiBuildItem>) o);
@@ -737,6 +870,23 @@ public final class ExtensionLoader {
             if (methodConsumingConfigPhases.contains(ConfigPhase.BUILD_TIME)) {
                 methodStepConfig = methodStepConfig
                         .andThen(bsb -> bsb.consumes(BuildTimeConfigurationBuildItem.class));
+            }
+
+            final Consume[] consumes = method.getAnnotationsByType(Consume.class);
+            if (consumes.length > 0) {
+                stepConfig = stepConfig.andThen(bsb -> {
+                    for (Consume consume : consumes) {
+                        bsb.afterProduce(consume.value());
+                    }
+                });
+            }
+            final Produce[] produces = method.getAnnotationsByType(Produce.class);
+            if (produces.length > 0) {
+                stepConfig = stepConfig.andThen(bsb -> {
+                    for (Produce produce : produces) {
+                        bsb.beforeConsume(produce.value());
+                    }
+                });
             }
 
             final Consumer<BuildStepBuilder> finalStepConfig = stepConfig.andThen(methodStepConfig)

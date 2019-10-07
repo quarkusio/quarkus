@@ -4,7 +4,7 @@ RUNNER=$( find . -maxdepth 1 -name '*-runner' )
 if [[ ! -z "$RUNNER" ]]
 then
     export DISABLE_SIGNAL_HANDLERS=true
-    $RUNNER
+    $RUNNER -Djava.io.tmpdir=/tmp
 else
     java -jar *-runner.jar
 fi

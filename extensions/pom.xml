@@ -64,6 +64,7 @@
 
         <!-- Data access and validation -->
         <module>narayana-jta</module>
+        <module>narayana-stm</module>
         <module>agroal</module>
         <module>jdbc</module>
         <module>hibernate-orm</module>
@@ -86,10 +87,12 @@
         <module>spring-data-jpa</module>
 
         <!-- Security -->
+        <module>security</module>
         <module>elytron-security</module>
+        <module>elytron-security-properties-file</module>
         <module>elytron-security-oauth2</module>
         <module>smallrye-jwt</module>
-        <module>keycloak</module>
+        <module>oidc</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>

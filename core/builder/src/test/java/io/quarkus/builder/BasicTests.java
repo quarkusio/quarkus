@@ -152,4 +152,84 @@ public class BasicTests {
         }
     }
 
+    @Test
+    public void testDuplicate() {
+        final BuildChainBuilder builder = BuildChain.builder();
+        builder.addFinal(DummyItem.class);
+        BuildStepBuilder stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
+            public void execute(final BuildContext context) {
+                context.produce(new DummyItem());
+            }
+        });
+        stepBuilder.produces(DummyItem.class);
+        stepBuilder.build();
+        stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
+            public void execute(final BuildContext context) {
+                context.produce(new DummyItem());
+            }
+        });
+        stepBuilder.produces(DummyItem.class);
+        stepBuilder.build();
+        try {
+            builder.build();
+            fail("Expected exception");
+        } catch (ChainBuildException expected) {
+            // ok
+            assertFalse(expected.getMessage().contains("overridable"));
+        }
+    }
+
+    @Test
+    public void testDuplicateOverridable() {
+        final BuildChainBuilder builder = BuildChain.builder();
+        builder.addFinal(DummyItem.class);
+        BuildStepBuilder stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
+            public void execute(final BuildContext context) {
+                context.produce(new DummyItem());
+            }
+        });
+        stepBuilder.produces(DummyItem.class, ProduceFlag.OVERRIDABLE);
+        stepBuilder.build();
+        stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
+            public void execute(final BuildContext context) {
+                context.produce(new DummyItem());
+            }
+        });
+        stepBuilder.produces(DummyItem.class, ProduceFlag.OVERRIDABLE);
+        stepBuilder.build();
+        try {
+            builder.build();
+            fail("Expected exception");
+        } catch (ChainBuildException expected) {
+            // ok
+            assertTrue(expected.getMessage().contains("overridable"));
+        }
+    }
+
+    @Test
+    public void testOverride() throws ChainBuildException {
+        final BuildChainBuilder builder = BuildChain.builder();
+        builder.addFinal(DummyItem.class);
+        BuildStepBuilder stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
+            public void execute(final BuildContext context) {
+                context.produce(new DummyItem());
+            }
+        });
+        stepBuilder.produces(DummyItem.class, ProduceFlag.OVERRIDABLE);
+        stepBuilder.build();
+        stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
+            public void execute(final BuildContext context) {
+                context.produce(new DummyItem());
+            }
+        });
+        stepBuilder.produces(DummyItem.class);
+        stepBuilder.build();
+        builder.build();
+    }
 }

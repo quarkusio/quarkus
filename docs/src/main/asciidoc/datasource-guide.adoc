@@ -72,7 +72,8 @@ Quarkus provides driver extensions for:
 
 * H2 - jdbc-h2
 * PostgreSQL - jdbc-postgresql
-* MariaDB (and MySQL) - jdbc-mariadb
+* MariaDB - jdbc-mariadb
+* MySQL - jdbc-mysql
 * Microsoft SQL Server - jdbc-mssql
 
 [NOTE]
@@ -145,14 +146,23 @@ Defaults for the different parts are as follows:
 
 The https://jdbc.postgresql.org/documentation/head/connect.html[official documentation] go into more detail and list optional parameters as well.
 
-==== MariaDB/MySQL
+==== MariaDB
 
-`jdbc:(mysql|mariadb):[replication:|failover:|sequential:|aurora:]//<hostDescription>[,<hostDescription>...]/[database][?<key1>=<value1>[&<key2>=<value2>]]`
+`jdbc:mariadb:[replication:|failover:|sequential:|aurora:]//<hostDescription>[,<hostDescription>...]/[database][?<key1>=<value1>[&<key2>=<value2>]]`
+ hostDescription:: `<host>[:<portnumber>]  or address=(host=<host>)[(port=<portnumber>)][(type=(master|slave))]`
+
+Example:: `jdbc:mariadb://localhost:3306/test`
+
+You can find more information about this feature and others detailed in the https://mariadb.com/kb/en/library/about-mariadb-connector-j/[official documentation].
+
+==== MySQL
+
+`jdbc:mysql:[replication:|failover:|sequential:|aurora:]//<hostDescription>[,<hostDescription>...]/[database][?<key1>=<value1>[&<key2>=<value2>]]`
  hostDescription:: `<host>[:<portnumber>]  or address=(host=<host>)[(port=<portnumber>)][(type=(master|slave))]`
 
 Example:: `jdbc:mysql://localhost:3306/test`
 
-You can find more information about this feature and others detailed in the https://mariadb.com/kb/en/library/about-mariadb-connector-j/[official documentation].
+You can find more information about this feature and others detailed in the https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference.html[official documentation].
 
 ==== Microsoft SQL Server
 
@@ -225,6 +235,16 @@ AgroalDataSource dataSource1;
 @DataSource("inventory")
 AgroalDataSource dataSource2;
 --
+
+== Datasource Health Check
+
+If you are using the `quarkus-smallrye-health` extension, `quarkus-agroal` will automatically add a readiness health check
+to validate the datasource.
+
+So when you access the `/health/ready` endpoint of your application you will have information about the datasource validation status.
+If you have multiple datasources, all datasources will be checked and the status will be `DOWN` as soon as there is one datasource validation failure.
+
+This behavior can be disabled via the property `quarkus.datasource.health.enabled`.
 
 
 [[configuration-reference]]

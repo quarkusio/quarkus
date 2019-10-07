@@ -20,8 +20,8 @@ import org.apache.maven.model.Model;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.cli.commands.file.MavenBuildFile;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.generators.BuildTool;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 
@@ -45,7 +45,7 @@ public class ListExtensionsTest {
         new AddExtensions(new FileProjectWriter(pomFile.getParentFile()))
                 .addExtensions(new HashSet<>(asList("commons-io:commons-io:2.5", "Agroal")));
 
-        final ListExtensions listExtensions = new ListExtensions(writer, BuildTool.MAVEN);
+        final ListExtensions listExtensions = new ListExtensions(new MavenBuildFile(writer));
 
         final Map<String, Dependency> installed = listExtensions.findInstalled();
 
@@ -76,7 +76,7 @@ public class ListExtensionsTest {
         new AddExtensions(writer)
                 .addExtensions(new HashSet<>(asList("resteasy", " hibernate-validator ")));
 
-        final ListExtensions listExtensions = new ListExtensions(writer, BuildTool.MAVEN);
+        final ListExtensions listExtensions = new ListExtensions(new MavenBuildFile(writer));
 
         final Map<String, Dependency> installed = listExtensions.findInstalled();
 
@@ -118,7 +118,7 @@ public class ListExtensionsTest {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
             System.setOut(printStream);
-            new ListExtensions(writer, BuildTool.MAVEN)
+            new ListExtensions(new MavenBuildFile(writer))
                     .listExtensions(true, "full", null);
         } finally {
             System.setOut(out);
@@ -178,7 +178,7 @@ public class ListExtensionsTest {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
             System.setOut(printStream);
-            new ListExtensions(writer, BuildTool.MAVEN)
+            new ListExtensions(new MavenBuildFile(writer))
                     .listExtensions(true, "full", "unexpectedSearch");
         } finally {
             System.setOut(out);
@@ -211,7 +211,7 @@ public class ListExtensionsTest {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
             System.setOut(printStream);
-            new ListExtensions(writer, BuildTool.MAVEN)
+            new ListExtensions(new MavenBuildFile(writer))
                     .listExtensions(true, "full", "Rest");
         } finally {
             System.setOut(out);
@@ -222,7 +222,7 @@ public class ListExtensionsTest {
 
     @Test
     void testListExtensionsWithoutAPomFile() throws IOException {
-        ListExtensions listExtensions = new ListExtensions(null, BuildTool.MAVEN);
+        ListExtensions listExtensions = new ListExtensions(null);
         assertThat(listExtensions.findInstalled()).isEmpty();
     }
 }

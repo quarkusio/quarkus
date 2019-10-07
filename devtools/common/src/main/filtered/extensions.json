@@ -178,6 +178,16 @@
     "artifactId": "quarkus-jdbc-mariadb"
   },
   {
+    "name": "JDBC Driver - MySQL",
+    "labels": [
+      "jdbc-mysql",
+      "jdbc",
+      "mysql"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jdbc-mysql"
+  },
+  {
     "name": "JDBC Driver - PostgreSQL",
     "labels": [
       "jdbc-postgresql",
@@ -237,15 +247,14 @@
     "artifactId": "quarkus-jsonp"
   },
   {
-    "name": "Keycloak",
+    "name": "OpenID Connect",
     "labels": [
-      "keycloak",
       "oauth2",
       "openid-connect"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-keycloak",
-    "guide": "https://quarkus.io/guides/keycloak-guide"
+    "artifactId": "quarkus-oidc",
+    "guide": "https://quarkus.io/guides/oidc-guide"
   },
   {
     "name": "Kogito",
@@ -306,6 +315,18 @@
     "artifactId": "quarkus-mongodb-client"
   },
   {
+    "name": "MongoDB with Panache",
+    "labels": [
+      "mongo",
+      "mongodb",
+      "nosql",
+      "datastore",
+      "panache"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-mongodb-panache"
+  },
+  {
     "name": "Narayana JTA - Transaction manager",
     "labels": [
       "narayana-jta",
@@ -319,6 +340,22 @@
     "groupId": "io.quarkus",
     "artifactId": "quarkus-narayana-jta",
     "guide": "https://quarkus.io/guides/transaction-guide"
+  },
+  {
+    "name": "Narayana STM - Software Transactional Memory",
+    "labels": [
+      "narayana-stm",
+      "narayana",
+      "stm",
+      "transactions",
+      "transaction",
+      "software-transactional-memory",
+      "tx",
+      "txs"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-narayana-stm",
+    "guide": "https://quarkus.io/guides/stm-guide"
   },
   {
     "name": "Neo4j client",
@@ -421,13 +458,13 @@
     "guide": "https://quarkus.io/guides/scheduled-guide"
   },
   {
-    "name": "Security",
+    "name": "Properties File based Security",
     "labels": [
       "security"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-elytron-security",
-    "guide": "https://quarkus.io/guides/security-guide"
+    "artifactId": "quarkus-elytron-security-properties-file",
+    "guide": "https://quarkus.io/guides/elytron-properties-guide"
   },
   {
     "name": "Security OAuth2",

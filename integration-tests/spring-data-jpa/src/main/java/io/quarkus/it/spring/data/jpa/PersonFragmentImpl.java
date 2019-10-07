@@ -2,17 +2,17 @@ package io.quarkus.it.spring.data.jpa;
 
 import java.util.List;
 
-import org.springframework.stereotype.Component;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 
-import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
-
-@Component
 public class PersonFragmentImpl implements PersonFragment, PersonFragment2 {
+
+    @PersistenceContext
+    EntityManager entityManager;
 
     @Override
     public List<Person> findAll() {
-        System.out.println("Custom findAll");
-        return (List<Person>) JpaOperations.findAll(Person.class).list();
+        return entityManager.createQuery("SELECT p FROM Person p").getResultList();
     }
 
     @Override

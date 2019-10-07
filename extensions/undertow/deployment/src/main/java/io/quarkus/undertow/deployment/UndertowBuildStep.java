@@ -104,6 +104,8 @@ import io.quarkus.undertow.runtime.ServletSecurityInfoSubstitution;
 import io.quarkus.undertow.runtime.UndertowDeploymentRecorder;
 import io.quarkus.undertow.runtime.UndertowHandlersConfServletExtension;
 import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
+import io.quarkus.vertx.http.deployment.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
@@ -112,7 +114,7 @@ import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.RoutingContext;
 
 //TODO: break this up, it is getting too big
 public class UndertowBuildStep {
@@ -142,14 +144,21 @@ public class UndertowBuildStep {
             List<HttpHandlerWrapperBuildItem> wrappers,
             ShutdownContextBuildItem shutdown,
             Consumer<DefaultRouteBuildItem> undertowProducer,
+            BuildProducer<RouteBuildItem> routeProducer,
             ExecutorBuildItem executorBuildItem, HttpConfiguration httpConfiguration,
-            ServletRuntimeConfig servletRuntimeConfig) throws Exception {
-        Handler<HttpServerRequest> ut = recorder.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
+            ServletRuntimeConfig servletRuntimeConfig,
+            ServletContextPathBuildItem servletContextPathBuildItem) throws Exception {
+
+        Handler<RoutingContext> ut = recorder.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
                 servletDeploymentManagerBuildItem.getDeploymentManager(),
                 wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()), httpConfiguration,
                 servletRuntimeConfig);
 
-        undertowProducer.accept(new DefaultRouteBuildItem(ut));
+        if (servletContextPathBuildItem.getServletContextPath().equals("/")) {
+            undertowProducer.accept(new DefaultRouteBuildItem(ut));
+        } else {
+            routeProducer.produce(new RouteBuildItem(servletContextPathBuildItem.getServletContextPath() + "/*", ut));
+        }
         return new ServiceStartBuildItem("undertow");
     }
 
@@ -248,13 +257,15 @@ public class UndertowBuildStep {
             UndertowDeploymentRecorder recorder, RecorderContext context,
             List<ServletExtensionBuildItem> extensions,
             BeanContainerBuildItem bc,
+            BuildProducer<ServletContextPathBuildItem> servletContextPathBuildItemBuildProducer,
             WebMetadataBuildItem webMetadataBuildItem,
             BuildProducer<ObjectSubstitutionBuildItem> substitutions,
             Consumer<ReflectiveClassBuildItem> reflectiveClasses,
             LaunchModeBuildItem launchMode,
             ShutdownContextBuildItem shutdownContext,
             KnownPathsBuildItem knownPaths,
-            ServletConfig servletConfig) throws Exception {
+            ServletConfig servletConfig,
+            HttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
 
         ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(ServletSecurityInfo.class,
                 ServletSecurityInfoProxy.class, ServletSecurityInfoSubstitution.class);
@@ -264,7 +275,6 @@ public class UndertowBuildStep {
         WebMetaData webMetaData = webMetadataBuildItem.getWebMetaData();
         final IndexView index = combinedIndexBuildItem.getIndex();
         processAnnotations(index, webMetaData);
-
         String contextPath;
         if (servletConfig.contextPath.isPresent()) {
             if (!servletConfig.contextPath.get().startsWith("/")) {
@@ -272,14 +282,16 @@ public class UndertowBuildStep {
             } else {
                 contextPath = servletConfig.contextPath.get();
             }
-        } else if (webMetaData.getDefaultContextPath() != null) {
-            contextPath = webMetaData.getDefaultContextPath();
+        } else if (webMetadataBuildItem.getWebMetaData().getDefaultContextPath() != null) {
+            contextPath = webMetadataBuildItem.getWebMetaData().getDefaultContextPath();
         } else {
             contextPath = "/";
         }
+        servletContextPathBuildItemBuildProducer.produce(new ServletContextPathBuildItem(contextPath));
+
         RuntimeValue<DeploymentInfo> deployment = recorder.createDeployment("test", knownPaths.knownFiles,
                 knownPaths.knownDirectories,
-                launchMode.getLaunchMode(), shutdownContext, contextPath);
+                launchMode.getLaunchMode(), shutdownContext, contextPath, httpBuildTimeConfig.rootPath);
 
         if (webMetaData.getContextParams() != null) {
             for (ParamValueMetaData i : webMetaData.getContextParams()) {

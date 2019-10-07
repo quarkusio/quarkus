@@ -158,6 +158,144 @@ You can add the `greeting.suffix`, remove the other properties, change the value
 As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
 You can also generate the native executable with `./mvnw clean package -Pnative`.
 
+== Using @ConfigProperties
+
+As an alternative to injecting multiple related configuration values in the way that was shown in the previous example,
+users can also use the `@io.quarkus.arc.config.ConfigProperties` annotation to group these properties together.
+
+For the greeting properties above, a `GreetingConfiguration` class could be created like so:
+
+[source,java]
+----
+package org.acme.config;
+
+import io.quarkus.arc.config.ConfigProperties;
+import java.util.Optional;
+
+@ConfigProperties(prefix = "greeting") <1>
+public class GreetingConfiguration {
+
+    private String message;
+    private String suffix = "!"; <2>
+    private Optional<String> name;
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public String getSuffix() {
+        return suffix;
+    }
+
+    public void setSuffix(String suffix) {
+        this.suffix = suffix;
+    }
+
+    public Optional<String> getName() {
+        return name;
+    }
+
+    public void setName(Optional<String> name) {
+        this.name = name;
+    }
+}
+----
+<1> `prefix` is optional. If not set then the prefix to be used will be determined by the class name. In this case it would still be `greeting` (since the `Configuration` suffix is removed). If the class were named `GreetingExtraConfiguration` then the resulting default prefix would be `greeting-extra`.
+<2> `!` will be the default value if `greeting.suffix` is not set
+
+This class could then be injected into the `GreetingResource` using the familiar CDI `@Inject` annotation like so:
+
+[source,java]
+----
+@Inject
+GreetingConfiguation greetingConfigation;
+----
+
+Another alternative style provided by Quarkus is to create `GreetingConfiguration` as an interface like so:
+
+[source,java]
+----
+package org.acme.config;
+
+import io.quarkus.arc.config.ConfigProperties;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import java.util.Optional;
+
+@ConfigProperties(prefix = "greeting")
+public interface GreetingConfiguration {
+
+    @ConfigProperty(name = "message") <1>
+    String message();
+
+    @ConfigProperty(defaultValue = "!")
+    String getSuffix(); <2>
+
+    Optional<String> getName(); <3>
+}
+----
+<1> The `@ConfigProperty` annotation is needed because the name of the configuration property that the method corresponds to doesn't follow the getter method naming conventions
+<2> In this case since `name` was not set, the corresponding property will be `greeting.suffix`.
+<3> It is unnecessary to specify the `@ConfigProperty` annotation because the method name follows the getter method naming conventions (`greeting.name` being the corresponding property) and no default value is needed.
+
+=== Additional notes on @ConfigProperties
+
+When using a regular class annotated with `@ConfigProperties` the class doesn't necessarily have to declare getters and setters.
+Having simple public non-final fields is valid as well.
+
+Furthermore the configuration classes support nested object configuration. Suppose there was a need to have an extra layer
+of greeting configuration named `hidden` that would contain a few fields. This could be achieved like so:
+
+[source,java]
+----
+@ConfigProperties(prefix = "greeting")
+public class GreetingConfiguration {
+
+    public String message;
+    public String suffix = "!";
+    public Optional<String> name;
+    public HiddenConfig hidden; <1>
+
+    public static class HiddenConfig {
+        public Integer prizeAmount;
+        public List<String> recipients;
+    }
+}
+----
+<1> The name of the field (not the class name) will determine the name of the properties that are bound to the object.
+
+Setting the properties would occur in the normal manner, for example in `application.properties` one could have:
+
+[source,properties]
+----
+greeting.message = hello
+greeting.name = quarkus
+greeting.hidden.prizeAmount=10
+greeting.hidden.recipients=Jane,John
+----
+
+Furthermore, classes annotated with `@ConfigProperties` can be annotated with Bean Validation annotations similar to the following example:
+
+[source,java]
+----
+@ConfigProperties(prefix = "greeting")
+public class GreetingConfiguration {
+
+    @Size(min = 20)
+    public String message;
+    public String suffix = "!";
+
+}
+----
+
+If the validation fails with the given configuration, the application will fail to start and indicate the corresponding validation errors in the log.
+
+In the case of an interface being annotated with `@ConfigProperties`, the interface is allowed to extend other interfaces and methods from
+the entire interface hierarchy are used to bind properties.
+
 == Configuring Quarkus
 
 Quarkus itself is configured via the same mechanism as your application. Quarkus reserves the `quarkus.` namespace

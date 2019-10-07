@@ -85,9 +85,9 @@ Next navigate to _Java_ -> _Code Style_ -> _Organize Imports_. Click _Import_ an
 
 #### IDEA Setup
 
-Open the _Preferences_ window, navigate to _Plugins_ and install the [Eclipse Code Formatter Plugin](https://plugins.jetbrains.com/plugin/6546-eclipse-code-formatter).
+Open the _Preferences_ window (or _Settings_ depending on your edition) , navigate to _Plugins_ and install the [Eclipse Code Formatter Plugin](https://plugins.jetbrains.com/plugin/6546-eclipse-code-formatter) from the Marketplace.
 
-Restart your IDE, open the *Preferences* window again and navigate to _Other Settings_ -> _Eclipse Code Formatter_.
+Restart your IDE, open the *Preferences* (or *Settings*) window again and navigate to _Other Settings_ -> _Eclipse Code Formatter_.
 
 Select _Use the Eclipse Code Formatter_, then change the _Eclipse Java Formatter Config File_ to point to the
 `eclipse-format.xml` file in the `ide-config` directory. Make sure the _Optimize Imports_ box is ticked, and
@@ -108,6 +108,10 @@ cd quarkus
 ```
 
 The default build does not create native images, which is quite time consuming.
+
+Note that the full build with all tests is quite slow, you will usually want to build with `-DskipTests`. This will also
+skip creation of the integration-test runner jars. If you want to skip tests but still create the runners you can set
+`-DskipTests -Dquarkus.build.skip=false`
 
 You can build and test native images in the integration tests supporting it by using `./mvnw install -Dnative`.
 
@@ -141,3 +145,7 @@ To import Quarkus you need to define the JVM Max Heap Size (E.g. `-Xmx1g`)
 ```
 DevMojoIT require a few minutes to run but anything more than that is not expected. Make sure that nothing is running on 8080.
 
+* The native integration test for my extension didn't run in the CI
+
+In the interest of speeding up CI, the native build stage `run_native_tests_stage` have been split into multiple steps. 
+This means that each new extension needs to be configured explicitly in `azure-pipelines.yml` to have it's integration tests run in native mode

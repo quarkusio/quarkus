@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.producer.generic;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -13,14 +13,14 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * Test for https://github.com/quarkus-project/quarkus/issues/120
  */
 public class ErasedGenericTest {
-    @Rule
+    @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(ErasedTypeProducer.class, Claim.class, Target.class);
 
     @Test

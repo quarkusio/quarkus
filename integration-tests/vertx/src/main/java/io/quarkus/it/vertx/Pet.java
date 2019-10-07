@@ -1,5 +1,9 @@
 package io.quarkus.it.vertx;
 
+/**
+ * Simple pojo.
+ * The test using this pojo will use the generic codec facility.
+ */
 public class Pet {
 
     private final String name;

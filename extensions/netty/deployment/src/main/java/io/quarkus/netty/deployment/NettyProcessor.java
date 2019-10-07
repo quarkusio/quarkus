@@ -16,8 +16,11 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.JniBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
 import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.netty.runtime.NettyRecorder;
@@ -34,6 +37,20 @@ class NettyProcessor {
     }
 
     @BuildStep
+    public SubstrateSystemPropertyBuildItem limitMem() {
+        //in native mode we limit the size of the epoll array
+        //if the array overflows the selector just moves the overflow to a map
+        return new SubstrateSystemPropertyBuildItem("sun.nio.ch.maxUpdateArraySize", "100");
+    }
+
+    @BuildStep
+    public SystemPropertyBuildItem limitArenaSize() {
+        //in native mode we limit the size of the epoll array
+        //if the array overflows the selector just moves the overflow to a map
+        return new SystemPropertyBuildItem("io.netty.allocator.maxOrder", "1");
+    }
+
+    @BuildStep
     SubstrateConfigBuildItem build(BuildProducer<JniBuildItem> jni) {
         boolean enableJni = false;
 
@@ -43,13 +60,19 @@ class NettyProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "java.util.LinkedHashMap"));
 
         SubstrateConfigBuildItem.Builder builder = SubstrateConfigBuildItem.builder()
-                .addNativeImageSystemProperty("io.netty.noUnsafe", "true")
+                //.addNativeImageSystemProperty("io.netty.noUnsafe", "true")
+                // Use small chunks to avoid a lot of wasted space. Default is 16mb * arenas (derived from core count)
+                // Since buffers are cached to threads, the malloc overhead is temporary anyway
+                .addNativeImageSystemProperty("io.netty.allocator.maxOrder", "1")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.JdkNpnApplicationProtocolNegotiator")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslEngine")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslContext")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslClientContext")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.util.ThreadLocalInsecureRandom")
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil$HexUtil")
+                .addRuntimeInitializedClass("io.netty.buffer.PooledByteBufAllocator")
+                .addRuntimeInitializedClass("io.netty.buffer.ByteBufAllocator")
+                .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ConscryptAlpnSslEngine")
                 .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED");
         try {
@@ -141,6 +164,12 @@ class NettyProcessor {
                 .setScope(ApplicationScoped.class)
                 .addQualifier(MainEventLoopGroup.class)
                 .build());
+    }
+
+    @BuildStep
+    public RuntimeReinitializedClassBuildItem reinitScheduledFutureTask() {
+        return new RuntimeReinitializedClassBuildItem(
+                "io.quarkus.netty.runtime.graal.Holder_io_netty_util_concurrent_ScheduledFutureTask");
     }
 
 }

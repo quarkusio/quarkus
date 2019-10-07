@@ -1,0 +1,148 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Using Software Transactional Memory in Quarkus
+
+include::./attributes.adoc[]
+
+Quarkus supports the Software Transactional Memory (STM) implementation provided by the
+Narayana open source project. Narayana STM allows a program to group object accesses into
+a transaction such that other transactions either see all of the changes at once or they
+see none of them.
+
+STM offers an approach to developing transactional applications in a highly concurrent
+environment with some of the same characteristics of ACID (Atomicity, Consistency,
+Isolation and Durability) transactions.
+
+To use Narayana STM you must define which objects you would like to be transactional using java
+annotations. Please refer to the https://narayana.io/docs/project/index.html#d0e16066[Narayana STM manual]
+and the https://narayana.io//docs/project/index.html#d0e16133[STM annotations guide] for more details.
+
+There is also a fully worked example in the quickstarts which you may access by cloning the
+Git repository: `git clone {quickstarts-clone-url}`, or by downloading an {quickstarts-archive-url}[archive].
+Look for the `using-stm` example.
+
+== Setting it up
+
+To use the extension include it as a dependency in your application pom:
+
+[source,xml]
+--
+<dependencies>
+    <!-- STM extension -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-narayana-stm</artifactId>
+      <version>${quarkus.version}</version>
+    </dependency>
+</dependencies>
+--
+
+Now you may use the STM library just like you would normally use it. But briefly, the process is:
+
+== Defining Transactional Objects
+
+Transactional objects must implement an interface. Add the `org.jboss.stm.annotations.Transactional` annotation to the
+interfaces that you wish to be managed by a transactional container. For example
+
+[source,java]
+--
+@Transactional
+public interface FlightService {
+    int getNumberOfBookings();
+    void makeBooking(String details);
+}
+--
+
+Unless specified using other annotations, all public methods of implementations of this object will be assumed to modify the state of the object.
+Please refer to the Narayana guide for details of how to exert finer grained control over the transactional behaviour of objects that implement
+interfaces marked with the `@Transactional` annotation.
+
+== Creating STM objects
+
+The STM library needs to be told which objects it should be managing by providing a container for the transactional memory.
+The default container (`org.jboss.stm.Container`) provides support for volatile objects that cannot be shared between JVMs
+(although other constructors do allow for other models):
+
+[source,java]
+--
+    import org.jboss.stm.Container;
+
+    ...
+
+    Container<FlightService> container = new Container<>(); <1>
+    FlightServiceImpl instance = new FlightServiceImpl(); <2>
+    FlightService flightServiceProxy = container.create(instance); <3>
+--
+
+<1> You need to tell each Container about the type of objects for which it will be responsible. In this example
+    it will be instances that implement the FlightService interface.
+<2> Then you create an instance that implements FlightService. You cannot use it directly at this stage because
+    its operations aren't being monitored by the Container.
+<3> To obtain a managed instance, pass the instance to the `container` to obtain a reference through which you
+    will be able perform transactional operations. This reference can be used safely from multiple threads
+    (provided that each thread uses it in a transaction context - see the next section.
+
+== Defining transaction boundaries
+
+STM objects must be accessed within a transaction (otherwise they will behave just like any other java object).
+You can define the transaction boundary in two ways:
+
+=== Declarative approach
+
+The easiest, but less flexible, way to define your transaction boundaries is to place an `@NestedTopLevel` or `@Nested` annotation on the interface.
+Then when a method of your transactional object is invoked a new transaction will be created for the duration of the method call.
+
+=== API approach
+
+The more flexible approach is to manually start a transaction before accessing methods of transactional objects:
+
+[source,java]
+--
+AtomicAction aa = new AtomicAction(); <1>
+
+aa.begin(); <2>
+{
+    try {
+        flightService.makeBooking("BA123 ...");
+        taxiService.makeBooking("East Coast Taxis ..."); <3>
+        <4>
+        aa.commit();
+        <5>
+    } catch (Exception e) {
+        aa.abort(); <6>
+    }
+}
+--
+
+<1> An object for manually controlling transaction boundaries (AtomicAction and many other useful
+    classes are included in the extension).
+    Refer https://narayana.io//docs/api/com/arjuna/ats/arjuna/AtomicAction.html[to the javadoc] for more detail.
+<2> Programmatically begin a transaction.
+<3> Notice that object updates can be composed which means that updates to multiple objects can be committed together as a single action.
+    [Note that it is also possible to begin nested transactions so that you can perform speculative work which may then be abandoned
+    without abandoning other work performed by the outer transaction].
+<4> Since the transaction has not yet been committed the changes made by the flight and taxi services are not visible outside of the transaction.
+<5> Since the commit was successful the changes made by the flight and taxi services are now visible to other threads.
+    Note that other transactions that relied on the old state may or may not now incur conflicts when they commit (the STM library
+    provides a number of features for managing conflicting behaviour and these are covered in the Narayana STM manual).
+<6> Programmatically decide to abort the transaction which means that the changes made by the flight and taxi services are discarded.
+
+== Concurrency behaviour
+
+The goal of STM is to simplify object reads and writes from multiple threads.
+Threads are responsible for starting their own transactions before accessing
+a transactional object. The STM library will safely manage any conflicts between
+these threads. For example, if the access mode is pessimistic (the default),
+and a thread enters a transactional method then other threads may be blocked
+until the first thread leaves the method. This blocking behaviour may be modified
+using suitable STM annotations. Optimistic concurrency is also supported: in
+this mode conflicts are checked only at commit time and a thread may be forced
+to abort if another thread has made conflicting updates.
+
+Remark: sharing a transaction between multiple threads is possible but is currently
+an advanced use case only and the Narayana documentation should be consulted
+if this behaviour is required. In particular, STM does not yet support the features
+described in the link:context-propagation-guide.html[Context Propagation guide].

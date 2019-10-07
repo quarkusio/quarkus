@@ -147,6 +147,9 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(property = "ignoredEntries")
     private String[] ignoredEntries;
 
+    @Parameter(defaultValue = "false")
+    private boolean skip = false;
+
     public BuildMojo() {
         MojoLogger.logSupplier = this::getLog;
     }
@@ -156,6 +159,10 @@ public class BuildMojo extends AbstractMojo {
 
         if (project.getPackaging().equals("pom")) {
             getLog().info("Type of the artifact is POM, skipping build goal");
+            return;
+        }
+        if (skip) {
+            getLog().info("Skipping Quarkus build");
             return;
         }
 

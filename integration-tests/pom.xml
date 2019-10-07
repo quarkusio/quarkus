@@ -17,6 +17,7 @@
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
+        <quarkus.build.skip>${skipTests}</quarkus.build.skip>
     </properties>
 
     <modules>
@@ -32,8 +33,10 @@
         <module>jpa-mariadb</module>
         <module>jpa-h2</module>
         <module>jpa-mssql</module>
+        <module>jpa-mysql</module>
         <module>hibernate-orm-panache</module>
         <module>hibernate-search-elasticsearch</module>
+        <module>vertx-http</module>
         <module>vertx</module>
         <module>spring-di</module>
         <module>spring-web</module>
@@ -42,7 +45,7 @@
         <module>elytron-security</module>
         <module>elytron-security-oauth2</module>
         <module>flyway</module>
-        <module>keycloak</module>
+        <module>oidc</module>
         <module>reactive-pg-client</module>
         <module>reactive-mysql-client</module>
         <module>amazon-dynamodb</module>
@@ -61,8 +64,10 @@
         <module>artemis-core</module>
         <module>artemis-jms</module>
         <module>maven</module>
-        <module>kotlin</module>
         <module>scala</module>
+        <module>kotlin</module>
+        <module>mongodb-panache</module>
+        <module>narayana-stm</module>
     </modules>
 
     <build>
@@ -84,6 +89,7 @@
                     <version>${project.version}</version>
                     <configuration>
                         <noDeps>true</noDeps>
+                        <skip>${quarkus.build.skip}</skip>
                     </configuration>
                 </plugin>
             </plugins>

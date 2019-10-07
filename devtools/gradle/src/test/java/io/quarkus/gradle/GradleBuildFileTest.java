@@ -1,10 +1,9 @@
 package io.quarkus.gradle;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.net.URI;
@@ -38,8 +37,7 @@ class GradleBuildFileTest {
     @Test
     void testGetDependencies() {
         List<Dependency> dependencies = buildFile.getDependencies();
-        assertNotNull(dependencies);
-        assertFalse(dependencies.isEmpty());
+        assertThat(dependencies).isNotEmpty();
         List<String> depsString = new ArrayList<>();
         for (Iterator<Dependency> depIter = dependencies.iterator(); depIter.hasNext();) {
             Dependency dependency = depIter.next();
@@ -49,9 +47,8 @@ class GradleBuildFileTest {
             }
             depsString.add(managementKey);
         }
-        assertTrue(depsString.contains("io.quarkus:quarkus-jsonp:jar:999-SNAPSHOT"));
-        assertTrue(depsString.contains("io.quarkus:quarkus-jsonb:jar:999-SNAPSHOT"));
-        assertTrue(depsString.contains("io.quarkus:quarkus-resteasy:jar:999-SNAPSHOT"));
+        assertThat(depsString).contains("io.quarkus:quarkus-jsonp:jar:999-SNAPSHOT",
+                "io.quarkus:quarkus-jsonb:jar:999-SNAPSHOT", "io.quarkus:quarkus-resteasy:jar:999-SNAPSHOT");
     }
 
     @Test
@@ -64,16 +61,16 @@ class GradleBuildFileTest {
     void testFindInstalled() throws IOException {
         Map<String, Dependency> installed = buildFile.findInstalled();
         assertNotNull(installed);
-        assertFalse(installed.isEmpty());
+        assertThat(installed).isNotEmpty();
+
         Dependency jsonb = installed.get("io.quarkus:quarkus-jsonb");
-        assertNotNull(jsonb);
-        assertEquals("999-SNAPSHOT", jsonb.getVersion());
+        assertThat(jsonb).extracting("version").isEqualTo("999-SNAPSHOT");
+
         Dependency jsonp = installed.get("io.quarkus:quarkus-jsonp");
-        assertNotNull(jsonp);
-        assertEquals("999-SNAPSHOT", jsonp.getVersion());
+        assertThat(jsonp).extracting("version").isEqualTo("999-SNAPSHOT");
+
         Dependency resteasy = installed.get("io.quarkus:quarkus-resteasy");
-        assertNotNull(resteasy);
-        assertEquals("999-SNAPSHOT", resteasy.getVersion());
+        assertThat(resteasy).extracting("version").isEqualTo("999-SNAPSHOT");
     }
 
 }

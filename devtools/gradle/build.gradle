@@ -52,7 +52,7 @@ pluginBundle {
 
 gradlePlugin {
     plugins {
-        simplePlugin {
+        quarkusPlugin {
             id = 'io.quarkus'
             implementationClass = 'io.quarkus.gradle.QuarkusPlugin'
             displayName = 'Quarkus Plugin'

@@ -153,12 +153,6 @@ quarkus.http.cors.exposed-headers=Content-Disposition
 quarkus.http.cors.access-control-max-age=24H
 ----
 
-[WARNING]
-====
-If you want to use the `keycloak` Quarkus extension in your project, you should configure CORS using the `keycloak` extension
-configuration. See link:keycloak-guide#configuring-cors[the Keycloak guide] for more details.
-====
-
 == Http Limits Configuration
 The following properties are supported.
 [cols="<m,<m,<2",options="header"]

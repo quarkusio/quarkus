@@ -43,6 +43,7 @@
         <module>resteasy</module>
         <module>resteasy-jsonb</module>
         <module>resteasy-jackson</module>
+        <module>resteasy-jaxb</module>
         <module>rest-client</module>
         <module>smallrye-openapi-common</module>
         <module>smallrye-openapi</module>

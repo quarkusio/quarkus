@@ -25,7 +25,7 @@ public class ResteasyJacksonProcessor {
 
     private static final DotName OBJECT_MAPPER = DotName.createSimple(ObjectMapper.class.getName());
 
-    @BuildStep(providesCapabilities = { Capabilities.RESTEASY_JSON_EXTENSION, "io.quarkus.resteasy.jackson" })
+    @BuildStep(providesCapabilities = { Capabilities.RESTEASY_JSON_EXTENSION })
     void build(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY_JACKSON));
     }

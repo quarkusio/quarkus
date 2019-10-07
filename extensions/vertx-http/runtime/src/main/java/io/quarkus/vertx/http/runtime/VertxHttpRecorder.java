@@ -175,7 +175,7 @@ public class VertxHttpRecorder {
         }
 
         if (defaultRouteHandler != null) {
-            defaultRouteHandler.accept(router.route());
+            defaultRouteHandler.accept(router.route().order(10_000));
         }
 
         container.instance(RouterProducer.class).initialize(router);

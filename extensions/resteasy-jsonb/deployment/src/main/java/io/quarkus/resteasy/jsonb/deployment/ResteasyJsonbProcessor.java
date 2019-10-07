@@ -25,7 +25,7 @@ public class ResteasyJsonbProcessor {
 
     private static final DotName JSONB = DotName.createSimple(Jsonb.class.getName());
 
-    @BuildStep(providesCapabilities = { Capabilities.RESTEASY_JSON_EXTENSION, "io.quarkus.resteasy.jsonb" })
+    @BuildStep(providesCapabilities = { Capabilities.RESTEASY_JSON_EXTENSION })
     void build(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY_JSONB));
     }

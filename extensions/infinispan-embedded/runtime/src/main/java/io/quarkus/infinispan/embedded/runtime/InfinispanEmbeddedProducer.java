@@ -51,8 +51,9 @@ public class InfinispanEmbeddedProducer {
     }
 
     /**
-     * Verifies that if a configuration  has transactions enabled that it only uses the lookup that uses the
+     * Verifies that if a configuration has transactions enabled that it only uses the lookup that uses the
      * JBossStandaloneJTAManager, which looks up the transaction manager used by Quarkus
+     * 
      * @param configurationBuilder the current configuration
      * @param cacheName the cache for the configuration
      */

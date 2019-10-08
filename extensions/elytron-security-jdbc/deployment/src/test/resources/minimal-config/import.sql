@@ -1,3 +1,5 @@
+DROP TABLE test_user IF EXISTS;
+
 CREATE TABLE test_user (
   id INT,
   username VARCHAR(255),

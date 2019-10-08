@@ -1,7 +1,11 @@
+DROP TABLE test_role IF EXISTS;
+
 CREATE TABLE test_role (
   id INT,
   role_name VARCHAR(255)
 );
+
+DROP TABLE test_user_role IF EXISTS;
 
 CREATE TABLE test_user_role (
   username VARCHAR(255),

@@ -218,6 +218,14 @@
     "artifactId": "quarkus-jackson"
   },
   {
+    "name": "JAXB",
+    "labels": [
+      "jaxb"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jaxb"
+  },
+  {
     "name": "JGit",
     "labels": [
       "git"
@@ -410,19 +418,15 @@
     "guide": "https://quarkus.io/guides/rest-json-guide"
   },
   {
-    "name": "RESTEasy - JSON-B",
+    "name": "RESTEasy - JAXB",
     "labels": [
-      "resteasy-jsonb",
-      "jaxrs-json",
-      "resteasy-json",
+      "resteasy-jaxb",
+      "jaxrs-jaxb",
       "resteasy",
-      "jaxrs",
-      "json",
-      "jsonb"
+      "jaxb"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-resteasy-jsonb",
-    "guide": "https://quarkus.io/guides/rest-json-guide"
+    "artifactId": "quarkus-resteasy-jaxb"
   },
   {
     "name": "RESTEasy - Jackson",
@@ -437,6 +441,21 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-resteasy-jackson"
+  },
+  {
+    "name": "RESTEasy - JSON-B",
+    "labels": [
+      "resteasy-jsonb",
+      "jaxrs-json",
+      "resteasy-json",
+      "resteasy",
+      "jaxrs",
+      "json",
+      "jsonb"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-resteasy-jsonb",
+    "guide": "https://quarkus.io/guides/rest-json-guide"
   },
   {
     "name": "Scala",

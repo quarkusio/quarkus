@@ -47,7 +47,9 @@ public class DataSourceRuntimeConfig {
     public int maxSize;
 
     /**
-     * The interval at which we validate idle connections in the background
+     * The interval at which we validate idle connections in the background.
+     * <p>
+     * Set to {@code 0} to disable background validation.
      */
     @ConfigItem(defaultValue = "2M")
     public Optional<Duration> backgroundValidationInterval;

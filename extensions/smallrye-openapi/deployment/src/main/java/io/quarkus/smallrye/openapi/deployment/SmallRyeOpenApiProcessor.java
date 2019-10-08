@@ -39,6 +39,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -210,27 +211,33 @@ public class SmallRyeOpenApiProcessor {
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
             BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
             BuildProducer<SubstrateResourceBuildItem> substrateResources,
-            OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem) throws Exception {
+            OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
+            DeploymentClassLoaderBuildItem deploymentClassLoaderBuildItem) throws Exception {
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(deploymentClassLoaderBuildItem.getClassLoader());
+            FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
 
-        FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
+            feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
+            OpenAPI staticModel = generateStaticModel(archivesBuildItem);
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
-        OpenAPI staticModel = generateStaticModel(archivesBuildItem);
-
-        OpenAPI annotationModel;
-        Config config = ConfigProvider.getConfig();
-        boolean scanDisable = config.getOptionalValue(OASConfig.SCAN_DISABLE, Boolean.class).orElse(false);
-        if (resteasyJaxrsConfig.isPresent() && !scanDisable) {
-            annotationModel = generateAnnotationModel(index, resteasyJaxrsConfig.get());
-        } else {
-            annotationModel = null;
-        }
-        OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel);
-        for (OpenApiSerializer.Format format : OpenApiSerializer.Format.values()) {
-            String name = OpenApiHandler.BASE_NAME + format;
-            resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name,
-                    OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8)));
-            substrateResources.produce(new SubstrateResourceBuildItem(name));
+            OpenAPI annotationModel;
+            Config config = ConfigProvider.getConfig();
+            boolean scanDisable = config.getOptionalValue(OASConfig.SCAN_DISABLE, Boolean.class).orElse(false);
+            if (resteasyJaxrsConfig.isPresent() && !scanDisable) {
+                annotationModel = generateAnnotationModel(index, resteasyJaxrsConfig.get());
+            } else {
+                annotationModel = null;
+            }
+            OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel);
+            for (OpenApiSerializer.Format format : OpenApiSerializer.Format.values()) {
+                String name = OpenApiHandler.BASE_NAME + format;
+                resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name,
+                        OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8)));
+                substrateResources.produce(new SubstrateResourceBuildItem(name));
+            }
+        } finally {
+            Thread.currentThread().setContextClassLoader(old);
         }
     }
 

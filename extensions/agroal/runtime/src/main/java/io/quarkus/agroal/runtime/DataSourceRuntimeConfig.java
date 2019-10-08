@@ -87,4 +87,10 @@ public class DataSourceRuntimeConfig {
      */
     @ConfigItem
     public boolean enableMetrics;
+
+    /**
+     * Query executed when first using a connection.
+     */
+    @ConfigItem
+    public Optional<String> newConnectionSql;
 }

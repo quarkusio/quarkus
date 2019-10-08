@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-elytron-security-jdbc</artifactId>
-    <name>Quarkus - Elytron Security Jdbc - Runtime</name>
+    <name>Quarkus - Elytron Security JDBC - Runtime</name>
 
     <dependencies>
         <dependency>

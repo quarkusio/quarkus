@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-elytron-security-jdbc-parent</artifactId>
-    <name>Quarkus - Elytron Security Jdbc - Parent</name>
+    <name>Quarkus - Elytron Security JDBC</name>
 
     <packaging>pom</packaging>
     <modules>

@@ -51,6 +51,8 @@ public class NativeImageLauncher implements Closeable {
 
     public void start() throws IOException {
 
+        System.setProperty("test.url", TestHTTPResourceManager.getUri());
+
         String path = System.getProperty("native.image.path");
         if (path == null) {
             path = guessPath(testClass);

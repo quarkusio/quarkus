@@ -228,6 +228,8 @@ public class QuarkusTestExtension
                 .build();
         runtimeRunner.run();
 
+        System.setProperty("test.url", TestHTTPResourceManager.getUri());
+
         Closeable shutdownTask = new Closeable() {
             @Override
             public void close() throws IOException {

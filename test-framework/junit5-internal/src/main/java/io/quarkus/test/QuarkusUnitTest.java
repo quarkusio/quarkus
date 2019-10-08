@@ -273,6 +273,7 @@ public class QuarkusUnitTest
                     fail("The build was expected to fail");
                 }
                 started = true;
+                System.setProperty("test.url", TestHTTPResourceManager.getUri());
                 Instance<?> factory;
                 try {
                     factory = CDI.current()

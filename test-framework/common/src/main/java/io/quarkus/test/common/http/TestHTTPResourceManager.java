@@ -17,9 +17,7 @@ public class TestHTTPResourceManager {
         String host = config.getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
         String port = config.getOptionalValue("quarkus.http.test-port", String.class).orElse("8081");
         String contextPath = config.getOptionalValue("quarkus.servlet.context-path", String.class).orElse("");
-        String testUrl = "http://" + host + ":" + port + contextPath;
-        System.setProperty("test.url", testUrl);
-        return testUrl;
+        return "http://" + host + ":" + port + contextPath;
     }
 
     public static void inject(Object testCase) {

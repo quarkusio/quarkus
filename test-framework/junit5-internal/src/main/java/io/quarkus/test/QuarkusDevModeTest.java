@@ -339,15 +339,18 @@ public class QuarkusDevModeTest
     }
 
     public void sleepForFileChanges(Path path) {
-        long currentTime = System.currentTimeMillis();
         try {
+            //we want to make sure the last modified time is larger than both the current time
+            //and the current last modified time. Some file systems only resolve file
+            //time to the nearest second, so this is necessary for dev mode to pick up the changes
+            long timeToBeat = Math.max(System.currentTimeMillis(), Files.getLastModifiedTime(path).toMillis());
             for (;;) {
                 Files.setLastModifiedTime(path, FileTime.fromMillis(System.currentTimeMillis()));
                 long fm = Files.getLastModifiedTime(path).toMillis();
-                if (fm > currentTime) {
+                Thread.sleep(10);
+                if (fm > timeToBeat) {
                     return;
                 }
-                Thread.sleep(50);
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

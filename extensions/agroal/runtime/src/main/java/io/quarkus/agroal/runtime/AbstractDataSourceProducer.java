@@ -16,6 +16,7 @@ import javax.transaction.TransactionSynchronizationRegistry;
 import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
+import io.agroal.api.configuration.AgroalConnectionPoolConfiguration.ConnectionValidator;
 import io.agroal.api.configuration.supplier.AgroalConnectionFactoryConfigurationSupplier;
 import io.agroal.api.configuration.supplier.AgroalConnectionPoolConfigurationSupplier;
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
@@ -129,6 +130,7 @@ public abstract class AbstractDataSourceProducer {
         }
 
         // Connection management
+        poolConfiguration.connectionValidator(ConnectionValidator.defaultValidator());
         if (dataSourceRuntimeConfig.acquisitionTimeout.isPresent()) {
             poolConfiguration.acquisitionTimeout(dataSourceRuntimeConfig.acquisitionTimeout.get());
         }

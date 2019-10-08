@@ -149,21 +149,7 @@ quarkus.oidc.credentials.secret=secret
 
 === Configuring CORS
 
-If you plan to consume this application from a Web Application running on a different domain, you will need to configure CORS (Cross-origin resource sharing). The Keycloak extension have an option for that :
-
-[source,properties]
-----
-quarkus.keycloak.enable-cors=true
-----
-
-For most use case that will be enough but if you need a more fined-grained CORS configuration you can set these different options :
-
-[source,properties]
-----
-quarkus.keycloak.cors-max-age=1000
-quarkus.keycloak.cors-allowed-methods=POST, PUT, DELETE, GET
-quarkus.keycloak.cors-exposed-headers=WWW-Authenticate, My-custom-exposed-Header
-----
+If you plan to consume this application from another application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the link:http-reference.html#cors-filter[HTTP CORS documentation] for more details.
 
 == Starting and Configuring the Keycloak Server
 
@@ -289,5 +275,5 @@ export access_token=$(\
 == References
 
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
-* https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_overview[Keycloak Policy Enforcer]
-* https://www.keycloak.org/docs/latest/securing_apps/index.html#_multi_tenancy
+* https://openid.net/connect/[OpenID Connect]
+* https://tools.ietf.org/html/rfc7519[JSON Web Token]

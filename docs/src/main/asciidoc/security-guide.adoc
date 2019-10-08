@@ -83,8 +83,8 @@ very much a work in progress, so this list will be expanded over the coming week
 |link:jwt-guide.html[quarkus-smallrye-jwt]
 |A Microprofile JWT implementation that provides support for authenticating using Json Web Tokens. This also allows you to inject the token and claims into the application as per the MP JWT spec.
 
-|link:keycloak-guide.html[quarkus-vertx-keycloak]
-|Provides support for authenticating via Keycloak's OpenID connect implementation.
+|link:oidc-guide.html[quarkus-oidc]
+|Provides support for authenticating via an OpenID Connect provider such as Keycloak.
 
 |===
 

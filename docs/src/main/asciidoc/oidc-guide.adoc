@@ -142,10 +142,8 @@ The OpenID Connect extension allows you to define the adapter configuration usin
 
 [source,properties]
 ----
-quarkus.oidc.realm=quarkus
-quarkus.oidc.auth-server-url=http://localhost:8180/auth
-quarkus.oidc.resource=backend-service
-quarkus.oidc.bearer-only=true
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.client-id=backend-service
 quarkus.oidc.credentials.secret=secret
 ----
 

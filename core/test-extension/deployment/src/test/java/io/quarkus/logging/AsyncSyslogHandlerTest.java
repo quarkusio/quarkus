@@ -39,7 +39,7 @@ public class AsyncSyslogHandlerTest {
                 .filter(h -> (h instanceof AsyncHandler))
                 .findFirst().get();
         assertThat(handler).isNotNull();
-        assertThat(handler.getLevel()).isEqualTo(Level.ALL);
+        assertThat(handler.getLevel()).isEqualTo(Level.WARNING);
 
         AsyncHandler asyncHandler = (AsyncHandler) handler;
         assertThat(asyncHandler.getHandlers()).isNotEmpty();

@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-elytron-security-jdbc-deployment</artifactId>
-    <name>Quarkus - Elytron Security Jdbc - Deployment</name>
+    <name>Quarkus - Elytron Security JDBC - Deployment</name>
 
     <dependencies>
         <dependency>
@@ -22,6 +22,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

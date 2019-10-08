@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-integration-test-jpa-mssql</artifactId>
     <name>Quarkus - Integration Tests - JPA - MSSQL</name>
-    <description>Module that contains JPA related tests running in strict mode with the MSSQL database</description>
+    <description>Module that contains JPA related tests running with the MSSQL database</description>
 
     <properties>
         <mssqldb.url>SomeJDBCUrl</mssqldb.url>

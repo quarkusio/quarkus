@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-elytron-security-jdbc-integration-test</artifactId>
-    <name>Quarkus - Elytron Security Jdbc - Integration Test</name>
+    <name>Quarkus - Integration Tests - Elytron Security JDBC</name>
 
     <dependencies>
         <dependency>

@@ -25,6 +25,7 @@
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
         <kotlin.version>1.3.21</kotlin.version>
         <scala.version>2.12.8</scala.version>
+        <scala-plugin.version>4.1.1</scala-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's

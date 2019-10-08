@@ -16,7 +16,7 @@
         <compiler-plugin.version>${compiler_plugin_version}</compiler-plugin.version>
         <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
         <scala.version>${scala_version}</scala.version>
-        <scala-maven-plugin.version>4.1.1</scala-maven-plugin.version>
+        <scala-maven-plugin.version>${scala_plugin_version}</scala-maven-plugin.version>
     </properties>
 
     <dependencyManagement>

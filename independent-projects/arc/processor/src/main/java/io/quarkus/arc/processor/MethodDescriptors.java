@@ -1,7 +1,9 @@
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.AbstractInvocationContext;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.AroundInvokeInvocationContext;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.CreationalContextImpl;
 import io.quarkus.arc.FixedValueSupplier;
@@ -129,9 +131,10 @@ final class MethodDescriptors {
     static final MethodDescriptor EVENT_CONTEXT_GET_METADATA = MethodDescriptor.ofMethod(EventContext.class, "getMetadata",
             EventMetadata.class);
 
-    static final MethodDescriptor INVOCATION_CONTEXT_AROUND_INVOKE = MethodDescriptor.ofMethod(InvocationContextImpl.class,
-            "aroundInvoke",
-            InvocationContextImpl.class, Object.class, Method.class, Object[].class, List.class, Function.class, Set.class);
+    static final MethodDescriptor INVOCATION_CONTEXT_AROUND_INVOKE = MethodDescriptor.ofMethod(
+            AroundInvokeInvocationContext.class,
+            "create",
+            AbstractInvocationContext.class, Object.class, Method.class, Function.class, Object[].class, List.class, Set.class);
 
     static final MethodDescriptor INVOCATION_CONTEXT_AROUND_CONSTRUCT = MethodDescriptor.ofMethod(InvocationContextImpl.class,
             "aroundConstruct",

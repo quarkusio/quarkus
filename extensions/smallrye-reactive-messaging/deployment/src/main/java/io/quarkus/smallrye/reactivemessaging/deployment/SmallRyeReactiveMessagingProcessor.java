@@ -41,6 +41,7 @@ import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
@@ -201,7 +202,8 @@ public class SmallRyeReactiveMessagingProcessor {
             List<MediatorBuildItem> mediatorMethods,
             List<EmitterBuildItem> emitterFields,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            DeploymentClassLoaderBuildItem deploymentClassLoaderBuildItem) {
 
         List<QuarkusMediatorConfiguration> configurations = new ArrayList<>(mediatorMethods.size());
 
@@ -230,7 +232,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
             try {
                 QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil.create(methodInfo, bean,
-                        generatedInvokerName, recorderContext);
+                        generatedInvokerName, recorderContext, deploymentClassLoaderBuildItem.getClassLoader());
                 configurations.add(mediatorConfiguration);
             } catch (IllegalArgumentException e) {
                 throw new DeploymentException(e); // needed to pass the TCK

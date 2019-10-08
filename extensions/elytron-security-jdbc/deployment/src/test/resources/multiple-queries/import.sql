@@ -1,13 +1,19 @@
+DROP TABLE test_user IF EXISTS;
+
 CREATE TABLE test_user (
   id INT,
   username VARCHAR(255),
   password VARCHAR(255)
 );
 
+DROP TABLE test_role IF EXISTS;
+
 CREATE TABLE test_role (
   id INT,
   role_name VARCHAR(255)
 );
+
+DROP TABLE test_user_role IF EXISTS;
 
 CREATE TABLE test_user_role (
   user_id INT,

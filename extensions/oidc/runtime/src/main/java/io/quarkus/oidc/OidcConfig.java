@@ -20,11 +20,16 @@ public class OidcConfig {
     String authServerUrl;
 
     /**
-     * Relative path of the RFC7662 introspection service address.
-     * Default value is currently set to the path supported by Keycloak.
+     * Relative path of the RFC7662 introspection service.
      */
-    @ConfigItem(defaultValue = "/protocol/openid-connect/token/introspect")
-    String introspectionPath;
+    @ConfigItem
+    Optional<String> introspectionPath;
+
+    /**
+     * Relative path of the OIDC service returning a JWK set.
+     */
+    @ConfigItem
+    Optional<String> jwksPath;
 
     /**
      * Public key for the local JWT token verification.

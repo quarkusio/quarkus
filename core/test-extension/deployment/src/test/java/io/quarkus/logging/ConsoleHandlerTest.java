@@ -37,7 +37,7 @@ public class ConsoleHandlerTest {
         Handler handler = Arrays.stream(delayedHandler.getHandlers()).filter(h -> (h instanceof ConsoleHandler))
                 .findFirst().get();
         assertThat(handler).isNotNull();
-        assertThat(handler.getLevel()).isEqualTo(Level.ALL);
+        assertThat(handler.getLevel()).isEqualTo(Level.WARNING);
 
         Formatter formatter = handler.getFormatter();
         assertThat(formatter).isInstanceOf(PatternFormatter.class);

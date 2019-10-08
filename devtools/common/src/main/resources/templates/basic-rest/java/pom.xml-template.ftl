@@ -10,6 +10,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
 
         <quarkus.version>${quarkus_version}</quarkus.version>
         <compiler-plugin.version>${compiler_plugin_version}</compiler-plugin.version>

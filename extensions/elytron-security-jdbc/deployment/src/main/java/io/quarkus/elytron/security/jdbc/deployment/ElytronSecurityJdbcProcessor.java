@@ -17,13 +17,11 @@ import io.quarkus.runtime.RuntimeValue;
 
 class ElytronSecurityJdbcProcessor {
 
-    private static final String FEATURE = "elytron-security-jdbc";
-
     JdbcSecurityRealmConfig jdbc;
 
     @BuildStep(providesCapabilities = "io.quarkus.elytron.security.jdbc")
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FEATURE);
+        return new FeatureBuildItem(FeatureBuildItem.SECURITY_JDBC);
     }
 
     /**

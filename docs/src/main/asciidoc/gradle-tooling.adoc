@@ -252,6 +252,14 @@ redeployed application. If there are any issues with compilation or deployment a
 
 Hit `CTRL+C` to stop the application.
 
+You can change the working directory the development environment runs on:
+
+----
+quarkusDev {
+    workingDir = rootProject.projectDir
+}
+----
+
 == Debugging
 
 In development mode, Quarkus starts by default with debug mode enabled, listening to port `5005` without suspending the JVM.

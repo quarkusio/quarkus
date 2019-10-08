@@ -70,6 +70,8 @@ public class QuarkusDev extends QuarkusTask {
 
     private String sourceDir;
 
+    private String workingDir;
+
     private String jvmArgs;
 
     private boolean preventnoverify = false;
@@ -102,6 +104,20 @@ public class QuarkusDev extends QuarkusTask {
     @Option(description = "Set source directory", option = "source-dir")
     public void setSourceDir(String sourceDir) {
         this.sourceDir = sourceDir;
+    }
+
+    @Optional
+    @InputDirectory
+    public File getWorkingDir() {
+        if (workingDir == null)
+            return extension().workingDir();
+        else
+            return new File(workingDir);
+    }
+
+    @Option(description = "Set working directory", option = "working-dir")
+    public void setWorkingDir(String workingDir) {
+        this.workingDir = workingDir;
     }
 
     @Optional
@@ -308,7 +324,7 @@ public class QuarkusDev extends QuarkusTask {
             ProcessBuilder pb = new ProcessBuilder(args.toArray(new String[0]));
             pb.redirectErrorStream(true);
             pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
-            pb.directory(extension.outputDirectory());
+            pb.directory(getWorkingDir());
             System.out.println("Starting process: ");
             pb.command().forEach(System.out::println);
             System.out.println("Args: ");

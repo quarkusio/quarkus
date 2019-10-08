@@ -42,7 +42,8 @@ public class GradleBuildFile extends BuildFile {
     }
 
     @Override
-    public void completeFile(String groupId, String artifactId, String version) throws IOException {
+    public void completeFile(String groupId, String artifactId, String version)
+            throws IOException {
         init();
         completeSettingsContent(artifactId);
         completeBuildContent(groupId, version);

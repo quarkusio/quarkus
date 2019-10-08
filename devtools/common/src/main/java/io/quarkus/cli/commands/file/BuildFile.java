@@ -116,7 +116,8 @@ public abstract class BuildFile implements Closeable {
 
     protected abstract List<Dependency> getManagedDependencies() throws IOException;
 
-    public abstract void completeFile(String groupId, String artifactId, String version) throws IOException;
+    public abstract void completeFile(String groupId, String artifactId, String version)
+            throws IOException;
 
     public BuildTool getBuildTool() {
         return buildTool;

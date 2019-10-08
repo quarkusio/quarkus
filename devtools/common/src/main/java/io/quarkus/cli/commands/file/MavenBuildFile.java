@@ -86,7 +86,8 @@ public class MavenBuildFile extends BuildFile {
     }
 
     @Override
-    public void completeFile(String groupId, String artifactId, String version) throws IOException {
+    public void completeFile(String groupId, String artifactId, String version)
+            throws IOException {
         addVersionProperty();
         addBom();
         addMainPluginConfig();

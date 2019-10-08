@@ -204,58 +204,52 @@ public class SmallRyeReactiveMessagingProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             DeploymentClassLoaderBuildItem deploymentClassLoaderBuildItem) {
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-        try {
-            Thread.currentThread().setContextClassLoader(deploymentClassLoaderBuildItem.getClassLoader());
-            List<QuarkusMediatorConfiguration> configurations = new ArrayList<>(mediatorMethods.size());
 
-            ClassOutput classOutput = new ClassOutput() {
-                @Override
-                public void write(String name, byte[] data) {
-                    generatedClass.produce(new GeneratedClassBuildItem(true, name, data));
-                }
-            };
+        List<QuarkusMediatorConfiguration> configurations = new ArrayList<>(mediatorMethods.size());
 
+        ClassOutput classOutput = new ClassOutput() {
+            @Override
+            public void write(String name, byte[] data) {
+                generatedClass.produce(new GeneratedClassBuildItem(true, name, data));
+            }
+        };
+
+        /*
+         * Go through the collected MediatorMethods and build up the corresponding MediaConfiguration
+         * This includes generating an invoker for each method
+         * The configuration will then be captured and used at static init time to push data into smallrye
+         */
+        for (MediatorBuildItem mediatorMethod : mediatorMethods) {
+            MethodInfo methodInfo = mediatorMethod.getMethod();
+            BeanInfo bean = mediatorMethod.getBean();
+
+            String generatedInvokerName = generateInvoker(bean, methodInfo, classOutput);
             /*
-             * Go through the collected MediatorMethods and build up the corresponding MediaConfiguration
-             * This includes generating an invoker for each method
-             * The configuration will then be captured and used at static init time to push data into smallrye
+             * We need to register the invoker's constructor for reflection since it will be called inside smallrye.
+             * We could potentially lift this restriction with some extra CDI bean generation but it's probably not worth it
              */
-            for (MediatorBuildItem mediatorMethod : mediatorMethods) {
-                MethodInfo methodInfo = mediatorMethod.getMethod();
-                BeanInfo bean = mediatorMethod.getBean();
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedInvokerName));
 
-                String generatedInvokerName = generateInvoker(bean, methodInfo, classOutput);
-                /*
-                 * We need to register the invoker's constructor for reflection since it will be called inside smallrye.
-                 * We could potentially lift this restriction with some extra CDI bean generation but it's probably not worth it
-                 */
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedInvokerName));
-
-                try {
-                    QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil.create(methodInfo,
-                            bean,
-                            generatedInvokerName, recorderContext);
-                    configurations.add(mediatorConfiguration);
-                } catch (IllegalArgumentException e) {
-                    throw new DeploymentException(e); // needed to pass the TCK
-                }
+            try {
+                QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil.create(methodInfo, bean,
+                        generatedInvokerName, recorderContext, deploymentClassLoaderBuildItem.getClassLoader());
+                configurations.add(mediatorConfiguration);
+            } catch (IllegalArgumentException e) {
+                throw new DeploymentException(e); // needed to pass the TCK
             }
+        }
 
-            recorder.registerMediators(configurations, beanContainer.getValue());
+        recorder.registerMediators(configurations, beanContainer.getValue());
 
-            for (EmitterBuildItem it : emitterFields) {
-                int defaultBufferSize = ConfigProviderResolver.instance().getConfig()
-                        .getOptionalValue("smallrye.messaging.emitter.default-buffer-size", Integer.class).orElse(127);
-                if (it.getOverflow() != null) {
-                    recorder.configureEmitter(beanContainer.getValue(), it.getName(), it.getOverflow(), it.getBufferSize(),
-                            defaultBufferSize);
-                } else {
-                    recorder.configureEmitter(beanContainer.getValue(), it.getName(), null, 0, defaultBufferSize);
-                }
+        for (EmitterBuildItem it : emitterFields) {
+            int defaultBufferSize = ConfigProviderResolver.instance().getConfig()
+                    .getOptionalValue("smallrye.messaging.emitter.default-buffer-size", Integer.class).orElse(127);
+            if (it.getOverflow() != null) {
+                recorder.configureEmitter(beanContainer.getValue(), it.getName(), it.getOverflow(), it.getBufferSize(),
+                        defaultBufferSize);
+            } else {
+                recorder.configureEmitter(beanContainer.getValue(), it.getName(), null, 0, defaultBufferSize);
             }
-        } finally {
-            Thread.currentThread().setContextClassLoader(old);
         }
     }
 

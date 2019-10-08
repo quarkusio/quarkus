@@ -206,6 +206,30 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testSecureAccessSuccessWithCors() {
+        String origin = "http://custom.origin.quarkus";
+        String methods = "GET";
+        String headers = "X-Custom";
+        RestAssured.given().header("Origin", origin)
+                .header("Access-Control-Request-Method", methods)
+                .header("Access-Control-Request-Headers", headers)
+                .when()
+                .options("/api").then()
+                .statusCode(200)
+                .header("Access-Control-Allow-Origin", origin)
+                .header("Access-Control-Allow-Methods", methods)
+                .header("Access-Control-Allow-Headers", headers);
+
+        for (String username : Arrays.asList("alice", "jdoe", "admin")) {
+            RestAssured.given().auth().oauth2(getAccessToken(username))
+                    .when().get("/api/users/me")
+                    .then()
+                    .statusCode(200)
+                    .body("userName", equalTo(username));
+        }
+    }
+
+    @Test
     public void testSecureAccessSuccess() {
         for (String username : Arrays.asList("alice", "jdoe", "admin")) {
             RestAssured.given().auth().oauth2(getAccessToken(username))

@@ -89,8 +89,8 @@ Here's the same build script, using the Gradle Kotlin DSL:
 ----
 plugins {
     java
+    id("io.quarkus") version "{quarkus-version}"
 }
-apply(plugin = "io.quarkus")
 
 repositories {
     mavenCentral()

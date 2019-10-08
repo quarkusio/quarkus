@@ -2,24 +2,19 @@ package io.quarkus.smallrye.openapi.deployment;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.OASConfig;
-import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
@@ -30,11 +25,11 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -45,22 +40,16 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.resteasy.deployment.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
 import io.quarkus.smallrye.openapi.runtime.OpenApiHandler;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
-import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
-import io.smallrye.openapi.api.OpenApiDocument;
-import io.smallrye.openapi.runtime.OpenApiProcessor;
-import io.smallrye.openapi.runtime.OpenApiStaticFile;
-import io.smallrye.openapi.runtime.io.OpenApiSerializer;
 import io.smallrye.openapi.runtime.scanner.FilteredIndexView;
-import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
 
 /**
  * @author Ken Finnigan
@@ -85,6 +74,7 @@ public class SmallRyeOpenApiProcessor {
     private static final String OPENAPI_SCHEMA_ANY_OF = "anyOf";
     private static final String OPENAPI_SCHEMA_ALL_OF = "allOf";
     private static final String OPENAPI_SCHEMA_IMPLEMENTATION = "implementation";
+    protected static final String OPEN_API_SCANNING_UTIL = "io.quarkus.smallrye.openapi.deployment.OpenApiScanningUtil";
 
     SmallRyeOpenApiConfig openapi;
 
@@ -215,130 +205,95 @@ public class SmallRyeOpenApiProcessor {
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
-        OpenAPI staticModel = generateStaticModel(archivesBuildItem);
+
+        //TODO: MASSIVE HACK ALERT
+        //see https://github.com/quarkusio/quarkus/issues/4329#issuecomment-539454820
+        //As soon as this is fixed in Smallrye this commit should be reverted
+        //if this code is still here once smallrye openapi 1.1.10 is in there has been a mistake
+
+        HackClassLoader cl = new HackClassLoader(archivesBuildItem);
+        Class<?> util = cl.loadClass(OPEN_API_SCANNING_UTIL);
+        Method generateStaticModel = util.getDeclaredMethod("generateStaticModel", ApplicationArchivesBuildItem.class);
+        Method generateAnnotationModel = util.getDeclaredMethod("generateAnnotationModel", IndexView.class,
+                ResteasyJaxrsConfigBuildItem.class);
+        Method loadDocument = util.getDeclaredMethod("loadDocument", OpenAPI.class, OpenAPI.class);
+
+        OpenAPI staticModel = (OpenAPI) generateStaticModel.invoke(null, archivesBuildItem);
 
         OpenAPI annotationModel;
         Config config = ConfigProvider.getConfig();
         boolean scanDisable = config.getOptionalValue(OASConfig.SCAN_DISABLE, Boolean.class).orElse(false);
         if (resteasyJaxrsConfig.isPresent() && !scanDisable) {
-            annotationModel = generateAnnotationModel(index, resteasyJaxrsConfig.get());
+            annotationModel = (OpenAPI) generateAnnotationModel.invoke(null, index, resteasyJaxrsConfig.get());
         } else {
             annotationModel = null;
         }
-        OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel);
-        for (OpenApiSerializer.Format format : OpenApiSerializer.Format.values()) {
-            String name = OpenApiHandler.BASE_NAME + format;
-            resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name,
-                    OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8)));
-            substrateResources.produce(new SubstrateResourceBuildItem(name));
+        Map<String, byte[]> finalDocument = (Map<String, byte[]>) loadDocument.invoke(null, staticModel, annotationModel);
+        for (Map.Entry<String, byte[]> e : finalDocument.entrySet()) {
+            resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(e.getKey(), e.getValue()));
+            substrateResources.produce(new SubstrateResourceBuildItem(e.getKey()));
         }
     }
 
-    @BuildStep
-    LogCleanupFilterBuildItem logCleanup() {
+    public
+
+    @BuildStep LogCleanupFilterBuildItem logCleanup() {
         return new LogCleanupFilterBuildItem("io.smallrye.openapi.api.OpenApiDocument",
                 "OpenAPI document initialized:");
     }
 
-    private OpenAPI generateStaticModel(ApplicationArchivesBuildItem archivesBuildItem) throws IOException {
-        Result result = findStaticModel(archivesBuildItem);
-        if (result != null) {
-            try (InputStream is = Files.newInputStream(result.path);
-                    OpenApiStaticFile staticFile = new OpenApiStaticFile(is, result.format)) {
-                return io.smallrye.openapi.runtime.OpenApiProcessor.modelFromStaticFile(staticFile);
+    static class HackClassLoader extends ClassLoader {
+
+        private final ApplicationArchivesBuildItem archivesBuildItem;
+
+        HackClassLoader(ApplicationArchivesBuildItem archivesBuildItem) {
+            super(HackClassLoader.class.getClassLoader());
+            this.archivesBuildItem = archivesBuildItem;
+        }
+
+        @Override
+        public Class<?> loadClass(String name) throws ClassNotFoundException {
+            return loadClass(name, false);
+        }
+
+        @Override
+        protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+            Class<?> c = findLoadedClass(name);
+            if (c != null) {
+                return c;
             }
-        }
-        return null;
-    }
+            if (name.startsWith("java.")) {
+                return super.loadClass(name, resolve);
+            }
+            ApplicationArchive applicationArchive = archivesBuildItem.containingArchive(name);
+            if (applicationArchive != null) {
 
-    private OpenAPI generateAnnotationModel(IndexView indexView, ResteasyJaxrsConfigBuildItem jaxrsConfig) {
-        // build a composite index with additional JDK classes, because SmallRye-OpenAPI will check if some
-        // app types implement Map and Collection and will go through super classes until Object is reached,
-        // and yes, it even checks Object
-        // see https://github.com/quarkusio/quarkus/issues/2961
-        Indexer indexer = new Indexer();
-        Set<DotName> additionalIndex = new HashSet<>();
-        IndexingUtil.indexClass(Collection.class.getName(), indexer, indexView, additionalIndex,
-                SmallRyeOpenApiProcessor.class.getClassLoader());
-        IndexingUtil.indexClass(Map.class.getName(), indexer, indexView, additionalIndex,
-                SmallRyeOpenApiProcessor.class.getClassLoader());
-        IndexingUtil.indexClass(Object.class.getName(), indexer, indexView, additionalIndex,
-                SmallRyeOpenApiProcessor.class.getClassLoader());
-
-        CompositeIndex compositeIndex = CompositeIndex.create(indexView, indexer.complete());
-
-        Config config = ConfigProvider.getConfig();
-        OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
-        return new OpenApiAnnotationScanner(openApiConfig, compositeIndex,
-                Collections.singletonList(new RESTEasyExtension(jaxrsConfig, compositeIndex))).scan();
-    }
-
-    private Result findStaticModel(ApplicationArchivesBuildItem archivesBuildItem) {
-        // Check for the file in both META-INF and WEB-INF/classes/META-INF
-        OpenApiSerializer.Format format = OpenApiSerializer.Format.YAML;
-        Path resourcePath = archivesBuildItem.getRootArchive().getChildPath(META_INF_OPENAPI_YAML);
-        if (resourcePath == null) {
-            resourcePath = archivesBuildItem.getRootArchive().getChildPath(WEB_INF_CLASSES_META_INF_OPENAPI_YAML);
-        }
-        if (resourcePath == null) {
-            resourcePath = archivesBuildItem.getRootArchive().getChildPath(META_INF_OPENAPI_YML);
-        }
-        if (resourcePath == null) {
-            resourcePath = archivesBuildItem.getRootArchive().getChildPath(WEB_INF_CLASSES_META_INF_OPENAPI_YML);
-        }
-        if (resourcePath == null) {
-            resourcePath = archivesBuildItem.getRootArchive().getChildPath(META_INF_OPENAPI_JSON);
-            format = OpenApiSerializer.Format.JSON;
-        }
-        if (resourcePath == null) {
-            resourcePath = archivesBuildItem.getRootArchive().getChildPath(WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
-            format = OpenApiSerializer.Format.JSON;
+                try {
+                    try (InputStream res = Files
+                            .newInputStream(applicationArchive.getChildPath(name.replace(".", "/") + ".class"))) {
+                        byte[] data = FileUtil.readFileContents(res);
+                        return defineClass(name, data, 0, data.length);
+                    }
+                } catch (IOException e) {
+                    throw new ClassNotFoundException("IO Exception", e);
+                }
+            }
+            if (name.startsWith(OPEN_API_SCANNING_UTIL) || name.startsWith("io.smallrye.openapi")
+                    || name.equals("io.quarkus.smallrye.openapi.deployment.RESTEasyExtension")) {
+                try {
+                    try (InputStream res = Thread.currentThread().getContextClassLoader()
+                            .getResourceAsStream(name.replace(".", "/") + ".class")) {
+                        if (res != null) {
+                            byte[] data = FileUtil.readFileContents(res);
+                            return defineClass(name, data, 0, data.length);
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new ClassNotFoundException("IO Exception", e);
+                }
+            }
+            return super.loadClass(name, resolve);
         }
 
-        if (resourcePath == null) {
-            return null;
-        }
-
-        return new Result(format, resourcePath);
-    }
-
-    static class Result {
-        final OpenApiSerializer.Format format;
-        final Path path;
-
-        Result(OpenApiSerializer.Format format, Path path) {
-            this.format = format;
-            this.path = path;
-        }
-    }
-
-    public OpenApiDocument loadDocument(OpenAPI staticModel, OpenAPI annotationModel) {
-        Config config = ConfigProvider.getConfig();
-        OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
-
-        OpenAPI readerModel = OpenApiProcessor.modelFromReader(openApiConfig,
-                Thread.currentThread().getContextClassLoader());
-
-        OpenApiDocument document = createDocument(openApiConfig);
-        if (annotationModel != null) {
-            document.modelFromAnnotations(annotationModel);
-        }
-        document.modelFromReader(readerModel);
-        document.modelFromStaticFile(staticModel);
-        document.filter(filter(openApiConfig));
-        document.initialize();
-        return document;
-    }
-
-    private OpenApiDocument createDocument(OpenApiConfig openApiConfig) {
-        OpenApiDocument document = OpenApiDocument.INSTANCE;
-        document.reset();
-        document.config(openApiConfig);
-        return document;
-    }
-
-    private OASFilter filter(OpenApiConfig openApiConfig) {
-        return OpenApiProcessor.getFilter(openApiConfig,
-                Thread.currentThread().getContextClassLoader());
     }
 }

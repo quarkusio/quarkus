@@ -5,6 +5,8 @@ import java.util.function.BiFunction;
 
 import javax.enterprise.inject.spi.CDI;
 
+import org.jboss.logging.Logger;
+
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.AuthenticationFailedException;
@@ -14,6 +16,8 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class HttpSecurityRecorder {
+
+    private static final Logger log = Logger.getLogger(HttpSecurityRecorder.class);
 
     public Handler<RoutingContext> authenticationMechanismHandler() {
         return new Handler<RoutingContext>() {
@@ -38,6 +42,7 @@ public class HttpSecurityRecorder {
                                     }
                                 });
                             } else {
+                                log.error(throwable);
                                 event.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code());
                                 event.response().end();
                             }

@@ -467,6 +467,15 @@
     "guide": "https://quarkus.io/guides/elytron-properties-guide"
   },
   {
+    "name": "JDBC based Security",
+    "labels": [
+      "security",
+      "jdbc"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-elytron-security-jdbc"
+  },
+  {
     "name": "Security OAuth2",
     "labels": [
       "security",

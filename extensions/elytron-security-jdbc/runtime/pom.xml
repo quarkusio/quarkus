@@ -23,8 +23,8 @@
             <artifactId>quarkus-elytron-security</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus.arc</groupId>
-            <artifactId>arc</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

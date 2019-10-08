@@ -247,6 +247,16 @@ public class FastBootMetadataBuilder {
 
         cfg.put("hibernate.temp.use_jdbc_metadata_defaults", "false");
 
+        //This shouldn't be encouraged but sometimes it's really useful - and it used to be the default
+        //in Hibernate ORM before the JPA spec would require to change this.
+        //At this time of transitioning we'll only expose it as a global system property, so to allow usage
+        //for special circumstances and yet not encourage this.
+        //Also, definitely don't override anything which was explicitly set in the configuration.
+        if (!cfg.containsKey(AvailableSettings.ALLOW_UPDATE_OUTSIDE_TRANSACTION)) {
+            cfg.put(AvailableSettings.ALLOW_UPDATE_OUTSIDE_TRANSACTION,
+                    Boolean.getBoolean(AvailableSettings.ALLOW_UPDATE_OUTSIDE_TRANSACTION));
+        }
+
         //Enable the new Enhanced Proxies capability (unless it was specifically disabled):
         if (!cfg.containsKey(AvailableSettings.ALLOW_ENHANCEMENT_AS_PROXY)) {
             cfg.put(AvailableSettings.ALLOW_ENHANCEMENT_AS_PROXY, Boolean.TRUE.toString());

@@ -15,9 +15,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
+import org.jboss.logging.Logger;
 import org.reactivestreams.Publisher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.quarkus.mailer.Attachment;
 import io.quarkus.mailer.Mail;
@@ -34,7 +33,7 @@ import io.vertx.ext.mail.MailMessage;
 @ApplicationScoped
 public class ReactiveMailerImpl implements ReactiveMailer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("quarkus-mailer");
+    private static final Logger LOGGER = Logger.getLogger("quarkus-mailer");
 
     @Inject
     MailClient client;
@@ -74,7 +73,7 @@ public class ReactiveMailerImpl implements ReactiveMailer {
 
     private CompletionStage<Void> send(Mail mail, MailMessage message) {
         if (mock) {
-            LOGGER.info("Sending email {} from {} to {}, text body: \n{}\nhtml body: \n{}",
+            LOGGER.infof("Sending email {} from {} to {}, text body: \n{}\nhtml body: \n{}",
                     message.getSubject(), message.getFrom(), message.getTo(),
                     message.getText(), message.getHtml());
             return mockMailbox.send(mail);

@@ -25,6 +25,7 @@ public class NativeImageLauncher implements Closeable {
     private static final long DEFAULT_IMAGE_WAIT_TIME = 60;
 
     private final Class<?> testClass;
+    private final String profile;
     private Process quarkusProcess;
     private final int port;
     private final long imageWaitTime;
@@ -35,10 +36,12 @@ public class NativeImageLauncher implements Closeable {
         this(testClass,
                 ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-port", Integer.class).orElse(DEFAULT_PORT),
                 ConfigProvider.getConfig().getOptionalValue("quarkus.test.native-image-wait-time", Long.class)
-                        .orElse(DEFAULT_IMAGE_WAIT_TIME));
+                        .orElse(DEFAULT_IMAGE_WAIT_TIME),
+                ConfigProvider.getConfig().getOptionalValue("quarkus.test.native-image-profile", String.class)
+                        .orElse(null));
     }
 
-    public NativeImageLauncher(Class<?> testClass, int port, long imageWaitTime) {
+    public NativeImageLauncher(Class<?> testClass, int port, long imageWaitTime, String profile) {
         this.testClass = testClass;
         this.port = port;
         this.imageWaitTime = imageWaitTime;
@@ -47,6 +50,7 @@ public class NativeImageLauncher implements Closeable {
             startedNotifiers.add(i);
         }
         this.startedNotifiers = startedNotifiers;
+        this.profile = profile;
     }
 
     public void start() throws IOException {
@@ -60,6 +64,9 @@ public class NativeImageLauncher implements Closeable {
         args.add("-Dquarkus.http.port=" + port);
         args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
         args.add("-Dquarkus.log.file.path=" + PropertyTestUtil.getLogFileLocation());
+        if (profile != null) {
+            args.add("-Dquarkus.profile=" + profile);
+        }
         for (Map.Entry<String, String> e : systemProps.entrySet()) {
             args.add("-D" + e.getKey() + "=" + e.getValue());
         }

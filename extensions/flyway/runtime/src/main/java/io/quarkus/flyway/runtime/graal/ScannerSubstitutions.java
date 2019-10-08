@@ -29,10 +29,11 @@ public final class ScannerSubstitutions {
      * Replaces the original method that tries to detect migrations using reflection techniques that are not allowed
      * in native mode
      *
-     * @see org.flywaydb.core.internal.scanner.Scanner#Scanner(Collection, ClassLoader, Charset)
+     * @see org.flywaydb.core.internal.scanner.Scanner#Scanner(Class, Collection, ClassLoader, Charset)
      */
     @Substitute
-    public ScannerSubstitutions(Collection<Location> locations, ClassLoader classLoader, Charset encoding) {
+    public ScannerSubstitutions(Class<?> implementedInterface, Collection<Location> locations, ClassLoader classLoader,
+            Charset encoding) {
         ResourceAndClassScanner quarkusScanner = new QuarkusPathLocationScanner();
         resources.addAll(quarkusScanner.scanForResources());
         classes.addAll(quarkusScanner.scanForClasses());

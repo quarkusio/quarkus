@@ -29,7 +29,8 @@ import io.quarkus.it.hibernate.validator.injection.InjectedConstraintValidatorCo
 import io.quarkus.it.hibernate.validator.injection.MyService;
 
 @Path("/hibernate-validator/test")
-public class HibernateValidatorTestResource {
+public class HibernateValidatorTestResource
+        implements HibernateValidatorTestResourceGenericInterface<Integer> {
 
     @Inject
     Validator validator;
@@ -101,6 +102,14 @@ public class HibernateValidatorTestResource {
     @Path("/rest-end-point-validation/{id}/")
     @Produces(MediaType.TEXT_PLAIN)
     public String testRestEndPointValidation(@Digits(integer = 5, fraction = 0) @PathParam("id") String id) {
+        return id;
+    }
+
+    @GET
+    @Path("/rest-end-point-generic-method-validation/{id}")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Override
+    public Integer testRestEndpointGenericMethodValidation(@Digits(integer = 5, fraction = 0) @PathParam("id") Integer id) {
         return id;
     }
 

@@ -28,9 +28,10 @@ dependencies {
     compile "io.quarkus:quarkus-creator:${version}"
     compile "org.gradle:gradle-tooling-api:5.5.1"
 
-    testCompile 'org.junit.jupiter:junit-jupiter-api:5.4.1'
-    testCompile 'org.junit.jupiter:junit-jupiter-params:5.4.1'
-    testCompile 'org.junit.jupiter:junit-jupiter-engine:5.4.1'
+    testImplementation 'org.assertj:assertj-core:3.13.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.5.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.5.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.5.2'
 }
 
 test {
@@ -52,7 +53,7 @@ pluginBundle {
 
 gradlePlugin {
     plugins {
-        simplePlugin {
+        quarkusPlugin {
             id = 'io.quarkus'
             implementationClass = 'io.quarkus.gradle.QuarkusPlugin'
             displayName = 'Quarkus Plugin'

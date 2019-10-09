@@ -19,10 +19,12 @@
             <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <!-- Should this be in a separate jaxrs-security extension? -->
+        <!--
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-deployment</artifactId>
         </dependency>
+        -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-http-deployment</artifactId>
@@ -35,7 +37,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-security-deployment</artifactId>
         </dependency>
-
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-undertow-deployment</artifactId>

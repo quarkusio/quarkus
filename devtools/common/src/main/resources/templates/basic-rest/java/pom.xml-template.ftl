@@ -10,8 +10,10 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
 
         <quarkus.version>${quarkus_version}</quarkus.version>
+        <compiler-plugin.version>${compiler_plugin_version}</compiler-plugin.version>
         <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
     </properties>
 
@@ -60,6 +62,10 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${compiler-plugin.version}</version>
             </plugin>
             <!-- Run the tests in JVM mode -->
             <plugin>

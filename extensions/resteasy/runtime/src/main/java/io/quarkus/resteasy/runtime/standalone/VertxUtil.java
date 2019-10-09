@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
@@ -23,6 +24,9 @@ import io.vertx.core.http.HttpServerRequest;
  * @version $Revision: 1 $
  */
 public class VertxUtil {
+
+    private static final Pattern COMMA_PATTERN = Pattern.compile(",");
+
     public static ResteasyUriInfo extractUriInfo(HttpServerRequest req, String contextPath) {
         String uri = req.absoluteURI();
         String protocol = req.scheme();
@@ -87,7 +91,7 @@ public class VertxUtil {
             return acceptable;
 
         for (String accept : accepts) {
-            String[] splits = accept.split(",");
+            String[] splits = COMMA_PATTERN.split(accept);
             for (String split : splits)
                 acceptable.add(split.trim());
         }

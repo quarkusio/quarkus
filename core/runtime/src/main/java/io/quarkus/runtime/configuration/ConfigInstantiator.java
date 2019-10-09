@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
@@ -25,6 +26,8 @@ import io.smallrye.config.SmallRyeConfig;
  * TODO: fully implement this as required, at the moment this is mostly to read the HTTP config when startup fails
  */
 public class ConfigInstantiator {
+
+    private static final Pattern COMMA_PATTERN = Pattern.compile(",");
 
     public static void handleObject(Object o) {
         SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
@@ -78,7 +81,7 @@ public class ConfigInstantiator {
                         if (fieldIsList) {
                             Class<?> listType = (Class<?>) ((ParameterizedType) genericType)
                                     .getActualTypeArguments()[0];
-                            String[] parts = defaultValue.split(",");
+                            String[] parts = COMMA_PATTERN.split(defaultValue);
                             List<Object> list = new ArrayList<>();
                             for (String i : parts) {
                                 list.add(config.convert(i, listType));

@@ -22,6 +22,8 @@ import io.vertx.core.net.PfxOptions;
 
 public class VertxOptionsBuilder {
 
+    private static final Pattern COMMA_PATTERN = Pattern.compile(",");
+
     static VertxOptions buildVertxOptions(VertxConfiguration conf) {
         VertxOptions options = new VertxOptions();
 
@@ -93,9 +95,9 @@ public class VertxOptionsBuilder {
             List<String> certs = new ArrayList<>();
             List<String> keys = new ArrayList<>();
             eb.keyCertificatePem.certs.ifPresent(
-                    s -> certs.addAll(Pattern.compile(",").splitAsStream(s).map(String::trim).collect(Collectors.toList())));
+                    s -> certs.addAll(COMMA_PATTERN.splitAsStream(s).map(String::trim).collect(Collectors.toList())));
             eb.keyCertificatePem.keys.ifPresent(
-                    s -> keys.addAll(Pattern.compile(",").splitAsStream(s).map(String::trim).collect(Collectors.toList())));
+                    s -> keys.addAll(COMMA_PATTERN.splitAsStream(s).map(String::trim).collect(Collectors.toList())));
             PemKeyCertOptions o = new PemKeyCertOptions()
                     .setCertPaths(certs)
                     .setKeyPaths(keys);
@@ -119,7 +121,7 @@ public class VertxOptionsBuilder {
         if (eb.trustCertificatePem != null) {
             eb.trustCertificatePem.certs.ifPresent(s -> {
                 PemTrustOptions o = new PemTrustOptions();
-                Pattern.compile(",").splitAsStream(s).map(String::trim).forEach(o::addCertPath);
+                COMMA_PATTERN.splitAsStream(s).map(String::trim).forEach(o::addCertPath);
                 opts.setPemTrustOptions(o);
             });
         }

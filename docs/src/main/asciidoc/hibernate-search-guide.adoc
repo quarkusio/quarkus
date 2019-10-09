@@ -475,7 +475,8 @@ In our existing `LibraryResource`, we just need to inject the following methods 
     @GET
     @Path("author/search")
     @Transactional
-    public List<Author> searchAuthors(@QueryParam("pattern") String pattern) { // <3>
+    public List<Author> searchAuthors(@QueryParam("pattern") String pattern, // <3>
+            @QueryParam("size") Optional<Integer> size) {
         return Search.session(em) // <4>
                 .search(Author.class) // <5>
                 .predicate(f ->
@@ -485,7 +486,7 @@ In our existing `LibraryResource`, we just need to inject the following methods 
                                 .fields("firstName", "lastName", "books.title").matching(pattern) // <7>
                 )
                 .sort(f -> f.field("lastName_sort").then().field("firstName_sort")) // <8>
-                .fetchAllHits(); // <9>
+                .fetchHits(size.orElse(20)); // <9>
     }
 ----
 <1> Important point: we need a transactional context for these methods.
@@ -500,7 +501,7 @@ the mass indexer should then only be used when you change your indexing configur
 <6> We create a predicate: if the pattern is empty, we use a `matchAll()` predicate.
 <7> If we have a valid pattern, we create a https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-simple-query-string-query.html[`simpleQueryString()`] predicate on the `firstName`, `lastName` and `books.title` fields matching our pattern.
 <8> We define the sort order of our results. Here we sort by last name, then by first name. Note that we use the specific fields we created for sorting.
-<9> This is self explanatory. Obviously, paging is also supported.
+<9> Fetch the `size` top hits, `20` by default. Obviously, paging is also supported.
 
 [NOTE]
 ====

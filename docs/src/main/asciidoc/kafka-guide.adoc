@@ -183,7 +183,7 @@ Creates the `src/main/java/org/acme/quarkus/sample/PriceResource.java` file with
 ----
 package org.acme.quarkus.sample;
 
-import io.smallrye.reactive.messaging.annotations.Stream;
+import io.smallrye.reactive.messaging.annotations.Channel;
 import org.reactivestreams.Publisher;
 
 import javax.inject.Inject;
@@ -200,7 +200,7 @@ import org.jboss.resteasy.annotations.SseElementType;
 public class PriceResource {
 
     @Inject
-    @Stream("my-data-stream") Publisher<Double> prices; // <1>
+    @Channel("my-data-stream") Publisher<Double> prices; // <1>
 
     @GET
     @Path("/stream")
@@ -211,7 +211,7 @@ public class PriceResource {
     }
 }
 ----
-<1> Injects the `my-data-stream` stream using the `@Stream` qualifier
+<1> Injects the `my-data-stream` channel using the `@Channel` qualifier
 <2> Indicates that the content is sent using `Server Sent Events`
 <3> Indicates that the data contained within the server sent events is of type `text/plain`
 <4> Returns the stream (_Reactive Stream_)

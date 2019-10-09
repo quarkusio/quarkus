@@ -624,4 +624,19 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         }
         return false;
     }
+
+    public static void main(String[] args) {
+        ExtensionAnnotationProcessor processor = new ExtensionAnnotationProcessor();
+        processor.generateAllConfigDocs();
+    }
+
+    private void generateAllConfigDocs() {
+        try {
+            final Map<String, List<ConfigDocItem>> extensionConfigurationItems = configDocItemScanner
+                    .loadAllExtensionsConfigurationItems();
+            configDocWriter.writeAllExtensionConfigDocumentation(extensionConfigurationItems);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

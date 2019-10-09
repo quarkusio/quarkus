@@ -168,6 +168,49 @@ final public class ConfigDocItemScanner {
     }
 
     /**
+     * Return a Map structure which contains extension name as key and generated doc value.
+     */
+    public Map<String, List<ConfigDocItem>> loadAllExtensionsConfigurationItems()
+            throws IOException {
+
+        if (!Constants.GENERATED_DOCS_DIR.exists()) {
+            Constants.GENERATED_DOCS_DIR.mkdirs();
+        }
+
+        final Properties allExtensionGeneratedDocs = new Properties();
+        if (Constants.ALL_CR_GENERATED_DOC.exists()) {
+            try (BufferedReader bufferedReader = Files.newBufferedReader(Constants.ALL_CR_GENERATED_DOC.toPath(),
+                    StandardCharsets.UTF_8)) {
+                allExtensionGeneratedDocs.load(bufferedReader);
+            }
+        }
+
+        final Map<String, List<ConfigDocItem>> foundExtensionConfigurationItems = new HashMap<>();
+
+        for (String member : (Set<String>) (Set) allExtensionGeneratedDocs.keySet()) {
+
+            final String serializedContent = allExtensionGeneratedDocs.getProperty(member);
+            if (serializedContent == null) {
+                continue;
+            }
+            List<ConfigDocItem> configDocItems = OBJECT_MAPPER.readValue(serializedContent,
+                    new TypeReference<List<ConfigDocItem>>() {
+                    });
+
+            final String fileName = computeExtensionDocFileName(member);
+            final List<ConfigDocItem> previousExtensionConfigDocKeys = foundExtensionConfigurationItems.get(fileName);
+
+            if (previousExtensionConfigDocKeys == null) {
+                foundExtensionConfigurationItems.put(fileName, configDocItems);
+            } else {
+                previousExtensionConfigDocKeys.addAll(configDocItems);
+            }
+        }
+
+        return foundExtensionConfigurationItems;
+    }
+
+    /**
      * Find configuration items from current encountered configuration roots
      */
     private Map<String, List<ConfigDocItem>> findInMemoryConfigurationItems(Properties javaDocProperties) {

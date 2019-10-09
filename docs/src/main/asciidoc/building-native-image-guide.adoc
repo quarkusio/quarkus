@@ -58,6 +58,18 @@ case; it now has to be installed as a second step after GraalVM itself is instal
 to do so.
 ====
 
+[NOTE]
+====
+GraalVM binaries are not (yet) notarized for macOS Catalina as reported in this https://github.com/oracle/graal/issues/1724[GraalVM issue].
+To bypass the issue, it is recommended to run the below command instead of disabling macOS Gatekeeper entirely:
+[source,shell]
+-----
+xattr -r -d com.apple.quarantine $HOME/Development/graalvm <1>
+-----
+
+1. Recursively delete the `com.apple.quarantine` extended attribute on the GraalVM root directory `$HOME/Development/graalvm` we set up above.
+====
+
 [TIP]
 ====
 If you cannot install GraalVM, you can use a multi-stage Docker build to run Maven inside a Docker container that embeds GraalVM. There is an explanation of how to do this at the end of this guide.

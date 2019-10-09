@@ -137,7 +137,7 @@ public class VertxInputStream extends InputStream {
                 });
                 request.fetch(1);
             } else {
-                throw new IOException("Request was ended before Resteasy could process it.");
+                eof = true;
             }
         }
 

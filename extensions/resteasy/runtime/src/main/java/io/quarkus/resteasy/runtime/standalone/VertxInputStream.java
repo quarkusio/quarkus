@@ -109,7 +109,7 @@ public class VertxInputStream extends InputStream {
         }
     }
 
-    public class VertxBlockingInput implements Handler<Buffer> {
+    public static class VertxBlockingInput implements Handler<Buffer> {
         protected final HttpServerRequest request;
         protected Buffer input1;
         protected Deque<Buffer> inputOverflow;
@@ -137,7 +137,7 @@ public class VertxInputStream extends InputStream {
                 });
                 request.fetch(1);
             } else {
-                throw new IOException("Request was ended before Resteasy could process it.");
+                eof = true;
             }
         }
 

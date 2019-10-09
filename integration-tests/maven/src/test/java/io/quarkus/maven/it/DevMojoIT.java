@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
@@ -41,6 +42,17 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         //make sure webjars work
         getHttpResponse("webjars/bootstrap/3.1.0/css/bootstrap.min.css");
         assertThatOutputWorksCorrectly(running.log());
+    }
+
+    @Test
+    public void testThatResteasyWithoutUndertowCanRun() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic-no-undertow", "projects/project-classic-no-undertow-run");
+        run();
+
+        //make sure that a simple HTTP GET request always works
+        IntStream.range(0, 10).forEach(i -> {
+            assertThat(getStrictHttpResponse("/hello", 200)).isTrue();
+        });
     }
 
     @Test

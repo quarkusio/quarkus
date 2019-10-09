@@ -261,6 +261,27 @@ public class MojoTestBase {
         return code.get();
     }
 
+    // will fail if it receives any http response except the expected one
+    static boolean getStrictHttpResponse(String path, int expectedStatus) {
+        AtomicBoolean code = new AtomicBoolean();
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(5, TimeUnit.MINUTES).until(() -> {
+                    try {
+                        URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
+                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                        // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
+                        connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
+                        code.set(connection.getResponseCode() == expectedStatus);
+                        //complete no matter what the response code was
+                        return true;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                });
+        return code.get();
+    }
+
     public static String get() throws IOException {
         URL url = new URL("http://localhost:8080");
         return IOUtils.toString(url, "UTF-8");

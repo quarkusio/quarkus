@@ -20,4 +20,12 @@ ENV AB_ENABLED=jmx_exporter
 COPY target/lib/* /deployments/lib/
 COPY target/*-runner.jar /deployments/app.jar
 EXPOSE 8080
+
+# Run under user "quarkus" and be prepared for be running under OpenShift too
+RUN adduser -s /bin/bash -G root --no-create-home --disabled-password quarkus \
+  && chown -R quarkus /deployments \
+  && chmod -R "g+rwX" /deployments \
+  && chown -R quarkus:root /deployments
+USER quarkus
+
 ENTRYPOINT [ "/deployments/run-java.sh" ]

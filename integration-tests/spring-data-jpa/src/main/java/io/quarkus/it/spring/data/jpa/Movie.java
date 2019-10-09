@@ -1,15 +1,9 @@
 package io.quarkus.it.spring.data.jpa;
 
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
 
 @Entity
-public class Movie {
-
-    @Id
-    @GeneratedValue
-    private Long id;
+public class Movie extends MovieSuperclass {
 
     private String title;
     private String rating;
@@ -22,10 +16,6 @@ public class Movie {
         this.title = title;
         this.rating = rating;
         this.duration = duration;
-    }
-
-    public Long getId() {
-        return id;
     }
 
     public String getTitle() {

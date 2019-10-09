@@ -890,21 +890,28 @@ public class StockMethodsAdder {
     }
 
     private AnnotationTarget getIdAnnotationTarget(DotName entityDotName, IndexView index) {
-        ClassInfo entityClassInfo = index.getClassByName(entityDotName);
-        if (entityClassInfo == null) {
-            throw new IllegalStateException("Entity class " + entityClassInfo + " was not part of the Quarkus index");
+        return getIdAnnotationTargetRec(entityDotName, index, entityDotName);
+    }
+
+    private AnnotationTarget getIdAnnotationTargetRec(DotName currentDotName, IndexView index, DotName originalEntityDotName) {
+        ClassInfo classInfo = index.getClassByName(currentDotName);
+        if (classInfo == null) {
+            throw new IllegalStateException("Entity " + originalEntityDotName + " was not part of the Quarkus index");
         }
 
-        if (!entityClassInfo.annotations().containsKey(DotNames.JPA_ID)) {
-            throw new IllegalArgumentException("Currently only Entities with the @Id annotation are supported. " +
-                    "Offending class is " + entityDotName);
+        if (!classInfo.annotations().containsKey(DotNames.JPA_ID)) {
+            if (DotNames.OBJECT.equals(classInfo.superName())) {
+                throw new IllegalArgumentException("Currently only Entities with the @Id annotation are supported. " +
+                        "Offending class is " + originalEntityDotName);
+            }
+            return getIdAnnotationTargetRec(classInfo.superName(), index, originalEntityDotName);
         }
 
-        List<AnnotationInstance> annotationInstances = entityClassInfo.annotations().get(DotNames.JPA_ID);
+        List<AnnotationInstance> annotationInstances = classInfo.annotations().get(DotNames.JPA_ID);
         if (annotationInstances.size() > 1) {
             throw new IllegalArgumentException(
                     "Currently the @Id annotation can only be placed on a single field or method. " +
-                            "Offending class is " + entityDotName);
+                            "Offending class is " + originalEntityDotName);
         }
 
         return annotationInstances.get(0).target();

@@ -76,6 +76,7 @@ public final class DotNames {
     public static final DotName LIST = DotName.createSimple(List.class.getName());
     public static final DotName STREAM = DotName.createSimple(Stream.class.getName());
     public static final DotName OPTIONAL = DotName.createSimple(Optional.class.getName());
+    public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
     private DotNames() {
     }

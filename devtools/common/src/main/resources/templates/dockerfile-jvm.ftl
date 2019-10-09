@@ -22,7 +22,7 @@ COPY target/*-runner.jar /deployments/app.jar
 EXPOSE 8080
 
 # run with user 1001 and be prepared for be running in OpenShift too
-RUN adduser -s /bin/bash -G root --no-create-home --disabled-password 1001 \
+RUN adduser -G root --no-create-home --disabled-password 1001 \
   && chown -R 1001 /deployments \
   && chmod -R "g+rwX" /deployments \
   && chown -R 1001:root /deployments

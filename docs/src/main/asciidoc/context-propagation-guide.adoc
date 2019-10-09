@@ -56,7 +56,7 @@ them to the client, you can do it like this:
 --
     // Get the price-stream Kafka topic
     @Inject
-    @Stream("price-stream") Publisher<Double> prices; 
+    @Channel("price-stream") Publisher<Double> prices;
 
     @Transactional
     @GET

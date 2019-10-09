@@ -8,13 +8,13 @@ import javax.inject.Inject;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.reactivex.Flowable;
-import io.smallrye.reactive.messaging.annotations.Stream;
+import io.smallrye.reactive.messaging.annotations.Channel;
 
 @ApplicationScoped
 public class StreamConsumer {
 
     @Inject
-    @Stream("source")
+    @Channel("source")
     Flowable<Message<String>> sourceStream;
 
     public List<String> consume() {

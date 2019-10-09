@@ -8,6 +8,7 @@ import javax.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
+import io.smallrye.reactive.messaging.annotations.Channel;
 import io.smallrye.reactive.messaging.annotations.Emitter;
 import io.smallrye.reactive.messaging.annotations.OnOverflow;
 import io.smallrye.reactive.messaging.annotations.Stream;
@@ -16,7 +17,7 @@ import io.smallrye.reactive.messaging.annotations.Stream;
 public class StreamEmitterWithOverflow {
 
     @Inject
-    @Stream("sink")
+    @Channel("sink")
     @OnOverflow(value = OnOverflow.Strategy.BUFFER)
     Emitter<String> emitter;
 

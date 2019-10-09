@@ -8,14 +8,14 @@ import javax.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
+import io.smallrye.reactive.messaging.annotations.Channel;
 import io.smallrye.reactive.messaging.annotations.Emitter;
-import io.smallrye.reactive.messaging.annotations.Stream;
 
 @ApplicationScoped
 public class StreamEmitter {
 
     @Inject
-    @Stream("sink")
+    @Channel("sink")
     Emitter<String> emitter;
 
     private List<String> list = new CopyOnWriteArrayList<>();

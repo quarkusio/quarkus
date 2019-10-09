@@ -3,7 +3,7 @@ package io.quarkus.hibernate.search.elasticsearch.runtime;
 import java.util.Map;
 import java.util.Optional;
 
-import org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchVersion;
+import org.hibernate.search.backend.elasticsearch.ElasticsearchVersion;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -49,9 +49,18 @@ public class HibernateSearchElasticsearchBuildTimeConfig {
         public Optional<ElasticsearchVersion> version;
 
         /**
+         * Configuration for full-text analysis.
+         */
+        @ConfigItem
+        public AnalysisConfig analysis;
+    }
+
+    @ConfigGroup
+    public static class AnalysisConfig {
+        /**
          * The class or the name of the bean used to configure full text analysis (e.g. analyzers, normalizers).
          */
         @ConfigItem
-        public Optional<Class<?>> analysisConfigurer;
+        public Optional<Class<?>> configurer;
     }
 }

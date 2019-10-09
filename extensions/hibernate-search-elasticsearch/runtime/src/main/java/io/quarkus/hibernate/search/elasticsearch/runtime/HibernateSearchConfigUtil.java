@@ -7,17 +7,16 @@ import java.util.function.Function;
 
 import org.hibernate.search.engine.cfg.BackendSettings;
 import org.hibernate.search.engine.cfg.EngineSettings;
-import org.hibernate.search.mapper.orm.cfg.HibernateOrmMapperSettings;
 
 public class HibernateSearchConfigUtil {
 
     public static <T> void addConfig(BiConsumer<String, Object> propertyCollector, String configPath, T value) {
-        propertyCollector.accept(configKey(configPath), value);
+        propertyCollector.accept(configPath, value);
     }
 
     public static void addConfig(BiConsumer<String, Object> propertyCollector, String configPath, Optional<?> value) {
         if (value.isPresent()) {
-            propertyCollector.accept(configKey(configPath), value.get());
+            propertyCollector.accept(configPath, value.get());
         }
     }
 
@@ -80,11 +79,7 @@ public class HibernateSearchConfigUtil {
                 shouldBeAdded, getValue);
     }
 
-    private static String configKey(String configPath) {
-        return HibernateOrmMapperSettings.PREFIX + configPath;
-    }
-
     private static String backendConfigKey(String backendName, String configPath) {
-        return configKey(EngineSettings.BACKENDS + "." + backendName + "." + configPath);
+        return EngineSettings.BACKENDS + "." + backendName + "." + configPath;
     }
 }

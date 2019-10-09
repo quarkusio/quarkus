@@ -131,9 +131,9 @@ class HibernateSearchElasticsearchProcessor {
         Set<DotName> reflectiveClassCollector = new HashSet<>();
         Set<DotName> reflectiveTypeCollector = new HashSet<>();
 
-        if (buildTimeConfig.elasticsearch.analysisConfigurer.isPresent()) {
+        if (buildTimeConfig.elasticsearch.analysis.configurer.isPresent()) {
             reflectiveClass.produce(
-                    new ReflectiveClassBuildItem(true, false, buildTimeConfig.elasticsearch.analysisConfigurer.get()));
+                    new ReflectiveClassBuildItem(true, false, buildTimeConfig.elasticsearch.analysis.configurer.get()));
         }
 
         for (DotName fieldAnnotation : FIELD_ANNOTATIONS) {

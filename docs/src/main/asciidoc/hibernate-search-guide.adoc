@@ -14,9 +14,10 @@ We will also explore how you can can query your Elasticsearch cluster using the 
 
 [WARNING]
 ====
-The version of Hibernate Search shipped with Quarkus is still an Alpha.
+The version of Hibernate Search shipped with Quarkus is still a Beta.
 
-While the code is of production quality and thoroughly tested, some features are still missing, performance might not be optimal and some APIs might change before the final release.
+While APIs are quite stable and the code is of production quality and thoroughly tested,
+some features are still missing, performance might not be optimal and some APIs might change before the final release.
 ====
 
 == Prerequisites
@@ -437,15 +438,15 @@ public class AnalysisConfigurer implements ElasticsearchAnalysisConfigurer {
     @Override
     public void configure(ElasticsearchAnalysisDefinitionContainerContext context) {
         context.analyzer("name").custom() // <1>
-                .withTokenizer("standard")
-                .withTokenFilters("asciifolding", "lowercase");
+                .tokenizer("standard")
+                .tokenFilters("asciifolding", "lowercase");
 
         context.analyzer("english").custom() // <2>
-                .withTokenizer("standard")
-                .withTokenFilters("asciifolding", "lowercase", "porter_stem");
+                .tokenizer("standard")
+                .tokenFilters("asciifolding", "lowercase", "porter_stem");
 
         context.normalizer("sort").custom() // <3>
-                .withTokenFilters("asciifolding", "lowercase");
+                .tokenFilters("asciifolding", "lowercase");
     }
 }
 ----
@@ -481,10 +482,10 @@ In our existing `LibraryResource`, we just need to inject the following methods 
                     pattern == null || pattern.trim().isEmpty() ?
                             f.matchAll() : // <6>
                             f.simpleQueryString()
-                                .onFields("firstName", "lastName", "books.title").matching(pattern) // <7>
+                                .fields("firstName", "lastName", "books.title").matching(pattern) // <7>
                 )
-                .sort(f -> f.byField("lastName_sort").then().byField("firstName_sort")) // <8>
-                .fetchHits(); // <9>
+                .sort(f -> f.field("lastName_sort").then().field("firstName_sort")) // <8>
+                .fetchAllHits(); // <9>
     }
 ----
 <1> Important point: we need a transactional context for these methods.
@@ -526,8 +527,8 @@ quarkus.hibernate-orm.database.generation=drop-and-create <3>
 quarkus.hibernate-orm.sql-load-script=import.sql <4>
 
 quarkus.hibernate-search.elasticsearch.version=7 <5>
-quarkus.hibernate-search.elasticsearch.analysis-configurer=org.acme.hibernate.search.elasticsearch.config.AnalysisConfigurer <6>
-quarkus.hibernate-search.elasticsearch.automatic-indexing.synchronization-strategy=searchable <7>
+quarkus.hibernate-search.elasticsearch.analysis.configurer=org.acme.hibernate.search.elasticsearch.config.AnalysisConfigurer <6>
+quarkus.hibernate-search.elasticsearch.automatic-indexing.synchronization.strategy=searchable <7>
 quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.strategy=drop-and-create <8>
 quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.required-status=yellow <9>
 ----
@@ -590,7 +591,7 @@ Let's use Docker to start one of each:
 
 [source, shell]
 ----
-docker run -it --rm=true --name elasticsearch_quarkus_test -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.0.1
+docker run -it --rm=true --name elasticsearch_quarkus_test -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.3.1
 ----
 
 [source, shell]
@@ -636,7 +637,8 @@ In a real life application, it is obviously something you won't do at startup.
 
 If you are interested into learning more about Hibernate Search 6, the Hibernate team has https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/[some documentation] in the works.
 
-It is still very much a work in progress but it can guide you in your exploration.
+It is still work in progress but covers all main concepts and features,
+so it can guide you in your exploration.
 
 == FAQ
 
@@ -644,11 +646,11 @@ It is still very much a work in progress but it can guide you in your exploratio
 
 To optimize the Hibernate Search bootstrap for Quarkus, the Hibernate team had to reorganize things a bit (collect the metadata offline, start the Elasticsearch client later...).
 
-This couldn't be done in the 5.x code base so we decided to go with the in progress Hibernate Search 6.
+This couldn't be done in the 5.x code base so we decided to go with the in-progress Hibernate Search 6.
 
 === Can I really use it?
 
-While Hibernate Search 6 is still at Alpha stage, the code is of production quality and can be relied on.
+While Hibernate Search 6 is still at Beta stage, the code is of production quality and can be relied on.
 
 What we don't guarantee is that there might be API changes along the way to the final release of Hibernate Search 6 and you might have to adapt your code.
 

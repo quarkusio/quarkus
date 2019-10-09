@@ -83,6 +83,9 @@ public final class PathTestHelper {
                         .append(testClassPath, 0, testClassPath.length() - "-tests.jar".length())
                         .append(".jar")
                         .toString());
+            } else if (testClassPath.contains("-rpkgtests")) {
+                // This is a third party test-jar transformed using rpkgtests-maven-plugin
+                return Paths.get(testClassPath.replace("-rpkgtests", ""));
             }
             return Paths.get(testClassPath);
         }

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,22 @@ final public class ConfigDocWriter {
 
             generateDocumentation(Constants.GENERATED_DOCS_PATH.resolve(extensionFileName), configDocItems);
         }
+    }
+
+    /**
+     * Write all extension configuration AsciiDoc format in `{root}/target/asciidoc/generated/config/`
+     */
+    public void writeAllExtensionConfigDocumentation(Map<String, List<ConfigDocItem>> extensionsConfigurations)
+            throws IOException {
+        List<ConfigDocItem> allItems = new ArrayList<>();
+        // FIXME: sort by extension name
+        for (Map.Entry<String, List<ConfigDocItem>> entry : extensionsConfigurations.entrySet()) {
+            final List<ConfigDocItem> configDocItems = entry.getValue();
+
+            sort(configDocItems);
+            allItems.addAll(configDocItems);
+        }
+        generateDocumentation(Constants.GENERATED_DOCS_PATH.resolve("all-config.adoc"), allItems);
     }
 
     /**

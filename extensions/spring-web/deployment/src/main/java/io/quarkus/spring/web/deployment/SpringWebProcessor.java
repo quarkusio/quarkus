@@ -193,14 +193,6 @@ public class SpringWebProcessor {
                         if (pathVariableInstance.target().kind() != AnnotationTarget.Kind.METHOD_PARAMETER) {
                             continue;
                         }
-                        if ((pathVariableInstance.value() == null) && (pathVariableInstance.value("name") == null)) {
-                            MethodInfo method = pathVariableInstance.target().asMethodParameter().method();
-                            throw new IllegalArgumentException(
-                                    "Currently method parameters annotated with @PathVariable must supply a value for 'name' or 'value'."
-                                            +
-                                            "Offending method is " + method.declaringClass().name() + "#" + method.name());
-                        }
-
                     }
                 }
             }

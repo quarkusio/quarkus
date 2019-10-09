@@ -2421,7 +2421,7 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-            
+
             <!-- Keycloak -->
             <dependency>
                 <groupId>org.keycloak</groupId>

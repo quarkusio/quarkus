@@ -19,6 +19,13 @@ public class SpringControllerTest {
     }
 
     @Test
+    public void testJsonResult2() {
+        RestAssured.when().get("/greeting/json/hello?suffix=000").then()
+                .contentType("application/json")
+                .body(containsString("hello000"));
+    }
+
+    @Test
     public void testInvalidJsonInputAndResult() {
         RestAssured.given().contentType("application/json").body("{\"name\":\"\"}").post("/greeting/person").then()
                 .statusCode(400);

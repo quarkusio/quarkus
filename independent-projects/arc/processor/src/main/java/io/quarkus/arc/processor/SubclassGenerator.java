@@ -364,7 +364,7 @@ public class SubclassGenerator extends AbstractGenerator {
 
         ResultHandle invocationContext = tryCatch.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXT_AROUND_INVOKE,
                 tryCatch.getThis(),
-                interceptedMethodHandle, paramsHandle, interceptedChainHandle, func.getInstance(), bindingsHandle);
+                interceptedMethodHandle, func.getInstance(), paramsHandle, interceptedChainHandle, bindingsHandle);
         // InvocationContext.proceed()
         ResultHandle ret = tryCatch.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_PROCEED, invocationContext);
         tryCatch.returnValue(superResult != null ? ret : null);

@@ -22,21 +22,7 @@ public class InvocationContextImpl implements InvocationContext {
 
     public static final String KEY_INTERCEPTOR_BINDINGS = "io.quarkus.arc.interceptorBindings";
 
-    /**
-     *
-     * @param target
-     * @param method
-     * @param args
-     * @param chain
-     * @param aroundInvokeForward
-     * @param interceptorBindings
-     * @return a new {@link javax.interceptor.AroundInvoke} invocation context
-     */
-    public static InvocationContextImpl aroundInvoke(Object target, Method method, Object[] args,
-            List<InterceptorInvocation> chain,
-            Function<InvocationContext, Object> aroundInvokeForward, Set<Annotation> interceptorBindings) {
-        return new InvocationContextImpl(target, method, null, args, chain, aroundInvokeForward, null, interceptorBindings);
-    }
+    // Around invoke is done via io.quarkus.arc.AroundInvokeInvocationContext#create()
 
     /**
      *
@@ -253,7 +239,6 @@ public class InvocationContextImpl implements InvocationContext {
         Object invoke(InvocationContext ctx) throws Exception {
             return interceptor.intercept(interceptionType, interceptorInstance, ctx);
         }
-
     }
 
 }

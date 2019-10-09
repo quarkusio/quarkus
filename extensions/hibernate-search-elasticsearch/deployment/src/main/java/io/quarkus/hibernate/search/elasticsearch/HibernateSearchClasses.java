@@ -35,6 +35,7 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextFi
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ScaledNumberField;
 import org.jboss.jandex.DotName;
@@ -50,7 +51,8 @@ class HibernateSearchClasses {
             DotName.createSimple(KeywordField.class.getName()),
             DotName.createSimple(ScaledNumberField.class.getName()),
             DotName.createSimple(IndexedEmbedded.class.getName()),
-            DotName.createSimple(AssociationInverseSide.class.getName()));
+            DotName.createSimple(AssociationInverseSide.class.getName()),
+            DotName.createSimple(IndexingDependency.class.getName()));
 
     static final List<DotName> BINDING_DECLARATION_ANNOTATIONS_ON_PROPERTIES = Arrays.asList(
             DotName.createSimple(PropertyBinding.class.getName()),

@@ -75,12 +75,25 @@ public class HttpAuthenticator {
      * @return
      */
     public CompletionStage<Void> sendChallenge(RoutingContext routingContext, Runnable closeTask) {
+        if (closeTask == null) {
+            closeTask = NoopCloseTask.INSTANCE;
+        }
         if (mechanism == null) {
             routingContext.response().setStatusCode(HttpResponseStatus.FORBIDDEN.code());
             closeTask.run();
             return CompletableFuture.completedFuture(null);
         }
         return mechanism.sendChallenge(routingContext).thenRun(closeTask);
+    }
+
+    static class NoopCloseTask implements Runnable {
+
+        static final NoopCloseTask INSTANCE = new NoopCloseTask();
+
+        @Override
+        public void run() {
+
+        }
     }
 
 }

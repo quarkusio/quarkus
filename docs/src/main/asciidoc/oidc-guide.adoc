@@ -144,7 +144,6 @@ The OpenID Connect extension allows you to define the adapter configuration usin
 ----
 quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
 quarkus.oidc.client-id=backend-service
-quarkus.oidc.credentials.secret=secret
 ----
 
 === Configuring CORS

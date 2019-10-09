@@ -1,7 +1,5 @@
 package io.quarkus.oidc;
 
-import java.security.SecureRandom;
-import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 
 import io.quarkus.arc.runtime.BeanContainer;
@@ -13,7 +11,6 @@ import io.vertx.core.Vertx;
 import io.vertx.ext.auth.PubSecKeyOptions;
 import io.vertx.ext.auth.oauth2.OAuth2Auth;
 import io.vertx.ext.auth.oauth2.OAuth2ClientOptions;
-import io.vertx.ext.auth.oauth2.OAuth2FlowType;
 import io.vertx.ext.auth.oauth2.providers.KeycloakAuth;
 
 @Recorder
@@ -25,7 +22,14 @@ public class VertxKeycloakRecorder {
         // Base IDP server URL
         options.setSite(config.authServerUrl);
         // RFC7662 introspection service address
-        options.setIntrospectionPath(config.introspectionPath);
+        if (config.introspectionPath.isPresent()) {
+            options.setIntrospectionPath(config.introspectionPath.get());
+        }
+
+        // RFC7662 JWKS service address
+        if (config.jwksPath.isPresent()) {
+            options.setJwkPath(config.jwksPath.get());
+        }
 
         if (config.clientId.isPresent()) {
             options.setClientID(config.clientId.get());
@@ -39,16 +43,6 @@ public class VertxKeycloakRecorder {
                     .setAlgorithm("RS256")
                     .setPublicKey(config.publicKey.get()));
         }
-
-        //TODO: remove this temporary code block
-        byte[] bogus = new byte[512];
-        new SecureRandom().nextBytes(bogus);
-
-        options.addPubSecKey(
-                new PubSecKeyOptions().setSymmetric(true).setPublicKey(Base64.getEncoder().encodeToString(bogus))
-                        .setAlgorithm("HS512"));
-        options.setFlow(OAuth2FlowType.AUTH_JWT);
-        // End of the temporary code block
 
         CompletableFuture<OAuth2Auth> cf = new CompletableFuture<>();
         KeycloakAuth.discover(vertx.getValue(), options, new Handler<AsyncResult<OAuth2Auth>>() {

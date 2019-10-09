@@ -21,11 +21,11 @@ COPY target/lib/* /deployments/lib/
 COPY target/*-runner.jar /deployments/app.jar
 EXPOSE 8080
 
-# Run under user "quarkus" and be prepared for be running under OpenShift too
-RUN adduser -s /bin/bash -G root --no-create-home --disabled-password quarkus \
-  && chown -R quarkus /deployments \
+# run with user 1001 and be prepared for be running in OpenShift too
+RUN adduser -s /bin/bash -G root --no-create-home --disabled-password 1001 \
+  && chown -R 1001 /deployments \
   && chmod -R "g+rwX" /deployments \
-  && chown -R quarkus:root /deployments
-USER quarkus
+  && chown -R 1001:root /deployments
+USER 1001
 
 ENTRYPOINT [ "/deployments/run-java.sh" ]

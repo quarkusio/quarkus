@@ -357,8 +357,16 @@ You can override these runtime properties with the following mechanisms (in decr
 2. using environment variables:
   * for a runner jar: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; java -jar target/myapp-runner.jar`
   * for a native executable: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; ./target/myapp-runner`
+3. using a configuration file placed in `$PWD/config/application.properties`
+  * By placing an `application.properties` file inside a directory named `config` which resides in the directory where the application runs, any runtime properties defined
+in that file will override the default configuration. Furthermore any runtime properties added to this file that were not part of the original `application.properties` file
+_will also_ be taken into account.
+  * This works in the same way for runner jar and the native executable
 
 NOTE: Environment variables names are following the conversion rules of link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[Eclipse MicroProfile]
+
+NOTE: The `config/application.properties` features is available in development mode as well. To make use of it, `config/application.properties` needs to be placed inside the build tool's output directory (`target` for Maven and `build` for Gradle).
+Keep in mind however that any cleaning operation from the build tool like `mvn clean` or `gradle clean` will remove the `config` directory as well.
 
 === Configuration Profiles
 

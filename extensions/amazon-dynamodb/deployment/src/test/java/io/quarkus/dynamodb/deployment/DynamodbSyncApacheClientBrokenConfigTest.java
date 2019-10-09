@@ -12,7 +12,7 @@ import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.test.QuarkusUnitTest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-public class DynamodbSyncClientBrokenConfigTest {
+public class DynamodbSyncApacheClientBrokenConfigTest {
 
     @Inject
     DynamoDbClient client;
@@ -21,7 +21,7 @@ public class DynamodbSyncClientBrokenConfigTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setExpectedException(ConfigurationError.class)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("sync-broken-config.properties", "application.properties"));
+                    .addAsResource("sync-apache-broken-config.properties", "application.properties"));
 
     @Test
     public void test() {

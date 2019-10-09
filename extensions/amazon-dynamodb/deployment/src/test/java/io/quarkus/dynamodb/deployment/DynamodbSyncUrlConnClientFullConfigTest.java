@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-public class DynamodbSyncClientFullConfigTest {
+public class DynamodbSyncUrlConnClientFullConfigTest {
 
     @Inject
     DynamoDbClient client;
@@ -18,7 +18,7 @@ public class DynamodbSyncClientFullConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("sync-full-config.properties", "application.properties"));
+                    .addAsResource("sync-urlconn-full-config.properties", "application.properties"));
 
     @Test
     public void test() {

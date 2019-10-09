@@ -19,7 +19,7 @@ Keep in mind it's actively developed and does not support yet all the features a
 
 The Quarkus extension supports two programming models:
 
-* Blocking access using the Apache HTTP Client
+* Blocking access using URL Connection HTTP client (by default) or the Apache HTTP Client
 * https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/basics-async.html[Asynchronous programming] based on JDK's `CompletableFuture` objects and the Netty HTTP client.
 
 In this guide, we see how you can get your REST services to use the DynamoDB locally and on AWS.
@@ -318,6 +318,38 @@ The implementation is pretty straightforward and you just need to define your en
 == Configuring DynamoDB clients
 
 Both DynamoDB clients (sync and async) are configurable via the `application.properties` file that can be provided in the `src/main/resources` directory.
+Additionally, you need to added to the classpath a proper implementation of the sync client. By default the extension uses URL connection HTTP client, so
+you need to add a URL connection client dependency to the `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>url-connection-client</artifactId>
+</dependency>
+----
+
+If you want to use Apache HTTP client instead, configure it as follows:
+[source,properties]
+----
+quarkus.dynamodb.sync-client.type=apache
+----
+
+And add following dependency to the application `pom.xml`:
+[source,xml]
+----
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>apache-client</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+----
+NOTE: It's important to exclude `commons-logging` from the client dependency to force Apache HTTP client to use Quarkus logger.
 
 If you're going to use a local DynamoDB instance, configure it as follows:
 
@@ -326,24 +358,24 @@ If you're going to use a local DynamoDB instance, configure it as follows:
 quarkus.dynamodb.endpoint-override=http://localhost:8000
 
 quarkus.dynamodb.aws.region=eu-central-1
-quarkus.dynamodb.aws.credentials.type=STATIC
+quarkus.dynamodb.aws.credentials.type=static
 quarkus.dynamodb.aws.credentials.static-provider.access-key-id=test-key
 quarkus.dynamodb.aws.credentials.static-provider.secret-access-key=test-secret
 ----
 
 - `quarkus.dynamodb.aws.region` - It's required by the client, but since you're using a local DynamoDB instance you can pick any valid AWS region.
-- `quarkus.dynamodb.aws.credentials.type` - Set `STATIC` credentials provider with any values for `access-key-id` and `secret-access-key`
+- `quarkus.dynamodb.aws.credentials.type` - Set `static` credentials provider with any values for `access-key-id` and `secret-access-key`
 - `quarkus.dynamodb.endpoint-override` - Override the DynamoDB client to use a local instance instead of an AWS service
 
 If you want to work with an AWS account, you'd need to set it with:
 [source,properties]
 ----
 quarkus.dynamodb.aws.region=<YOUR_REGION>
-quarkus.dynamodb.aws.credentials.type=DEFAULT
+quarkus.dynamodb.aws.credentials.type=default
 ----
 
 - `quarkus.dynamodb.aws.region` you should set it to the region where you provisioned the DynamoDB table,
-- `quarkus.dynamodb.aws.credentials.type` - use the `DEFAULT` credentials provider chain that looks for credentials in this order:
+- `quarkus.dynamodb.aws.credentials.type` - use the `default` credentials provider chain that looks for credentials in this order:
 - Java System Properties - `aws.accessKeyId` and `aws.secretKey`
 * Environment Variables - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
 * Credential profiles file at the default location (`~/.aws/credentials`) shared by all AWS SDKs and the AWS CLI
@@ -400,7 +432,7 @@ public class FruitAsyncService extends AbstractService {
 }
 ----
 
-And an asynchronous REST resource:
+Create an asynchronous REST resource:
 
 [source,java]
 ----
@@ -443,6 +475,16 @@ public class FruitAsyncResource {
         return getAll();
     }
 }
+----
+
+And add Netty HTTP client dependency to the `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>netty-nio-client</artifactId>
+</dependency>
 ----
 
 == Configuration Reference

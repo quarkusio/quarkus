@@ -11,9 +11,9 @@ import javax.enterprise.inject.Produces;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import io.quarkus.dynamodb.runtime.SyncHttpClientConfig.SyncClientType;
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
 import software.amazon.awssdk.core.client.builder.SdkClientBuilder;
-import software.amazon.awssdk.core.client.builder.SdkSyncClientBuilder;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
@@ -21,6 +21,7 @@ import software.amazon.awssdk.http.apache.ApacheHttpClient.Builder;
 import software.amazon.awssdk.http.apache.ProxyConfiguration;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.http.nio.netty.SdkEventLoopGroup;
+import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClientBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbBaseClientBuilder;
@@ -101,40 +102,54 @@ public class DynamodbClientProducer {
         }
     }
 
-    private void initHttpClient(SdkSyncClientBuilder builder, ApacheHttpClientConfig config) {
-        builder.httpClientBuilder(createApacheClientBuilder(config));
+    private void initHttpClient(DynamoDbClientBuilder builder, SyncHttpClientConfig config) {
+        if (config.type == SyncClientType.APACHE) {
+            builder.httpClientBuilder(createApacheClientBuilder(config));
+        } else {
+            builder.httpClientBuilder(createUrlConnectionClientBuilder(config));
+        }
     }
 
     private void initHttpClient(DynamoDbAsyncClientBuilder builder, NettyHttpClientConfig config) {
         builder.httpClientBuilder(createNettyClientBuilder(config));
     }
 
-    private ApacheHttpClient.Builder createApacheClientBuilder(ApacheHttpClientConfig config) {
+    private UrlConnectionHttpClient.Builder createUrlConnectionClientBuilder(SyncHttpClientConfig config) {
+        UrlConnectionHttpClient.Builder builder = UrlConnectionHttpClient.builder();
+        builder.connectionTimeout(config.connectionTimeout);
+        builder.socketTimeout(config.socketTimeout);
+        return builder;
+    }
+
+    private ApacheHttpClient.Builder createApacheClientBuilder(SyncHttpClientConfig config) {
         Builder builder = ApacheHttpClient.builder();
 
         builder.connectionTimeout(config.connectionTimeout);
-        builder.connectionAcquisitionTimeout(config.connectionAcquisitionTimeout);
-        builder.connectionMaxIdleTime(config.connectionMaxIdleTime);
-        config.connectionTimeToLive.ifPresent(builder::connectionTimeToLive);
-        builder.expectContinueEnabled(config.expectContinueEnabled);
-        builder.maxConnections(config.maxConnections);
         builder.socketTimeout(config.socketTimeout);
-        builder.useIdleConnectionReaper(config.useIdleConnectionReaper);
 
-        if (config.proxy.enabled) {
-            ProxyConfiguration.Builder proxyBuilder = ProxyConfiguration.builder().endpoint(config.proxy.endpoint);
-            config.proxy.username.ifPresent(proxyBuilder::username);
-            config.proxy.password.ifPresent(proxyBuilder::password);
-            config.proxy.nonProxyHosts.forEach(proxyBuilder::addNonProxyHost);
-            config.proxy.ntlmDomain.ifPresent(proxyBuilder::ntlmDomain);
-            config.proxy.ntlmWorkstation.ifPresent(proxyBuilder::ntlmWorkstation);
-            config.proxy.preemptiveBasicAuthenticationEnabled
+        builder.connectionAcquisitionTimeout(config.apache.connectionAcquisitionTimeout);
+        builder.connectionMaxIdleTime(config.apache.connectionMaxIdleTime);
+        config.apache.connectionTimeToLive.ifPresent(builder::connectionTimeToLive);
+        builder.expectContinueEnabled(config.apache.expectContinueEnabled);
+        builder.maxConnections(config.apache.maxConnections);
+        builder.useIdleConnectionReaper(config.apache.useIdleConnectionReaper);
+
+        if (config.apache.proxy.enabled) {
+            ProxyConfiguration.Builder proxyBuilder = ProxyConfiguration.builder()
+                    .endpoint(config.apache.proxy.endpoint);
+            config.apache.proxy.username.ifPresent(proxyBuilder::username);
+            config.apache.proxy.password.ifPresent(proxyBuilder::password);
+            config.apache.proxy.nonProxyHosts.forEach(proxyBuilder::addNonProxyHost);
+            config.apache.proxy.ntlmDomain.ifPresent(proxyBuilder::ntlmDomain);
+            config.apache.proxy.ntlmWorkstation.ifPresent(proxyBuilder::ntlmWorkstation);
+            config.apache.proxy.preemptiveBasicAuthenticationEnabled
                     .ifPresent(proxyBuilder::preemptiveBasicAuthenticationEnabled);
 
             builder.proxyConfiguration(proxyBuilder.build());
         }
 
-        builder.tlsKeyManagersProvider(config.tlsManagersProvider.type.create(config.tlsManagersProvider));
+        builder.tlsKeyManagersProvider(
+                config.apache.tlsManagersProvider.type.create(config.apache.tlsManagersProvider));
 
         return builder;
     }

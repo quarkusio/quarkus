@@ -107,6 +107,18 @@ This will also work in tandem with link:https://kubernetes.io/docs/concepts/conf
 
 _Note: in order to remain compatible with earlier versions of Quarkus (before 0.16) the default password is set to "password". It is therefore not a mandatory parameter!_
 
+=== Disable the HTTP port
+
+It is possible to redirect all traffic that tries to connect using HTTP to the HTTPS protocol and port.
+Add the following property to your `application.properties`:
+
+[source, properties]
+----
+quarkus.http.port-enabled=false
+----
+
+_Note: if you disable the HTTP port and have not added a SSL certificate or keystore, your server will not start!_
+
 == CORS filter
 
 link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin resource sharing] (CORS) is a mechanism that

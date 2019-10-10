@@ -270,6 +270,9 @@ public class VertxHttpRecorder {
         // Http server configuration
         HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode, websocketSubProtocols);
         HttpServerOptions sslConfig = createSslOptions(httpConfiguration, launchMode);
+        if (httpConfiguration.redirectInsecureRequests && sslConfig == null) {
+            throw new IllegalStateException("Cannot set quarkus.http.redirect-insecure-requests without enabling SSL.");
+        }
 
         int eventLoopCount = eventLoops.get();
         int ioThreads;
@@ -284,7 +287,7 @@ public class VertxHttpRecorder {
             public Verticle get() {
                 return new WebDeploymentVerticle(httpConfiguration.determinePort(launchMode),
                         httpConfiguration.determineSslPort(launchMode), httpConfiguration.host, httpServerOptions,
-                        sslConfig, launchMode);
+                        sslConfig, launchMode, httpConfiguration.redirectInsecureRequests);
             }
         }, new DeploymentOptions().setInstances(ioThreads), new Handler<AsyncResult<String>>() {
             @Override
@@ -549,22 +552,54 @@ public class VertxHttpRecorder {
         private final HttpServerOptions httpOptions;
         private final HttpServerOptions httpsOptions;
         private final LaunchMode launchMode;
+        private final boolean redirectHttp;
 
         public WebDeploymentVerticle(int port, int httpsPort, String host, HttpServerOptions httpOptions,
-                HttpServerOptions httpsOptions, LaunchMode launchMode) {
+                HttpServerOptions httpsOptions, LaunchMode launchMode, boolean redirectHttp) {
             this.port = port;
             this.httpsPort = httpsPort;
             this.host = host;
             this.httpOptions = httpOptions;
             this.httpsOptions = httpsOptions;
             this.launchMode = launchMode;
+            this.redirectHttp = redirectHttp;
         }
 
         @Override
         public void start(Future<Void> startFuture) {
+            if (httpOptions == null && httpsOptions == null) {
+                throw new RuntimeException("No HTTPS options specified and HTTP has been disabled");
+            }
+
             final AtomicInteger remainingCount = new AtomicInteger(httpsOptions != null ? 2 : 1);
             httpServer = vertx.createHttpServer(httpOptions);
-            httpServer.requestHandler(ACTUAL_ROOT);
+            if (redirectHttp) {
+                httpServer.requestHandler(req -> {
+                    try {
+                        String host = req.getHeader(HttpHeaderNames.HOST);
+                        if (host == null) {
+                            //TODO: solution for HTTP/1.0, but really there is not much we can do
+                            req.response().setStatusCode(HttpResponseStatus.NOT_FOUND.code()).end();
+                        } else {
+                            int includedPort = host.indexOf(":");
+                            int port = 80;
+                            if (includedPort != -1) {
+                                port = Integer.parseInt(host.substring(includedPort + 1));
+                                host = host.substring(0, includedPort);
+                            }
+                            req.response()
+                                    .setStatusCode(301)
+                                    .putHeader("Location", "https://" + host + ":" + port + req.uri())
+                                    .end();
+                        }
+                    } catch (Exception e) {
+                        req.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
+                    }
+
+                });
+            } else {
+                httpServer.requestHandler(ACTUAL_ROOT);
+            }
             httpServer.listen(port, host, event -> {
                 if (event.cause() != null) {
                     startFuture.fail(event.cause());
@@ -576,7 +611,8 @@ public class VertxHttpRecorder {
                         System.setProperty(launchMode == LaunchMode.TEST ? "quarkus.http.test-port" : "quarkus.http.port",
                                 String.valueOf(actualPort));
                         // Set in HttpOptions to output the port in the Timing class
-                        httpOptions.setPort(actualPort);
+                        if (httpOptions != null)
+                            httpOptions.setPort(actualPort);
                     }
                     if (remainingCount.decrementAndGet() == 0) {
                         startFuture.complete(null);

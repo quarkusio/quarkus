@@ -50,6 +50,13 @@ public class HttpConfiguration {
     public int testSslPort;
 
     /**
+     * If this is true then any requests to the HTTP port
+     * will be automatically redirected to the HTTPS port.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean redirectInsecureRequests;
+
+    /**
      * The CORS config
      */
     public CORSConfig cors;

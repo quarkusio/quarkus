@@ -91,6 +91,16 @@ public class DataSourceRuntimeConfig {
     public boolean enableMetrics;
 
     /**
+     * When enabled Agroal will be able to produce a warning when a connection is returned
+     * to the pool without the application having closed all open statements.
+     * This is unrelated with tracking of open connections.
+     * Disable for peak performance, but only when there's high confidence that
+     * no leaks are happening.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean detectStatementLeaks;
+
+    /**
      * Query executed when first using a connection.
      */
     @ConfigItem

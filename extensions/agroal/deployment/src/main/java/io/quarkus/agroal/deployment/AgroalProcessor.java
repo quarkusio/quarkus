@@ -2,6 +2,7 @@ package io.quarkus.agroal.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.sql.Driver;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map.Entry;
@@ -11,6 +12,8 @@ import java.util.Set;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.spi.DeploymentException;
+import javax.sql.XADataSource;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -20,6 +23,7 @@ import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
+import io.quarkus.agroal.TransactionIntegration;
 import io.quarkus.agroal.runtime.AbstractDataSourceProducer;
 import io.quarkus.agroal.runtime.AgroalBuildTimeConfig;
 import io.quarkus.agroal.runtime.AgroalRecorder;
@@ -96,6 +100,9 @@ class AgroalProcessor {
                 java.sql.ResultSet.class.getName(),
                 java.sql.ResultSet[].class.getName()));
 
+        validateBuildTimeConfig(null, agroalBuildTimeConfig.defaultDataSource);
+        agroalBuildTimeConfig.namedDataSources.forEach(AgroalProcessor::validateBuildTimeConfig);
+
         // Add reflection for the drivers
         if (agroalBuildTimeConfig.defaultDataSource.driver.isPresent()) {
             reflectiveClass
@@ -125,6 +132,56 @@ class AgroalProcessor {
                 (Class<? extends AbstractDataSourceProducer>) recorderContext.classProxy(dataSourceProducerClassName),
                 agroalBuildTimeConfig,
                 sslNativeConfig.isExplicitlyDisabled()));
+    }
+
+    private static void validateBuildTimeConfig(final String datasourceName, final DataSourceBuildTimeConfig ds) {
+        if (!ds.driver.isPresent()) {
+            // When the driver is not defined on the default datasource, we need to be more lenient as the datasource
+            // component might not be enabled at all so we only throw an exception for named datasources
+            if (datasourceName != null) {
+                throw new DeploymentException("Named datasource '" + datasourceName + "' doesn't have a driver defined.");
+            }
+            return;
+        }
+
+        String driverName = ds.driver.get();
+        Class<?> driver;
+        try {
+            driver = Class.forName(driverName, true, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            if (datasourceName == null) {
+                throw new DeploymentException("Unable to load the datasource driver for the default datasource", e);
+            } else {
+                throw new DeploymentException(
+                        "Unable to load the datasource driver for datasource named '" + datasourceName + "'",
+                        e);
+            }
+        }
+        if (ds.transactions == TransactionIntegration.XA) {
+            if (!XADataSource.class.isAssignableFrom(driver)) {
+                if (datasourceName == null) {
+                    throw new DeploymentException(
+                            "Driver is not an XA dataSource, while XA has been enabled in the configuration of the default datasource: either disable XA or switch the driver to an XADataSource");
+                } else {
+                    throw new DeploymentException(
+                            "Driver is not an XA dataSource, while XA has been enabled in the configuration of the datasource named '"
+                                    + datasourceName + "': either disable XA or switch the driver to an XADataSource");
+                }
+            }
+        } else {
+            if (driver != null && !javax.sql.DataSource.class.isAssignableFrom(driver)
+                    && !Driver.class.isAssignableFrom(driver)) {
+                if (datasourceName == null) {
+                    throw new DeploymentException(
+                            "Driver is an XA dataSource, but XA transactions have not been enabled on the default datasource; please either set 'quarkus.datasource.xa=true' or switch to a standard non-XA JDBC driver implementation");
+                } else {
+                    throw new DeploymentException(
+                            "Driver is an XA dataSource, but XA transactions have not been enabled on the datasource named '"
+                                    + datasourceName + "'; please either set 'quarkus.datasource." + datasourceName
+                                    + ".xa=true' or switch to a standard non-XA JDBC driver implementation");
+                }
+            }
+        }
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

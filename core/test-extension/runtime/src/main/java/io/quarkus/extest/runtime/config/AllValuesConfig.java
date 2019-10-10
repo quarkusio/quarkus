@@ -6,6 +6,8 @@ import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -43,12 +45,15 @@ public class AllValuesConfig {
     public ObjectValueOf ovoWithDefault;
     /** A map of config group objects */
     @ConfigItem
+    @ConfigDocSection
     public Map<String, NestedConfig> nestedConfigMap;
     /** A map of properties */
     @ConfigItem
+    @ConfigDocMapKey("string-property")
     public Map<String, String> stringMap;
     /** A map of property lists */
     @ConfigItem
+    @ConfigDocMapKey("list-of-strings")
     public Map<String, List<String>> stringListMap;
     /** A List of string values */
     @ConfigItem

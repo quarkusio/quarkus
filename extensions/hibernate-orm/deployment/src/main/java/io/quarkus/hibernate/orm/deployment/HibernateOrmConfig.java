@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -71,7 +72,7 @@ public class HibernateOrmConfig {
      * @asciidoclet
      */
     // @formatter:on
-    @ConfigItem
+    @ConfigItem(defaultValueDocumentation = "import.sql (DEV,TEST)")
     public Optional<String> sqlLoadScript;
 
     /**
@@ -88,29 +89,34 @@ public class HibernateOrmConfig {
      * Query related configuration.
      */
     @ConfigItem
+    @ConfigDocSection
     public HibernateOrmConfigQuery query;
 
     /**
      * Database related configuration.
      */
     @ConfigItem
+    @ConfigDocSection
     public HibernateOrmConfigDatabase database;
 
     /**
      * JDBC related configuration.
      */
     @ConfigItem
+    @ConfigDocSection
     public HibernateOrmConfigJdbc jdbc;
 
     /**
      * Logging configuration.
      */
     @ConfigItem
+    @ConfigDocSection
     public HibernateOrmConfigLog log;
 
     /**
      * Caching configuration
      */
+    @ConfigDocSection
     public Map<String, HibernateOrmConfigCache> cache;
 
     /**
@@ -239,10 +245,8 @@ public class HibernateOrmConfig {
 
         /**
          * Whether JDBC warnings should be collected and logged.
-         * <p>
-         * Default value depends on the dialect.
          */
-        @ConfigItem
+        @ConfigItem(defaultValueDocumentation = "depends on dialect")
         public Optional<Boolean> jdbcWarnings;
 
         public boolean isAnyPropertySet() {

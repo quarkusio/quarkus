@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
 
@@ -33,6 +34,7 @@ import org.jboss.logging.Logger;
 public class ClassLoaderCompiler {
 
     private static final Logger log = Logger.getLogger(ClassLoaderCompiler.class);
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile(" ");
 
     private final List<CompilationProvider> compilationProviders;
     /**
@@ -101,7 +103,7 @@ public class ClassLoaderCompiler {
                             }
                             Object classPath = mf.getMainAttributes().get(Attributes.Name.CLASS_PATH);
                             if (classPath != null) {
-                                for (String i : classPath.toString().split(" ")) {
+                                for (String i : WHITESPACE_PATTERN.split(classPath.toString())) {
                                     File f;
                                     try {
                                         f = Paths.get(new URI("file", null, "/", null).resolve(new URI(i))).toFile();

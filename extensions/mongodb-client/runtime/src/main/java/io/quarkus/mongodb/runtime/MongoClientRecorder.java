@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.bson.codecs.configuration.CodecProvider;
@@ -43,6 +44,7 @@ import io.quarkus.runtime.annotations.Recorder;
 public class MongoClientRecorder {
 
     private static final Logger LOGGER = Logger.getLogger(MongoClientRecorder.class);
+    private static final Pattern COLON_PATTERN = Pattern.compile(":");
 
     private static volatile MongoClient client;
     private static volatile ReactiveMongoClient reactiveMongoClient;
@@ -251,7 +253,7 @@ public class MongoClientRecorder {
         return addresses.stream()
                 .map(String::trim)
                 .map(address -> {
-                    String[] segments = address.split(":");
+                    String[] segments = COLON_PATTERN.split(address);
                     if (segments.length == 1) {
                         // Host only, default port
                         return new ServerAddress(address);

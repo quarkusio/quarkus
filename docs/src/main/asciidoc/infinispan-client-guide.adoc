@@ -49,6 +49,51 @@ can be configured in this file:
 for each. (eg. host1:11222;host:11222)
 | Runtime overridable
 
+| `quarkus.infinispan-client.client-intelligence`
+| <empty>
+| Sets client intelligence used by authentication
+| Runtime overridable
+
+| `quarkus.infinispan-client.use-auth`
+| <empty>
+| Enables or disables authentication
+| Runtime overridable
+
+| `quarkus.infinispan-client.auth-username`
+| <empty>
+| Sets user name used by authentication
+| Runtime overridable
+
+| `quarkus.infinispan-client.auth-password`
+| <empty>
+|
+| Runtime overridable
+
+| `quarkus.infinispan-client.auth-realm`
+| <empty>
+| Sets realm used by authentication
+| Runtime overridable
+
+| `quarkus.infinispan-client.auth-server-name`
+| <empty>
+| Sets server name used by authentication
+| Runtime overridable
+
+| `quarkus.infinispan-client.auth-client-subject`
+| <empty>
+| Sets client subject used by authentication
+| Runtime overridable
+
+| `quarkus.infinispan-client.auth-callback-handler`
+| <empty>
+| Sets callback handler used by authentication
+| Runtime overridable
+
+| `quarkus.infinispan-client.sasl-mechanism`
+| <empty>
+| Sets SASL mechanism used by authentication
+| Runtime overridable
+
 | `quarkus.infinispan-client.near-cache-max-entries`
 | 0
 | Controls whether the near cache is enabled (allowing repeated retrievals to be stored).

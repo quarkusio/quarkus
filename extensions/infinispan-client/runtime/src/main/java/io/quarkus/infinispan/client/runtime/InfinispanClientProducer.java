@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
@@ -167,12 +166,31 @@ public class InfinispanClientProducer {
             builder.marshaller((Marshaller) marshallerInstance);
         }
 
-        // Override serverList property value at runtime if such configuration exists
         if (infinispanClientRuntimeConfig != null) {
-            Optional<String> runtimeServerList = infinispanClientRuntimeConfig.serverList;
-            if (runtimeServerList.isPresent()) {
-                properties.put(ConfigurationProperties.SERVER_LIST, runtimeServerList.get());
-            }
+
+            infinispanClientRuntimeConfig.serverList
+                    .ifPresent(v -> properties.put(ConfigurationProperties.SERVER_LIST, v));
+
+            infinispanClientRuntimeConfig.clientIntelligence
+                    .ifPresent(v -> properties.put(ConfigurationProperties.CLIENT_INTELLIGENCE, v));
+
+            infinispanClientRuntimeConfig.useAuth
+                    .ifPresent(v -> properties.put(ConfigurationProperties.USE_AUTH, v));
+            infinispanClientRuntimeConfig.authUsername
+                    .ifPresent(v -> properties.put(ConfigurationProperties.AUTH_USERNAME, v));
+            infinispanClientRuntimeConfig.authPassword
+                    .ifPresent(v -> properties.put(ConfigurationProperties.AUTH_PASSWORD, v));
+            infinispanClientRuntimeConfig.authRealm
+                    .ifPresent(v -> properties.put(ConfigurationProperties.AUTH_REALM, v));
+            infinispanClientRuntimeConfig.authServerName
+                    .ifPresent(v -> properties.put(ConfigurationProperties.AUTH_SERVER_NAME, v));
+            infinispanClientRuntimeConfig.authClientSubject
+                    .ifPresent(v -> properties.put(ConfigurationProperties.AUTH_CLIENT_SUBJECT, v));
+            infinispanClientRuntimeConfig.authCallbackHandler
+                    .ifPresent(v -> properties.put(ConfigurationProperties.AUTH_CALLBACK_HANDLER, v));
+
+            infinispanClientRuntimeConfig.saslMechanism
+                    .ifPresent(v -> properties.put(ConfigurationProperties.SASL_MECHANISM, v));
         }
 
         builder.withProperties(properties);

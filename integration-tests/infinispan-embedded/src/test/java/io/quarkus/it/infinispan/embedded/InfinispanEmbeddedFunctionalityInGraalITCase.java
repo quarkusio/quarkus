@@ -8,6 +8,6 @@ import io.quarkus.test.junit.SubstrateTest;
  */
 @QuarkusTestResource(InfinispanEmbeddedTestResource.class)
 @SubstrateTest
-public class InfinispanClientFunctionalityInGraalITCase extends InfinispanClientFunctionalityTest {
+public class InfinispanEmbeddedFunctionalityInGraalITCase extends InfinispanEmbeddedFunctionalityTest {
 
 }

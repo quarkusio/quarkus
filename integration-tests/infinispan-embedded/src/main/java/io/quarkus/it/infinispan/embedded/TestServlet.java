@@ -1,5 +1,11 @@
 package io.quarkus.it.infinispan.embedded;
 
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
@@ -11,6 +17,9 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheMode;
+import org.infinispan.configuration.cache.ConfigurationBuilder;
+import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.util.logging.Log;
 import org.infinispan.util.logging.LogFactory;
@@ -62,5 +71,51 @@ public class TestServlet {
         Cache<byte[], byte[]> cache = emc.getCache(cacheName);
         byte[] result = cache.remove(id.getBytes());
         return result == null ? "null" : new String(result);
+    }
+
+    @Path("CLUSTER")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String simpleCluster() throws IOException {
+        ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
+        configurationBuilder.clustering().cacheMode(CacheMode.DIST_SYNC);
+
+        List<EmbeddedCacheManager> managers = new ArrayList<>(3);
+        try {
+            // Force TCP to connect to loopback, which our TCPPING in dist.xml connects to for discovery
+            String oldProperty = System.setProperty("jgroups.tcp.address", "127.0.0.1");
+            for (int i = 0; i < 3; i++) {
+                EmbeddedCacheManager ecm = new DefaultCacheManager(
+                        Paths.get("src", "main", "resources", "dist.xml").toString());
+                ecm.start();
+                managers.add(ecm);
+                // Start the default cache
+                ecm.getCache();
+            }
+
+            if (oldProperty != null) {
+                System.setProperty("jgroups.tcp.address", oldProperty);
+            }
+
+            long failureTime = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+
+            int sizeMatched = 0;
+            while (sizeMatched < 3) {
+                // reset the size every time
+                sizeMatched = 0;
+                for (EmbeddedCacheManager ecm : managers) {
+                    int size = ecm.getMembers().size();
+                    if (size == 3) {
+                        sizeMatched++;
+                    }
+                }
+                if (failureTime - System.nanoTime() < 0) {
+                    return "Timed out waiting for caches to have joined together!";
+                }
+            }
+        } finally {
+            managers.forEach(EmbeddedCacheManager::stop);
+        }
+        return "Success";
     }
 }

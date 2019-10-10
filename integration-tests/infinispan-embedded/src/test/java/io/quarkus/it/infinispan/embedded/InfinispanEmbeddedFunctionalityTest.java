@@ -11,7 +11,7 @@ import io.restassured.RestAssured;
  * @author William Burns
  */
 @QuarkusTest
-public class InfinispanClientFunctionalityTest {
+public class InfinispanEmbeddedFunctionalityTest {
     @Test
     public void testCache() {
         // This cache also has persistence
@@ -60,5 +60,11 @@ public class InfinispanClientFunctionalityTest {
         RestAssured.when().get("/test/REMOVE/" + cacheName + "/key").then().body(is("something"));
 
         RestAssured.when().get("/test/GET/" + cacheName + "/key").then().body(is("null"));
+    }
+
+    @Test
+    public void testSimpleCluster() {
+        System.out.println("Running cluster test");
+        RestAssured.when().get("/test/CLUSTER").then().body(is("Success"));
     }
 }

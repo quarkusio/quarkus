@@ -10,7 +10,7 @@
        <stack name="tcpping" extends="tcp">
            <MPING ispn:stack.combine="REMOVE" xmlns="urn:org:jgroups"/>
            <TCPPING async_discovery="true"
-                    initial_hosts="${initial_hosts:192.168.1.20[7800],192.168.1.20[7801]}"
+                    initial_hosts="${initial_hosts:127.0.0.1[7800],127.0.0.1[7801]}"
                     port_range="0" ispn:stack.combine="INSERT_AFTER" ispn:stack.position="TCP" xmlns="urn:org:jgroups"/>
        </stack>
    </jgroups>

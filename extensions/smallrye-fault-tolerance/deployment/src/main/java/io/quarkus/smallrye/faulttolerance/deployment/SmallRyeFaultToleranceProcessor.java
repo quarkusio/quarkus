@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Priority;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.faulttolerance.Asynchronous;
@@ -22,6 +23,7 @@ import com.netflix.hystrix.HystrixCircuitBreaker;
 
 import io.quarkus.arc.deployment.*;
 import io.quarkus.arc.processor.*;
+import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -35,7 +37,6 @@ import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildIte
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
-import io.quarkus.smallrye.faulttolerance.runtime.RequestContextListener;
 import io.quarkus.smallrye.faulttolerance.runtime.SmallryeFaultToleranceRecorder;
 import io.smallrye.faulttolerance.DefaultCommandListenersProvider;
 import io.smallrye.faulttolerance.DefaultHystrixConcurrencyStrategy;
@@ -128,9 +129,36 @@ public class SmallRyeFaultToleranceProcessor {
                 DefaultHystrixConcurrencyStrategy.class,
                 QuarkusFaultToleranceOperationProvider.class, QuarkusFallbackHandlerProvider.class,
                 DefaultCommandListenersProvider.class,
-                MetricsCollectorFactory.class,
-                RequestContextListener.class);
+                MetricsCollectorFactory.class);
         additionalBean.produce(builder.build());
+    }
+
+    @BuildStep
+    AnnotationsTransformerBuildItem transformInterceptorPriority(BeanArchiveIndexBuildItem index) {
+        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                if (ctx.isClass()) {
+                    if (!ctx.getTarget().asClass().name().toString()
+                            .equals("io.smallrye.faulttolerance.HystrixCommandInterceptor")) {
+                        return;
+                    }
+
+                    Integer priority = QuarkusConfig.getBoxedInt("mp.fault.tolerance.interceptor.priority", null, true);
+                    if (priority != null) {
+                        ctx.transform()
+                                .remove(ann -> ann.name().toString().equals(Priority.class.getName()))
+                                .add(Priority.class, AnnotationValue.createIntegerValue("value", priority))
+                                .done();
+                    }
+                }
+            }
+        });
     }
 
     @BuildStep

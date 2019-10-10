@@ -18,9 +18,13 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <suiteXmlFiles>
+                        <suiteXmlFile>tck-suite.xml</suiteXmlFile>
+                    </suiteXmlFiles>
                     <systemPropertyVariables>
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
+                        <io_smallrye_faulttolerance_asyncTimeout>true</io_smallrye_faulttolerance_asyncTimeout>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->
@@ -28,12 +32,6 @@
                     <dependenciesToScan>
                         <dependency>org.eclipse.microprofile.fault-tolerance:microprofile-fault-tolerance-tck</dependency>
                     </dependenciesToScan>
-                    <excludes>
-                        <!-- Waiting on https://github.com/eclipse/microprofile-fault-tolerance/pull/450 -->
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.bulkhead.BulkheadAsynchTest</exclude>
-                        <!-- We do not support enablement via beans.xml -->
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.interceptor.xmlInterceptorEnabling.FaultToleranceInterceptorEnableByXmlTest</exclude>
-                    </excludes>
                 </configuration>
             </plugin>
         </plugins>

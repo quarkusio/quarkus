@@ -31,6 +31,7 @@
         <maven-resolver.version>1.1.1</maven-resolver.version>
         <maven-wagon.version>3.0.0</maven-wagon.version>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+        <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
     </properties>
     <modules>
         <module>core</module>
@@ -130,6 +131,11 @@
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging</artifactId>
                 <version>${jboss-logging.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.logging</groupId>
+                <artifactId>commons-logging-jboss-logging</artifactId>
+                <version>${commons-logging-jboss-logging.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>

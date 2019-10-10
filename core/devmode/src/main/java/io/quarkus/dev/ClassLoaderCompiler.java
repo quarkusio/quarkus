@@ -104,6 +104,10 @@ public class ClassLoaderCompiler {
                                 for (String i : classPath.toString().split(" ")) {
                                     File f;
                                     try {
+                                        if (i.startsWith("file:")) {
+                                            i = i.substring(5, i.lastIndexOf('!'));
+                                        }
+
                                         f = Paths.get(new URI("file", null, "/", null).resolve(new URI(i))).toFile();
                                     } catch (URISyntaxException e) {
                                         f = new File(file.getParentFile(), i);

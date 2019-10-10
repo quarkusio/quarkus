@@ -29,6 +29,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Pattern;
 
+import javax.enterprise.context.ApplicationScoped;
+
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -45,7 +47,8 @@ import io.vertx.ext.web.RoutingContext;
  *
  * @author <a href="mailto:darran.lofthouse@jboss.com">Darran Lofthouse</a>
  */
-public class BasicAuthenticationMechanism implements HTTPAuthenticationMechanism {
+@ApplicationScoped
+public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism {
 
     private static final Logger log = Logger.getLogger(BasicAuthenticationMechanism.class);
 

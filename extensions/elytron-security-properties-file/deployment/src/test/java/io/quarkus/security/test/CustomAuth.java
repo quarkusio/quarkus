@@ -20,7 +20,7 @@ import io.quarkus.security.credential.PasswordCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
-import io.quarkus.vertx.http.runtime.security.HTTPAuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.undertow.security.idm.IdentityManager;
 import io.vertx.ext.web.RoutingContext;
 
@@ -28,7 +28,7 @@ import io.vertx.ext.web.RoutingContext;
  * An alternate BASIC auth based mechanism to test installing a custom AuthenticationMechanism into Undertow
  */
 @ApplicationScoped
-public class CustomAuth implements HTTPAuthenticationMechanism {
+public class CustomAuth implements HttpAuthenticationMechanism {
     private static final Logger log = Logger.getLogger(CustomAuth.class.getName());
     private static final String BASIC_PREFIX = BASIC + " ";
     private static final String LOWERCASE_BASIC_PREFIX = BASIC_PREFIX.toLowerCase(Locale.ENGLISH);

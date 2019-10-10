@@ -32,8 +32,8 @@ import io.quarkus.resteasy.runtime.standalone.ResteasyStandaloneRecorder;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
 import io.quarkus.vertx.core.deployment.InternalWebVertxBuildItem;
 import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
-import io.quarkus.vertx.http.deployment.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.vertx.ext.web.Route;
 
 public class ResteasyStandaloneBuildStep {

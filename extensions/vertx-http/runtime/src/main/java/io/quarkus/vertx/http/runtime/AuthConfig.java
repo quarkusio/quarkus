@@ -1,14 +1,16 @@
-package io.quarkus.vertx.http.deployment;
+package io.quarkus.vertx.http.runtime;
 
+import java.util.Map;
+
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
  * Authentication mechanism and SecurityRealm name information used for configuring HTTP auth
  * instance for the deployment.
  */
-@ConfigRoot
-public class HttpAuthConfig {
+@ConfigGroup
+public class AuthConfig {
     /**
      * If basic auth should be enabled. If both basic and form auth is enabled then basic auth will be enabled in silent mode.
      *
@@ -31,4 +33,16 @@ public class HttpAuthConfig {
      */
     @ConfigItem(defaultValue = "Quarkus")
     public String realm;
+
+    /**
+     * The HTTP permissions
+     */
+    @ConfigItem(name = "permission")
+    public Map<String, PermissionSetConfig> permissions;
+
+    /**
+     * If this is true then any HTTP request that has not been explicitly permitted by a permission checker will be denied
+     */
+    @ConfigItem
+    public boolean defaultDeny = false;
 }

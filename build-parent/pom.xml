@@ -199,7 +199,8 @@
                                             <exclude>commons-logging:commons-logging</exclude>
                                             <exclude>commons-logging:commons-logging-api</exclude>
                                             <exclude>org.springframework:spring-jcl</exclude>
-                                            <!-- Ban SLF4j implementations (use org.jboss.slf4j:slf4j-jboss-logmanager instead) -->
+                                            <exclude>org.slf4j:jcl-over-slf4j</exclude>
+                                            <!-- Ban SLF4j implementations (use org.jboss.slf4j:slf4j-jboss-logging instead) -->
                                             <exclude>org.slf4j:slf4j-simple</exclude>
                                             <exclude>org.slf4j:slf4j-nop</exclude>
                                             <exclude>org.slf4j:slf4j-jdk14</exclude>

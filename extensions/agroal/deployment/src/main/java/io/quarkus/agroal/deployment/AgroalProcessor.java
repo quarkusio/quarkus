@@ -135,8 +135,12 @@ class AgroalProcessor {
     }
 
     private static void validateBuildTimeConfig(final String datasourceName, final DataSourceBuildTimeConfig ds) {
-        //When the driver is not defined on the default datasource, we need to be more lenient as the datasource component might not be enabled at all:
-        if (!ds.driver.isPresent() && datasourceName == null) {
+        if (!ds.driver.isPresent()) {
+            // When the driver is not defined on the default datasource, we need to be more lenient as the datasource
+            // component might not be enabled at all so we only throw an exception for named datasources
+            if (datasourceName != null) {
+                throw new DeploymentException("Named datasource '" + datasourceName + "' doesn't have a driver defined.");
+            }
             return;
         }
 
@@ -146,10 +150,10 @@ class AgroalProcessor {
             driver = Class.forName(driverName, true, Thread.currentThread().getContextClassLoader());
         } catch (ClassNotFoundException e) {
             if (datasourceName == null) {
-                throw new DeploymentException("Unable to load the dataSource driver for the default datasource", e);
+                throw new DeploymentException("Unable to load the datasource driver for the default datasource", e);
             } else {
                 throw new DeploymentException(
-                        "Unable to load the dataSource driver for datasource named '" + datasourceName + "'",
+                        "Unable to load the datasource driver for datasource named '" + datasourceName + "'",
                         e);
             }
         }

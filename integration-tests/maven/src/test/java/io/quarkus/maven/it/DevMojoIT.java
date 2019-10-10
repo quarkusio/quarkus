@@ -340,6 +340,31 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testThatExternalConfigOverridesConfigInJar() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic", "projects/project-classic-external-config");
+        File configurationFile = new File(testDir, "target/config/application.properties");
+        assertThat(configurationFile).doesNotExist();
+
+        String uuid = UUID.randomUUID().toString();
+
+        FileUtils.write(configurationFile,
+                "greeting=" + uuid,
+                "UTF-8");
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(configurationFile::isFile);
+
+        run();
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(10, TimeUnit.SECONDS)
+                .until(() -> getHttpResponse("/app/hello/greeting").contains(uuid));
+    }
+
+    @Test
     public void testThatNewResourcesAreServed() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-resource-change");
         runAndCheck();

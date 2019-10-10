@@ -97,8 +97,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
             throws Exception {
 
         TransactionConfiguration configAnnotation = getTransactionConfiguration(ic);
-        int currentTmTimeout = ((TransactionManagerImple) com.arjuna.ats.jta.TransactionManager.transactionManager())
-                .getTimeout();
+        int currentTmTimeout = ((TransactionManagerImple) transactionManager).getTimeout();
         if (configAnnotation != null && configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT) {
             tm.setTransactionTimeout(configAnnotation.timeout());
         }

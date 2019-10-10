@@ -9,10 +9,10 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.DeploymentException;
+import javax.inject.Singleton;
 import javax.sql.XADataSource;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -231,12 +231,12 @@ class AgroalProcessor {
                 .className(dataSourceProducerClassName)
                 .superClass(AbstractDataSourceProducer.class)
                 .build();
-        classCreator.addAnnotation(ApplicationScoped.class);
+        classCreator.addAnnotation(Singleton.class);
 
         if (agroalBuildTimeConfig.defaultDataSource.driver.isPresent()) {
             MethodCreator defaultDataSourceMethodCreator = classCreator.getMethodCreator("createDefaultDataSource",
                     AgroalDataSource.class);
-            defaultDataSourceMethodCreator.addAnnotation(ApplicationScoped.class);
+            defaultDataSourceMethodCreator.addAnnotation(Singleton.class);
             defaultDataSourceMethodCreator.addAnnotation(Produces.class);
             defaultDataSourceMethodCreator.addAnnotation(Default.class);
 
@@ -271,7 +271,7 @@ class AgroalProcessor {
             MethodCreator namedDataSourceMethodCreator = classCreator.getMethodCreator(
                     "createNamedDataSource_" + HashUtil.sha1(namedDataSourceName),
                     AgroalDataSource.class);
-            namedDataSourceMethodCreator.addAnnotation(ApplicationScoped.class);
+            namedDataSourceMethodCreator.addAnnotation(Singleton.class);
             namedDataSourceMethodCreator.addAnnotation(Produces.class);
             namedDataSourceMethodCreator.addAnnotation(AnnotationInstance.create(DotNames.NAMED, null,
                     new AnnotationValue[] { AnnotationValue.createStringValue("value", namedDataSourceName) }));

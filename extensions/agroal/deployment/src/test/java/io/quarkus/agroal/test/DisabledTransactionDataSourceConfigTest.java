@@ -2,7 +2,6 @@ package io.quarkus.agroal.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -35,7 +34,7 @@ public class DisabledTransactionDataSourceConfigTest {
     public void testNonTransactionalDataSourceInjection() throws SQLException {
         AgroalConnectionPoolConfiguration configuration = defaultDataSource.getConfiguration().connectionPoolConfiguration();
 
-        assertTrue(!(configuration.transactionIntegration() instanceof NarayanaTransactionIntegration));
+        assertFalse(configuration.transactionIntegration() instanceof NarayanaTransactionIntegration);
         Class<? extends TransactionIntegration> nonTxIntegrator = TransactionIntegration.none().getClass();
         assertEquals(nonTxIntegrator, configuration.transactionIntegration().getClass());
         assertFalse(configuration.connectionFactoryConfiguration().trackJdbcResources());

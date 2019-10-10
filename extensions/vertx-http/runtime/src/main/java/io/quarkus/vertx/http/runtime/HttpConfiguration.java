@@ -70,6 +70,15 @@ public class HttpConfiguration {
     public boolean allowForwarded;
 
     /**
+     * If insecure (i.e. http rather than https) requests are allowed. If this is {@code enabled}
+     * then http works as normal. {@code redirect} will still open the http port, but
+     * all requests will be redirected to the HTTPS port. {@code disabled} will prevent the HTTP
+     * port from opening at all.
+     */
+    @ConfigItem(defaultValue = "enabled")
+    public InsecureRequests insecureRequests;
+
+    /**
      * The CORS config
      */
     public CORSConfig cors;
@@ -160,4 +169,9 @@ public class HttpConfiguration {
         return launchMode == LaunchMode.TEST ? testSslPort : sslPort;
     }
 
+    public static enum InsecureRequests {
+        ENABLED,
+        REDIRECT,
+        DISABLED;
+    }
 }

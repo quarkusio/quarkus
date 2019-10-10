@@ -75,8 +75,12 @@ public class RestAssuredURLManager {
             try {
                 oldBaseURI = (String) baseURIField.get(null);
                 final String protocol = useSecureConnection ? "https://" : "http://";
-                String baseURI = protocol + ConfigProvider.getConfig().getOptionalValue("quarkus.http.host", String.class)
+                String host = ConfigProvider.getConfig().getOptionalValue("quarkus.http.host", String.class)
                         .orElse("localhost");
+                if (host.equals("0.0.0.0")) {
+                    host = "localhost";
+                }
+                String baseURI = protocol + host;
                 baseURIField.set(null, baseURI);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();

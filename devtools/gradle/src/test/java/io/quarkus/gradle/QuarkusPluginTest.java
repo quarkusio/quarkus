@@ -6,8 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.testfixtures.ProjectBuilder;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled
 public class QuarkusPluginTest {
 
     @Test

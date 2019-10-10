@@ -18,10 +18,12 @@ import java.util.Map;
 
 import org.apache.maven.model.Dependency;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 
+@Disabled
 class GradleBuildFileTest {
 
     private static GradleBuildFileFromConnector buildFile;

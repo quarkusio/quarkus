@@ -1,6 +1,5 @@
 package io.quarkus.infinispan.client.runtime;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.util.Map;
@@ -26,7 +25,6 @@ import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
 import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
-import org.infinispan.commons.CacheConfigurationException;
 import org.infinispan.commons.marshall.Marshaller;
 import org.infinispan.commons.util.Util;
 import org.infinispan.counter.api.CounterManager;
@@ -34,8 +32,8 @@ import org.infinispan.protostream.BaseMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 import org.infinispan.protostream.SerializationContextInitializer;
+import org.infinispan.protostream.WrappedMessage;
 import org.infinispan.query.remote.client.ProtobufMetadataManagerConstants;
-import org.infinispan.query.remote.client.impl.MarshallerRegistration;
 
 /**
  * Produces a configured remote cache manager instance
@@ -129,10 +127,10 @@ public class InfinispanClientProducer {
         // Note that the other half is done in QuerySubstitutions.SubstituteMarshallerRegistration class
         // Note that the registration of these files are done twice in normal VM mode
         // (once during init and once at runtime)
-        properties.put(InfinispanClientProducer.PROTOBUF_FILE_PREFIX + MarshallerRegistration.QUERY_PROTO_RES,
-                getContents(MarshallerRegistration.QUERY_PROTO_RES));
-        properties.put(InfinispanClientProducer.PROTOBUF_FILE_PREFIX + MarshallerRegistration.MESSAGE_PROTO_RES,
-                getContents(MarshallerRegistration.MESSAGE_PROTO_RES));
+        properties.put(InfinispanClientProducer.PROTOBUF_FILE_PREFIX + WrappedMessage.PROTO_FILE,
+                getContents("/" + WrappedMessage.PROTO_FILE));
+        String queryProtoFile = "org/infinispan/query/remote/client/query.proto";
+        properties.put(InfinispanClientProducer.PROTOBUF_FILE_PREFIX + queryProtoFile, getContents("/" + queryProtoFile));
     }
 
     /**
@@ -206,11 +204,7 @@ public class InfinispanClientProducer {
                 .get(InfinispanClientProducer.PROTOBUF_INITIALIZERS);
         if (initializers != null) {
             initializers.forEach(sci -> {
-                try {
-                    sci.registerSchema(serializationContext);
-                } catch (IOException e) {
-                    throw new CacheConfigurationException(e);
-                }
+                sci.registerSchema(serializationContext);
                 sci.registerMarshallers(serializationContext);
             });
         }

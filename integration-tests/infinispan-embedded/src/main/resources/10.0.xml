@@ -304,7 +304,7 @@
       </local-cache>
       <local-cache name="off-heap-memory">
          <memory>
-            <off-heap size="10000000" eviction="MEMORY" address-count="4"/>
+            <off-heap size="10000000" eviction="MEMORY"/>
          </memory>
       </local-cache>
       <local-cache name="binary-memory">

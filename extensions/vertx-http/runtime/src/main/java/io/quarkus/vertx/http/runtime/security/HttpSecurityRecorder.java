@@ -5,9 +5,12 @@ import java.util.function.BiFunction;
 
 import javax.enterprise.inject.spi.CDI;
 
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -16,9 +19,14 @@ public class HttpSecurityRecorder {
 
     public Handler<RoutingContext> authenticationMechanismHandler() {
         return new Handler<RoutingContext>() {
+
+            volatile HttpAuthenticator authenticator;
+
             @Override
             public void handle(RoutingContext event) {
-                HttpAuthenticator authenticator = CDI.current().select(HttpAuthenticator.class).get();
+                if (authenticator == null) {
+                    authenticator = CDI.current().select(HttpAuthenticator.class).get();
+                }
                 //we put the authenticator into the routing context so it can be used by other systems
                 event.put(HttpAuthenticator.class.getName(), authenticator);
                 authenticator.attemptAuthentication(event).handle(new BiFunction<SecurityIdentity, Throwable, Object>() {
@@ -52,4 +60,27 @@ public class HttpSecurityRecorder {
         };
     }
 
+    public Handler<RoutingContext> permissionCheckHandler() {
+        return new Handler<RoutingContext>() {
+            volatile HttpAuthorizer authorizer;
+
+            @Override
+            public void handle(RoutingContext event) {
+                if (authorizer == null) {
+                    authorizer = CDI.current().select(HttpAuthorizer.class).get();
+                }
+                authorizer.checkPermission(event);
+            }
+        };
+    }
+
+    public BeanContainerListener initPermissions(HttpBuildTimeConfig permissions) {
+        return new BeanContainerListener() {
+            @Override
+            public void created(BeanContainer container) {
+                container.instance(DefaultHttpPermissionChecker.class).init(permissions);
+                container.instance(HttpAuthorizer.class).setDefaultDeny(permissions.auth.defaultDeny);
+            }
+        };
+    }
 }

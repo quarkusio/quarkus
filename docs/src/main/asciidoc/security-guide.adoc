@@ -90,6 +90,56 @@ very much a work in progress, so this list will be expanded over the coming week
 
 Please see the linked documents above for details on how to setup the various extensions.
 
+### Securing Web Endpoints
+
+Quarkus has an integrated plugable web security layer. If security is enabled all HTTP requests will have a permission
+check performed to make sure they are permitted to continue.
+
+The default implementation allows you to define permissions using config in `application.properties`. An example
+config is shown below:
+
+[source,properties]
+--
+quarkus.http.auth.default-deny=true                                                 <1>
+
+quarkus.http.auth.permission.roles1.paths=/roles-secured/*,/other/*,/api/*          <2>
+quarkus.http.auth.permission.roles1.roles-allowed=user,admin
+
+quarkus.http.auth.permission.permit1.paths=/public/*                                <3>
+quarkus.http.auth.permission.permit1.permit-all=true
+quarkus.http.auth.permission.permit1.methods=GET
+
+quarkus.http.auth.permission.deny1.paths=/forbidden                                 <4>
+quarkus.http.auth.permission.deny1.deny-all=true
+--
+<1> Setting `default-deny` means that all requests that do not match a rule will be denied by default
+<2> This is a permission set that uses `roles-allowed` to control which users can access the provided resources. `roles1` is an arbitrary name, you can call the permission sets whatever you want.
+<3> This permission get uses `permit-all` to allow `GET` methods to `/public`
+<4> This permission set denies all access to `/forbidden`. In this example this is a no-op as it would be denied anyway by the `default-deny`. This is an exact path match as it does not end with *.
+
+Permissions are defined in config using permission sets. These are arbitrarily named permission grouping. Each permission
+set can specify either `permit-all=true`, `deny-all=true` or `roles-allowed=`. The special role '*' allows any authenticated
+user to access the resource.
+
+Permission sets can also specify paths and methods as a comma separated list. If a path ends with '*' then it is considered
+to be a wildcard match and will match all sub paths, otherwise it is an exact match and will only match that specific path.
+
+If a request would match one or more permission sets based on the path, but does not match any due to method requirements
+then the request is rejected.
+
+Matching is always done on a longest path basis, less specific permission sets are not considered if a more specific one
+has been matched.
+
+If a path is registered with multiple permission sets then any permission sets that specify a HTTP method will take
+precedence and permissions sets without a method will not be considered (assuming of course the method matches). In this
+instance permission sets will only come into effect if the request method does not match any of the sets with method permissions.
+If a request would have matched based on path, but does not match any permission sets because of method requirements
+then this request is rejected.
+
+If multiple permission sets specify the same path and method (or multiple have no method) then both permissions have to
+allow access for the request to proceed. Note that for this to happen both have to either have specified the method, or
+have no method, method specific matches take precedence as stated above.
+
 
 ### Registering Security Providers
 When running in native mode the default behavior for Graal native image generation is to only include the main "SUN" provider

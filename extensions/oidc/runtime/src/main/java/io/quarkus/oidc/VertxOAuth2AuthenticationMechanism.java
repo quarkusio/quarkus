@@ -9,7 +9,7 @@ import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
-import io.quarkus.vertx.http.runtime.security.HTTPAuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
@@ -17,7 +17,7 @@ import io.vertx.ext.auth.oauth2.OAuth2Auth;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
-public class VertxOAuth2AuthenticationMechanism implements HTTPAuthenticationMechanism {
+public class VertxOAuth2AuthenticationMechanism implements HttpAuthenticationMechanism {
 
     private static final String BEARER = "Bearer";
 

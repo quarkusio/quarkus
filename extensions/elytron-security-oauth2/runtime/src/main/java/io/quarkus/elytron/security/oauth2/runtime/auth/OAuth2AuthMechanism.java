@@ -13,14 +13,14 @@ import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
-import io.quarkus.vertx.http.runtime.security.HTTPAuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.vertx.ext.web.RoutingContext;
 
 /**
  * An AuthenticationMechanism that validates a caller based on a bearer token
  */
 @ApplicationScoped
-public class OAuth2AuthMechanism implements HTTPAuthenticationMechanism {
+public class OAuth2AuthMechanism implements HttpAuthenticationMechanism {
 
     private static final Logger log = Logger.getLogger(OAuth2AuthMechanism.class);
 

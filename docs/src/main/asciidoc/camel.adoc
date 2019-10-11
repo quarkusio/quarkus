@@ -1,0 +1,15 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Apache Camel on Quarkus
+
+include::./attributes.adoc[]
+
+http://camel.apache.org/[Apache Camel] is the Swiss knife of integrating heterogeneous systems with more than a decade
+of history and a lively community of users and developers.
+
+The support for Apache Camel on top of Quarkus is provided by the
+https://github.com/apache/camel-quarkus[Apache Camel Quarkus project]. Please refer to
+https://camel.apache.org/camel-quarkus/latest/[their documentation] for more information.

@@ -4,9 +4,13 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -21,6 +25,7 @@ import javax.validation.Valid;
 import javax.validation.executable.ValidateOnExecution;
 import javax.validation.valueextraction.ValueExtractor;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.hibernate.validator.internal.metadata.core.ConstraintHelper;
 import org.hibernate.validator.messageinterpolation.AbstractMessageInterpolator;
 import org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy;
@@ -29,9 +34,11 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -51,6 +58,7 @@ import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
+import io.quarkus.hibernate.validator.runtime.configuration_validation.ConfigPropertyValidation;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 
@@ -70,6 +78,8 @@ class HibernateValidatorProcessor {
     private static final DotName VALUE_EXTRACTOR = DotName.createSimple(ValueExtractor.class.getName());
 
     private static final DotName VALIDATE_ON_EXECUTION = DotName.createSimple(ValidateOnExecution.class.getName());
+    private static final DotName CONFIG_PROPERTY = DotName.createSimple(ConfigProperty.class.getName());
+    private static final DotName CONFIG_PROPERTIES = DotName.createSimple(ConfigProperties.class.getName());
 
     private static final DotName VALID = DotName.createSimple(Valid.class.getName());
 
@@ -88,6 +98,9 @@ class HibernateValidatorProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBean) {
         // The bean encapsulating the Validator and ValidatorFactory
         additionalBeans.produce(new AdditionalBeanBuildItem(ValidatorProvider.class));
+
+        // The bean that validates @ConfigProperty on application startup
+        additionalBeans.produce(new AdditionalBeanBuildItem(ConfigPropertyValidation.class));
 
         // The CDI interceptor which will validate the methods annotated with @MethodValidated
         additionalBeans.produce(new AdditionalBeanBuildItem(MethodValidationInterceptor.class));
@@ -144,32 +157,39 @@ class HibernateValidatorProcessor {
         consideredAnnotations.add(VALIDATE_ON_EXECUTION);
 
         Set<DotName> classNamesToBeValidated = new HashSet<>();
+        Map<Class<?>, List<String>> configClassWithProperties = new HashMap<>();
 
         for (DotName consideredAnnotation : consideredAnnotations) {
             Collection<AnnotationInstance> annotationInstances = indexView.getAnnotations(consideredAnnotation);
 
             for (AnnotationInstance annotation : annotationInstances) {
                 if (annotation.target().kind() == AnnotationTarget.Kind.FIELD) {
-                    contributeClass(classNamesToBeValidated, indexView, annotation.target().asField().declaringClass().name());
-                    reflectiveFields.produce(new ReflectiveFieldBuildItem(annotation.target().asField()));
-                    contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation,
-                            annotation.target().asField().type());
+                    FieldInfo field = annotation.target().asField();
+                    ClassInfo classInfo = field.declaringClass();
+                    Set<DotName> classes = contributeClass(indexView, classInfo.name());
+                    classNamesToBeValidated.addAll(classes);
+                    reflectiveFields.produce(new ReflectiveFieldBuildItem(field));
+                    classNamesToBeValidated
+                            .addAll(contributeClassMarkedForCascadingValidation(indexView, consideredAnnotation, field.type()));
+                    collectClassWithConfigurationProperties(recorderContext, configClassWithProperties, field, classInfo,
+                            classes);
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
-                    contributeClass(classNamesToBeValidated, indexView, annotation.target().asMethod().declaringClass().name());
+                    classNamesToBeValidated
+                            .addAll(contributeClass(indexView, annotation.target().asMethod().declaringClass().name()));
                     // we need to register the method for reflection as it could be a getter
                     reflectiveMethods.produce(new ReflectiveMethodBuildItem(annotation.target().asMethod()));
-                    contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation,
-                            annotation.target().asMethod().returnType());
+                    classNamesToBeValidated.addAll(contributeClassMarkedForCascadingValidation(indexView, consideredAnnotation,
+                            annotation.target().asMethod().returnType()));
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
-                    contributeClass(classNamesToBeValidated, indexView,
-                            annotation.target().asMethodParameter().method().declaringClass().name());
+                    classNamesToBeValidated.addAll(contributeClass(indexView,
+                            annotation.target().asMethodParameter().method().declaringClass().name()));
                     // a getter does not have parameters so it's a pure method: no need for reflection in this case
-                    contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation,
+                    classNamesToBeValidated.addAll(contributeClassMarkedForCascadingValidation(indexView, consideredAnnotation,
                             // FIXME this won't work in the case of synthetic parameters
                             annotation.target().asMethodParameter().method().parameters()
-                                    .get(annotation.target().asMethodParameter().position()));
+                                    .get(annotation.target().asMethodParameter().position())));
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
-                    contributeClass(classNamesToBeValidated, indexView, annotation.target().asClass().name());
+                    classNamesToBeValidated.addAll(contributeClass(indexView, annotation.target().asClass().name()));
                     // no need for reflection in the case of a class level constraint
                 }
             }
@@ -180,6 +200,7 @@ class HibernateValidatorProcessor {
         for (AdditionalJaxRsResourceMethodAnnotationsBuildItem additionalJaxRsResourceMethodAnnotation : additionalJaxRsResourceMethodAnnotations) {
             additionalJaxRsMethodAnnotationsDotNames.addAll(additionalJaxRsResourceMethodAnnotation.getAnnotationClasses());
         }
+
         annotationsTransformers
                 .produce(new AnnotationsTransformerBuildItem(
                         new MethodValidatedAnnotationsTransformer(consideredAnnotations,
@@ -192,7 +213,31 @@ class HibernateValidatorProcessor {
 
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
-                        recorder.initializeValidatorFactory(classesToBeValidated, shutdownContext)));
+                        recorder.initializeValidatorFactory(classesToBeValidated, shutdownContext, configClassWithProperties)));
+    }
+
+    private void collectClassWithConfigurationProperties(RecorderContext recorderContext,
+            Map<Class<?>, List<String>> configClassWithProperties, FieldInfo field, ClassInfo classInfo, Set<DotName> classes) {
+        /**
+         * Consider only field that are {@link ConfigProperty} and not with a {@link ConfigProperties} container.
+         */
+        if (field.hasAnnotation(CONFIG_PROPERTY)) {
+            for (DotName clazz : classes) {
+                if (classInfo.classAnnotation(CONFIG_PROPERTIES) != null) {
+                    continue;
+                }
+
+                final Class<?> clazzWithConfigProperty = recorderContext.classProxy(clazz.toString());
+                List<String> configProperties = configClassWithProperties.get(clazzWithConfigProperty);
+                if (configProperties == null) {
+                    configProperties = new ArrayList<>();
+                    configProperties.add(field.name());
+                    configClassWithProperties.put(clazzWithConfigProperty, configProperties);
+                } else {
+                    configProperties.add(field.name());
+                }
+            }
+        }
     }
 
     @BuildStep
@@ -211,7 +256,8 @@ class HibernateValidatorProcessor {
         }
     }
 
-    private static void contributeClass(Set<DotName> classNamesCollector, IndexView indexView, DotName className) {
+    private static Set<DotName> contributeClass(IndexView indexView, DotName className) {
+        Set<DotName> classNamesCollector = new HashSet<>();
         classNamesCollector.add(className);
         for (ClassInfo subclass : indexView.getAllKnownSubclasses(className)) {
             if (Modifier.isAbstract(subclass.flags())) {
@@ -231,18 +277,22 @@ class HibernateValidatorProcessor {
             }
             classNamesCollector.add(implementor.name());
         }
+
+        return classNamesCollector;
     }
 
-    private static void contributeClassMarkedForCascadingValidation(Set<DotName> classNamesCollector,
-            IndexView indexView, DotName consideredAnnotation, Type type) {
+    private static Set<DotName> contributeClassMarkedForCascadingValidation(IndexView indexView, DotName consideredAnnotation,
+            Type type) {
         if (VALID != consideredAnnotation) {
-            return;
+            return Collections.EMPTY_SET;
         }
 
         DotName className = getClassName(type);
         if (className != null) {
-            contributeClass(classNamesCollector, indexView, className);
+            return contributeClass(indexView, className);
         }
+
+        return Collections.EMPTY_SET;
     }
 
     private static DotName getClassName(Type type) {

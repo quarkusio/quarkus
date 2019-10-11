@@ -2,7 +2,9 @@ package io.quarkus.hibernate.validator.runtime;
 
 import java.lang.reflect.Method;
 import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import javax.validation.ClockProvider;
@@ -24,6 +26,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.hibernate.validator.runtime.configuration_validation.ClassWithConfigProperties;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -31,7 +34,7 @@ import io.quarkus.runtime.annotations.Recorder;
 public class HibernateValidatorRecorder {
 
     public BeanContainerListener initializeValidatorFactory(Set<Class<?>> classesToBeValidated,
-            ShutdownContext shutdownContext) {
+            ShutdownContext shutdownContext, Map<Class<?>, List<String>> configClassWithProperties) {
         BeanContainerListener beanContainerListener = new BeanContainerListener() {
 
             @Override
@@ -110,6 +113,7 @@ public class HibernateValidatorRecorder {
                 ValidatorFactory validatorFactory = configuration.buildValidatorFactory();
                 ValidatorHolder.initialize(validatorFactory);
 
+                ClassWithConfigProperties.initialize(configClassWithProperties);
                 // Close the ValidatorFactory on shutdown
                 shutdownContext.addShutdownTask(new Runnable() {
                     @Override

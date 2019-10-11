@@ -42,6 +42,7 @@ public class CreateExtensionMojoTest {
         mojo.encoding = CreateExtensionMojo.DEFAULT_ENCODING;
         mojo.templatesUriBase = CreateExtensionMojo.DEFAULT_TEMPLATES_URI_BASE;
         mojo.quarkusVersion = CreateExtensionMojo.DEFAULT_QUARKUS_VERSION;
+        mojo.bomEntryVersion = CreateExtensionMojo.DEFAULT_BOM_ENTRY_VERSION;
         mojo.assumeManaged = true;
         mojo.nameSegmentDelimiter = CreateExtensionMojo.DEFAULT_NAME_SEGMENT_DELIMITER;
         return mojo;

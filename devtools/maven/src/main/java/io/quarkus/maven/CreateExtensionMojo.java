@@ -69,6 +69,7 @@ public class CreateExtensionMojo extends AbstractMojo {
 
     static final String DEFAULT_ENCODING = "utf-8";
     static final String DEFAULT_QUARKUS_VERSION = "@{quarkus.version}";
+    static final String DEFAULT_BOM_ENTRY_VERSION = "@{project.version}";
     static final String DEFAULT_TEMPLATES_URI_BASE = "classpath:/create-extension-templates";
     static final String DEFAULT_NAME_SEGMENT_DELIMITER = " - ";
     static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("@\\{([^\\}]+)\\}");
@@ -327,6 +328,16 @@ public class CreateExtensionMojo extends AbstractMojo {
     Path deploymentBomPath;
 
     /**
+     * A version for the entries added to the runtime BOM (see {@link #runtimeBomPath}) and to the deployment BOM (see
+     * {@link #deploymentBomPath}). If you want to pass a property placeholder, use {@code @} instead if {@code $} so
+     * that the property is not evaluated by the current mojo - e.g. <code>@{my-project.version}</code>
+     *
+     * @since 0.25.0
+     */
+    @Parameter(property = "quarkus.bomEntryVersion", defaultValue = DEFAULT_BOM_ENTRY_VERSION)
+    String bomEntryVersion;
+
+    /**
      * A list of strings of the form {@code groupId:artifactId:version[:type[:classifier[:scope]]]} representing the
      * dependencies that should be added to the generated runtime module and to the runtime BOM if it is specified via
      * {@link #runtimeBomPath}.
@@ -335,10 +346,10 @@ public class CreateExtensionMojo extends AbstractMojo {
      * pass {@link #additionalRuntimeDependencies}) via CLI, the Mojo supports a custom <code>@{placeholder}</code>
      * expansion:
      * <ul>
-     * <li><code>@{$}</code> will be expanded to {@code $} - handy for escaping standard placeholders. E.g. to
-     * insert <code>${quarkus.version}</code> to the BOM, you need to pass <code>@{$}{quarkus.version}</code></li>
-     * <li><code>@{quarkus.field}</code> will be expanded to whatever value the given {@code field} of this mojo
-     * has at runtime.</li>
+     * <li><code>@{$}</code> will be expanded to {@code $} - handy for escaping standard placeholders. E.g. to insert
+     * <code>${quarkus.version}</code> to the BOM, you need to pass <code>@{$}{quarkus.version}</code></li>
+     * <li><code>@{quarkus.field}</code> will be expanded to whatever value the given {@code field} of this mojo has at
+     * runtime.</li>
      * <li>Any other <code>@{placeholder}</code> will be resolved using the current project's properties</li>
      * </ul>
      *
@@ -462,6 +473,7 @@ public class CreateExtensionMojo extends AbstractMojo {
         model.nameSegmentDelimiter = nameSegmentDelimiter;
         model.assumeManaged = detectAssumeManaged();
         model.quarkusVersion = quarkusVersion.replace('@', '$');
+        model.bomEntryVersion = bomEntryVersion.replace('@', '$');
 
         model.grandParentGroupId = grandParentGroupId != null ? grandParentGroupId : getGroupId(basePom);
         model.grandParentArtifactId = grandParentArtifactId != null ? grandParentArtifactId : basePom.getArtifactId();
@@ -491,9 +503,11 @@ public class CreateExtensionMojo extends AbstractMojo {
             new PomTransformer(basePomXml, charset).transform(Transformation.addModule(model.artifactIdBase));
         }
         if (runtimeBomPath != null) {
-            getLog().info(String.format("Adding [%s] to dependencyManagement in [%s]", model.artifactId, runtimeBomPath));
+            getLog().info(
+                    String.format("Adding [%s] to dependencyManagement in [%s]", model.artifactId, runtimeBomPath));
             List<PomTransformer.Transformation> transformations = new ArrayList<PomTransformer.Transformation>();
-            transformations.add(Transformation.addManagedDependency(model.groupId, model.artifactId, "${project.version}"));
+            transformations
+                    .add(Transformation.addManagedDependency(model.groupId, model.artifactId, model.bomEntryVersion));
             for (Gavtcs gavtcs : model.additionalRuntimeDependencies) {
                 getLog().info(String.format("Adding [%s] to dependencyManagement in [%s]", gavtcs, runtimeBomPath));
                 transformations.add(Transformation.addManagedDependency(gavtcs));
@@ -503,8 +517,8 @@ public class CreateExtensionMojo extends AbstractMojo {
         if (deploymentBomPath != null) {
             final String aId = model.artifactId + "-deployment";
             getLog().info(String.format("Adding [%s] to dependencyManagement in [%s]", aId, deploymentBomPath));
-            new PomTransformer(deploymentBomPath, charset).transform(
-                    Transformation.addManagedDependency(model.groupId, aId, "${project.version}"));
+            new PomTransformer(deploymentBomPath, charset)
+                    .transform(Transformation.addManagedDependency(model.groupId, aId, model.bomEntryVersion));
         }
         if (itestParentPath != null) {
             generateItest(cfg, charset, model);
@@ -756,6 +770,7 @@ public class CreateExtensionMojo extends AbstractMojo {
         String quarkusVersion;
         List<Gavtcs> additionalRuntimeDependencies;
         boolean runtimeBomPathSet;
+        String bomEntryVersion;
 
         public String getJavaPackageBase() {
             return javaPackageBase;

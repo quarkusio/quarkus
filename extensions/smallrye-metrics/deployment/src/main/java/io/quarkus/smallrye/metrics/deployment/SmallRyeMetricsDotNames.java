@@ -4,6 +4,10 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.eclipse.microprofile.metrics.Counter;
+import org.eclipse.microprofile.metrics.Histogram;
+import org.eclipse.microprofile.metrics.Meter;
+import org.eclipse.microprofile.metrics.Timer;
 import org.eclipse.microprofile.metrics.annotation.ConcurrentGauge;
 import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.eclipse.microprofile.metrics.annotation.Gauge;
@@ -16,6 +20,24 @@ import org.jboss.jandex.DotName;
 import io.smallrye.metrics.interceptors.MetricsBinding;
 
 public class SmallRyeMetricsDotNames {
+
+    // metric interfaces
+    public static final DotName METRIC_INTERFACE = DotName
+            .createSimple(org.eclipse.microprofile.metrics.Metric.class.getName());
+    public static final DotName GAUGE_INTERFACE = DotName
+            .createSimple(org.eclipse.microprofile.metrics.Gauge.class.getName());
+    public static final DotName COUNTER_INTERFACE = DotName
+            .createSimple(Counter.class.getName());
+    public static final DotName CONCURRENT_GAUGE_INTERFACE = DotName
+            .createSimple(org.eclipse.microprofile.metrics.ConcurrentGauge.class.getName());
+    public static final DotName METER_INTERFACE = DotName
+            .createSimple(Meter.class.getName());
+    public static final DotName TIMER_INTERFACE = DotName
+            .createSimple(Timer.class.getName());
+    public static final DotName HISTOGRAM_INTERFACE = DotName
+            .createSimple(Histogram.class.getName());
+
+    // annotations
     public static final DotName GAUGE = DotName.createSimple(Gauge.class.getName());
     public static final DotName TIMED = DotName.createSimple(Timed.class.getName());
     public static final DotName METRIC = DotName.createSimple(Metric.class.getName());

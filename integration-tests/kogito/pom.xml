@@ -29,6 +29,10 @@
         </dependency>
         <dependency>
             <groupId>org.kie.kogito</groupId>
+            <artifactId>kogito-dmn</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.kie.kogito</groupId>
             <artifactId>jbpm-bpmn2</artifactId>
         </dependency>
 

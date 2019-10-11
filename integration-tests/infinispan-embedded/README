@@ -1,0 +1,5 @@
+You can run the native runner with dist by the following
+
+```
+./target/quarkus-integration-test-infinispan-embedded-999-SNAPSHOT-runner -Dquarkus.infinispan-embedded.xml-config=src/main/resources/dist.xml -Dquarkus.http.port=8090
+```

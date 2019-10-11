@@ -1,0 +1,73 @@
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups-4.0.xsd">
+   <!-- Disable the regular thread pool queue for tests so we can set a lower min_threads -->
+   <TCP_NIO2
+         bind_addr="${jgroups.tcp.address:127.0.0.1}"
+         bind_port="${jgroups.tcp.port:7800}"
+         port_range="30"
+         recv_buf_size="20m"
+         send_buf_size="640k"
+         enable_diagnostics="false"
+         bundler_type="no-bundler"
+
+         thread_naming_pattern="pl"
+
+         thread_pool.min_threads="0"
+         thread_pool.max_threads="8"
+         thread_pool.keep_alive_time="60000"
+         />
+
+   <org.infinispan.test.fwk.TEST_PING ergonomics="false" testName=""/>
+
+   <!-- Ergonomics, new in JGroups 2.11, are disabled by default until JGRP-1253 is resolved -->
+   <!--<TCPPING timeout="3000"-->
+            <!--initial_hosts="localhost[7800]"-->
+            <!--port_range="3"-->
+            <!--ergonomics="false"-->
+	<!--/>-->
+
+   <!--<MPING bind_addr="127.0.0.1" break_on_coord_rsp="true"-->
+   <!--mcast_addr="${jgroups.mping.mcast_addr:228.2.4.6}"-->
+   <!--mcast_port="${jgroups.mping.mcast_port:43366}"-->
+   <!--ip_ttl="2" num_initial_members="3"/>-->
+
+   <MERGE3 min_interval="1000" max_interval="5000"/>
+
+   <FD_SOCK sock_conn_timeout="3000"/>
+   <!-- Suspect node `timeout` to `timeout + timeout_check_interval` millis after the last heartbeat -->
+   <FD_ALL timeout="3000"
+           interval="1000"
+           timeout_check_interval="1000"
+   />
+   <VERIFY_SUSPECT timeout="1000"/>
+
+   <!-- resend_last_seqno_max_times=10000 is a workaround for JGRP-2167  -->
+   <pbcast.NAKACK2
+   					use_mcast_xmit="false"
+                    xmit_interval="100"
+                    xmit_table_num_rows="50"
+                    xmit_table_msgs_per_row="1024"
+                    xmit_table_max_compaction_time="30000"
+                    resend_last_seqno_max_times="10000"/>
+   <UNICAST3
+              xmit_interval="100"
+              xmit_table_num_rows="50"
+              xmit_table_msgs_per_row="1024"
+              xmit_table_max_compaction_time="30000"
+   />
+   <pbcast.STABLE stability_delay="200"
+                  desired_avg_gossip="2000"
+                  max_bytes="1M"
+   />
+   <pbcast.GMS print_local_addr="false"
+               join_timeout="${jgroups.join_timeout:2000}"/>
+   <tom.TOA/> <!-- the Total Order Anycast is only needed for total order transactions (in distributed mode)-->
+
+   <UFC_NB max_credits="3m" min_threshold="0.40"/>
+   <MFC_NB max_credits="3m" min_threshold="0.40"/>
+   <RSVP timeout="60000" resend_interval="500" ack_on_delivery="false" />
+
+   <org.infinispan.test.fwk.TEST_RELAY2 site="__site_name__" config="configs/xsite/relay-config.xml" relay_multicasts="true" async_relay_creation="false"/>
+
+</config>

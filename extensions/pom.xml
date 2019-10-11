@@ -97,6 +97,7 @@
 
         <!-- Infinispan -->
         <module>infinispan-client</module>
+        <module>infinispan-embedded</module>
 
         <!-- Caching -->
         <module>caffeine</module>

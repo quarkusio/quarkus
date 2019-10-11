@@ -22,6 +22,6 @@ final class SubstituteMarshallerRegistration {
     public static void init(SerializationContext ctx) throws IOException {
         // Skip loading the proto definition files as this was already done at compile time with
         // HandleProtostreamMarshaller#handleQueryRequirements
-        MarshallerRegistration.registerMarshallers(ctx);
+        MarshallerRegistration.INSTANCE.registerMarshallers(ctx);
     }
 }

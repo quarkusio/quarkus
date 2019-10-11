@@ -54,8 +54,8 @@
             <artifactId>infinispan-client-hotrod</artifactId>
             <exclusions>
                 <exclusion>
-                    <groupId>org.jboss.marshalling</groupId>
-                    <artifactId>jboss-marshalling-osgi</artifactId>
+                    <groupId>org.infinispan</groupId>
+                    <artifactId>infinispan-jboss-marshalling</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.jboss.spec.javax.transaction</groupId>

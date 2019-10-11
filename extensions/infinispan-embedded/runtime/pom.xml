@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-infinispan-embedded</artifactId>
     <name>Quarkus - Infinispan - Embedded - Runtime</name>
-    <description>Run an embedded Infinispan data grid server for distributed caching</description>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -26,21 +26,26 @@
             <artifactId>quarkus-caffeine</artifactId>
         </dependency>
 
+        <!-- Explicitly add in smallrye-metrics so that the proper version of
+             microprofile-metrics-api is brought along since it is excluded below
+             This and the exclusion can be removed when updating to 10.0.1.Final of Infinispan -->
+        <dependency>
+            <groupId>io.smallrye</groupId>
+            <artifactId>smallrye-metrics</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.infinispan</groupId>
             <artifactId>infinispan-core</artifactId>
             <exclusions>
                 <exclusion>
+                    <groupId>org.eclipse.microprofile.metrics</groupId>
+                    <artifactId>microprofile-metrics-api</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.jboss.spec.javax.transaction</groupId>
-                    <artifactId>
-                        jboss-transaction-api_1.2_spec
-                    </artifactId>
+                    <artifactId>jboss-transaction-api_1.2_spec</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.transaction</groupId>
-            <artifactId>jakarta.transaction-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.narayana.jta</groupId>

@@ -83,6 +83,9 @@ public class ClassLoaderCompiler {
                 classPathElements.add(new File(i.getClassesPath()));
             }
         }
+        final String devModeRunnerJarAbsolutePath = context.getDevModeRunnerJarFile() == null
+                ? null
+                : context.getDevModeRunnerJarFile().getAbsolutePath();
         while (!toParse.isEmpty()) {
             String s = toParse.poll();
             if (!parsedFiles.contains(s)) {
@@ -94,7 +97,22 @@ public class ClassLoaderCompiler {
                 if (file.isDirectory()) {
                     classPathElements.add(file);
                 } else if (file.getName().endsWith(".jar")) {
-                    classPathElements.add(file);
+                    // skip adding the dev mode runner jar to the classpath to prevent
+                    // hitting a bug in JDK - https://bugs.openjdk.java.net/browse/JDK-8232170
+                    // which causes the programmatic java file compilation to fail.
+                    // see details in https://github.com/quarkusio/quarkus/issues/3592.
+                    // we anyway don't need to add that jar to the hot deployment classpath since the
+                    // current running JVM is already launched using that jar, plus it doesn't
+                    // have any application resources/classes. The Class-Path jar(s) contained
+                    // in the MANIFEST.MF of that dev mode runner jar are anyway added explicitly
+                    // in various different ways in this very own ClassLoaderCompiler class, so
+                    // not passing this jar to the JDK's compiler won't prevent its Class-Path
+                    // references from being part of the hot deployment compile classpath.
+                    if (devModeRunnerJarAbsolutePath != null && file.getAbsolutePath().equals(devModeRunnerJarAbsolutePath)) {
+                        log.debug("Dev mode runner jar " + file + " won't be added to compilation classpath of hot deployment");
+                    } else {
+                        classPathElements.add(file);
+                    }
                     if (!file.isDirectory() && file.getName().endsWith(".jar")) {
                         try (JarFile jar = new JarFile(file)) {
                             Manifest mf = jar.getManifest();

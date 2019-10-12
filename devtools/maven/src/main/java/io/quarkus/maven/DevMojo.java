@@ -300,7 +300,7 @@ public class DevMojo extends AbstractMojo {
             //this stuff does not change
             // Do not include URIs in the manifest, because some JVMs do not like that
             StringBuilder classPathManifest = new StringBuilder();
-            DevModeContext devModeContext = new DevModeContext();
+            final DevModeContext devModeContext = new DevModeContext();
             for (Map.Entry<Object, Object> e : System.getProperties().entrySet()) {
                 devModeContext.getSystemProperties().put(e.getKey().toString(), (String) e.getValue());
             }
@@ -429,6 +429,8 @@ public class DevMojo extends AbstractMojo {
             devModeContext.setFrameworkClassesDir(wiringClassesDirectory.getAbsoluteFile());
             devModeContext.setCacheDir(new File(buildDir, "transformer-cache").getAbsoluteFile());
 
+            // this is the jar file we will use to launch the dev mode main class
+            devModeContext.setDevModeRunnerJarFile(tempFile);
             try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(tempFile))) {
                 out.putNextEntry(new ZipEntry("META-INF/"));
                 Manifest manifest = new Manifest();

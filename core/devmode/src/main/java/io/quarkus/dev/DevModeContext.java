@@ -29,6 +29,8 @@ public class DevModeContext implements Serializable {
     private File cacheDir;
     private boolean test;
     private boolean abortOnFailedStart;
+    // the jar file which is used to launch the DevModeMain
+    private File devModeRunnerJarFile;
 
     private List<String> compilerOptions;
     private String sourceJavaVersion;
@@ -116,6 +118,14 @@ public class DevModeContext implements Serializable {
 
     public void setTargetJvmVersion(String targetJvmVersion) {
         this.targetJvmVersion = targetJvmVersion;
+    }
+
+    public File getDevModeRunnerJarFile() {
+        return devModeRunnerJarFile;
+    }
+
+    public void setDevModeRunnerJarFile(final File devModeRunnerJarFile) {
+        this.devModeRunnerJarFile = devModeRunnerJarFile;
     }
 
     public static class ModuleInfo implements Serializable {

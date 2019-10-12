@@ -58,6 +58,36 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
 
     }
 
+    public static class BeanTypeExclusion implements Predicate<BeanInfo> {
+
+        private final DotName dotName;
+
+        public BeanTypeExclusion(DotName dotName) {
+            this.dotName = Objects.requireNonNull(dotName);
+        }
+
+        @Override
+        public boolean test(BeanInfo bean) {
+            return bean.getTypes().stream().anyMatch(t -> dotName.equals(t.name()));
+        }
+
+    }
+
+    public static class BeanTypesExclusion implements Predicate<BeanInfo> {
+
+        private final Set<DotName> dotNames;
+
+        public BeanTypesExclusion(Set<DotName> dotNames) {
+            this.dotNames = Objects.requireNonNull(dotNames);
+        }
+
+        @Override
+        public boolean test(BeanInfo bean) {
+            return bean.getTypes().stream().anyMatch(t -> dotNames.contains(t.name()));
+        }
+
+    }
+
     public static class BeanClassAnnotationExclusion implements Predicate<BeanInfo> {
 
         private final String nameStartsWith;

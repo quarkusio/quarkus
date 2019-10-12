@@ -19,6 +19,8 @@ import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -97,6 +99,19 @@ public class PanacheResourceProcessor {
         CompositeIndex compositeIndex = CompositeIndex.create(index.getIndex(), indexer.complete());
         Type type = Type.create(DOTNAME_OBJECT_ID, Type.Kind.CLASS);
         return new ReflectiveHierarchyBuildItem(type, compositeIndex);
+    }
+
+    public static final DotName MONGOCLIENT_INTERFACE = DotName.createSimple("com.mongodb.client.MongoClient");
+
+    @BuildStep
+    void unremovableProducers(BuildProducer<UnremovableBeanBuildItem> unremovable,
+            BeanArchiveIndexBuildItem beanArchiveIndex) {
+        Type type = Type.create(MONGOCLIENT_INTERFACE, Type.Kind.CLASS);
+        unremovable.produce(
+                new UnremovableBeanBuildItem(
+                        new UnremovableBeanBuildItem.BeanClassNameExclusion(
+                                "io.quarkus.mongodb.runtime.MongoClientProducer")));
+
     }
 
     @BuildStep

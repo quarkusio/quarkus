@@ -35,7 +35,6 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
-import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -242,15 +241,6 @@ class InfinispanClientProcessor {
 
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {
-        return new UnremovableBeanBuildItem(beanInfo -> {
-            Set<Type> types = beanInfo.getTypes();
-            for (Type t : types) {
-                if (UNREMOVABLE_BEANS.contains(t.name())) {
-                    return true;
-                }
-            }
-
-            return false;
-        });
+        return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypesExclusion(UNREMOVABLE_BEANS));
     }
 }

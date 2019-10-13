@@ -47,14 +47,14 @@ class GradleBuildFileTest {
             }
             depsString.add(managementKey);
         }
-        assertThat(depsString).contains("io.quarkus:quarkus-jsonp:jar:999-SNAPSHOT",
-                "io.quarkus:quarkus-jsonb:jar:999-SNAPSHOT", "io.quarkus:quarkus-resteasy:jar:999-SNAPSHOT");
+        assertThat(depsString).contains("io.quarkus:quarkus-jsonp:jar:0.23.2",
+                "io.quarkus:quarkus-jsonb:jar:0.23.2", "io.quarkus:quarkus-resteasy:jar:0.23.2");
     }
 
     @Test
     void testGetProperty() {
         assertNull(buildFile.getProperty("toto"));
-        assertEquals("999-SNAPSHOT", buildFile.getProperty("quarkusVersion"));
+        assertEquals("0.23.2", buildFile.getProperty("quarkusVersion"));
     }
 
     @Test
@@ -64,13 +64,13 @@ class GradleBuildFileTest {
         assertThat(installed).isNotEmpty();
 
         Dependency jsonb = installed.get("io.quarkus:quarkus-jsonb");
-        assertThat(jsonb).extracting("version").isEqualTo("999-SNAPSHOT");
+        assertThat(jsonb).extracting("version").isEqualTo("0.23.2");
 
         Dependency jsonp = installed.get("io.quarkus:quarkus-jsonp");
-        assertThat(jsonp).extracting("version").isEqualTo("999-SNAPSHOT");
+        assertThat(jsonp).extracting("version").isEqualTo("0.23.2");
 
         Dependency resteasy = installed.get("io.quarkus:quarkus-resteasy");
-        assertThat(resteasy).extracting("version").isEqualTo("999-SNAPSHOT");
+        assertThat(resteasy).extracting("version").isEqualTo("0.23.2");
     }
 
 }

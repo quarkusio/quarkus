@@ -20,7 +20,7 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
 
-
+NB: For Gradle project setup please see below
 
 == Creating the Maven project
 
@@ -173,6 +173,203 @@ for example, then `<option>all-open:annotation=javax.enterprise.context.Applicat
 
 Future versions of Quarkus will configure the Kotlin compiler plugin in a way that will make it unnecessary to alter this configuration.
 
+== Important Gradle configuration points
+
+Similar to the Maven configuration, when using Gradle, the following modifications are required when Kotlin is selected:
+
+* The `quarkus-kotlin` artifact is added to the dependencies. This artifact provides support for Kotlin in the live reload mode (more about this later on)
+* The `kotlin-stdlib-jdk8` is also added as a dependency.
+* The Kotlin plugin is activated, which implicitly adds `sourceDirectory` and `testSourceDirectory` build properties to point to Kotlin sources (`src/main/kotlin` and `src/test/kotlin` respectively)
+* All open Kotlin plugin tells the compiler not to mark as final, those classes with the annotations highlighted (customize as required)
+* When using native-image, the use of http (or https) protocol(s) must be declared
+* An example configuration follows:
+
+[source,groovy,subs=attributes+]
+----
+group = '...' // set your group
+version = '1.0.0-SNAPSHOT'
+
+plugins {
+    id 'java'
+    id 'io.quarkus' version '{quarkus-version}' // <1>
+
+    id "org.jetbrains.kotlin.jvm" version "{kotlin-version}" // <2>
+    id "org.jetbrains.kotlin.plugin.allopen" version "{kotlin-version}" // <2>
+}
+
+apply plugin: 'io.quarkus'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies { 
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:{kotlin-version}'
+
+    // <3>
+    implementation enforcedPlatform('io.quarkus:quarkus-bom:{quarkus-version}')
+    implementation 'io.quarkus:quarkus-resteasy'
+    implementation 'io.quarkus:quarkus-resteasy-jsonb'
+    implementation 'io.quarkus:quarkus-kotlin'
+
+    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.rest-assured:rest-assured:{rest-assured-version}'  // <4>
+}
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+test {
+    useJUnitPlatform()
+    exclude '**/Native*'
+}
+
+buildNative {
+    enableHttpUrlHandler = true
+}
+
+allOpen { // <5>
+    annotation("javax.ws.rs.Path")
+    annotation("javax.enterprise.context.ApplicationScoped")
+    annotation("io.quarkus.test.junit.QuarkusTest")
+}
+----
+
+<1> The Quarkus plugin needs to be applied.
+<2> The Kotlin plugin version needs to be specified.
+<3> We include the Quarkus BOM using Gradle's link:https://docs.gradle.org/5.4.1/userguide/managing_transitive_dependencies.html#sec:bom_import[relevant syntax]
+<4> The rest-assured version needs to be specified
+<5> All open configuration required, as per Maven guide above
+
+or, if you use the Gradle Kotlin DSL:
+
+[source,kotlin,subs=attributes+]
+----
+import io.quarkus.gradle.tasks.QuarkusNative
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+group = "..."
+version = "1.0.0-SNAPSHOT"
+
+plugins {
+    java
+    id("io.quarkus") version "{quarkus-version}" // <1>
+
+    kotlin("jvm") version "{kotlin-version}" // <2>
+    id("org.jetbrains.kotlin.plugin.allopen") version "{kotlin-version}" // <2>
+}
+
+apply(plugin = "io.quarkus")
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation(kotlin("stdlib-jdk8"))
+
+    // <3>
+    implementation(enforcedPlatform("io.quarkus:quarkus-bom:${quarkusVersion}"))
+    implementation("io.quarkus:quarkus-kotlin")
+    implementation("io.quarkus:quarkus-resteasy")
+    implementation("io.quarkus:quarkus-resteasy-jsonb")
+
+    testImplementation("io.quarkus:quarkus-junit5")
+    testImplementation("io.rest-assured:rest-assured:{rest-assured-version}") // <4>
+}
+
+tasks {
+    named<QuarkusNative>("buildNative") {
+        setEnableHttpUrlHandler(true)
+    }
+}
+
+tasks.test {
+    useJUnitPlatform()
+    exclude '**/Native*'
+}
+
+allOpen { // <5>
+    annotation("javax.ws.rs.Path")
+    annotation("javax.enterprise.context.ApplicationScoped")
+    annotation("io.quarkus.test.junit.QuarkusTest")
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+val compileKotlin: KotlinCompile by tasks
+compileKotlin.kotlinOptions {
+    jvmTarget = "1.8"
+}
+
+val compileTestKotlin: KotlinCompile by tasks
+compileTestKotlin.kotlinOptions {
+    jvmTarget = "1.8"
+}
+----
+
+<1> The Quarkus plugin needs to be applied.
+<2> The Kotlin plugin version needs to be specified.
+<3> We include the Quarkus BOM using Gradle's link:https://docs.gradle.org/5.4.1/userguide/managing_transitive_dependencies.html#sec:bom_import[relevant syntax]
+<4> The rest-assured version needs to be specified
+<5> All open configuration required, as per Maven guide above
+
+== CDI @Inject with Kotlin
+
+Kotlin reflection annotation processing differs from Java.  You may experience an error when using CDI @Inject such as:
+"kotlin.UninitializedPropertyAccessException: lateinit property xxx has not been initialized"
+
+In the example below, this can be easily solved by adapting the annotation, adding @field: Default, to handle the lack of a @Target on the Kotlin reflection annotation definition. 
+
+Alternatively, prefer the use of the compile-time injection with ArC which works without modification of the Java examples.
+
+[source,kotlin]
+----
+
+import javax.inject.Inject
+import javax.enterprise.inject.Default
+import javax.enterprise.context.ApplicationScoped
+
+import javax.ws.rs.GET
+import javax.ws.rs.Path
+import javax.ws.rs.PathParam
+import javax.ws.rs.Produces
+import javax.ws.rs.core.MediaType
+
+
+
+@ApplicationScoped
+class GreetingService {
+
+    fun greeting(name: String): String {
+        return "hello $name"
+    }
+
+}
+
+@Path("/")
+class GreetingResource {
+
+    @Inject
+    @field: Default // <1> 
+    lateinit var service: GreetingService
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/greeting/{name}")
+    fun greeting(@PathParam("name") name: String): String {
+        return service.greeting(name)
+    }
+
+}
+----
+<1> Kotlin requires a @field: xxx qualifier as it has no @Target on the annotation definition. Add @field: xxx in this example. @Default is used as the qualifier, explicitly specifying the use of the default bean.
+
+
+
 == Live reload
 
 Quarkus provides support for live reloading changes made to source code. This support is also available to Kotlin, meaning that developers can update their Kotlin source
@@ -195,4 +392,4 @@ One thing to note is that the live reload feature is not available when making c
 
 == Packaging the application
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file. You can also build the native executable using `./mvnw package -Pnative`.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file. You can also build the native executable using `./mvnw package -Pnative`, or `./gradlew buildNative` for the platform-local binary.  

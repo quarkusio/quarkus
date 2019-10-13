@@ -6,7 +6,10 @@ import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.ext.web.RoutingContext;
 
-public interface HTTPAuthenticationMechanism {
+/**
+ * An interface that performs HTTP based authentication
+ */
+public interface HttpAuthenticationMechanism {
 
     CompletionStage<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager);
 

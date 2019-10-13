@@ -56,6 +56,28 @@ plugins {
 apply plugin: 'io.quarkus'
 ----
 
+or, if you use the Gradle Kotlin DSL:
+
+[source,kotlin,subs=attributes+]
+----
+
+buildscript {
+    repositories {
+        mavenLocal()
+    }
+    dependencies {
+        classpath("io.quarkus:quarkus-gradle-plugin:999-SNAPSHOT")
+    }
+}
+
+plugins {
+    java
+}
+
+apply(plugin = "io.quarkus")
+----
+
+
 [[project-creation]]
 == Creating a new project
 
@@ -117,10 +139,8 @@ Using the Kotlin DSL, add:
 
 [source,kotlin,subs=attributes+]
 ----
-tasks {
-    "test"(Test::class) {
-        useJUnitPlatform()
-    }
+tasks.test {
+    useJUnitPlatform()
 }
 ----
 
@@ -169,12 +189,10 @@ or, if you use the Gradle Kotlin DSL:
 
 [source,kotlin,subs=attributes+]
 ----
-tasks {
-    "test"(Test::class) {
-        useJUnitPlatform()
-        systemProperty("quarkus.test.profile", "foo") <1>
-    }
-}
+tasks.test {
+    useJUnitPlatform()
+    systemProperty("quarkus.test.profile", "foo") <1>
+ }
 ----
 
 <1> The `foo` configuration profile will be used to run the tests.
@@ -360,6 +378,18 @@ buildNative {
     enableHttpUrlHandler = true
 }
 ----
+
+or, if you use the Gradle Kotlin DSL:
+
+[source,kotlin,subs=attributes+]
+----
+tasks {
+    named<QuarkusNative>("buildNative") {
+        setEnableHttpUrlHandler(true)
+    }
+}
+----
+
 
 The native executable would then be produced by executing:
 

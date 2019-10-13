@@ -112,8 +112,8 @@
         <testng.version>6.14.2</testng.version>
         <assertj.version>3.13.2</assertj.version>
         <json-smart.version>2.3</json-smart.version>
-        <infinispan.version>10.0.0.Beta5</infinispan.version>
-        <infinispan.protostream.version>4.3.0.Alpha9</infinispan.protostream.version>
+        <infinispan.version>10.0.0.CR1</infinispan.version>
+        <infinispan.protostream.version>4.3.0.Alpha10</infinispan.protostream.version>
         <caffeine.version>2.6.2</caffeine.version>
         <netty.version>4.1.39.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
@@ -151,7 +151,7 @@
         <bootstrap.version>3.1.0</bootstrap.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kogito.version>0.4.0</kogito.version>
+        <kogito.version>0.5.0</kogito.version>
         <kubernetes-client.version>4.6.0</kubernetes-client.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
@@ -371,6 +371,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-infinispan-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-infinispan-embedded</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

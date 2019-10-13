@@ -2,9 +2,17 @@ package io.quarkus.smallrye.metrics.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.CONCURRENT_GAUGE_INTERFACE;
+import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.COUNTER_INTERFACE;
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.GAUGE;
+import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.GAUGE_INTERFACE;
+import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.HISTOGRAM_INTERFACE;
+import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METER_INTERFACE;
+import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METRIC;
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METRICS_ANNOTATIONS;
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METRICS_BINDING;
+import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METRIC_INTERFACE;
+import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.TIMER_INTERFACE;
 
 import java.lang.reflect.Modifier;
 import java.util.Collection;
@@ -14,14 +22,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import javax.enterprise.context.Dependent;
 
+import org.eclipse.microprofile.metrics.MetricRegistry;
+import org.eclipse.microprofile.metrics.MetricType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -33,7 +45,9 @@ import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -271,6 +285,97 @@ public class SmallRyeMetricsProcessor {
                 metrics.registerMetrics(beanInfo, memberInfoAdapter.convert(method));
             }
         }
+    }
+
+    /**
+     * Mark metric producer methods and fields as unremovable, they should be kept even if
+     * there is no injection point for them.
+     */
+    @BuildStep
+    void unremovableProducers(BuildProducer<UnremovableBeanBuildItem> unremovable) {
+        Type type = Type.create(METRIC_INTERFACE, Type.Kind.CLASS);
+        unremovable.produce(
+                new UnremovableBeanBuildItem(new Predicate<io.quarkus.arc.processor.BeanInfo>() {
+                    @Override
+                    public boolean test(io.quarkus.arc.processor.BeanInfo beanInfo) {
+                        io.quarkus.arc.processor.BeanInfo declaringBean = beanInfo.getDeclaringBean();
+                        return (beanInfo.isProducerMethod() || beanInfo.isProducerField())
+                                && beanInfo.getTypes().contains(type)
+                                && !declaringBean.getBeanClass().toString().startsWith("io.smallrye.metrics");
+                    }
+                }));
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void registerMetricsFromProducers(
+            SmallRyeMetricsRecorder recorder,
+            ValidationPhaseBuildItem validationPhase,
+            BeanArchiveIndexBuildItem beanArchiveIndex) {
+        IndexView index = beanArchiveIndex.getIndex();
+        for (io.quarkus.arc.processor.BeanInfo bean : validationPhase.getContext().get(BuildExtension.Key.BEANS)) {
+            if (bean.isProducerField() || bean.isProducerMethod()) {
+                MetricType metricType = getMetricType(bean.getImplClazz());
+                if (metricType != null) {
+                    AnnotationTarget target = bean.getTarget().get();
+                    AnnotationInstance metricAnnotation = null;
+                    String memberName = null;
+                    if (bean.isProducerField()) {
+                        FieldInfo field = target.asField();
+                        metricAnnotation = field.annotation(METRIC);
+                        memberName = field.name();
+                    }
+                    if (bean.isProducerMethod()) {
+                        MethodInfo method = target.asMethod();
+                        metricAnnotation = method.annotation(METRIC);
+                        memberName = method.name();
+                    }
+                    if (metricAnnotation != null) {
+                        String nameValue = metricAnnotation.valueWithDefault(index, "name").asString();
+                        boolean absolute = metricAnnotation.valueWithDefault(index, "absolute").asBoolean();
+                        String metricSimpleName = !nameValue.isEmpty() ? nameValue : memberName;
+                        String declaringClassName = bean.getDeclaringBean().getImplClazz().name().toString();
+                        String metricsFinalName = absolute ? metricSimpleName
+                                : MetricRegistry.name(declaringClassName, metricSimpleName);
+                        recorder.registerMetricFromProducer(
+                                bean.getIdentifier(),
+                                metricType,
+                                metricsFinalName,
+                                metricAnnotation.valueWithDefault(index, "tags").asStringArray(),
+                                metricAnnotation.valueWithDefault(index, "description").asString(),
+                                metricAnnotation.valueWithDefault(index, "displayName").asString(),
+                                metricAnnotation.valueWithDefault(index, "unit").asString());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Obtains the MetricType from a bean that is a producer method or field,
+     * or null if no MetricType can be detected.
+     */
+    private MetricType getMetricType(ClassInfo clazz) {
+        DotName name = clazz.name();
+        if (name.equals(GAUGE_INTERFACE)) {
+            return MetricType.GAUGE;
+        }
+        if (name.equals(COUNTER_INTERFACE)) {
+            return MetricType.COUNTER;
+        }
+        if (name.equals(CONCURRENT_GAUGE_INTERFACE)) {
+            return MetricType.CONCURRENT_GAUGE;
+        }
+        if (name.equals(HISTOGRAM_INTERFACE)) {
+            return MetricType.HISTOGRAM;
+        }
+        if (name.equals(TIMER_INTERFACE)) {
+            return MetricType.TIMER;
+        }
+        if (name.equals(METER_INTERFACE)) {
+            return MetricType.METERED;
+        }
+        return null;
     }
 
     private void collectMetricsClassAndSubClasses(IndexView index, Map<DotName, ClassInfo> collectedMetricsClasses,

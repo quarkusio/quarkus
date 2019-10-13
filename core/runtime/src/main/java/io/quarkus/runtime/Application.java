@@ -36,6 +36,7 @@ public abstract class Application {
     private final Lock stateLock = Locks.reentrantLock();
     private final Condition stateCond = stateLock.newCondition();
 
+    private String name;
     private int state = ST_INITIAL;
     private volatile boolean shutdownRequested;
     private static volatile Application currentApplication;
@@ -164,7 +165,7 @@ public abstract class Application {
             stateLock.lock();
             try {
                 state = ST_STOPPED;
-                Timing.printStopTime();
+                Timing.printStopTime(name);
                 stateCond.signalAll();
             } finally {
                 stateLock.unlock();
@@ -177,6 +178,10 @@ public abstract class Application {
     }
 
     protected abstract void doStop();
+
+    public void setName(String name) {
+        this.name = name;
+    }
 
     /**
      * Run the application as if it were in a standalone JVM.

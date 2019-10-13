@@ -58,8 +58,8 @@ public class Timing {
         final Logger logger = Logger.getLogger("io.quarkus");
         //Use a BigDecimal so we can render in seconds with 3 digits precision, as requested:
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(bootTimeNanoSeconds);
-        String safeAppName = (name == null || name.isEmpty()) ? UNSET_VALUE : name;
-        String safeAppVersion = (version == null || version.isEmpty()) ? UNSET_VALUE : version;
+        String safeAppName = (name == null || name.trim().isEmpty()) ? UNSET_VALUE : name;
+        String safeAppVersion = (version == null || version.trim().isEmpty()) ? UNSET_VALUE : version;
         if (UNSET_VALUE.equals(safeAppName) || UNSET_VALUE.equals(safeAppVersion)) {
             logger.infof("Quarkus %s started in %ss. %s", quarkusVersion, secondsRepresentation, httpServerInfo);
         } else {
@@ -71,11 +71,13 @@ public class Timing {
         bootStartTime = -1;
     }
 
-    public static void printStopTime() {
+    public static void printStopTime(String name) {
         final long stopTimeNanoSeconds = System.nanoTime() - bootStopTime;
         final Logger logger = Logger.getLogger("io.quarkus");
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(stopTimeNanoSeconds);
-        logger.infof("Quarkus stopped in %ss", secondsRepresentation);
+        logger.infof("%s stopped in %ss",
+                (UNSET_VALUE.equals(name) || name == null || name.trim().isEmpty()) ? "Quarkus" : name,
+                secondsRepresentation);
         bootStopTime = -1;
     }
 

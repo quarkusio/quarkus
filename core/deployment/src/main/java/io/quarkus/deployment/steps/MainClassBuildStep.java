@@ -234,6 +234,11 @@ class MainClassBuildStep {
         mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
 
         final ResultHandle appClassInstance = mv.newInstance(ofConstructor(appClassName));
+
+        // Set the application name
+        mv.invokeVirtualMethod(ofMethod(Application.class, "setName", void.class, String.class), appClassInstance,
+                mv.load(applicationInfo.getName()));
+
         // run the app
         mv.invokeVirtualMethod(ofMethod(Application.class, "run", void.class, String[].class), appClassInstance,
                 mv.getMethodParam(0));

@@ -34,9 +34,6 @@
                     <excludes>
                         <!-- GlobalTagsTest registers ConfigSources at runtime which is not supported -->
                         <exclude>org/eclipse/microprofile/metrics/tck/GlobalTagsTest.java</exclude>
-                        <!-- These depend on metrics from CDI producers -->
-                        <exclude>io.astefanutti.metrics.cdi.se.MetricProducerFieldBeanTest</exclude>
-                        <exclude>io.astefanutti.metrics.cdi.se.MetricProducerMethodBeanTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>

@@ -24,14 +24,14 @@ public class HttpAuthenticator {
     @Inject
     IdentityProviderManager identityProviderManager;
 
-    final HTTPAuthenticationMechanism mechanism;
+    final HttpAuthenticationMechanism mechanism;
 
     public HttpAuthenticator() {
         mechanism = null;
     }
 
     @Inject
-    public HttpAuthenticator(Instance<HTTPAuthenticationMechanism> instance,
+    public HttpAuthenticator(Instance<HttpAuthenticationMechanism> instance,
             Instance<IdentityProvider<UsernamePasswordAuthenticationRequest>> usernamePassword) {
         if (instance.isResolvable()) {
             if (instance.isAmbiguous()) {
@@ -49,7 +49,7 @@ public class HttpAuthenticator {
         }
     }
 
-    public HttpAuthenticator(HTTPAuthenticationMechanism mechanism) {
+    public HttpAuthenticator(HttpAuthenticationMechanism mechanism) {
         this.mechanism = mechanism;
     }
 

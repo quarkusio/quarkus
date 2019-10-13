@@ -81,7 +81,10 @@ public abstract class AbstractDataSourceProducer {
 
         String url = dataSourceRuntimeConfig.url.get();
 
-        if (dataSourceBuildTimeConfig.xa) {
+        //TODO should we do such checks at build time only? All these are currently defined at build - but it could change
+        //depending on if and how we could do Driver auto-detection.
+        final io.quarkus.agroal.TransactionIntegration transactionIntegration = dataSourceBuildTimeConfig.transactions;
+        if (transactionIntegration == io.quarkus.agroal.TransactionIntegration.XA) {
             if (!XADataSource.class.isAssignableFrom(driver)) {
                 throw new RuntimeException("Driver is not an XA dataSource and XA has been configured");
             }
@@ -98,6 +101,7 @@ public abstract class AbstractDataSourceProducer {
                 .connectionFactoryConfiguration();
         agroalConnectionFactoryConfigurationSupplier.jdbcUrl(url);
         agroalConnectionFactoryConfigurationSupplier.connectionProviderClass(driver);
+        agroalConnectionFactoryConfigurationSupplier.trackJdbcResources(dataSourceRuntimeConfig.detectStatementLeaks);
 
         if (dataSourceRuntimeConfig.transactionIsolationLevel.isPresent()) {
             agroalConnectionFactoryConfigurationSupplier
@@ -105,9 +109,11 @@ public abstract class AbstractDataSourceProducer {
                             dataSourceRuntimeConfig.transactionIsolationLevel.get());
         }
 
-        TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
-                transactionSynchronizationRegistry);
-        poolConfiguration.transactionIntegration(txIntegration);
+        if (transactionIntegration != io.quarkus.agroal.TransactionIntegration.DISABLED) {
+            TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
+                    transactionSynchronizationRegistry);
+            poolConfiguration.transactionIntegration(txIntegration);
+        }
 
         // New connection SQL
         if (dataSourceRuntimeConfig.newConnectionSql.isPresent()) {
@@ -169,7 +175,9 @@ public abstract class AbstractDataSourceProducer {
         // Explicit reference to bypass reflection need of the ServiceLoader used by AgroalDataSource#from
         AgroalDataSource dataSource = new io.agroal.pool.DataSource(dataSourceConfiguration.get());
 
-        log.debug("Started data source " + dataSourceName + " connected to " + url);
+        if (log.isDebugEnabled()) {
+            log.debug("Started data source " + dataSourceName + " connected to " + url);
+        }
 
         this.dataSources.add(dataSource);
 

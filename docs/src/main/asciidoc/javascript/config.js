@@ -43,7 +43,8 @@ function highlight(element, text){
             continue;
         var elementTextLC = elementText.toLowerCase(); 
         var index = elementTextLC.indexOf(text);
-        if(index != -1){
+        if(index != -1
+           && acceptTextForSearch(n)){
             var start = 0;
             var fragment = document.createDocumentFragment()
             // we use the DOM here to avoid &lt; and such being parsed as elements by jQuery when replacing content
@@ -99,13 +100,21 @@ function findText(row, search){
         var elementText = n.nodeValue;
         if(elementText == undefined)
             continue;
-        if(elementText.toLowerCase().indexOf(search) != -1){
+        if(elementText.toLowerCase().indexOf(search) != -1
+            // check that it's not decoration
+            && acceptTextForSearch(n)){
             iter.detach();
             return true;
         }
     }
     iter.detach();
     return false;
+}
+
+function acceptTextForSearch(n){
+  var classes = n.parentNode.classList;
+  return !classes.contains("link-collapsible")
+    && !classes.contains("description-label");
 }
 
 function getShadowTable(input){
@@ -309,14 +318,20 @@ function makeCollapsibleHandler(input, descDiv, td, row,
             if(typeCell){
                 var cell = typeCell.cloneNode(true);
                 cell.classList.add("remove-on-collapse");
-                cell.insertBefore(document.createTextNode("Type: "), cell.firstChild);
+                var labelSpan = document.createElement("span");
+                labelSpan.appendChild(document.createTextNode("Type: "));
+                labelSpan.classList.add("description-label");
+                cell.insertBefore(labelSpan, cell.firstChild);
                 descDiv.appendChild(cell);
             }
             var defaultCell = td.nextElementSibling.nextElementSibling.firstElementChild;
             if(defaultCell){
                 var cell = defaultCell.cloneNode(true);
                 cell.classList.add("remove-on-collapse");
-                cell.insertBefore(document.createTextNode("Defaults to: "), cell.firstChild);
+                var labelSpan = document.createElement("span");
+                labelSpan.appendChild(document.createTextNode("Defaults to: "));
+                labelSpan.classList.add("description-label");
+                cell.insertBefore(labelSpan, cell.firstChild);
                 descDiv.appendChild(cell);
             }
         }

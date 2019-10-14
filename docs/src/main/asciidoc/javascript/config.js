@@ -7,15 +7,17 @@ var tables = document.querySelectorAll("table.configuration-reference");
 var typingTimer;
 
 if(tables){
+    var idx = 0;
     for (var table of tables) {
         var caption = table.previousElementSibling;
         var input = document.createElement("input");
         input.setAttribute("type", "search");
         input.setAttribute("placeholder", "filter configuration");
+        input.id = "config-search-"+(idx++);
         caption.children.item(0).appendChild(input);
         input.addEventListener("keyup", initiateSearch);
         input.addEventListener("input", initiateSearch);
-        inputs[input] = {"table": table};
+        inputs[input.id] = {"table": table};
         var descriptions = table.querySelectorAll(".description");
         if(descriptions){
             for (description of descriptions){
@@ -118,11 +120,11 @@ function acceptTextForSearch(n){
 }
 
 function getShadowTable(input){
-    if(!inputs[input].shadowTable){
-        inputs[input].shadowTable = inputs[input].table.cloneNode(true);
-        reinstallClickHandlers(input, inputs[input].shadowTable);
+    if(!inputs[input.id].shadowTable){
+        inputs[input.id].shadowTable = inputs[input.id].table.cloneNode(true);
+        reinstallClickHandlers(input, inputs[input.id].shadowTable);
     }
-    return inputs[input].shadowTable;
+    return inputs[input.id].shadowTable;
 }
 
 function reinstallClickHandlers(input, table){
@@ -159,16 +161,16 @@ function reinstallClickHandlers(input, table){
 }
 
 function swapShadowTable(input){
-    var currentTable = inputs[input].table;
-    var shadowTable = inputs[input].shadowTable;
+    var currentTable = inputs[input.id].table;
+    var shadowTable = inputs[input.id].shadowTable;
     currentTable.parentNode.replaceChild(shadowTable, currentTable);
-    inputs[input].table = shadowTable;
-    inputs[input].shadowTable = currentTable;
+    inputs[input.id].table = shadowTable;
+    inputs[input.id].shadowTable = currentTable;
 }
 
 function search(input){
     var search = input.value.trim().toLowerCase();
-    var lastSearch = inputs[input].lastSearch;
+    var lastSearch = inputs[input.id].lastSearch;
     if(search == lastSearch)
         return;
     // work on shadow table
@@ -176,7 +178,7 @@ function search(input){
 
     applySearch(table, search, true);
 
-    inputs[input].lastSearch = search;
+    inputs[input.id].lastSearch = search;
     // swap tables
     swapShadowTable(input);
 }
@@ -373,7 +375,7 @@ function makeCollapsibleAllHandler(input, descDiv) {
         
         var table = getShadowTable(input);
         collapseAll(table, isCollapsed);
-        applySearch(table, inputs[input].lastSearch, false);
+        applySearch(table, inputs[input.id].lastSearch, false);
         swapShadowTable(input);
         
         event.preventDefault();

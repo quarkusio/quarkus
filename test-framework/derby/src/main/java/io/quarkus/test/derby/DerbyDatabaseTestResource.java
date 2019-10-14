@@ -30,7 +30,7 @@ public class DerbyDatabaseTestResource implements QuarkusTestResourceLifecycleMa
                         throw ex;
                     }
                     try {
-                    	Thread.sleep(SLEEP_BETWEEN_PINGS);
+                        Thread.sleep(SLEEP_BETWEEN_PINGS);
                     } catch (InterruptedException ignore) {
                     }
                 }

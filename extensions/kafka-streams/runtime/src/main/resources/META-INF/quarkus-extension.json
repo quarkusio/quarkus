@@ -1,0 +1,8 @@
+
+{
+    "name": "Apache Kafka Streams",
+    "labels": [
+        "kafka",
+        "kafka-streams"
+    ]
+}

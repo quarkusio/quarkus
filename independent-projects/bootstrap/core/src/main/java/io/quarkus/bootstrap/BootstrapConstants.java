@@ -7,6 +7,7 @@ package io.quarkus.bootstrap;
 public interface BootstrapConstants {
 
     String DESCRIPTOR_FILE_NAME = "quarkus-extension.properties";
+    String EXTENSION_PROPS_JSON_FILE_NAME = "quarkus-extension.json";
 
     String META_INF = "META-INF";
 

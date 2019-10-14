@@ -1,0 +1,12 @@
+
+{
+    "name": "Hibernate Search + Elasticsearch",
+    "labels": [
+        "hibernate-search-elasticsearch",
+        "search",
+        "full-text",
+        "hibernate",
+        "elasticsearch"
+    ],
+    "guide": "https://quarkus.io/guides/hibernate-search-guide"
+}

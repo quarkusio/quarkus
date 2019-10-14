@@ -20,6 +20,7 @@
     </properties>
 
     <modules>
+        <module>core-extensions-json</module>
         <module>common-core</module>
         <module>extension-plugin</module>
         <module>common</module>

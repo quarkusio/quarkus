@@ -1,0 +1,10 @@
+
+{
+    "name": "Neo4j client",
+    "labels": [
+        "neo4j",
+        "graph",
+        "nosql",
+        "datastore"
+    ]
+}

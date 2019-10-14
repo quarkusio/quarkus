@@ -1,0 +1,8 @@
+
+{
+    "name": "Quarkus Extension for Spring Web API",
+    "labels": [
+        "spring-web"
+    ],
+    "guide": "https://quarkus.io/guides/spring-web-guide"
+}

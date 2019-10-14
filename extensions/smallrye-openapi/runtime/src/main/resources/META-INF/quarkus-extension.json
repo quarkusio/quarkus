@@ -1,0 +1,10 @@
+
+{
+    "name": "SmallRye OpenAPI",
+    "labels": [
+        "smallrye-openapi",
+        "openapi",
+        "open-api"
+    ],
+    "guide": "https://quarkus.io/guides/openapi-swaggerui-guide"
+}

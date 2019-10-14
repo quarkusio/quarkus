@@ -1,0 +1,11 @@
+
+{
+    "name": "Hibernate ORM with Panache",
+    "labels": [
+        "hibernate-orm-panache",
+        "panache",
+        "hibernate",
+        "jpa"
+    ],
+    "guide": "https://quarkus.io/guides/hibernate-orm-panache-guide"
+}

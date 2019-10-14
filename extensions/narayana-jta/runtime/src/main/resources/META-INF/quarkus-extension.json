@@ -1,0 +1,14 @@
+
+{
+    "name": "Narayana JTA - Transaction manager",
+    "labels": [
+        "narayana-jta",
+        "narayana",
+        "jta",
+        "transactions",
+        "transaction",
+        "tx",
+        "txs"
+    ],
+    "guide": "https://quarkus.io/guides/transaction-guide"
+}

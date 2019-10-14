@@ -1,0 +1,12 @@
+
+{
+    "name": "RESTEasy",
+    "shortName": "jax-rs",
+    "labels": [
+        "resteasy",
+        "jaxrs",
+        "web",
+        "rest"
+    ],
+    "guide": "https://quarkus.io/guides/rest-json-guide"
+}

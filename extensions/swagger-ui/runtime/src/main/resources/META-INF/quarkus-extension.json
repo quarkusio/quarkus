@@ -1,0 +1,8 @@
+
+{
+    "name": "Swagger UI",
+    "labels": [
+        "swagger-ui"
+    ],
+    "guide": "https://quarkus.io/guides/openapi-swaggerui-guide"
+}

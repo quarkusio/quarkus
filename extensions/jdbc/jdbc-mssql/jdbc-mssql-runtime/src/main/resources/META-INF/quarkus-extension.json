@@ -1,0 +1,10 @@
+
+{
+    "name": "JDBC Driver - Microsoft SQL Server",
+    "labels": [
+        "jdbc-mssql",
+        "jdbc",
+        "mssql",
+        "sql-server"
+    ]
+}

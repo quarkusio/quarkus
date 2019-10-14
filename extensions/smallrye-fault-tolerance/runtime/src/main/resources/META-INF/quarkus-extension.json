@@ -1,0 +1,11 @@
+
+{
+    "name": "SmallRye Fault Tolerance",
+    "labels": [
+        "smallrye-fault-tolerance",
+        "fault-tolerance",
+        "microprofile-fault-tolerance",
+        "circuit-breaker",
+        "bulkhead"
+    ]
+}

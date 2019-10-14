@@ -1,0 +1,9 @@
+
+{
+    "name": "OpenID Connect",
+    "labels": [
+        "oauth2",
+        "openid-connect"
+    ],
+    "guide": "https://quarkus.io/guides/oidc-guide"
+}

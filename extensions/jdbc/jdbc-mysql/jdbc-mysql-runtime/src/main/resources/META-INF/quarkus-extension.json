@@ -1,0 +1,9 @@
+
+{
+    "name": "JDBC Driver - MySQL",
+    "labels": [
+        "jdbc-mysql",
+        "jdbc",
+        "mysql"
+    ]
+}

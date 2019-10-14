@@ -15,8 +15,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.ApplicationArchive;
@@ -37,7 +35,6 @@ import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.vertx.ext.web.Route;
 
 public class ResteasyStandaloneBuildStep {
-    private static final Logger log = Logger.getLogger("io.quarkus.resteasy");
     protected static final String META_INF_RESOURCES_SLASH = "META-INF/resources/";
     protected static final String META_INF_RESOURCES = "META-INF/resources";
 
@@ -54,17 +51,28 @@ public class ResteasyStandaloneBuildStep {
             ResteasyInjectionReadyBuildItem resteasyInjectionReady,
             HttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<ResteasyStandaloneBuildItem> standalone) throws Exception {
-        if (deployment == null || capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
+        if (capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
             return;
         }
 
-        String rootPath = deployment.getRootPath();
-        if (!httpBuildTimeConfig.rootPath.equals("/")) {
-            rootPath = httpBuildTimeConfig.rootPath + rootPath;
-        }
         Set<String> knownPaths = getClasspathResources(applicationArchivesBuildItem);
-        recorder.staticInit(deployment.getDeployment(), rootPath, knownPaths);
-        standalone.produce(new ResteasyStandaloneBuildItem());
+        if (deployment != null) {
+            String rootPath = deployment.getRootPath();
+            if (!httpBuildTimeConfig.rootPath.equals("/")) {
+                rootPath = httpBuildTimeConfig.rootPath + rootPath;
+            }
+            recorder.staticInit(deployment.getDeployment(), rootPath, knownPaths);
+        } else if (!knownPaths.isEmpty()) {
+            String rootPath = "/";
+            if (!httpBuildTimeConfig.rootPath.equals("/")) {
+                rootPath = httpBuildTimeConfig.rootPath;
+            }
+            recorder.staticInit(null, rootPath, knownPaths);
+        }
+
+        if (deployment != null || !knownPaths.isEmpty()) {
+            standalone.produce(new ResteasyStandaloneBuildItem());
+        }
 
     }
 

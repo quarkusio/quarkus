@@ -80,8 +80,10 @@ public class ResteasyStandaloneRecorder {
     private static String contextPath;
 
     public void staticInit(ResteasyDeployment dep, String path, Set<String> known) {
-        deployment = dep;
-        deployment.start();
+        if (dep != null) {
+            deployment = dep;
+            deployment.start();
+        }
         knownPaths = known;
         contextPath = path;
     }
@@ -94,7 +96,9 @@ public class ResteasyStandaloneRecorder {
         shutdown.addShutdownTask(new Runnable() {
             @Override
             public void run() {
-                deployment.stop();
+                if (deployment != null) {
+                    deployment.stop();
+                }
             }
         });
         Vertx vertx = vertxValue.getValue();
@@ -130,9 +134,11 @@ public class ResteasyStandaloneRecorder {
             });
         }
 
-        VertxRequestHandler requestHandler = new VertxRequestHandler(vertx, beanContainer, deployment, contextPath, ALLOCATOR);
-
-        handlers.add(requestHandler);
+        if (deployment != null) {
+            VertxRequestHandler requestHandler = new VertxRequestHandler(vertx, beanContainer, deployment, contextPath,
+                    ALLOCATOR);
+            handlers.add(requestHandler);
+        }
         return new Consumer<Route>() {
 
             @Override

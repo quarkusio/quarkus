@@ -27,8 +27,12 @@ public class QuarkusTestNgCallbacks {
         if (testInstance != null) {
             List<Method> beforeClasses = new ArrayList<>();
             collectCallbacks(testInstance.getClass(), beforeClasses, BeforeClass.class);
-            for (Method beforeClass : beforeClasses) {
-                beforeClass.invoke(testInstance);
+            for (Method m : beforeClasses) {
+                // we don't know the values for parameterized methods that TestNG allows, we just skip those
+                if (m.getParameterCount() == 0) {
+                    m.setAccessible(true);
+                    m.invoke(testInstance);
+                }
             }
         }
     }
@@ -38,8 +42,12 @@ public class QuarkusTestNgCallbacks {
         if (testInstance != null) {
             List<Method> afterClasses = new ArrayList<>();
             collectCallbacks(testInstance.getClass(), afterClasses, AfterClass.class);
-            for (Method afterClass : afterClasses) {
-                afterClass.invoke(testInstance);
+            for (Method m : afterClasses) {
+                // we don't know the values for parameterized methods that TestNG allows, we just skip those
+                if (m.getParameterCount() == 0) {
+                    m.setAccessible(true);
+                    m.invoke(testInstance);
+                }
             }
         }
     }
@@ -49,8 +57,12 @@ public class QuarkusTestNgCallbacks {
         if (testInstance != null) {
             List<Method> afterMethods = new ArrayList<>();
             collectCallbacks(testInstance.getClass(), afterMethods, AfterMethod.class);
-            for (Method afterClass : afterMethods) {
-                afterClass.invoke(testInstance);
+            for (Method m : afterMethods) {
+                // we don't know the values for parameterized methods that TestNG allows, we just skip those
+                if (m.getParameterCount() == 0) {
+                    m.setAccessible(true);
+                    m.invoke(testInstance);
+                }
             }
         }
     }
@@ -60,8 +72,12 @@ public class QuarkusTestNgCallbacks {
         if (testInstance != null) {
             List<Method> beforeMethods = new ArrayList<>();
             collectCallbacks(testInstance.getClass(), beforeMethods, BeforeMethod.class);
-            for (Method afterClass : beforeMethods) {
-                afterClass.invoke(testInstance);
+            for (Method m : beforeMethods) {
+                // we don't know the values for parameterized methods that TestNG allows, we just skip those
+                if (m.getParameterCount() == 0) {
+                    m.setAccessible(true);
+                    m.invoke(testInstance);
+                }
             }
         }
     }

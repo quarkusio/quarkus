@@ -25,12 +25,20 @@
                 </methods>
             </class>
 
-            <!-- Failing because we're not using enough workers. Using 3 but should be 5 -->
-            <class name="org.eclipse.microprofile.fault.tolerance.tck.bulkhead.BulkheadSynchConfigTest">
+            <!-- https://github.com/eclipse/microprofile-fault-tolerance/issues/464 -->
+            <class name="org.eclipse.microprofile.fault.tolerance.tck.metrics.BulkheadMetricTest">
                 <methods>
-                    <exclude name=".*" />
+                    <exclude name="bulkheadMetricAsyncTest"/>
+                    <exclude name="bulkheadMetricRejectionTest"/>
+                    <exclude name="bulkheadMetricTest"/>
                 </methods>
             </class>
+            <class name="org.eclipse.microprofile.fault.tolerance.tck.metrics.AllMetricsTest">
+                <methods>
+                    <exclude name="testAllMetrics"/>
+                </methods>
+            </class>
+
         </classes>
     </test>
 

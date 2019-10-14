@@ -2,7 +2,9 @@ package io.quarkus.smallrye.faulttolerance.runtime;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.enterprise.inject.spi.DeploymentException;
 
@@ -47,7 +49,7 @@ public class SmallryeFaultToleranceRecorder {
                 }
                 Class<?> beanClass = Class.forName(beanName, true, classLoader);
 
-                for (Method method : beanClass.getDeclaredMethods()) {
+                for (Method method : getMethodsForValidation(beanClass)) {
                     FaultToleranceOperation operation = FaultToleranceOperation.of(beanClass, method);
                     if (operation.isLegitimate()) {
                         try {
@@ -82,5 +84,17 @@ public class SmallryeFaultToleranceRecorder {
                 throw deploymentException;
             }
         }
+    }
+
+    private Set<Method> getMethodsForValidation(Class<?> beanClass) {
+        Set<Method> allMethods = new HashSet<>();
+        Class<?> currentClass = beanClass;
+        while (!currentClass.equals(Object.class)) {
+            for (Method m : currentClass.getDeclaredMethods()) {
+                allMethods.add(m);
+            }
+            currentClass = currentClass.getSuperclass();
+        }
+        return allMethods;
     }
 }

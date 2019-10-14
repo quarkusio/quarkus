@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-rest-client</artifactId>
     <name>Quarkus - REST client - Runtime</name>
+    <description>Call REST services</description>
 
     <dependencies>
         <dependency>

@@ -1,6 +1,6 @@
 
 {
-    "name": "Reactive MySQL Client",
+    "name": "Reactive MySQL client",
     "labels": [
         "eclipse-vert.x",
         "vertx",

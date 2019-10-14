@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-resteasy</artifactId>
     <name>Quarkus - RESTEasy - Runtime</name>
+    <description>REST framework implementing JAX-RS and more</description>
 
     <dependencies>
         <dependency>

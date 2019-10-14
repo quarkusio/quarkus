@@ -11,6 +11,7 @@
 
     <artifactId>quarkus-undertow</artifactId>
     <name>Quarkus - Undertow - Runtime</name>
+    <description>Support for servlets</description>
 
     <dependencies>
         <dependency>

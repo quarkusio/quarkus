@@ -50,7 +50,7 @@ public class SetupVerifier {
 
         MavenProject project = new MavenProject(model);
 
-        Optional<Plugin> maybe = MojoUtils.hasPlugin(project, CreateProjectMojo.PLUGIN_KEY);
+        Optional<Plugin> maybe = MojoUtils.hasPlugin(project, CreateProjectMojo.getPluginKey());
         assertThat(maybe).isNotEmpty();
 
         //Check if the properties have been set correctly
@@ -75,7 +75,7 @@ public class SetupVerifier {
         assertThat(model.getProfiles()).hasSize(1);
         Profile profile = model.getProfiles().get(0);
         assertThat(profile.getId()).isEqualTo("native");
-        Plugin actual = profile.getBuild().getPluginsAsMap().get(CreateProjectMojo.PLUGIN_KEY);
+        Plugin actual = profile.getBuild().getPluginsAsMap().get(CreateProjectMojo.getPluginKey());
         assertThat(actual).isNotNull();
         assertThat(actual.getExecutions()).hasSize(1).allSatisfy(exec -> {
             assertThat(exec.getGoals()).containsExactly("native-image");

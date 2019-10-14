@@ -1,6 +1,6 @@
 
 {
-    "name": "Quarkus Extension for Spring Data API",
+    "name": "Quarkus Extension for Spring Data JPA API",
     "labels": [
         "spring-data"
     ],

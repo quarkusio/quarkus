@@ -16,6 +16,7 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -72,14 +73,11 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter(required = true, defaultValue = "${project.groupId}:${project.artifactId}-deployment:${project.version}")
     private String deployment;
 
-    @Parameter(readonly = true, required = true, defaultValue = "${project.groupId}")
-    private String projectGroupId;
-
-    @Parameter(readonly = true, required = true, defaultValue = "${project.artifactId}")
-    private String projectArtifactId;
-
     @Parameter(required = true, defaultValue = "${project.build.outputDirectory}/META-INF/quarkus-extension.json")
     private File extensionJson;
+
+    @Parameter(defaultValue = "${project}")
+    protected MavenProject project;
 
     @Override
     public void execute() throws MojoExecutionException {
@@ -98,16 +96,13 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         // extension.json
         JsonObject extObject;
-        boolean groupIdProvided = false;
-        boolean artifactIdProvided = false;
         if(extensionJson == null) {
             extensionJson = new File(outputDirectory, "META-INF" + File.separator + BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME);
         }
+
         if(extensionJson.exists()) {
             try(BufferedReader reader = Files.newBufferedReader(extensionJson.toPath())) {
                 extObject = Json.parse(reader).asObject();
-                groupIdProvided = extObject.get("groupId") != null;
-                artifactIdProvided = extObject.get("artifactId") != null;
             } catch (IOException e) {
                 throw new MojoExecutionException("Failed to parse " + extensionJson, e);
             }
@@ -115,11 +110,48 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             extObject = Json.object();
         }
 
-        if(!groupIdProvided) {
-            extObject.add("groupId", projectGroupId);
+        if(extObject.get("groupId") == null) {
+            extObject.add("groupId", project.getGroupId());
         }
-        if(!artifactIdProvided) {
-            extObject.add("artifactId", projectArtifactId);
+        if(extObject.get("artifactId") == null) {
+            extObject.add("artifactId", project.getArtifactId());
+        }
+        if(extObject.get("version") == null) {
+            extObject.add("version", project.getVersion());
+        }
+        if (extObject.get("name") == null) {
+            if (project.getName() != null) {
+                extObject.add("name", project.getName());
+            } else {
+                String defaultName = extObject.getString("artifactId", null);
+                int i = 0;
+                if (defaultName.startsWith("quarkus-")) {
+                    i = "quarkus-".length();
+                }
+                final StringBuilder buf = new StringBuilder();
+                boolean startWord = true;
+                while (i < defaultName.length()) {
+                    final char c = defaultName.charAt(i++);
+                    if (c == '-') {
+                        if (!startWord) {
+                            buf.append(' ');
+                            startWord = true;
+                        }
+                    } else if (startWord) {
+                        buf.append(Character.toUpperCase(c));
+                        startWord = false;
+                    } else {
+                        buf.append(c);
+                    }
+                }
+                defaultName = buf.toString();
+                getLog().warn("Extension name has not been provided for " + extObject.getString("groupId", null) + ":"
+                        + extObject.getString("artifactId", null) + "! Using '" + defaultName + "' as the default one.");
+                extObject.set("name", defaultName);
+            }
+        }
+        if(extObject.get("description") == null && project.getDescription() != null) {
+            extObject.add("description", project.getDescription());
         }
 
         try (BufferedWriter bw = Files.newBufferedWriter(output.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME))) {

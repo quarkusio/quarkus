@@ -1,6 +1,6 @@
 
 {
-    "name": "Amazon DynamoDB",
+    "name": "Amazon DynamoDB client",
     "labels": [
         "dynamodb",
         "dynamo",

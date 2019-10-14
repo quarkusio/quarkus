@@ -165,6 +165,15 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         }
         final Path p = metaInfDir.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME);
         if (!Files.exists(p)) {
+            final Path props = metaInfDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
+            if (Files.exists(props)) {
+                extJsonBuilder.add(Json.createObjectBuilder()
+                        .add("artifactId", artifact.getArtifactId())
+                        .add("groupId", artifact.getGroupId())
+                        .add("version", artifact.getVersion())
+                        .add("name", artifact.getArtifactId())
+                        .build());
+            }
             return false;
         }
         processPlatformArtifact(artifact, p, extJsonBuilder);

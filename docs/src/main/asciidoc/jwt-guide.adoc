@@ -575,6 +575,15 @@ To get these classes to compile and run, you need to add the following dependenc
       <scope>test</scope>
     </dependency>
 ----
+.jackson-databind library dependency
+[source, xml]
+----
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+----
 
 Now we need the content of the RSA private key that corresponds to the public key we have in the TokenSecuredResource application. Take the following PEM content and place it into using-jwt-rbac/src/test/resources/privateKey.pem.
 

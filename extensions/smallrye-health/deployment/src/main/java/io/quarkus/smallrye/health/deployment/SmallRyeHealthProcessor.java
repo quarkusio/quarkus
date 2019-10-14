@@ -29,6 +29,7 @@ import io.quarkus.smallrye.health.runtime.SmallRyeHealthRecorder;
 import io.quarkus.smallrye.health.runtime.SmallRyeLivenessHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeReadinessHandler;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.runtime.HandlerType;
 import io.smallrye.health.SmallRyeHealthReporter;
 
 class SmallRyeHealthProcessor {
@@ -91,11 +92,13 @@ class SmallRyeHealthProcessor {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_HEALTH));
 
         // Register the health handler
-        routes.produce(new RouteBuildItem(health.rootPath, new SmallRyeHealthHandler()));
+        routes.produce(new RouteBuildItem(health.rootPath, new SmallRyeHealthHandler(), HandlerType.BLOCKING));
         routes.produce(
-                new RouteBuildItem(health.rootPath + health.livenessPath, new SmallRyeLivenessHandler()));
+                new RouteBuildItem(health.rootPath + health.livenessPath, new SmallRyeLivenessHandler(),
+                        HandlerType.BLOCKING));
         routes.produce(
-                new RouteBuildItem(health.rootPath + health.readinessPath, new SmallRyeReadinessHandler()));
+                new RouteBuildItem(health.rootPath + health.readinessPath, new SmallRyeReadinessHandler(),
+                        HandlerType.BLOCKING));
 
         // Make ArC discover the beans marked with the @Health qualifier
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH));

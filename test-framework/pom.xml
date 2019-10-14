@@ -16,6 +16,7 @@
     <modules>
         <module>common</module>
         <module>h2</module>
+        <module>derby</module>
         <module>kubernetes-client</module>
         <module>junit5-internal</module>
         <module>junit5</module>

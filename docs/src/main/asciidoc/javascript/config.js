@@ -171,7 +171,6 @@ function search(input){
     var lastSearch = inputs[input].lastSearch;
     if(search == lastSearch)
         return;
-    var startTime = new Date();
     // work on shadow table
     var table = getShadowTable(input);
 
@@ -370,7 +369,6 @@ function makeCollapsibleAllHandler(input, descDiv) {
     return function(event){
         var target = event.target;
 
-        var startTime = new Date();
         var isCollapsed = descDiv.classList.contains('description-collapsed');
         
         var table = getShadowTable(input);

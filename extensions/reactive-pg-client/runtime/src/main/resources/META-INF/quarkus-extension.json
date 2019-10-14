@@ -1,6 +1,6 @@
 
 {
-    "name": "Reactive PostgreSQL Client",
+    "name": "Reactive PostgreSQL client",
     "labels": [
         "eclipse-vert.x",
         "vertx",

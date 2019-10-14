@@ -64,7 +64,7 @@ class GenerateConfigIT extends MojoTestBase {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections
-                .singletonList(CreateProjectMojo.PLUGIN_KEY + ":" + MojoUtils.getPluginVersion() + ":generate-config"));
+                .singletonList(CreateProjectMojo.getPluginKey() + ":" + MojoUtils.getPluginVersion() + ":generate-config"));
         Properties properties = new Properties();
         properties.setProperty("file", filename);
         request.setProperties(properties);

@@ -12,6 +12,7 @@
 
   <artifactId>quarkus-arc</artifactId>
   <name>Quarkus - ArC - Runtime</name>
+  <description>Build time CDI dependency injection</description>
 
   <dependencies>
     <dependency>

@@ -107,7 +107,7 @@ class AddExtensionIT extends MojoTestBase {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
-                CreateProjectMojo.PLUGIN_KEY + ":" + MojoUtils.getPluginVersion() + ":add-extension"));
+                CreateProjectMojo.getPluginKey() + ":" + MojoUtils.getPluginVersion() + ":add-extension"));
         Properties properties = new Properties();
         if (plural) {
             properties.setProperty("extensions", ext);

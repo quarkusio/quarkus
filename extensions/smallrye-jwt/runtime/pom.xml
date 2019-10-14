@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-smallrye-jwt</artifactId>
     <name>Quarkus - SmallRye JWT - Runtime</name>
+    <description>Secure your applications with JSON Web Token</description>
 
     <dependencies>
         <dependency>

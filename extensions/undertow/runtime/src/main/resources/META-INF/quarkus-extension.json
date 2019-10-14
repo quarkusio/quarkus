@@ -1,6 +1,6 @@
 
 {
-    "name": "Undertow",
+    "name": "Undertow Servlet",
     "shortName": "servlet",
     "labels": [
         "undertow",

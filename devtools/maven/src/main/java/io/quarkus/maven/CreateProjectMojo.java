@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -35,6 +36,9 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuilder;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.fusesource.jansi.Ansi;
 
 import io.quarkus.cli.commands.AddExtensionResult;
@@ -54,7 +58,11 @@ import io.quarkus.maven.utilities.MojoUtils;
 @Mojo(name = "create", requiresProject = false)
 public class CreateProjectMojo extends AbstractMojo {
 
-    public static final String PLUGIN_KEY = MojoUtils.getPluginGroupId() + ":" + MojoUtils.getPluginArtifactId();
+    private static String pluginKey;
+
+    public static String getPluginKey() {
+        return pluginKey == null ? pluginKey = MojoUtils.getPluginGroupId() + ":" + MojoUtils.getPluginArtifactId() : pluginKey;
+    }
 
     private static final String DEFAULT_GROUP_ID = "org.acme.quarkus.sample";
 
@@ -69,6 +77,15 @@ public class CreateProjectMojo extends AbstractMojo {
 
     @Parameter(property = "projectVersion")
     private String projectVersion;
+
+    @Parameter(property = "platformGroupId", defaultValue = CreateUtils.DEFAULT_PLATFORM_GROUP_ID)
+    private String platformGroupId;
+
+    @Parameter(property = "platformArtifactId", defaultValue = CreateUtils.DEFAULT_PLATFORM_ARTIFACT_ID)
+    private String platformArtifactId;
+
+    @Parameter(property = "platformVersion", required = false)
+    private String platformVersion;
 
     @Parameter(property = "path")
     private String path;
@@ -97,8 +114,21 @@ public class CreateProjectMojo extends AbstractMojo {
     @Component
     private ProjectBuilder projectBuilder;
 
+    @Component
+    private RepositorySystem repoSystem;
+
+    @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
+    private RepositorySystemSession repoSession;
+
+    @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
+    private List<RemoteRepository> repos;
+
     @Override
     public void execute() throws MojoExecutionException {
+
+        CreateUtils.setupQuarkusJsonPlatformDescriptor(repoSystem, repoSession, repos, platformGroupId, platformArtifactId,
+                platformVersion, getLog());
+
         // We detect the Maven version during the project generation to indicate the user immediately that the installed
         // version may not be supported.
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
@@ -179,7 +209,8 @@ public class CreateProjectMojo extends AbstractMojo {
         if (success) {
             printUserInstructions(projectRoot);
         } else {
-            throw new MojoExecutionException("the project was created but it was unable to add the extensions");
+            throw new MojoExecutionException(
+                    "The project was created but (some of) the requested extensions couldn't be added.");
         }
     }
 

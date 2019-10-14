@@ -56,6 +56,7 @@
         <!-- External projects -->
         <module>independent-projects/arc</module>
         <module>independent-projects/bootstrap</module>
+        <module>independent-projects/tools</module>
 
         <!-- Devtools (Maven, cli, gradle) -->
         <module>devtools</module>

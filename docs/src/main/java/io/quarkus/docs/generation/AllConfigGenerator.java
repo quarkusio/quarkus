@@ -43,7 +43,7 @@ public class AllConfigGenerator {
         String version = args[0];
 
         // This is where we produce the entire list of extensions
-        File jsonFile = new File("devtools/core-extensions-json/target/extensions.json");
+        File jsonFile = new File("devtools/bom-descriptor-json/target/extensions.json");
         if (!jsonFile.exists()) {
             System.err.println("WARNING: could not generate all-config file because extensions list is missing: " + jsonFile);
             System.exit(0);

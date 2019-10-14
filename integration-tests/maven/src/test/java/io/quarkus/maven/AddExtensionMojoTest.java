@@ -31,6 +31,8 @@ class AddExtensionMojoTest {
     void init() throws IOException {
         mojo = getMojo();
         mojo.project = new MavenProject();
+        mojo.project.setPomFile(OUTPUT_POM);
+        mojo.project.setFile(OUTPUT_POM);
         Model model = new Model();
         mojo.project.setModel(model);
         mojo.project.setOriginalModel(model);

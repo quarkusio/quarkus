@@ -110,6 +110,10 @@ public class QuartzScheduler implements Scheduler {
     }
 
     void start(@Observes StartupEvent startupEvent) {
+        if (schedulerConfig.getSchedules().isEmpty()) {
+            LOGGER.warn("No @Scheduled methods found, scheduler will not be started.");
+            return;
+        }
         if (running.compareAndSet(false, true)) {
 
             try {

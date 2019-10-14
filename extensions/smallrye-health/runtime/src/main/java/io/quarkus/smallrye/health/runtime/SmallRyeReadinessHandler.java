@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 
 import javax.enterprise.inject.spi.CDI;
 
+import io.quarkus.arc.Arc;
 import io.smallrye.health.SmallRyeHealth;
 import io.smallrye.health.SmallRyeHealthReporter;
 import io.vertx.core.Handler;
@@ -32,17 +33,24 @@ public class SmallRyeReadinessHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext event) {
+        boolean activated = RequestScopeHelper.activeRequestScope();
 
-        SmallRyeHealthReporter reporter = CDI.current().select(SmallRyeHealthReporter.class).get();
-        SmallRyeHealth health = reporter.getReadiness();
-        HttpServerResponse resp = event.response();
-        if (health.isDown()) {
-            resp.setStatusCode(503);
+        try {
+            SmallRyeHealthReporter reporter = CDI.current().select(SmallRyeHealthReporter.class).get();
+            SmallRyeHealth health = reporter.getReadiness();
+            HttpServerResponse resp = event.response();
+            if (health.isDown()) {
+                resp.setStatusCode(503);
+            }
+            resp.headers().set(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+            reporter.reportHealth(outputStream, health);
+            resp.end(Buffer.buffer(outputStream.toByteArray()));
+        } finally {
+            if (activated) {
+                Arc.container().requestContext().terminate();
+            }
         }
-        resp.headers().set(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-        reporter.reportHealth(outputStream, health);
-        resp.end(Buffer.buffer(outputStream.toByteArray()));
     }
 }

@@ -30,3 +30,10 @@ dependencies {
 
 group '${project_groupId}'
 version '${project_version}'
+
+compileJava {
+    options.compilerArgs << '-parameters'
+}
+
+
+

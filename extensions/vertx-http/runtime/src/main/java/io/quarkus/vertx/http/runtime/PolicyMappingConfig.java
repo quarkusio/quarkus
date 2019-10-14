@@ -6,33 +6,16 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class PermissionSetConfig {
+public class PolicyMappingConfig {
 
     /**
-     * A list of roles allowed to access this resource.
+     * The HTTP policy that this permission set is linked to.
      *
-     * The special role name '*' can be used to represent any authenticated user.
-     *
-     * If this is set the permit-all and deny-all must not be set
+     * There are 3 built in policies: permit, deny and authenticated. Role based
+     * policies can be defined, and extensions can add their own policies.
      */
     @ConfigItem
-    public List<String> rolesAllowed;
-
-    /**
-     * If this is true any user (including unauthenticated users) can access these resources.
-     *
-     * If this is set then deny-all and roles-allowed must not be set.
-     */
-    @ConfigItem
-    public boolean permitAll;
-
-    /**
-     * If this is true access to these resources are denied for all users
-     *
-     * If this is set then permit-all and roles-allowed must not be set.
-     */
-    @ConfigItem
-    public boolean denyAll;
+    public String policy;
 
     /**
      * The methods that this permission set applies to. If this is not set then they apply to all methods.

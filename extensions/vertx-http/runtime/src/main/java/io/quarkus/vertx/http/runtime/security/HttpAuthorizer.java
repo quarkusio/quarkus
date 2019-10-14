@@ -1,26 +1,31 @@
 package io.quarkus.vertx.http.runtime.security;
 
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.PolicyMappingConfig;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
 /**
  * Class that is responsible for running the HTTP based permission checks
  */
-@ApplicationScoped
+@Singleton
 public class HttpAuthorizer {
-
-    final List<HttpPermissionChecker> permissionCheckers;
 
     @Inject
     HttpAuthenticator httpAuthenticator;
@@ -28,40 +33,9 @@ public class HttpAuthorizer {
     @Inject
     IdentityProviderManager identityProviderManager;
 
-    volatile boolean defaultDeny;
-
-    boolean isDefaultDeny() {
-        return defaultDeny;
-    }
-
-    void setDefaultDeny(boolean defaultDeny) {
-        this.defaultDeny = defaultDeny;
-    }
-
-    public HttpAuthorizer() {
-        //for proxy
-        permissionCheckers = null;
-    }
-
-    @Inject
-    public HttpAuthorizer(Instance<HttpPermissionChecker> permissionCheckers) {
-        this.permissionCheckers = new ArrayList<>();
-        for (HttpPermissionChecker i : permissionCheckers) {
-            this.permissionCheckers.add(i);
-        }
-        this.permissionCheckers.sort(new Comparator<HttpPermissionChecker>() {
-            @Override
-            public int compare(HttpPermissionChecker o1, HttpPermissionChecker o2) {
-                return Integer.compare(o2.getPriority(), o1.getPriority());
-            }
-        });
-    }
+    private final PathMatcher<List<HttpMatcher>> pathMatcher = new PathMatcher<>();
 
     public void checkPermission(RoutingContext routingContext) {
-        if (permissionCheckers.isEmpty()) {
-            routingContext.next();
-            return;
-        }
         QuarkusHttpUser user = (QuarkusHttpUser) routingContext.user();
         if (user != null) {
             //we have a user, check their permissions
@@ -84,36 +58,32 @@ public class HttpAuthorizer {
     }
 
     private void doPermissionCheck(RoutingContext routingContext, SecurityIdentity securityIdentity) {
-        doPermissionCheck(routingContext, securityIdentity, 0);
+
+        List<HttpSecurityPolicy> permissionCheckers = findPermissionCheckers(routingContext.request());
+        doPermissionCheck(routingContext, securityIdentity, 0, permissionCheckers);
     }
 
-    private void doPermissionCheck(RoutingContext routingContext, SecurityIdentity securityIdentity, int index) {
+    private void doPermissionCheck(RoutingContext routingContext, SecurityIdentity securityIdentity, int index,
+            List<HttpSecurityPolicy> permissionCheckers) {
         if (index == permissionCheckers.size()) {
             //we passed, nothing rejected it
-            if (defaultDeny) {
-                doDeny(securityIdentity, routingContext);
-            } else {
-                routingContext.next();
-            }
+            routingContext.next();
             return;
         }
         //get the current checker
-        HttpPermissionChecker res = permissionCheckers.get(index);
+        HttpSecurityPolicy res = permissionCheckers.get(index);
         res.checkPermission(routingContext.request(), securityIdentity)
-                .handle(new BiFunction<HttpPermissionChecker.CheckResult, Throwable, Object>() {
+                .handle(new BiFunction<HttpSecurityPolicy.CheckResult, Throwable, Object>() {
                     @Override
-                    public Object apply(HttpPermissionChecker.CheckResult checkResult, Throwable throwable) {
+                    public Object apply(HttpSecurityPolicy.CheckResult checkResult, Throwable throwable) {
                         if (throwable != null) {
                             routingContext.fail(throwable);
                         } else {
-                            if (checkResult == HttpPermissionChecker.CheckResult.DENY) {
+                            if (checkResult == HttpSecurityPolicy.CheckResult.DENY) {
                                 doDeny(securityIdentity, routingContext);
-                            } else if (checkResult == HttpPermissionChecker.CheckResult.PERMIT) {
-                                //we are permitted, just move to the next handler
-                                routingContext.next();
                             } else {
                                 //attempt to run the next checker
-                                doPermissionCheck(routingContext, securityIdentity, index + 1);
+                                doPermissionCheck(routingContext, securityIdentity, index + 1, permissionCheckers);
                             }
                         }
                         return null;
@@ -135,4 +105,71 @@ public class HttpAuthorizer {
         }
     }
 
+    void init(HttpBuildTimeConfig config, Map<String, Supplier<HttpSecurityPolicy>> supplierMap) {
+        Map<String, HttpSecurityPolicy> permissionCheckers = new HashMap<>();
+        for (Map.Entry<String, Supplier<HttpSecurityPolicy>> i : supplierMap.entrySet()) {
+            permissionCheckers.put(i.getKey(), i.getValue().get());
+        }
+
+        Map<String, List<HttpMatcher>> tempMap = new HashMap<>();
+        for (Map.Entry<String, PolicyMappingConfig> entry : config.auth.permissions.entrySet()) {
+            HttpSecurityPolicy checker = permissionCheckers.get(entry.getValue().policy);
+            if (checker == null) {
+                throw new RuntimeException("Unable to find HTTP security policy " + entry.getValue().policy);
+            }
+
+            for (String path : entry.getValue().paths) {
+                if (tempMap.containsKey(path)) {
+                    HttpMatcher m = new HttpMatcher(new HashSet<>(entry.getValue().methods), checker);
+                    tempMap.get(path).add(m);
+                } else {
+                    HttpMatcher m = new HttpMatcher(new HashSet<>(entry.getValue().methods), checker);
+                    List<HttpMatcher> perms = new ArrayList<>();
+                    tempMap.put(path, perms);
+                    perms.add(m);
+                    if (path.endsWith("*")) {
+                        pathMatcher.addPrefixPath(path.substring(0, path.length() - 1), perms);
+                    } else {
+                        pathMatcher.addExactPath(path, perms);
+                    }
+                }
+            }
+        }
+    }
+
+    public List<HttpSecurityPolicy> findPermissionCheckers(HttpServerRequest request) {
+        PathMatcher.PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(request.path());
+        if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<HttpSecurityPolicy> methodMatch = new ArrayList<>();
+        List<HttpSecurityPolicy> noMethod = new ArrayList<>();
+        for (HttpMatcher i : toCheck.getValue()) {
+            if (i.methods == null || i.methods.isEmpty()) {
+                noMethod.add(i.checker);
+            } else if (i.methods.contains(request.method().toString())) {
+                methodMatch.add(i.checker);
+            }
+        }
+        if (!methodMatch.isEmpty()) {
+            return methodMatch;
+        } else if (!noMethod.isEmpty()) {
+            return noMethod;
+        } else {
+            //we deny if we did not match due to method filtering
+            return Collections.singletonList(DenySecurityPolicy.INSTANCE);
+        }
+
+    }
+
+    static class HttpMatcher {
+
+        final Set<String> methods;
+        final HttpSecurityPolicy checker;
+
+        HttpMatcher(Set<String> methods, HttpSecurityPolicy checker) {
+            this.methods = methods;
+            this.checker = checker;
+        }
+    }
 }

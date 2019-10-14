@@ -1,5 +1,10 @@
 package io.quarkus.vertx.http.deployment;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -8,13 +13,32 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.PolicyConfig;
+import io.quarkus.vertx.http.runtime.security.AuthenticatedHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
-import io.quarkus.vertx.http.runtime.security.DefaultHttpPermissionChecker;
+import io.quarkus.vertx.http.runtime.security.DenySecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
+import io.quarkus.vertx.http.runtime.security.PermitSecurityPolicy;
+import io.quarkus.vertx.http.runtime.security.RolesAllowedHttpSecurityPolicy;
+import io.quarkus.vertx.http.runtime.security.SupplierImpl;
 
 public class HttpSecurityProcessor {
+
+    @BuildStep
+    public void builtins(BuildProducer<HttpSecurityPolicyBuildItem> producer, HttpBuildTimeConfig buildTimeConfig) {
+        producer.produce(new HttpSecurityPolicyBuildItem("deny", new SupplierImpl<>(new DenySecurityPolicy())));
+        producer.produce(new HttpSecurityPolicyBuildItem("permit", new SupplierImpl<>(new PermitSecurityPolicy())));
+        producer.produce(
+                new HttpSecurityPolicyBuildItem("authenticated", new SupplierImpl<>(new AuthenticatedHttpSecurityPolicy())));
+
+        for (Map.Entry<String, PolicyConfig> e : buildTimeConfig.auth.rolePolicy.entrySet()) {
+            producer.produce(new HttpSecurityPolicyBuildItem(e.getKey(),
+                    new SupplierImpl<>(new RolesAllowedHttpSecurityPolicy(e.getValue().rolesAllowed))));
+        }
+    }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
@@ -24,7 +48,15 @@ public class HttpSecurityProcessor {
             BuildProducer<AdditionalBeanBuildItem> beanProducer,
             Capabilities capabilities,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListenerBuildItemBuildProducer,
-            HttpBuildTimeConfig buildTimeConfig) {
+            HttpBuildTimeConfig buildTimeConfig,
+            List<HttpSecurityPolicyBuildItem> httpSecurityPolicyBuildItemList) {
+        Map<String, Supplier<HttpSecurityPolicy>> policyMap = new HashMap<>();
+        for (HttpSecurityPolicyBuildItem e : httpSecurityPolicyBuildItemList) {
+            if (policyMap.containsKey(e.getName())) {
+                throw new RuntimeException("Multiple HTTP security policies defined with name " + e.getName());
+            }
+            policyMap.put(e.getName(), e.policySupplier);
+        }
 
         if (buildTimeConfig.auth.basic) {
             beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(BasicAuthenticationMechanism.class));
@@ -38,9 +70,8 @@ public class HttpSecurityProcessor {
             filterBuildItemBuildProducer.produce(new FilterBuildItem(recorder.permissionCheckHandler(), 100));
 
             if (!buildTimeConfig.auth.permissions.isEmpty()) {
-                beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultHttpPermissionChecker.class));
                 beanContainerListenerBuildItemBuildProducer
-                        .produce(new BeanContainerListenerBuildItem(recorder.initPermissions(buildTimeConfig)));
+                        .produce(new BeanContainerListenerBuildItem(recorder.initPermissions(buildTimeConfig, policyMap)));
             }
         } else {
             if (!buildTimeConfig.auth.permissions.isEmpty()) {

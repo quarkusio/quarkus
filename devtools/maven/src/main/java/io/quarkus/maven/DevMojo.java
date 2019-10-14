@@ -28,6 +28,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -42,6 +43,7 @@ import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.toolchain.ToolchainManager;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -173,6 +175,25 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${noDeps}")
     private boolean noDeps = false;
 
+    /**
+     * Additional parameters to pass to javac when recompiling changed
+     * source files.
+     */
+    @Parameter
+    private List<String> compilerArgs;
+
+    /**
+     * The -source argument to javac.
+     */
+    @Parameter(defaultValue = "${maven.compiler.source}")
+    private String source;
+
+    /**
+     * The -target argument to javac.
+     */
+    @Parameter(defaultValue = "${maven.compiler.target}")
+    private String target;
+
     @Component
     private ToolchainManager toolchainManager;
 
@@ -285,6 +306,34 @@ public class DevMojo extends AbstractMojo {
             }
             devModeContext.getBuildSystemProperties().putAll((Map) project.getProperties());
             devModeContext.setSourceEncoding(getSourceEncoding());
+            devModeContext.setSourceJavaVersion(source);
+            devModeContext.setTargetJvmVersion(target);
+
+            // Set compilation flags.  Try the explicitly given configuration first.  Otherwise,
+            // refer to the configuration of the Maven Compiler Plugin.
+            if (compilerArgs != null) {
+                devModeContext.setCompilerOptions(compilerArgs);
+            } else {
+                for (Plugin plugin : project.getBuildPlugins()) {
+                    if (!plugin.getKey().equals("org.apache.maven.plugins:maven-compiler-plugin")) {
+                        continue;
+                    }
+                    Xpp3Dom compilerPluginConfiguration = (Xpp3Dom) plugin.getConfiguration();
+                    if (compilerPluginConfiguration == null) {
+                        continue;
+                    }
+                    Xpp3Dom compilerPluginArgsConfiguration = compilerPluginConfiguration.getChild("compilerArgs");
+                    if (compilerPluginArgsConfiguration == null) {
+                        continue;
+                    }
+                    List<String> compilerPluginArgs = new ArrayList<>();
+                    for (Xpp3Dom argConfiguration : compilerPluginArgsConfiguration.getChildren()) {
+                        compilerPluginArgs.add(argConfiguration.getValue());
+                    }
+                    devModeContext.setCompilerOptions(compilerPluginArgs);
+                    break;
+                }
+            }
 
             final AppModel appModel;
             try {

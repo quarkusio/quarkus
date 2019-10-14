@@ -4,7 +4,9 @@ import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 public interface CompilationProvider {
@@ -27,6 +29,9 @@ public interface CompilationProvider {
         private final File sourceDirectory;
         private final File outputDirectory;
         private final Charset sourceEncoding;
+        private final List<String> compilerOptions;
+        private final String sourceJavaVersion;
+        private final String targetJvmVersion;
 
         public Context(
                 String name,
@@ -34,7 +39,10 @@ public interface CompilationProvider {
                 File projectDirectory,
                 File sourceDirectory,
                 File outputDirectory,
-                String sourceEncoding) {
+                String sourceEncoding,
+                List<String> compilerOptions,
+                String sourceJavaVersion,
+                String targetJvmVersion) {
 
             this.name = name;
             this.classpath = classpath;
@@ -42,6 +50,9 @@ public interface CompilationProvider {
             this.sourceDirectory = sourceDirectory;
             this.outputDirectory = outputDirectory;
             this.sourceEncoding = sourceEncoding == null ? StandardCharsets.UTF_8 : Charset.forName(sourceEncoding);
+            this.compilerOptions = compilerOptions == null ? new ArrayList<String>() : compilerOptions;
+            this.sourceJavaVersion = sourceJavaVersion;
+            this.targetJvmVersion = targetJvmVersion;
         }
 
         public String getName() {
@@ -66,6 +77,18 @@ public interface CompilationProvider {
 
         public Charset getSourceEncoding() {
             return sourceEncoding;
+        }
+
+        public List<String> getCompilerOptions() {
+            return compilerOptions;
+        }
+
+        public String getSourceJavaVersion() {
+            return sourceJavaVersion;
+        }
+
+        public String getTargetJvmVersion() {
+            return targetJvmVersion;
         }
     }
 }

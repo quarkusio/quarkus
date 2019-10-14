@@ -12,6 +12,7 @@ out
 lib
 bin
 dependency-reduced-pom.xml
+derby.log
 hotspot.log
 .directory
 .java-version

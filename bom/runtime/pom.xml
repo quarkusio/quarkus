@@ -106,6 +106,7 @@
         <mariadb-jdbc.version>2.4.4</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.17</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.1.jre8</mssql-jdbc.version>
+        <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>4.1.1</rest-assured.version>
         <junit.jupiter.version>5.5.2</junit.jupiter.version>
@@ -410,6 +411,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jdbc-derby</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kafka-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -688,6 +694,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-test-h2</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-test-derby</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1821,6 +1832,21 @@
                 <groupId>mysql</groupId>
                 <artifactId>mysql-connector-java</artifactId>
                 <version>${mysql-jdbc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.derby</groupId>
+                <artifactId>derbyclient</artifactId>
+                <version>${derby-jdbc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.derby</groupId>
+                <artifactId>derbynet</artifactId>
+                <version>${derby-jdbc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.derby</groupId>
+                <artifactId>derbytools</artifactId>
+                <version>${derby-jdbc.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.microsoft.sqlserver</groupId>

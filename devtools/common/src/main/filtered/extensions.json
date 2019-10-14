@@ -158,6 +158,16 @@
     "guide": "https://quarkus.io/guides/infinispan-client-guide"
   },
   {
+    "name": "JDBC Driver - Derby",
+    "labels": [
+      "jdbc-derby",
+      "jdbc",
+      "derby"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jdbc-derby"
+  },
+  {
     "name": "JDBC Driver - H2",
     "labels": [
       "jdbc-h2",

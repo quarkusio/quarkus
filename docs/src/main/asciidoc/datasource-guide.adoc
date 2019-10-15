@@ -75,6 +75,7 @@ Quarkus provides driver extensions for:
 * MariaDB - jdbc-mariadb
 * MySQL - jdbc-mysql
 * Microsoft SQL Server - jdbc-mssql
+* Derby - jdbc-derby
 
 [NOTE]
 ====
@@ -174,6 +175,17 @@ Example:: `jdbc:sqlserver://localhost:1433;databaseName=AdventureWorks`
 
 The Microsoft SQL Server JDBC driver works essentially the same as the others.
 More details can be found in the https://docs.microsoft.com/en-us/sql/connect/jdbc/connecting-to-sql-server-with-the-jdbc-driver?view=sql-server-2017[official documentation].
+
+==== Derby
+
+`jdbc:derby:[//serverName[:portNumber]/][memory:]databaseName[;property=value[;property=value]]`
+
+Example:: `jdbc:derby://localhost:1527/myDB`, `jdbc:derby:memory:myDB;create=true`
+
+Derby is an embedded database.
+It can run as a server, based on a file, or live completely in memory.
+All of these options are available as listed above.
+You can find more information at the https://db.apache.org/derby/docs/10.8/devguide/cdevdvlp17453.html#cdevdvlp17453[official documentation].
 
 == Injecting a Datasource
 

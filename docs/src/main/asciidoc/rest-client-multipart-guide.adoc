@@ -177,7 +177,7 @@ The name of the property needs to follow a certain convention which is best disp
 org.acme.restclient.multipart.MultipartService/mp-rest/url=http://localhost:8080/
 ----
 
-<1> Having this configuration means that all requests performed using `org.acme.restclient.multipart.MultipartService` will use `http://localhost:8080/ ` as the base URL.
+Having this configuration means that all requests performed using `org.acme.restclient.multipart.MultipartService` will use `http://localhost:8080/ ` as the base URL.
 
 Note that `org.acme.restclient.multipart.MultipartService` _must_ match the fully qualified name of the `MultipartService` interface we created in the previous section.
 

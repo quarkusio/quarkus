@@ -3,7 +3,7 @@
 [![Version](https://img.shields.io/github/v/release/quarkusio/quarkus?style=for-the-badge)](https://github.com/quarkusio/quarkus/releases/latest)
 [![Build Status](https://img.shields.io/azure-devops/build/quarkus-ci/quarkus/1?style=for-the-badge&logo=azure-pipelines)](https://dev.azure.com/quarkus-ci/quarkus/_build/latest?definitionId=1)
 [![License](https://img.shields.io/github/license/quarkusio/quarkus?style=for-the-badge&logo=apache)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Project Chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg?style=for-the-badge)](https://quarkusio.zulipchat.com/)
+[![Project Chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg?style=for-the-badge&logo=zulip)](https://quarkusio.zulipchat.com/)
 
 # Quarkus - Supersonic Subatomic Java
 

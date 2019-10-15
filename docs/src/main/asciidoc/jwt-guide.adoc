@@ -136,7 +136,7 @@ public class TokenSecuredResource {
 ----
 <1> Add a `RequestScoped` as Quarkus uses a default scoping of `ApplicationScoped` and this
 will produce undesirable behavior since JWT claims are naturally request scoped.
-<2> Here we inject the JsonWebToken interface, and extension of the java.security.Principal interface that provides access to the claims associated with the current authenticated token.
+<2> Here we inject the JsonWebToken interface, an extension of the java.security.Principal interface that provides access to the claims associated with the current authenticated token.
 <3> @PermitAll is a JSR 250 common security annotation that indicates that the given endpoint is accessible by any caller, authenticated or not.
 <4> Here we inject the JAX-RS SecurityContext to inspect the security state of the call.
 <5> Here we obtain the current request user/caller `Principal`. For an unsecured call this will be null, so we build the user name by checking `caller` against null.

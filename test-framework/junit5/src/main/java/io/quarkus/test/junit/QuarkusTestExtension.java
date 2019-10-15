@@ -3,13 +3,16 @@ package io.quarkus.test.junit;
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -68,6 +71,16 @@ public class QuarkusTestExtension
     private ClassLoader originalCl;
     private static boolean failedBoot;
 
+    /**
+     * As part of the test run we need to create files in the test-classes directory
+     *
+     * We attempt to clean these up with a shutdown hook, but if the processes is killed (e.g. hitting the red
+     * IDE button) it can leave these files behind which interfere with subsequent runs.
+     *
+     * To fix this we create a file that contains the names of all the files we have created, and at the start of a new
+     * run we remove them if this file exists.
+     */
+    private static final String CREATED_FILES = "CREATED_FILES.txt";
     private final RestAssuredURLManager restAssuredURLManager = new RestAssuredURLManager(false);
 
     private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
@@ -79,11 +92,11 @@ public class QuarkusTestExtension
         appCl = createQuarkusBuildClassLoader(appClassLocation);
         originalCl = setCCL(appCl);
 
-        final Path testClassLocation = getTestClassesLocation(context.getRequiredTestClass());
         final ClassLoader testClassLoader = context.getRequiredTestClass().getClassLoader();
         final Path testWiringClassesDir;
         final RuntimeRunner.Builder runnerBuilder = RuntimeRunner.builder();
 
+        final Path testClassLocation = getTestClassesLocation(context.getRequiredTestClass());
         if (Files.isDirectory(testClassLocation)) {
             testWiringClassesDir = testClassLocation;
         } else {
@@ -102,154 +115,183 @@ public class QuarkusTestExtension
             }
         }
 
-        RuntimeRunner runtimeRunner = runnerBuilder
-                .setLaunchMode(LaunchMode.TEST)
-                .setClassLoader(appCl)
-                .setTarget(appClassLocation)
-                .addAdditionalArchive(testWiringClassesDir)
-                .setClassOutput(new ClassOutput() {
-                    @Override
-                    public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {
-                        Path location = testWiringClassesDir.resolve(className.replace('.', '/') + ".class");
-                        Files.createDirectories(location.getParent());
-                        Files.write(location, data);
-                        shutdownTasks.add(new DeleteRunnable(location));
-                    }
+        Path createdFilesPath = testWiringClassesDir.resolve(CREATED_FILES);
+        if (Files.exists(createdFilesPath)) {
+            cleanupOldRun(createdFilesPath);
+        }
+        try (OutputStream created = Files.newOutputStream(createdFilesPath)) {
 
-                    @Override
-                    public void writeResource(String name, byte[] data) throws IOException {
-                        Path location = testWiringClassesDir.resolve(name);
-                        Files.createDirectories(location.getParent());
-                        Files.write(location, data);
-                        shutdownTasks.add(new DeleteRunnable(location));
-                    }
-                })
-                .setTransformerTarget(new TransformerTarget() {
-                    @Override
-                    public void setTransformers(
-                            Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> functions) {
-                        ClassLoader main = Thread.currentThread().getContextClassLoader();
+            RuntimeRunner runtimeRunner = runnerBuilder
+                    .setLaunchMode(LaunchMode.TEST)
+                    .setClassLoader(appCl)
+                    .setTarget(appClassLocation)
+                    .addAdditionalArchive(testWiringClassesDir)
+                    .setClassOutput(new ClassOutput() {
+                        @Override
+                        public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {
+                            Path location = testWiringClassesDir.resolve(className.replace('.', '/') + ".class");
+                            Files.createDirectories(location.getParent());
+                            Files.write(location, data);
+                            handleCreatedFile(location, created, testWiringClassesDir, shutdownTasks);
+                        }
 
-                        //we need to use a temp class loader, or the old resource location will be cached
-                        ClassLoader temp = new ClassLoader() {
-                            @Override
-                            protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-                                // First, check if the class has already been loaded
-                                Class<?> c = findLoadedClass(name);
-                                if (c == null) {
-                                    c = findClass(name);
-                                }
-                                if (resolve) {
-                                    resolveClass(c);
-                                }
-                                return c;
-                            }
+                        @Override
+                        public void writeResource(String name, byte[] data) throws IOException {
+                            Path location = testWiringClassesDir.resolve(name);
+                            Files.createDirectories(location.getParent());
+                            Files.write(location, data);
+                            handleCreatedFile(location, created, testWiringClassesDir, shutdownTasks);
+                        }
+                    })
+                    .setTransformerTarget(new TransformerTarget() {
+                        @Override
+                        public void setTransformers(
+                                Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> functions) {
+                            ClassLoader main = Thread.currentThread().getContextClassLoader();
 
-                            @Override
-                            public URL getResource(String name) {
-                                return main.getResource(name);
-                            }
-
-                            @Override
-                            public Enumeration<URL> getResources(String name) throws IOException {
-                                return main.getResources(name);
-                            }
-                        };
-                        for (Map.Entry<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> e : functions
-                                .entrySet()) {
-                            String resourceName = e.getKey().replace('.', '/') + ".class";
-                            try (InputStream stream = temp.getResourceAsStream(resourceName)) {
-                                if (stream == null) {
-                                    System.err.println("Failed to transform " + e.getKey());
-                                    continue;
-                                }
-                                byte[] data = IoUtil.readBytes(stream);
-
-                                ClassReader cr = new ClassReader(data);
-                                ClassWriter cw = new QuarkusClassWriter(cr,
-                                        ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES) {
-
-                                    @Override
-                                    protected ClassLoader getClassLoader() {
-                                        return temp;
+                            //we need to use a temp class loader, or the old resource location will be cached
+                            ClassLoader temp = new ClassLoader() {
+                                @Override
+                                protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+                                    // First, check if the class has already been loaded
+                                    Class<?> c = findLoadedClass(name);
+                                    if (c == null) {
+                                        c = findClass(name);
                                     }
-                                };
-                                ClassLoader old = Thread.currentThread().getContextClassLoader();
-                                Thread.currentThread().setContextClassLoader(temp);
-                                try {
-                                    ClassVisitor visitor = cw;
-                                    for (BiFunction<String, ClassVisitor, ClassVisitor> i : e.getValue()) {
-                                        visitor = i.apply(e.getKey(), visitor);
+                                    if (resolve) {
+                                        resolveClass(c);
                                     }
-                                    cr.accept(visitor, 0);
-                                } finally {
-                                    Thread.currentThread().setContextClassLoader(old);
+                                    return c;
                                 }
 
-                                Path location = testWiringClassesDir.resolve(resourceName);
-                                Files.createDirectories(location.getParent());
-                                Files.write(location, cw.toByteArray());
-                                shutdownTasks.add(new DeleteRunnable(location));
-                            } catch (IOException ex) {
-                                ex.printStackTrace();
+                                @Override
+                                public URL getResource(String name) {
+                                    return main.getResource(name);
+                                }
+
+                                @Override
+                                public Enumeration<URL> getResources(String name) throws IOException {
+                                    return main.getResources(name);
+                                }
+                            };
+                            for (Map.Entry<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> e : functions
+                                    .entrySet()) {
+                                String resourceName = e.getKey().replace('.', '/') + ".class";
+                                try (InputStream stream = temp.getResourceAsStream(resourceName)) {
+                                    if (stream == null) {
+                                        System.err.println("Failed to transform " + e.getKey());
+                                        continue;
+                                    }
+                                    byte[] data = IoUtil.readBytes(stream);
+
+                                    ClassReader cr = new ClassReader(data);
+                                    ClassWriter cw = new QuarkusClassWriter(cr,
+                                            ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES) {
+
+                                        @Override
+                                        protected ClassLoader getClassLoader() {
+                                            return temp;
+                                        }
+                                    };
+                                    ClassLoader old = Thread.currentThread().getContextClassLoader();
+                                    Thread.currentThread().setContextClassLoader(temp);
+                                    try {
+                                        ClassVisitor visitor = cw;
+                                        for (BiFunction<String, ClassVisitor, ClassVisitor> i : e.getValue()) {
+                                            visitor = i.apply(e.getKey(), visitor);
+                                        }
+                                        cr.accept(visitor, 0);
+                                    } finally {
+                                        Thread.currentThread().setContextClassLoader(old);
+                                    }
+
+                                    Path location = testWiringClassesDir.resolve(resourceName);
+                                    Files.createDirectories(location.getParent());
+                                    Files.write(location, cw.toByteArray());
+                                    handleCreatedFile(location, created, testWiringClassesDir, shutdownTasks);
+                                } catch (IOException ex) {
+                                    ex.printStackTrace();
+                                }
                             }
                         }
-                    }
-                })
-                .addChainCustomizer(new Consumer<BuildChainBuilder>() {
-                    @Override
-                    public void accept(BuildChainBuilder buildChainBuilder) {
-                        buildChainBuilder.addBuildStep(new BuildStep() {
-                            @Override
-                            public void execute(BuildContext context) {
-                                context.produce(new TestClassPredicateBuildItem(new Predicate<String>() {
-                                    @Override
-                                    public boolean test(String className) {
-                                        return PathTestHelper.isTestClass(className, testClassLoader);
-                                    }
-                                }));
-                            }
-                        }).produces(TestClassPredicateBuildItem.class)
-                                .build();
-                    }
-                })
-                .addChainCustomizer(new Consumer<BuildChainBuilder>() {
-                    @Override
-                    public void accept(BuildChainBuilder buildChainBuilder) {
-                        buildChainBuilder.addBuildStep(new BuildStep() {
-                            @Override
-                            public void execute(BuildContext context) {
-                                context.produce(new TestAnnotationBuildItem(QuarkusTest.class.getName()));
-                            }
-                        }).produces(TestAnnotationBuildItem.class)
-                                .build();
-                    }
-                })
-                .build();
-        runtimeRunner.run();
+                    })
+                    .addChainCustomizer(new Consumer<BuildChainBuilder>() {
+                        @Override
+                        public void accept(BuildChainBuilder buildChainBuilder) {
+                            buildChainBuilder.addBuildStep(new BuildStep() {
+                                @Override
+                                public void execute(BuildContext context) {
+                                    context.produce(new TestClassPredicateBuildItem(new Predicate<String>() {
+                                        @Override
+                                        public boolean test(String className) {
+                                            return PathTestHelper.isTestClass(className, testClassLoader);
+                                        }
+                                    }));
+                                }
+                            }).produces(TestClassPredicateBuildItem.class)
+                                    .build();
+                        }
+                    })
+                    .addChainCustomizer(new Consumer<BuildChainBuilder>() {
+                        @Override
+                        public void accept(BuildChainBuilder buildChainBuilder) {
+                            buildChainBuilder.addBuildStep(new BuildStep() {
+                                @Override
+                                public void execute(BuildContext context) {
+                                    context.produce(new TestAnnotationBuildItem(QuarkusTest.class.getName()));
+                                }
+                            }).produces(TestAnnotationBuildItem.class)
+                                    .build();
+                        }
+                    })
+                    .build();
+            runtimeRunner.run();
 
-        System.setProperty("test.url", TestHTTPResourceManager.getUri());
+            System.setProperty("test.url", TestHTTPResourceManager.getUri());
 
-        Closeable shutdownTask = new Closeable() {
-            @Override
-            public void close() throws IOException {
-                runtimeRunner.close();
-                while (!shutdownTasks.isEmpty()) {
-                    shutdownTasks.pop().run();
+            Closeable shutdownTask = new Closeable() {
+                @Override
+                public void close() throws IOException {
+                    runtimeRunner.close();
+                    while (!shutdownTasks.isEmpty()) {
+                        shutdownTasks.pop().run();
+                    }
                 }
-            }
-        };
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    shutdownTask.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
+            };
+            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        shutdownTask.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
+            }, "Quarkus Test Cleanup Shutdown task"));
+            shutdownTasks.add(new DeleteRunnable(createdFilesPath));
+            return new ExtensionState(testResourceManager, shutdownTask, false);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void cleanupOldRun(Path createdFilesPath) {
+        try (BufferedReader reader = Files.newBufferedReader(createdFilesPath)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                Files.deleteIfExists(createdFilesPath.getParent().resolve(line));
             }
-        }, "Quarkus Test Cleanup Shutdown task"));
-        return new ExtensionState(testResourceManager, shutdownTask, false);
+            Files.deleteIfExists(createdFilesPath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void handleCreatedFile(Path location, OutputStream created, Path testWiringClassesDir,
+            LinkedBlockingDeque<Runnable> shutdownTasks) throws IOException {
+        created.write((testWiringClassesDir.relativize(location).toString() + "\n").getBytes(StandardCharsets.UTF_8));
+        created.flush();
+        shutdownTasks.add(new DeleteRunnable(location));
     }
 
     /**

@@ -11,6 +11,43 @@ This guide explains how your Quarkus application can use https://tika.apache.org
 
 https://tika.apache.org/[Apache Tika] is a content analysis toolkit which is used to parse the documents in PDF, Open Document, Excel and many other well known binary and text formats using a simple uniform API. Both the document text and properties (metadata) are available once the document has been parsed.
 
+== Configuration
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|quarkus.tika.tika-config-path||The resource path within the application artifact to the https://tika.apache.org/1.22/configuring.html[Tika configuration] resource. Typically a file named `tika-config.xml` is added to the root of the application resources path. The default configuration will be used if no configuration resource is available.
+|quarkus.tika.parsers||Comma-separated list of the abbreviated or full parser class names which have to be loaded by the extension. Note that `pdf` and 'odf' abbreviations can be used to refer to PDF and OpenDocument format parsers and custom abbreviations must be used for all other parsers. Note that this property is mutually exclusive with the `tika-config-path` property.
+|quarkus.tika.append-embedded-content|true|The document may have other embedded documents, for example, an Excel document may include a PDF content. If such an embedded content is available then, by default, it will be appended to the content of the master document, thus, in this example, the text extracted from PDF file will be appended to the text extracted from the Excel file. This property has to be set to `false` if one needs to access the content of the master and each of the embedded documents individually.  
+|===
+
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 20 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.5.3+
+* Docker
+* link:building-native-image-guide[GraalVM installed if you want to run in native mode]
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `apache-tika` {quickstarts-tree-url}/apache-tika[directory].
+
+[NOTE]
+====
+The provided solution contains a few additional elements such as tests and testing infrastructure.
+====
+
+
 == Creating the Maven Project
 
 First, we need a new project. Create a new project with the following command:
@@ -18,19 +55,21 @@ First, we need a new project. Create a new project with the following command:
 [source, subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=using-tika \
-    -Dextensions="tika"
+    -DprojectGroupId=org.acme.example \
+    -DprojectArtifactId=apache-tika \
+    -DclassName="org.acme.quickstart.tika.TikaParserResource" \
+    -Dpath="/parse" \
+    -Dextensions="tika,resteasy"
 ----
 
-This command generates a Maven project, importing the `tika` extension.
+This command generates a Maven project, importing the `tika` and `resteasy` extensions.
 
-If you already have your Quarkus project configured you can add the `tika` extension
+If you already have your Quarkus project configured you can add the `tika` and `resteasy` extensions
 to your project by running the following command in your project base directory.
 
 [source,bash]
 ----
-mvn quarkus:add-extension -Dextensions="tika"
+mvn quarkus:add-extension -Dextensions="tika,resteasy"
 ----
 
 This will add the following to your pom.xml:
@@ -41,26 +80,48 @@ This will add the following to your pom.xml:
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-tika</artifactId>
     </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy</artifactId>
+    </dependency>
 ----
 
-== Configuration
+=== Examine the generated JAX-RS resource
 
-[cols="<m,<m,<2",options="header"]
-|===
-|Property Name|Default|Description
-|quarkus.tika.tika-config-path||The resource path within the application artifact to the https://tika.apache.org/1.22/configuring.html[Tika configuration] resource. Typically a file named `tika-config.xml` is added to the root of the application resources path. The default configuration will be used if no configuration resource is available.
-|quarkus.tika.parsers||Comma-separated list of the abbreviated or full parser class names which have to be loaded by the extension. A `pdf` abbreviation can be used to refer to the PDF parser and custom abbreviations must be used for all other parsers. Note that this property is mutually exclusive with the `tika-config-path` property. 
-|quarkus.tika.append-embedded-content|true|The document may have other embedded documents, for example, an Excel document may include a PDF content. If such an embedded content is available then, by default, it will be appended to the content of the master document, thus, in this example, the text extracted from PDF file will be appended to the text extracted from the Excel file. This property has to be set to `false` if one needs to access the content of the master and each of the embedded documents individually.  
-|===
-
-
-== Simple text extraction example
+Open the `src/main/java/org/acme/quickstart/tika/TikaParserResource.java` file and see the following content:
 
 [source,java]
 ----
-package org.acme.tika;
+package org.acme.quickstart.tika;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/parse")
+public class TikaParserResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "hello";
+    }
+}
+----
+
+=== Update the JAX-RS resource
+
+Next update `TikaParserResource` to accept and parse PDF and OpenDocument format documents:
+
+[source,java]
+----
+package org.acme.quickstart.tika;
 
 import java.io.InputStream;
+import java.time.Duration;
+import java.time.Instant;
+
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -68,61 +129,84 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-
 import io.quarkus.tika.TikaParser;
+import org.jboss.logging.Logger;
 
 @Path("/parse")
 public class TikaParserResource {
+    private static final Logger log = Logger.getLogger(TikaParserResource.class);
 
     @Inject
     TikaParser parser;
 
     @POST
     @Path("/text")
-    @Consumes({ "application/pdf", "application/vnd.oasis.opendocument.text" })
+    @Consumes({"application/pdf", "application/vnd.oasis.opendocument.text"})
     @Produces(MediaType.TEXT_PLAIN)
     public String extractText(InputStream stream) {
-        return parser.getText(stream);
+        Instant start = Instant.now();
+
+        String text = parser.getText(stream);
+
+        Instant finish = Instant.now();
+
+        log.info(Duration.between(start, finish).toMillis() + " mls have passed");
+
+        return text;
     }
 }
 ----
 
-== Embedded document text extraction example
+As you can see the JAX-RS resource method was renamed to `extractText`, `@GET` annotation was replaced with `POST` and `@Path(/text)` annotation was added, and `@Consumes` annotation shows that PDF and OpenDocument media type formats can now be accepted. An injected `TikaParser` is used to parse the documents and report the extracted text. It also measures how long does it take to parse a given document.
 
-[source,java]
+== Run the application
+
+Now we are ready to run our application. Use:
+
+[source,shell]
 ----
-package org.acme.tika;
-
-import java.io.InputStream;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import javax.inject.Inject;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-import io.quarkus.tika.TikaContent;
-import io.quarkus.tika.TikaParser;
-
-@Path("/parse")
-public class TikaParserResource {
-
-    @Inject
-    TikaParser parser;
-
-    @POST
-    @Path("/text")
-    @Consumes({ "application/pdf", "application/vnd.oasis.opendocument.text" })
-    @Produces(MediaType.TEXT_PLAIN)
-    public List<String> extractText(InputStream stream) {
-        TikaContent masterContent = parser.parse(stream);
-        return masterContent.getEmbeddedContent().stream()
-            .map(tc -> tc.getText())
-            .collect(Collectors.toList());
-    }
-}
+./mvnw compile quarkus:dev
 ----
 
+and you should see output similar to:
+
+.quarkus:dev Output
+[source,shell]
+----
+$ mvn clean compile quarkus:dev
+[INFO] Scanning for projects...
+[INFO]
+INFO] --------------------< org.acme.example:apache-tika >--------------------
+[INFO] Building apache-tika 1.0-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+...
+Listening for transport dt_socket at address: 5005
+2019-10-15 14:23:26,442 INFO  [io.qua.dep.QuarkusAugmentor] (main) Beginning quarkus augmentation
+2019-10-15 14:23:26,960 INFO  [io.qua.resteasy] (build-15) Resteasy running without servlet container.
+2019-10-15 14:23:26,960 INFO  [io.qua.resteasy] (build-15) - Add quarkus-undertow to run Resteasy within a servlet container
+2019-10-15 14:23:26,991 INFO  [io.qua.dep.QuarkusAugmentor] (main) Quarkus augmentation completed in 549ms
+2019-10-15 14:23:27,637 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 1.361s. Listening on: http://0.0.0.0:8080
+2019-10-15 14:23:27,638 INFO  [io.quarkus] (main) Profile dev activated. Live Coding activated.
+2019-10-15 14:23:27,639 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, tika]
+----
+
+Now that the REST endpoint is running, we can get it to parse PDF and OpenDocument documents using a command line tool like curl:
+
+[source,shell]
+----
+$ curl -X POST -H "Content-type: application/pdf" --data-binary @target/classes/quarkus.pdf http://localhost:8080/parse/text
+Hello Quarkus
+----
+
+and
+
+[source,shell]
+----
+$ curl -X POST -H "Content-type: Content-type: application/vnd.oasis.opendocument.text" --data-binary @target/classes/quarkus.odt http://localhost:8080/parse/text
+Hello Quarkus
+----
+
+== Building a native executable
+
+You can build a native executable with the usual command `./mvnw package -Pnative`.
+Running it is as simple as executing `./target/apache-tika-1.0-SNAPSHOT-runner`.

@@ -38,6 +38,7 @@ The property files realm supports mapping of users to password and users to role
 |quarkus.security.users.file.enabled|false|Determine whether security via the file realm is enabled
 |quarkus.security.users.file.auth-mechanism|BASIC|Name of authentication mechanism to use
 |quarkus.security.users.file.realm-name|Quarkus|Name to assign the security realm
+|quarkus.security.users.file.plain-text|false|If this is true passwords are plain text, otherwise they must be in the form MD5( username : realm : password )
 |quarkus.security.users.file.users|users.properties|Classpath resource name of properties file containing user to password mappings; see <<Users.properties>>
 |quarkus.security.users.file.roles|roles.properties|Classpath resource name of properties file containing user to role mappings; see <<Roles.properties>>
 |===
@@ -50,7 +51,7 @@ quarkus.security.users.file.users=test-users.properties
 quarkus.security.users.file.roles=test-roles.properties
 quarkus.security.users.file.auth-mechanism=BASIC
 quarkus.security.users.file.realm-name=MyRealm
-quarkus.security.users.file.plain-test=true
+quarkus.security.users.file.plain-text=true
 ----
 
 ==== Users.properties

@@ -192,7 +192,7 @@ Second best is to write Substrate VM substitutions, which are patches applied du
 
 Get a framework running::
 A framework at runtime typically reads configuration, scan the classpath and classes for metadata (annotations, getters etc), build a metamodel on top of which it runs, find options via the service loader pattern, prepare invocation calls (reflection), proxy interfaces, etc. +
-These operations should be done at build time and the metamodel be passed to the recorder DSL that will generate classes are runtime and boot the framework.
+These operations should be done at build time and the metamodel be passed to the recorder DSL that will generate classes that will be executed at runtime and boot the framework.
 
 Get a CDI portable extension running::
 The CDI portable extension model is very flexible.

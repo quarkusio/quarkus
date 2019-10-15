@@ -36,24 +36,6 @@ final public class ConfigDocWriter {
         generateDocumentation(Constants.GENERATED_DOCS_PATH.resolve("all-config.adoc"), allItems);
     }
 
-    private String capitalize(String title) {
-        char[] chars = title.toCharArray();
-        boolean capitalize = true;
-        for (int i = 0; i < chars.length; i++) {
-            char c = chars[i];
-            if (Character.isSpaceChar(c)) {
-                capitalize = true;
-                continue;
-            }
-            if (capitalize) {
-                if (Character.isLetter(c))
-                    chars[i] = Character.toUpperCase(c);
-                capitalize = false;
-            }
-        }
-        return new String(chars);
-    }
-
     /**
      * Sort docs keys. The sorted list will contain the properties in the following order
      * - 1. Map config items as last elements of the generated docs.

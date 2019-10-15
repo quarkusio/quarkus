@@ -19,9 +19,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <suiteXmlFiles>
-                        <suiteXmlFile>tck-suite.xml</suiteXmlFile>
-                    </suiteXmlFiles>
                     <systemPropertyVariables>
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
@@ -32,6 +29,19 @@
                     <dependenciesToScan>
                         <dependency>org.eclipse.microprofile.rest.client:microprofile-rest-client-tck</dependency>
                     </dependenciesToScan>
+                    <reuseForks>false</reuseForks>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                    <excludes>
+                        <!-- Not actually tests that should be run -->
+                        <exclude>org.eclipse.microprofile.rest.client.tck.WiremockArquillianTest</exclude>
+                        <exclude>org.eclipse.microprofile.rest.client.tck.ssl.AbstractSslTest</exclude>
+
+                        <!-- mp/scope not supported for ConversationScope and SessionScope-->
+                        <exclude>org.eclipse.microprofile.rest.client.tck.cditests.HasConversationScopeTest</exclude>
+                        <exclude>org.eclipse.microprofile.rest.client.tck.cditests.HasSessionScopeTest</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
             <plugin>
@@ -61,6 +71,22 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jsonp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-json-p-provider</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jsonb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-json-binding-provider</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.microprofile.rest.client</groupId>

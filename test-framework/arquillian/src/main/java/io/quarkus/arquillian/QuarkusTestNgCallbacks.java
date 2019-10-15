@@ -9,8 +9,10 @@ import java.util.List;
 
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeTest;
 
 /**
  * Note that we cannot use event.getExecutor().invoke() directly because the callbacks would be invoked upon the original test
@@ -57,6 +59,7 @@ public class QuarkusTestNgCallbacks {
         if (testInstance != null) {
             List<Method> afterMethods = new ArrayList<>();
             collectCallbacks(testInstance.getClass(), afterMethods, AfterMethod.class);
+            collectCallbacks(testInstance.getClass(), afterMethods, AfterTest.class);
             for (Method m : afterMethods) {
                 // we don't know the values for parameterized methods that TestNG allows, we just skip those
                 if (m.getParameterCount() == 0) {
@@ -72,6 +75,7 @@ public class QuarkusTestNgCallbacks {
         if (testInstance != null) {
             List<Method> beforeMethods = new ArrayList<>();
             collectCallbacks(testInstance.getClass(), beforeMethods, BeforeMethod.class);
+            collectCallbacks(testInstance.getClass(), beforeMethods, BeforeTest.class);
             for (Method m : beforeMethods) {
                 // we don't know the values for parameterized methods that TestNG allows, we just skip those
                 if (m.getParameterCount() == 0) {

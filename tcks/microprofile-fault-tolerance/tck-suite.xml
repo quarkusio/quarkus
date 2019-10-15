@@ -45,6 +45,11 @@
                     <exclude name="testAllMetrics"/>
                 </methods>
             </class>
+            <class name="org.eclipse.microprofile.fault.tolerance.tck.metrics.CircuitBreakerMetricTest">
+                <methods>
+                    <exclude name="testCircuitBreakerMetric"/>
+                </methods>
+            </class>
 
         </classes>
     </test>

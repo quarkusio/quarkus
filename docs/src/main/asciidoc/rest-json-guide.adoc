@@ -511,8 +511,8 @@ how to use it.
 
 [WARNING]
 ====
-If you want to use the `keycloak` Quarkus extension in your project, you should configure CORS using the `keycloak` extension
-configuration. See link:keycloak-guide#configuring-cors[the Keycloak guide] for more details.
+If you want to use the `oidc` Quarkus extension in your project, you should configure CORS using the `oidc` extension
+configuration. See link:oidc-guide#configuring-cors[the OpenID Connect Adapter guide] for more details.
 ====
 
 == GZip Support

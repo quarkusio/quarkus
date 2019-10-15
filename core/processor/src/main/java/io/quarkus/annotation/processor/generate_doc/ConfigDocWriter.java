@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import io.quarkus.annotation.processor.Constants;
 
@@ -35,14 +37,48 @@ final public class ConfigDocWriter {
     public void writeAllExtensionConfigDocumentation(Map<String, List<ConfigDocItem>> extensionsConfigurations)
             throws IOException {
         List<ConfigDocItem> allItems = new ArrayList<>();
-        // FIXME: sort by extension name
-        for (Map.Entry<String, List<ConfigDocItem>> entry : extensionsConfigurations.entrySet()) {
+        SortedMap<String, List<ConfigDocItem>> sortedExtensions = new TreeMap<>();
+        sortedExtensions.putAll(extensionsConfigurations);
+        for (Map.Entry<String, List<ConfigDocItem>> entry : sortedExtensions.entrySet()) {
             final List<ConfigDocItem> configDocItems = entry.getValue();
 
             sort(configDocItems);
+            ConfigDocSection header = new ConfigDocSection();
+            String title = entry.getKey();
+            // sanitise
+            if (title.startsWith("quarkus-"))
+                title = title.substring(8);
+            if (title.endsWith(".adoc"))
+                title = title.substring(0, title.length() - 5);
+            if (title.endsWith("-config"))
+                title = title.substring(0, title.length() - 7);
+            if (title.endsWith("-configuration"))
+                title = title.substring(0, title.length() - 14);
+            title = title.replace('-', ' ');
+            title = capitalize(title);
+            header.setSectionDetailsTitle(title);
+            allItems.add(new ConfigDocItem(header, null));
             allItems.addAll(configDocItems);
         }
         generateDocumentation(Constants.GENERATED_DOCS_PATH.resolve("all-config.adoc"), allItems);
+    }
+
+    private String capitalize(String title) {
+        char[] chars = title.toCharArray();
+        boolean capitalize = true;
+        for (int i = 0; i < chars.length; i++) {
+            char c = chars[i];
+            if (Character.isSpaceChar(c)) {
+                capitalize = true;
+                continue;
+            }
+            if (capitalize) {
+                if (Character.isLetter(c))
+                    chars[i] = Character.toUpperCase(c);
+                capitalize = false;
+            }
+        }
+        return new String(chars);
     }
 
     /**

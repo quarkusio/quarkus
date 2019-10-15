@@ -1,7 +1,7 @@
 package io.quarkus.arc;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -9,38 +9,60 @@ import java.util.Set;
 import java.util.function.Function;
 import javax.interceptor.InvocationContext;
 
-public abstract class AroundInvokeInvocationContext extends AbstractInvocationContext {
+/**
+ * Special type of InvocationContext for AroundInvoke interceptors.
+ * <p>
+ * A new instance of {@link AroundInvokeInvocationContext} is created for each interceptor in the chain. This does not comply
+ * with the spec but allows for "asynchronous continuation" of an interceptor chain execution. In other words, it is possible to
+ * "cut off" the chain (interceptors executed before dispatch return immediately) and execute all remaining interceptors
+ * asynchronously, possibly on a different thread.
+ * <p>
+ * Note that context data and method parameters are mutable and are not guarded/synchronized. We expect them to be modified
+ * before or after dispatch. If modified before and after dispatch an unpredicatble behavior may occur.
+ */
+class AroundInvokeInvocationContext extends AbstractInvocationContext {
 
-    protected AroundInvokeInvocationContext(Object target, Method method,
+    private final int position;
+    private final Function<InvocationContext, Object> aroundInvokeForward;
+
+    AroundInvokeInvocationContext(Object target, Method method, Object[] parameters,
+            LazyValue<Map<String, Object>> contextData, Set<Annotation> interceptorBindings, int position,
+            List<InterceptorInvocation> chain, Function<InvocationContext, Object> aroundInvokeForward) {
+        super(target, method, null, parameters, contextData, interceptorBindings, chain);
+        this.position = position;
+        this.aroundInvokeForward = aroundInvokeForward;
+    }
+
+    static Object perform(Object target, Method method,
             Function<InvocationContext, Object> aroundInvokeForward, Object[] parameters,
-            Map<String, Object> contextData, Set<Annotation> interceptorBindings) {
-        super(target, method, aroundInvokeForward, parameters, contextData, interceptorBindings);
-    }
+            List<InterceptorInvocation> chain,
+            Set<Annotation> interceptorBindings) throws Exception {
 
-    protected AroundInvokeInvocationContext(Object target, Method method,
-            Function<InvocationContext, Object> aroundInvokeForward, Constructor<?> constructor,
-            Object[] parameters, Object timer, Map<String, Object> contextData, Set<Annotation> interceptorBindings) {
-        super(target, method, aroundInvokeForward, constructor, parameters, timer, contextData, interceptorBindings);
-    }
-
-    public static AbstractInvocationContext create(Object instance, Method method,
-            Function<InvocationContext, Object> aroundInvokeForward, Object[] args,
-            List<InvocationContextImpl.InterceptorInvocation> chain,
-            Set<Annotation> interceptorBindings) {
-        if (chain.size() == 0) {
-            // terminal invocation context, known to be last context in chain; invoked the original method directly
-            return new TerminalInvocationContext(instance, method, aroundInvokeForward, args, null, interceptorBindings);
-        } else {
-            // non-terminal invocation context, meaning there are more interceptors to be invoked
-            return new NonTerminalInvocationContext(instance, method, aroundInvokeForward, args, interceptorBindings, chain);
-        }
+        return chain.get(0).invoke(new AroundInvokeInvocationContext(target, method,
+                parameters, null, interceptorBindings, 1, chain, aroundInvokeForward));
     }
 
     @Override
     public Object proceed() throws Exception {
-        return proceedInternal();
+        try {
+            if (position < chain.size()) {
+                // Invoke the next interceptor in the chain
+                return chain.get(position).invoke(new AroundInvokeInvocationContext(target, method,
+                        parameters, contextData, interceptorBindings, position + 1, chain, aroundInvokeForward));
+            } else {
+                // Invoke the target method
+                return aroundInvokeForward.apply(this);
+            }
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof Error) {
+                throw (Error) cause;
+            }
+            if (cause instanceof Exception) {
+                throw (Exception) cause;
+            }
+            throw new RuntimeException(cause);
+        }
     }
 
-    @Override
-    abstract Object proceedInternal() throws Exception;
 }

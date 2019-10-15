@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.InvocationContextImpl;
+import io.quarkus.arc.ArcInvocationContext;
 import io.quarkus.arc.test.ArcTestContainer;
 import io.quarkus.arc.test.interceptors.Simple;
 import javax.annotation.Priority;
@@ -52,7 +52,7 @@ public class InvocationContextBindingsTest {
 
         @AroundInvoke
         Object mySuperCoolAroundInvoke(InvocationContext ctx) throws Exception {
-            Object bindings = ctx.getContextData().get(InvocationContextImpl.KEY_INTERCEPTOR_BINDINGS);
+            Object bindings = ctx.getContextData().get(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS);
             if (bindings != null) {
                 return bindings.toString() + "::" + ctx.proceed();
             }

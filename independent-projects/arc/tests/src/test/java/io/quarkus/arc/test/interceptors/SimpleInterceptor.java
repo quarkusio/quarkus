@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.interceptors;
 
-import io.quarkus.arc.InvocationContextImpl;
+import io.quarkus.arc.ArcInvocationContext;
 import javax.annotation.Priority;
 import javax.inject.Inject;
 import javax.interceptor.AroundInvoke;
@@ -17,7 +17,7 @@ public class SimpleInterceptor {
 
     @AroundInvoke
     Object mySuperCoolAroundInvoke(InvocationContext ctx) throws Exception {
-        Object bindings = ctx.getContextData().get(InvocationContextImpl.KEY_INTERCEPTOR_BINDINGS);
+        Object bindings = ctx.getContextData().get(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS);
         if (bindings == null) {
             throw new IllegalArgumentException("No bindings found");
         }

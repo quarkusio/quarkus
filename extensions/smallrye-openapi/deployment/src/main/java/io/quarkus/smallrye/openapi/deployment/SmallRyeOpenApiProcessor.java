@@ -43,12 +43,14 @@ import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.resteasy.deployment.ResteasyJaxrsConfigBuildItem;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
 import io.quarkus.smallrye.openapi.runtime.OpenApiHandler;
@@ -98,7 +100,23 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    RouteBuildItem handler() {
+    RouteBuildItem handler(DeploymentClassLoaderBuildItem deploymentClassLoaderBuildItem, LaunchModeBuildItem launch) {
+        /*
+         * <em>Ugly Hack</em>
+         * In dev mode, we pass a classloader to load the up to date OpenAPI document.
+         * This hack is required because using the TCCL would get an outdated version - the initial one.
+         * This is because the worker thread on which the handler is called captures the TCCL at creation time
+         * and does not allow updating it.
+         *
+         * This classloader must ONLY be used to load the OpenAPI document.
+         *
+         * In non dev mode, the TCCL is used.
+         */
+        if (launch.getLaunchMode() == LaunchMode.DEVELOPMENT) {
+            OpenApiHandler.classLoader = deploymentClassLoaderBuildItem.getClassLoader();
+        } else {
+            OpenApiHandler.classLoader = null;
+        }
         return new RouteBuildItem(openapi.path, new OpenApiHandler(), HandlerType.BLOCKING);
     }
 

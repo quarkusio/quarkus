@@ -221,6 +221,13 @@ duration can be changed using the `quarkus.test.native-image-wait-time` system p
 to 300 seconds, use: `./mvnw verify -Pnative -Dquarkus.test.native-image-wait-time=300`.
 ====
 
+By default, native tests runs using the `prod` profile.
+This can be overridden using the `quarkus.test.native-image-profile` property.
+For example, in your `application.properties` file, add: `quarkus.test.native-image-profile=test`.
+Alternatively, you can run your tests with: `./mvnw verify -Pnative -Dquarkus.test.native-image-profile=test`.
+However, don't forget that when the native executable is built the `prod` profile is enabled.
+So, the profile you enable this way must be compatible with the produced executable.
+
 === Excluding tests when running as a native executable
 
 When running tests this way, the only things that actually run natively are you application endpoints, which

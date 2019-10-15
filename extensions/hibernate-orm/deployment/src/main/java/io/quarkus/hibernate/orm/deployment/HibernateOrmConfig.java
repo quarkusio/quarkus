@@ -148,6 +148,17 @@ public class HibernateOrmConfig {
     @ConfigItem(name = "metrics.enabled", defaultValue = "false")
     public boolean metricsEnabled;
 
+    /**
+     * The default in Quarkus is for 2nd level caching to be enabled,
+     * and a good implementation is already integrated for you.
+     * <p>
+     * Just cherry-pick which entities should be using the cache.
+     * <p>
+     * Set this to false to disable all 2nd level caches.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean secondLevelCachingEnabled;
+
     public boolean isAnyPropertySet() {
         return dialect.isPresent() ||
                 dialectStorageEngine.isPresent() ||

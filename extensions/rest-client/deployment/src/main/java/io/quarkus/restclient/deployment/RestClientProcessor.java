@@ -138,33 +138,9 @@ class RestClientProcessor {
         Set<Type> returnTypes = new HashSet<>();
 
         IndexView index = combinedIndexBuildItem.getIndex();
-        for (AnnotationInstance annotation : index.getAnnotations(PATH)) {
-            AnnotationTarget target = annotation.target();
-            ClassInfo theInfo;
-            if (target.kind() == AnnotationTarget.Kind.CLASS) {
-                theInfo = target.asClass();
-            } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
-                theInfo = target.asMethod().declaringClass();
-            } else {
-                continue;
-            }
 
-            if (!isRestClientInterface(index, theInfo)) {
-                continue;
-            }
-
-            interfaces.put(theInfo.name(), theInfo);
-
-            // Find Return types
-            for (MethodInfo method : theInfo.methods()) {
-                Type type = method.returnType();
-                if (!type.name().toString().contains("java.lang")) {
-                    if (!returnTypes.contains(type)) {
-                        returnTypes.add(type);
-                    }
-                }
-            }
-        }
+        findInterfaces(index, interfaces, returnTypes, REGISTER_REST_CLIENT);
+        findInterfaces(index, interfaces, returnTypes, PATH);
 
         if (interfaces.isEmpty()) {
             return;
@@ -207,16 +183,17 @@ class RestClientProcessor {
                     // The spec is not clear whether we should add superinterfaces too - let's keep aligned with SmallRye for now
                     configurator.addType(restClientName);
                     configurator.addQualifier(REST_CLIENT);
-                    final ScopeInfo scope = computeDefaultScope(config, entry);
+                    final String configPrefix = computeConfigPrefix(restClientName.toString(), entry.getValue());
+                    final ScopeInfo scope = computeDefaultScope(config, entry, configPrefix);
                     configurator.scope(scope);
                     configurator.creator(m -> {
                         // return new RestClientBase(proxyType, baseUri).create();
                         ResultHandle interfaceHandle = m.loadClass(restClientName.toString());
                         ResultHandle baseUriHandle = m.load(getAnnotationParameter(entry.getValue(), "baseUri"));
-                        ResultHandle configKeyHandle = m.load(getAnnotationParameter(entry.getValue(), "configKey"));
+                        ResultHandle configPrefixHandle = m.load(configPrefix);
                         ResultHandle baseHandle = m.newInstance(
                                 MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class, String.class),
-                                interfaceHandle, baseUriHandle, configKeyHandle);
+                                interfaceHandle, baseUriHandle, configPrefixHandle);
                         ResultHandle ret = m.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
                         m.returnValue(ret);
@@ -232,13 +209,60 @@ class RestClientProcessor {
         restClientRecorder.setSslEnabled(sslNativeConfig.isEnabled());
     }
 
-    private ScopeInfo computeDefaultScope(Config config, Map.Entry<DotName, ClassInfo> entry) {
-        DotName restClientName = entry.getKey();
+    private void findInterfaces(IndexView index, Map<DotName, ClassInfo> interfaces, Set<Type> returnTypes,
+            DotName annotationToFind) {
+        for (AnnotationInstance annotation : index.getAnnotations(annotationToFind)) {
+            AnnotationTarget target = annotation.target();
+            ClassInfo theInfo;
+            if (target.kind() == AnnotationTarget.Kind.CLASS) {
+                theInfo = target.asClass();
+            } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
+                theInfo = target.asMethod().declaringClass();
+            } else {
+                continue;
+            }
+
+            if (!isRestClientInterface(index, theInfo)) {
+                continue;
+            }
+
+            interfaces.put(theInfo.name(), theInfo);
+
+            // Find Return types
+            processInterfaceReturnTypes(theInfo, returnTypes);
+            for (Type interfaceType : theInfo.interfaceTypes()) {
+                ClassInfo interfaceClassInfo = index.getClassByName(interfaceType.name());
+                if (interfaceClassInfo != null) {
+                    processInterfaceReturnTypes(interfaceClassInfo, returnTypes);
+                }
+            }
+        }
+    }
+
+    private void processInterfaceReturnTypes(ClassInfo classInfo, Set<Type> returnTypes) {
+        for (MethodInfo method : classInfo.methods()) {
+            Type type = method.returnType();
+            if (!type.name().toString().startsWith("java.lang")) {
+                returnTypes.add(type);
+            }
+        }
+    }
+
+    private String computeConfigPrefix(String interfaceName, ClassInfo classInfo) {
+        String propertyPrefixFromAnnotation = getAnnotationParameter(classInfo, "configKey");
+
+        if (propertyPrefixFromAnnotation != null && !propertyPrefixFromAnnotation.isEmpty()) {
+            return propertyPrefixFromAnnotation;
+        }
+
+        return interfaceName;
+    }
+
+    private ScopeInfo computeDefaultScope(Config config, Map.Entry<DotName, ClassInfo> entry, String configPrefix) {
         // Initialize a default @Dependent scope as per the spec
         ScopeInfo scopeInfo = BuiltinScope.DEPENDENT.getInfo();
-        final String REST_SCOPE_FORMAT = "%s/" + RestClientBase.MP_REST + "/scope";
         final Optional<String> scopeConfig = config
-                .getOptionalValue(String.format(REST_SCOPE_FORMAT, restClientName.toString()), String.class);
+                .getOptionalValue(String.format(RestClientBase.REST_SCOPE_FORMAT, configPrefix), String.class);
         if (scopeConfig.isPresent()) {
             final DotName scope = DotName.createSimple(scopeConfig.get());
             final BuiltinScope builtinScope = BuiltinScope.from(scope);
@@ -247,7 +271,7 @@ class RestClientProcessor {
             } else {
                 log.warn(String.format(
                         "Unsupported default scope %s provided for rest client %s. Defaulting to @Dependent.",
-                        scope, restClientName));
+                        scope, entry.getKey()));
             }
         } else {
             final Set<DotName> annotations = entry.getValue().annotations().keySet();

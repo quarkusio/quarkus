@@ -49,19 +49,23 @@ public class RestClientRecorder {
 
         if (useBuiltIn) {
             RegisterBuiltin.register(clientProviderFactory);
-            registerProviders(clientProviderFactory, contributedProviders);
+            registerProviders(clientProviderFactory, contributedProviders, false);
         } else {
-            registerProviders(clientProviderFactory, providersToRegister);
+            providersToRegister.removeAll(contributedProviders);
+            registerProviders(clientProviderFactory, providersToRegister, true);
+            registerProviders(clientProviderFactory, contributedProviders, false);
         }
 
         RestClientBuilderImpl.setProviderFactory(clientProviderFactory);
     }
 
-    private static void registerProviders(ResteasyProviderFactory clientProviderFactory, Set<String> providersToRegister) {
+    private static void registerProviders(ResteasyProviderFactory clientProviderFactory, Set<String> providersToRegister,
+            Boolean isBuiltIn) {
         for (String providerToRegister : providersToRegister) {
             try {
                 clientProviderFactory
-                        .registerProvider(Thread.currentThread().getContextClassLoader().loadClass(providerToRegister.trim()));
+                        .registerProvider(Thread.currentThread().getContextClassLoader().loadClass(providerToRegister.trim()),
+                                isBuiltIn);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException("Unable to find class for provider " + providerToRegister, e);
             }

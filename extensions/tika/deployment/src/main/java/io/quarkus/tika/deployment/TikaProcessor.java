@@ -42,6 +42,7 @@ public class TikaProcessor {
 
     private static final Map<String, String> PARSER_ABBREVIATIONS = Arrays.stream(new String[][] {
             { "pdf", "org.apache.tika.parser.pdf.PDFParser" },
+            { "odf", "org.apache.tika.parser.odf.OpenDocumentParser" }
     }).collect(Collectors.toMap(kv -> kv[0], kv -> kv[1]));
 
     private TikaConfiguration config;

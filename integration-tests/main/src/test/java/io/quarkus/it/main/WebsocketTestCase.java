@@ -16,6 +16,7 @@ import javax.websocket.Session;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.it.websocket.WebSocketOpenEndpoint;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -28,6 +29,9 @@ public class WebsocketTestCase {
 
     @TestHTTPResource("recoder")
     URI recoderUri;
+
+    @TestHTTPResource("wsopen")
+    URI openURI;
 
     @Test
     public void websocketTest() throws Exception {
@@ -97,5 +101,30 @@ public class WebsocketTestCase {
                 // "initial-data" is sent from the ClientCodingResource to the EchoService
                 // encoder and decoder prepend it with the [encoded] and [decoded] strings.
                 .body(is("[decoded][encoded]initial data"));
+    }
+
+    @Test
+    public void testSendMessageOnOpen() throws Exception {
+
+        LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
+        Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
+            @Override
+            public void onOpen(Session session, EndpointConfig endpointConfig) {
+                session.addMessageHandler(new MessageHandler.Whole<String>() {
+                    @Override
+                    public void onMessage(String s) {
+                        message.add(s);
+                    }
+                });
+            }
+        }, ClientEndpointConfig.Builder.create().build(), openURI);
+
+        try {
+            for (String i : WebSocketOpenEndpoint.messages) {
+                Assertions.assertEquals(i, message.poll(20, TimeUnit.SECONDS));
+            }
+        } finally {
+            session.close();
+        }
     }
 }

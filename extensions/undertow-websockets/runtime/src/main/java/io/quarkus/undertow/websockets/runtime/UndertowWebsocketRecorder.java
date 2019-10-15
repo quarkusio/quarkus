@@ -26,6 +26,7 @@ public class UndertowWebsocketRecorder {
     public WebSocketDeploymentInfo createDeploymentInfo(Set<String> annotatedEndpoints, Set<String> endpoints,
             Set<String> serverApplicationConfigClasses) {
         WebSocketDeploymentInfo container = new WebSocketDeploymentInfo();
+        container.setDispatchToWorkerThread(false);
         container.setExecutor(new ExecutorSupplier());
         Set<Class<? extends Endpoint>> allScannedEndpointImplementations = new HashSet<>();
         for (String i : endpoints) {

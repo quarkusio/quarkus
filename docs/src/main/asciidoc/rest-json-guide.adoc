@@ -506,14 +506,8 @@ link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin re
 allows restricted resources on a web page to be requested from another domain outside the domain from which the first resource
 was served.
 
-Quarkus comes with a CORS filter. Read the link:undertow-reference.html#cors-filter[Undertow Reference Documentation] to learn
+Quarkus comes with a CORS filter. Read the link:http-reference.html#cors-filter[HTTP Reference Documentation] to learn
 how to use it.
-
-[WARNING]
-====
-If you want to use the `keycloak` Quarkus extension in your project, you should configure CORS using the `keycloak` extension
-configuration. See link:keycloak-guide#configuring-cors[the Keycloak guide] for more details.
-====
 
 == GZip Support
 

@@ -1,0 +1,89 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.reactive-pg-client.cache-prepared-statements, quarkus.reactive-pg-client.cache-prepared-statements>>
+
+Whether prepared statements should be cached on the client side.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.reactive-pg-client.pipelining-limit, quarkus.reactive-pg-client.pipelining-limit>>
+
+The maximum number of inflight database commands that can be pipelined.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.datasource.url, quarkus.datasource.url>>
+
+The datasource URL.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.datasource.username, quarkus.datasource.username>>
+
+The datasource username.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.datasource.password, quarkus.datasource.password>>
+
+The datasource password.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.datasource.max-size, quarkus.datasource.max-size>>
+
+The datasource pool maximum size.|int 
+|
+| icon:gears[title=Overridable at runtime]
+|===
+
+
+== Details
+
+[[quarkus.reactive-pg-client.cache-prepared-statements]]
+`quarkus.reactive-pg-client.cache-prepared-statements` icon:gears[title=Overridable at runtime]:: Whether prepared statements should be cached on the client side. 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.reactive-pg-client.pipelining-limit]]
+`quarkus.reactive-pg-client.pipelining-limit` icon:gears[title=Overridable at runtime]:: The maximum number of inflight database commands that can be pipelined. 
++
+Type: `int`  +
+
+
+
+[[quarkus.datasource.url]]
+`quarkus.datasource.url` icon:gears[title=Overridable at runtime]:: The datasource URL. 
++
+Type: `string`  +
+
+
+
+[[quarkus.datasource.username]]
+`quarkus.datasource.username` icon:gears[title=Overridable at runtime]:: The datasource username. 
++
+Type: `string`  +
+
+
+
+[[quarkus.datasource.password]]
+`quarkus.datasource.password` icon:gears[title=Overridable at runtime]:: The datasource password. 
++
+Type: `string`  +
+
+
+
+[[quarkus.datasource.max-size]]
+`quarkus.datasource.max-size` icon:gears[title=Overridable at runtime]:: The datasource pool maximum size. 
++
+Type: `int`  +
+
+

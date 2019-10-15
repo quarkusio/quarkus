@@ -1,0 +1,38 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.kubernetes.group, quarkus.kubernetes.group>>
+
+The group of the application.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes.docker.registry, quarkus.kubernetes.docker.registry>>
+
+The docker registry to which the images will be pushed.|string 
+|`docker.io`
+| icon:archive[title=Fixed at build time]
+|===
+
+
+== Details
+
+[[quarkus.kubernetes.group]]
+`quarkus.kubernetes.group` icon:archive[title=Fixed at build time]:: The group of the application. This value will be use as: - docker image repo - labeling resources 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes.docker.registry]]
+`quarkus.kubernetes.docker.registry` icon:archive[title=Fixed at build time]:: The docker registry to which the images will be pushed 
++
+Type: `string`  +
+Defaults to: `docker.io` +
+
+

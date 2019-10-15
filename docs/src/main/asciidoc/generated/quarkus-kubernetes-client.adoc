@@ -1,0 +1,332 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.kubernetes-client.trust-certs, quarkus.kubernetes-client.trust-certs>>
+
+Whether or not the client should trust a self signed certificate if so presented by the API server.|boolean 
+|`false`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.master-url, quarkus.kubernetes-client.master-url>>
+
+URL of the Kubernetes API server.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.namespace, quarkus.kubernetes-client.namespace>>
+
+Default namespace to use.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.ca-cert-file, quarkus.kubernetes-client.ca-cert-file>>
+
+CA certificate file.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.ca-cert-data, quarkus.kubernetes-client.ca-cert-data>>
+
+CA certificate data.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.client-cert-file, quarkus.kubernetes-client.client-cert-file>>
+
+Client certificate file.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.client-cert-data, quarkus.kubernetes-client.client-cert-data>>
+
+Client certificate data.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.client-key-file, quarkus.kubernetes-client.client-key-file>>
+
+Client key file.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.client-key-data, quarkus.kubernetes-client.client-key-data>>
+
+Client key data.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.client-key-algo, quarkus.kubernetes-client.client-key-algo>>
+
+Client key algorithm.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.client-key-passphrase, quarkus.kubernetes-client.client-key-passphrase>>
+
+Client key passphrase.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.username, quarkus.kubernetes-client.username>>
+
+Kubernetes auth username.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.password, quarkus.kubernetes-client.password>>
+
+Kubernetes auth password.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.watch-reconnect-interval, quarkus.kubernetes-client.watch-reconnect-interval>>
+
+Watch reconnect interval.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|`PT1S`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.watch-reconnect-limit, quarkus.kubernetes-client.watch-reconnect-limit>>
+
+Maximum reconnect attempts in case of watch failure By default there is no limit to the number of reconnect attempts.|int 
+|`-1`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.connection-timeout, quarkus.kubernetes-client.connection-timeout>>
+
+Maximum amount of time to wait for a connection with the API server to be established.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|`PT10S`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.request-timeout, quarkus.kubernetes-client.request-timeout>>
+
+Maximum amount of time to wait for a request to the API server to be completed.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|`PT10S`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.rolling-timeout, quarkus.kubernetes-client.rolling-timeout>>
+
+Maximum amount of time in milliseconds to wait for a rollout to be completed.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|`PT15M`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.http-proxy, quarkus.kubernetes-client.http-proxy>>
+
+HTTP proxy used to access the Kubernetes API server.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.https-proxy, quarkus.kubernetes-client.https-proxy>>
+
+HTTPS proxy used to access the Kubernetes API server.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.proxy-username, quarkus.kubernetes-client.proxy-username>>
+
+Proxy username.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.proxy-password, quarkus.kubernetes-client.proxy-password>>
+
+Proxy password.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.kubernetes-client.no-proxy, quarkus.kubernetes-client.no-proxy>>
+
+IP addresses or hosts to exclude from proxying.|string 
+|
+| icon:archive[title=Fixed at build time]
+|===
+
+
+== Details
+
+[[quarkus.kubernetes-client.trust-certs]]
+`quarkus.kubernetes-client.trust-certs` icon:archive[title=Fixed at build time]:: Whether or not the client should trust a self signed certificate if so presented by the API server 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.kubernetes-client.master-url]]
+`quarkus.kubernetes-client.master-url` icon:archive[title=Fixed at build time]:: URL of the Kubernetes API server 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.namespace]]
+`quarkus.kubernetes-client.namespace` icon:archive[title=Fixed at build time]:: Default namespace to use 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.ca-cert-file]]
+`quarkus.kubernetes-client.ca-cert-file` icon:archive[title=Fixed at build time]:: CA certificate file 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.ca-cert-data]]
+`quarkus.kubernetes-client.ca-cert-data` icon:archive[title=Fixed at build time]:: CA certificate data 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.client-cert-file]]
+`quarkus.kubernetes-client.client-cert-file` icon:archive[title=Fixed at build time]:: Client certificate file 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.client-cert-data]]
+`quarkus.kubernetes-client.client-cert-data` icon:archive[title=Fixed at build time]:: Client certificate data 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.client-key-file]]
+`quarkus.kubernetes-client.client-key-file` icon:archive[title=Fixed at build time]:: Client key file 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.client-key-data]]
+`quarkus.kubernetes-client.client-key-data` icon:archive[title=Fixed at build time]:: Client key data 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.client-key-algo]]
+`quarkus.kubernetes-client.client-key-algo` icon:archive[title=Fixed at build time]:: Client key algorithm 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.client-key-passphrase]]
+`quarkus.kubernetes-client.client-key-passphrase` icon:archive[title=Fixed at build time]:: Client key passphrase 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.username]]
+`quarkus.kubernetes-client.username` icon:archive[title=Fixed at build time]:: Kubernetes auth username 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.password]]
+`quarkus.kubernetes-client.password` icon:archive[title=Fixed at build time]:: Kubernetes auth password 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.watch-reconnect-interval]]
+`quarkus.kubernetes-client.watch-reconnect-interval` icon:archive[title=Fixed at build time]:: Watch reconnect interval 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+Defaults to: `PT1S` +
+
+
+
+[[quarkus.kubernetes-client.watch-reconnect-limit]]
+`quarkus.kubernetes-client.watch-reconnect-limit` icon:archive[title=Fixed at build time]:: Maximum reconnect attempts in case of watch failure By default there is no limit to the number of reconnect attempts 
++
+Type: `int`  +
+Defaults to: `-1` +
+
+
+
+[[quarkus.kubernetes-client.connection-timeout]]
+`quarkus.kubernetes-client.connection-timeout` icon:archive[title=Fixed at build time]:: Maximum amount of time to wait for a connection with the API server to be established 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+Defaults to: `PT10S` +
+
+
+
+[[quarkus.kubernetes-client.request-timeout]]
+`quarkus.kubernetes-client.request-timeout` icon:archive[title=Fixed at build time]:: Maximum amount of time to wait for a request to the API server to be completed 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+Defaults to: `PT10S` +
+
+
+
+[[quarkus.kubernetes-client.rolling-timeout]]
+`quarkus.kubernetes-client.rolling-timeout` icon:archive[title=Fixed at build time]:: Maximum amount of time in milliseconds to wait for a rollout to be completed 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+Defaults to: `PT15M` +
+
+
+
+[[quarkus.kubernetes-client.http-proxy]]
+`quarkus.kubernetes-client.http-proxy` icon:archive[title=Fixed at build time]:: HTTP proxy used to access the Kubernetes API server 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.https-proxy]]
+`quarkus.kubernetes-client.https-proxy` icon:archive[title=Fixed at build time]:: HTTPS proxy used to access the Kubernetes API server 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.proxy-username]]
+`quarkus.kubernetes-client.proxy-username` icon:archive[title=Fixed at build time]:: Proxy username 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.proxy-password]]
+`quarkus.kubernetes-client.proxy-password` icon:archive[title=Fixed at build time]:: Proxy password 
++
+Type: `string`  +
+
+
+
+[[quarkus.kubernetes-client.no-proxy]]
+`quarkus.kubernetes-client.no-proxy` icon:archive[title=Fixed at build time]:: IP addresses or hosts to exclude from proxying 
++
+Type: `string`  +
+
+
+
+[NOTE]
+[[duration-note-anchor]]
+.About the Duration format
+====
+The format for durations uses the standard `java.time.Duration` format.
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+
+You can also provide duration values starting with a number.
+In this case, if the value consists only of a number, the converter treats the value as seconds.
+Otherwise, `PT` is implicitly appended to the value to obtain a standard `java.time.Duration` format.
+====

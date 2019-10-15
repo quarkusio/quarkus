@@ -1,0 +1,49 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.resteasy.gzip.enabled, quarkus.resteasy.gzip.enabled>>
+
+If gzip is enabled.|boolean 
+|`false`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.resteasy.gzip.max-input, quarkus.resteasy.gzip.max-input>>
+
+Maximum deflated file bytes size 
+ If the limit is exceeded, Resteasy will return Response with status 413("Request Entity Too Large").|MemorySize  link:#memory-size-note-anchor[icon:question-circle[], title=More information about the MemorySize format]
+|`10M`
+| icon:archive[title=Fixed at build time]
+|===
+
+
+== Details
+
+[[quarkus.resteasy.gzip.enabled]]
+`quarkus.resteasy.gzip.enabled` icon:archive[title=Fixed at build time]:: If gzip is enabled 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.resteasy.gzip.max-input]]
+`quarkus.resteasy.gzip.max-input` icon:archive[title=Fixed at build time]:: Maximum deflated file bytes size 
+ If the limit is exceeded, Resteasy will return Response with status 413("Request Entity Too Large") 
++
+Type: `MemorySize`  link:#memory-size-note-anchor[icon:question-circle[], title=More information about the MemorySize format] +
+Defaults to: `10M` +
+
+
+
+[NOTE]
+[[memory-size-note-anchor]]
+.About the MemorySize format
+====
+A size configuration option recognises string in this format (shown as a regular expression): `[0-9]+[KkMmGgTtPpEeZzYy]?`.
+If no suffix is given, assume bytes.
+====

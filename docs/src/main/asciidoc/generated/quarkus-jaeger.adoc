@@ -1,0 +1,223 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.jaeger.endpoint, quarkus.jaeger.endpoint>>
+
+The traces endpoint, in case the client should connect directly to the Collector, like http://jaeger-collector:14268/api/traces.|link:https://docs.oracle.com/javase/8/docs/api/java/net/URI.html[URI]
+ 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.jaeger.auth-token, quarkus.jaeger.auth-token>>
+
+Authentication Token to send as "Bearer" to the endpoint.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.jaeger.user, quarkus.jaeger.user>>
+
+Username to send as part of "Basic" authentication to the endpoint.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.jaeger.password, quarkus.jaeger.password>>
+
+Password to send as part of "Basic" authentication to the endpoint.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.jaeger.agent-host-port, quarkus.jaeger.agent-host-port>>
+
+The hostname and port for communicating with agent via UDP.|link:https://docs.oracle.com/javase/8/docs/api/java/net/InetSocketAddress.html[InetSocketAddress]
+ 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.jaeger.reporter-log-spans, quarkus.jaeger.reporter-log-spans>>
+
+Whether the reporter should also log the spans.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.jaeger.reporter-max-queue-size, quarkus.jaeger.reporter-max-queue-size>>
+
+The reporter's maximum queue size.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.jaeger.reporter-flush-interval, quarkus.jaeger.reporter-flush-interval>>
+
+The reporter's flush interval.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.jaeger.sampler-type, quarkus.jaeger.sampler-type>>
+
+The sampler type (const, probabilistic, ratelimiting or remote).|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.jaeger.sampler-param, quarkus.jaeger.sampler-param>>
+
+The sampler parameter (number).|link:https://docs.oracle.com/javase/8/docs/api/java/math/BigDecimal.html[BigDecimal]
+ 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.jaeger.sampler-manager-host-port, quarkus.jaeger.sampler-manager-host-port>>
+
+The host name and port when using the remote controlled sampler.|link:https://docs.oracle.com/javase/8/docs/api/java/net/InetSocketAddress.html[InetSocketAddress]
+ 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.jaeger.service-name, quarkus.jaeger.service-name>>
+
+The service name.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.jaeger.tags, quarkus.jaeger.tags>>
+
+A comma separated list of name = value tracer level tags, which get added to all reported spans.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.jaeger.propagation, quarkus.jaeger.propagation>>
+
+Comma separated list of formats to use for propagating the trace context.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.jaeger.sender-factory, quarkus.jaeger.sender-factory>>
+
+The sender factory class name.|string 
+|
+| icon:gears[title=Overridable at runtime]
+|===
+
+
+== Details
+
+[[quarkus.jaeger.endpoint]]
+`quarkus.jaeger.endpoint` icon:gears[title=Overridable at runtime]:: The traces endpoint, in case the client should connect directly to the Collector, like http://jaeger-collector:14268/api/traces 
++
+Type: `URI`  +
+
+
+
+[[quarkus.jaeger.auth-token]]
+`quarkus.jaeger.auth-token` icon:gears[title=Overridable at runtime]:: Authentication Token to send as "Bearer" to the endpoint 
++
+Type: `string`  +
+
+
+
+[[quarkus.jaeger.user]]
+`quarkus.jaeger.user` icon:gears[title=Overridable at runtime]:: Username to send as part of "Basic" authentication to the endpoint 
++
+Type: `string`  +
+
+
+
+[[quarkus.jaeger.password]]
+`quarkus.jaeger.password` icon:gears[title=Overridable at runtime]:: Password to send as part of "Basic" authentication to the endpoint 
++
+Type: `string`  +
+
+
+
+[[quarkus.jaeger.agent-host-port]]
+`quarkus.jaeger.agent-host-port` icon:gears[title=Overridable at runtime]:: The hostname and port for communicating with agent via UDP 
++
+Type: `InetSocketAddress`  +
+
+
+
+[[quarkus.jaeger.reporter-log-spans]]
+`quarkus.jaeger.reporter-log-spans` icon:gears[title=Overridable at runtime]:: Whether the reporter should also log the spans 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.jaeger.reporter-max-queue-size]]
+`quarkus.jaeger.reporter-max-queue-size` icon:gears[title=Overridable at runtime]:: The reporter's maximum queue size 
++
+Type: `int`  +
+
+
+
+[[quarkus.jaeger.reporter-flush-interval]]
+`quarkus.jaeger.reporter-flush-interval` icon:gears[title=Overridable at runtime]:: The reporter's flush interval 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.jaeger.sampler-type]]
+`quarkus.jaeger.sampler-type` icon:gears[title=Overridable at runtime]:: The sampler type (const, probabilistic, ratelimiting or remote) 
++
+Type: `string`  +
+
+
+
+[[quarkus.jaeger.sampler-param]]
+`quarkus.jaeger.sampler-param` icon:gears[title=Overridable at runtime]:: The sampler parameter (number) 
++
+Type: `BigDecimal`  +
+
+
+
+[[quarkus.jaeger.sampler-manager-host-port]]
+`quarkus.jaeger.sampler-manager-host-port` icon:gears[title=Overridable at runtime]:: The host name and port when using the remote controlled sampler 
++
+Type: `InetSocketAddress`  +
+
+
+
+[[quarkus.jaeger.service-name]]
+`quarkus.jaeger.service-name` icon:gears[title=Overridable at runtime]:: The service name 
++
+Type: `string`  +
+
+
+
+[[quarkus.jaeger.tags]]
+`quarkus.jaeger.tags` icon:gears[title=Overridable at runtime]:: A comma separated list of name = value tracer level tags, which get added to all reported spans. The value can also refer to an environment variable using the format ${envVarName:default}, where the :default is optional, and identifies a value to be used if the environment variable cannot be found 
++
+Type: `string`  +
+
+
+
+[[quarkus.jaeger.propagation]]
+`quarkus.jaeger.propagation` icon:gears[title=Overridable at runtime]:: Comma separated list of formats to use for propagating the trace context. Defaults to the standard Jaeger format. Valid values are jaeger and b3 
++
+Type: `string`  +
+
+
+
+[[quarkus.jaeger.sender-factory]]
+`quarkus.jaeger.sender-factory` icon:gears[title=Overridable at runtime]:: The sender factory class name 
++
+Type: `string`  +
+
+
+
+[NOTE]
+[[duration-note-anchor]]
+.About the Duration format
+====
+The format for durations uses the standard `java.time.Duration` format.
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+
+You can also provide duration values starting with a number.
+In this case, if the value consists only of a number, the converter treats the value as seconds.
+Otherwise, `PT` is implicitly appended to the value to obtain a standard `java.time.Duration` format.
+====

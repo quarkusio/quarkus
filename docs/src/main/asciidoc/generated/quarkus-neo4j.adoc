@@ -1,0 +1,166 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.neo4j.uri, quarkus.neo4j.uri>>
+
+The uri this driver should connect to.|string 
+|`bolt://localhost:7687`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.neo4j.authentication.username, quarkus.neo4j.authentication.username>>
+
+The login of the user connecting to the database.|string 
+|`neo4j`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.neo4j.authentication.password, quarkus.neo4j.authentication.password>>
+
+The password of the user connecting to the database.|string 
+|`neo4j`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.neo4j.authentication.disabled, quarkus.neo4j.authentication.disabled>>
+
+Set this to true to disable authentication.|boolean 
+|`false`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.neo4j.pool.metrics-enabled, quarkus.neo4j.pool.metrics-enabled>>
+
+Flag, if metrics are enabled.|boolean 
+|`false`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.neo4j.pool.log-leaked-sessions, quarkus.neo4j.pool.log-leaked-sessions>>
+
+Flag, if leaked sessions logging is enabled.|boolean 
+|`false`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.neo4j.pool.max-connection-pool-size, quarkus.neo4j.pool.max-connection-pool-size>>
+
+The maximum amount of connections in the connection pool towards a single database.|int 
+|`100`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.neo4j.pool.idle-time-before-connection-test, quarkus.neo4j.pool.idle-time-before-connection-test>>
+
+Pooled connections that have been idle in the pool for longer than this timeout will be tested before they are used again.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|`-0.001S`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.neo4j.pool.max-connection-lifetime, quarkus.neo4j.pool.max-connection-lifetime>>
+
+Pooled connections older than this threshold will be closed and removed from the pool.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|`1H`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.neo4j.pool.connection-acquisition-timeout, quarkus.neo4j.pool.connection-acquisition-timeout>>
+
+Acquisition of new connections will be attempted for at most configured timeout.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|`1M`
+| icon:gears[title=Overridable at runtime]
+|===
+
+
+== Details
+
+[[quarkus.neo4j.uri]]
+`quarkus.neo4j.uri` icon:gears[title=Overridable at runtime]:: The uri this driver should connect to. The driver supports bolt, bolt+routing or neo4j as schemes. 
++
+Type: `string`  +
+Defaults to: `bolt://localhost:7687` +
+
+
+
+[[quarkus.neo4j.authentication.username]]
+`quarkus.neo4j.authentication.username` icon:gears[title=Overridable at runtime]:: The login of the user connecting to the database. 
++
+Type: `string`  +
+Defaults to: `neo4j` +
+
+
+
+[[quarkus.neo4j.authentication.password]]
+`quarkus.neo4j.authentication.password` icon:gears[title=Overridable at runtime]:: The password of the user connecting to the database. 
++
+Type: `string`  +
+Defaults to: `neo4j` +
+
+
+
+[[quarkus.neo4j.authentication.disabled]]
+`quarkus.neo4j.authentication.disabled` icon:gears[title=Overridable at runtime]:: Set this to true to disable authentication. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.neo4j.pool.metrics-enabled]]
+`quarkus.neo4j.pool.metrics-enabled` icon:gears[title=Overridable at runtime]:: Flag, if metrics are enabled. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.neo4j.pool.log-leaked-sessions]]
+`quarkus.neo4j.pool.log-leaked-sessions` icon:gears[title=Overridable at runtime]:: Flag, if leaked sessions logging is enabled. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.neo4j.pool.max-connection-pool-size]]
+`quarkus.neo4j.pool.max-connection-pool-size` icon:gears[title=Overridable at runtime]:: The maximum amount of connections in the connection pool towards a single database. 
++
+Type: `int`  +
+Defaults to: `100` +
+
+
+
+[[quarkus.neo4j.pool.idle-time-before-connection-test]]
+`quarkus.neo4j.pool.idle-time-before-connection-test` icon:gears[title=Overridable at runtime]:: Pooled connections that have been idle in the pool for longer than this timeout will be tested before they are used again. The value `0` means connections will always be tested for validity and negative values mean connections will never be tested. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+Defaults to: `-0.001S` +
+
+
+
+[[quarkus.neo4j.pool.max-connection-lifetime]]
+`quarkus.neo4j.pool.max-connection-lifetime` icon:gears[title=Overridable at runtime]:: Pooled connections older than this threshold will be closed and removed from the pool. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+Defaults to: `1H` +
+
+
+
+[[quarkus.neo4j.pool.connection-acquisition-timeout]]
+`quarkus.neo4j.pool.connection-acquisition-timeout` icon:gears[title=Overridable at runtime]:: Acquisition of new connections will be attempted for at most configured timeout. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+Defaults to: `1M` +
+
+
+
+[NOTE]
+[[duration-note-anchor]]
+.About the Duration format
+====
+The format for durations uses the standard `java.time.Duration` format.
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+
+You can also provide duration values starting with a number.
+In this case, if the value consists only of a number, the converter treats the value as seconds.
+Otherwise, `PT` is implicitly appended to the value to obtain a standard `java.time.Duration` format.
+====

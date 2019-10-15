@@ -1,0 +1,143 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.flyway.locations, quarkus.flyway.locations>>
+
+Comma-separated list of locations to scan recursively for migrations.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.flyway.connect-retries, quarkus.flyway.connect-retries>>
+
+The maximum number of retries when attempting to connect to the database.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.flyway.schemas, quarkus.flyway.schemas>>
+
+Comma-separated case-sensitive list of schemas managed by Flyway.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.flyway.table, quarkus.flyway.table>>
+
+The name of Flyway's schema history table.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.flyway.sql-migration-prefix, quarkus.flyway.sql-migration-prefix>>
+
+The file name prefix for versioned SQL migrations.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.flyway.repeatable-sql-migration-prefix, quarkus.flyway.repeatable-sql-migration-prefix>>
+
+The file name prefix for repeatable SQL migrations.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.flyway.migrate-at-start, quarkus.flyway.migrate-at-start>>
+
+true to execute Flyway automatically when the application starts, false otherwise.|boolean 
+|`false`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.flyway.baseline-on-migrate, quarkus.flyway.baseline-on-migrate>>
+
+Enable the creation of the history table if it does not exist already.|boolean 
+|`false`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.flyway.baseline-version, quarkus.flyway.baseline-version>>
+
+The initial baseline version.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.flyway.baseline-description, quarkus.flyway.baseline-description>>
+
+The description to tag an existing schema with when executing baseline.|string 
+|
+| icon:gears[title=Overridable at runtime]
+|===
+
+
+== Details
+
+[[quarkus.flyway.locations]]
+`quarkus.flyway.locations` icon:archive[title=Fixed at build time]:: Comma-separated list of locations to scan recursively for migrations. The location type is determined by its prefix. Unprefixed locations or locations starting with classpath: point to a package on the classpath and may contain both SQL and Java-based migrations. Locations starting with filesystem: point to a directory on the filesystem, may only contain SQL migrations and are only scanned recursively down non-hidden directories. 
++
+Type: `string`  +
+
+
+
+[[quarkus.flyway.connect-retries]]
+`quarkus.flyway.connect-retries` icon:gears[title=Overridable at runtime]:: The maximum number of retries when attempting to connect to the database. After each failed attempt, Flyway will wait 1 second before attempting to connect again, up to the maximum number of times specified by connectRetries. 
++
+Type: `int`  +
+
+
+
+[[quarkus.flyway.schemas]]
+`quarkus.flyway.schemas` icon:gears[title=Overridable at runtime]:: Comma-separated case-sensitive list of schemas managed by Flyway. The first schema in the list will be automatically set as the default one during the migration. It will also be the one containing the schema history table. 
++
+Type: `string`  +
+
+
+
+[[quarkus.flyway.table]]
+`quarkus.flyway.table` icon:gears[title=Overridable at runtime]:: The name of Flyway's schema history table. By default (single-schema mode) the schema history table is placed in the default schema for the connection provided by the datasource. When the flyway.schemas property is set (multi-schema mode), the schema history table is placed in the first schema of the list. 
++
+Type: `string`  +
+
+
+
+[[quarkus.flyway.sql-migration-prefix]]
+`quarkus.flyway.sql-migration-prefix` icon:gears[title=Overridable at runtime]:: The file name prefix for versioned SQL migrations. Versioned SQL migrations have the following file name structure: prefixVERSIONseparatorDESCRIPTIONsuffix , which using the defaults translates to V1.1__My_description.sql 
++
+Type: `string`  +
+
+
+
+[[quarkus.flyway.repeatable-sql-migration-prefix]]
+`quarkus.flyway.repeatable-sql-migration-prefix` icon:gears[title=Overridable at runtime]:: The file name prefix for repeatable SQL migrations. Repeatable SQL migrations have the following file name structure: prefixSeparatorDESCRIPTIONsuffix , which using the defaults translates to R__My_description.sql 
++
+Type: `string`  +
+
+
+
+[[quarkus.flyway.migrate-at-start]]
+`quarkus.flyway.migrate-at-start` icon:gears[title=Overridable at runtime]:: true to execute Flyway automatically when the application starts, false otherwise. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.flyway.baseline-on-migrate]]
+`quarkus.flyway.baseline-on-migrate` icon:gears[title=Overridable at runtime]:: Enable the creation of the history table if it does not exist already. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.flyway.baseline-version]]
+`quarkus.flyway.baseline-version` icon:gears[title=Overridable at runtime]:: The initial baseline version. 
++
+Type: `string`  +
+
+
+
+[[quarkus.flyway.baseline-description]]
+`quarkus.flyway.baseline-description` icon:gears[title=Overridable at runtime]:: The description to tag an existing schema with when executing baseline. 
++
+Type: `string`  +
+
+

@@ -1,0 +1,65 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.transaction-manager.node-name, quarkus.transaction-manager.node-name>>
+
+The node name used by the transaction manager.|string 
+|`quarkus`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.transaction-manager.xa-node-name, quarkus.transaction-manager.xa-node-name>>
+
+The XA node name used by the transaction manager.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.transaction-manager.default-transaction-timeout, quarkus.transaction-manager.default-transaction-timeout>>
+
+The default transaction timeout.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|`60`
+| icon:gears[title=Overridable at runtime]
+|===
+
+
+== Details
+
+[[quarkus.transaction-manager.node-name]]
+`quarkus.transaction-manager.node-name` icon:gears[title=Overridable at runtime]:: The node name used by the transaction manager 
++
+Type: `string`  +
+Defaults to: `quarkus` +
+
+
+
+[[quarkus.transaction-manager.xa-node-name]]
+`quarkus.transaction-manager.xa-node-name` icon:gears[title=Overridable at runtime]:: The XA node name used by the transaction manager 
++
+Type: `string`  +
+
+
+
+[[quarkus.transaction-manager.default-transaction-timeout]]
+`quarkus.transaction-manager.default-transaction-timeout` icon:gears[title=Overridable at runtime]:: The default transaction timeout 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+Defaults to: `60` +
+
+
+
+[NOTE]
+[[duration-note-anchor]]
+.About the Duration format
+====
+The format for durations uses the standard `java.time.Duration` format.
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+
+You can also provide duration values starting with a number.
+In this case, if the value consists only of a number, the converter treats the value as seconds.
+Otherwise, `PT` is implicitly appended to the value to obtain a standard `java.time.Duration` format.
+====

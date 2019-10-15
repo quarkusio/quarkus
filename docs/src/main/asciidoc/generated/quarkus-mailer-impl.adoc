@@ -1,0 +1,253 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.mailer.from, quarkus.mailer.from>>
+
+Configure the default `from` attribute.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.mock, quarkus.mailer.mock>>
+
+Enables the mock mode, not sending emails.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.bounce-address, quarkus.mailer.bounce-address>>
+
+Configures the default bounce email address.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.host, quarkus.mailer.host>>
+
+The SMTP host name.|string 
+|`localhost`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.port, quarkus.mailer.port>>
+
+The SMTP port.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.username, quarkus.mailer.username>>
+
+The username.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.password, quarkus.mailer.password>>
+
+The password.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.ssl, quarkus.mailer.ssl>>
+
+Enables or disables the SSL on connect.|boolean 
+|`false`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.trust-all, quarkus.mailer.trust-all>>
+
+Set whether to trust all certificates on ssl connect the option is also applied to `STARTTLS` operation.|boolean 
+|`false`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.max-pool-size, quarkus.mailer.max-pool-size>>
+
+Configures the maximum allowed number of open connections to the mail server If not set the default is `10`.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.own-host-name, quarkus.mailer.own-host-name>>
+
+The hostname to be used for HELO/EHLO and the Message-ID.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.keep-alive, quarkus.mailer.keep-alive>>
+
+Set if connection pool is enabled, `true` by default.|boolean 
+|`true`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.disable-esmtp, quarkus.mailer.disable-esmtp>>
+
+Disable ESMTP.|boolean 
+|`false`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.start-tls, quarkus.mailer.start-tls>>
+
+Set the TLS security mode for the connection.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.login, quarkus.mailer.login>>
+
+Set the login mode for the connection.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.auth-methods, quarkus.mailer.auth-methods>>
+
+Set the allowed auth methods.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.key-store, quarkus.mailer.key-store>>
+
+Set the key store.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mailer.key-store-password, quarkus.mailer.key-store-password>>
+
+Set the key store password.|string 
+|
+| icon:gears[title=Overridable at runtime]
+|===
+
+
+== Details
+
+[[quarkus.mailer.from]]
+`quarkus.mailer.from` icon:gears[title=Overridable at runtime]:: Configure the default `from` attribute. It's the sender email address. 
++
+Type: `string`  +
+
+
+
+[[quarkus.mailer.mock]]
+`quarkus.mailer.mock` icon:gears[title=Overridable at runtime]:: Enables the mock mode, not sending emails. The content of the emails is printed on the console. 
+ Disabled by default on PROD, enabled by default on DEV and TEST modes. 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.mailer.bounce-address]]
+`quarkus.mailer.bounce-address` icon:gears[title=Overridable at runtime]:: Configures the default bounce email address. 
++
+Type: `string`  +
+
+
+
+[[quarkus.mailer.host]]
+`quarkus.mailer.host` icon:gears[title=Overridable at runtime]:: The SMTP host name. 
++
+Type: `string`  +
+Defaults to: `localhost` +
+
+
+
+[[quarkus.mailer.port]]
+`quarkus.mailer.port` icon:gears[title=Overridable at runtime]:: The SMTP port. 
++
+Type: `int`  +
+
+
+
+[[quarkus.mailer.username]]
+`quarkus.mailer.username` icon:gears[title=Overridable at runtime]:: The username. 
++
+Type: `string`  +
+
+
+
+[[quarkus.mailer.password]]
+`quarkus.mailer.password` icon:gears[title=Overridable at runtime]:: The password. 
++
+Type: `string`  +
+
+
+
+[[quarkus.mailer.ssl]]
+`quarkus.mailer.ssl` icon:gears[title=Overridable at runtime]:: Enables or disables the SSL on connect. `false` by default. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.mailer.trust-all]]
+`quarkus.mailer.trust-all` icon:gears[title=Overridable at runtime]:: Set whether to trust all certificates on ssl connect the option is also applied to `STARTTLS` operation. `false` by default. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.mailer.max-pool-size]]
+`quarkus.mailer.max-pool-size` icon:gears[title=Overridable at runtime]:: Configures the maximum allowed number of open connections to the mail server If not set the default is `10`. 
++
+Type: `int`  +
+
+
+
+[[quarkus.mailer.own-host-name]]
+`quarkus.mailer.own-host-name` icon:gears[title=Overridable at runtime]:: The hostname to be used for HELO/EHLO and the Message-ID 
++
+Type: `string`  +
+
+
+
+[[quarkus.mailer.keep-alive]]
+`quarkus.mailer.keep-alive` icon:gears[title=Overridable at runtime]:: Set if connection pool is enabled, `true` by default. 
+ If the connection pooling is disabled, the max number of sockets is enforced nevertheless. 
+ 
++
+Type: `boolean`  +
+Defaults to: `true` +
+
+
+
+[[quarkus.mailer.disable-esmtp]]
+`quarkus.mailer.disable-esmtp` icon:gears[title=Overridable at runtime]:: Disable ESMTP. `false` by default. The RFC-1869 states that clients should always attempt `EHLO` as first command to determine if ESMTP is supported, if this returns an error code, `HELO` is tried to use the *regular* SMTP command. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.mailer.start-tls]]
+`quarkus.mailer.start-tls` icon:gears[title=Overridable at runtime]:: Set the TLS security mode for the connection. Either `DISABLED`, `OPTIONAL` or `REQUIRED`. 
++
+Type: `string`  +
+
+
+
+[[quarkus.mailer.login]]
+`quarkus.mailer.login` icon:gears[title=Overridable at runtime]:: Set the login mode for the connection. Either `DISABLED`, `OPTIONAL` or `REQUIRED` 
++
+Type: `string`  +
+
+
+
+[[quarkus.mailer.auth-methods]]
+`quarkus.mailer.auth-methods` icon:gears[title=Overridable at runtime]:: Set the allowed auth methods. If defined, only these methods will be used, if the server supports them. 
++
+Type: `string`  +
+
+
+
+[[quarkus.mailer.key-store]]
+`quarkus.mailer.key-store` icon:gears[title=Overridable at runtime]:: Set the key store. 
++
+Type: `string`  +
+
+
+
+[[quarkus.mailer.key-store-password]]
+`quarkus.mailer.key-store-password` icon:gears[title=Overridable at runtime]:: Set the key store password. 
++
+Type: `string`  +
+
+

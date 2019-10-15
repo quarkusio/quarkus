@@ -2,6 +2,7 @@ package io.quarkus.cxf.deployment.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Set;
 import java.util.function.Supplier;
 
 import javax.xml.namespace.QName;
@@ -14,6 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.cxf.deployment.test.impl.FruitImpl;
+import io.quarkus.cxf.deployment.test.impl.FruitWebServiceImpl;
 import io.quarkus.test.QuarkusDevModeTest;
 
 public class CxfServiceTest {
@@ -24,35 +27,38 @@ public class CxfServiceTest {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClass(HelloWebServiceImpl.class)
-                            .addClass(HelloWebService.class)
+                            .addClass(FruitWebServiceImpl.class)
+                            .addClass(FruitWebService.class)
+                            .addClass(Fruit.class)
+                            .addClass(FruitImpl.class)
+                            .addClass(FruitAdapter.class)
                             .addAsResource("application.properties");
                 }
             });
 
-    private static QName SERVICE_NAME = new QName("http://test.deployment.cxf.quarkus.io/", "HelloWebServiceImpl");
-    private static QName PORT_NAME = new QName("http://test.deployment.cxf.quarkus.io/", "HelloWebServiceImplPortType");
+    private static QName SERVICE_NAME = new QName("http://test.deployment.cxf.quarkus.io/", "FruitWebServiceImpl");
+    private static QName PORT_NAME = new QName("http://test.deployment.cxf.quarkus.io/", "FruitWebServiceImplPortType");
 
     private Service service;
-    private HelloWebService helloProxy;
-    private HelloWebServiceImpl helloImpl;
+    private FruitWebService fruitProxy;
+    private FruitWebServiceImpl fruitImpl;
 
     {
         service = Service.create(SERVICE_NAME);
-        final String endpointAddress = "http://localhost:8080/hello";
+        final String endpointAddress = "http://localhost:8080/fruit";
         service.addPort(PORT_NAME, SOAPBinding.SOAP11HTTP_BINDING, endpointAddress);
     }
 
     @BeforeEach
     public void reinstantiateBaeldungInstances() {
-        helloImpl = new HelloWebServiceImpl();
-        helloProxy = service.getPort(PORT_NAME, HelloWebService.class);
+        fruitImpl = new FruitWebServiceImpl();
+        fruitProxy = service.getPort(PORT_NAME, FruitWebService.class);
     }
 
     @Test
     public void whenUsingHelloMethod_thenCorrect() {
-        final String endpointResponse = helloProxy.sayHi("Quarkus");
-        final String localResponse = helloImpl.sayHi("Quarkus");
+        final Set<Fruit> endpointResponse = fruitProxy.list();
+        final Set<Fruit> localResponse = fruitImpl.list();
         assertEquals(localResponse, endpointResponse);
     }
 }

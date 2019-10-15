@@ -1,0 +1,612 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.hibernate-search.elasticsearch.version, quarkus.hibernate-search.elasticsearch.version>>
+
+The version of Elasticsearch used in the cluster.|ElasticsearchVersion 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-search.elasticsearch.analysis-configurer, quarkus.hibernate-search.elasticsearch.analysis-configurer>>
+
+The class or the name of the bean used to configure full text analysis (e.|class name 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-search.default-backend, quarkus.hibernate-search.default-backend>>
+
+If not using the default backend configuration, the name of the default backend that is part of the `additional-backends`.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-search.elasticsearch.hosts, quarkus.hibernate-search.elasticsearch.hosts>>
+
+The list of hosts of the Elasticsearch servers.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.username, quarkus.hibernate-search.elasticsearch.username>>
+
+The username used for authentication.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.password, quarkus.hibernate-search.elasticsearch.password>>
+
+The password used for authentication.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.connection-timeout, quarkus.hibernate-search.elasticsearch.connection-timeout>>
+
+The connection timeout.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.max-connections, quarkus.hibernate-search.elasticsearch.max-connections>>
+
+The maximum number of connections to all the Elasticsearch servers.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.max-connections-per-route, quarkus.hibernate-search.elasticsearch.max-connections-per-route>>
+
+The maximum number of connections per Elasticsearch server.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.discovery.enabled, quarkus.hibernate-search.elasticsearch.discovery.enabled>>
+
+Defines if automatic discovery is enabled.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.discovery.refresh-interval, quarkus.hibernate-search.elasticsearch.discovery.refresh-interval>>
+
+Refresh interval of the node list.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.discovery.default-scheme, quarkus.hibernate-search.elasticsearch.discovery.default-scheme>>
+
+The scheme that should be used for the new nodes discovered.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.strategy, quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.strategy>>
+
+The strategy used for index lifecycle.|`none`, `validate`, `update`, `create`, `drop-and-create`, `drop-and-create-and-drop` 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.required-status, quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.required-status>>
+
+The minimal cluster status required.|`green`, `yellow`, `red` 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.required-status-wait-timeout, quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.required-status-wait-timeout>>
+
+How long we should wait for the status before failing the bootstrap.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.index-defaults.refresh-after-write, quarkus.hibernate-search.elasticsearch.index-defaults.refresh-after-write>>
+
+Defines if the indexes should be refreshed after writes.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.query.loading.cache-lookup-strategy, quarkus.hibernate-search.elasticsearch.query.loading.cache-lookup-strategy>>
+
+The strategy to use when loading entities during the execution of a search query.|`skip`, `persistence-context`, `persistence-context-then-second-level-cache` 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.query.loading.fetch-size, quarkus.hibernate-search.elasticsearch.query.loading.fetch-size>>
+
+The fetch size to use when loading entities during the execution of a search query.|int 
+|`100`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.automatic-indexing.synchronization-strategy, quarkus.hibernate-search.elasticsearch.automatic-indexing.synchronization-strategy>>
+
+The synchronization strategy to use when indexing automatically.|`queued`, `committed`, `searchable` 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.automatic-indexing.enable-dirty-check, quarkus.hibernate-search.elasticsearch.automatic-indexing.enable-dirty-check>>
+
+Whether to check if dirty properties are relevant to indexing before actually reindexing an entity.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.version, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".version>>
+
+The version of Elasticsearch used in the cluster.|ElasticsearchVersion 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.analysis-configurer, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".analysis-configurer>>
+
+The class or the name of the bean used to configure full text analysis (e.|class name 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-search.elasticsearch.indexes.indexes.lifecycle.strategy, quarkus.hibernate-search.elasticsearch.indexes."<indexes>".lifecycle.strategy>>
+
+The strategy used for index lifecycle.|`none`, `validate`, `update`, `create`, `drop-and-create`, `drop-and-create-and-drop` 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.indexes.indexes.lifecycle.required-status, quarkus.hibernate-search.elasticsearch.indexes."<indexes>".lifecycle.required-status>>
+
+The minimal cluster status required.|`green`, `yellow`, `red` 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.indexes.indexes.lifecycle.required-status-wait-timeout, quarkus.hibernate-search.elasticsearch.indexes."<indexes>".lifecycle.required-status-wait-timeout>>
+
+How long we should wait for the status before failing the bootstrap.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.indexes.indexes.refresh-after-write, quarkus.hibernate-search.elasticsearch.indexes."<indexes>".refresh-after-write>>
+
+Defines if the indexes should be refreshed after writes.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.hosts, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".hosts>>
+
+The list of hosts of the Elasticsearch servers.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.username, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".username>>
+
+The username used for authentication.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.password, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".password>>
+
+The password used for authentication.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.connection-timeout, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".connection-timeout>>
+
+The connection timeout.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.max-connections, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".max-connections>>
+
+The maximum number of connections to all the Elasticsearch servers.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.max-connections-per-route, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".max-connections-per-route>>
+
+The maximum number of connections per Elasticsearch server.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.discovery.enabled, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".discovery.enabled>>
+
+Defines if automatic discovery is enabled.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.discovery.refresh-interval, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".discovery.refresh-interval>>
+
+Refresh interval of the node list.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.discovery.default-scheme, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".discovery.default-scheme>>
+
+The scheme that should be used for the new nodes discovered.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.index-defaults.lifecycle.strategy, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".index-defaults.lifecycle.strategy>>
+
+The strategy used for index lifecycle.|`none`, `validate`, `update`, `create`, `drop-and-create`, `drop-and-create-and-drop` 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.index-defaults.lifecycle.required-status, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".index-defaults.lifecycle.required-status>>
+
+The minimal cluster status required.|`green`, `yellow`, `red` 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.index-defaults.lifecycle.required-status-wait-timeout, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".index-defaults.lifecycle.required-status-wait-timeout>>
+
+How long we should wait for the status before failing the bootstrap.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.index-defaults.refresh-after-write, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".index-defaults.refresh-after-write>>
+
+Defines if the indexes should be refreshed after writes.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.indexes.indexes.lifecycle.strategy, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".indexes."<indexes>".lifecycle.strategy>>
+
+The strategy used for index lifecycle.|`none`, `validate`, `update`, `create`, `drop-and-create`, `drop-and-create-and-drop` 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.indexes.indexes.lifecycle.required-status, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".indexes."<indexes>".lifecycle.required-status>>
+
+The minimal cluster status required.|`green`, `yellow`, `red` 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.indexes.indexes.lifecycle.required-status-wait-timeout, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".indexes."<indexes>".lifecycle.required-status-wait-timeout>>
+
+How long we should wait for the status before failing the bootstrap.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.hibernate-search.elasticsearch.backends.additional-backends.indexes.indexes.refresh-after-write, quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".indexes."<indexes>".refresh-after-write>>
+
+Defines if the indexes should be refreshed after writes.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+|===
+
+
+== Details
+
+[[quarkus.hibernate-search.elasticsearch.version]]
+`quarkus.hibernate-search.elasticsearch.version` icon:archive[title=Fixed at build time]:: The version of Elasticsearch used in the cluster. 
+ As the schema is generated without a connection to the server, this item is mandatory. 
+ It doesn't have to be the exact version (it can be 7 or 7.1 for instance) but it has to be sufficiently precise to choose a model dialect (the one used to generate the schema) compatible with the protocol dialect (the one used to communicate with Elasticsearch). 
+ There's no rule of thumb here as it depends on the schema incompatibilities introduced by Elasticsearch versions. In any case, if there is a problem, you will have an error when Hibernate Search tries to connect to the cluster. 
++
+Type: `ElasticsearchVersion`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.analysis-configurer]]
+`quarkus.hibernate-search.elasticsearch.analysis-configurer` icon:archive[title=Fixed at build time]:: The class or the name of the bean used to configure full text analysis (e.g. analyzers, normalizers). 
++
+Type: `class name`  +
+
+
+
+[[quarkus.hibernate-search.default-backend]]
+`quarkus.hibernate-search.default-backend` icon:archive[title=Fixed at build time]:: If not using the default backend configuration, the name of the default backend that is part of the `additional-backends`. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.hosts]]
+`quarkus.hibernate-search.elasticsearch.hosts` icon:gears[title=Overridable at runtime]:: The list of hosts of the Elasticsearch servers. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.username]]
+`quarkus.hibernate-search.elasticsearch.username` icon:gears[title=Overridable at runtime]:: The username used for authentication. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.password]]
+`quarkus.hibernate-search.elasticsearch.password` icon:gears[title=Overridable at runtime]:: The password used for authentication. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.connection-timeout]]
+`quarkus.hibernate-search.elasticsearch.connection-timeout` icon:gears[title=Overridable at runtime]:: The connection timeout. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.max-connections]]
+`quarkus.hibernate-search.elasticsearch.max-connections` icon:gears[title=Overridable at runtime]:: The maximum number of connections to all the Elasticsearch servers. 
++
+Type: `int`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.max-connections-per-route]]
+`quarkus.hibernate-search.elasticsearch.max-connections-per-route` icon:gears[title=Overridable at runtime]:: The maximum number of connections per Elasticsearch server. 
++
+Type: `int`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.discovery.enabled]]
+`quarkus.hibernate-search.elasticsearch.discovery.enabled` icon:gears[title=Overridable at runtime]:: Defines if automatic discovery is enabled. 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.discovery.refresh-interval]]
+`quarkus.hibernate-search.elasticsearch.discovery.refresh-interval` icon:gears[title=Overridable at runtime]:: Refresh interval of the node list. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.discovery.default-scheme]]
+`quarkus.hibernate-search.elasticsearch.discovery.default-scheme` icon:gears[title=Overridable at runtime]:: The scheme that should be used for the new nodes discovered. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.strategy]]
+`quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.strategy` icon:gears[title=Overridable at runtime]:: The strategy used for index lifecycle. 
+ Must be one of: none, validate, update, create, drop-and-create or drop-and-create-and-drop. 
++
+Accepted values: `none`, `validate`, `update`, `create`, `drop-and-create`, `drop-and-create-and-drop` +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.required-status]]
+`quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.required-status` icon:gears[title=Overridable at runtime]:: The minimal cluster status required. 
+ Must be one of: green, yellow, red. 
++
+Accepted values: `green`, `yellow`, `red` +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.required-status-wait-timeout]]
+`quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.required-status-wait-timeout` icon:gears[title=Overridable at runtime]:: How long we should wait for the status before failing the bootstrap. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.index-defaults.refresh-after-write]]
+`quarkus.hibernate-search.elasticsearch.index-defaults.refresh-after-write` icon:gears[title=Overridable at runtime]:: Defines if the indexes should be refreshed after writes. 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.query.loading.cache-lookup-strategy]]
+`quarkus.hibernate-search.elasticsearch.query.loading.cache-lookup-strategy` icon:gears[title=Overridable at runtime]:: The strategy to use when loading entities during the execution of a search query. 
+ Can be either one of "skip", "persistence-context" or "persistence-context-then-second-level-cache". 
+ Defaults to "skip". 
++
+Accepted values: `skip`, `persistence-context`, `persistence-context-then-second-level-cache` +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.query.loading.fetch-size]]
+`quarkus.hibernate-search.elasticsearch.query.loading.fetch-size` icon:gears[title=Overridable at runtime]:: The fetch size to use when loading entities during the execution of a search query. 
++
+Type: `int`  +
+Defaults to: `100` +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.automatic-indexing.synchronization-strategy]]
+`quarkus.hibernate-search.elasticsearch.automatic-indexing.synchronization-strategy` icon:gears[title=Overridable at runtime]:: The synchronization strategy to use when indexing automatically. 
+ Defines the status for which you wait before considering the operation completed by Hibernate Search. 
+ Can be either one of "queued", "committed" or "searchable". 
+ Using "searchable" is recommended in unit tests. 
+ Defaults to "committed". 
++
+Accepted values: `queued`, `committed`, `searchable` +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.automatic-indexing.enable-dirty-check]]
+`quarkus.hibernate-search.elasticsearch.automatic-indexing.enable-dirty-check` icon:gears[title=Overridable at runtime]:: Whether to check if dirty properties are relevant to indexing before actually reindexing an entity. 
+ When enabled, re-indexing of an entity is skipped if the only changes are on properties that are not used when indexing. 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.version]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".version` icon:archive[title=Fixed at build time]:: The version of Elasticsearch used in the cluster. 
+ As the schema is generated without a connection to the server, this item is mandatory. 
+ It doesn't have to be the exact version (it can be 7 or 7.1 for instance) but it has to be sufficiently precise to choose a model dialect (the one used to generate the schema) compatible with the protocol dialect (the one used to communicate with Elasticsearch). 
+ There's no rule of thumb here as it depends on the schema incompatibilities introduced by Elasticsearch versions. In any case, if there is a problem, you will have an error when Hibernate Search tries to connect to the cluster. 
++
+Type: `ElasticsearchVersion`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.analysis-configurer]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".analysis-configurer` icon:archive[title=Fixed at build time]:: The class or the name of the bean used to configure full text analysis (e.g. analyzers, normalizers). 
++
+Type: `class name`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.indexes.indexes.lifecycle.strategy]]
+`quarkus.hibernate-search.elasticsearch.indexes."<indexes>".lifecycle.strategy` icon:gears[title=Overridable at runtime]:: The strategy used for index lifecycle. 
+ Must be one of: none, validate, update, create, drop-and-create or drop-and-create-and-drop. 
++
+Accepted values: `none`, `validate`, `update`, `create`, `drop-and-create`, `drop-and-create-and-drop` +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.indexes.indexes.lifecycle.required-status]]
+`quarkus.hibernate-search.elasticsearch.indexes."<indexes>".lifecycle.required-status` icon:gears[title=Overridable at runtime]:: The minimal cluster status required. 
+ Must be one of: green, yellow, red. 
++
+Accepted values: `green`, `yellow`, `red` +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.indexes.indexes.lifecycle.required-status-wait-timeout]]
+`quarkus.hibernate-search.elasticsearch.indexes."<indexes>".lifecycle.required-status-wait-timeout` icon:gears[title=Overridable at runtime]:: How long we should wait for the status before failing the bootstrap. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.indexes.indexes.refresh-after-write]]
+`quarkus.hibernate-search.elasticsearch.indexes."<indexes>".refresh-after-write` icon:gears[title=Overridable at runtime]:: Defines if the indexes should be refreshed after writes. 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.hosts]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".hosts` icon:gears[title=Overridable at runtime]:: The list of hosts of the Elasticsearch servers. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.username]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".username` icon:gears[title=Overridable at runtime]:: The username used for authentication. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.password]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".password` icon:gears[title=Overridable at runtime]:: The password used for authentication. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.connection-timeout]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".connection-timeout` icon:gears[title=Overridable at runtime]:: The connection timeout. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.max-connections]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".max-connections` icon:gears[title=Overridable at runtime]:: The maximum number of connections to all the Elasticsearch servers. 
++
+Type: `int`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.max-connections-per-route]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".max-connections-per-route` icon:gears[title=Overridable at runtime]:: The maximum number of connections per Elasticsearch server. 
++
+Type: `int`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.discovery.enabled]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".discovery.enabled` icon:gears[title=Overridable at runtime]:: Defines if automatic discovery is enabled. 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.discovery.refresh-interval]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".discovery.refresh-interval` icon:gears[title=Overridable at runtime]:: Refresh interval of the node list. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.discovery.default-scheme]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".discovery.default-scheme` icon:gears[title=Overridable at runtime]:: The scheme that should be used for the new nodes discovered. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.index-defaults.lifecycle.strategy]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".index-defaults.lifecycle.strategy` icon:gears[title=Overridable at runtime]:: The strategy used for index lifecycle. 
+ Must be one of: none, validate, update, create, drop-and-create or drop-and-create-and-drop. 
++
+Accepted values: `none`, `validate`, `update`, `create`, `drop-and-create`, `drop-and-create-and-drop` +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.index-defaults.lifecycle.required-status]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".index-defaults.lifecycle.required-status` icon:gears[title=Overridable at runtime]:: The minimal cluster status required. 
+ Must be one of: green, yellow, red. 
++
+Accepted values: `green`, `yellow`, `red` +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.index-defaults.lifecycle.required-status-wait-timeout]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".index-defaults.lifecycle.required-status-wait-timeout` icon:gears[title=Overridable at runtime]:: How long we should wait for the status before failing the bootstrap. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.index-defaults.refresh-after-write]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".index-defaults.refresh-after-write` icon:gears[title=Overridable at runtime]:: Defines if the indexes should be refreshed after writes. 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.indexes.indexes.lifecycle.strategy]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".indexes."<indexes>".lifecycle.strategy` icon:gears[title=Overridable at runtime]:: The strategy used for index lifecycle. 
+ Must be one of: none, validate, update, create, drop-and-create or drop-and-create-and-drop. 
++
+Accepted values: `none`, `validate`, `update`, `create`, `drop-and-create`, `drop-and-create-and-drop` +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.indexes.indexes.lifecycle.required-status]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".indexes."<indexes>".lifecycle.required-status` icon:gears[title=Overridable at runtime]:: The minimal cluster status required. 
+ Must be one of: green, yellow, red. 
++
+Accepted values: `green`, `yellow`, `red` +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.indexes.indexes.lifecycle.required-status-wait-timeout]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".indexes."<indexes>".lifecycle.required-status-wait-timeout` icon:gears[title=Overridable at runtime]:: How long we should wait for the status before failing the bootstrap. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.hibernate-search.elasticsearch.backends.additional-backends.indexes.indexes.refresh-after-write]]
+`quarkus.hibernate-search.elasticsearch.backends."<additional-backends>".indexes."<indexes>".refresh-after-write` icon:gears[title=Overridable at runtime]:: Defines if the indexes should be refreshed after writes. 
++
+Type: `boolean`  +
+
+
+
+[NOTE]
+[[duration-note-anchor]]
+.About the Duration format
+====
+The format for durations uses the standard `java.time.Duration` format.
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+
+You can also provide duration values starting with a number.
+In this case, if the value consists only of a number, the converter treats the value as seconds.
+Otherwise, `PT` is implicitly appended to the value to obtain a standard `java.time.Duration` format.
+====

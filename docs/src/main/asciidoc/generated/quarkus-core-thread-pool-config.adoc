@@ -1,0 +1,137 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.thread-pool.core-threads, quarkus.thread-pool.core-threads>>
+
+The core thread pool size.|int 
+|`1`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.thread-pool.max-threads, quarkus.thread-pool.max-threads>>
+
+The maximum number of threads.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.thread-pool.queue-size, quarkus.thread-pool.queue-size>>
+
+The queue size.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.thread-pool.growth-resistance, quarkus.thread-pool.growth-resistance>>
+
+The executor growth resistance.|float 
+|`0`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.thread-pool.shutdown-timeout, quarkus.thread-pool.shutdown-timeout>>
+
+The shutdown timeout.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|`1M`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.thread-pool.shutdown-interrupt, quarkus.thread-pool.shutdown-interrupt>>
+
+The amount of time to wait for thread pool shutdown before tasks should be interrupted.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|`10`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.thread-pool.shutdown-check-interval, quarkus.thread-pool.shutdown-check-interval>>
+
+The frequency at which the status of the thread pool should be checked during shutdown.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|`5`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.thread-pool.keep-alive-time, quarkus.thread-pool.keep-alive-time>>
+
+The amount of time a thread will stay alive with no work.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|`30`
+| icon:gears[title=Overridable at runtime]
+|===
+
+
+== Details
+
+[[quarkus.thread-pool.core-threads]]
+`quarkus.thread-pool.core-threads` icon:gears[title=Overridable at runtime]:: The core thread pool size. This number of threads will always be kept alive. 
++
+Type: `int`  +
+Defaults to: `1` +
+
+
+
+[[quarkus.thread-pool.max-threads]]
+`quarkus.thread-pool.max-threads` icon:gears[title=Overridable at runtime]:: The maximum number of threads. If this is not specified then it will be automatically sized to 8 * the number of available processors 
++
+Type: `int`  +
+
+
+
+[[quarkus.thread-pool.queue-size]]
+`quarkus.thread-pool.queue-size` icon:gears[title=Overridable at runtime]:: The queue size. For most applications this should be unbounded 
++
+Type: `int`  +
+
+
+
+[[quarkus.thread-pool.growth-resistance]]
+`quarkus.thread-pool.growth-resistance` icon:gears[title=Overridable at runtime]:: The executor growth resistance. A resistance factor applied after the core pool is full; values applied here will cause that fraction of submissions to create new threads when no idle thread is available. A value of `0.0f` implies that threads beyond the core size should be created as aggressively as threads within it; a value of `1.0f` implies that threads beyond the core size should never be created. 
++
+Type: `float`  +
+Defaults to: `0` +
+
+
+
+[[quarkus.thread-pool.shutdown-timeout]]
+`quarkus.thread-pool.shutdown-timeout` icon:gears[title=Overridable at runtime]:: The shutdown timeout. If all pending work has not been completed by this time then additional threads will be spawned to attempt to finish any pending tasks, and the shutdown process will continue 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+Defaults to: `1M` +
+
+
+
+[[quarkus.thread-pool.shutdown-interrupt]]
+`quarkus.thread-pool.shutdown-interrupt` icon:gears[title=Overridable at runtime]:: The amount of time to wait for thread pool shutdown before tasks should be interrupted. If this value is greater than or equal to the value for `shutdown-timeout`, then tasks will not be interrupted before the shutdown timeout occurs. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+Defaults to: `10` +
+
+
+
+[[quarkus.thread-pool.shutdown-check-interval]]
+`quarkus.thread-pool.shutdown-check-interval` icon:gears[title=Overridable at runtime]:: The frequency at which the status of the thread pool should be checked during shutdown. Information about waiting tasks and threads will be checked and possibly logged at this interval. Setting this key to an empty value disables the shutdown check interval. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+Defaults to: `5` +
+
+
+
+[[quarkus.thread-pool.keep-alive-time]]
+`quarkus.thread-pool.keep-alive-time` icon:gears[title=Overridable at runtime]:: The amount of time a thread will stay alive with no work. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+Defaults to: `30` +
+
+
+
+[NOTE]
+[[duration-note-anchor]]
+.About the Duration format
+====
+The format for durations uses the standard `java.time.Duration` format.
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+
+You can also provide duration values starting with a number.
+In this case, if the value consists only of a number, the converter treats the value as seconds.
+Otherwise, `PT` is implicitly appended to the value to obtain a standard `java.time.Duration` format.
+====

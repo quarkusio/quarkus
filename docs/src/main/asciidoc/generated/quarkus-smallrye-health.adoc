@@ -1,0 +1,53 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.smallrye-health.root-path, quarkus.smallrye-health.root-path>>
+
+Root path for health-checking servlets.|string 
+|`/health`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.smallrye-health.liveness-path, quarkus.smallrye-health.liveness-path>>
+
+The relative path of the liveness health-checking servlet.|string 
+|`/live`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.smallrye-health.readiness-path, quarkus.smallrye-health.readiness-path>>
+
+The relative path of the readiness health-checking servlet.|string 
+|`/ready`
+| icon:archive[title=Fixed at build time]
+|===
+
+
+== Details
+
+[[quarkus.smallrye-health.root-path]]
+`quarkus.smallrye-health.root-path` icon:archive[title=Fixed at build time]:: Root path for health-checking servlets. 
++
+Type: `string`  +
+Defaults to: `/health` +
+
+
+
+[[quarkus.smallrye-health.liveness-path]]
+`quarkus.smallrye-health.liveness-path` icon:archive[title=Fixed at build time]:: The relative path of the liveness health-checking servlet. 
++
+Type: `string`  +
+Defaults to: `/live` +
+
+
+
+[[quarkus.smallrye-health.readiness-path]]
+`quarkus.smallrye-health.readiness-path` icon:archive[title=Fixed at build time]:: The relative path of the readiness health-checking servlet. 
++
+Type: `string`  +
+Defaults to: `/ready` +
+
+

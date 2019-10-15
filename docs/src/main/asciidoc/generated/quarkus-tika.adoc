@@ -1,0 +1,38 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.tika.tika-config-path, quarkus.tika.tika-config-path>>
+
+The path to the tika-config.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.tika.append-embedded-content, quarkus.tika.append-embedded-content>>
+
+Controls how the content of the embedded documents is parsed.|boolean 
+|`true`
+| icon:archive[title=Fixed at build time]
+|===
+
+
+== Details
+
+[[quarkus.tika.tika-config-path]]
+`quarkus.tika.tika-config-path` icon:archive[title=Fixed at build time]:: The path to the tika-config.xml 
++
+Type: `string`  +
+
+
+
+[[quarkus.tika.append-embedded-content]]
+`quarkus.tika.append-embedded-content` icon:archive[title=Fixed at build time]:: Controls how the content of the embedded documents is parsed. By default it is appended to the master document content. Setting this property to false makes the content of each of the embedded documents available separately. 
++
+Type: `boolean`  +
+Defaults to: `true` +
+
+

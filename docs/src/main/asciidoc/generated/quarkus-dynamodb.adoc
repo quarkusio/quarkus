@@ -1,0 +1,622 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.dynamodb.region, quarkus.dynamodb.region>>
+
+Overrides region provider chain with static value of region with which the DynamoDB client should communicate (e.|Region 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.enable-endpoint-discovery, quarkus.dynamodb.enable-endpoint-discovery>>
+
+Enable endpoint discovery.|boolean 
+|`false`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.endpoint-override, quarkus.dynamodb.endpoint-override>>
+
+Overrides endpoint URI.|link:https://docs.oracle.com/javase/8/docs/api/java/net/URI.html[URI]
+ 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.credentials.type, quarkus.dynamodb.credentials.type>>
+
+Credentials provider.|`default`, `static`, `system-property`, `env-variable`, `profile`, `container`, `instance-profile`, `process`, `anonymous` 
+|`DEFAULT`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.credentials.default-provider.async-credential-update-enabled, quarkus.dynamodb.credentials.default-provider.async-credential-update-enabled>>
+
+Fetch credentials asynchronously in the background.|boolean 
+|`false`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.credentials.default-provider.reuse-last-provider-enabled, quarkus.dynamodb.credentials.default-provider.reuse-last-provider-enabled>>
+
+Reuse the last successful credentials provider in the chain.|boolean 
+|`true`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.credentials.static-provider.access-key-id, quarkus.dynamodb.credentials.static-provider.access-key-id>>
+
+Access key id.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.credentials.static-provider.secret-access-key, quarkus.dynamodb.credentials.static-provider.secret-access-key>>
+
+Secret access key.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.credentials.profile-provider.profile-name, quarkus.dynamodb.credentials.profile-provider.profile-name>>
+
+Profile name 
+ By default, the profile name is 'default'.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.credentials.process-provider.async-credential-update-enabled, quarkus.dynamodb.credentials.process-provider.async-credential-update-enabled>>
+
+Configure whether the provider should fetch credentials asynchronously in the background.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.credentials.process-provider.credential-refresh-threshold, quarkus.dynamodb.credentials.process-provider.credential-refresh-threshold>>
+
+Configure the amount of time between when the credentials expire and when the credentials should start to be refreshed.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.credentials.process-provider.process-output-limit, quarkus.dynamodb.credentials.process-provider.process-output-limit>>
+
+Configure the maximum amount of data that can be returned by the external process before an exception is raised.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.credentials.process-provider.command, quarkus.dynamodb.credentials.process-provider.command>>
+
+Command that should be executed to retrieve credentials.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.connection-acquisition-timeout, quarkus.dynamodb.sync-client.connection-acquisition-timeout>>
+
+Connection acquisition timeout.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.connection-max-idle-time, quarkus.dynamodb.sync-client.connection-max-idle-time>>
+
+Connection max idle time.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.connection-timeout, quarkus.dynamodb.sync-client.connection-timeout>>
+
+Connection timeout.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.connection-time-to-live, quarkus.dynamodb.sync-client.connection-time-to-live>>
+
+Connection time to live.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.socket-timeout, quarkus.dynamodb.sync-client.socket-timeout>>
+
+Socket timeout.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.max-connections, quarkus.dynamodb.sync-client.max-connections>>
+
+Max connections.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.expect-continue-enabled, quarkus.dynamodb.sync-client.expect-continue-enabled>>
+
+Expect continue enabled.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.use-idle-connection-reaper, quarkus.dynamodb.sync-client.use-idle-connection-reaper>>
+
+Use idle connection reaper.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.proxy.enabled, quarkus.dynamodb.sync-client.proxy.enabled>>
+
+Enable HTTP proxy.|boolean 
+|`false`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.proxy.endpoint, quarkus.dynamodb.sync-client.proxy.endpoint>>
+
+Proxy endpoint.|link:https://docs.oracle.com/javase/8/docs/api/java/net/URI.html[URI]
+ 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.proxy.username, quarkus.dynamodb.sync-client.proxy.username>>
+
+Proxy username.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.proxy.password, quarkus.dynamodb.sync-client.proxy.password>>
+
+Proxy password.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.proxy.ntlm-domain, quarkus.dynamodb.sync-client.proxy.ntlm-domain>>
+
+NTLM domain.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.proxy.ntlm-workstation, quarkus.dynamodb.sync-client.proxy.ntlm-workstation>>
+
+NTLM workstation.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.proxy.preemptive-basic-authentication-enabled, quarkus.dynamodb.sync-client.proxy.preemptive-basic-authentication-enabled>>
+
+Enable preemptive basic authentication.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.sync-client.proxy.non-proxy-hosts, quarkus.dynamodb.sync-client.proxy.non-proxy-hosts>>
+
+Configure the hosts that the client is allowed to access without going through the proxy.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.async-client.max-concurrency, quarkus.dynamodb.async-client.max-concurrency>>
+
+Max concurrency.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.async-client.max-pending-connection-acquires, quarkus.dynamodb.async-client.max-pending-connection-acquires>>
+
+Max pending connection acquires.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.async-client.read-timeout, quarkus.dynamodb.async-client.read-timeout>>
+
+Read timeout.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.async-client.write-timeout, quarkus.dynamodb.async-client.write-timeout>>
+
+Write timeout.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.async-client.connection-timeout, quarkus.dynamodb.async-client.connection-timeout>>
+
+Connection timeout.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.async-client.connection-acquisition-timeout, quarkus.dynamodb.async-client.connection-acquisition-timeout>>
+
+Connection acquisition timeout.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.async-client.connection-time-to-live, quarkus.dynamodb.async-client.connection-time-to-live>>
+
+Connection time to live.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.async-client.connection-max-idle-time, quarkus.dynamodb.async-client.connection-max-idle-time>>
+
+Connection max idle time.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.async-client.use-idle-connection-reaper, quarkus.dynamodb.async-client.use-idle-connection-reaper>>
+
+Use idle connection reaper.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.async-client.protocol, quarkus.dynamodb.async-client.protocol>>
+
+HTTP protocol.|`http1-1`, `http2` 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.async-client.max-http2-streams, quarkus.dynamodb.async-client.max-http2-streams>>
+
+Max Http2 streams.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.async-client.ssl-provider, quarkus.dynamodb.async-client.ssl-provider>>
+
+SSL provider.|`jdk`, `openssl`, `openssl-refcnt` 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.async-client.event-loop.override, quarkus.dynamodb.async-client.event-loop.override>>
+
+Enables overrides for event loop.|boolean 
+|`false`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.async-client.event-loop.number-of-threads, quarkus.dynamodb.async-client.event-loop.number-of-threads>>
+
+Defines amount of threads for event loop.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.dynamodb.async-client.event-loop.thread-name-prefix, quarkus.dynamodb.async-client.event-loop.thread-name-prefix>>
+
+Defines event loop thread name prefix.|string 
+|
+| icon:gears[title=Overridable at runtime]
+|===
+
+
+== Details
+
+[[quarkus.dynamodb.region]]
+`quarkus.dynamodb.region` icon:gears[title=Overridable at runtime]:: Overrides region provider chain with static value of region with which the DynamoDB client should communicate (e.g. eu-west-1, eu-central-1, us-east-1, etc.) 
++
+Type: `Region`  +
+
+
+
+[[quarkus.dynamodb.enable-endpoint-discovery]]
+`quarkus.dynamodb.enable-endpoint-discovery` icon:gears[title=Overridable at runtime]:: Enable endpoint discovery 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.dynamodb.endpoint-override]]
+`quarkus.dynamodb.endpoint-override` icon:gears[title=Overridable at runtime]:: Overrides endpoint URI 
++
+Type: `URI`  +
+
+
+
+[[quarkus.dynamodb.credentials.type]]
+`quarkus.dynamodb.credentials.type` icon:gears[title=Overridable at runtime]:: Credentials provider 
++
+Accepted values: `default`, `static`, `system-property`, `env-variable`, `profile`, `container`, `instance-profile`, `process`, `anonymous` +
+Defaults to: `DEFAULT` +
+
+
+
+[[quarkus.dynamodb.credentials.default-provider.async-credential-update-enabled]]
+`quarkus.dynamodb.credentials.default-provider.async-credential-update-enabled` icon:gears[title=Overridable at runtime]:: Fetch credentials asynchronously in the background. 
+ By default, this is disabled. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.dynamodb.credentials.default-provider.reuse-last-provider-enabled]]
+`quarkus.dynamodb.credentials.default-provider.reuse-last-provider-enabled` icon:gears[title=Overridable at runtime]:: Reuse the last successful credentials provider in the chain. It will typically return credentials faster than searching through the chain. 
+ By default, this is enabled. 
++
+Type: `boolean`  +
+Defaults to: `true` +
+
+
+
+[[quarkus.dynamodb.credentials.static-provider.access-key-id]]
+`quarkus.dynamodb.credentials.static-provider.access-key-id` icon:gears[title=Overridable at runtime]:: Access key id 
++
+Type: `string`  +
+
+
+
+[[quarkus.dynamodb.credentials.static-provider.secret-access-key]]
+`quarkus.dynamodb.credentials.static-provider.secret-access-key` icon:gears[title=Overridable at runtime]:: Secret access key 
++
+Type: `string`  +
+
+
+
+[[quarkus.dynamodb.credentials.profile-provider.profile-name]]
+`quarkus.dynamodb.credentials.profile-provider.profile-name` icon:gears[title=Overridable at runtime]:: Profile name 
+ By default, the profile name is 'default'. 
++
+Type: `string`  +
+
+
+
+[[quarkus.dynamodb.credentials.process-provider.async-credential-update-enabled]]
+`quarkus.dynamodb.credentials.process-provider.async-credential-update-enabled` icon:gears[title=Overridable at runtime]:: Configure whether the provider should fetch credentials asynchronously in the background. If this is true, threads are less likely to block when credentials are loaded, but additional resources are used to maintain the provider. 
+ By default, this is disabled. 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.dynamodb.credentials.process-provider.credential-refresh-threshold]]
+`quarkus.dynamodb.credentials.process-provider.credential-refresh-threshold` icon:gears[title=Overridable at runtime]:: Configure the amount of time between when the credentials expire and when the credentials should start to be refreshed. This allows the credentials to be refreshed *before* they are reported to expire. 
+ Default: 15 seconds. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.dynamodb.credentials.process-provider.process-output-limit]]
+`quarkus.dynamodb.credentials.process-provider.process-output-limit` icon:gears[title=Overridable at runtime]:: Configure the maximum amount of data that can be returned by the external process before an exception is raised. 
+ Default: 1024 bytes. 
++
+Type: `int`  +
+
+
+
+[[quarkus.dynamodb.credentials.process-provider.command]]
+`quarkus.dynamodb.credentials.process-provider.command` icon:gears[title=Overridable at runtime]:: Command that should be executed to retrieve credentials. 
++
+Type: `string`  +
+
+
+
+[[quarkus.dynamodb.sync-client.connection-acquisition-timeout]]
+`quarkus.dynamodb.sync-client.connection-acquisition-timeout` icon:gears[title=Overridable at runtime]:: Connection acquisition timeout 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.dynamodb.sync-client.connection-max-idle-time]]
+`quarkus.dynamodb.sync-client.connection-max-idle-time` icon:gears[title=Overridable at runtime]:: Connection max idle time 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.dynamodb.sync-client.connection-timeout]]
+`quarkus.dynamodb.sync-client.connection-timeout` icon:gears[title=Overridable at runtime]:: Connection timeout 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.dynamodb.sync-client.connection-time-to-live]]
+`quarkus.dynamodb.sync-client.connection-time-to-live` icon:gears[title=Overridable at runtime]:: Connection time to live 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.dynamodb.sync-client.socket-timeout]]
+`quarkus.dynamodb.sync-client.socket-timeout` icon:gears[title=Overridable at runtime]:: Socket timeout 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.dynamodb.sync-client.max-connections]]
+`quarkus.dynamodb.sync-client.max-connections` icon:gears[title=Overridable at runtime]:: Max connections 
++
+Type: `int`  +
+
+
+
+[[quarkus.dynamodb.sync-client.expect-continue-enabled]]
+`quarkus.dynamodb.sync-client.expect-continue-enabled` icon:gears[title=Overridable at runtime]:: Expect continue enabled 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.dynamodb.sync-client.use-idle-connection-reaper]]
+`quarkus.dynamodb.sync-client.use-idle-connection-reaper` icon:gears[title=Overridable at runtime]:: Use idle connection reaper 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.dynamodb.sync-client.proxy.enabled]]
+`quarkus.dynamodb.sync-client.proxy.enabled` icon:gears[title=Overridable at runtime]:: Enable HTTP proxy 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.dynamodb.sync-client.proxy.endpoint]]
+`quarkus.dynamodb.sync-client.proxy.endpoint` icon:gears[title=Overridable at runtime]:: Proxy endpoint 
++
+Type: `URI`  +
+
+
+
+[[quarkus.dynamodb.sync-client.proxy.username]]
+`quarkus.dynamodb.sync-client.proxy.username` icon:gears[title=Overridable at runtime]:: Proxy username 
++
+Type: `string`  +
+
+
+
+[[quarkus.dynamodb.sync-client.proxy.password]]
+`quarkus.dynamodb.sync-client.proxy.password` icon:gears[title=Overridable at runtime]:: Proxy password 
++
+Type: `string`  +
+
+
+
+[[quarkus.dynamodb.sync-client.proxy.ntlm-domain]]
+`quarkus.dynamodb.sync-client.proxy.ntlm-domain` icon:gears[title=Overridable at runtime]:: NTLM domain 
++
+Type: `string`  +
+
+
+
+[[quarkus.dynamodb.sync-client.proxy.ntlm-workstation]]
+`quarkus.dynamodb.sync-client.proxy.ntlm-workstation` icon:gears[title=Overridable at runtime]:: NTLM workstation 
++
+Type: `string`  +
+
+
+
+[[quarkus.dynamodb.sync-client.proxy.preemptive-basic-authentication-enabled]]
+`quarkus.dynamodb.sync-client.proxy.preemptive-basic-authentication-enabled` icon:gears[title=Overridable at runtime]:: Enable preemptive basic authentication 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.dynamodb.sync-client.proxy.non-proxy-hosts]]
+`quarkus.dynamodb.sync-client.proxy.non-proxy-hosts` icon:gears[title=Overridable at runtime]:: Configure the hosts that the client is allowed to access without going through the proxy. 
++
+Type: `string`  +
+
+
+
+[[quarkus.dynamodb.async-client.max-concurrency]]
+`quarkus.dynamodb.async-client.max-concurrency` icon:gears[title=Overridable at runtime]:: Max concurrency 
++
+Type: `int`  +
+
+
+
+[[quarkus.dynamodb.async-client.max-pending-connection-acquires]]
+`quarkus.dynamodb.async-client.max-pending-connection-acquires` icon:gears[title=Overridable at runtime]:: Max pending connection acquires 
++
+Type: `int`  +
+
+
+
+[[quarkus.dynamodb.async-client.read-timeout]]
+`quarkus.dynamodb.async-client.read-timeout` icon:gears[title=Overridable at runtime]:: Read timeout 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.dynamodb.async-client.write-timeout]]
+`quarkus.dynamodb.async-client.write-timeout` icon:gears[title=Overridable at runtime]:: Write timeout 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.dynamodb.async-client.connection-timeout]]
+`quarkus.dynamodb.async-client.connection-timeout` icon:gears[title=Overridable at runtime]:: Connection timeout 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.dynamodb.async-client.connection-acquisition-timeout]]
+`quarkus.dynamodb.async-client.connection-acquisition-timeout` icon:gears[title=Overridable at runtime]:: Connection acquisition timeout 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.dynamodb.async-client.connection-time-to-live]]
+`quarkus.dynamodb.async-client.connection-time-to-live` icon:gears[title=Overridable at runtime]:: Connection time to live 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.dynamodb.async-client.connection-max-idle-time]]
+`quarkus.dynamodb.async-client.connection-max-idle-time` icon:gears[title=Overridable at runtime]:: Connection max idle time 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.dynamodb.async-client.use-idle-connection-reaper]]
+`quarkus.dynamodb.async-client.use-idle-connection-reaper` icon:gears[title=Overridable at runtime]:: Use idle connection reaper 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.dynamodb.async-client.protocol]]
+`quarkus.dynamodb.async-client.protocol` icon:gears[title=Overridable at runtime]:: HTTP protocol 
++
+Accepted values: `http1-1`, `http2` +
+
+
+
+[[quarkus.dynamodb.async-client.max-http2-streams]]
+`quarkus.dynamodb.async-client.max-http2-streams` icon:gears[title=Overridable at runtime]:: Max Http2 streams 
++
+Type: `int`  +
+
+
+
+[[quarkus.dynamodb.async-client.ssl-provider]]
+`quarkus.dynamodb.async-client.ssl-provider` icon:gears[title=Overridable at runtime]:: SSL provider 
++
+Accepted values: `jdk`, `openssl`, `openssl-refcnt` +
+
+
+
+[[quarkus.dynamodb.async-client.event-loop.override]]
+`quarkus.dynamodb.async-client.event-loop.override` icon:gears[title=Overridable at runtime]:: Enables overrides for event loop 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.dynamodb.async-client.event-loop.number-of-threads]]
+`quarkus.dynamodb.async-client.event-loop.number-of-threads` icon:gears[title=Overridable at runtime]:: Defines amount of threads for event loop 
++
+Type: `int`  +
+
+
+
+[[quarkus.dynamodb.async-client.event-loop.thread-name-prefix]]
+`quarkus.dynamodb.async-client.event-loop.thread-name-prefix` icon:gears[title=Overridable at runtime]:: Defines event loop thread name prefix 
++
+Type: `string`  +
+
+
+
+[NOTE]
+[[duration-note-anchor]]
+.About the Duration format
+====
+The format for durations uses the standard `java.time.Duration` format.
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+
+You can also provide duration values starting with a number.
+In this case, if the value consists only of a number, the converter treats the value as seconds.
+Otherwise, `PT` is implicitly appended to the value to obtain a standard `java.time.Duration` format.
+====

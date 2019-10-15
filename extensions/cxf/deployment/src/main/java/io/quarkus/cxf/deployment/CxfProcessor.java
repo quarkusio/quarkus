@@ -5,8 +5,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
+import javax.xml.ws.spi.Provider;
+
+import org.apache.cxf.jaxws.blueprint.JAXWSBPNamespaceHandler;
+import org.apache.cxf.jaxws.spi.ProviderImpl;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
@@ -21,8 +26,10 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
 import io.quarkus.undertow.deployment.ServletBuildItem;
 import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
 
@@ -34,12 +41,24 @@ public class CxfProcessor {
     private static final String JAX_WS_CXF_SERVLET = "org.apache.cxf.transport.servlet.CXFNonSpringServlet";
 
     private static final DotName WEBSERVICE_ANNOTATION = DotName.createSimple("javax.jws.WebService");
+    private static final DotName ADAPTER_ANNOTATION = DotName.createSimple("javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter");
 
     /**
      * JAX-RS configuration.
      */
     CxfConfig cxfConfig;
 
+//    @BuildStep
+//    void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+//            BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle,
+//            BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+//        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
+//                ProviderImpl.class.getName()));
+//        
+//        serviceProvider.produce(new ServiceProviderBuildItem(Provider.class.getName(),
+//                ProviderImpl.class.getName()));
+//    }
+    
     @BuildStep
     public void build(
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -59,6 +78,16 @@ public class CxfProcessor {
                 reflectiveClass
                         .produce(new ReflectiveClassBuildItem(true, true, annotation.target().asClass().name().toString()));
             }
+        }
+        
+        for (AnnotationInstance annotation : index.getAnnotations(ADAPTER_ANNOTATION)) {
+            if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
+                reflectiveClass
+                        .produce(new ReflectiveClassBuildItem(true, true, annotation.target().asClass().name().toString()));
+            }
+            AnnotationValue value = annotation.value();
+            reflectiveClass
+            .produce(new ReflectiveClassBuildItem(true, true, value.asClass().name().toString()));
         }
 
         Map<String, String> cxfInitParameters = new HashMap<>();

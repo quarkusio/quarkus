@@ -1,0 +1,102 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.datasource.url, quarkus.datasource.url>>
+
+The datasource URL.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.datasource.username, quarkus.datasource.username>>
+
+The datasource username.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.datasource.password, quarkus.datasource.password>>
+
+The datasource password.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.datasource.max-size, quarkus.datasource.max-size>>
+
+The datasource pool maximum size.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.reactive-mysql-client.cache-prepared-statements, quarkus.reactive-mysql-client.cache-prepared-statements>>
+
+Whether prepared statements should be cached on the client side.|boolean 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.reactive-mysql-client.charset, quarkus.reactive-mysql-client.charset>>
+
+Charset for connections.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.reactive-mysql-client.collation, quarkus.reactive-mysql-client.collation>>
+
+Collation for connections.|string 
+|
+| icon:gears[title=Overridable at runtime]
+|===
+
+
+== Details
+
+[[quarkus.datasource.url]]
+`quarkus.datasource.url` icon:gears[title=Overridable at runtime]:: The datasource URL. 
++
+Type: `string`  +
+
+
+
+[[quarkus.datasource.username]]
+`quarkus.datasource.username` icon:gears[title=Overridable at runtime]:: The datasource username. 
++
+Type: `string`  +
+
+
+
+[[quarkus.datasource.password]]
+`quarkus.datasource.password` icon:gears[title=Overridable at runtime]:: The datasource password. 
++
+Type: `string`  +
+
+
+
+[[quarkus.datasource.max-size]]
+`quarkus.datasource.max-size` icon:gears[title=Overridable at runtime]:: The datasource pool maximum size. 
++
+Type: `int`  +
+
+
+
+[[quarkus.reactive-mysql-client.cache-prepared-statements]]
+`quarkus.reactive-mysql-client.cache-prepared-statements` icon:gears[title=Overridable at runtime]:: Whether prepared statements should be cached on the client side. 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.reactive-mysql-client.charset]]
+`quarkus.reactive-mysql-client.charset` icon:gears[title=Overridable at runtime]:: Charset for connections. 
++
+Type: `string`  +
+
+
+
+[[quarkus.reactive-mysql-client.collation]]
+`quarkus.reactive-mysql-client.collation` icon:gears[title=Overridable at runtime]:: Collation for connections. 
++
+Type: `string`  +
+
+

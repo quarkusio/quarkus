@@ -1,0 +1,164 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.security.file.auth-mechanism, quarkus.security.file.auth-mechanism>>
+
+The authentication mechanism.|string 
+|`BASIC`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.security.file.realm-name, quarkus.security.file.realm-name>>
+
+The authentication mechanism.|string 
+|`Quarkus`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.security.file.enabled, quarkus.security.file.enabled>>
+
+If the properties store is enabled.|boolean 
+|`false`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.security.file.users, quarkus.security.file.users>>
+
+The location of the users property resource.|string 
+|`users.properties`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.security.file.roles, quarkus.security.file.roles>>
+
+The location of the roles property file.|string 
+|`roles.properties`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.security.embedded.auth-mechanism, quarkus.security.embedded.auth-mechanism>>
+
+The authentication mechanism.|string 
+|`BASIC`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.security.embedded.realm-name, quarkus.security.embedded.realm-name>>
+
+The authentication mechanism.|string 
+|`Quarkus`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.security.embedded.enabled, quarkus.security.embedded.enabled>>
+
+If the embedded store is enabled.|boolean 
+|`false`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.security.security-providers, quarkus.security.security-providers>>
+
+List of security providers to enable for reflection.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.security.embedded.users.users, quarkus.security.embedded.users."<users>">>
+
+The realm users user1=password\nuser2=password2.|link:https://docs.oracle.com/javase/8/docs/api/java/lang/String.html[String]
+ 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.security.embedded.roles.roles, quarkus.security.embedded.roles."<roles>">>
+
+The realm roles user1=role1,role2,.|link:https://docs.oracle.com/javase/8/docs/api/java/lang/String.html[String]
+ 
+|
+| icon:archive[title=Fixed at build time]
+|===
+
+
+== Details
+
+[[quarkus.security.file.auth-mechanism]]
+`quarkus.security.file.auth-mechanism` icon:archive[title=Fixed at build time]:: The authentication mechanism 
++
+Type: `string`  +
+Defaults to: `BASIC` +
+
+
+
+[[quarkus.security.file.realm-name]]
+`quarkus.security.file.realm-name` icon:archive[title=Fixed at build time]:: The authentication mechanism 
++
+Type: `string`  +
+Defaults to: `Quarkus` +
+
+
+
+[[quarkus.security.file.enabled]]
+`quarkus.security.file.enabled` icon:archive[title=Fixed at build time]:: If the properties store is enabled. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.security.file.users]]
+`quarkus.security.file.users` icon:archive[title=Fixed at build time]:: The location of the users property resource 
++
+Type: `string`  +
+Defaults to: `users.properties` +
+
+
+
+[[quarkus.security.file.roles]]
+`quarkus.security.file.roles` icon:archive[title=Fixed at build time]:: The location of the roles property file 
++
+Type: `string`  +
+Defaults to: `roles.properties` +
+
+
+
+[[quarkus.security.embedded.auth-mechanism]]
+`quarkus.security.embedded.auth-mechanism` icon:archive[title=Fixed at build time]:: The authentication mechanism 
++
+Type: `string`  +
+Defaults to: `BASIC` +
+
+
+
+[[quarkus.security.embedded.realm-name]]
+`quarkus.security.embedded.realm-name` icon:archive[title=Fixed at build time]:: The authentication mechanism 
++
+Type: `string`  +
+Defaults to: `Quarkus` +
+
+
+
+[[quarkus.security.embedded.enabled]]
+`quarkus.security.embedded.enabled` icon:archive[title=Fixed at build time]:: If the embedded store is enabled. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.security.security-providers]]
+`quarkus.security.security-providers` icon:archive[title=Fixed at build time]:: List of security providers to enable for reflection 
++
+Type: `string`  +
+
+
+
+[[quarkus.security.embedded.users.users]]
+`quarkus.security.embedded.users."<users>"` icon:archive[title=Fixed at build time]:: The realm users user1=password\nuser2=password2... mapping 
++
+Type: `String`  +
+
+
+
+[[quarkus.security.embedded.roles.roles]]
+`quarkus.security.embedded.roles."<roles>"` icon:archive[title=Fixed at build time]:: The realm roles user1=role1,role2,...\nuser2=role1,role2,... mapping 
++
+Type: `String`  +
+
+

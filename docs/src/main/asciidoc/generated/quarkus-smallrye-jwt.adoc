@@ -1,0 +1,67 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.smallrye-jwt.auth-mechanism, quarkus.smallrye-jwt.auth-mechanism>>
+
+The authentication mechanism.|string 
+|`MP-JWT`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.smallrye-jwt.realm-name, quarkus.smallrye-jwt.realm-name>>
+
+The authentication mechanism.|string 
+|`Quarkus-JWT`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.smallrye-jwt.enabled, quarkus.smallrye-jwt.enabled>>
+
+The MP-JWT configuration object.|boolean 
+|`true`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.smallrye-jwt.rsa-sig-provider, quarkus.smallrye-jwt.rsa-sig-provider>>
+
+The name of the `java.|string 
+|`SunRsaSign`
+| icon:archive[title=Fixed at build time]
+|===
+
+
+== Details
+
+[[quarkus.smallrye-jwt.auth-mechanism]]
+`quarkus.smallrye-jwt.auth-mechanism` icon:archive[title=Fixed at build time]:: The authentication mechanism 
++
+Type: `string`  +
+Defaults to: `MP-JWT` +
+
+
+
+[[quarkus.smallrye-jwt.realm-name]]
+`quarkus.smallrye-jwt.realm-name` icon:archive[title=Fixed at build time]:: The authentication mechanism 
++
+Type: `string`  +
+Defaults to: `Quarkus-JWT` +
+
+
+
+[[quarkus.smallrye-jwt.enabled]]
+`quarkus.smallrye-jwt.enabled` icon:archive[title=Fixed at build time]:: The MP-JWT configuration object 
++
+Type: `boolean`  +
+Defaults to: `true` +
+
+
+
+[[quarkus.smallrye-jwt.rsa-sig-provider]]
+`quarkus.smallrye-jwt.rsa-sig-provider` icon:archive[title=Fixed at build time]:: The name of the `java.security.Provider` that supports SHA256withRSA signatures 
++
+Type: `string`  +
+Defaults to: `SunRsaSign` +
+
+

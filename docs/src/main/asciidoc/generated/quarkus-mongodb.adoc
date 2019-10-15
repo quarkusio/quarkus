@@ -1,0 +1,469 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.mongodb.connection-string, quarkus.mongodb.connection-string>>
+
+Configures the connection string.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.hosts, quarkus.mongodb.hosts>>
+
+Configures the Mongo server addressed (one if single mode).|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.database, quarkus.mongodb.database>>
+
+Configure the database name.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.application-name, quarkus.mongodb.application-name>>
+
+Configures the application name.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.max-pool-size, quarkus.mongodb.max-pool-size>>
+
+Configures the maximum number of connections in the connection pool.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.min-pool-size, quarkus.mongodb.min-pool-size>>
+
+Configures the minimum number of connections in the connection pool.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.max-connection-idle-time, quarkus.mongodb.max-connection-idle-time>>
+
+Maximum idle time of a pooled connection.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.max-connection-life-time, quarkus.mongodb.max-connection-life-time>>
+
+Maximum life time of a pooled connection.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.wait-queue-timeout, quarkus.mongodb.wait-queue-timeout>>
+
+The maximum wait time that a thread may wait for a connection to become available.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.maintenance-frequency, quarkus.mongodb.maintenance-frequency>>
+
+Configures the time period between runs of the maintenance job.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.maintenance-initial-delay, quarkus.mongodb.maintenance-initial-delay>>
+
+Configures period of time to wait before running the first maintenance job on the connection pool.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.wait-queue-multiple, quarkus.mongodb.wait-queue-multiple>>
+
+This multiplier, multiplied with the `maxPoolSize` setting, gives the maximum number of threads that may be waiting for a connection to become available from the pool.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.connect-timeout, quarkus.mongodb.connect-timeout>>
+
+How long a connection can take to be opened before timing out.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.socket-timeout, quarkus.mongodb.socket-timeout>>
+
+How long a send or receive on a socket can take before timing out.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.tls-insecure, quarkus.mongodb.tls-insecure>>
+
+If connecting with TLS, this option enables insecure TLS connections.|boolean 
+|`false`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.tls, quarkus.mongodb.tls>>
+
+Whether to connect using TLS.|boolean 
+|`false`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.replica-set-name, quarkus.mongodb.replica-set-name>>
+
+Implies that the hosts given are a seed list, and the driver will attempt to find all members of the set.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.server-selection-timeout, quarkus.mongodb.server-selection-timeout>>
+
+How long the driver will wait for server selection to succeed before throwing an exception.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.local-threshold, quarkus.mongodb.local-threshold>>
+
+When choosing among multiple MongoDB servers to send a request, the driver will only send that request to a server whose ping time is less than or equal to the server with the fastest ping time plus the local threshold.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.heartbeat-frequency, quarkus.mongodb.heartbeat-frequency>>
+
+The frequency that the driver will attempt to determine the current state of each server in the cluster.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.write-concern.safe, quarkus.mongodb.write-concern.safe>>
+
+Configures the safety.|boolean 
+|`true`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.write-concern.journal, quarkus.mongodb.write-concern.journal>>
+
+Configures the journal writing aspect.|boolean 
+|`true`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.write-concern.w, quarkus.mongodb.write-concern.w>>
+
+When set, the driver adds `w: wValue` to all write commands.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.write-concern.retry-writes, quarkus.mongodb.write-concern.retry-writes>>
+
+If set to `true`, the driver will retry supported write operations if they fail due to a network error.|boolean 
+|`false`
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.write-concern.w-timeout, quarkus.mongodb.write-concern.w-timeout>>
+
+When set, the driver adds `wtimeout : ms` to all write commands.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.read-preference, quarkus.mongodb.read-preference>>
+
+Configures the read preferences.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.credentials.username, quarkus.mongodb.credentials.username>>
+
+Configures the username.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.credentials.password, quarkus.mongodb.credentials.password>>
+
+Configures the password.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.credentials.auth-mechanism, quarkus.mongodb.credentials.auth-mechanism>>
+
+Configures the authentication mechanism to use if a credential was supplied.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.credentials.auth-source, quarkus.mongodb.credentials.auth-source>>
+
+Configures the source of the authentication credentials.|string 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.max-wait-queue-size, quarkus.mongodb.max-wait-queue-size>>
+
+Configures the maximum number of concurrent operations allowed to wait for a server to become available.|int 
+|
+| icon:gears[title=Overridable at runtime]
+
+|<<quarkus.mongodb.credentials.auth-mechanism-properties.auth-mechanism-properties, quarkus.mongodb.credentials.auth-mechanism-properties."<auth-mechanism-properties>">>
+
+Allows passing authentication mechanism properties.|link:https://docs.oracle.com/javase/8/docs/api/java/lang/String.html[String]
+ 
+|
+| icon:gears[title=Overridable at runtime]
+|===
+
+
+== Details
+
+[[quarkus.mongodb.connection-string]]
+`quarkus.mongodb.connection-string` icon:gears[title=Overridable at runtime]:: Configures the connection string. The format is: `mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database.collection][?options]]` 
+ `mongodb://` is a required prefix to identify that this is a string in the standard connection format. 
+ `username:password@` are optional. If given, the driver will attempt to login to a database after connecting to a database server. For some authentication mechanisms, only the username is specified and the password is not, in which case the ":" after the username is left off as well. 
+ `host1` is the only required part of the connection string. It identifies a server address to connect to. 
+ `:portX` is optional and defaults to :27017 if not provided. 
+ `/database` is the name of the database to login to and thus is only relevant if the `username:password@` syntax is used. If not specified the `admin` database will be used by default. 
+ `?options` are connection options. Note that if `database` is absent there is still a `/` required between the last host and the `?` introducing the options. Options are name=value pairs and the pairs are separated by "&". 
+ An alternative format, using the `mongodb+srv` protocol, is:  mongodb+srv://[username:password@]host[/[database][?options]]   
+ - `mongodb+srv://` is a required prefix for this format. 
+ - `username:password@` are optional. If given, the driver will attempt to login to a database after connecting to a database server. For some authentication mechanisms, only the username is specified and the password is not, in which case the ":" after the username is left off as well 
+ - `host` is the only required part of the URI. It identifies a single host name for which SRV records are looked up from a Domain Name Server after prefixing the host name with `"_mongodb._tcp"`. The host/port for each SRV record becomes the seed list used to connect, as if each one were provided as host/port pair in a URI using the normal mongodb protocol. 
+ - `/database` is the name of the database to login to and thus is only relevant if the `username:password@` syntax is used. If not specified the "admin" database will be used by default. 
+ - `?options` are connection options. Note that if `database` is absent there is still a `/` required between the last host and the `?` introducing the options. Options are name=value pairs and the pairs are separated by "&". Additionally with the mongodb+srv protocol, TXT records are looked up from a Domain Name Server for the given host, and the text value of each one is prepended to any options on the URI itself. Because the last specified value for any option wins, that means that options provided on the URI will override any that are provided via TXT records.  
++
+Type: `string`  +
+
+
+
+[[quarkus.mongodb.hosts]]
+`quarkus.mongodb.hosts` icon:gears[title=Overridable at runtime]:: Configures the Mongo server addressed (one if single mode). The addressed are passed as `host:port`. 
++
+Type: `string`  +
+
+
+
+[[quarkus.mongodb.database]]
+`quarkus.mongodb.database` icon:gears[title=Overridable at runtime]:: Configure the database name. 
++
+Type: `string`  +
+
+
+
+[[quarkus.mongodb.application-name]]
+`quarkus.mongodb.application-name` icon:gears[title=Overridable at runtime]:: Configures the application name. 
++
+Type: `string`  +
+
+
+
+[[quarkus.mongodb.max-pool-size]]
+`quarkus.mongodb.max-pool-size` icon:gears[title=Overridable at runtime]:: Configures the maximum number of connections in the connection pool. 
++
+Type: `int`  +
+
+
+
+[[quarkus.mongodb.min-pool-size]]
+`quarkus.mongodb.min-pool-size` icon:gears[title=Overridable at runtime]:: Configures the minimum number of connections in the connection pool. 
++
+Type: `int`  +
+
+
+
+[[quarkus.mongodb.max-connection-idle-time]]
+`quarkus.mongodb.max-connection-idle-time` icon:gears[title=Overridable at runtime]:: Maximum idle time of a pooled connection. A connection that exceeds this limit will be closed. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.mongodb.max-connection-life-time]]
+`quarkus.mongodb.max-connection-life-time` icon:gears[title=Overridable at runtime]:: Maximum life time of a pooled connection. A connection that exceeds this limit will be closed. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.mongodb.wait-queue-timeout]]
+`quarkus.mongodb.wait-queue-timeout` icon:gears[title=Overridable at runtime]:: The maximum wait time that a thread may wait for a connection to become available. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.mongodb.maintenance-frequency]]
+`quarkus.mongodb.maintenance-frequency` icon:gears[title=Overridable at runtime]:: Configures the time period between runs of the maintenance job. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.mongodb.maintenance-initial-delay]]
+`quarkus.mongodb.maintenance-initial-delay` icon:gears[title=Overridable at runtime]:: Configures period of time to wait before running the first maintenance job on the connection pool. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.mongodb.wait-queue-multiple]]
+`quarkus.mongodb.wait-queue-multiple` icon:gears[title=Overridable at runtime]:: This multiplier, multiplied with the `maxPoolSize` setting, gives the maximum number of threads that may be waiting for a connection to become available from the pool. All further threads will get an exception right away. 
++
+Type: `int`  +
+
+
+
+[[quarkus.mongodb.connect-timeout]]
+`quarkus.mongodb.connect-timeout` icon:gears[title=Overridable at runtime]:: How long a connection can take to be opened before timing out. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.mongodb.socket-timeout]]
+`quarkus.mongodb.socket-timeout` icon:gears[title=Overridable at runtime]:: How long a send or receive on a socket can take before timing out. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.mongodb.tls-insecure]]
+`quarkus.mongodb.tls-insecure` icon:gears[title=Overridable at runtime]:: If connecting with TLS, this option enables insecure TLS connections. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.mongodb.tls]]
+`quarkus.mongodb.tls` icon:gears[title=Overridable at runtime]:: Whether to connect using TLS. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.mongodb.replica-set-name]]
+`quarkus.mongodb.replica-set-name` icon:gears[title=Overridable at runtime]:: Implies that the hosts given are a seed list, and the driver will attempt to find all members of the set. 
++
+Type: `string`  +
+
+
+
+[[quarkus.mongodb.server-selection-timeout]]
+`quarkus.mongodb.server-selection-timeout` icon:gears[title=Overridable at runtime]:: How long the driver will wait for server selection to succeed before throwing an exception. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.mongodb.local-threshold]]
+`quarkus.mongodb.local-threshold` icon:gears[title=Overridable at runtime]:: When choosing among multiple MongoDB servers to send a request, the driver will only send that request to a server whose ping time is less than or equal to the server with the fastest ping time plus the local threshold. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.mongodb.heartbeat-frequency]]
+`quarkus.mongodb.heartbeat-frequency` icon:gears[title=Overridable at runtime]:: The frequency that the driver will attempt to determine the current state of each server in the cluster. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.mongodb.write-concern.safe]]
+`quarkus.mongodb.write-concern.safe` icon:gears[title=Overridable at runtime]:: Configures the safety. If set to `true`: the driver ensures that all writes are acknowledged by the MongoDB server, or else throws an exception. (see also `w` and `wtimeoutMS`). If set fo 
+ - `false`: the driver does not ensure that all writes are acknowledged by the MongoDB server. 
++
+Type: `boolean`  +
+Defaults to: `true` +
+
+
+
+[[quarkus.mongodb.write-concern.journal]]
+`quarkus.mongodb.write-concern.journal` icon:gears[title=Overridable at runtime]:: Configures the journal writing aspect. If set to `true`: the driver waits for the server to group commit to the journal file on disk. If set to `false`: the driver does not wait for the server to group commit to the journal file on disk. 
++
+Type: `boolean`  +
+Defaults to: `true` +
+
+
+
+[[quarkus.mongodb.write-concern.w]]
+`quarkus.mongodb.write-concern.w` icon:gears[title=Overridable at runtime]:: When set, the driver adds `w: wValue` to all write commands. It requires `safe` to be `true`. The value is typically a number, but can also be the `majority` string. 
++
+Type: `string`  +
+
+
+
+[[quarkus.mongodb.write-concern.retry-writes]]
+`quarkus.mongodb.write-concern.retry-writes` icon:gears[title=Overridable at runtime]:: If set to `true`, the driver will retry supported write operations if they fail due to a network error. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.mongodb.write-concern.w-timeout]]
+`quarkus.mongodb.write-concern.w-timeout` icon:gears[title=Overridable at runtime]:: When set, the driver adds `wtimeout : ms` to all write commands. It requires `safe` to be `true`. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.mongodb.read-preference]]
+`quarkus.mongodb.read-preference` icon:gears[title=Overridable at runtime]:: Configures the read preferences. Supported values are: `primary|primaryPreferred|secondary|secondaryPreferred|nearest` 
++
+Type: `string`  +
+
+
+
+[[quarkus.mongodb.credentials.username]]
+`quarkus.mongodb.credentials.username` icon:gears[title=Overridable at runtime]:: Configures the username. 
++
+Type: `string`  +
+
+
+
+[[quarkus.mongodb.credentials.password]]
+`quarkus.mongodb.credentials.password` icon:gears[title=Overridable at runtime]:: Configures the password. 
++
+Type: `string`  +
+
+
+
+[[quarkus.mongodb.credentials.auth-mechanism]]
+`quarkus.mongodb.credentials.auth-mechanism` icon:gears[title=Overridable at runtime]:: Configures the authentication mechanism to use if a credential was supplied. The default is unspecified, in which case the client will pick the most secure mechanism available based on the sever version. For the GSSAPI and MONGODB-X509 mechanisms, no password is accepted, only the username. Supported values: `MONGO-CR|GSSAPI|PLAIN|MONGODB-X509` 
++
+Type: `string`  +
+
+
+
+[[quarkus.mongodb.credentials.auth-source]]
+`quarkus.mongodb.credentials.auth-source` icon:gears[title=Overridable at runtime]:: Configures the source of the authentication credentials. This is typically the database that the credentials have been created. The value defaults to the database specified in the path portion of the connection string or in the 'database' configuration property.. If the database is specified in neither place, the default value is `admin`. This option is only respected when using the MONGO-CR mechanism (the default). 
++
+Type: `string`  +
+
+
+
+[[quarkus.mongodb.max-wait-queue-size]]
+`quarkus.mongodb.max-wait-queue-size` icon:gears[title=Overridable at runtime]:: Configures the maximum number of concurrent operations allowed to wait for a server to become available. All further operations will get an exception immediately. 
++
+Type: `int`  +
+
+
+
+[[quarkus.mongodb.credentials.auth-mechanism-properties.auth-mechanism-properties]]
+`quarkus.mongodb.credentials.auth-mechanism-properties."<auth-mechanism-properties>"` icon:gears[title=Overridable at runtime]:: Allows passing authentication mechanism properties. 
++
+Type: `String`  +
+
+
+
+[NOTE]
+[[duration-note-anchor]]
+.About the Duration format
+====
+The format for durations uses the standard `java.time.Duration` format.
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+
+You can also provide duration values starting with a number.
+In this case, if the value consists only of a number, the converter treats the value as seconds.
+Otherwise, `PT` is implicitly appended to the value to obtain a standard `java.time.Duration` format.
+====

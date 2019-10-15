@@ -1,0 +1,37 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.hot-reload.password, quarkus.hot-reload.password>>
+
+|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hot-reload.url, quarkus.hot-reload.url>>
+
+|string 
+|
+| icon:archive[title=Fixed at build time]
+|===
+
+
+== Details
+
+[[quarkus.hot-reload.password]]
+`quarkus.hot-reload.password` icon:archive[title=Fixed at build time]::  
++
+Type: `string`  +
+
+
+
+[[quarkus.hot-reload.url]]
+`quarkus.hot-reload.url` icon:archive[title=Fixed at build time]::  
++
+Type: `string`  +
+
+

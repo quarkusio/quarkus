@@ -1,0 +1,281 @@
+== Summary
+
+icon:archive[title=Fixed at build time] Configuration property fixed at build time - icon:gears[title=Overridable at runtime]️ Configuration property overridable at runtime 
+
+[cols="50,.^10,.^10,^.^5"]
+|===
+|Configuration property|Type|Default|Lifecycle
+
+|<<quarkus.hibernate-orm.dialect, quarkus.hibernate-orm.dialect>>
+
+The hibernate ORM dialect class name.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.dialect.storage-engine, quarkus.hibernate-orm.dialect.storage-engine>>
+
+The storage engine used by the dialect if it supports several storage engines.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.sql-load-script, quarkus.hibernate-orm.sql-load-script>>
+
+To populate the database tables with data before the application loads, specify the location of a load script.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.batch-fetch-size, quarkus.hibernate-orm.batch-fetch-size>>
+
+The size of a batch when using batch loading to load entities and collections.|int 
+|`-1`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.query.query-plan-cache-max-size, quarkus.hibernate-orm.query.query-plan-cache-max-size>>
+
+The max size of the query plan cache.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.query.default-null-ordering, quarkus.hibernate-orm.query.default-null-ordering>>
+
+The default ordering of nulls specific in the ORDER BY clause.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.database.generation, quarkus.hibernate-orm.database.generation>>
+
+Control how schema generation is happening in Hibernate ORM.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.database.generation.halt-on-error, quarkus.hibernate-orm.database.generation.halt-on-error>>
+
+Whether we should stop schema application at the first error or continue.|boolean 
+|`false`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.database.default-catalog, quarkus.hibernate-orm.database.default-catalog>>
+
+The default database catalog.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.database.default-schema, quarkus.hibernate-orm.database.default-schema>>
+
+The default database schema.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.database.charset, quarkus.hibernate-orm.database.charset>>
+
+The charset of the database.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.jdbc.timezone, quarkus.hibernate-orm.jdbc.timezone>>
+
+The timezone pushed to the JDBC driver.|string 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.jdbc.statement-fetch-size, quarkus.hibernate-orm.jdbc.statement-fetch-size>>
+
+How many rows are fetched at a time by the JDBC driver.|int 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.jdbc.statement-batch-size, quarkus.hibernate-orm.jdbc.statement-batch-size>>
+
+The number of updates (inserts, updates and deletes) that are sent to the database at one time for execution.|int 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.log.sql, quarkus.hibernate-orm.log.sql>>
+
+Whether we log all the SQL queries executed.|boolean 
+|`false`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.log.jdbc-warnings, quarkus.hibernate-orm.log.jdbc-warnings>>
+
+Whether JDBC warnings should be collected and logged.|boolean 
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.statistics, quarkus.hibernate-orm.statistics>>
+
+Statistics configuration.|boolean 
+|`false`
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.cache.cache.expiration.max-idle, quarkus.hibernate-orm.cache."<cache>".expiration.max-idle>>
+
+The maximum time before an object is considered expired.|link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html[Duration]
+  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format]
+|
+| icon:archive[title=Fixed at build time]
+
+|<<quarkus.hibernate-orm.cache.cache.memory.object-count, quarkus.hibernate-orm.cache."<cache>".memory.object-count>>
+
+The maximum number of objects kept in memory.|long 
+|
+| icon:archive[title=Fixed at build time]
+|===
+
+
+== Details
+
+[[quarkus.hibernate-orm.dialect]]
+`quarkus.hibernate-orm.dialect` icon:archive[title=Fixed at build time]:: The hibernate ORM dialect class name 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-orm.dialect.storage-engine]]
+`quarkus.hibernate-orm.dialect.storage-engine` icon:archive[title=Fixed at build time]:: The storage engine used by the dialect if it supports several storage engines. 
+ This is the case of MariaDB. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-orm.sql-load-script]]
+`quarkus.hibernate-orm.sql-load-script` icon:archive[title=Fixed at build time]:: To populate the database tables with data before the application loads, specify the location of a load script. The location specified in this property is relative to the root of the persistence unit. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-orm.batch-fetch-size]]
+`quarkus.hibernate-orm.batch-fetch-size` icon:archive[title=Fixed at build time]:: The size of a batch when using batch loading to load entities and collections. 
+ -1 means batch loading is disabled. 
++
+Type: `int`  +
+Defaults to: `-1` +
+
+
+
+[[quarkus.hibernate-orm.query.query-plan-cache-max-size]]
+`quarkus.hibernate-orm.query.query-plan-cache-max-size` icon:archive[title=Fixed at build time]:: The max size of the query plan cache. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-orm.query.default-null-ordering]]
+`quarkus.hibernate-orm.query.default-null-ordering` icon:archive[title=Fixed at build time]:: The default ordering of nulls specific in the ORDER BY clause. 
+ Valid values are: none, first, last. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-orm.database.generation]]
+`quarkus.hibernate-orm.database.generation` icon:archive[title=Fixed at build time]:: Control how schema generation is happening in Hibernate ORM. 
+ Same as JPA's javax.persistence.schema-generation.database.action. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-orm.database.generation.halt-on-error]]
+`quarkus.hibernate-orm.database.generation.halt-on-error` icon:archive[title=Fixed at build time]:: Whether we should stop schema application at the first error or continue. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.hibernate-orm.database.default-catalog]]
+`quarkus.hibernate-orm.database.default-catalog` icon:archive[title=Fixed at build time]:: The default database catalog. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-orm.database.default-schema]]
+`quarkus.hibernate-orm.database.default-schema` icon:archive[title=Fixed at build time]:: The default database schema. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-orm.database.charset]]
+`quarkus.hibernate-orm.database.charset` icon:archive[title=Fixed at build time]:: The charset of the database. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-orm.jdbc.timezone]]
+`quarkus.hibernate-orm.jdbc.timezone` icon:archive[title=Fixed at build time]:: The timezone pushed to the JDBC driver. 
++
+Type: `string`  +
+
+
+
+[[quarkus.hibernate-orm.jdbc.statement-fetch-size]]
+`quarkus.hibernate-orm.jdbc.statement-fetch-size` icon:archive[title=Fixed at build time]:: How many rows are fetched at a time by the JDBC driver. 
++
+Type: `int`  +
+
+
+
+[[quarkus.hibernate-orm.jdbc.statement-batch-size]]
+`quarkus.hibernate-orm.jdbc.statement-batch-size` icon:archive[title=Fixed at build time]:: The number of updates (inserts, updates and deletes) that are sent to the database at one time for execution. 
++
+Type: `int`  +
+
+
+
+[[quarkus.hibernate-orm.log.sql]]
+`quarkus.hibernate-orm.log.sql` icon:archive[title=Fixed at build time]:: Whether we log all the SQL queries executed. 
+ Setting it to true is obviously not recommended in production. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.hibernate-orm.log.jdbc-warnings]]
+`quarkus.hibernate-orm.log.jdbc-warnings` icon:archive[title=Fixed at build time]:: Whether JDBC warnings should be collected and logged. 
+ Default value depends on the dialect. 
++
+Type: `boolean`  +
+
+
+
+[[quarkus.hibernate-orm.statistics]]
+`quarkus.hibernate-orm.statistics` icon:archive[title=Fixed at build time]:: Statistics configuration. 
++
+Type: `boolean`  +
+Defaults to: `false` +
+
+
+
+[[quarkus.hibernate-orm.cache.cache.expiration.max-idle]]
+`quarkus.hibernate-orm.cache."<cache>".expiration.max-idle` icon:archive[title=Fixed at build time]:: The maximum time before an object is considered expired. 
++
+Type: `Duration`  link:#duration-note-anchor[icon:question-circle[], title=More information about the Duration format] +
+
+
+
+[[quarkus.hibernate-orm.cache.cache.memory.object-count]]
+`quarkus.hibernate-orm.cache."<cache>".memory.object-count` icon:archive[title=Fixed at build time]:: The maximum number of objects kept in memory. 
++
+Type: `long`  +
+
+
+
+[NOTE]
+[[duration-note-anchor]]
+.About the Duration format
+====
+The format for durations uses the standard `java.time.Duration` format.
+You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].
+
+You can also provide duration values starting with a number.
+In this case, if the value consists only of a number, the converter treats the value as seconds.
+Otherwise, `PT` is implicitly appended to the value to obtain a standard `java.time.Duration` format.
+====

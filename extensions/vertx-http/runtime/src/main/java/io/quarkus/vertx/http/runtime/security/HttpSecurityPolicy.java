@@ -6,15 +6,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
-public interface HttpPermissionChecker {
-
-    /**
-     * The priority of the permission checker. Permission checkers are evaluated from highest to lowest
-     * priority.
-     *
-     * @return The priority
-     */
-    int getPriority();
+public interface HttpSecurityPolicy {
 
     CompletionStage<CheckResult> checkPermission(HttpServerRequest request, SecurityIdentity identity);
 
@@ -23,13 +15,8 @@ public interface HttpPermissionChecker {
      */
     enum CheckResult {
         /**
-         * This permission checker essentially has nothing to say about this request,
-         * it will be delegated to the next checker in the chain.
-         */
-        IGNORE,
-        /**
-         * If this is returned then the request is allowed, and no further permission checkers will be
-         * consulted.
+         * If this is returned then the request is allowed. All permission checkers must permit a request for it
+         * to proceed.
          */
         PERMIT,
         /**

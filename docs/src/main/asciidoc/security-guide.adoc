@@ -100,26 +100,32 @@ config is shown below:
 
 [source,properties]
 --
-quarkus.http.auth.default-deny=true                                                 <1>
+
+quarkus.http.auth.policy.role-policy1.roles-allowed=user,admin                      <1>
 
 quarkus.http.auth.permission.roles1.paths=/roles-secured/*,/other/*,/api/*          <2>
-quarkus.http.auth.permission.roles1.roles-allowed=user,admin
+quarkus.http.auth.permission.roles1.policy=role-policy1
 
 quarkus.http.auth.permission.permit1.paths=/public/*                                <3>
-quarkus.http.auth.permission.permit1.permit-all=true
+quarkus.http.auth.permission.permit1.policy=permit
 quarkus.http.auth.permission.permit1.methods=GET
 
 quarkus.http.auth.permission.deny1.paths=/forbidden                                 <4>
-quarkus.http.auth.permission.deny1.deny-all=true
+quarkus.http.auth.permission.deny1.policy=deny
 --
-<1> Setting `default-deny` means that all requests that do not match a rule will be denied by default
-<2> This is a permission set that uses `roles-allowed` to control which users can access the provided resources. `roles1` is an arbitrary name, you can call the permission sets whatever you want.
-<3> This permission get uses `permit-all` to allow `GET` methods to `/public`
-<4> This permission set denies all access to `/forbidden`. In this example this is a no-op as it would be denied anyway by the `default-deny`. This is an exact path match as it does not end with *.
+<1> This defines a role based policy that allows users with the `user` and `admin` roles. This is referenced by later rules
+<2> This is a permission set that references the previously defined policy. `roles1` is an arbitrary name, you can call the permission sets whatever you want.
+<3> This permission references the default `permit` built in policy to allow `GET` methods to `/public`. This is actually a no-op in this example, as this request would have been allowed anyway.
+<4> This permission references the built in `deny` build in policy `/forbidden`. This is an exact path match as it does not end with *.
 
 Permissions are defined in config using permission sets. These are arbitrarily named permission grouping. Each permission
-set can specify either `permit-all=true`, `deny-all=true` or `roles-allowed=`. The special role '*' allows any authenticated
-user to access the resource.
+set must specify a policy that is used to control access. There are three built in policies: `deny`, `permit` and `authenticated`,
+which permit all, deny all and only allow authenticated users respectively.
+
+It is also possible to define role based policies, as shown in the example. These policies will only allow users with the
+specified roles to access the resources.
+
+Policies are pluggable so it is possible for other Quarkus extensions to provide additional policies.
 
 Permission sets can also specify paths and methods as a comma separated list. If a path ends with '*' then it is considered
 to be a wildcard match and will match all sub paths, otherwise it is an exact match and will only match that specific path.

@@ -19,12 +19,12 @@ public class PermitDenyAllTestCase {
     private static final String APP_PROPS = "" +
             "quarkus.http.auth.basic=true\n" +
             "quarkus.http.auth.permission.permit1.paths=/permit,/combined\n" +
-            "quarkus.http.auth.permission.permit1.permit-all=true\n" +
+            "quarkus.http.auth.permission.permit1.policy=permit\n" +
             "quarkus.http.auth.permission.permit2.paths=/permit-get\n" +
             "quarkus.http.auth.permission.permit2.methods=GET\n" +
-            "quarkus.http.auth.permission.permit2.permit-all=true\n" +
+            "quarkus.http.auth.permission.permit2.policy=permit\n" +
             "quarkus.http.auth.permission.deny1.paths=/deny,/combined\n" +
-            "quarkus.http.auth.permission.deny1.deny-all=true\n";
+            "quarkus.http.auth.permission.deny1.policy=deny\n";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<JavaArchive>() {

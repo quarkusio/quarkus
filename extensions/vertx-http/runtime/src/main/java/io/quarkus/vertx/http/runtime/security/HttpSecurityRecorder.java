@@ -1,7 +1,9 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 import javax.enterprise.inject.spi.CDI;
 
@@ -74,12 +76,12 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public BeanContainerListener initPermissions(HttpBuildTimeConfig permissions) {
+    public BeanContainerListener initPermissions(HttpBuildTimeConfig permissions,
+            Map<String, Supplier<HttpSecurityPolicy>> policies) {
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer container) {
-                container.instance(DefaultHttpPermissionChecker.class).init(permissions);
-                container.instance(HttpAuthorizer.class).setDefaultDeny(permissions.auth.defaultDeny);
+                container.instance(HttpAuthorizer.class).init(permissions, policies);
             }
         };
     }

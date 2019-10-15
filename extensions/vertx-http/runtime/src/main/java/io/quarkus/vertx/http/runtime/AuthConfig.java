@@ -38,11 +38,11 @@ public class AuthConfig {
      * The HTTP permissions
      */
     @ConfigItem(name = "permission")
-    public Map<String, PermissionSetConfig> permissions;
+    public Map<String, PolicyMappingConfig> permissions;
 
     /**
-     * If this is true then any HTTP request that has not been explicitly permitted by a permission checker will be denied
+     * The HTTP role based policies
      */
-    @ConfigItem
-    public boolean defaultDeny = false;
+    @ConfigItem(name = "policy")
+    public Map<String, PolicyConfig> rolePolicy;
 }

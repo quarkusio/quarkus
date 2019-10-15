@@ -18,14 +18,16 @@ public class RolesAllowedTestCase {
 
     private static final String APP_PROPS = "" +
             "quarkus.http.auth.basic=true\n" +
+            "quarkus.http.auth.policy.r1.roles-allowed=test\n" +
+            "quarkus.http.auth.policy.r2.roles-allowed=admin\n" +
             "quarkus.http.auth.permission.roles1.paths=/roles1,/deny,/permit,/combined\n" +
-            "quarkus.http.auth.permission.roles1.roles-allowed=test\n" +
+            "quarkus.http.auth.permission.roles1.policy=r1\n" +
             "quarkus.http.auth.permission.roles2.paths=/roles2,/deny,/permit/combined\n" +
-            "quarkus.http.auth.permission.roles2.roles-allowed=admin\n" +
+            "quarkus.http.auth.permission.roles2.policy=r2\n" +
             "quarkus.http.auth.permission.permit1.paths=/permit\n" +
-            "quarkus.http.auth.permission.permit1.permit-all=true\n" +
+            "quarkus.http.auth.permission.permit1.policy=permit\n" +
             "quarkus.http.auth.permission.deny1.paths=/deny,/combined\n" +
-            "quarkus.http.auth.permission.deny1.deny-all=true\n";
+            "quarkus.http.auth.permission.deny1.policy=deny\n";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<JavaArchive>() {

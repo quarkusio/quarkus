@@ -123,7 +123,6 @@ public class QuartzScheduler implements Scheduler {
                 props.put("org.quartz.threadPool.threadCount", "10");
                 props.put("org.quartz.threadPool.threadPriority", "5");
                 props.put("org.quartz.threadPool.threadsInheritContextClassLoaderOfInitializingThread", true);
-                props.put("org.quartz.threadPool.threadPriority", "5");
                 props.put("org.quartz.jobStore.misfireThreshold", "60000");
                 props.put("org.quartz.jobStore.class", "org.quartz.simpl.RAMJobStore");
 

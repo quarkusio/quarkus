@@ -13,6 +13,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.hibernate.cache.spi.TimestampsCache;
+import org.hibernate.internal.SessionImpl;
+
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
 
@@ -96,4 +99,14 @@ public class CRUDResource {
         Cake c = (Cake) em.createQuery("from Cake").getSingleResult();
         return c.getType();
     }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/timestamps")
+    public String checkCachingState() {
+        SessionImpl sessionImpl = em.unwrap(SessionImpl.class);
+        TimestampsCache timestampsCache = sessionImpl.getSessionFactory().getCache().getTimestampsCache();
+        return timestampsCache.getClass().getName();
+    }
+
 }

@@ -20,5 +20,9 @@ public class JPAConfigurationlessTest {
 
         RestAssured.when().get("/jpa-test/user-tx").then()
                 .body(containsString("jpa=OK"));
+
+        RestAssured.when().get("/jpa-test/timestamps").then()
+                .body(containsString("org.hibernate.cache.internal.TimestampsCacheEnabledImpl"));
     }
+
 }

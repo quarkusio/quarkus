@@ -120,6 +120,7 @@
                                 <argument>${gradle.task}</argument>
                                 <argument>-Pdescription=${project.description}</argument>
                                 <argument>-S</argument>
+                                <argument>-Pversion=${project.version}</argument>
                             </arguments>
                             <environmentVariables>
                                 <MAVEN_LOCAL_REPO>${settings.localRepository}</MAVEN_LOCAL_REPO>

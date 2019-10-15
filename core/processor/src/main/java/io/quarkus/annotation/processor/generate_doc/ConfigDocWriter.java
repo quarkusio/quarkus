@@ -4,12 +4,9 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import io.quarkus.annotation.processor.Constants;
 
@@ -34,32 +31,8 @@ final public class ConfigDocWriter {
     /**
      * Write all extension configuration AsciiDoc format in `{root}/target/asciidoc/generated/config/`
      */
-    public void writeAllExtensionConfigDocumentation(Map<String, List<ConfigDocItem>> extensionsConfigurations)
+    public void writeAllExtensionConfigDocumentation(List<ConfigDocItem> allItems)
             throws IOException {
-        List<ConfigDocItem> allItems = new ArrayList<>();
-        SortedMap<String, List<ConfigDocItem>> sortedExtensions = new TreeMap<>();
-        sortedExtensions.putAll(extensionsConfigurations);
-        for (Map.Entry<String, List<ConfigDocItem>> entry : sortedExtensions.entrySet()) {
-            final List<ConfigDocItem> configDocItems = entry.getValue();
-
-            sort(configDocItems);
-            ConfigDocSection header = new ConfigDocSection();
-            String title = entry.getKey();
-            // sanitise
-            if (title.startsWith("quarkus-"))
-                title = title.substring(8);
-            if (title.endsWith(".adoc"))
-                title = title.substring(0, title.length() - 5);
-            if (title.endsWith("-config"))
-                title = title.substring(0, title.length() - 7);
-            if (title.endsWith("-configuration"))
-                title = title.substring(0, title.length() - 14);
-            title = title.replace('-', ' ');
-            title = capitalize(title);
-            header.setSectionDetailsTitle(title);
-            allItems.add(new ConfigDocItem(header, null));
-            allItems.addAll(configDocItems);
-        }
         generateDocumentation(Constants.GENERATED_DOCS_PATH.resolve("all-config.adoc"), allItems);
     }
 
@@ -89,7 +62,7 @@ final public class ConfigDocWriter {
      * - 4. Elements within a configuration section will appear at the end of the generated doc while preserving described in
      * 1-4.
      */
-    private static void sort(List<ConfigDocItem> configDocItems) {
+    public static void sort(List<ConfigDocItem> configDocItems) {
         Collections.sort(configDocItems);
         for (ConfigDocItem configDocItem : configDocItems) {
             if (configDocItem.isConfigSection()) {

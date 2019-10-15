@@ -197,14 +197,7 @@ final public class ConfigDocItemScanner {
                     new TypeReference<List<ConfigDocItem>>() {
                     });
 
-            final String fileName = computeExtensionDocFileName(member);
-            final List<ConfigDocItem> previousExtensionConfigDocKeys = foundExtensionConfigurationItems.get(fileName);
-
-            if (previousExtensionConfigDocKeys == null) {
-                foundExtensionConfigurationItems.put(fileName, configDocItems);
-            } else {
-                previousExtensionConfigDocKeys.addAll(configDocItems);
-            }
+            foundExtensionConfigurationItems.put(member, configDocItems);
         }
 
         return foundExtensionConfigurationItems;

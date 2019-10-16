@@ -71,6 +71,9 @@
                     <arguments>
                         <argument>${project.version}</argument>
                     </arguments>
+                    <environmentVariables>
+                        <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
+                    </environmentVariables>
                 </configuration>
             </plugin>
             <plugin>

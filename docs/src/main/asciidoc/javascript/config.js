@@ -186,6 +186,7 @@ function search(input){
 function applySearch(table, search, autoExpand){
     // clear highlights
     clearHighlights(table);
+    var lastSectionHeader = null;
     for (var row of table.querySelectorAll("tr")) {
         if(!search){
             row.style.removeProperty("display");
@@ -196,13 +197,27 @@ function applySearch(table, search, autoExpand){
                 row.click();
         }else{
             var heads = row.querySelectorAll("th");
-            if((heads && heads.length > 1)
-               || findText(row, search)){
+            if(heads && heads.length > 0){
+                if(heads.length > 1){
+                    // always show the top header, never highlight it
+                    row.style.removeProperty("display");
+                }else{
+                    // keep the header rows for rows who matched, but start hidden
+                    lastSectionHeader = row;
+                    highlight(row, search);
+                    row.style.display = "none";
+                }
+            }else if(findText(row, search)){
                 row.style.removeProperty("display");
                 // expand if shown
                 if(autoExpand && row.classList.contains("row-collapsed"))
                     row.click();
                 highlight(row, search);
+                if(lastSectionHeader){
+                    lastSectionHeader.style.removeProperty("display");
+                    // avoid showing it more than once
+                    lastSectionHeader = null;
+                }
             }else{
                 row.style.display = "none";
             }

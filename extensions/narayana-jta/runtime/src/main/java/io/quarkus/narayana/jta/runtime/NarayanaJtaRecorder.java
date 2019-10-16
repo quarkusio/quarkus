@@ -53,4 +53,9 @@ public class NarayanaJtaRecorder {
     public static Properties getDefaultProperties() {
         return defaultProperties;
     }
+
+    public void setTransactionStatusManagerEnabled(TransactionManagerConfiguration transactions) {
+        arjPropertyManager.getCoordinatorEnvironmentBean()
+                .setTransactionStatusManagerEnable(transactions.enableTransactionStatusManager);
+    }
 }

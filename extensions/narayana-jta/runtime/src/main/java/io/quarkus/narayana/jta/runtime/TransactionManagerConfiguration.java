@@ -29,4 +29,10 @@ public final class TransactionManagerConfiguration {
      */
     @ConfigItem(defaultValue = "60")
     public Optional<Duration> defaultTransactionTimeout;
+
+    /**
+     * Whether to enable the transaction status manager
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean enableTransactionStatusManager;
 }

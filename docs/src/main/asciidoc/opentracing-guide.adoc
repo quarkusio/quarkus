@@ -90,7 +90,6 @@ The first approach is by providing the properties within the `src/main/resources
 quarkus.jaeger.service-name=myservice // <1>
 quarkus.jaeger.sampler-type=const // <2>
 quarkus.jaeger.sampler-param=1 // <3>
-quarkus.jaeger.endpoint=http://localhost:14268/api/traces
 ----
 
 <1> If the `quarkus.jaeger.service-name` property (or `JAEGER_SERVICE_NAME` environment variable) is not provided then a "no-op" tracer will be configured, resulting in no tracing data being reported to the backend.
@@ -98,8 +97,6 @@ quarkus.jaeger.endpoint=http://localhost:14268/api/traces
 <3> Sample all requests. Set sampler-param to somewhere between 0 and 1, e.g. 0.50, if you do not wish to sample all requests.
 
 The second approach is to supply the properties as https://www.jaegertracing.io/docs/latest/client-features/[environment variables]. These can be specified as `jvm.args` as shown in the following section.
-
-NOTE: Currently the tracer can only be configured to report spans directly to the collector via HTTP, using the `quarkus.jaeger.endpoint` property (or `JAEGER_ENDPOINT` environment variable). Support for using the Jaeger agent, via UDP, will be available in a future version.
 
 == Run the application
 
@@ -121,7 +118,7 @@ or if configuring the tracer via environment variables:
 
 [source, text]
 ----
-./mvnw compile quarkus:dev -Djvm.args="-DJAEGER_SERVICE_NAME=myservice -DJAEGER_SAMPLER_TYPE=const -DJAEGER_SAMPLER_PARAM=1 -DJAEGER_ENDPOINT=http://localhost:14268/api/traces"
+./mvnw compile quarkus:dev -Djvm.args="-DJAEGER_SERVICE_NAME=myservice -DJAEGER_SAMPLER_TYPE=const -DJAEGER_SAMPLER_PARAM=1"
 ----
 
 Once both the application and tracing system are started, you can make a request to the provided endpoint:
@@ -132,23 +129,22 @@ hello
 ```
 When the first request has been submitted, the Jaeger tracer within the app will be initialized:
 ```
-2019-01-14 17:36:38,580 localhost using-opentracing-dev.jar[14190] INFO  [i.j.Configuration] (XNIO-1 task-1) Initialized tracer=JaegerTracer(version=Java-0.33.1, serviceName=myservice, reporter=RemoteReporter(sender=HttpSender(), closeEnqueueTimeout=1000), sampler=ConstSampler(decision=true, tags={sampler.type=const, sampler.param=true}), tags={hostname=localhost.localdomain, jaeger.version=Java-0.33.1, ip=127.0.0.1}, zipkinSharedRpcSpan=false, expandExceptionLogs=false, useTraceId128Bit=false)
+2019-10-16 09:35:23,464 INFO  [io.jae.Configuration] (executor-thread-1) Initialized tracer=JaegerTracer(version=Java-0.34.0, serviceName=myservice, reporter=RemoteReporter(sender=UdpSender(), closeEnqueueTimeout=1000), sampler=ConstSampler(decision=true, tags={sampler.type=const, sampler.param=true}), tags={hostname=localhost.localdomain, jaeger.version=Java-0.34.0, ip=127.0.0.1}, zipkinSharedRpcSpan=false, expandExceptionLogs=false, useTraceId128Bit=false)
 ```
 
 Then visit the http://localhost:16686[Jaeger UI] to see the tracing information.
 
-
 Hit `CTRL+C` to stop the application.
 
-== Additional tracers
+== Additional instrumentation
 
-The https://github.com/opentracing-contrib[OpenTracing API Contributions project] offers additional tracers that can be used to add tracing to a large variety of technologies/components.
+The https://github.com/opentracing-contrib[OpenTracing API Contributions project] offers additional instrumentation that can be used to add tracing to a large variety of technologies/components.
 
-The tracers documented in the following section has been tested with Quarkus and works in both standard and native mode.
+The instrumentation documented in this section has been tested with Quarkus and works in both standard and native mode.
 
-=== JDBC Tracer
+=== JDBC
 
-The https://github.com/opentracing-contrib/java-jdbc[JDBC tracer] will add a span for each JDBC queries done by your application, to enable it, add the following dependency to your pom.xml:
+The https://github.com/opentracing-contrib/java-jdbc[JDBC instrumentation] will add a span for each JDBC queries done by your application, to enable it, add the following dependency to your pom.xml:
 
 [source, xml]
 ----

@@ -30,6 +30,7 @@
         <module>main</module>
         <module>kafka</module>
         <module>jpa</module>
+        <module>jpa-derby</module>
         <module>jpa-postgresql</module>
         <module>jpa-mariadb</module>
         <module>jpa-h2</module>

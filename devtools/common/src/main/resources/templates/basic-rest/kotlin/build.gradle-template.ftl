@@ -32,6 +32,11 @@ dependencies {
 group '${project_groupId}'
 version '${project_version}'
 
+test {
+    useJUnitPlatform()
+    exclude '**/Native*'
+}
+
 quarkus {
     setOutputDirectory("$projectDir/build/classes/kotlin/main")
 }

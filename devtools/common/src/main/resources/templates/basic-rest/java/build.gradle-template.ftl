@@ -35,5 +35,10 @@ compileJava {
     options.compilerArgs << '-parameters'
 }
 
+test {
+    useJUnitPlatform()
+    exclude '**/Native*'
+}
+
 
 

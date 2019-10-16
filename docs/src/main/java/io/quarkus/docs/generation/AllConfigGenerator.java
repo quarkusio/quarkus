@@ -42,7 +42,7 @@ public class AllConfigGenerator {
 
         // let's read it (and ignore the fields we don't need)
         ExtensionJson extensionJson = mapper.readValue(new File(jsonPath), ExtensionJson.class);
-        
+
         // now get all the listed extension jars via Maven
         List<ArtifactRequest> requests = new ArrayList<>(extensionJson.extensions.size());
         Map<String, Extension> extensionsByGav = new HashMap<>();
@@ -55,7 +55,7 @@ public class AllConfigGenerator {
             // record the extension for this GAV
             extensionsByGav.put(extension.groupId + ":" + extension.artifactId, extension);
         }
-        
+
         // examine all the extension jars 
         List<ArtifactRequest> deploymentRequests = new ArrayList<>(extensionJson.extensions.size());
         for (ArtifactResult result : resolver.resolve(requests)) {
@@ -65,7 +65,7 @@ public class AllConfigGenerator {
             try (ZipFile zf = new ZipFile(artifact.getFile())) {
                 // collect all its config roots
                 collectConfigRoots(zf, extension, extensionsByConfigRoots);
-                
+
                 // see if it has a deployment artifact we need to load
                 ZipEntry entry = zf.getEntry("META-INF/quarkus-extension.properties");
                 if (entry != null) {
@@ -87,7 +87,7 @@ public class AllConfigGenerator {
                 }
             }
         }
-        
+
         // now examine all the extension deployment jars
         for (ArtifactResult result : resolver.resolve(deploymentRequests)) {
             Artifact artifact = result.getArtifact();
@@ -104,7 +104,7 @@ public class AllConfigGenerator {
         Map<String, List<ConfigDocItem>> docItemsByConfigRoots = configDocItemScanner
                 .loadAllExtensionsConfigurationItems();
         ConfigDocWriter configDocWriter = new ConfigDocWriter();
-        
+
         // build a list of sorted config items by extension
         List<ConfigDocItem> allItems = new ArrayList<>();
         SortedMap<String, List<ConfigDocItem>> sortedConfigItemsByExtension = new TreeMap<>();
@@ -131,7 +131,7 @@ public class AllConfigGenerator {
             // add all the configs for this extension
             allItems.addAll(configDocItems);
         }
-        
+
         // write our docs
         configDocWriter.writeAllExtensionConfigDocumentation(allItems);
     }

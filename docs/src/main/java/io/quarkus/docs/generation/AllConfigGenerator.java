@@ -35,6 +35,12 @@ import io.quarkus.docs.generation.ExtensionJson.Extension;
 public class AllConfigGenerator {
     public static void main(String[] args)
             throws AppModelResolverException, JsonParseException, JsonMappingException, IOException {
+        if (args.length != 1) {
+            System.err.println("Missing version parameter.");
+            System.exit(1);
+        }
+        String version = args[0];
+
         MavenArtifactResolver resolver = MavenArtifactResolver.builder().build();
         // This is where we produce the entire list of extensions
         String jsonPath = "devtools/core-extensions-json/target/extensions.json";
@@ -49,7 +55,7 @@ public class AllConfigGenerator {
         Map<String, Extension> extensionsByConfigRoots = new HashMap<>();
         for (Extension extension : extensionJson.extensions) {
             ArtifactRequest request = new ArtifactRequest();
-            Artifact artifact = new DefaultArtifact(extension.groupId, extension.artifactId, "jar", "999-SNAPSHOT");
+            Artifact artifact = new DefaultArtifact(extension.groupId, extension.artifactId, "jar", version);
             request.setArtifact(artifact);
             requests.add(request);
             // record the extension for this GAV

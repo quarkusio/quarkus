@@ -58,7 +58,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>1.6.0</version>
                 <executions>
                     <execution>
                         <phase>process-classes</phase>
@@ -69,6 +68,9 @@
                 </executions>
                 <configuration>
                     <mainClass>io.quarkus.docs.generation.AllConfigGenerator</mainClass>
+                    <arguments>
+                        <argument>${project.version}</argument>
+                    </arguments>
                 </configuration>
             </plugin>
             <plugin>

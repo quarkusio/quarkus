@@ -142,7 +142,7 @@
         <jboss-logmanager.version>1.0.3</jboss-logmanager.version>
         <jgit.version>5.5.0.201909110433-r</jgit.version>
         <jetty.version>9.4.19.v20190610</jetty.version>
-        <flyway.version>6.0.4</flyway.version>
+        <flyway.version>6.0.6</flyway.version>
         <yasson.version>1.0.5</yasson.version>
         <neo4j-java-driver.version>2.0.0-alpha03</neo4j-java-driver.version>
         <mongo-client.version>3.10.2</mongo-client.version>

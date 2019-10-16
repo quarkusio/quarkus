@@ -28,6 +28,7 @@ import io.quarkus.annotation.processor.generate_doc.ConfigDocItem;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocItemScanner;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocSection;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocWriter;
+import io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.docs.generation.ExtensionJson.Extension;
@@ -119,7 +120,17 @@ public class AllConfigGenerator {
         for (Entry<String, Extension> entry : extensionsByConfigRoots.entrySet()) {
             List<ConfigDocItem> items = docItemsByConfigRoots.get(entry.getKey());
             if (items != null) {
-                List<ConfigDocItem> configItems = sortedConfigItemsByExtension.computeIfAbsent(entry.getValue().getConfigName(),
+                String extensionName = entry.getValue().name;
+                if (extensionName == null) {
+                    String extensionGav = entry.getValue().groupId + ":" + entry.getValue().artifactId;
+                    // compute the docs file name for this extension
+                    String docFileName = DocGeneratorUtil.computeExtensionDocFileName(entry.getKey());
+                    // now approximate an extension file name based on it
+                    extensionName = guessExtensionNameFromDocumentationFileName(docFileName);
+                    System.err.println("WARNING: Extension name missing for " + extensionGav + " using guessed extension name: "
+                            + extensionName);
+                }
+                List<ConfigDocItem> configItems = sortedConfigItemsByExtension.computeIfAbsent(extensionName,
                         k -> new ArrayList<>());
                 configItems.addAll(items);
             }
@@ -140,6 +151,38 @@ public class AllConfigGenerator {
 
         // write our docs
         configDocWriter.writeAllExtensionConfigDocumentation(allItems);
+    }
+
+    private static String guessExtensionNameFromDocumentationFileName(String docFileName) {
+        // sanitise
+        if (docFileName.startsWith("quarkus-"))
+            docFileName = docFileName.substring(8);
+        if (docFileName.endsWith(".adoc"))
+            docFileName = docFileName.substring(0, docFileName.length() - 5);
+        if (docFileName.endsWith("-config"))
+            docFileName = docFileName.substring(0, docFileName.length() - 7);
+        if (docFileName.endsWith("-configuration"))
+            docFileName = docFileName.substring(0, docFileName.length() - 14);
+        docFileName = docFileName.replace('-', ' ');
+        return capitalize(docFileName);
+    }
+
+    private static String capitalize(String title) {
+        char[] chars = title.toCharArray();
+        boolean capitalize = true;
+        for (int i = 0; i < chars.length; i++) {
+            char c = chars[i];
+            if (Character.isSpaceChar(c)) {
+                capitalize = true;
+                continue;
+            }
+            if (capitalize) {
+                if (Character.isLetter(c))
+                    chars[i] = Character.toUpperCase(c);
+                capitalize = false;
+            }
+        }
+        return new String(chars);
     }
 
     private static void collectConfigRoots(ZipFile zf, Extension extension, Map<String, Extension> extensionsByConfigRoots)

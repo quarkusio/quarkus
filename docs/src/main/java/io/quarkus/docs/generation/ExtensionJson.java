@@ -11,11 +11,5 @@ public class ExtensionJson {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Extension {
         public String name, groupId, artifactId;
-
-        public String getConfigName() {
-            if (name != null)
-                return name;
-            return "NAME MISSING: " + groupId + ":" + artifactId;
-        }
     }
 }

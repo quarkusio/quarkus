@@ -78,8 +78,9 @@ public class DevMojo extends AbstractMojo {
     protected MavenProject project;
 
     /**
-     * If this server should be started in debug mode. The default is to start in debug mode without suspending and listen on
-     * port 5005. It supports the following options:
+     * If this server should be started in debug mode. The default is to start in debug mode and listen on
+     * port 5005. Whether or not the JVM is suspended waiting for a debugger to be attached,
+     * depends on the value of {@link #suspend}. {@code debug} supports the following options:
      * <table>
      * <tr>
      * <td><b>Value</b></td>
@@ -91,7 +92,7 @@ public class DevMojo extends AbstractMojo {
      * </tr>
      * <tr>
      * <td><b>true</b></td>
-     * <td>The JVM is started in debug mode and suspends until a debugger is attached to port 5005</td>
+     * <td>The JVM is started in debug mode and will be listening on port 5005</td>
      * </tr>
      * <tr>
      * <td><b>client</b></td>
@@ -99,7 +100,7 @@ public class DevMojo extends AbstractMojo {
      * </tr>
      * <tr>
      * <td><b>{port}</b></td>
-     * <td>The JVM is started in debug mode and suspends until a debugger is attached to {port}</td>
+     * <td>The JVM is started in debug mode and will be listening on {port}</td>
      * </tr>
      * </table>
      */

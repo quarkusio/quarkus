@@ -132,6 +132,7 @@ Quarkus uses Junit5 and to enable it in Gradle we need to add a section to our b
 ----
 test {
   useJUnitPlatform()
+  exclude '**/Native*'
 }
 ----
 
@@ -141,6 +142,7 @@ Using the Kotlin DSL, add:
 ----
 tasks.test {
     useJUnitPlatform()
+    exclude("**/Native*")
 }
 ----
 

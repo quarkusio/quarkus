@@ -282,7 +282,7 @@ tasks {
 
 tasks.test {
     useJUnitPlatform()
-    exclude '**/Native*'
+    exclude("**/Native*")
 }
 
 allOpen { // <5>

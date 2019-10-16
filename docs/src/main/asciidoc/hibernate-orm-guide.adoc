@@ -49,10 +49,10 @@ then add the relevant configuration properties in `{config-file}`.
 [source,properties]
 --
 # configure your datasource
-quarkus.datasource.url = jdbc:postgresql://localhost:5432/mydatabase
+quarkus.datasource.url = jdbc:postgresql://localhost:5432/hibernate_db
 quarkus.datasource.driver = org.postgresql.Driver
-quarkus.datasource.username = sarah
-quarkus.datasource.password = connor
+quarkus.datasource.username = hibernate
+quarkus.datasource.password = hibernate
 
 # drop and create the database at startup (use `update` to only update the schema)
 quarkus.hibernate-orm.database.generation=drop-and-create

@@ -25,6 +25,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
@@ -329,8 +330,20 @@ final public class ConfigDocItemScanner {
             } else {
                 final ConfigDocKey configDocKey = new ConfigDocKey();
                 configDocKey.setWithinAMap(withinAMap);
+                boolean optional = false;
+                boolean list = false;
                 if (!typeMirror.getKind().isPrimitive()) {
                     DeclaredType declaredType = (DeclaredType) typeMirror;
+                    TypeElement typeElement = (TypeElement) declaredType.asElement();
+                    Name qualifiedName = ((TypeElement) typeElement).getQualifiedName();
+                    if (qualifiedName.contentEquals("java.util.Optional")
+                            || qualifiedName.contentEquals("java.util.OptionalInt")
+                            || qualifiedName.contentEquals("java.util.OptionalDouble")
+                            || qualifiedName.contentEquals("java.util.OptionalLong")) {
+                        optional = true;
+                    } else if (qualifiedName.contentEquals("java.util.List")) {
+                        list = true;
+                    }
                     List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
                     if (!typeArguments.isEmpty()) {
                         // FIXME: this is super dodgy: we should check the type!!
@@ -348,7 +361,7 @@ final public class ConfigDocItemScanner {
                                 configDocKey.setWithinAMap(true);
                             }
                         } else {
-                            // FIXME: I assume this is for Optional<T>
+                            // FIXME: this is for Optional<T> and List<T>
                             TypeMirror realTypeMirror = typeArguments.get(0);
                             type = simpleTypeToString(realTypeMirror);
 
@@ -370,6 +383,8 @@ final public class ConfigDocItemScanner {
                 configDocKey.setType(type);
                 configDocKey.setConfigPhase(configPhase);
                 configDocKey.setDefaultValue(defaultValue);
+                configDocKey.setOptional(optional);
+                configDocKey.setList(list);
                 configDocKey.setConfigDoc(configDescription);
                 configDocKey.setAcceptedValues(acceptedValues);
                 configDocKey.setJavaDocSiteLink(getJavaDocSiteLink(type));

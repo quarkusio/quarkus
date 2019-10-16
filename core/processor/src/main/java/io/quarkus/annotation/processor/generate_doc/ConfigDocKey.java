@@ -17,6 +17,8 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
     private String javaDocSiteLink;
     private ConfigPhase configPhase;
     private List<String> acceptedValues;
+    private boolean optional;
+    private boolean list;
 
     public ConfigDocKey() {
     }
@@ -119,6 +121,22 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
         return unwrappedType;
     }
 
+    public void setOptional(boolean optional) {
+        this.optional = optional;
+    }
+
+    public boolean isOptional() {
+        return optional;
+    }
+
+    public void setList(boolean list) {
+        this.list = list;
+    }
+
+    public boolean isList() {
+        return list;
+    }
+
     @Override
     public void accept(Writer writer, DocFormatter docFormatter) throws IOException {
         docFormatter.format(writer, this);
@@ -142,13 +160,16 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
                 Objects.equals(configDoc, that.configDoc) &&
                 Objects.equals(defaultValue, that.defaultValue) &&
                 Objects.equals(javaDocSiteLink, that.javaDocSiteLink) &&
+                optional == that.optional &&
+                list == that.list &&
                 configPhase == that.configPhase &&
                 Objects.equals(acceptedValues, that.acceptedValues);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, key, configDoc, withinAMap, defaultValue, javaDocSiteLink, configPhase, acceptedValues);
+        return Objects.hash(type, key, configDoc, withinAMap, defaultValue, javaDocSiteLink, configPhase, acceptedValues,
+                optional, list);
     }
 
     @Override
@@ -162,6 +183,8 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
                 ", javaDocSiteLink='" + javaDocSiteLink + '\'' +
                 ", configPhase=" + configPhase +
                 ", acceptedValues=" + acceptedValues +
+                ", optional=" + optional +
+                ", list=" + list +
                 '}';
     }
 }

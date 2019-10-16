@@ -43,18 +43,24 @@ final class SummaryTableDocFormatter implements DocFormatter {
                 typeContent = String.format("link:%s[%s]\n", javaDocLink, typeContent);
             }
         }
+        if (configDocKey.isList()) {
+            typeContent = "list of " + typeContent;
+        }
 
         String doc = configDocKey.getConfigDoc();
 
         final String typeDetail = DocGeneratorUtil.getTypeFormatInformationNote(configDocKey);
         final String defaultValue = configDocKey.getDefaultValue();
+        // this is not strictly true, because we can have a required value with a default value, but
+        // for documentation it will do
+        String required = configDocKey.isOptional() || !defaultValue.isEmpty() ? "" : "REQUIRED";
         writer.append(String.format(TABLE_ROW_FORMAT,
                 configDocKey.getConfigPhase().getIllustration(),
                 configDocKey.getKey(),
                 // make sure nobody inserts a table cell separator here
                 doc.replace("|", "\\|"),
                 typeContent, typeDetail,
-                defaultValue.isEmpty() ? Constants.EMPTY : String.format("`%s`", defaultValue)));
+                defaultValue.isEmpty() ? required : String.format("`%s`", defaultValue)));
     }
 
     @Override

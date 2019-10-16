@@ -158,6 +158,17 @@
     "guide": "https://quarkus.io/guides/infinispan-client-guide"
   },
   {
+    "name": "Infinispan Embedded",
+    "labels": [
+      "infinispan-embedded",
+      "data-grid",
+      "infinispan"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-infinispan-embedded",
+    "guide": "https://quarkus.io/guides/infinispan-embedded-guide"
+  },
+  {
     "name": "JDBC Driver - Derby",
     "labels": [
       "jdbc-derby",

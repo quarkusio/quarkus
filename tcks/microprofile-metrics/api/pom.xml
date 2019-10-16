@@ -33,7 +33,7 @@
                     </environmentVariables>
                     <excludes>
                         <!-- GlobalTagsTest registers ConfigSources at runtime which is not supported -->
-                        <exclude>org/eclipse/microprofile/metrics/tck/GlobalTagsTest.java</exclude>
+                        <exclude>org/eclipse/microprofile/metrics/tck/tags/GlobalTagsTest.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>

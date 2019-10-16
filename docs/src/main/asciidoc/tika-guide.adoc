@@ -21,6 +21,30 @@ https://tika.apache.org/[Apache Tika] is a content analysis toolkit which is use
 |quarkus.tika.append-embedded-content|true|The document may have other embedded documents, for example, an Excel document may include a PDF content. If such an embedded content is available then, by default, it will be appended to the content of the master document, thus, in this example, the text extracted from PDF file will be appended to the text extracted from the Excel file. This property has to be set to `false` if one needs to access the content of the master and each of the embedded documents individually.  
 |===
 
+[NOTE]
+====
+If you are planning to run the application in a native image mode and parse the documents that may have been created with the charsets other than the standard ones supported in Java such as `UTF-8` then you should configure Quarkus Maven Plugin to get the native image generator include all the charsets available to JVM:
+[source,xml]
+----
+<plugin>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-maven-plugin</artifactId>
+    <executions>
+        <execution>
+            <id>native-image</id>
+            <goals>
+                <goal>native-image</goal>
+            </goals>
+            <configuration>
+                <addAllCharsets>true</addAllCharsets>
+                ...
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+----
+====
+
 
 == Prerequisites
 

@@ -111,6 +111,7 @@
                                     <goal>native-image</goal>
                                 </goals>
                                 <configuration>
+                                    <addAllCharsets>true</addAllCharsets>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
                                     <graalvmHome>${graalvmHome}</graalvmHome>

@@ -38,6 +38,7 @@ import io.quarkus.annotation.processor.Constants;
 final public class ConfigDocItemScanner {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final String NAMED_MAP_CONFIG_ITEM_FORMAT = ".\"%s\"";
+    private static final String IO_QUARKUS_TEST_EXTENSION_PACKAGE = "io.quarkus.extest.";
 
     private final JavaDocParser javaDocParser = new JavaDocParser();
     private final Set<ConfigRootInfo> configRoots = new HashSet<>();
@@ -55,7 +56,13 @@ final public class ConfigDocItemScanner {
      * Record configuration group. It will later be visited to find configuration items.
      */
     public void addConfigGroups(TypeElement configGroup) {
-        configGroups.put(configGroup.getQualifiedName().toString(), configGroup);
+        String configGroupName = configGroup.getQualifiedName().toString();
+        final Matcher pkgMatcher = Constants.PKG_PATTERN.matcher(configGroupName);
+        if (!pkgMatcher.find() || configGroupName.startsWith(IO_QUARKUS_TEST_EXTENSION_PACKAGE)) {
+            return;
+        }
+
+        configGroups.put(configGroupName, configGroup);
     }
 
     /**
@@ -63,7 +70,7 @@ final public class ConfigDocItemScanner {
      */
     public void addConfigRoot(final PackageElement pkg, TypeElement clazz) {
         final Matcher pkgMatcher = Constants.PKG_PATTERN.matcher(pkg.toString());
-        if (!pkgMatcher.find()) {
+        if (!pkgMatcher.find() || pkg.toString().startsWith(IO_QUARKUS_TEST_EXTENSION_PACKAGE)) {
             return;
         }
 

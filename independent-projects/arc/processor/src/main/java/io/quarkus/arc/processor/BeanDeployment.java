@@ -57,6 +57,8 @@ public class BeanDeployment {
 
     private final Map<DotName, ClassInfo> interceptorBindings;
 
+    private final Map<DotName, Set<String>> nonBindingFields;
+
     private final Map<DotName, Set<AnnotationInstance>> transitiveInterceptorBindings;
 
     private final Map<DotName, StereotypeInfo> stereotypes;
@@ -123,10 +125,15 @@ public class BeanDeployment {
         buildContextPut(Key.QUALIFIERS.asString(), Collections.unmodifiableMap(qualifiers));
 
         this.interceptorBindings = findInterceptorBindings(index);
+        this.nonBindingFields = new HashMap<>();
         for (InterceptorBindingRegistrar registrar : bindingRegistrars) {
-            for (DotName dotName : registrar.registerAdditionalBindings()) {
+            for (Map.Entry<DotName, Set<String>> bindingEntry : registrar.registerAdditionalBindings().entrySet()) {
+                DotName dotName = bindingEntry.getKey();
                 ClassInfo classInfo = getClassByName(index, dotName);
                 if (classInfo != null) {
+                    if (bindingEntry.getValue() != null) {
+                        nonBindingFields.put(dotName, bindingEntry.getValue());
+                    }
                     interceptorBindings.put(dotName, classInfo);
                 }
             }
@@ -909,6 +916,10 @@ public class BeanDeployment {
                 }
             }
         }
+    }
+
+    public Set<String> getNonBindingFields(DotName name) {
+        return nonBindingFields.getOrDefault(name, Collections.emptySet());
     }
 
     private static class ValidationContextImpl implements ValidationContext {

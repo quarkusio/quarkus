@@ -20,6 +20,7 @@ import io.quarkus.security.credential.PasswordCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
+import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.undertow.security.idm.IdentityManager;
 import io.vertx.ext.web.RoutingContext;
@@ -75,9 +76,11 @@ public class CustomAuth implements HttpAuthenticationMechanism {
     }
 
     @Override
-    public CompletionStage<Boolean> sendChallenge(RoutingContext context) {
-        context.response().headers().set(HttpHeaderNames.WWW_AUTHENTICATE, "BASIC realm=CUSTOM");
-        context.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code());
-        return CompletableFuture.completedFuture(true);
+    public CompletionStage<ChallengeData> getChallenge(RoutingContext context) {
+        ChallengeData result = new ChallengeData(
+                HttpResponseStatus.UNAUTHORIZED.code(),
+                HttpHeaderNames.WWW_AUTHENTICATE,
+                "BASIC realm=CUSTOM");
+        return CompletableFuture.completedFuture(result);
     }
 }

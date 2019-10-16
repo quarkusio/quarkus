@@ -7,9 +7,9 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-Quarkus comes with build in security to allow for RBAC based on the common security annotations `@RolesAllowed`,
-`@DenyAll`, `@PermitAll` on REST endpoints. An example of an endpoint that makes use of both JAX-RS and Common
-Security annotations to describe and secure its endpoints is given in <<subject-example>>. Quarkus also provides
+Quarkus comes with build in security to allow for RBAC (role based access control)
+based on the common security annotations `@RolesAllowed`, `@DenyAll`, `@PermitAll` on REST endpoints and CDI beans.
+An example of an endpoint that makes use of both JAX-RS and Common Security annotations to describe and secure its endpoints is given in <<subject-example>>. Quarkus also provides
 the `io.quarkus.security.Authenticated` annotation that will permit any authenticated user to access the resource
 (equivalent to `@RolesAllowed("*"))`.
 
@@ -63,6 +63,15 @@ public class SubjectExposingResource {
 <3> The `/subject/unsecured` endpoint allows for unauthenticated access by specifying the `@PermitAll` annotation.
 <4> This call to obtain the user principal will return null if the caller is unauthenticated, non-null if the caller is authenticated.
 <5> The `/subject/denied` endpoint disallows any access regardless of whether the call is authenticated by specifying the `@DenyAll` annotation.
+
+There are two configuration settings that alter the RBAC behavior:
+
+- `quarkus.jaxrs.deny-uncovered=true|false` - if set to true, the access will be denied for all JAX-RS endpoints will be
+denied by default. That is if the security annotations security annotations do not define the access control.
+Defaults to `false`
+- `quarkus.security.deny-unannotated=true|false` - if set to true, the access will be denied to all CDI methods
+and JAX-RS endpoints that do not have security annotations but are defined in classes that contain methods with
+security annotations. Defaults to `false`.
 
 ## Security implementations
 

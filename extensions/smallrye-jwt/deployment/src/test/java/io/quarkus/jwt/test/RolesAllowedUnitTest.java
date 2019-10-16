@@ -137,7 +137,7 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatusCode());
         String replyString = response.body().asString();
-        Assertions.assertEquals("Access forbidden: role not allowed", replyString);
+        Assertions.assertEquals("Forbidden", replyString);
     }
 
     /**
@@ -213,7 +213,7 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatusCode());
         String replyString = response.body().asString();
-        Assertions.assertEquals("Access forbidden: role not allowed", replyString);
+        Assertions.assertEquals("Forbidden", replyString);
     }
 
     /**

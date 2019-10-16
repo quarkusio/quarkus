@@ -23,7 +23,7 @@ https://tika.apache.org/[Apache Tika] is a content analysis toolkit which is use
 
 [NOTE]
 ====
-If you are planning to run the application in a native image mode and parse the documents that may have been created with the charsets other than the standard ones supported in Java such as `UTF-8` then you should configure Quarkus Maven Plugin to get the native image generator include all the charsets available to JVM:
+If you are planning to run the application as a native executable and parse documents that may have been created with charsets different than the standard ones supported in Java such as `UTF-8` then you should configure Quarkus Maven Plugin to get the native image generator include all the charsets available to the JVM:
 [source,xml]
 ----
 <plugin>

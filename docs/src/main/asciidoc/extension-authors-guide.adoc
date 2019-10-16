@@ -2189,6 +2189,24 @@ public class SomeConfig {
 1. This will generate a configuration map key named `quarkus.some."cache-name"` instead of `quarkus.some."namespace"`.
 ====
 
+[TIP]
+====
+By default, the doc generator will display the default value supplied via the `defaultValue` attribute of `@ConfigItem`.
+If you wish to display the default value without hardcoding it in the config item e.g when there are different default values depending on the `quarkus.profile`,
+you can use the `defaultValueDocumentation` attribute as shown below.
+[source,java]
+----
+@ConfigRoot
+public class SomeConfig {
+    /**
+     * Namespace configuration.
+     */
+    @ConfigItem(defaultValueDocumentation = "*value-dev (DEV,TEST)\n*value-prod(DEV)")
+    public Optional<String> value;
+}
+----
+====
+
 === Writing section documentation
 
 If you wish to generate configuration section of a given `@ConfigGroup`, Quarkus has got you covered with the `@ConfigDocSection` annotation.

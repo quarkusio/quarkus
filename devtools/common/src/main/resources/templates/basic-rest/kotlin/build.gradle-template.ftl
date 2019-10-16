@@ -20,6 +20,20 @@ repositories {
      mavenCentral()
 }
 
+sourceSets {
+    nativeTest {
+        compileClasspath += sourceSets.main.output
+        compileClasspath += sourceSets.test.output
+        runtimeClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.test.output
+    }
+}
+
+configurations {
+    nativeTestImplementation.extendsFrom implementation
+    nativeTestRuntimeOnly.extendsFrom runtimeOnly
+}
+
 dependencies {
     implementation enforcedPlatform("io.quarkus:quarkus-bom:${quarkusVersion}")
     implementation 'io.quarkus:quarkus-resteasy'
@@ -27,6 +41,9 @@ dependencies {
 
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.rest-assured:rest-assured'
+
+    nativeTestImplementation 'io.quarkus:quarkus-junit5'
+    nativeTestImplementation 'io.rest-assured:rest-assured'
 }
 
 group '${project_groupId}'
@@ -34,8 +51,20 @@ version '${project_version}'
 
 test {
     useJUnitPlatform()
-    exclude '**/Native*'
 }
+
+task testNative(type: Test) {
+    useJUnitPlatform()
+    description = 'Runs native image tests'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.nativeTest.output.classesDirs
+    classpath = sourceSets.nativeTest.runtimeClasspath
+    shouldRunAfter test
+}
+
+testNative.dependsOn buildNative
+check.dependsOn testNative
 
 quarkus {
     setOutputDirectory("$projectDir/build/classes/kotlin/main")

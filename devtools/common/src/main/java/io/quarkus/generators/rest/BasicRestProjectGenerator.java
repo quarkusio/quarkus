@@ -56,6 +56,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
         private ProjectWriter writer;
         private String srcMainPath;
         private String testMainPath;
+        private String nativeTestMainPath;
         private SourceType type;
 
         private BasicRestProject(final ProjectWriter writer, final Map<String, Object> parameters) {
@@ -76,13 +77,19 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
 
             srcMainPath = writer.mkdirs(type.getSrcDir());
             testMainPath = writer.mkdirs(type.getTestSrcDir());
+            // for gradle we want to place the native tests in under 'src/native-test/java'
+            // since gradle's idiomatic way of running integration tests is to create a new source set
+            if (getBuildTool() == BuildTool.GRADLE) {
+                nativeTestMainPath = writer.mkdirs(type.getTestSrcDir().replace("test", "native-test"));
+            } else {
+                nativeTestMainPath = testMainPath;
+            }
 
             return newProject;
         }
 
         private boolean initBuildTool() throws IOException {
-            BuildFile buildFileManager = get(BUILD_FILE, null);
-            BuildTool buildTool = buildFileManager == null ? BuildTool.MAVEN : buildFileManager.getBuildTool();
+            BuildTool buildTool = getBuildTool();
             context.putIfAbsent(ADDITIONAL_GITIGNORE_ENTRIES, buildTool.getGitIgnoreEntries());
             boolean newProject = !writer.exists(buildTool.getDependenciesFile());
             if (newProject) {
@@ -108,6 +115,11 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
                 context.put(PROJECT_ARTIFACT_ID, gav[1]);
             }
             return newProject;
+        }
+
+        private BuildTool getBuildTool() {
+            BuildFile buildFileManager = get(BUILD_FILE, null);
+            return buildFileManager == null ? BuildTool.MAVEN : buildFileManager.getBuildTool();
         }
 
         private void generate(final String templateName, final Map<String, Object> context, final String outputFilePath,
@@ -176,9 +188,18 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
 
                 if (packageName != null) {
                     String packageDir = srcMainPath + '/' + packageName.replace('.', '/');
+                    String originalTestMainPath = testMainPath;
                     String testPackageDir = testMainPath + '/' + packageName.replace('.', '/');
                     srcMainPath = writer.mkdirs(packageDir);
                     testMainPath = writer.mkdirs(testPackageDir);
+
+                    if (!originalTestMainPath.equals(nativeTestMainPath)) {
+                        String nativeTestPackageDir = nativeTestMainPath + '/' + packageName.replace('.', '/');
+                        nativeTestMainPath = writer.mkdirs(nativeTestPackageDir);
+                    } else {
+                        nativeTestMainPath = testMainPath;
+                    }
+
                 } else {
                     throw new NullPointerException("Need a non-null package name");
                 }
@@ -192,7 +213,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
                 String extension = type.getExtension();
                 String classFile = srcMainPath + '/' + className + extension;
                 String testClassFile = testMainPath + '/' + className + "Test" + extension;
-                String itTestClassFile = testMainPath + '/' + "Native" + className + "IT" + extension;
+                String itTestClassFile = nativeTestMainPath + '/' + "Native" + className + "IT" + extension;
                 String name = getName();
                 String srcResourceTemplate = type.getSrcResourceTemplate(name);
                 Object isSpring = context.get(IS_SPRING);

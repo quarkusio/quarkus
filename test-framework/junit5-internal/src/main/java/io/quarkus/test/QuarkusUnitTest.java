@@ -403,6 +403,14 @@ public class QuarkusUnitTest
         }
     }
 
+    public QuarkusUnitTest overrideConfigKey(final String propertyKey, final String propertyValue) {
+        if (customApplicationProperties == null) {
+            customApplicationProperties = new Properties();
+        }
+        customApplicationProperties.put(propertyKey, propertyValue);
+        return this;
+    }
+
     private static class PropertiesAsset implements Asset {
         private final Properties props;
 

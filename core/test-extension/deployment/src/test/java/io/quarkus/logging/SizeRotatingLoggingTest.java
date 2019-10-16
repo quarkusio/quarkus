@@ -12,8 +12,6 @@ import java.util.logging.Logger;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.DelayedHandler;
 import org.jboss.logmanager.handlers.SizeRotatingFileHandler;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,10 +19,10 @@ import io.quarkus.runtime.logging.InitialConfigurator;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class SizeRotatingLoggingTest {
+
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("application-size-file-log-rotating.properties", "application.properties"))
+            .withConfigurationResource("application-size-file-log-rotating.properties")
             .setLogFileName("SizeRotatingLoggingTest.log");
 
     @Test

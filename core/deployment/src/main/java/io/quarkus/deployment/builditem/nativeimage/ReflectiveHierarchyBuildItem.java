@@ -69,7 +69,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         private static final DefaultIgnorePredicate INSTANCE = new DefaultIgnorePredicate();
 
         private static final List<String> DEFAULT_IGNORED_PACKAGES = Arrays.asList("java.", "io.reactivex.",
-                "org.reactivestreams.");
+                "org.reactivestreams.", "reactor.core.publisher.");
 
         @Override
         public boolean test(DotName name) {

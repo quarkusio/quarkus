@@ -294,7 +294,9 @@ stages:
             - mongodb-client
             - mongodb-panache
             - neo4j
+            - redis
           name: data_4
+          redis: true
 
       - template: native-build-steps.yaml
         parameters:

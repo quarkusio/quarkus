@@ -87,6 +87,7 @@
         <module>vertx-graphql</module>
         <module>jpa-without-entity</module>
         <module>quartz</module>
+        <module>redis</module>
     </modules>
 
     <build>

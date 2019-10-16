@@ -7,6 +7,7 @@ parameters:
   dynamodb: false
   keycloak: false
   mysql: false
+  redis: false
   timeoutInMinutes: 80
 
 
@@ -32,6 +33,9 @@ jobs:
     - ${{ if eq(parameters.postgres, 'true') }}:
       - script: docker run --rm --publish 5432:5432 --name build-postgres -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -d postgres:10.5
         displayName: 'start postgres'
+    - ${{ if eq(parameters.redis, 'true') }}:
+      - script: docker run --rm --publish 6379:6379 --name build-redis -d redis:5.0.6
+        displayName: 'start redis'
     - ${{ if eq(parameters.dynamodb, 'true') }}:
       - script: docker run --rm --publish 8000:8000 --name build-dynamodb -d amazon/dynamodb-local:1.11.477
         displayName: 'start dynamodb'
@@ -49,4 +53,4 @@ jobs:
       inputs:
         goals: 'install'
         mavenOptions: $(MAVEN_OPTS)
-        options: '-pl integration-tests/${{ join('',integration-tests/'', parameters.modules) }} -B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-vault -Dnative-image.xmx=6g -Dnative -Dno-format'
+        options: '-pl integration-tests/${{ join('',integration-tests/'', parameters.modules) }} -B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-vault -Dtest-redis -Dnative-image.xmx=6g -Dnative -Dno-format'

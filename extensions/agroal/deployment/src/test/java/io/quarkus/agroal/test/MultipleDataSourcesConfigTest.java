@@ -8,8 +8,6 @@ import java.sql.SQLException;
 
 import javax.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -34,10 +32,8 @@ public class MultipleDataSourcesConfigTest {
     //end::injection[]
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("application-multiple-datasources.properties",
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .withConfigurationResource("application-multiple-datasources.properties");
 
     @Test
     public void testDataSourceInjection() throws SQLException {

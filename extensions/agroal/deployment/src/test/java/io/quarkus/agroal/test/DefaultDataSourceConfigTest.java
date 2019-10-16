@@ -9,8 +9,6 @@ import java.time.Duration;
 
 import javax.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -28,10 +26,8 @@ public class DefaultDataSourceConfigTest {
     //end::injection[]
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("application-default-datasource.properties",
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .withConfigurationResource("application-default-datasource.properties");
 
     @Test
     public void testDefaultDataSourceInjection() throws SQLException {

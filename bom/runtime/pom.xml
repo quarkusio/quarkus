@@ -140,7 +140,7 @@
         <awaitility.version>4.0.1</awaitility.version>
         <jprocesses.version>1.6.5</jprocesses.version>
         <jboss-logmanager.version>1.0.3</jboss-logmanager.version>
-        <jgit.version>5.5.0.201909110433-r</jgit.version>
+        <jgit.version>5.5.1.201910021850-r</jgit.version>
         <jetty.version>9.4.19.v20190610</jetty.version>
         <flyway.version>6.0.6</flyway.version>
         <yasson.version>1.0.5</yasson.version>

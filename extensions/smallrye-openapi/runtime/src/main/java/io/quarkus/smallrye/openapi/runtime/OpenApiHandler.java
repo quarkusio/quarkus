@@ -18,6 +18,19 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class OpenApiHandler implements Handler<RoutingContext> {
 
+    /*
+     * <em>Ugly Hack</em>
+     * In dev mode, we receive a classloader to load the up to date OpenAPI document.
+     * This hack is required because using the TCCL would get an outdated version - the initial one.
+     * This is because the worker thread on which the handler is called captures the TCCL at creation time
+     * and does not allow updating it.
+     *
+     * This classloader must ONLY be used to load the OpenAPI document.
+     *
+     * In non dev mode, the TCCL is used.
+     */
+    public static volatile ClassLoader classLoader;
+
     private static final String ALLOWED_METHODS = "GET, HEAD, OPTIONS";
 
     private static final String QUERY_PARAM_FORMAT = "format";
@@ -57,7 +70,8 @@ public class OpenApiHandler implements Handler<RoutingContext> {
 
             addCorsResponseHeaders(resp);
             resp.headers().set("Content-Type", format.getMimeType() + ";charset=UTF-8");
-            try (InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream(BASE_NAME + format)) {
+            ClassLoader cl = classLoader == null ? Thread.currentThread().getContextClassLoader() : classLoader;
+            try (InputStream in = cl.getResourceAsStream(BASE_NAME + format)) {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 int r;
                 byte[] buf = new byte[1024];

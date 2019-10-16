@@ -42,13 +42,17 @@ public class AllConfigGenerator {
         }
         String version = args[0];
 
-        MavenArtifactResolver resolver = MavenArtifactResolver.builder().build();
         // This is where we produce the entire list of extensions
-        String jsonPath = "devtools/core-extensions-json/target/extensions.json";
+        File jsonFile = new File("devtools/core-extensions-json/target/extensions.json");
+        if (!jsonFile.exists()) {
+            System.err.println("WARNING: could not generate all-config file because extensions list is missing: " + jsonFile);
+            System.exit(0);
+        }
         ObjectMapper mapper = new ObjectMapper();
+        MavenArtifactResolver resolver = MavenArtifactResolver.builder().build();
 
         // let's read it (and ignore the fields we don't need)
-        ExtensionJson extensionJson = mapper.readValue(new File(jsonPath), ExtensionJson.class);
+        ExtensionJson extensionJson = mapper.readValue(jsonFile, ExtensionJson.class);
 
         // now get all the listed extension jars via Maven
         List<ArtifactRequest> requests = new ArrayList<>(extensionJson.extensions.size());

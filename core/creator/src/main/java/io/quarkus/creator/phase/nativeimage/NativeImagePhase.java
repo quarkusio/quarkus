@@ -107,7 +107,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private String nativeImageXmx;
 
-    private String builderImage = "quay.io/quarkus/ubi-quarkus-native-image:19.2.0.1";
+    private String builderImage = "quay.io/quarkus/ubi-quarkus-native-image:19.2.1";
 
     private String containerRuntime = "";
 
@@ -592,7 +592,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
         final List<String> obsoleteGraalVmVersions = Arrays.asList("1.0.0", "19.0.", "19.1.");
         final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(vmName::contains);
         if (vmVersionIsObsolete) {
-            log.error("Out of date build of GraalVM detected! Please upgrade to GraalVM 19.2.0.1.");
+            log.error("Out of date build of GraalVM detected! Please upgrade to GraalVM 19.2.1.");
             return true;
         }
         return false;

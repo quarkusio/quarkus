@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -164,7 +165,28 @@ public class QuarkusDev extends QuarkusTask {
         try {
             List<String> args = new ArrayList<>();
             args.add(JavaBinFinder.findBin());
-            String debug = System.getProperty("debug");
+            final String debug = System.getProperty("debug");
+            final String suspend = System.getProperty("suspend");
+            String debugSuspend = "n";
+            if (suspend != null) {
+                switch (suspend.toLowerCase(Locale.ENGLISH)) {
+                    case "n":
+                    case "false": {
+                        debugSuspend = "n";
+                        break;
+                    }
+                    case "y":
+                    case "true": {
+                        debugSuspend = "y";
+                        break;
+                    }
+                    default: {
+                        System.err.println(
+                                "Ignoring invalid value \"" + suspend + "\" for \"suspend\" param and defaulting to \"n\"");
+                        break;
+                    }
+                }
+            }
             if (debug == null) {
                 // debug mode not specified
                 // make sure 5005 is not used, we don't want to just fail if something else is using it
@@ -172,14 +194,14 @@ public class QuarkusDev extends QuarkusTask {
                     System.err.println("Port 5005 in use, not starting in debug mode");
                 } catch (IOException e) {
                     args.add("-Xdebug");
-                    args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=n");
+                    args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=" + debugSuspend);
                 }
             } else if (debug.toLowerCase().equals("client")) {
                 args.add("-Xdebug");
-                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=n");
+                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=" + debugSuspend);
             } else if (debug.toLowerCase().equals("true") || debug.isEmpty()) {
                 args.add("-Xdebug");
-                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=y,suspend=y");
+                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=y,suspend=" + debugSuspend);
             } else if (!debug.toLowerCase().equals("false")) {
                 try {
                     int port = Integer.parseInt(debug);
@@ -187,7 +209,7 @@ public class QuarkusDev extends QuarkusTask {
                         throw new GradleException("The specified debug port must be greater than 0");
                     }
                     args.add("-Xdebug");
-                    args.add("-Xrunjdwp:transport=dt_socket,address=" + port + ",server=y,suspend=y");
+                    args.add("-Xrunjdwp:transport=dt_socket,address=" + port + ",server=y,suspend=" + debugSuspend);
                 } catch (NumberFormatException e) {
                     throw new GradleException(
                             "Invalid value for debug parameter: " + debug + " must be true|false|client|{port}");

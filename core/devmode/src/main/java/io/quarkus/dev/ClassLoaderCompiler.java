@@ -83,9 +83,9 @@ public class ClassLoaderCompiler {
                 classPathElements.add(new File(i.getClassesPath()));
             }
         }
-        final String devModeRunnerJarAbsolutePath = context.getDevModeRunnerJarFile() == null
+        final String devModeRunnerJarCanonicalPath = context.getDevModeRunnerJarFile() == null
                 ? null
-                : context.getDevModeRunnerJarFile().getAbsolutePath();
+                : context.getDevModeRunnerJarFile().getCanonicalPath();
         while (!toParse.isEmpty()) {
             String s = toParse.poll();
             if (!parsedFiles.contains(s)) {
@@ -108,7 +108,8 @@ public class ClassLoaderCompiler {
                     // in various different ways in this very own ClassLoaderCompiler class, so
                     // not passing this jar to the JDK's compiler won't prevent its Class-Path
                     // references from being part of the hot deployment compile classpath.
-                    if (devModeRunnerJarAbsolutePath != null && file.getAbsolutePath().equals(devModeRunnerJarAbsolutePath)) {
+                    if (devModeRunnerJarCanonicalPath != null
+                            && file.getCanonicalPath().equals(devModeRunnerJarCanonicalPath)) {
                         log.debug("Dev mode runner jar " + file + " won't be added to compilation classpath of hot deployment");
                     } else {
                         classPathElements.add(file);

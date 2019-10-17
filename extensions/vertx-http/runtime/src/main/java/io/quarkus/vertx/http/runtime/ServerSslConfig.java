@@ -5,6 +5,7 @@ import java.util.List;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.DefaultConverter;
+import io.vertx.core.http.ClientAuth;
 
 /**
  * Shared configuration for setting up server-side SSL.
@@ -28,5 +29,12 @@ public class ServerSslConfig {
     @DefaultConverter
     @ConfigItem(defaultValue = "TLSv1.3,TLSv1.2")
     public List<String> protocols;
+
+    /**
+     * Configures the engine to require/request client authentication.
+     * NONE, REQUEST, REQUIRED
+     */
+    @ConfigItem(defaultValue = "NONE")
+    public ClientAuth clientAuth;
 
 }

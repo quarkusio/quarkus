@@ -22,19 +22,19 @@ public final class PathTestHelper {
                 "bin" + File.separator + "main");
         // gradle
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "java" + File.separator + "nativeTest",
+                "classes" + File.separator + "java" + File.separator + "native-test",
                 "classes" + File.separator + "java" + File.separator + "main");
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "java" + File.separator + "test",
                 "classes" + File.separator + "java" + File.separator + "main");
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "kotlin" + File.separator + "nativeTest",
+                "classes" + File.separator + "kotlin" + File.separator + "native-test",
                 "classes" + File.separator + "kotlin" + File.separator + "main");
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "kotlin" + File.separator + "test",
                 "classes" + File.separator + "kotlin" + File.separator + "main");
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "scala" + File.separator + "nativeTest",
+                "classes" + File.separator + "scala" + File.separator + "native-test",
                 "classes" + File.separator + "scala" + File.separator + "main");
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "scala" + File.separator + "test",

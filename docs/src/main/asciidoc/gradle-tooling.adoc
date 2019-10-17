@@ -126,25 +126,9 @@ dependencies {
 
 == Enable Tests
 
-Quarkus uses Junit5 and to enable it in Gradle we need to add a section to our build file:
-
-[source,groovy,subs=attributes+]
-----
-test {
-  useJUnitPlatform()
-  exclude '**/Native*'
-}
-----
-
-Using the Kotlin DSL, add:
-
-[source,kotlin,subs=attributes+]
-----
-tasks.test {
-    useJUnitPlatform()
-    exclude("**/Native*")
-}
-----
+When the Quarkus Gradle plugin is applied to a build, the `test` task is configured to run regular tests while the `testNative` task
+is meant to run the native image tests.
+The source code for the native image tests should reside in `src/native-test` instead of `src/test` where the source code for regular tests resides.
 
 To follow up our Rest example from above, we would also need to add two test dependencies:
 
@@ -182,7 +166,6 @@ database.
 [source,groovy,subs=attributes+]
 ----
 test {
-    useJUnitPlatform()
     systemProperty "quarkus.test.profile", "foo" <1>
 }
 ----
@@ -192,7 +175,6 @@ or, if you use the Gradle Kotlin DSL:
 [source,kotlin,subs=attributes+]
 ----
 tasks.test {
-    useJUnitPlatform()
     systemProperty("quarkus.test.profile", "foo") <1>
  }
 ----

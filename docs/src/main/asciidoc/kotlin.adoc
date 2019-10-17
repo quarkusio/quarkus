@@ -280,11 +280,6 @@ tasks {
     }
 }
 
-tasks.test {
-    useJUnitPlatform()
-    exclude("**/Native*")
-}
-
 allOpen { // <5>
     annotation("javax.ws.rs.Path")
     annotation("javax.enterprise.context.ApplicationScoped")

@@ -1,11 +1,18 @@
 package io.quarkus.gradle;
 
+import java.util.Collections;
+
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
+import org.gradle.api.tasks.SourceSetOutput;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.testing.Test;
 import org.gradle.util.GradleVersion;
@@ -17,6 +24,7 @@ import io.quarkus.gradle.tasks.QuarkusGenerateConfig;
 import io.quarkus.gradle.tasks.QuarkusListExtensions;
 import io.quarkus.gradle.tasks.QuarkusNative;
 import io.quarkus.gradle.tasks.QuarkusTestConfig;
+import io.quarkus.gradle.tasks.QuarkusTestNative;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -52,11 +60,38 @@ public class QuarkusPlugin implements Plugin<Project> {
                     quarkusBuild.dependsOn(classesTask);
                 });
 
-        tasks.create("buildNative", QuarkusNative.class).dependsOn(quarkusBuild);
+        Task buildNative = tasks.create("buildNative", QuarkusNative.class).dependsOn(quarkusBuild);
 
-        // Quarkus test configuration task which should be executed before any Quarkus test
+        // set up the source set for the testNative
+        JavaPluginConvention javaPlugin = project.getConvention().findPlugin(JavaPluginConvention.class);
+        if (javaPlugin != null) {
+            SourceSetContainer sourceSets = javaPlugin.getSourceSets();
+            SourceSet nativeTestSourceSet = sourceSets.create("native-test"); // this name has to be the same as the directory in which the tests reside
+            SourceSetOutput mainSourceSetOutput = sourceSets.getByName("main").getOutput();
+            SourceSetOutput testSourceSetOutput = sourceSets.getByName("test").getOutput();
+            nativeTestSourceSet.setCompileClasspath(
+                    nativeTestSourceSet.getCompileClasspath().plus(mainSourceSetOutput).plus(testSourceSetOutput));
+            nativeTestSourceSet.setRuntimeClasspath(
+                    nativeTestSourceSet.getRuntimeClasspath().plus(mainSourceSetOutput).plus(testSourceSetOutput));
+
+            // create a custom configuration to be used for the dependencies of the testNative task
+            ConfigurationContainer configurations = project.getConfigurations();
+            configurations.maybeCreate("nativeTestImplementation").extendsFrom(configurations.findByName("implementation"));
+            configurations.maybeCreate("nativeTestRuntimeOnly").extendsFrom(configurations.findByName("runtimeOnly"));
+
+            Task testNative = tasks.create("testNative", QuarkusTestNative.class).dependsOn(buildNative);
+            testNative.setShouldRunAfter(Collections.singletonList(tasks.findByName("test")));
+
+            tasks.getByName("check").dependsOn(testNative);
+        }
+
         final QuarkusTestConfig quarkusTestConfig = tasks.create("quarkusTestConfig", QuarkusTestConfig.class);
-        tasks.withType(Test.class).forEach(t -> t.dependsOn(quarkusTestConfig));
+        tasks.withType(Test.class).forEach(t -> {
+            // Quarkus test configuration task which should be executed before any Quarkus test
+            t.dependsOn(quarkusTestConfig);
+            // also make each task use the JUnit platform since it's the only supported test environment
+            t.useJUnitPlatform();
+        });
     }
 
     private void verifyGradleVersion() {

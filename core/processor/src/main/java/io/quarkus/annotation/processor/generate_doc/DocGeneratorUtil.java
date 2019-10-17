@@ -15,7 +15,7 @@ import javax.lang.model.type.DeclaredType;
 
 import io.quarkus.annotation.processor.Constants;
 
-class DocGeneratorUtil {
+public class DocGeneratorUtil {
     static final String VERTX_JAVA_DOC_SITE = "https://vertx.io/docs/apidocs/";
     static final String OFFICIAL_JAVA_DOC_BASE_LINK = "https://docs.oracle.com/javase/8/docs/api/";
     static final String AGROAL_API_JAVA_DOC_SITE = "https://jar-download.com/javaDoc/io.agroal/agroal-api/1.5/index.html?";
@@ -258,7 +258,7 @@ class DocGeneratorUtil {
     /**
      * Guess extension name from given configuration root file
      */
-    static String computeExtensionDocFileName(String configRoot) {
+    public static String computeExtensionDocFileName(String configRoot) {
         final Matcher matcher = Constants.PKG_PATTERN.matcher(configRoot);
         if (!matcher.find()) {
             return configRoot + Constants.ADOC_EXTENSION;

@@ -13,7 +13,7 @@
 
     <artifactId>quarkus-documentation</artifactId>
 
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
     <properties>
         <asciidoctorj.version>2.0.0</asciidoctorj.version>
         <asciidoctor-maven-plugin.version>2.0.0-RC.1</asciidoctor-maven-plugin.version>
@@ -27,9 +27,29 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.12.1</version>
+        </dependency>
+        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>quarkus-extension-processor</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>quarkus-bootstrap-core</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>jcl-over-slf4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jsoup</groupId>
+                    <artifactId>jsoup</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
@@ -38,17 +58,22 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>1.6.0</version>
                 <executions>
                     <execution>
-                        <phase>generate-resources</phase>
+                        <phase>process-classes</phase>
                         <goals>
                             <goal>java</goal>
                         </goals>
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>io.quarkus.annotation.processor.ExtensionAnnotationProcessor</mainClass>
+                    <mainClass>io.quarkus.docs.generation.AllConfigGenerator</mainClass>
+                    <arguments>
+                        <argument>${project.version}</argument>
+                    </arguments>
+                    <environmentVariables>
+                        <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
+                    </environmentVariables>
                 </configuration>
             </plugin>
             <plugin>
@@ -116,7 +141,7 @@
                 <executions>
                     <execution>
                         <id>output-html</id>
-                        <phase>generate-resources</phase>
+                        <phase>prepare-package</phase>
                         <goals>
                             <goal>process-asciidoc</goal>
                         </goals>
@@ -136,6 +161,7 @@
                                 <!-- avoid content security policy violations -->
                                 <linkcss>true</linkcss>
                                 <copycss>true</copycss>
+                                <skip-front-matter>true</skip-front-matter>
                             </attributes>
                         </configuration>
                     </execution>

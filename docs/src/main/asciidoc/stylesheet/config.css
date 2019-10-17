@@ -11,6 +11,20 @@ table.configuration-reference caption {
     color: inherit;
 }
 
+/* Remove the bottom margin of the last p child of a row, because the row has padding */
+table.configuration-reference .description > .content > .paragraph > p:last-child {
+    margin-bottom: 0;
+}
+
+/* Instead add bottom margin to content div unless last child */
+table.configuration-reference .description > .content {
+    margin-bottom: 10px;
+}
+
+table.configuration-reference .description > .content:last-child {
+    margin-bottom: 0;
+}
+
 .configuration-legend input{
     float: right;
 }
@@ -20,7 +34,7 @@ table.configuration-reference caption {
 }
 
 .description-collapsed {
-    height: 1.4em;
+    height: 21px;
     overflow: hidden;
 }
 

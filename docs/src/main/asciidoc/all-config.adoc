@@ -1,3 +1,6 @@
+---
+layout: guides-configuration-reference
+---
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:

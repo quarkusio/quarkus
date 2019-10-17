@@ -36,7 +36,6 @@ import io.quarkus.docs.generation.ExtensionJson.Extension;
 public class AllConfigGenerator {
     public static void main(String[] args)
             throws AppModelResolverException, JsonParseException, JsonMappingException, IOException {
-        System.err.println("MAVEN_CMD_LINE_ARGS is: "+System.getenv("MAVEN_CMD_LINE_ARGS"));
         if (args.length != 1) {
             System.err.println("Missing version parameter.");
             System.exit(1);

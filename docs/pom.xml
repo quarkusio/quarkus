@@ -73,7 +73,7 @@
                     </arguments>
                     <environmentVariables>
                         <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
-                        <MAVEN_LOCAL_REPO>${env.MAVEN_LOCAL_REPO}</MAVEN_LOCAL_REPO>
+                        <QUARKUS_LOCAL_REPO>${env.QUARKUS_LOCAL_REPO}</QUARKUS_LOCAL_REPO>
                     </environmentVariables>
                 </configuration>
             </plugin>

@@ -1,23 +1,5 @@
 package io.quarkus.amazon.sam;
 
-import static io.netty.buffer.Unpooled.wrappedBuffer;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import javax.ws.rs.core.HttpHeaders;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.amazonaws.serverless.proxy.AwsProxyExceptionHandler;
 import com.amazonaws.serverless.proxy.internal.SecurityUtils;
 import com.amazonaws.serverless.proxy.model.AwsProxyRequest;
@@ -30,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
-
+import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultHttpRequest;
 import io.netty.handler.codec.http.DefaultLastHttpContent;
 import io.netty.handler.codec.http.HttpContent;
@@ -42,6 +24,21 @@ import io.netty.util.ReferenceCountUtil;
 import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
 import io.quarkus.runtime.Application;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.ws.rs.core.HttpHeaders;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("unused")
 public class SamHandler implements RequestStreamHandler {
@@ -185,8 +182,12 @@ public class SamHandler implements RequestStreamHandler {
 
     private HttpContent buildContent(AwsProxyRequest request) {
         String body = request.getBody();
-        return body != null
-                ? new DefaultLastHttpContent(wrappedBuffer(body.getBytes(StandardCharsets.UTF_8)))
-                : LastHttpContent.EMPTY_LAST_CONTENT;
+        HttpContent requestContent;
+        if (request.isBase64Encoded()) {
+            requestContent = new DefaultLastHttpContent(Unpooled.wrappedBuffer(Base64.getMimeDecoder().decode(body)));
+        } else {
+            requestContent = new DefaultLastHttpContent(Unpooled.copiedBuffer(body, StandardCharsets.UTF_8));
+        }
+        return requestContent;
     }
 }

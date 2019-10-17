@@ -357,6 +357,7 @@ public class VertxHttpRecorder {
         serverOptions.setSsl(true);
         serverOptions.setHost(httpConfiguration.host);
         serverOptions.setPort(httpConfiguration.determineSslPort(launchMode));
+        serverOptions.setClientAuth(sslConfig.clientAuth);
         return serverOptions;
     }
 

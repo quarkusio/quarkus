@@ -20,14 +20,13 @@ public class GradleBuildFileFromConnector extends GradleBuildFile {
 
     private List<Dependency> dependencies = null;
 
-    public GradleBuildFileFromConnector(ProjectWriter writer) throws IOException {
+    public GradleBuildFileFromConnector(ProjectWriter writer) {
         super(writer);
         // we need to initialize here since there is no other single point of entry
-        init();
     }
 
     @Override
-    public List<Dependency> getDependencies() {
+    public List<Dependency> getDependencies() throws IOException {
         if (dependencies == null) {
             EclipseProject eclipseProject = null;
             if (getBuildContent() != null) {

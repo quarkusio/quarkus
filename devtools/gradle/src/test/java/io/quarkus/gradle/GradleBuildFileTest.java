@@ -27,7 +27,7 @@ class GradleBuildFileTest {
     private static GradleBuildFileFromConnector buildFile;
 
     @BeforeAll
-    public static void beforeAll() throws IOException, URISyntaxException {
+    public static void beforeAll() throws URISyntaxException {
         URL url = GradleBuildFileTest.class.getClassLoader().getResource("gradle-project");
         URI uri = url.toURI();
         Path gradleProjectPath = Paths.get(uri);
@@ -35,7 +35,7 @@ class GradleBuildFileTest {
     }
 
     @Test
-    void testGetDependencies() {
+    void testGetDependencies() throws IOException {
         List<Dependency> dependencies = buildFile.getDependencies();
         assertThat(dependencies).isNotEmpty();
         List<String> depsString = new ArrayList<>();
@@ -52,7 +52,7 @@ class GradleBuildFileTest {
     }
 
     @Test
-    void testGetProperty() {
+    void testGetProperty() throws IOException {
         assertNull(buildFile.getProperty("toto"));
         assertEquals("0.23.2", buildFile.getProperty("quarkusVersion"));
     }

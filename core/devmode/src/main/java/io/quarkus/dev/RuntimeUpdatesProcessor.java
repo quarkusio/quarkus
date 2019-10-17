@@ -55,9 +55,10 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
 
     /**
      * Resources that appear in both src and target, these will be removed if the src resource subsequently disappears.
-     * This set contains the paths in the target dir
+     * This map contains the paths in the target dir, one for each module, otherwise on a second module we will delete files
+     * from the first one
      */
-    private final Set<Path> correspondingResources = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Map<String, Set<Path>> correspondingResources = new ConcurrentHashMap<>();
     private final List<Runnable> preScanSteps = new CopyOnWriteArrayList<>();
     private final List<Consumer<Set<String>>> noRestartChangesConsumers = new CopyOnWriteArrayList<>();
     private final List<HotReplacementSetup> hotReplacementSetup = new ArrayList<>();
@@ -285,6 +286,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     private Set<String> checkForFileChange() {
         Set<String> ret = new HashSet<>();
         for (DevModeContext.ModuleInfo module : context.getModules()) {
+            final Set<Path> moduleResources = correspondingResources.computeIfAbsent(module.getName(),
+                    m -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
             boolean doCopy = true;
             String rootPath = module.getResourcePath();
             if (rootPath == null) {
@@ -299,16 +302,16 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
             //copy all modified non hot deployment files over
             if (doCopy) {
                 try {
-                    Set<Path> seen = new HashSet<>(correspondingResources);
-                    Files.walk(root).forEach(new Consumer<Path>() {
-                        @Override
-                        public void accept(Path path) {
+                    final Set<Path> seen = new HashSet<>(moduleResources);
+                    //since the stream is Closeable, use a try with resources so the underlying iterator is closed
+                    try (final Stream<Path> walk = Files.walk(root)) {
+                        walk.forEach(path -> {
                             try {
                                 Path relative = root.relativize(path);
                                 Path target = classesDir.resolve(relative);
                                 seen.remove(target);
                                 if (!watchedFileTimestamps.containsKey(path)) {
-                                    correspondingResources.add(target);
+                                    moduleResources.add(target);
                                     if (!Files.exists(target) || Files.getLastModifiedTime(target).toMillis() < Files
                                             .getLastModifiedTime(path).toMillis()) {
                                         if (Files.isDirectory(path)) {
@@ -325,8 +328,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                             } catch (Exception e) {
                                 log.error("Failed to copy resources", e);
                             }
-                        }
-                    });
+                        });
+                    }
                     for (Path i : seen) {
                         if (!Files.isDirectory(i)) {
                             Files.delete(i);

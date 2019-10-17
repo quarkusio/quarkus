@@ -285,9 +285,14 @@ In development mode, Quarkus starts by default with debug mode enabled, listenin
 This behavior can be changed by giving the `debug` system property one of the following values:
 
 * `false` - the JVM will start with debug mode disabled
-* `true` - the JVM will start in debug mode and be suspended until a debugger is attached to port `5005`
+* `true` - The JVM is started in debug mode and will be listening on port `5005`
 * `client` - the JVM will start in client mode and attempt to connect to `localhost:5005`
-* `{port}` - the JVM will start in debug mode and be suspended until a debugger is attached to `{port}`
+* `{port}` - The JVM is started in debug mode and will be listening on `{port}`
+
+An additional system property `suspend` can be used to suspend the JVM, when launched in debug mode. `suspend` supports the following values:
+
+* `y` or `true` - The debug mode JVM launch is suspended
+* `n` or `false` - The debug mode JVM is started without suspending
 
 [TIP]
 ====

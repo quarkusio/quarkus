@@ -45,24 +45,6 @@ class FlywayProcessor {
     private static final String JAR_APPLICATION_MIGRATIONS_PROTOCOL = "jar";
     private static final String FILE_APPLICATION_MIGRATIONS_PROTOCOL = "file";
 
-    /**
-     * Flyway internal resources that must be added to the native image
-     */
-    private static final String FLYWAY_DATABASES_PATH_ROOT = "org/flywaydb/core/internal/database";
-    private static final String FLYWAY_METADATA_TABLE_FILENAME = "createMetaDataTable.sql";
-    private static final String[] FLYWAY_DATABASES_WITH_SQL_FILE = {
-            "cockroachdb",
-            "derby",
-            "h2",
-            "hsqldb",
-            "mysql",
-            "oracle",
-            "postgresql",
-            "redshift",
-            "saphana",
-            "sqlite",
-            "sybasease"
-    };
     private static final Logger LOGGER = Logger.getLogger(FlywayProcessor.class);
     /**
      * Flyway build config
@@ -111,7 +93,7 @@ class FlywayProcessor {
             BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
             FlywayBuildConfig flywayBuildConfig)
             throws IOException, URISyntaxException {
-        List<String> nativeResources = generateDatabasesSQLFiles();
+        final List<String> nativeResources = new ArrayList<>();
         List<String> applicationMigrations = discoverApplicationMigrations(flywayBuildConfig);
         nativeResources.addAll(applicationMigrations);
         // Store application migration in a generated resource that will be accessed later by the Quarkus-Flyway path scanner
@@ -181,13 +163,4 @@ class FlywayProcessor {
         return FileSystems.newFileSystem(uri, env);
     }
 
-    private List<String> generateDatabasesSQLFiles() {
-        List<String> result = new ArrayList<>(FLYWAY_DATABASES_WITH_SQL_FILE.length);
-        for (String database : FLYWAY_DATABASES_WITH_SQL_FILE) {
-            String filePath = FLYWAY_DATABASES_PATH_ROOT + "/" + database + "/" + FLYWAY_METADATA_TABLE_FILENAME;
-            result.add(filePath);
-            LOGGER.debug("Adding flyway internal migration: " + filePath);
-        }
-        return result;
-    }
 }

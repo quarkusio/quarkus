@@ -302,6 +302,12 @@ Quarkus itself is configured via the same mechanism as your application. Quarkus
 for its own configuration. For example to configure the HTTP server port you can set `quarkus.http.port` in
 `application.properties`.
 
+=== List of all configuration properties
+
+All the Quarkus configuration properties are link:all-config[documented and searcheable].
+
+=== Generating configuration for your application
+
 It is also possible to generate an example `application.properties` with all known configuration properties, to make
 it easy to see what Quarkus configuration options are available. To do this, run:
 

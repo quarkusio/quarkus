@@ -1,6 +1,5 @@
 package io.quarkus.arc.deployment.configproperties;
 
-import java.util.Collection;
 import java.util.Optional;
 import java.util.function.IntFunction;
 

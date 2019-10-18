@@ -12,6 +12,7 @@ import java.util.Set;
 import javax.enterprise.inject.Produces;
 
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -20,6 +21,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
@@ -59,8 +61,8 @@ final class InterfaceConfigPropertiesUtil {
     }
 
     static String generateImplementationForInterfaceConfigProperties(ClassInfo originalInterface, ClassOutput classOutput,
-            IndexView index, String prefixStr,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues) {
+            IndexView index, String prefixStr, BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
+            BuildProducer<ConfigPropertyBuildItem> configProperties) {
         Set<DotName> allInterfaces = new HashSet<>();
         allInterfaces.add(originalInterface.name());
         collectInterfacesRec(originalInterface, index, allInterfaces);
@@ -151,6 +153,10 @@ final class InterfaceConfigPropertiesUtil {
                                     fullConfigName, returnType,
                                     method.declaringClass().name(), methodCreator, config);
                             methodCreator.returnValue(value);
+                            if (defaultValueStr == null || ConfigProperty.UNCONFIGURED_VALUE.equals(defaultValueStr)) {
+                                configProperties
+                                        .produce(new ConfigPropertyBuildItem(fullConfigName, returnType.name().toString()));
+                            }
                         }
                     }
                 }

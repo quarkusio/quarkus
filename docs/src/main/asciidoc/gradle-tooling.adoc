@@ -280,7 +280,7 @@ An additional system property `suspend` can be used to suspend the JVM, when lau
 
 [TIP]
 ====
-You can also run a Quarkus application in debug mode with a suspended JVM using `./gradlew quarkusDev -Dsuspend=true -Ddebug` which is a shorthand for `./gradlew quarkusDev -Dsuspend=true -Ddebug=true`.
+You can also run a Quarkus application in debug mode with a suspended JVM using `./gradlew quarkusDev -Dsuspend -Ddebug` which is a shorthand for `./gradlew quarkusDev -Dsuspend=true -Ddebug=true`.
 
 Then, attach your debugger to `localhost:5005`.
 ====

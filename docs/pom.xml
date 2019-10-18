@@ -56,6 +56,18 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>dump-env</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <executions>
@@ -74,6 +86,7 @@
                     <environmentVariables>
                         <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
                         <QUARKUS_LOCAL_REPO>${env.QUARKUS_LOCAL_REPO}</QUARKUS_LOCAL_REPO>
+                        <MAVEN_PROJECTBASEDIR>${env.MAVEN_PROJECTBASEDIR}</MAVEN_PROJECTBASEDIR>
                     </environmentVariables>
                 </configuration>
             </plugin>

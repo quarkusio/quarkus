@@ -36,6 +36,25 @@ import io.quarkus.docs.generation.ExtensionJson.Extension;
 public class AllConfigGenerator {
     public static void main(String[] args)
             throws AppModelResolverException, JsonParseException, JsonMappingException, IOException {
+
+        System.err.println("ENVIRONMENT");
+        List<String> keys = new ArrayList<>(System.getenv().keySet());
+        java.util.Collections.sort(keys);
+        for (String key : keys) {
+            System.err.println(key + "=" + System.getenv(key));
+        }
+
+        System.err.println("------------");
+        System.err.println("MAVEN");
+        keys.clear();
+        for (Object key : System.getProperties().keySet()) {
+            keys.add(key.toString());
+        }
+        java.util.Collections.sort(keys);
+        for (String key : keys) {
+            System.err.println(key + "=" + System.getProperty(key));
+        }
+
         if (args.length != 1) {
             System.err.println("Missing version parameter.");
             System.exit(1);

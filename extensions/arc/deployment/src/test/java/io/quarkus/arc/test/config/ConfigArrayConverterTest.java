@@ -42,6 +42,7 @@ public class ConfigArrayConverterTest {
     @Singleton
     static class Configured {
 
+        @Deprecated
         @Inject
         @ConfigProperty(name = "foos")
         String[] foos;

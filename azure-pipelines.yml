@@ -245,7 +245,7 @@ stages:
             - elytron-security-oauth2
             - elytron-security
           name: security
-          keycloak: true
+          keycloak: false
 
       - template: ci-templates/native-build-steps.yaml
         parameters:

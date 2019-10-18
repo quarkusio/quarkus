@@ -183,7 +183,7 @@
             <id>docker-keycloak</id>
             <activation>
                 <property>
-                    <name>docker</name>
+                    <name>docker-keycloak</name>
                 </property>
             </activation>
             <properties>

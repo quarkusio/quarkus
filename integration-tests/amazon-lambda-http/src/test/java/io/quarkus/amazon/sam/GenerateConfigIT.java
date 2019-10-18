@@ -121,7 +121,6 @@ public class GenerateConfigIT extends MojoTestBase {
 
         Map<String, Object> content = new ObjectMapper(new YAMLFactory())
                 .readValue(new File(testDir, "properties.yaml"), LinkedHashMap.class);
-        System.out.println("********************* content = " + content);
 
         Map<String, Object> properties = AmazonLambdaHttpMojo.get(content, "Resources", "properties-resource", "Properties");
         Assert.assertEquals(SAM_HANDLER, properties.get("Handler"));

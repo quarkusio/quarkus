@@ -175,6 +175,7 @@ public class QuarkusDev extends QuarkusTask {
                         debugSuspend = "n";
                         break;
                     }
+                    case "":
                     case "y":
                     case "true": {
                         debugSuspend = "y";

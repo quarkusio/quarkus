@@ -280,7 +280,7 @@ An additional system property `suspend` can be used to suspend the JVM, when lau
 
 [TIP]
 ====
-You can also run a Quarkus application in debug mode with a suspended JVM using `./gradlew quarkusDev -Ddebug` which is a shorthand for `./gradlew quarkusDev -Ddebug=true`.
+You can also run a Quarkus application in debug mode with a suspended JVM using `./gradlew quarkusDev -Dsuspend -Ddebug` which is a shorthand for `./gradlew quarkusDev -Dsuspend=true -Ddebug=true`.
 
 Then, attach your debugger to `localhost:5005`.
 ====
@@ -405,4 +405,10 @@ When building an Uber-Jar you can specify entries that you want to exclude from 
 
 The entries are relative to the root of the generated Uber-Jar. You can specify multiple entries by adding extra `--ignored-entry` arguments.
 
+== Building with `./gradlew build`
+
+By default, `./gradlew build` will build the native image also. To skip it, use
+```
+./gradlew build -x buildNative -x testNative
+```
 

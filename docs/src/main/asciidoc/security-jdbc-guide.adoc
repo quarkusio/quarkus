@@ -49,12 +49,12 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=elytron-security-jdbc \
-    -Dextensions="elytron-security-jdbc, jdbc-h2, resteasy"
+    -Dextensions="elytron-security-jdbc, jdbc-postgresql, resteasy"
 ----
 
 [NOTE]
 ====
-Don't forget to add the database connector library of choice. Here we are using H2 as identity store.
+Don't forget to add the database connector library of choice. Here we are using PostgreSQL as identity store.
 ====
 
 This command generates a Maven project, importing the `elytron-security-jdbc` extension
@@ -146,13 +146,13 @@ The `elytron-security-jdbc` extension requires at least one datasource to access
 
 [source,properties]
 ----
-quarkus.datasource.url=jdbc:h2:mem:elytron-security-jdbc;DB_CLOSE_DELAY=-1;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:import.sql' <1>
-quarkus.datasource.driver=org.h2.Driver
-quarkus.datasource.username=sa
-quarkus.datasource.password=sa
+quarkus.datasource.url=jdbc:postgresql:elytron-security-jdbc
+quarkus.datasource.driver=org.postgresql.Driver
+quarkus.datasource.username=quarkus
+quarkus.datasource.password=quarkus
 ----
 
-In our context, we are using H2 in-memory mode as identity store and we load `import.sql` to init the database with users and roles.
+In our context, we are using PostgreSQL as identity store and we init the database with users and roles.
 
 [source,sql]
 ----
@@ -265,15 +265,15 @@ This guide only covered an easy use case, the extension offers multiple datasour
 
 [source,properties]
 --
-quarkus.datasource.url=jdbc:h2:mem:multiple-data-sources-users;DB_CLOSE_DELAY=-1;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:multiple-data-sources/users.sql'
-quarkus.datasource.driver=org.h2.Driver
-quarkus.datasource.username=sa
-quarkus.datasource.password=sa
+quarkus.datasource.url=jdbc:postgresql:multiple-data-sources-users
+quarkus.datasource.driver=org.postgresql.Driver
+quarkus.datasource.username=quarkus
+quarkus.datasource.password=quarkus
 
-quarkus.datasource.permissions.url=jdbc:h2:mem:multiple-data-sources-permissions;DB_CLOSE_DELAY=-1;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:multiple-data-sources/permissions.sql'
-quarkus.datasource.permissions.driver=org.h2.Driver
-quarkus.datasource.permissions.username=sa
-quarkus.datasource.permissions.password=sa
+quarkus.datasource.url=jdbc:postgresql:multiple-data-sources-permissions
+quarkus.datasource.driver=org.postgresql.Driver
+quarkus.datasource.username=quarkus
+quarkus.datasource.password=quarkus
 
 quarkus.security.jdbc.enabled=true
 quarkus.security.jdbc.principal-query.sql=SELECT u.password FROM test_user u WHERE u.username=?

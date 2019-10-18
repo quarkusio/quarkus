@@ -95,7 +95,7 @@
         <wildfly-elytron.version>2.0.0.Alpha4</wildfly-elytron.version>
         <jboss-modules.version>1.8.7.Final</jboss-modules.version>
         <jboss-threads.version>3.0.0.Final</jboss-threads.version>
-        <vertx.version>3.8.2</vertx.version>
+        <vertx.version>3.8.3</vertx.version>
         <httpclient.version>4.5.9</httpclient.version>
         <httpcore.version>4.4.11</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>

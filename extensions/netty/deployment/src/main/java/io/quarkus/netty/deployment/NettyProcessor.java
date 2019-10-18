@@ -74,6 +74,8 @@ class NettyProcessor {
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufAllocator")
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ConscryptAlpnSslEngine")
+                .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
+                .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ConnectionHandler")
                 .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED");
         try {
             Class.forName("io.netty.handler.codec.http.HttpObjectEncoder");

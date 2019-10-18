@@ -58,6 +58,7 @@ class NettyProcessor {
         reflectiveClass
                 .produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioServerSocketChannel"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "java.util.LinkedHashMap"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, "sun.nio.ch.SelectorImpl"));
 
         SubstrateConfigBuildItem.Builder builder = SubstrateConfigBuildItem.builder()
                 //.addNativeImageSystemProperty("io.netty.noUnsafe", "true")

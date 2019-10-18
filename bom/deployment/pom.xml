@@ -408,7 +408,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-amazon-sam-deployment</artifactId>
+                <artifactId>quarkus-amazon-lambda-http-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

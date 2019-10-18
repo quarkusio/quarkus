@@ -622,12 +622,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-amazon-lambda-resteasy</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-amazon-sam</artifactId>
+                <artifactId>quarkus-amazon-lambda-http</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

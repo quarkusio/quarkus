@@ -3,6 +3,7 @@ package io.quarkus.maven.it.verifier;
 import java.io.*;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
@@ -60,12 +61,19 @@ public class RunningInvoker extends MavenProcessInvoker {
 
     public MavenProcessInvocationResult execute(List<String> goals, Map<String, String> envVars)
             throws MavenInvocationException {
+        return execute(goals, envVars, new Properties());
+    }
+
+    public MavenProcessInvocationResult execute(List<String> goals, Map<String, String> envVars, Properties properties)
+            throws MavenInvocationException {
+
         DefaultInvocationRequest request = new DefaultInvocationRequest();
         request.setGoals(goals);
         request.setDebug(debug);
         request.setLocalRepositoryDirectory(getLocalRepositoryDirectory());
         request.setBaseDirectory(getWorkingDirectory());
         request.setPomFile(new File(getWorkingDirectory(), "pom.xml"));
+        request.setProperties(properties);
 
         if (System.getProperty("mavenOpts") != null) {
             request.setMavenOpts(System.getProperty("mavenOpts"));

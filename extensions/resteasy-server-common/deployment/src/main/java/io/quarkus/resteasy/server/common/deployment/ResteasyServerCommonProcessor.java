@@ -585,6 +585,10 @@ public class ResteasyServerCommonProcessor {
         OUTER: for (DotName annotationType : methodParameterAnnotations) {
             Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
             for (AnnotationInstance instance : instances) {
+                // we only care about method parameters, because properties or fields always work
+                if (instance.target().kind() != Kind.METHOD_PARAMETER) {
+                    continue;
+                }
                 MethodParameterInfo param = instance.target().asMethodParameter();
                 if (param.name() == null) {
                     log.warnv(

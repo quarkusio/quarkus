@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.yasson.spi.JsonbComponentInstanceCreator;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 
 public class QuarkusJsonbComponentInstanceCreator implements JsonbComponentInstanceCreator {
@@ -34,17 +35,26 @@ public class QuarkusJsonbComponentInstanceCreator implements JsonbComponentInsta
     @Override
     public <T> T getOrCreateComponent(Class<T> componentClass) {
         return (T) components.computeIfAbsent(componentClass, c -> {
-            InstanceHandle<T> beanHandle = Arc.container().instance(componentClass);
+            ArcContainer container = Arc.container();
+            if (container == null) { // this class can be used in unit tests where Arc obviously doesn't run
+                return fallbackCreate(componentClass);
+            }
+
+            InstanceHandle<T> beanHandle = container.instance(componentClass);
             if (beanHandle.isAvailable()) {
                 beanHandles.add(beanHandle);
                 return beanHandle.get();
             }
-            try {
-                return componentClass.newInstance();
-            } catch (InstantiationException | IllegalAccessException e) {
-                throw new IllegalStateException("Cannot instantiate Jsonb component: " + componentClass, e);
-            }
+            return fallbackCreate(componentClass);
         });
+    }
+
+    private <T> Object fallbackCreate(Class<T> componentClass) {
+        try {
+            return componentClass.newInstance();
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new IllegalStateException("Cannot instantiate JSON-B component: " + componentClass, e);
+        }
     }
 
 }

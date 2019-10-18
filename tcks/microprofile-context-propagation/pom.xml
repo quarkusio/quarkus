@@ -29,10 +29,6 @@
                     <dependenciesToScan>
                         <dependency>org.eclipse.microprofile.context-propagation:microprofile-context-propagation-tck</dependency>
                     </dependenciesToScan>
-                    <!-- To be removed once #3878 is implemented-->
-                    <excludes>
-                        <exclude>**/JTACDITest.java</exclude>
-                     </excludes>
                 </configuration>
             </plugin>
         </plugins>

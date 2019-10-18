@@ -241,9 +241,9 @@ stages:
         parameters:
           timeoutInMinutes: 20
           modules:
+            - oidc
             - elytron-security-oauth2
             - elytron-security
-            - oidc
           name: security
           keycloak: true
 

@@ -30,7 +30,7 @@
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
-        <graal-sdk.version-for-documentation>19.2.0.1</graal-sdk.version-for-documentation>
+        <graal-sdk.version-for-documentation>19.2.1</graal-sdk.version-for-documentation>
         <rest-assured.version>4.1.1</rest-assured.version>
         <axle-client.version>0.0.9</axle-client.version>
         <vertx.version>3.8.3</vertx.version>

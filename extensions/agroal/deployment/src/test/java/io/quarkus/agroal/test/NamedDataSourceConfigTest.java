@@ -9,8 +9,6 @@ import java.sql.SQLException;
 
 import javax.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -25,10 +23,8 @@ public class NamedDataSourceConfigTest {
     AgroalDataSource ds;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("application-named-datasource.properties",
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .withConfigurationResource("application-named-datasource.properties");
 
     @Test
     public void testNamedDataSourceInjection() throws SQLException {

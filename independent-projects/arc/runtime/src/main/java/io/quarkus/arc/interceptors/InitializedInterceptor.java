@@ -1,5 +1,6 @@
-package io.quarkus.arc;
+package io.quarkus.arc.interceptors;
 
+import io.quarkus.arc.InjectableInterceptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Set;

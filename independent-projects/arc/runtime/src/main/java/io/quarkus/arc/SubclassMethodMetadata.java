@@ -1,5 +1,6 @@
 package io.quarkus.arc;
 
+import io.quarkus.arc.interceptors.InterceptorInvocation;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.List;

@@ -53,7 +53,7 @@ class EventImpl<T> implements Event<T> {
 
     private transient volatile Notifier<? super T> lastNotifier;
 
-    public EventImpl(Type eventType, Set<Annotation> qualifiers) {
+    EventImpl(Type eventType, Set<Annotation> qualifiers) {
         if (eventType instanceof ParameterizedType) {
             eventType = ((ParameterizedType) eventType).getActualTypeArguments()[0];
         }

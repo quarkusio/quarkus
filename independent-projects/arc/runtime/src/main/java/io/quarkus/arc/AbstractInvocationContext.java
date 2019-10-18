@@ -3,62 +3,46 @@ package io.quarkus.arc;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
-import javax.interceptor.InvocationContext;
+import java.util.function.Supplier;
 
-public abstract class AbstractInvocationContext implements InvocationContext {
+abstract class AbstractInvocationContext implements ArcInvocationContext, Supplier<Map<String, Object>> {
 
-    protected Map<String, Object> contextData;
     protected final Method method;
-    protected Object[] parameters;
-    protected final Object target;
-    protected final Object timer;
     protected final Constructor<?> constructor;
     protected final Set<Annotation> interceptorBindings;
-    protected Function<InvocationContext, Object> aroundInvokeForward;
+    protected final List<InterceptorInvocation> chain;
+    protected Object target;
+    protected Object[] parameters;
+    // The map is initialized lazily but we need to use a holder so that all interceptors in the chain can access the same data
+    protected LazyValue<Map<String, Object>> contextData;
 
-    protected AbstractInvocationContext(Object target, Method method, Function<InvocationContext, Object> aroundInvokeForward,
-            Object[] parameters,
-            Map<String, Object> contextData, Set<Annotation> interceptorBindings) {
-        this(target, method, aroundInvokeForward, null, parameters, null, contextData, interceptorBindings);
-    }
-
-    protected AbstractInvocationContext(Object target, Method method, Function<InvocationContext, Object> aroundInvokeForward,
+    protected AbstractInvocationContext(Object target, Method method,
             Constructor<?> constructor,
-            Object[] parameters, Object timer, Map<String, Object> contextData,
-            Set<Annotation> interceptorBindings) {
+            Object[] parameters, LazyValue<Map<String, Object>> contextData,
+            Set<Annotation> interceptorBindings, List<InterceptorInvocation> chain) {
         this.target = target;
         this.method = method;
-        this.aroundInvokeForward = aroundInvokeForward;
         this.constructor = constructor;
         this.parameters = parameters;
-        this.timer = timer;
-        this.contextData = contextData;
+        this.contextData = contextData != null ? contextData : new LazyValue<>(this);
         this.interceptorBindings = interceptorBindings;
+        this.chain = chain;
     }
 
     @Override
     public Map<String, Object> getContextData() {
-        if (contextData == null) {
-            contextData = newContextData(interceptorBindings);
-        }
-        return contextData;
-    }
-
-    public Set<Annotation> getInterceptorBindings() {
-        return interceptorBindings;
+        return contextData.get();
     }
 
     @Override
-    public abstract Object proceed() throws Exception;
-
-    protected static Map<String, Object> newContextData(Set<Annotation> interceptorBindings) {
-        Map<String, Object> result = new HashMap<String, Object>();
-        result.put(InvocationContextImpl.KEY_INTERCEPTOR_BINDINGS, interceptorBindings);
-        return result;
+    public Set<Annotation> getInterceptorBindings() {
+        return interceptorBindings;
     }
 
     @Override
@@ -68,18 +52,35 @@ public abstract class AbstractInvocationContext implements InvocationContext {
 
     @Override
     public Object[] getParameters() {
-        if (parameters == null) {
-            throw new IllegalStateException();
-        }
         return parameters;
     }
 
     @Override
-    public void setParameters(Object[] params) throws IllegalStateException, IllegalArgumentException {
-        if (parameters == null) {
-            throw new IllegalStateException();
-        }
+    public void setParameters(Object[] params) {
+        validateParameters(params);
         this.parameters = params;
+    }
+
+    protected void validateParameters(Object[] params) {
+        int newParametersCount = Objects.requireNonNull(params).length;
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        if (parameterTypes.length != newParametersCount) {
+            throw new IllegalArgumentException(
+                    "Wrong number of parameters - method has " + Arrays.toString(parameterTypes) + ", attempting to set "
+                            + Arrays.toString(params));
+        }
+        for (int i = 0; i < params.length; i++) {
+            if (parameterTypes[i].isPrimitive() && params[i] == null) {
+                throw new IllegalArgumentException("Trying to set a null value to a primitive parameter [position: " + i
+                        + ", type: " + parameterTypes[i] + "]");
+            }
+            if (params[i] != null) {
+                if (!params[i].getClass().equals(parameterTypes[i])) {
+                    throw new IllegalArgumentException("The parameter type [" + params[i].getClass()
+                            + "] does not match the type for the target method [" + parameterTypes[i] + "]");
+                }
+            }
+        }
     }
 
     @Override
@@ -89,7 +90,7 @@ public abstract class AbstractInvocationContext implements InvocationContext {
 
     @Override
     public Object getTimer() {
-        return timer;
+        return null;
     }
 
     @Override
@@ -97,10 +98,11 @@ public abstract class AbstractInvocationContext implements InvocationContext {
         return constructor;
     }
 
-    protected Function<InvocationContext, Object> getAroundInvokeForward() {
-        return aroundInvokeForward;
+    @Override
+    public Map<String, Object> get() {
+        Map<String, Object> result = new HashMap<String, Object>();
+        result.put(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS, interceptorBindings);
+        return result;
     }
-
-    abstract Object proceedInternal() throws Exception;
 
 }

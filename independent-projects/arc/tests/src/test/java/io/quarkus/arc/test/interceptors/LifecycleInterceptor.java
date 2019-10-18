@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.interceptors;
 
-import io.quarkus.arc.InvocationContextImpl;
+import io.quarkus.arc.ArcInvocationContext;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.annotation.PostConstruct;
@@ -21,7 +21,7 @@ public class LifecycleInterceptor {
 
     @PostConstruct
     void simpleInit(InvocationContext ctx) {
-        Object bindings = ctx.getContextData().get(InvocationContextImpl.KEY_INTERCEPTOR_BINDINGS);
+        Object bindings = ctx.getContextData().get(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS);
         if (bindings == null) {
             throw new IllegalArgumentException("No bindings found");
         }
@@ -30,7 +30,7 @@ public class LifecycleInterceptor {
 
     @PreDestroy
     void simpleDestroy(InvocationContext ctx) {
-        Object bindings = ctx.getContextData().get(InvocationContextImpl.KEY_INTERCEPTOR_BINDINGS);
+        Object bindings = ctx.getContextData().get(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS);
         if (bindings == null) {
             throw new IllegalArgumentException("No bindings found");
         }
@@ -39,7 +39,7 @@ public class LifecycleInterceptor {
 
     @AroundConstruct
     void simpleAroundConstruct(InvocationContext ctx) throws Exception {
-        Object bindings = ctx.getContextData().get(InvocationContextImpl.KEY_INTERCEPTOR_BINDINGS);
+        Object bindings = ctx.getContextData().get(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS);
         if (bindings == null) {
             throw new IllegalArgumentException("No bindings found");
         }

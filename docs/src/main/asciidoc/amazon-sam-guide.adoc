@@ -1,0 +1,30 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Amazon SAM Applications 
+
+include::./attributes.adoc[]
+
+
+The `quarkus-amazon-lambda-http` extension allows you to write microservices with Resteasy (JAX-RS),
+Undertow (servlet), or Vert.x Web and make these microservices deployable to Amazon AWS using
+https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html[Amazon's SAM] framework.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* JDK 1.8 (Azure requires JDK 1.8)
+* Apache Maven 3.5.3+
+* https://aws.amazon.com[An Amazon AWS account]
+* https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-reference.html#serverless-sam-cli[Amazon SAM CLI]
+
+== Getting Started
+
+This guide can be used on existing projects or new projects.  It will cover a number of scenarios:
+
+1.  An existing application that is already being deployed to AWS using SAM and the desire is to supercharge it using quarkus.
+2.  An entirely new project designed from the start to run with quarkus on Amazon's infrastructure.

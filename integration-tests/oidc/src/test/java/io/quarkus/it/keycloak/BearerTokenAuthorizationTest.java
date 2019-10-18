@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
+import javax.validation.ValidationException;
+
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,7 +43,7 @@ public class BearerTokenAuthorizationTest {
     private static final String KEYCLOAK_REALM = "quarkus";
 
     @BeforeAll
-    public static void configureKeycloakRealm() throws IOException {
+    public static void configureKeycloakRealm() throws IOException, InterruptedException {
         RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
 
         realm.getClients().add(createClient("quarkus-app"));
@@ -49,14 +51,29 @@ public class BearerTokenAuthorizationTest {
         realm.getUsers().add(createUser("admin", "user", "admin"));
         realm.getUsers().add(createUser("jdoe", "user", "confidential"));
 
-        RestAssured
-                .given()
-                .auth().oauth2(getAdminAccessToken())
-                .contentType("application/json")
-                .body(JsonSerialization.writeValueAsBytes(realm))
-                .when()
-                .post(KEYCLOAK_SERVER_URL + "/admin/realms").then()
-                .statusCode(201);
+        // An initial wait to ensure the Keycloak IDP docker image is loaded
+        // and Keycloak has completed its initialization
+        Thread.sleep(10000);
+
+        for (int i = 0; i < 20; i++) {
+            try {
+                RestAssured
+                        .given()
+                        .auth().oauth2(getAdminAccessToken())
+                        .contentType("application/json")
+                        .body(JsonSerialization.writeValueAsBytes(realm))
+                        .when()
+                        .post(KEYCLOAK_SERVER_URL + "/admin/realms").then()
+                        .statusCode(201);
+                break;
+            } catch (ValidationException ex) {
+                if (i + 1 < 20) {
+                    Thread.sleep(10000);
+                } else {
+                    throw ex;
+                }
+            }
+        }
     }
 
     @AfterAll

@@ -18,7 +18,7 @@ import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
 public class ScopingUnitTest {
-    private static Class[] testClasses = {
+    private static Class<?>[] testClasses = {
             DefaultScopedEndpoint.class,
             RequestScopedEndpoint.class
     };
@@ -83,5 +83,6 @@ public class ScopingUnitTest {
         JsonReader jsonReader4 = Json.createReader(new StringReader(replyString4));
         JsonObject reply4 = jsonReader4.readObject();
         Assertions.assertTrue(reply4.getBoolean("pass"), reply4.getString("msg"));
+        Assertions.assertEquals("Bearer", reply4.getString("authScheme"));
     }
 }

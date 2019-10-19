@@ -19,7 +19,6 @@ secured access to the JAX-RS endpoints.
 |Property Name|Default|Description
 |quarkus.smallrye-jwt.enabled|true|Determine if the jwt extension is enabled. Enabled by default if you include the smallrye-jwt dependency, so this would be used to disable it.
 |quarkus.smallrye-jwt.realm-name|Quarkus-JWT|Name to use for security realm.
-|quarkus.smallrye-jwt.auth-mechanism|MP-JWT|Name to use for authentication mechanism
 |mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in section <<Supported Public Key Formats>>.
 |mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL. If the value points to an HTTPS based JWK set then, for it to work in native mode, the `quarkus.ssl.native` property must also be set to `true`, see link:native-and-ssl-guide.html[Using SSL With Native Executables] for more details.
 |mp.jwt.verify.issuer|none|Config property specifies the value of the `iss` (issuer)
@@ -322,7 +321,7 @@ nQIDAQAB
 === Generating a JWT
 
 Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the
-https://bitbucket.org/connect2id/nimbus-jose-jwt/wiki/Home[Nimbus JOSE+JWT] library and the TokenUtils class shown in the following listing. Take this source and place it into using-jwt-rbac/src/test/java/org/acme/jwt/TokenUtils.java.
+https://bitbucket.org/b_c/jose4j/wiki/Home[Jose4J] library and the TokenUtils class shown in the following listing. Take this source and place it into using-jwt-rbac/src/test/java/org/acme/jwt/TokenUtils.java.
 
 NOTE: JWT libraries for many different programming languages can be found at the JWT.io website https://jwt.io/#libraries[JWT Libraries].
 
@@ -331,33 +330,22 @@ NOTE: JWT libraries for many different programming languages can be found at the
 ----
 package org.acme.jwt;
 
-import static net.minidev.json.parser.JSONParser.DEFAULT_PERMISSIVE_MODE;
-
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
-import java.util.Date;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.jwt.Claims;
-
-import com.nimbusds.jose.JOSEObjectType;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.crypto.RSASSASigner;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
-
-import net.minidev.json.JSONObject;
-import net.minidev.json.parser.JSONParser;
+import org.jose4j.jws.AlgorithmIdentifiers;
+import org.jose4j.jws.JsonWebSignature;
+import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwt.NumericDate;
 
 /**
  * Utilities for generating a JWT for testing
@@ -384,63 +372,37 @@ public class TokenUtils {
         return generateTokenString(pk, "/privateKey.pem", jsonResName, timeClaims);
     }
 
-    /**
-     * Utility method to generate a JWT string from a JSON resource file that is signed by the privateKey.pem
-     * test resource key, possibly with invalid fields.
-     *
-     * @param pk - the private key to sign the token with
-     * @param kid - the kid claim to assign to the token
-     * @param jsonResName - name of test resources file
-     * @param timeClaims - used to return the exp, iat, auth_time claims
-     * @return the JWT string
-     * @throws Exception on parse failure
-     */
-    public static String generateTokenString(PrivateKey pk, String kid, String jsonResName, Map<String, Long> timeClaims) throws Exception {
-        InputStream contentIS = TokenUtils.class.getResourceAsStream(jsonResName);
-        if (contentIS == null) {
-            throw new IllegalStateException("Failed to find resource: " + jsonResName);
-        }
-        byte[] tmp = new byte[4096];
-        int length = contentIS.read(tmp);
-        byte[] content = new byte[length];
-        System.arraycopy(tmp, 0, content, 0, length);
+    public static String generateTokenString(PrivateKey privateKey, String kid,
+        String jsonResName, Map<String, Long> timeClaims) throws Exception {
 
-        JSONParser parser = new JSONParser(DEFAULT_PERMISSIVE_MODE);
-        JSONObject jwtContent = parser.parse(content, JSONObject.class);
+        JwtClaims claims = JwtClaims.parse(readTokenContent(jsonResName));
         long currentTimeInSecs = currentTimeInSecs();
-        long exp = currentTimeInSecs + 300;
-        // If exp was passed in, use it
-        if (timeClaims.containsKey(Claims.exp.name())) {
-            exp = timeClaims.get(Claims.exp.name());
-        }
-        System.out.printf("Setting exp: %d / %s%n", exp, new Date(1000*exp));
-        long iat = currentTimeInSecs;
-        long authTime = currentTimeInSecs;
-        jwtContent.put(Claims.exp.name(), exp);
-        jwtContent.put(Claims.iat.name(), iat);
-        jwtContent.put(Claims.auth_time.name(), authTime);
-        // Return the token time values if requested
-        if (timeClaims != null) {
-            timeClaims.put(Claims.iat.name(), iat);
-            timeClaims.put(Claims.auth_time.name(), authTime);
-            timeClaims.put(Claims.exp.name(), exp);
+        long exp = timeClaims != null && timeClaims.containsKey(Claims.exp.name())
+            ? timeClaims.get(Claims.exp.name()) : currentTimeInSecs + 300;
+
+        claims.setIssuedAt(NumericDate.fromSeconds(currentTimeInSecs));
+        claims.setClaim(Claims.auth_time.name(), NumericDate.fromSeconds(currentTimeInSecs));
+        claims.setExpirationTime(NumericDate.fromSeconds(exp));
+
+        for (Map.Entry<String, Object> entry : claims.getClaimsMap().entrySet()) {
+            System.out.printf("\tAdded claim: %s, value: %s\n", entry.getKey(), entry.getValue());
         }
 
-        // Create RSA-signer with the private key
-        JWSSigner signer = new RSASSASigner(pk);
-        JWTClaimsSet claimsSet = JWTClaimsSet.parse(jwtContent);
-        for (String claim : claimsSet.getClaims().keySet()) {
-            Object claimValue = claimsSet.getClaim(claim);
-            System.out.printf("\tAdded claim: %s, value: %s%n", claim, claimValue);
+        JsonWebSignature jws = new JsonWebSignature();
+        jws.setPayload(claims.toJson());
+        jws.setKey(privateKey);
+        jws.setKeyIdHeaderValue(kid);
+        jws.setHeader("typ", "JWT");
+        jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
+
+        return jws.getCompactSerialization();
+    }
+
+    private static String readTokenContent(String jsonResName) throws IOException {
+        InputStream contentIS = TokenUtils.class.getResourceAsStream(jsonResName);
+        try (BufferedReader buffer = new BufferedReader(new InputStreamReader(contentIS))) {
+            return buffer.lines().collect(Collectors.joining("\n"));
         }
-        JWSAlgorithm alg = JWSAlgorithm.RS256;
-        JWSHeader jwtHeader = new JWSHeader.Builder(alg)
-                .keyID(kid)
-                .type(JOSEObjectType.JWT)
-                .build();
-        SignedJWT signedJWT = new SignedJWT(jwtHeader, claimsSet);
-        signedJWT.sign(signer);
-        return signedJWT.serialize();
     }
 
     /**
@@ -458,19 +420,6 @@ public class TokenUtils {
     }
 
     /**
-     * Generate a new RSA keypair.
-     *
-     * @param keySize - the size of the key
-     * @return KeyPair
-     * @throws NoSuchAlgorithmException on failure to load RSA key generator
-     */
-    public static KeyPair generateKeyPair(final int keySize) throws NoSuchAlgorithmException {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-        keyPairGenerator.initialize(keySize);
-        return keyPairGenerator.genKeyPair();
-    }
-
-    /**
      * Decode a PEM encoded private key string to an RSA PrivateKey
      *
      * @param pemEncoded - PEM string for private key
@@ -485,22 +434,7 @@ public class TokenUtils {
         return kf.generatePrivate(keySpec);
     }
 
-    /**
-     * Decode a PEM encoded public key string to an RSA PublicKey
-     *
-     * @param pemEncoded - PEM string for private key
-     * @return PublicKey
-     * @throws Exception on decode failure
-     */
-    public static PublicKey decodePublicKey(String pemEncoded) throws Exception {
-        byte[] encodedBytes = toEncodedBytes(pemEncoded);
-
-        X509EncodedKeySpec spec = new X509EncodedKeySpec(encodedBytes);
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        return kf.generatePublic(spec);
-    }
-
-    private static byte[] toEncodedBytes(final String pemEncoded) {
+   private static byte[] toEncodedBytes(final String pemEncoded) {
         final String normalizedPem = removeBeginEnd(pemEncoded);
         return Base64.getDecoder().decode(normalizedPem);
     }
@@ -742,20 +676,19 @@ $ mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScop
 [INFO] --------------------------------[ jar ]---------------------------------
 [INFO]
 [INFO] --- exec-maven-plugin:1.6.0:java (default-cli) @ using-jwt-rbac ---
-Setting exp: 1551663155 / Sun Mar 03 17:32:35 PST 2019
-	Added claim: sub, value: jdoe-using-jwt-rbac
-	Added claim: aud, value: [using-jwt-rbac]
-	Added claim: upn, value: jdoe@quarkus.io
-	Added claim: birthdate, value: 2001-07-13
-	Added claim: auth_time, value: 1551659555
 	Added claim: iss, value: https://quarkus.io/using-jwt-rbac
-	Added claim: roleMappings, value: {"group2":"Group2MappedRole","group1":"Group1MappedRole"}
-	Added claim: groups, value: ["Echoer","Tester","Subscriber","group2"]
-	Added claim: preferred_username, value: jdoe
-	Added claim: exp, value: Sun Mar 03 17:32:35 PST 2019
-	Added claim: iat, value: Sun Mar 03 16:32:35 PST 2019
 	Added claim: jti, value: a-123
-eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjU5NTU1LCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY2MzE1NSwiaWF0IjoxNTUxNjU5NTU1LCJqdGkiOiJhLTEyMyJ9.QUfvHUstBHySis40QjecA7GbNEhM_kNWPRvgT7RShqIRJxr3A3pC3uO1p6Swx-7qiR21YYmGM3-hgXJPky-dKSGye_aLOXbNsqBn8RYmrrzFIlhtkZPhdqY60wYoMC4zk13oZKozUeVr5F-tLKtkXxoTQT1QWYH0YLk5BhpD1uJVpF8jiPk-CiLBn36Qee6cS2nBW1s7e2amnzgROeLAR5f1TQYPFHA9ULK9OxXq4ciMciwC_BCIykyR0pkBHhhhGjMcTxvwNMq6zRTwMGxvz-IZ53Gi8P_gl8ntT_NAJ5gd4RTmeqbWDFcrjBsCDRN92ixH50q_XDrcOs-s9800Gw
+	Added claim: sub, value: jdoe-using-jwt-rbac
+	Added claim: upn, value: jdoe@quarkus.io
+	Added claim: preferred_username, value: jdoe
+	Added claim: aud, value: using-jwt-rbac
+	Added claim: birthdate, value: 2001-07-13
+	Added claim: roleMappings, value: {group1=Group1MappedRole, group2=Group2MappedRole}
+	Added claim: groups, value: [Echoer, Tester, Subscriber, group2]
+	Added claim: iat, value: 1571329458
+	Added claim: auth_time, value: NumericDate{1571329458 -> Oct 17, 2019 5:24:18 PM IST}
+	Added claim: exp, value: 1571333058
+eyJraWQiOiIvcHJpdmF0ZUtleS5wZW0iLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL3F1YXJrdXMuaW8vdXNpbmctand0LXJiYWMiLCJqdGkiOiJhLTEyMyIsInN1YiI6Impkb2UtdXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJqZG9lIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwicm9sZU1hcHBpbmdzIjp7Imdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUiLCJncm91cDIiOiJHcm91cDJNYXBwZWRSb2xlIn0sImdyb3VwcyI6WyJFY2hvZXIiLCJUZXN0ZXIiLCJTdWJzY3JpYmVyIiwiZ3JvdXAyIl0sImlhdCI6MTU3MTMyOTQ1OCwiYXV0aF90aW1lIjoiTnVtZXJpY0RhdGV7MTU3MTMyOTQ1OCAtPiBPY3QgMTcsIDIwMTkgNToyNDoxOCBQTSBJU1R9IiwiZXhwIjoxNTcxMzMzMDU4fQ.Hn6f0qSk6wbbqOM-q9zo1KQ91VwIAdhJqdMmNK3pQrgSv68Ljdi75nSKvDmQwhtvEnHbZvoZy4BqbQagLT05JYcAWaT4NrtFLaqtJ_k8HD39_HosObF43u-vpEwisen0U219R0hpo9jx8Qohj4gzM-YL1sIFgqZSgsxH6YEorVLS70vkizTqfcclMvyrmkUq0nA4p4ST7jq987RkqXtY7U6jNc0rVnu7XmalA26VtfcqSgz9fwk_b-TmwqA6jgLvO6Rdovh0Q6tRDOW1VugQ_11-3k34ImdD3HG8gpdGatulHKWoxg9MhIcbrFWftlk7Ts97tkljp8ysfFzwFELnkg
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
@@ -783,7 +716,7 @@ hello + jdoe@quarkus.io, isSecure: false, authScheme: MP-JWT, hasJWT: true
 Success! We now have:
 
 * a non-anonymous caller name of jdoe@quarkus.io
-* an authentication scheme of MP-JWT
+* an authentication scheme of Bearer
 * a non-null JsonWebToken
 
 == Using the JsonWebToken and Claim Injection

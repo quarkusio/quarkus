@@ -56,6 +56,7 @@ public class RequestScopedEndpoint {
         JsonObject result = Json.createObjectBuilder()
                 .add("pass", pass)
                 .add("msg", msg)
+                .add("authScheme", context.getAuthenticationScheme())
                 .build();
         return result;
     }

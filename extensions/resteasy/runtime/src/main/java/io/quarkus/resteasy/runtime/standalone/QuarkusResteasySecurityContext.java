@@ -38,6 +38,11 @@ public class QuarkusResteasySecurityContext implements SecurityContext {
 
     @Override
     public String getAuthenticationScheme() {
-        return "BASIC"; //TODO: fixme
+        String authorizationValue = request.getHeader("Authorization");
+        if (authorizationValue == null) {
+            return null;
+        } else {
+            return authorizationValue.split(" ")[0].trim();
+        }
     }
 }

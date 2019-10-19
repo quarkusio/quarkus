@@ -21,7 +21,7 @@ public class ConfigRecorder {
         Config config = ConfigProviderResolver.instance().getConfig();
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
-            ConfigRecorder.class.getClassLoader();
+            cl = ConfigRecorder.class.getClassLoader();
         }
         for (Entry<String, Set<String>> entry : properties.entrySet()) {
             Set<String> propertyTypes = entry.getValue();

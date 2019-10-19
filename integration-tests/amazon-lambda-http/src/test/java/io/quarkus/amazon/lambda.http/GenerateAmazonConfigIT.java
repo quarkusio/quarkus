@@ -1,4 +1,4 @@
-package io.quarkus.amazon.sam;
+package io.quarkus.amazon.lambda.http;
 
 import static io.quarkus.amazon.lambda.http.AmazonLambdaHttpMojo.SAM_HANDLER;
 import static io.quarkus.amazon.lambda.http.AmazonLambdaHttpMojo.SAM_RUNTIME;
@@ -7,30 +7,27 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
-import io.quarkus.amazon.lambda.http.AmazonLambdaHttpMojo;
 import io.quarkus.maven.it.MojoTestBase;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 
-public class GenerateConfigIT extends MojoTestBase {
+public class GenerateAmazonConfigIT extends MojoTestBase {
     private File testDir;
     private String template = "properties.yaml";
     private String resource = "Quarkus";
 
-    //    @Test
-    public void testConfigureWithNoTemplate() throws MavenInvocationException, IOException, InterruptedException {
+    @Test
+    public void testConfigureWithNoTemplate() throws Exception {
         testDir = initProject("projects/configure-new-template");
         template = "sam.yaml";
         resource = "new-template";
@@ -38,25 +35,25 @@ public class GenerateConfigIT extends MojoTestBase {
         invoke();
     }
 
-    //    @Test
-    public void testConfigureWithConfiguredName() throws MavenInvocationException, IOException, InterruptedException {
+    @Test
+    public void testConfigureWithConfiguredName() throws Exception {
         testDir = initProject("projects/configure-named-template");
         resource = "named-template";
 
         invoke();
     }
 
-    //    @Test
-    public void testConfigureWithExistingTemplate() throws MavenInvocationException, IOException, InterruptedException {
+    @Test
+    public void testConfigureWithExistingTemplate() throws Exception {
         testDir = initProject("projects/configure-existing-template");
         resource = "ThumbnailFunction";
 
         invoke();
     }
 
-    //    @Test
+    @Test
     @SuppressWarnings("unchecked")
-    public void testConfigureWithApplicationProperties() throws MavenInvocationException, IOException, InterruptedException {
+    public void testConfigureWithApplicationProperties() throws Exception {
         testDir = initProject("projects/configure-with-application-properties");
         template = null;
         resource = null;
@@ -72,14 +69,35 @@ public class GenerateConfigIT extends MojoTestBase {
     }
 
     @Test
-    public void testConfigureDuringLifecycle() throws MavenInvocationException, IOException, InterruptedException {
+    public void testConfigureDuringLifecycle() throws Exception {
         testDir = initProject("projects/configure-during-lifecycle");
 
         compile();
     }
 
     @SuppressWarnings("unchecked")
-    private void invoke() throws MavenInvocationException, IOException, InterruptedException {
+    private void compile() throws Exception {
+        Properties mavenProperties = new Properties();
+        mavenProperties.put("projectGroupId", "org.acme");
+        mavenProperties.put("projectArtifactId", "acme");
+        mavenProperties.put("projectVersion", "1.0-SNAPSHOT");
+
+        RunningInvoker running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(singletonList("compile"), emptyMap(),
+                mavenProperties);
+
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        Map<String, Object> content = new ObjectMapper(new YAMLFactory())
+                .readValue(new File(testDir, "properties.yaml"), LinkedHashMap.class);
+
+        Map<String, Object> properties = AmazonLambdaHttpMojo.get(content, "Resources", "properties-resource", "Properties");
+        Assert.assertEquals(SAM_HANDLER, properties.get("Handler"));
+        Assert.assertEquals(SAM_RUNTIME, properties.get("Runtime"));
+    }
+
+    @SuppressWarnings("unchecked")
+    private void invoke() throws Exception {
         Properties mavenProperties = new Properties();
         mavenProperties.put("projectGroupId", "org.acme");
         mavenProperties.put("projectArtifactId", "acme");
@@ -104,26 +122,5 @@ public class GenerateConfigIT extends MojoTestBase {
             Assert.assertEquals(SAM_HANDLER, properties.get("Handler"));
             Assert.assertEquals(SAM_RUNTIME, properties.get("Runtime"));
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void compile() throws MavenInvocationException, IOException, InterruptedException {
-        Properties mavenProperties = new Properties();
-        mavenProperties.put("projectGroupId", "org.acme");
-        mavenProperties.put("projectArtifactId", "acme");
-        mavenProperties.put("projectVersion", "1.0-SNAPSHOT");
-
-        RunningInvoker running = new RunningInvoker(testDir, false);
-        final MavenProcessInvocationResult result = running.execute(singletonList("compile"), emptyMap(),
-                mavenProperties);
-
-        assertThat(result.getProcess().waitFor()).isEqualTo(0);
-
-        Map<String, Object> content = new ObjectMapper(new YAMLFactory())
-                .readValue(new File(testDir, "properties.yaml"), LinkedHashMap.class);
-
-        Map<String, Object> properties = AmazonLambdaHttpMojo.get(content, "Resources", "properties-resource", "Properties");
-        Assert.assertEquals(SAM_HANDLER, properties.get("Handler"));
-        Assert.assertEquals(SAM_RUNTIME, properties.get("Runtime"));
     }
 }

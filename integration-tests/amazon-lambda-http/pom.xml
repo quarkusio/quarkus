@@ -2,17 +2,18 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>quarkus-integration-tests-parent</artifactId>
         <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-integration-tests-parent</artifactId>
         <version>999-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>quarkus-integration-test-amazon-lambda-http</artifactId>
 
     <name>Quarkus - Integration Tests - Amazon Lambda HTTP</name>
-    <artifactId>quarkus-integration-test-amazon-lambda-http</artifactId>
 
     <dependencies>
         <dependency>
@@ -26,10 +27,14 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -53,11 +58,6 @@
             <artifactId>maven-invoker</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -65,39 +65,9 @@
             <testResource>
                 <directory>src/test/resources</directory>
             </testResource>
-            <testResource>
-                <directory>../deployment/src/test/resources/filtered</directory>
-                <filtering>true</filtering>
-            </testResource>
         </testResources>
 
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-invoker-plugin</artifactId>
-                <version>3.1.0</version>
-                <configuration>
-                    <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
-                    <cloneClean>true</cloneClean>
-                    <settingsFile>src/it/settings.xml</settingsFile>
-                    <postBuildHookScript>verify</postBuildHookScript>
-                    <addTestClassPath>true</addTestClassPath>
-                    <skipInvocation>${maven.test.skip}</skipInvocation>
-                    <streamLogs>true</streamLogs>
-                    <invokerPropertiesFile>invoker.properties</invokerPropertiesFile>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>integration-tests</id>
-                        <goals>
-                            <goal>install</goal>
-                            <goal>run</goal>
-                            <goal>verify</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
@@ -107,7 +77,6 @@
                             <goal>integration-test</goal>
                             <goal>verify</goal>
                         </goals>
-                        <phase>compile</phase>
                     </execution>
                 </executions>
                 <configuration>

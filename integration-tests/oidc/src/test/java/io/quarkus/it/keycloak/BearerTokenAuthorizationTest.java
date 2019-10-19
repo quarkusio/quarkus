@@ -6,9 +6,6 @@ import static org.hamcrest.Matchers.everyItem;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 
 import org.hamcrest.Matchers;
@@ -23,9 +20,6 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.keycloak.representations.idm.authorization.PolicyRepresentation;
-import org.keycloak.representations.idm.authorization.ResourceRepresentation;
-import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
 import org.keycloak.util.JsonSerialization;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -110,80 +104,7 @@ public class BearerTokenAuthorizationTest {
         client.setDirectAccessGrantsEnabled(true);
         client.setEnabled(true);
 
-        client.setAuthorizationServicesEnabled(true);
-
-        ResourceServerRepresentation authorizationSettings = new ResourceServerRepresentation();
-
-        authorizationSettings.setResources(new ArrayList<>());
-        authorizationSettings.setPolicies(new ArrayList<>());
-
-        configureConfidentialResourcePermission(authorizationSettings);
-        configurePermissionResourcePermission(authorizationSettings);
-
-        client.setAuthorizationSettings(authorizationSettings);
-
         return client;
-    }
-
-    private static void configureConfidentialResourcePermission(ResourceServerRepresentation authorizationSettings) {
-        ResourceRepresentation resource = new ResourceRepresentation("Confidential Resource");
-
-        resource.setUris(Collections.singleton("/api/confidential"));
-
-        authorizationSettings.getResources().add(resource);
-
-        PolicyRepresentation policy = new PolicyRepresentation();
-
-        policy.setName("Confidential Policy");
-        policy.setType("js");
-        policy.setConfig(new HashMap<>());
-        policy.getConfig().put("code",
-                "var identity = $evaluation.context.identity;\n" +
-                        "\n" +
-                        "if (identity.hasRealmRole(\"confidential\")) {\n" +
-                        "$evaluation.grant();\n" +
-                        "}");
-
-        authorizationSettings.getPolicies().add(policy);
-
-        PolicyRepresentation permission = new PolicyRepresentation();
-
-        permission.setName("Confidential Permission");
-        permission.setType("resource");
-        permission.setResources(new HashSet<>());
-        permission.getResources().add(resource.getName());
-        permission.setPolicies(new HashSet<>());
-        permission.getPolicies().add(policy.getName());
-
-        authorizationSettings.getPolicies().add(permission);
-    }
-
-    private static void configurePermissionResourcePermission(ResourceServerRepresentation authorizationSettings) {
-        ResourceRepresentation resource = new ResourceRepresentation("Permission Resource");
-
-        resource.setUris(Collections.singleton("/api/permission"));
-
-        authorizationSettings.getResources().add(resource);
-
-        PolicyRepresentation policy = new PolicyRepresentation();
-
-        policy.setName("Permission Policy");
-        policy.setType("js");
-        policy.setConfig(new HashMap<>());
-        policy.getConfig().put("code", "$evaluation.grant();");
-
-        authorizationSettings.getPolicies().add(policy);
-
-        PolicyRepresentation permission = new PolicyRepresentation();
-
-        permission.setName("Permission Resource Permission");
-        permission.setType("resource");
-        permission.setResources(new HashSet<>());
-        permission.getResources().add(resource.getName());
-        permission.setPolicies(new HashSet<>());
-        permission.getPolicies().add(policy.getName());
-
-        authorizationSettings.getPolicies().add(permission);
     }
 
     private static UserRepresentation createUser(String username, String... realmRoles) {

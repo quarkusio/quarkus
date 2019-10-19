@@ -38,7 +38,6 @@ public class AmazonLambdaHttpMojo extends AbstractMojo {
     @Override
     public void execute() {
         try {
-            System.out.println("******************* AmazonLambdaHttpMojo.execute");
             final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
             Properties application = new Properties();
             File appProperties = new File("src/main/resources/application.properties");
@@ -51,7 +50,6 @@ public class AmazonLambdaHttpMojo extends AbstractMojo {
                 }
             }
             File configFile = new File(templateFile);
-            System.out.println("********************* configFile = " + configFile.getAbsolutePath());
 
             Map template;
             Map<String, Object> resource;
@@ -85,10 +83,6 @@ public class AmazonLambdaHttpMojo extends AbstractMojo {
             } else {
                 throw new RuntimeException("Could not find the resource to update");
             }
-
-            System.out.println("********************* template = " + template);
-            System.out.println("********************* new File(\".\").getAbsolutePath() = "
-                    + new File(".").getAbsolutePath());
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         }

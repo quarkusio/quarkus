@@ -16,17 +16,7 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -61,6 +51,10 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
     private static final String DEFAULT_MAIN_CLASS = "io.quarkus.runner.GeneratedMain";
 
     private static final Logger log = Logger.getLogger(RunnerJarPhase.class);
+
+    private static final String PLACEHOLDER_PREFIX = "${";
+
+    private static final String PLACEHOLDER_SUFFIX = "}";
 
     private static final Set<String> IGNORED_ENTRIES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             "META-INF/INDEX.LIST",
@@ -427,6 +421,56 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
     }
 
     /**
+     * Handles the core attributes and exception handling for the Manifest.
+     * Setting the Version, Main Class and Classpath
+     *
+     * @param attributes - Manifest Attributes
+     * @param classPath - The Main Class
+     * @throws IOException
+     */
+    private void handleCoreAttributes(final Attributes attributes, final String classPath) {
+        attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        if (attributes.containsKey(Attributes.Name.CLASS_PATH)) {
+            log.warn(
+                    "Your MANIFEST.MF already defined a CLASS_PATH entry. Quarkus has overwritten this existing entry.");
+        }
+        attributes.put(Attributes.Name.CLASS_PATH, classPath);
+        if (attributes.containsKey(Attributes.Name.MAIN_CLASS)) {
+            String existingMainClass = attributes.getValue(Attributes.Name.MAIN_CLASS);
+            if (!mainClass.equals(existingMainClass)) {
+                log.warn("Your MANIFEST.MF already defined a MAIN_CLASS entry. Quarkus has overwritten your existing entry.");
+            }
+        }
+        attributes.put(Attributes.Name.MAIN_CLASS, mainClass);
+    }
+
+
+
+    /**
+     * Resolve any attribute name that is a place holder between ${...} notation.
+     * This is used by build systems that inject metadata to the manifest at build time,
+     * and generally created by CI/CD systems.
+     *
+     * @param attributes - Manifest Attributes to be resolved
+     */
+    private void handleResolvableAttributes(final Attributes attributes) {
+        attributes.keySet().forEach(k -> {
+            String value = (String) attributes.get(k);
+            if (Objects.nonNull(value)) {
+                String trimmedValue = value.trim();
+                if (!trimmedValue.isEmpty() && trimmedValue.startsWith(PLACEHOLDER_PREFIX) &&
+                        trimmedValue.endsWith(PLACEHOLDER_SUFFIX)) {
+                    String variableName = trimmedValue.substring(PLACEHOLDER_PREFIX.length(), trimmedValue.length() - PLACEHOLDER_SUFFIX.length());
+                    String systemPropertyValue = System.getenv(variableName);
+                    if (Objects.nonNull(systemPropertyValue) && !systemPropertyValue.trim().isEmpty()) {
+                        attributes.put(k, systemPropertyValue);
+                    }
+                }
+            }
+        });
+    }
+
+    /**
      * Manifest generation is quite simple : we just have to push some attributes in manifest.
      * However, it gets a little more complex if the manifest preexists.
      * So we first try to see if a manifest exists, and otherwise create a new one.
@@ -444,19 +488,10 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             Files.delete(manifestPath);
         }
         Attributes attributes = manifest.getMainAttributes();
-        attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
-        if (attributes.containsKey(Attributes.Name.CLASS_PATH)) {
-            log.warn(
-                    "Your MANIFEST.MF already defined a CLASS_PATH entry. Quarkus has overwritten this existing entry.");
-        }
-        attributes.put(Attributes.Name.CLASS_PATH, classPath);
-        if (attributes.containsKey(Attributes.Name.MAIN_CLASS)) {
-            String existingMainClass = attributes.getValue(Attributes.Name.MAIN_CLASS);
-            if (!mainClass.equals(existingMainClass)) {
-                log.warn("Your MANIFEST.MF already defined a MAIN_CLASS entry. Quarkus has overwritten your existing entry.");
-            }
-        }
-        attributes.put(Attributes.Name.MAIN_CLASS, mainClass);
+        // Resolve any existing attributes first as this may cause issues with the overrides.
+        handleResolvableAttributes(attributes);
+        // Resolve and/or create base attributes.
+        handleCoreAttributes(attributes, classPath);
         try (OutputStream os = Files.newOutputStream(manifestPath)) {
             manifest.write(os);
         }

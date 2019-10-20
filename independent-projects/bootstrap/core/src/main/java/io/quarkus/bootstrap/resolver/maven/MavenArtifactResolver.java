@@ -3,6 +3,7 @@
  */
 package io.quarkus.bootstrap.resolver.maven;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -185,6 +186,30 @@ public class MavenArtifactResolver {
         try {
             return repoSystem.resolveArtifacts(repoSession, artifacts);
         } catch (ArtifactResolutionException e) {
+            org.eclipse.aether.transfer.ArtifactNotFoundException notFound = null;
+            Throwable t = e.getCause();
+            while(t != null) {
+                if(t instanceof org.eclipse.aether.transfer.ArtifactNotFoundException) {
+                    notFound = (org.eclipse.aether.transfer.ArtifactNotFoundException) t;
+                    break;
+                }
+                t = t.getCause();
+            }
+            if(notFound == null) {
+                System.err.println(" COULD NOT FOUND THE RIGHT EXCEPTION");
+            } else {
+                System.err.println("FAILED TO RESOLVE " + notFound.getArtifact());
+                System.err.println("Local repo " + this.repoSession.getLocalRepository().getBasedir());
+                System.err.println("Local repo manager " + repoSession.getLocalRepositoryManager());
+                Path p = this.repoSession.getLocalRepository().getBasedir().toPath().resolve(
+                        repoSession.getLocalRepositoryManager().getPathForLocalArtifact(
+                        new org.eclipse.aether.artifact.DefaultArtifact(notFound.getArtifact().getGroupId(),
+                                notFound.getArtifact().getArtifactId(),
+                                notFound.getArtifact().getClassifier(),
+                                notFound.getArtifact().getExtension(),
+                                notFound.getArtifact().getVersion())));
+                System.out.println("PATH " + p + " " + Files.exists(p));
+            }
             throw new AppModelResolverException("Failed to resolve artifacts", e);
         }
     }

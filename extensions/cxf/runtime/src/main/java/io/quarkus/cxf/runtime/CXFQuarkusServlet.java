@@ -12,6 +12,8 @@ import org.apache.cxf.transport.servlet.CXFNonSpringServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkus.arc.Arc;
+
 public class CXFQuarkusServlet extends CXFNonSpringServlet {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CXFQuarkusServlet.class);
@@ -58,15 +60,14 @@ public class CXFQuarkusServlet extends CXFNonSpringServlet {
         factory.setBus(bus);
 
         for (WebServiceConfig config : WEB_SERVICES) {
-            try {
-                Class<?> serviceClass = Thread.currentThread().getContextClassLoader().loadClass(config.getClassName());
-
-                factory.setServiceClass(serviceClass);
+            Object instanceService = Arc.container().instance(config.getClassName()).get();
+            if (instanceService != null) {
+                factory.setServiceBean(instanceService);
                 factory.setAddress(config.getPath());
                 factory.create();
                 LOGGER.info(config.toString() + " available.");
-            } catch (ClassNotFoundException e) {
-                LOGGER.error("Cannot initialize " + config.toString(), e);
+            } else {
+                LOGGER.error("Cannot initialize " + config.toString());
             }
         }
     }

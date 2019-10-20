@@ -6,6 +6,6 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 public interface Fruit {
 
     String getName();
-    
+
     String getDescription();
 }

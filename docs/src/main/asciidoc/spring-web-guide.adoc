@@ -111,6 +111,70 @@ The result should be: `{"message": "hello"}`.
 
 You can of course create a native image using the instructions of the link:building-native-image-guide.html[Building a native executable guide].
 
+== Going further with an endpoint returning JSON
+
+The `GreetingController` above was an example of a very simple endpoint. In many cases however it is required to return JSON content.
+The following example illustrates how that could be achieved using a Spring RestController:
+
+[source, java]
+----
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/greeting")
+public class GreetingController {
+
+    @GetMapping("/{name}")
+    public Greeting hello(@PathVariable(name = "name") String name) {
+        return new Greeting("hello " + name);
+    }
+
+    public static class Greeting {
+        private final String message;
+
+        public Greeting(String message) {
+            this.message = message;
+        }
+
+        public String getMessage(){
+            return message;
+        }
+    }
+}
+----
+
+The corresponding test could look like:
+
+[source, java]
+----
+package org.acme.spring.web;
+
+import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.Test;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+
+@QuarkusTest
+public class GreetingControllerTest {
+
+    @Test
+    public void testHelloEndpoint() {
+        given()
+          .when().get("/greeting/quarkus")
+          .then()
+            .statusCode(200)
+            .body("message", is("hello quarkus"));
+    }
+
+}
+----
+
+It should be noted that when using the Spring Web support in Quarkus, link:https://github.com/FasterXML/jackson[Jackson] is automatically added to the classpath and properly setup.
+
 == Supported Spring Web functionalities
 
 Quarkus currently supports a subset of the functionalities that Spring Web provides. More specifically Quarkus supports the REST related features of Spring Web

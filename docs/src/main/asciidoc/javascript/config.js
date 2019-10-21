@@ -307,27 +307,6 @@ function makeCollapsibleHandler(input, descDiv, td, row,
             iconDecoration1.classList.replace('fa-chevron-down', 'fa-chevron-up');
             iconDecoration2.classList.replace('fa-chevron-down', 'fa-chevron-up');
             iconDecoration3.classList.replace('fa-chevron-down', 'fa-chevron-up');
-            td.setAttribute("colspan", 3);
-            var typeCell = td.nextElementSibling.firstElementChild;
-            if(typeCell){
-                var cell = typeCell.cloneNode(true);
-                cell.classList.add("remove-on-collapse");
-                var labelSpan = document.createElement("span");
-                labelSpan.appendChild(document.createTextNode("Type: "));
-                labelSpan.classList.add("description-label");
-                cell.insertBefore(labelSpan, cell.firstChild);
-                descDiv.appendChild(cell);
-            }
-            var defaultCell = td.nextElementSibling.nextElementSibling.firstElementChild;
-            if(defaultCell){
-                var cell = defaultCell.cloneNode(true);
-                cell.classList.add("remove-on-collapse");
-                var labelSpan = document.createElement("span");
-                labelSpan.appendChild(document.createTextNode("Defaults to: "));
-                labelSpan.classList.add("description-label");
-                cell.insertBefore(labelSpan, cell.firstChild);
-                descDiv.appendChild(cell);
-            }
         }
         else {
             iconExpand.style.removeProperty("display");
@@ -336,19 +315,10 @@ function makeCollapsibleHandler(input, descDiv, td, row,
             iconDecoration1.classList.replace('fa-chevron-up', 'fa-chevron-down');
             iconDecoration2.classList.replace('fa-chevron-up', 'fa-chevron-down');
             iconDecoration3.classList.replace('fa-chevron-up', 'fa-chevron-down');
-            td.removeAttribute("colspan");
-            var toRemoveList = descDiv.querySelectorAll(".remove-on-collapse");
-            if(toRemoveList){
-                for(var toRemove of toRemoveList){
-                    toRemove.parentNode.removeChild(toRemove);
-                }
-            }
         }
         descDiv.classList.toggle('description-collapsed');
         descDiv.classList.toggle('description-expanded');
         row.classList.toggle('row-collapsed');
-        td.nextElementSibling.classList.toggle("hidden");
-        td.nextElementSibling.nextElementSibling.classList.toggle("hidden");
         
         if( target.localName == 'a' && target.classList.contains('link-collapsible') ) {
             event.preventDefault();

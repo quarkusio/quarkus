@@ -84,10 +84,10 @@ Using the MicroProfile REST Client is as simple as creating an interface using t
 package org.acme.restclient;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import java.util.Set;
 
@@ -98,7 +98,7 @@ public interface CountriesService {
     @GET
     @Path("/name/{name}")
     @Produces("application/json")
-    Set<Country> getByName(@PathParam("name") String name);
+    Set<Country> getByName(@PathParam String name);
 }
 ----
 
@@ -145,11 +145,11 @@ Open the `src/main/java/org/acme/restclient/CountriesResource.java` file and upd
 [source,java]
 ----
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.util.Set;
@@ -165,7 +165,7 @@ public class CountriesResource {
     @GET
     @Path("/name/{name}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Set<Country> name(@PathParam("name") String name) {
+    public Set<Country> name(@PathParam String name) {
         return countriesService.getByName(name);
     }
 }
@@ -220,10 +220,10 @@ The rest client supports asynchronous rest calls. Let's see it in action by addi
 package org.acme.restclient;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import java.util.concurrent.CompletionStage;
 import java.util.Set;
@@ -235,12 +235,12 @@ public interface CountriesService {
     @GET
     @Path("/name/{name}")
     @Produces("application/json")
-    Set<Country> getByName(@PathParam("name") String name);
+    Set<Country> getByName(@PathParam String name);
 
     @GET
     @Path("/name/{name}")
     @Produces("application/json")
-    CompletionStage<Set<Country>> getByNameAsync(@PathParam("name") String name);
+    CompletionStage<Set<Country>> getByNameAsync(@PathParam String name);
 }
 ----
 
@@ -251,11 +251,11 @@ Open the `src/main/java/org/acme/restclient/CountriesResource.java` file and upd
 package org.acme.restclient;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.util.concurrent.CompletionStage;
@@ -272,14 +272,14 @@ public class CountriesResource {
     @GET
     @Path("/name/{name}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Set<Country> name(@PathParam("name") String name) {
+    public Set<Country> name(@PathParam String name) {
         return countriesService.getByName(name);
     }
 
     @GET
     @Path("/name-async/{name}")
     @Produces(MediaType.APPLICATION_JSON)
-    public CompletionStage<Set<Country>> nameAsync(@PathParam("name") String name) {
+    public CompletionStage<Set<Country>> nameAsync(@PathParam String name) {
         return countriesService.getByNameAsync(name);
     }
 }

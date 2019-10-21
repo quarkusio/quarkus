@@ -249,7 +249,7 @@ and save the file.
 
 [source,java]
 ----
-import javax.ws.rs.PathParam;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
 import org.eclipse.microprofile.faulttolerance.Timeout;
 ...
 public class CoffeeResource {
@@ -257,7 +257,7 @@ public class CoffeeResource {
     @GET
     @Path("/{id}/recommendations")
     @Timeout(250)
-    public List<Coffee> recommendations(@PathParam("id") int id) {
+    public List<Coffee> recommendations(@PathParam int id) {
         long started = System.currentTimeMillis();
         final long invocationNumber = counter.getAndIncrement();
 
@@ -307,7 +307,7 @@ import org.eclipse.microprofile.faulttolerance.Fallback;
 public class CoffeeResource {
     ...
     @Fallback(fallbackMethod = "fallbackRecommendations")
-    public List<Coffee> recommendations(@PathParam("id") int id) {
+    public List<Coffee> recommendations(@PathParam int id) {
         ...
     }
 
@@ -380,7 +380,7 @@ public class CoffeeResource {
     ...
     @Path("/{id}/availability")
     @GET
-    public Response availability(@PathParam("id") int id) {
+    public Response availability(@PathParam int id) {
         final Long invocationNumber = counter.getAndIncrement();
 
         Coffee coffee = coffeeRepository.getCoffeeById(id);

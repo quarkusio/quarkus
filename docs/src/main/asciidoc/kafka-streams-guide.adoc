@@ -1127,3 +1127,7 @@ This guide has shown how you can build stream processing applications using Quar
 both in JVM and native modes.
 For running your KStreams application in production, you could also add health checks and metrics for the data pipeline.
 Refer to the Quarkus guides on link:/guides/metrics-guide[metrics] and link:/guides/health-guide[health checks] to learn more.
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-kafka-streams.adoc[opts=optional, leveloffset=+1]

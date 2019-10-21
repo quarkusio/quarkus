@@ -11,10 +11,10 @@ include::./attributes.adoc[]
 The Reactive SQL Clients have a straightforward API focusing on scalability and low-overhead.
 Currently, the following database servers are supported:
 
-* Postgres
+* PostgreSQL
 * MySQL
 
-In this guide, you will learn how to implement a simple CRUD application exposing data stored in *Postgres* over a RESTful API.
+In this guide, you will learn how to implement a simple CRUD application exposing data stored in *PostgreSQL* over a RESTful API.
 
 NOTE: Extension and connection pool class names for each client can be found at the bottom of this document.
 
@@ -472,3 +472,13 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 |`quarkus-reactive-mysql-client`
 |`io.vertx.axle.mysqlclient.MySQLPool`
 |===
+
+== Configuration Reference
+
+=== MySQL
+
+include::{generated-dir}/config/quarkus-reactive-mysql-client.adoc[opts=optional, leveloffset=+1]
+
+=== PostgreSQL
+
+include::{generated-dir}/config/quarkus-reactive-pg-client.adoc[opts=optional, leveloffset=+1]

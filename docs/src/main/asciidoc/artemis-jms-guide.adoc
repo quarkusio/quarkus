@@ -285,3 +285,7 @@ You can build the native executable with:
 ----
 ./mvnw package -Pnative
 ----
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-artemis-core.adoc[opts=optional, leveloffset=+1]

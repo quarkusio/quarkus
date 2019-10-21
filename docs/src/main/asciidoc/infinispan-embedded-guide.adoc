@@ -72,24 +72,9 @@ Additional injection functionality will be available in future versions.
 `EmbeddedCacheManager`::
 This is the main entry point to configure and obtain caches.
 
-Configure Infinispan embedded caches with `application.properties` in the `src/main/resources` directory.
+== Configuration Reference
 
-Configuration properties are as follows:
-
-[cols=4*,options="header"]
-|===
-| Property
-| Default Value
-| Description
-| Runtime/Buildtime
-
-| `quarkus.infinispan-embedded.xml-config`
-| <empty>
-| Specifies a valid Infinispan configuration in `XML` format, either absolute
-or relative to the working directory.
-| Runtime overridable
-
-|===
+include::{generated-dir}/config/quarkus-infinispan-embedded.adoc[opts=optional, leveloffset=+1]
 
 [TIP]
 ====

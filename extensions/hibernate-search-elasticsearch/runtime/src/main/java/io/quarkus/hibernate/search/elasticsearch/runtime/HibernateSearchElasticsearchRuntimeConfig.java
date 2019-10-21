@@ -11,6 +11,8 @@ import org.hibernate.search.backend.elasticsearch.index.IndexStatus;
 import org.hibernate.search.mapper.orm.automaticindexing.AutomaticIndexingSynchronizationStrategyName;
 import org.hibernate.search.mapper.orm.search.loading.EntityLoadingCacheLookupStrategy;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -26,9 +28,11 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     ElasticsearchBackendRuntimeConfig defaultBackend;
 
     /**
-     * Configuration of optional additional backends.
+     * Additional backends
      */
     @ConfigItem(name = "backends")
+    @ConfigDocSection
+    @ConfigDocMapKey("backend-name")
     Map<String, ElasticsearchBackendRuntimeConfig> additionalBackends;
 
     /**

@@ -39,6 +39,8 @@ import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.swaggerui.runtime.SwaggerUiRecorder;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.RoutingContext;
 
 public class SwaggerUiProcessor {
 
@@ -113,8 +115,9 @@ public class SwaggerUiProcessor {
                     throw new RuntimeException(e);
                 }
             }
-            routes.produce(new RouteBuildItem(swaggerUiConfig.path + "/*",
-                    recorder.handler(cached.cachedDirectory, swaggerUiConfig.path)));
+            Handler<RoutingContext> handler = recorder.handler(cached.cachedDirectory, swaggerUiConfig.path);
+            routes.produce(new RouteBuildItem(swaggerUiConfig.path, handler));
+            routes.produce(new RouteBuildItem(swaggerUiConfig.path + "/*", handler));
         } else if (swaggerUiConfig.alwaysInclude) {
             ResolvedArtifact artifact = getSwaggerUiArtifact();
             //we are including in a production artifact

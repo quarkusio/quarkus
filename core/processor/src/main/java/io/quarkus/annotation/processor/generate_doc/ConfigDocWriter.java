@@ -77,10 +77,12 @@ final public class ConfigDocWriter {
                 if (item.hasDurationInformationNote()) {
                     hasDuration = true;
                 }
+
                 if (item.hasMemoryInformationNote()) {
                     hasMemory = true;
                 }
             }
+
             if (hasDuration) {
                 writer.append(Constants.DURATION_FORMAT_NOTE);
             }

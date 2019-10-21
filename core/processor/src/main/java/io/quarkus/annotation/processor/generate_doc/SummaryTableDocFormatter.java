@@ -71,12 +71,15 @@ final class SummaryTableDocFormatter implements DocFormatter {
         // for documentation it will do
         String required = configDocKey.isOptional() || !defaultValue.isEmpty() ? ""
                 : "required icon:exclamation-circle[title=Configuration property is required]";
-        String anchor = anchorPrefix + getAnchor(configDocKey.getKey());
+        String key = configDocKey.getKey();
+        String configKeyAnchor = configDocKey.isPassThroughMap() ? getAnchor(key + Constants.DASH + configDocKey.getDocMapKey())
+                : getAnchor(key);
+        String anchor = anchorPrefix + configKeyAnchor;
         writer.append(String.format(TABLE_ROW_FORMAT,
                 configDocKey.getConfigPhase().getIllustration(),
                 anchor,
                 anchor,
-                configDocKey.getKey(),
+                key,
                 // make sure nobody inserts a table cell separator here
                 doc.replace("|", "\\|"),
                 typeContent, typeDetail,

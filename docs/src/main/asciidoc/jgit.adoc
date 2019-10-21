@@ -47,7 +47,6 @@ Here is an example using it in a JAX-RS endpoint:
             return tmpDir.toString();
         }
     }
-
 ----
 
 

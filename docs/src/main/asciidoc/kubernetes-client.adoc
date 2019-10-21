@@ -262,3 +262,7 @@ subjects:
 
 Replace `<applicationName>` and `<namespace>` with your values.
 Have a look at https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/[Configure Service Accounts for Pods] to get further information.
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-kubernetes-client.adoc[opts=optional, leveloffset=+1]

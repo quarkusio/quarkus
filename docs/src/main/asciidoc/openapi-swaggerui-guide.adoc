@@ -387,3 +387,14 @@ You can also interact with your API in order to quickly test it.
 image:openapi-swaggerui-guide-screenshot02.png[alt=Interact with your API]
 
 Hit `CTRL+C` to stop the application.
+
+== Configuration Reference
+
+=== OpenAPI
+
+include::{generated-dir}/config/quarkus-smallrye-openapi.adoc[opts=optional, leveloffset=+1]
+
+=== Swagger UI
+
+include::{generated-dir}/config/quarkus-swaggerui.adoc[opts=optional, leveloffset=+1]
+

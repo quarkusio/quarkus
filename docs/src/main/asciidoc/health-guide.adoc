@@ -315,13 +315,21 @@ readiness checks are used to tell whether the application is able to process req
 All that is needed to enable the MicroProfile Health features in Quarkus is:
 
 * adding the `smallrye-health` Quarkus extension to your project using the 
-`quarkus-maven-plugin`:
+`quarkus-maven-plugin`: +
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="health"
+----
 
-  mvn quarkus:add-extension -Dextensions="health"
+* or simply adding the following Maven dependency: +
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-health</artifactId>
+</dependency>
+----
 
-* or simply adding the following Maven dependency:
+== Configuration Reference
 
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-smallrye-health</artifactId>
-    </dependency>
+include::{generated-dir}/config/quarkus-smallrye-health.adoc[opts=optional, leveloffset=+1]

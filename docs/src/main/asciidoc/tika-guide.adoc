@@ -11,16 +11,6 @@ This guide explains how your Quarkus application can use https://tika.apache.org
 
 https://tika.apache.org/[Apache Tika] is a content analysis toolkit which is used to parse the documents in PDF, Open Document, Excel and many other well known binary and text formats using a simple uniform API. Both the document text and properties (metadata) are available once the document has been parsed.
 
-== Configuration
-
-[cols="<m,<m,<2",options="header"]
-|===
-|Property Name|Default|Description
-|quarkus.tika.tika-config-path||The resource path within the application artifact to the https://tika.apache.org/1.22/configuring.html[Tika configuration] resource. Typically a file named `tika-config.xml` is added to the root of the application resources path. The default configuration will be used if no configuration resource is available.
-|quarkus.tika.parsers||Comma-separated list of the abbreviated or full parser class names which have to be loaded by the extension. Note that `pdf` and 'odf' abbreviations can be used to refer to PDF and OpenDocument format parsers and custom abbreviations must be used for all other parsers. Note that this property is mutually exclusive with the `tika-config-path` property.
-|quarkus.tika.append-embedded-content|true|The document may have other embedded documents, for example, an Excel document may include a PDF content. If such an embedded content is available then, by default, it will be appended to the content of the master document, thus, in this example, the text extracted from PDF file will be appended to the text extracted from the Excel file. This property has to be set to `false` if one needs to access the content of the master and each of the embedded documents individually.  
-|===
-
 [NOTE]
 ====
 If you are planning to run the application as a native executable and parse documents that may have been created with charsets different than the standard ones supported in Java such as `UTF-8` then you should configure Quarkus Maven Plugin to get the native image generator include all the charsets available to the JVM:
@@ -234,3 +224,7 @@ Hello Quarkus
 
 You can build a native executable with the usual command `./mvnw package -Pnative`.
 Running it is as simple as executing `./target/apache-tika-1.0-SNAPSHOT-runner`.
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-tika.adoc[opts=optional, leveloffset=+1]

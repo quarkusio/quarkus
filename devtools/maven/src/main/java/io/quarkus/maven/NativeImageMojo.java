@@ -130,8 +130,12 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "true")
     private Boolean fullStackTraces;
 
+    @Deprecated
     @Parameter(defaultValue = "${native-image.disable-reports}")
     private Boolean disableReports;
+
+    @Parameter(defaultValue = "${native-image.enable-reports}")
+    private Boolean enableReports;
 
     @Parameter
     private List<String> additionalBuildArgs;
@@ -333,7 +337,10 @@ public class NativeImageMojo extends AbstractMojo {
                     configs.add("quarkus.native.debug-symbols", debugSymbols.toString());
                 }
                 if (disableReports != null) {
-                    configs.add("quarkus.native.disable-reports", disableReports.toString());
+                    configs.add("quarkus.native.enable-reports", new Boolean(!disableReports).toString());
+                }
+                if (enableReports != null) {
+                    configs.add("quarkus.native.enable-reports", enableReports.toString());
                 }
                 if (containerRuntime != null) {
                     configs.add("quarkus.native.container-runtime", containerRuntime);

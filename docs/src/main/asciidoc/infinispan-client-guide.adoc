@@ -36,73 +36,7 @@ The Infinispan client is configurable in the `application.properties` file that 
 provided in the `src/main/resources` directory. These are the properties that
 can be configured in this file:
 
-[cols=4*,options="header"]
-|===
-| Property
-| Default Value
-| Description
-| Runtime/Buildtime
-
-| `quarkus.infinispan-client.server-list`
-| <empty>
-| Defines the list of servers to connect to upon startup. This allows for multiple servers separated by a semicolon
-for each. (eg. host1:11222;host:11222)
-| Runtime overridable
-
-| `quarkus.infinispan-client.client-intelligence`
-| <empty>
-| Sets client intelligence used by authentication
-| Runtime overridable
-
-| `quarkus.infinispan-client.use-auth`
-| <empty>
-| Enables or disables authentication
-| Runtime overridable
-
-| `quarkus.infinispan-client.auth-username`
-| <empty>
-| Sets user name used by authentication
-| Runtime overridable
-
-| `quarkus.infinispan-client.auth-password`
-| <empty>
-|
-| Runtime overridable
-
-| `quarkus.infinispan-client.auth-realm`
-| <empty>
-| Sets realm used by authentication
-| Runtime overridable
-
-| `quarkus.infinispan-client.auth-server-name`
-| <empty>
-| Sets server name used by authentication
-| Runtime overridable
-
-| `quarkus.infinispan-client.auth-client-subject`
-| <empty>
-| Sets client subject used by authentication
-| Runtime overridable
-
-| `quarkus.infinispan-client.auth-callback-handler`
-| <empty>
-| Sets callback handler used by authentication
-| Runtime overridable
-
-| `quarkus.infinispan-client.sasl-mechanism`
-| <empty>
-| Sets SASL mechanism used by authentication
-| Runtime overridable
-
-| `quarkus.infinispan-client.near-cache-max-entries`
-| 0
-| Controls whether the near cache is enabled (allowing repeated retrievals to be stored).
-If this value is zero or less near cache is disabled. A value greater than zero enables near
-cache and only that many entries will be held a time, removing older entries to save memory
-(per cache).
-| Build time only / Requires compilation to change
-
-|===
+include::{generated-dir}/config/quarkus-infinispan-client.adoc[opts=optional, leveloffset=+1]
 
 It is also possible to configure a `hotrod-client.properties` as described in the Infinispan user guide. Note that
 the `hotrod-client.properties` values overwrite any matching property from the other configuration values (eg. near cache).

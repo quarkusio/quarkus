@@ -184,3 +184,7 @@ Let's explain the meaning of each metric:
 ** `meanRate, oneMinRate, fiveMinRate, fifteenMinRate`: Mean throughput and one-, five-, and fifteen-minute exponentially-weighted moving average throughput.
 
 If you prefer an OpenMetrics export rather than the JSON format, remove the `-H"Accept: application/json"` argument from your command line.
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-smallrye-metrics.adoc[opts=optional, leveloffset=+1]

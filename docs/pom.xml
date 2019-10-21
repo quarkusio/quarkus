@@ -20,6 +20,7 @@
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
         <quarkus-base-url>https://github.com/quarkusio/quarkus</quarkus-base-url>
         <quickstarts-base-url>https://github.com/quarkusio/quarkus-quickstarts</quickstarts-base-url>
+        <skipDocs>false</skipDocs>
     </properties>
 
     <name>Quarkus - Documentation</name>
@@ -67,6 +68,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <skip>${skipDocs}</skip>
                     <mainClass>io.quarkus.docs.generation.AllConfigGenerator</mainClass>
                     <arguments>
                         <argument>${project.version}</argument>
@@ -81,6 +83,7 @@
                 <artifactId>asciidoctor-maven-plugin</artifactId>
                 <version>${asciidoctor-maven-plugin.version}</version>
                 <configuration>
+                    <skip>${skipDocs}</skip>
                     <enableVerbose>true</enableVerbose>
                     <logHandler>
                         <failIf>
@@ -146,6 +149,7 @@
                             <goal>process-asciidoc</goal>
                         </goals>
                         <configuration>
+                            <skip>${skipDocs}</skip>
                             <backend>html5</backend>
                             <sourceDirectory>src/main/asciidoc</sourceDirectory>
                             <preserveDirectories>true</preserveDirectories>

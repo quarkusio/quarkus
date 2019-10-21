@@ -195,7 +195,7 @@ final class QuarkusMediatorConfigurationUtil {
             List<Type> arguments = type.asParameterizedType().arguments();
             if (arguments.size() >= index + 1) {
                 Class<?> argumentClass = load(arguments.get(index).name().toString(), classLoader);
-                return argumentClass.isAssignableFrom(target) ? Result.Assignable : Result.NotAssignable;
+                return target.isAssignableFrom(argumentClass) ? Result.Assignable : Result.NotAssignable;
             } else {
                 return Result.InvalidIndex;
             }

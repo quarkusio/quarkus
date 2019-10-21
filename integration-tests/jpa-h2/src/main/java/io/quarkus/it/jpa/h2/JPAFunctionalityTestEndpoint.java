@@ -20,7 +20,7 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  * Basic test running JPA with the H2 database.
- * The application can work in either standard JVM or SubstrateVM, while we run H2 as a separate JVM process.
+ * The application can work in either standard JVM or in native mode, while we run H2 as a separate JVM process.
  */
 @WebServlet(name = "JPATestBootstrapEndpoint", urlPatterns = "/jpa-h2/testfunctionality")
 public class JPAFunctionalityTestEndpoint extends HttpServlet {

@@ -53,12 +53,12 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 
 class JaxbProcessor {
     private static final List<Class<?>> JAXB_REFLECTIVE_CLASSES = Arrays.asList(
@@ -112,16 +112,16 @@ class JaxbProcessor {
     @Inject
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
     @Inject
-    BuildProducer<SubstrateResourceBuildItem> resource;
+    BuildProducer<NativeImageResourceBuildItem> resource;
     @Inject
-    BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle;
+    BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle;
     @Inject
     BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses;
     @Inject
     ApplicationArchivesBuildItem applicationArchivesBuildItem;
 
     @BuildStep
-    void process(BuildProducer<SubstrateSystemPropertyBuildItem> substrateProps,
+    void process(BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageProps,
             BuildProducer<ServiceProviderBuildItem> providerItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
             List<JaxbFileRootBuildItem> fileRoots) {
@@ -173,8 +173,8 @@ class JaxbProcessor {
         addResourceBundle("javax.xml.bind.helpers.Messages");
         addResourceBundle("com.sun.org.apache.xml.internal.serializer.utils.SerializerMessages");
         addResourceBundle("com.sun.org.apache.xml.internal.res.XMLErrorResources");
-        substrateProps
-                .produce(new SubstrateSystemPropertyBuildItem("com.sun.xml.bind.v2.bytecode.ClassTailor.noOptimize", "true"));
+        nativeImageProps
+                .produce(new NativeImageSystemPropertyBuildItem("com.sun.xml.bind.v2.bytecode.ClassTailor.noOptimize", "true"));
 
         JAXB_REFLECTIVE_CLASSES.stream()
                 .map(Class::getName)
@@ -233,7 +233,7 @@ class JaxbProcessor {
     }
 
     private void addResource(String r) {
-        resource.produce(new SubstrateResourceBuildItem(r));
+        resource.produce(new NativeImageResourceBuildItem(r));
     }
 
     private void addReflectiveClass(boolean methods, boolean fields, String... className) {
@@ -241,6 +241,6 @@ class JaxbProcessor {
     }
 
     private void addResourceBundle(String bundle) {
-        resourceBundle.produce(new SubstrateResourceBundleBuildItem(bundle));
+        resourceBundle.produce(new NativeImageResourceBundleBuildItem(bundle));
     }
 }

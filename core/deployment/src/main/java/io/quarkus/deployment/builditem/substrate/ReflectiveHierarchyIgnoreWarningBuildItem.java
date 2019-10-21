@@ -6,7 +6,11 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Used by {@link io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyStep} to ignore reflection warning deliberately
+ * 
+ * @deprecated Use {@link io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem
+ *             ReflectiveHierarchyIgnoreWarningBuildItem} instead.
  */
+@Deprecated
 public final class ReflectiveHierarchyIgnoreWarningBuildItem extends MultiBuildItem {
 
     private final DotName dotName;

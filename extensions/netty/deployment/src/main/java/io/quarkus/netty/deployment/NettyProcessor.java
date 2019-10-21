@@ -17,10 +17,10 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.netty.runtime.NettyRecorder;
@@ -37,10 +37,10 @@ class NettyProcessor {
     }
 
     @BuildStep
-    public SubstrateSystemPropertyBuildItem limitMem() {
+    public NativeImageSystemPropertyBuildItem limitMem() {
         //in native mode we limit the size of the epoll array
         //if the array overflows the selector just moves the overflow to a map
-        return new SubstrateSystemPropertyBuildItem("sun.nio.ch.maxUpdateArraySize", "100");
+        return new NativeImageSystemPropertyBuildItem("sun.nio.ch.maxUpdateArraySize", "100");
     }
 
     @BuildStep
@@ -51,7 +51,7 @@ class NettyProcessor {
     }
 
     @BuildStep
-    SubstrateConfigBuildItem build(BuildProducer<JniBuildItem> jni) {
+    NativeImageConfigBuildItem build(BuildProducer<JniBuildItem> jni) {
         boolean enableJni = false;
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioSocketChannel"));
@@ -60,7 +60,7 @@ class NettyProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "java.util.LinkedHashMap"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, "sun.nio.ch.SelectorImpl"));
 
-        SubstrateConfigBuildItem.Builder builder = SubstrateConfigBuildItem.builder()
+        NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
                 //.addNativeImageSystemProperty("io.netty.noUnsafe", "true")
                 // Use small chunks to avoid a lot of wasted space. Default is 16mb * arenas (derived from core count)
                 // Since buffers are cached to threads, the malloc overhead is temporary anyway

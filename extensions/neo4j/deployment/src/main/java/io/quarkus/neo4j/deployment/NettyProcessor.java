@@ -6,8 +6,8 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 class NettyProcessor {
 
@@ -17,7 +17,7 @@ class NettyProcessor {
     private static final Logger log = Logger.getLogger(NettyProcessor.class);
 
     @BuildStep
-    SubstrateConfigBuildItem build() {
+    NativeImageConfigBuildItem build() {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 "org.neo4j.driver.internal.shaded.io.netty.channel.socket.nio.NioSocketChannel"));
         reflectiveClass
@@ -25,7 +25,7 @@ class NettyProcessor {
                         "org.neo4j.driver.internal.shaded.io.netty.channel.socket.nio.NioServerSocketChannel"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "java.util.LinkedHashMap"));
 
-        SubstrateConfigBuildItem.Builder builder = SubstrateConfigBuildItem.builder()
+        NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
                 .addNativeImageSystemProperty("io.netty.noUnsafe", "true")
                 .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED")
                 .addRuntimeInitializedClass(

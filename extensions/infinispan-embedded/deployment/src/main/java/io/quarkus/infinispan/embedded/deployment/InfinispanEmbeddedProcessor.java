@@ -45,9 +45,9 @@ import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.infinispan.embedded.runtime.InfinispanEmbeddedProducer;
 import io.quarkus.infinispan.embedded.runtime.InfinispanEmbeddedRuntimeConfig;
 import io.quarkus.infinispan.embedded.runtime.InfinispanRecorder;
@@ -63,7 +63,7 @@ class InfinispanEmbeddedProcessor {
     @BuildStep
     void setup(BuildProducer<FeatureBuildItem> feature, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ServiceProviderBuildItem> serviceProvider, BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<SubstrateResourceBuildItem> resources, CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<NativeImageResourceBuildItem> resources, CombinedIndexBuildItem combinedIndexBuildItem,
             List<InfinispanReflectionExcludedBuildItem> excludedReflectionClasses,
             ApplicationIndexBuildItem applicationIndexBuildItem) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.INFINISPAN_EMBEDDED));
@@ -82,7 +82,7 @@ class InfinispanEmbeddedProcessor {
         }
 
         // These are either default or required for marshalling
-        resources.produce(new SubstrateResourceBuildItem(
+        resources.produce(new NativeImageResourceBuildItem(
                 "org/infinispan/protostream/message-wrapping.proto",
                 "proto/generated/persistence.commons.proto",
                 "proto/generated/persistence.core.proto",

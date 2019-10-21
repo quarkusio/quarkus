@@ -6,10 +6,10 @@ import org.hibernate.type.EnumType;
 import antlr.CommonToken;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 /**
- * This list of classes which any Hibernate ORM using application should register for reflective access on SubstrateVM.
+ * This list of classes which any Hibernate ORM using application should register for reflective access in native mode.
  * <p>
  * FIXME Find a reliable way to identify these and maintain the list accurate: the current list
  * is likely not complete as it was identified via a dumb "trial&error" strategy.

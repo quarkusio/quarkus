@@ -25,7 +25,7 @@ import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 
 /**
- * Various tests covering Panache functionality. All tests should work in both standard JVM and SubstrateVM.
+ * Various tests covering Panache functionality. All tests should work in both standard JVM and in native mode.
  */
 @Path("test")
 public class TestEndpoint {

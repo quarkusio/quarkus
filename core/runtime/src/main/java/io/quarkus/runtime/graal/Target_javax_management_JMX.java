@@ -16,7 +16,7 @@ final class Target_javax_management_JMX {
             Class<T> interfaceClass,
             boolean notificationEmitter,
             boolean isMXBean) {
-        throw new IllegalStateException("Not Implemented in Substrate");
+        throw new IllegalStateException("Not Implemented in native mode");
     }
 
 }

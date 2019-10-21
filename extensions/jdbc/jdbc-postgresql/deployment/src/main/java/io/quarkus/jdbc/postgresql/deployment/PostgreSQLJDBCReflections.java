@@ -2,7 +2,7 @@ package io.quarkus.jdbc.postgresql.deployment;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 /**
  * Registers the {@code org.postgresql.Driver} so that it can be loaded

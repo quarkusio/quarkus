@@ -6,7 +6,7 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 /**
- * JMX is always disabled in substrate
+ * JMX is always disabled in native mode
  * 
  * @author William Burns
  */

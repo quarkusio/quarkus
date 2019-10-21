@@ -18,8 +18,7 @@ import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 
 /**
- * Replaces the ClassLoaderService in Hibernate ORM with one which should work
- * in Substrate.
+ * Replaces the ClassLoaderService in Hibernate ORM with one which should work in native mode.
  */
 public class FlatClassLoaderService implements ClassLoaderService {
 

@@ -2,7 +2,7 @@ package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.vertx.kafka.client.serialization.BufferDeserializer;
 import io.vertx.kafka.client.serialization.BufferSerializer;
 import io.vertx.kafka.client.serialization.JsonArrayDeserializer;

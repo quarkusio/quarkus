@@ -22,53 +22,53 @@ import io.quarkus.deployment.builditem.NativeEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.SslTrustStoreSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
-import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.runtime.ssl.SslContextConfigurationRecorder;
 
 //TODO: this should go away, once we decide on which one of the API's we want
-class SubstrateConfigBuildStep {
+class NativeImageConfigBuildStep {
 
-    private static final Logger log = Logger.getLogger(SubstrateConfigBuildStep.class);
+    private static final Logger log = Logger.getLogger(NativeImageConfigBuildStep.class);
 
     private static final String LIB_SUN_EC = "libsunec.so";
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void build(SslContextConfigurationRecorder sslContextConfigurationRecorder,
-            List<SubstrateConfigBuildItem> substrateConfigBuildItems,
+            List<NativeImageConfigBuildItem> nativeImageConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
             List<JniBuildItem> jniBuildItems,
             List<NativeEnableAllCharsetsBuildItem> nativeEnableAllCharsetsBuildItems,
             List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
             List<EnableAllSecurityServicesBuildItem> enableAllSecurityServicesBuildItems,
-            BuildProducer<SubstrateProxyDefinitionBuildItem> proxy,
-            BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle,
+            BuildProducer<NativeImageProxyDefinitionBuildItem> proxy,
+            BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
             BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinit,
-            BuildProducer<SubstrateSystemPropertyBuildItem> nativeImage,
+            BuildProducer<NativeImageSystemPropertyBuildItem> nativeImage,
             BuildProducer<SystemPropertyBuildItem> systemProperty,
             BuildProducer<JavaLibraryPathAdditionalPathBuildItem> javaLibraryPathAdditionalPath,
             BuildProducer<SslTrustStoreSystemPropertyBuildItem> sslTrustStoreSystemProperty) {
-        for (SubstrateConfigBuildItem substrateConfigBuildItem : substrateConfigBuildItems) {
-            for (String i : substrateConfigBuildItem.getRuntimeInitializedClasses()) {
+        for (NativeImageConfigBuildItem nativeImageConfigBuildItem : nativeImageConfigBuildItems) {
+            for (String i : nativeImageConfigBuildItem.getRuntimeInitializedClasses()) {
                 runtimeInit.produce(new RuntimeInitializedClassBuildItem(i));
             }
-            for (String i : substrateConfigBuildItem.getRuntimeReinitializedClasses()) {
+            for (String i : nativeImageConfigBuildItem.getRuntimeReinitializedClasses()) {
                 runtimeReinit.produce(new RuntimeReinitializedClassBuildItem(i));
             }
-            for (Map.Entry<String, String> e : substrateConfigBuildItem.getNativeImageSystemProperties().entrySet()) {
-                nativeImage.produce(new SubstrateSystemPropertyBuildItem(e.getKey(), e.getValue()));
+            for (Map.Entry<String, String> e : nativeImageConfigBuildItem.getNativeImageSystemProperties().entrySet()) {
+                nativeImage.produce(new NativeImageSystemPropertyBuildItem(e.getKey(), e.getValue()));
             }
-            for (String i : substrateConfigBuildItem.getResourceBundles()) {
-                resourceBundle.produce(new SubstrateResourceBundleBuildItem(i));
+            for (String i : nativeImageConfigBuildItem.getResourceBundles()) {
+                resourceBundle.produce(new NativeImageResourceBundleBuildItem(i));
             }
-            for (List<String> i : substrateConfigBuildItem.getProxyDefinitions()) {
-                proxy.produce(new SubstrateProxyDefinitionBuildItem(i));
+            for (List<String> i : nativeImageConfigBuildItem.getProxyDefinitions()) {
+                proxy.produce(new NativeImageProxyDefinitionBuildItem(i));
             }
         }
 
@@ -117,12 +117,12 @@ class SubstrateConfigBuildStep {
                 }
             }
         }
-        nativeImage.produce(new SubstrateSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));
+        nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));
 
         boolean requireJni = false;
         if (!enableAllSecurityServicesBuildItems.isEmpty()) {
             requireJni = true;
-            nativeImage.produce(new SubstrateSystemPropertyBuildItem("quarkus.native.enable-all-security-services", "true"));
+            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-security-services", "true"));
         }
 
         if (!jniBuildItems.isEmpty() || requireJni) {
@@ -134,11 +134,11 @@ class SubstrateConfigBuildStep {
                     }
                 }
             }
-            nativeImage.produce(new SubstrateSystemPropertyBuildItem("quarkus.jni.enable", "true"));
+            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.jni.enable", "true"));
         }
 
         if (!nativeEnableAllCharsetsBuildItems.isEmpty()) {
-            nativeImage.produce(new SubstrateSystemPropertyBuildItem("quarkus.native.enable-all-charsets", "true"));
+            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-charsets", "true"));
         }
     }
 

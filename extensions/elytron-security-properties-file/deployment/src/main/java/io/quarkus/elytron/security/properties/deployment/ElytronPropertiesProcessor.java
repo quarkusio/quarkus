@@ -11,7 +11,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.runtime.ElytronPropertiesFileRecorder;
@@ -55,7 +55,7 @@ class ElytronPropertiesProcessor {
      * to include the build artifact.
      *
      * @param recorder - runtime security recorder
-     * @param resources - SubstrateResourceBuildItem used to register the realm user/roles properties files names.
+     * @param resources - NativeImageResourceBuildItem used to register the realm user/roles properties files names.
      * @param securityRealm - the producer factory for the SecurityRealmBuildItem
      * @return the AuthConfigBuildItem for the realm authentication mechanism if there was an enabled PropertiesRealmConfig,
      *         null otherwise
@@ -64,14 +64,14 @@ class ElytronPropertiesProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void configureFileRealmAuthConfig(ElytronPropertiesFileRecorder recorder,
-            BuildProducer<SubstrateResourceBuildItem> resources,
+            BuildProducer<NativeImageResourceBuildItem> resources,
             BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
         if (propertiesConfig.file.enabled) {
             PropertiesRealmConfig realmConfig = propertiesConfig.file;
             log.debugf("Configuring from PropertiesRealmConfig, users=%s, roles=%s", realmConfig.users,
                     realmConfig.roles);
             // Add the users/roles properties files resource names to build artifact
-            resources.produce(new SubstrateResourceBuildItem(realmConfig.users, realmConfig.roles));
+            resources.produce(new NativeImageResourceBuildItem(realmConfig.users, realmConfig.roles));
             // Have the runtime recorder create the LegacyPropertiesSecurityRealm and create the build item
             RuntimeValue<SecurityRealm> realm = recorder.createRealm(realmConfig);
             securityRealm

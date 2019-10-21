@@ -24,7 +24,7 @@ import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.security.deployment.JCAProviderBuildItem;
 import io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMechanism;
 import io.quarkus.smallrye.jwt.runtime.auth.JwtPrincipalProducer;
@@ -83,17 +83,17 @@ class SmallRyeJwtProcessor {
     }
 
     /**
-     * If the configuration specified a deployment local key resource, register it with substrate
+     * If the configuration specified a deployment local key resource, register it in native mode
      *
-     * @return SubstrateResourceBuildItem
+     * @return NativeImageResourceBuildItem
      */
     @BuildStep
-    SubstrateResourceBuildItem registerSubstrateResources() {
+    NativeImageResourceBuildItem registerNativeImageResources() {
         String publicKeyLocation = QuarkusConfig.getString("mp.jwt.verify.publickey.location", null, true);
         if (publicKeyLocation != null) {
             if (publicKeyLocation.indexOf(':') < 0 || publicKeyLocation.startsWith("classpath:")) {
                 log.infof("Adding %s to native image", publicKeyLocation);
-                return new SubstrateResourceBuildItem(publicKeyLocation);
+                return new NativeImageResourceBuildItem(publicKeyLocation);
             }
         }
         return null;

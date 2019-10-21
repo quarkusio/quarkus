@@ -31,12 +31,12 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.GeneratedSubstrateClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.runtime.LaunchMode;
 
@@ -173,7 +173,7 @@ public final class AmazonLambdaProcessor {
     void bootNativeEventLoop(AmazonLambdaRecorder recorder,
             ShutdownContextBuildItem shutdownContextBuildItem,
             List<ServiceStartBuildItem> orderServicesFirst, // force some ordering of recorders
-            BuildProducer<GeneratedSubstrateClassBuildItem> substrate // hack to try to force native only
+            BuildProducer<GeneratedNativeImageClassBuildItem> nativeImage // hack to try to force native only
     ) {
         recorder.startPollLoop(shutdownContextBuildItem);
     }

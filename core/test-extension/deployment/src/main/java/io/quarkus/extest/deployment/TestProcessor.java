@@ -47,8 +47,8 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.extest.runtime.FinalFieldReflectionObject;
 import io.quarkus.extest.runtime.IConfigConsumer;
 import io.quarkus.extest.runtime.RuntimeXmlConfigService;
@@ -77,7 +77,7 @@ public final class TestProcessor {
     static DotName TEST_ANNOTATION_SCOPE = DotName.createSimple(ApplicationScoped.class.getName());
 
     @Inject
-    BuildProducer<SubstrateResourceBuildItem> resource;
+    BuildProducer<NativeImageResourceBuildItem> resource;
 
     TestConfigRoot configRoot;
     TestBuildTimeConfig buildTimeConfig;
@@ -105,7 +105,7 @@ public final class TestProcessor {
 
     @BuildStep
     void registerNativeImageResources() {
-        resource.produce(new SubstrateResourceBuildItem("/DSAPublicKey.encoded"));
+        resource.produce(new NativeImageResourceBuildItem("/DSAPublicKey.encoded"));
     }
 
     /**

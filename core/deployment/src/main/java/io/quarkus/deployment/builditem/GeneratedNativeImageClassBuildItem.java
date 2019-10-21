@@ -5,11 +5,11 @@ import io.quarkus.builder.item.MultiBuildItem;
 /**
  * A generated class that is only applicable to native images
  */
-public final class GeneratedSubstrateClassBuildItem extends MultiBuildItem {
+public final class GeneratedNativeImageClassBuildItem extends MultiBuildItem {
     final String name;
     final byte[] classData;
 
-    public GeneratedSubstrateClassBuildItem(String name, byte[] classData) {
+    public GeneratedNativeImageClassBuildItem(String name, byte[] classData) {
         this.name = name;
         this.classData = classData;
     }

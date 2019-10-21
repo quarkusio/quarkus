@@ -10,7 +10,7 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 /**
- * This class removes osgi based classes in embedded, which we don't support with substrate
+ * This class removes osgi based classes in embedded, which we don't support in native mode
  * 
  * @author William Burns
  */

@@ -11,9 +11,14 @@ import io.quarkus.builder.item.MultiBuildItem;
  * When processed, it embeds the service interface descriptor (META-INF/services/...) and allow reflection (instantiation only)
  * on a set of provider
  * classes.
+ * 
+ * @deprecated Use {@link io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem ServiceProviderBuildItem}
+ *             instead.
  */
+@Deprecated
 public final class ServiceProviderBuildItem extends MultiBuildItem {
 
+    @Deprecated
     public static final String SPI_ROOT = "META-INF/services/";
     private final String serviceInterface;
     private final List<String> providers;
@@ -36,6 +41,10 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
                 throw new IllegalArgumentException("The provider class name cannot be null or blank");
             }
         });
+    }
+
+    public String getServiceInterface() {
+        return serviceInterface;
     }
 
     public List<String> providers() {

@@ -20,7 +20,7 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  * Basic test running JPA with the MariaDB database.
- * The application can work in either standard JVM or SubstrateVM.
+ * The application can work in either standard JVM or in native mode.
  */
 @WebServlet(name = "JPATestBootstrapEndpoint", urlPatterns = "/jpa-mariadb/testfunctionality")
 public class JPAFunctionalityTestEndpoint extends HttpServlet {

@@ -11,8 +11,8 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.IOThreadDetectorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.core.runtime.VertxCoreProducer;
@@ -24,9 +24,9 @@ import io.vertx.core.Vertx;
 class VertxCoreProcessor {
 
     @BuildStep
-    SubstrateConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    NativeImageConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, VertxLogDelegateFactory.class.getName()));
-        return SubstrateConfigBuildItem.builder()
+        return NativeImageConfigBuildItem.builder()
                 .addRuntimeInitializedClass("io.vertx.core.net.impl.PartialPooledByteBufAllocator")
                 .addRuntimeInitializedClass("io.vertx.core.http.impl.VertxHttp2ClientUpgradeCodec")
                 .addRuntimeInitializedClass("io.vertx.core.eventbus.impl.clustered.ClusteredEventBus")

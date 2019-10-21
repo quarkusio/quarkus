@@ -33,9 +33,9 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
@@ -56,14 +56,14 @@ public class JsonbProcessor {
 
     @BuildStep(providesCapabilities = Capabilities.JSONB)
     void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle,
+            BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             CombinedIndexBuildItem combinedIndexBuildItem) {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 JsonBindingProvider.class.getName()));
 
-        resourceBundle.produce(new SubstrateResourceBundleBuildItem("yasson-messages"));
+        resourceBundle.produce(new NativeImageResourceBundleBuildItem("yasson-messages"));
 
         serviceProvider.produce(new ServiceProviderBuildItem(JsonbComponentInstanceCreator.class.getName(),
                 QuarkusJsonbComponentInstanceCreator.class.getName()));

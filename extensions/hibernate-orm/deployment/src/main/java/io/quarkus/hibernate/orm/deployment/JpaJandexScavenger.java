@@ -26,7 +26,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
 import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 
 /**

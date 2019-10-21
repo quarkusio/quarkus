@@ -55,11 +55,11 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.restclient.runtime.IncomingHeadersProvider;
@@ -83,16 +83,16 @@ class RestClientProcessor {
     private static final String PROVIDERS_SERVICE_FILE = "META-INF/services/" + Providers.class.getName();
 
     @BuildStep
-    void setupProviders(BuildProducer<SubstrateResourceBuildItem> resources,
-            BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition) {
+    void setupProviders(BuildProducer<NativeImageResourceBuildItem> resources,
+            BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition) {
 
-        proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem("javax.ws.rs.ext.Providers"));
-        resources.produce(new SubstrateResourceBuildItem(PROVIDERS_SERVICE_FILE));
+        proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem("javax.ws.rs.ext.Providers"));
+        resources.produce(new NativeImageResourceBuildItem(PROVIDERS_SERVICE_FILE));
     }
 
     @BuildStep
-    SubstrateProxyDefinitionBuildItem addProxy() {
-        return new SubstrateProxyDefinitionBuildItem(ResteasyConfiguration.class.getName());
+    NativeImageProxyDefinitionBuildItem addProxy() {
+        return new NativeImageProxyDefinitionBuildItem(ResteasyConfiguration.class.getName());
     }
 
     @BuildStep
@@ -125,7 +125,7 @@ class RestClientProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void processInterfaces(CombinedIndexBuildItem combinedIndexBuildItem,
             SslNativeConfigBuildItem sslNativeConfig,
-            BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition,
+            BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<BeanRegistrarBuildItem> beanRegistrars,
@@ -172,11 +172,11 @@ class RestClientProcessor {
 
         for (Map.Entry<DotName, ClassInfo> entry : interfaces.entrySet()) {
             String iName = entry.getKey().toString();
-            // the SubstrateProxyDefinitions have to be separate because
+            // the native image proxy definitions have to be separate because
             // MP REST Client impl creates a JDK proxy that delegates to a resteasy JDK proxy
-            proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(iName, ResteasyClientProxy.class.getName()));
+            proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(iName, ResteasyClientProxy.class.getName()));
             proxyDefinition.produce(
-                    new SubstrateProxyDefinitionBuildItem(iName, RestClientProxy.class.getName(), Closeable.class.getName()));
+                    new NativeImageProxyDefinitionBuildItem(iName, RestClientProxy.class.getName(), Closeable.class.getName()));
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, iName));
         }
 

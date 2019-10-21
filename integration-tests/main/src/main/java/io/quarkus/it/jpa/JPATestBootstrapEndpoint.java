@@ -22,7 +22,7 @@ import io.quarkus.it.common.Clown;
 
 /**
  * Various tests for the JPA integration.
- * WARNING: these tests will ONLY pass in Substrate, as it also verifies reflection non-functionality.
+ * WARNING: these tests will ONLY pass in native mode, as it also verifies reflection non-functionality.
  */
 @WebServlet(name = "JPATestBootstrapEndpoint", urlPatterns = "/jpa/testbootstrap")
 public class JPATestBootstrapEndpoint extends HttpServlet {

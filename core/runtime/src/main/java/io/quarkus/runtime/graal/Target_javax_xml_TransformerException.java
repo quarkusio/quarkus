@@ -8,7 +8,7 @@ public final class Target_javax_xml_TransformerException {
 
     @Substitute
     public void printStackTrace(java.io.PrintWriter s) {
-        s.print("Error omitted: javax.xml.transform.TransformerException is substituted in Substrate");
+        s.print("Error omitted: javax.xml.transform.TransformerException is substituted in native mode");
     }
 
 }

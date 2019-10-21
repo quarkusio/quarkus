@@ -259,7 +259,7 @@ public class SubclassGenerator extends AbstractGenerator {
             // metadata.put("m1", new SubclassMethodMetadata(...))
             constructor.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, metadataHandle, methodIdHandle, methodMetadataHandle);
 
-            // Needed when running on substrate VM
+            // Needed when running on native image
             reflectionRegistration.registerMethod(method);
 
             // Finally create the forwarding method

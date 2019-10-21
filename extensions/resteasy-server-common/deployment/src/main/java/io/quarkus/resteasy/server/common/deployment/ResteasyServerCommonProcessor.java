@@ -54,12 +54,12 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor.ResteasyCommonConfig;
 import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
@@ -136,8 +136,8 @@ public class ResteasyServerCommonProcessor {
     }
 
     @BuildStep
-    SubstrateConfigBuildItem config() {
-        return SubstrateConfigBuildItem.builder()
+    NativeImageConfigBuildItem config() {
+        return NativeImageConfigBuildItem.builder()
                 .addResourceBundle("messages")
                 .build();
     }
@@ -146,8 +146,8 @@ public class ResteasyServerCommonProcessor {
     public void build(
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
-            BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition,
-            BuildProducer<SubstrateResourceBuildItem> resource,
+            BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
+            BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ResteasyServerConfigBuildItem> resteasyServerConfig,
@@ -164,7 +164,7 @@ public class ResteasyServerCommonProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) throws Exception {
         IndexView index = combinedIndexBuildItem.getIndex();
 
-        resource.produce(new SubstrateResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
+        resource.produce(new NativeImageResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
 
         Collection<AnnotationInstance> applicationPaths = index.getAnnotations(ResteasyDotNames.APPLICATION_PATH);
 
@@ -610,7 +610,7 @@ public class ResteasyServerCommonProcessor {
     }
 
     private static void registerContextProxyDefinitions(IndexView index,
-            BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition) {
+            BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition) {
         // @Context uses proxies for interface injection
         for (AnnotationInstance annotation : index.getAnnotations(ResteasyDotNames.CONTEXT)) {
             DotName typeName = null;
@@ -629,14 +629,14 @@ public class ResteasyServerCommonProcessor {
                 ClassInfo type = index.getClassByName(typeName);
                 if (type != null) {
                     if (Modifier.isInterface(type.flags())) {
-                        proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(type.toString()));
+                        proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(type.toString()));
                     }
                 } else {
                     //might be a framework class, which should be loadable
                     try {
                         Class<?> typeClass = Class.forName(typeName.toString());
                         if (typeClass.isInterface()) {
-                            proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(typeName.toString()));
+                            proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(typeName.toString()));
                         }
                     } catch (Exception e) {
                         //ignore

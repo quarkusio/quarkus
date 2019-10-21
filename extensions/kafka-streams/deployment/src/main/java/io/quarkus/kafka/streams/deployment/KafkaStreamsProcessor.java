@@ -24,9 +24,9 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.kafka.streams.runtime.HotReplacementInterceptor;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
@@ -41,7 +41,7 @@ class KafkaStreamsProcessor {
     void build(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized,
-            BuildProducer<SubstrateResourceBuildItem> nativeLibs,
+            BuildProducer<NativeImageResourceBuildItem> nativeLibs,
             BuildProducer<JniBuildItem> jni,
             LaunchModeBuildItem launchMode) throws IOException {
 
@@ -105,14 +105,14 @@ class KafkaStreamsProcessor {
         }
     }
 
-    private void addSupportForRocksDbLib(BuildProducer<SubstrateResourceBuildItem> nativeLibs) {
+    private void addSupportForRocksDbLib(BuildProducer<NativeImageResourceBuildItem> nativeLibs) {
         // for RocksDB, either add linux64 native lib when targeting containers
         if (isContainerBuild()) {
-            nativeLibs.produce(new SubstrateResourceBuildItem("librocksdbjni-linux64.so"));
+            nativeLibs.produce(new NativeImageResourceBuildItem("librocksdbjni-linux64.so"));
         }
         // otherwise the native lib of the platform this build runs on
         else {
-            nativeLibs.produce(new SubstrateResourceBuildItem(Environment.getJniLibraryFileName("rocksdb")));
+            nativeLibs.produce(new NativeImageResourceBuildItem(Environment.getJniLibraryFileName("rocksdb")));
         }
     }
 

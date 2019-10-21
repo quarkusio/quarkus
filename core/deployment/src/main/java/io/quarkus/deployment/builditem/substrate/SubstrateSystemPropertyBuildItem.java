@@ -4,7 +4,11 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A system property that will be set at native image build time
+ * 
+ * @deprecated Use {@link io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem
+ *             NativeImageSystemPropertyBuildItem} instead.
  */
+@Deprecated
 public final class SubstrateSystemPropertyBuildItem extends MultiBuildItem {
 
     private final String key;

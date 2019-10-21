@@ -10,7 +10,11 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Used to register a class for reflection in substrate
+ * 
+ * @deprecated Use {@link io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem ReflectiveClassBuildItem}
+ *             instead.
  */
+@Deprecated
 public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
     private final List<String> className;

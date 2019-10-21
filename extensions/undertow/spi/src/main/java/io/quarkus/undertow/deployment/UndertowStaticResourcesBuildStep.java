@@ -18,7 +18,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 /**
@@ -119,9 +119,9 @@ public class UndertowStaticResourcesBuildStep {
     }
 
     @BuildStep
-    void substrateResources(KnownPathsBuildItem paths, BuildProducer<SubstrateResourceBuildItem> substrate) {
+    void nativeImageResources(KnownPathsBuildItem paths, BuildProducer<NativeImageResourceBuildItem> nativeImage) {
         for (String i : paths.knownFiles) {
-            substrate.produce(new SubstrateResourceBuildItem(META_INF_RESOURCES_SLASH + i));
+            nativeImage.produce(new NativeImageResourceBuildItem(META_INF_RESOURCES_SLASH + i));
         }
     }
 }

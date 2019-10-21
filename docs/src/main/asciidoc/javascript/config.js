@@ -270,9 +270,9 @@ function makeCollapsible(input, descDiv){
 
         var collapsibleLink = document.createElement("a");
         collapsibleLink.setAttribute("href", "#");
+        collapsibleLink.setAttribute("title", "Expand");
         collapsibleLink.appendChild(iconExpand);
         collapsibleLink.appendChild(iconCollapse);
-        collapsibleLink.appendChild(document.createTextNode("Expand"));
         collapsibleLink.classList.add('link-collapsible');
 
         var collapsibleHandler = makeCollapsibleHandler(input, descDiv, td, row, 
@@ -283,7 +283,7 @@ function makeCollapsible(input, descDiv){
         collapsibleLink.addEventListener('click', collapsibleHandler);
 
         var parent = descDiv.parentNode;
-        parent.insertBefore(collapsibleLink, parent.firstChild);
+        parent.insertBefore(collapsibleLink, descDiv);
 
         parent.appendChild(descDecoration);
         row.classList.add("row-collapsible", "row-collapsed");
@@ -311,7 +311,7 @@ function makeCollapsibleHandler(input, descDiv, td, row,
         if( isCollapsed ) {
             iconCollapse.style.removeProperty("display");
             iconExpand.style.display = "none";
-            collapsibleLink.childNodes.item(2).nodeValue = 'Collapse';
+            collapsibleLink.setAttribute('title', 'Collapse');
             iconDecoration1.classList.replace('fa-chevron-down', 'fa-chevron-up');
             iconDecoration2.classList.replace('fa-chevron-down', 'fa-chevron-up');
             iconDecoration3.classList.replace('fa-chevron-down', 'fa-chevron-up');
@@ -319,7 +319,7 @@ function makeCollapsibleHandler(input, descDiv, td, row,
         else {
             iconExpand.style.removeProperty("display");
             iconCollapse.style.display = "none";
-            collapsibleLink.childNodes.item(2).nodeValue = 'Expand';
+            collapsibleLink.setAttribute('title', 'Expand');
             iconDecoration1.classList.replace('fa-chevron-up', 'fa-chevron-down');
             iconDecoration2.classList.replace('fa-chevron-up', 'fa-chevron-down');
             iconDecoration3.classList.replace('fa-chevron-up', 'fa-chevron-down');

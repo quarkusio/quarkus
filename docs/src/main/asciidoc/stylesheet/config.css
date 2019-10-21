@@ -52,12 +52,11 @@ table.configuration-reference .description > .content:last-child {
 }
 
 a.link-collapsible {
-    float: right;
+    float: left;
 }
 
 a.link-collapsible i.fa {
-    margin: 0 4px;
-    font-size: 8px;
+    font-size: 12px;
 }
 
 tr.row-collapsible td {

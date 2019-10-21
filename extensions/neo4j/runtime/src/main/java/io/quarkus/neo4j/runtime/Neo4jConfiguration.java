@@ -2,6 +2,7 @@ package io.quarkus.neo4j.runtime;
 
 import java.time.Duration;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -21,15 +22,17 @@ public class Neo4jConfiguration {
     public String uri;
 
     /**
-     * The authentication the driver is supposed to use.
+     * Authentication.
      */
     @ConfigItem
+    @ConfigDocSection
     public Authentication authentication;
 
     /**
-     * Advanced settings for the drivers internal connection pool.
+     * Connection pool.
      */
     @ConfigItem
+    @ConfigDocSection
     public Pool pool;
 
     @ConfigGroup

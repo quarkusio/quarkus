@@ -420,8 +420,7 @@ public class QuarkusNative extends QuarkusTask {
             @Override
             public void accept(ConfigBuilder configBuilder) {
                 InMemoryConfigSource type = new InMemoryConfigSource(Integer.MAX_VALUE, "Native Image Type")
-                        .add("quarkus.package.types", "NATIVE");
-                configBuilder.withSources(type);
+                        .add("quarkus.package.types", "native");
 
                 InMemoryConfigSource configs = new InMemoryConfigSource(0, "Native Image Maven Settings");
 
@@ -473,6 +472,7 @@ public class QuarkusNative extends QuarkusTask {
 
                 configs.add("quarkus.native.report-exception-stack-traces", reportExceptionStackTraces);
 
+                configBuilder.withSources(type, configs);
             }
         };
 

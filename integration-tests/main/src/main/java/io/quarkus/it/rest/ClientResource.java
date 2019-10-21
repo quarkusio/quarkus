@@ -85,6 +85,18 @@ public class ClientResource {
     }
 
     @GET
+    @Path("cdi/timeout")
+    public String getTimeout() {
+        String response = "";
+        try {
+            response = restClientInterface.getSlowAnswer();
+        } catch (javax.ws.rs.ProcessingException e) {
+            response = e.getCause().getMessage().toUpperCase();
+        }
+        return response;
+    }
+
+    @GET
     @Path("async/cdi/jackson")
     @Produces("application/json")
     public CompletionStage<TestResource.MyData> getDataAsync() {

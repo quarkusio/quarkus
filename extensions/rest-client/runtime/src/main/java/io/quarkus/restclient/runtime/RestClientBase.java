@@ -3,6 +3,7 @@ package io.quarkus.restclient.runtime;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -13,6 +14,8 @@ public class RestClientBase {
     public static final String MP_REST = "mp-rest";
     public static final String REST_URL_FORMAT = "%s/" + MP_REST + "/url";
     public static final String REST_URI_FORMAT = "%s/" + MP_REST + "/uri";
+    public static final String CONNECT_TIMEOUT_FORMAT = "%s/" + MP_REST + "/connectTimeout";
+    public static final String READ_TIMEOUT_FORMAT = "%s/" + MP_REST + "/readTimeout";
 
     private final Class<?> proxyType;
     private final String baseUriFromAnnotation;
@@ -30,6 +33,8 @@ public class RestClientBase {
     public Object create() {
         RestClientBuilder builder = RestClientBuilder.newBuilder();
         String baseUrl = getBaseUrl();
+        enhanceConnectTimeout(builder);
+        enhanceReadTimeout(builder);
         try {
             return builder.baseUrl(new URL(baseUrl)).build(proxyType);
         } catch (MalformedURLException e) {
@@ -62,5 +67,21 @@ public class RestClientBase {
                             propertyName));
         }
         return propertyOptional.orElse(baseUriFromAnnotation);
+    }
+
+    private void enhanceConnectTimeout(RestClientBuilder builder) {
+        String propertyName = String.format(CONNECT_TIMEOUT_FORMAT, proxyType.getName());
+        Optional<Long> propertyOptional = config.getOptionalValue(propertyName, Long.class);
+        if (propertyOptional.isPresent()) {
+            builder.connectTimeout(propertyOptional.get(), TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private void enhanceReadTimeout(RestClientBuilder builder) {
+        String propertyName = String.format(READ_TIMEOUT_FORMAT, proxyType.getName());
+        Optional<Long> propertyOptional = config.getOptionalValue(propertyName, Long.class);
+        if (propertyOptional.isPresent()) {
+            builder.readTimeout(propertyOptional.get(), TimeUnit.MILLISECONDS);
+        }
     }
 }

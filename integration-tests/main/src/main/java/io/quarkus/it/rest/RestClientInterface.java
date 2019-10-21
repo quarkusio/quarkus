@@ -23,4 +23,8 @@ public interface RestClientInterface {
     @Path("/jackson")
     @Produces("application/json")
     TestResource.MyData getData();
+
+    @GET
+    @Path("/slow")
+    String getSlowAnswer();
 }

@@ -13,65 +13,7 @@ This guide explains logging and how to configure it.
 
 Run time configuration of logging is done through the normal `application.properties` file.
 
-=== Console configuration
-
-Console logging is enabled by default.  To configure or disable it, the following configuration properties are used:
-
-[cols="<m,<m,<2",options="header"]
-|===
-|Property Name|Default|Description
-|quarkus.log.console.enable|true|Determine whether console logging is enabled.
-|quarkus.log.console.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n|The format pattern to use for logging to the console; see <<format_string>>.
-|quarkus.log.console.level|ALL|The minimum log level to display to the console.
-|quarkus.log.console.color|true|Allow color rendering to be used on the console, if it is supported by the terminal.
-|quarkus.log.console.async|false|Indicates whether to log asynchronously.
-|quarkus.log.console.async.queue-length|512|The queue length to use before flushing writing.
-|quarkus.log.console.async.overflow|block|Determine whether to block the publisher (rather than drop the message) when the queue is full.
-|===
-
-=== File configuration
-
-Logging to a file is also supported but not enabled by default.  To configure or enable this behavior, use the following configuration properties:
-
-[cols="<m,<m,<2",options="header"]
-|===
-|Property Name|Default|Description
-|quarkus.log.file.enable|false|Determine whether file logging is enabled.
-|quarkus.log.file.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{3.}] (%t) %s%e%n|The format pattern to use for logging to a file; see <<format_string>>.
-|quarkus.log.file.level|ALL|The minimum log level to write to the log file.
-|quarkus.log.file.path|quarkus.log|The path of the log file.
-|quarkus.log.file.rotation.max-file-size||The maximum file size of the log file after which a rotation is executed. This configuration option would recognize strings in this format (shown as a regular expression): `[0-9]+[KkMmGgTtPpEeZzYy]?`. If no suffix is given, assume bytes.
-|quarkus.log.file.rotation.max-backup-index|1|The maximum number of backups to keep.
-|quarkus.log.file.rotation.file-suffix||Rotating log file suffix. The format of suffix value has to be understood by `java.text.SimpleDateFormat`.
-|quarkus.log.file.rotation.rotate-on-boot|true|Indicates whether to rotate log files on server initialization.
-|quarkus.log.file.async|false|Indicates whether to log asynchronously.
-|quarkus.log.file.async.queue-length|512|The queue length to use before flushing writing.
-|quarkus.log.file.async.overflow|block|Determine whether to block the publisher (rather than drop the message) when the queue is full.
-|===
-
-=== Syslog configuration
-
-Logging to a syslog is also supported but not enabled by default.  To configure or enable this behavior, use the following configuration properties:
-
-[cols="<m,<m,<2",options="header"]
-|===
-|Property Name|Default|Description
-|quarkus.log.syslog.enable|false|Determine whether syslog logging is enabled.
-|quarkus.log.syslog.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{3.}] (%t) %s%e%n|The format pattern to use for logging to syslog; see <<format_string>>.
-|quarkus.log.syslog.level|ALL|The minimum log level to write to syslog.
-|quarkus.log.syslog.endpoint|localhost:514|The IP address and port of the syslog server.
-|quarkus.log.syslog.app-name|The current process name|The app name used when formatting the message in RFC5424 format.
-|quarkus.log.syslog.hostname|The current hostname|The name of the host the messages are being sent from.
-|quarkus.log.syslog.facility|USER_LEVEL|The facility used when calculating the priority of the message as defined by RFC-5424 and RFC-3164.
-|quarkus.log.syslog.syslog-type|RFC5424|The syslog type which handler should use to format the message sent.
-|quarkus.log.syslog.protocol|TCP|The protocol used to connect to the syslog server.
-|quarkus.log.syslog.use-counting-framing|false|Determine whether the message being sent should be prefixed with the size of the message.
-|quarkus.log.syslog.truncate|true|Indicates whether the message should be truncated.
-|quarkus.log.syslog.block-on-reconnect|true|Determine whether to block when attempting to reconnect on TCP or SSL TCP protocols
-|quarkus.log.syslog.async|false|Indicates whether to log asynchronously.
-|quarkus.log.syslog.async.queue-length|512|The queue length to use before flushing writing.
-|quarkus.log.syslog.async.overflow|block|Determine whether to block the publisher (rather than drop the message) when the queue is full.
-|===
+include::{generated-dir}/config/quarkus-core-log-config.adoc[opts=optional, leveloffset=+1]
 
 === Logging categories
 

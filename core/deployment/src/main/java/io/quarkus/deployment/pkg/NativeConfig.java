@@ -164,7 +164,7 @@ public class NativeConfig {
      * If reporting on call paths should be enabled
      */
     @ConfigItem(defaultValue = "false")
-    public boolean disableReports;
+    public boolean enableReports;
 
     /**
      * Additional arguments to pass to the build process

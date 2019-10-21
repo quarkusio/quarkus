@@ -107,7 +107,7 @@
                                     <graalvmHome>${graalvmHome}</graalvmHome>
                                     <enableJni>true</enableJni>
                                     <enableAllSecurityServices>true</enableAllSecurityServices>
-                                    <disableReports>true</disableReports>
+                                    <enableReports>false</enableReports>
                                 </configuration>
                             </execution>
                         </executions>

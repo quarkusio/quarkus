@@ -198,7 +198,7 @@ public class NativeImageBuildStep {
             if (nativeConfig.debugBuildProcess) {
                 command.add("-J-Xrunjdwp:transport=dt_socket,address=" + DEBUG_BUILD_PROCESS_PORT + ",server=y,suspend=y");
             }
-            if (!nativeConfig.disableReports) {
+            if (nativeConfig.enableReports) {
                 command.add("-H:+PrintAnalysisCallTree");
             }
             if (nativeConfig.dumpProxies) {

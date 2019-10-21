@@ -1,0 +1,8 @@
+{
+    "name": "Vault",
+    "labels": [
+        "vault",
+        "security"
+    ],
+    "guide": "https://quarkus.io/guides/vault-guide"
+}

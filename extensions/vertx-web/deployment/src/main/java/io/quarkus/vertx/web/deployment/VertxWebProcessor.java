@@ -137,7 +137,6 @@ class VertxWebProcessor {
                 generatedClass.produce(new GeneratedClassBuildItem(true, name, data));
             }
         };
-
         for (AnnotatedRouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
             String handlerClass = generateHandler(businessMethod.getBean(), businessMethod.getMethod(), classOutput);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));

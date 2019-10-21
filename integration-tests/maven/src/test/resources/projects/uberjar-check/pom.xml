@@ -48,9 +48,6 @@
             </goals>
           </execution>
         </executions>
-        <configuration>
-          <uberJar>${env.UBER_JAR}</uberJar>
-        </configuration>
       </plugin>
     </plugins>
   </build>

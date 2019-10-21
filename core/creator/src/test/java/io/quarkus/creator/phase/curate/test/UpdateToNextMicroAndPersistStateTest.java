@@ -6,18 +6,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Properties;
 
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
-import io.quarkus.creator.AppCreator;
-import io.quarkus.creator.phase.curate.CurateOutcome;
-import io.quarkus.creator.phase.curate.CuratePhase;
-import io.quarkus.creator.phase.curate.DependenciesOrigin;
-import io.quarkus.creator.phase.curate.VersionUpdate;
-import io.quarkus.creator.phase.curate.VersionUpdateNumber;
+import io.quarkus.creator.CuratedApplicationCreator;
+import io.quarkus.creator.DependenciesOrigin;
+import io.quarkus.creator.VersionUpdate;
+import io.quarkus.creator.VersionUpdateNumber;
+import io.quarkus.creator.curator.CurateOutcome;
 import io.quarkus.creator.phase.runnerjar.test.CreatorOutcomeTestBase;
 
 public class UpdateToNextMicroAndPersistStateTest extends CreatorOutcomeTestBase {
@@ -27,13 +25,10 @@ public class UpdateToNextMicroAndPersistStateTest extends CreatorOutcomeTestBase
     private int buildNo;
 
     @Override
-    protected void initProps(Properties props) {
-        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_DEPS_ORIGIN),
-                DependenciesOrigin.LAST_UPDATE.getName()); // APPLICATION, last-update
-        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE),
-                VersionUpdate.NEXT.getName()); // NONE, next, latest
-        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE_NUMBER),
-                VersionUpdateNumber.MICRO.getName()); // major, minor, MICRO
+    protected void initProps(CuratedApplicationCreator.Builder builder) {
+        builder.setUpdateNumber(VersionUpdateNumber.MICRO)
+                .setUpdate(VersionUpdate.NEXT)
+                .setDepsOrigin(DependenciesOrigin.LAST_UPDATE);
     }
 
     @Override
@@ -50,9 +45,9 @@ public class UpdateToNextMicroAndPersistStateTest extends CreatorOutcomeTestBase
     }
 
     @Override
-    protected void testCreator(AppCreator creator) throws Exception {
+    protected void testCreator(CuratedApplicationCreator creator) throws Exception {
 
-        final CurateOutcome outcome = creator.resolveOutcome(CurateOutcome.class);
+        final CurateOutcome outcome = creator.runTask(CurateOutcomeCuratedTask.INSTANCE);
 
         final String expectedVersion;
 

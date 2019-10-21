@@ -68,6 +68,11 @@
 
         <!-- Antlr is used by the PanacheQL parser-->
         <antlr.version>4.7.2</antlr.version>
+
+        <!-- Align various dependencies that are not really part of the bom-->
+        <findbugs.version>3.0.2</findbugs.version>
+        <jsoup.version>1.11.3</jsoup.version>
+        <wagon-provider-api.version>3.3.3</wagon-provider-api.version>
     </properties>
 
     <dependencyManagement>
@@ -115,6 +120,21 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-legacy-launcher</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>jsr305</artifactId>
+                <version>${findbugs.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jsoup</groupId>
+                <artifactId>jsoup</artifactId>
+                <version>${jsoup.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-provider-api</artifactId>
+                <version>${wagon-provider-api.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

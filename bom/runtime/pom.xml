@@ -1767,6 +1767,11 @@
                 <version>${slf4j.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jcl-over-slf4j</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.jboss.slf4j</groupId>
                 <artifactId>slf4j-jboss-logging</artifactId>
                 <version>${slf4j-jboss-logging.version}</version>

@@ -122,7 +122,7 @@ class SubstrateConfigBuildStep {
         boolean requireJni = false;
         if (!enableAllSecurityServicesBuildItems.isEmpty()) {
             requireJni = true;
-            nativeImage.produce(new SubstrateSystemPropertyBuildItem("quarkus.all-security-services.enable", "true"));
+            nativeImage.produce(new SubstrateSystemPropertyBuildItem("quarkus.native.enable-all-security-services", "true"));
         }
 
         if (!jniBuildItems.isEmpty() || requireJni) {

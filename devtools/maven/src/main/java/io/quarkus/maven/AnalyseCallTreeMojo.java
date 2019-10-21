@@ -8,7 +8,7 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-import io.quarkus.creator.phase.nativeimage.ReportAnalyzer;
+import io.quarkus.deployment.pkg.steps.ReportAnalyzer;
 
 /**
  * Analyze call tree of a method or a class based on an existing report produced by Substrate when using

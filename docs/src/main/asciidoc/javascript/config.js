@@ -24,6 +24,21 @@ if(tables){
                 makeCollapsible(input, description);
             }
         }
+        var rowIdx = 0;
+        for (var row of table.querySelectorAll("tr")) {
+            var heads = row.querySelectorAll("th");
+            if(!heads || heads.length == 0){
+                // mark even rows
+                if(++rowIdx % 2){
+                    row.classList.add("odd");
+                }else{
+                    row.classList.remove("odd");
+                }
+            }else{
+                // reset count at each section
+                rowIdx = 0;
+            }
+        }
     }
 }
 
@@ -174,7 +189,20 @@ function applySearch(table, search, autoExpand){
     // clear highlights
     clearHighlights(table);
     var lastSectionHeader = null;
+    var idx = 0;
     for (var row of table.querySelectorAll("tr")) {
+        var heads = row.querySelectorAll("th");
+        if(!heads || heads.length == 0){
+            // mark even rows
+            if(++idx % 2){
+                row.classList.add("odd");
+            }else{
+                row.classList.remove("odd");
+            }
+        }else{
+            // reset count at each section
+            idx = 0;
+        }
         if(!search){
             row.style.removeProperty("display");
             // recollapse when searching is over
@@ -183,7 +211,6 @@ function applySearch(table, search, autoExpand){
                 && !row.classList.contains("row-collapsed"))
                 row.click();
         }else{
-            var heads = row.querySelectorAll("th");
             if(heads && heads.length > 0){
                 // keep the column header with no highlight, but start hidden
                 lastSectionHeader = row;

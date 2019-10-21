@@ -471,7 +471,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                         trimmedValue.endsWith(PLACEHOLDER_SUFFIX)) {
                     String variableName = trimmedValue.substring(PLACEHOLDER_PREFIX.length(),
                             trimmedValue.length() - PLACEHOLDER_SUFFIX.length());
-                    String systemPropertyValue = System.getenv(variableName);
+                    String systemPropertyValue = System.getProperty(variableName);
                     if (Objects.nonNull(systemPropertyValue) && !systemPropertyValue.trim().isEmpty()) {
                         attributes.put(k, systemPropertyValue);
                     }

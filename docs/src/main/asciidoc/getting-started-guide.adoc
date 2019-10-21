@@ -294,7 +294,7 @@ and the application is redeployed; your request is then serviced by the redeploy
 with compilation or deployment an error page will let you know.
 
 This will also listen for a debugger on port `5005`. If you want to wait for the debugger to attach before running you
-can pass `-Ddebug` on the command line. If you don't want the debugger at all you can use `-Ddebug=false`.
+can pass `-Dsuspend` on the command line. If you don't want the debugger at all you can use `-Ddebug=false`.
 
 == Testing
 
@@ -316,8 +316,7 @@ In the generated `pom.xml` file, you can see 2 test dependencies:
 </dependency>
 ----
 
-Quarkus supports https://junit.org/junit4/[Junit 4] and https://junit.org/junit5/[Junit 5] tests.
-In the generated project, we use Junit 5.
+Quarkus supports https://junit.org/junit5/[Junit 5] tests.
 Because of this, the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin] must
 be set, as the default version does not support Junit 5:
 
@@ -410,17 +409,18 @@ property called `test.url` that is set to the base test URL for situations where
 == Packaging and run the application
 
 The application is packaged using `./mvnw package`.
-It produces 2 jar files in `/target`:
+It produces 2 jar files, one in `/target` and one in `/target/getting-started-1.0-SNAPSHOT`:
 
 * `getting-started-1.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
 artifact produced by the Maven build;
-* `getting-started-1.0-SNAPSHOT-runner.jar` - being an executable _jar_. Be aware that it's not an _über-jar_ as
-the dependencies are copied into the `target/lib` directory.
+* `getting-started-1.0-SNAPSHOT/getting-started-1.0-SNAPSHOT-runner.jar` - being an executable _jar_. Be aware that it's not an _über-jar_ as
+the dependencies are copied into the `target/getting-started-1.0-SNAPSHOT/lib` directory.
 
-You can run the application using: `java -jar target/getting-started-1.0-SNAPSHOT-runner.jar`
+You can run the application using: `java -jar target/getting-started-1.0-SNAPSHOT/getting-started-1.0-SNAPSHOT-runner.jar`
 
 NOTE: The `Class-Path` entry of the `MANIFEST.MF` from the _runner jar_ explicitly lists the jars from the `lib` directory.
-So if you want to deploy your application somewhere, you need to copy the _runner_ jar as well as the _lib_ directory.
+So if you want to deploy your application somewhere, you need to copy the contents of the `getting-started-1.0-SNAPSHOT`
+directory.
 
 NOTE: Before running the application, don't forget to stop the hot reload mode (hit `CTRL+C`), or you will have a port conflict.
 

@@ -16,7 +16,18 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -444,8 +455,6 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         attributes.put(Attributes.Name.MAIN_CLASS, mainClass);
     }
 
-
-
     /**
      * Resolve any attribute name that is a place holder between ${...} notation.
      * This is used by build systems that inject metadata to the manifest at build time,
@@ -460,7 +469,8 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                 String trimmedValue = value.trim();
                 if (!trimmedValue.isEmpty() && trimmedValue.startsWith(PLACEHOLDER_PREFIX) &&
                         trimmedValue.endsWith(PLACEHOLDER_SUFFIX)) {
-                    String variableName = trimmedValue.substring(PLACEHOLDER_PREFIX.length(), trimmedValue.length() - PLACEHOLDER_SUFFIX.length());
+                    String variableName = trimmedValue.substring(PLACEHOLDER_PREFIX.length(),
+                            trimmedValue.length() - PLACEHOLDER_SUFFIX.length());
                     String systemPropertyValue = System.getenv(variableName);
                     if (Objects.nonNull(systemPropertyValue) && !systemPropertyValue.trim().isEmpty()) {
                         attributes.put(k, systemPropertyValue);

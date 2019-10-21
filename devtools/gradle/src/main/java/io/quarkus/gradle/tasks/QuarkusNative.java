@@ -429,7 +429,7 @@ public class QuarkusNative extends QuarkusTask {
                 if (additionalBuildArgs != null) {
                     configs.add("quarkus.native.additional-build-args", additionalBuildArgs);
                 }
-                configs.add("quarkus.native.auto-serviceloader-registration", autoServiceLoaderRegistration);
+                configs.add("quarkus.native.auto-service-loader-registration", autoServiceLoaderRegistration);
 
                 configs.add("quarkus.native.cleanup-server", cleanupServer);
                 configs.add("quarkus.native.debug-build-process", debugBuildProcess);

@@ -5,6 +5,8 @@ import java.util.Optional;
 
 import org.hibernate.search.backend.elasticsearch.ElasticsearchVersion;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -26,9 +28,11 @@ public class HibernateSearchElasticsearchBuildTimeConfig {
     public Optional<String> defaultBackend;
 
     /**
-     * Configuration of optional additional backends.
+     * Additional backends
      */
     @ConfigItem(name = "elasticsearch.backends")
+    @ConfigDocSection
+    @ConfigDocMapKey("backend-name")
     public Map<String, ElasticsearchBackendBuildTimeConfig> additionalBackends;
 
     @ConfigGroup

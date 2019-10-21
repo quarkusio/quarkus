@@ -497,19 +497,6 @@ public class GenerateToken {
 }
 ----
 
-To get these classes to compile and run, you need to add the following dependency to your using-jwt-rbac/pom.xml:
-
-.nimbus-jose-jwt library dependency
-[source, xml]
-----
-    <dependency>
-      <groupId>com.nimbusds</groupId>
-      <artifactId>nimbus-jose-jwt</artifactId>
-      <version>6.7</version>
-      <scope>test</scope>
-    </dependency>
-----
-
 Now we need the content of the RSA private key that corresponds to the public key we have in the TokenSecuredResource application. Take the following PEM content and place it into using-jwt-rbac/src/test/resources/privateKey.pem.
 
 .RSA Private Key PEM Content

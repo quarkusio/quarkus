@@ -10,7 +10,7 @@
 ### Non-covered dirs....
 ### - extensions
 ### - extensions/agroal
-### - extensions/amazon-dynamodb
+### - extensions/amazon-services
 ### - extensions/azure-functions-http
 ### - extensions/caffeine
 ### - extensions/flyway
@@ -27,7 +27,7 @@
 ### - integration-tests
 ### - integration-tests/.project
 ### - integration-tests/.settings
-### - integration-tests/amazon-dynamodb
+### - integration-tests/amazon-services
 ### - integration-tests/class-transformer
 ### - integration-tests/flyway
 ### - integration-tests/jackson

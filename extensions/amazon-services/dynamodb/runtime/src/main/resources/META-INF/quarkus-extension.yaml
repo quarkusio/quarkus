@@ -1,0 +1,12 @@
+---
+name: "Amazon DynamoDB"
+metadata:
+  keywords:
+    - "dynamodb"
+    - "dynamo"
+    - "aws"
+    - "amazon"
+  guide: "https://quarkus.io/guides/amazon-dynamodb"
+  categories:
+    - "data"
+  status: "preview"

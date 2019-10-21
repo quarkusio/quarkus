@@ -63,7 +63,7 @@
         <module>keycloak-authorization</module>
         <module>reactive-pg-client</module>
         <module>reactive-mysql-client</module>
-        <module>amazon-dynamodb</module>
+        <module>amazon-services</module>
         <module>test-extension</module>
         <module>amazon-lambda</module>
         <module>amazon-lambda-stream-handler</module>

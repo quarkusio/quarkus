@@ -1,0 +1,509 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Working with HashiCorp Vault
+
+include::./attributes.adoc[]
+:config-file: application.properties
+:vault-version: 1.2.2
+:root-token: s.5VUS8pte13RqekCB2fmMT3u2
+:client-token: s.s93BVzJPzBiIGuYJHBTkG8Uw
+
+https://www.vaultproject.io/[HashiCorp Vault] is a multi-purpose tool aiming at protecting sensitive data, such as
+credentials, certificates, access tokens, encryption keys, ... In the context of Quarkus,
+it is being used for 3 primary use cases:
+
+* mounting a map of properties stored into the
+https://www.vaultproject.io/docs/secrets/kv/index.html[Vault kv secret engine] as an Eclipse MicroProfile config source
+* fetch credentials from Vault when configuring an Agroal datasource
+* access the Vault _kv secret engine_ programmatically
+
+Under the hood, the Quarkus Vault extension takes care of authentication when negotiating a client Vault token plus
+any transparent token or lease renewals according to ttl and max-ttl.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* roughly 20 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.5.3+
+* Docker installed
+
+== Starting Vault
+
+Let's start Vault in development mode:
+
+[source, shell, subs=attributes+]
+----
+docker run --rm --cap-add=IPC_LOCK -e VAULT_ADDR=http://localhost:8200 -p 8200:8200 -d --name=dev-vault vault:{vault-version}
+----
+
+You can check that vault is running with:
+[source, shell, subs=attributes+]
+----
+docker logs dev-vault
+----
+
+You should see:
+
+[source, shell, subs=attributes+]
+----
+==> Vault server configuration:
+
+             Api Address: http://0.0.0.0:8200
+                     Cgo: disabled
+         Cluster Address: https://0.0.0.0:8201
+              Listener 1: tcp (addr: "0.0.0.0:8200", cluster address: "0.0.0.0:8201", max_request_duration: "1m30s", max_request_size: "33554432", tls: "disabled")
+               Log Level: info
+                   Mlock: supported: true, enabled: false
+                 Storage: inmem
+                 Version: Vault v{vault-version}
+
+WARNING! dev mode is enabled! In this mode, Vault runs entirely in-memory
+and starts unsealed with a single unseal key. The root token is already
+authenticated to the CLI, so you can immediately begin using Vault.
+
+You may need to set the following environment variable:
+
+    $ export VAULT_ADDR='http://0.0.0.0:8200'
+
+The unseal key and root token are displayed below in case you want to
+seal/unseal the Vault or re-authenticate.
+
+Unseal Key: 0lZ2/vzpa92pH8gersSn2h9b5tmzd4m5sqIdMC/4PDs=
+Root Token: {root-token}
+
+Development mode should NOT be used in production installations!
+
+==> Vault server started! Log data will stream in below:
+----
+
+In development mode, Vault gets configured with several options that makes it convenient:
+
+* Vault is already initialized with one key share (whereas in normal mode this has to be done explicitly and the
+number of key shares is 5 by default)
+* the unseal key and the root token are displayed in the logs (please write down the root token, we will need it
+in the following step)
+* Vault is unsealed
+* in-memory storage
+* TLS is disabled
+* a _kv secret engine v2_ is mounted at `secret/`
+
+In the following step, we are going to add a `userpass` authentication that we will use from the Quarkus application,
+to access a secret stored in the _kv secret engine_.
+
+First open a shell inside the vault container:
+
+[source, shell, subs=attributes+]
+----
+docker exec -it dev-vault sh
+----
+
+Set the `VAULT_TOKEN` with the value that was printed in the logs:
+
+[source, shell, subs=attributes+]
+----
+export VAULT_TOKEN={root-token}
+----
+
+You can check Vault's status using the CLI command `vault status`:
+
+[source, shell]
+----
+Key             Value
+---             -----
+Seal Type       shamir
+Initialized     true
+Sealed          false
+Total Shares    1
+Threshold       1
+Version         1.2.2
+Cluster Name    vault-cluster-b07e80d8
+Cluster ID      55bd74b6-eaaf-3862-f7ce-3473ab86c57f
+HA Enabled      false
+----
+
+For simplicity reasons, we are going to use a _kv secret engine version 1_ (which is the default) mounted at path
+`secret` instead of the pre-configured _kv version 2_ available in dev mode. So let's disable the current kv engine,
+and recreate a new one:
+
+[source, shell]
+----
+# this will disable the current kv version 2 secret engine mounted at path 'secret'
+vault secrets disable secret
+
+# this will enable a new kv engine version 1 at path 'secret'
+vault secrets enable -path=secret kv
+----
+
+Now let's add a secret configuration for our application:
+
+[source, shell]
+----
+vault kv put secret/myapps/vault-quickstart/config a-private-key=123456
+----
+
+We have defined a path `secret/myapps/vault-quickstart` in Vault that we need to give access to from the Quarkus application.
+
+Create a policy that gives read access to `secret/myapps/vault-quickstart` and subpaths:
+
+[source, shell]
+----
+cat <<EOF | vault policy write vault-quickstart-policy -
+path "secret/myapps/vault-quickstart/*" {
+  capabilities = ["read"]
+}
+EOF
+----
+
+[NOTE]
+====
+When using a _kv secret engine version 2_, secrets are written and fetched at path `<mount>/*data*/<secret-path>`
+as opposed to `<mount>/<secret-path>` in a _kv secret engine version 1_.
+It does not change any of the CLI commands (i.e. you do not specify `data` in your path).
+However it does change the policies, since capabilities are applied to the real path. In the example above,
+the path should be `secret/*data*/myapps/vault-quickstart/*` if you were working with a _kv secret engine version 2_.
+====
+
+And finally, let's enable the _userpass auth secret engine_, and create user `bob` with access to the `vault-quickstart-policy`:
+
+[source, shell]
+----
+vault auth enable userpass
+vault write auth/userpass/users/bob password=sinclair policies=vault-quickstart-policy
+----
+
+[NOTE]
+====
+The Vault extension also supports alternate authentication methods such as:
+
+ - https://www.vaultproject.io/docs/auth/approle.html[approle]
+ - https://www.vaultproject.io/docs/auth/kubernetes.html[kubernetes] when deploying the Quarkus application
+and Vault into Kubernetes
+
+It is also possible to directly pass a `quarkus.vault.authentication.client-token`, which will bypass the authentication process.
+This could be handy in development where revocation and ttl are not a concern.
+
+Check the extension configuration documentation for more information.
+====
+
+To check that the configuration is correct, try logging in:
+
+[source, shell]
+----
+vault login -method=userpass username=bob password=sinclair
+----
+
+You should see:
+
+[source, shell, subs=attributes+]
+----
+Success! You are now authenticated. The token information displayed below
+is already stored in the token helper. You do NOT need to run "vault login"
+again. Future Vault requests will automatically use this token.
+
+Key                    Value
+---                    -----
+token                  {client-token}
+token_accessor         OKNipTAgxWbxsrjixASNiwdY
+token_duration         768h
+token_renewable        true
+token_policies         ["default" "vault-quickstart-policy"]
+identity_policies      []
+policies               ["default" "vault-quickstart-policy"]
+token_meta_username    bob
+----
+
+Now set `VAULT_TOKEN` to the `token` above (instead of the root token), and try reading the vault-quickstart secret config:
+
+[source, shell, subs=attributes+]
+----
+export VAULT_TOKEN={client-token}
+vault kv get secret/myapps/vault-quickstart/config
+----
+
+You should see:
+
+[source, shell]
+----
+======== Data ========
+Key              Value
+---              -----
+a-private-key    123456
+----
+
+== Create a quarkus application with a secret configuration
+
+[source, subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=vault-quickstart \
+    -DclassName="org.acme.quickstart.GreetingResource" \
+    -Dpath="/hello" \
+    -Dextensions="vault,hibernate-orm,jdbc-postgresql"
+----
+
+Configure access to vault from the `{config-file}`:
+
+[source,properties]
+----
+# vault url
+quarkus.vault.url=http://localhost:8200
+
+# vault authentication
+quarkus.vault.authentication.userpass.username=bob
+quarkus.vault.authentication.userpass.password=sinclair
+
+# path within the kv secret engine where is located the vault-quickstart secret configuration
+quarkus.vault.secret-config-kv-path=myapps/vault-quickstart/config
+----
+
+This should mount whatever keys are stored in `secret/myapps/vault-quickstart` as MicroProfile config properties.
+
+Let's verify that by adding a new endpoint in GreetingResource:
+
+[source,java]
+----
+@Path("/hello")
+public class GreetingResource {
+
+    @ConfigProperty(name = "a-private-key")
+    String privateKey;
+
+    ...
+
+    @GET
+    @Path("/private-key")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String privateKey() {
+        return privateKey;
+    }
+}
+----
+
+Now compile the application and run it:
+
+[source,shell]
+----
+./mvnw clean install
+java -jar target/vault-quickstart-1.0-SNAPSHOT-runner.jar
+----
+
+Finally test the new endpoint:
+
+[source,shell]
+----
+curl http://localhost:8080/hello/private-key
+----
+
+You should see:
+
+[source,shell]
+----
+123456
+----
+
+== Fetching credentials from Vault with Hibernate ORM
+
+Start a PostgreSQL database:
+
+[source,shell]
+----
+docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name postgres-quarkus-hibernate -e POSTGRES_USER=sarah -e POSTGRES_PASSWORD=connor -e POSTGRES_DB=mydatabase -p 5432:5432 postgres:10.5
+----
+
+Create a simple service:
+
+[source,java]
+----
+@ApplicationScoped
+public class SantaClausService {
+
+    @Inject
+    EntityManager em;
+
+    @Transactional
+    public List<Gift> getGifts() {
+        return (List<Gift>) em.createQuery("select g from Gift g").getResultList();
+    }
+}
+----
+
+With its `Gift` entity:
+
+[source,java]
+----
+@Entity
+public class Gift {
+
+    private Long id;
+    private String name;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="giftSeq")
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+----
+
+Finally, add a new endpoint in `GreetingResource`:
+
+[source,java]
+----
+@Inject
+SantaClausService santaClausService;
+
+@GET
+@Path("/gift-count")
+@Produces(MediaType.TEXT_PLAIN)
+public int geGiftCount() {
+    return santaClausService.getGifts().size();
+}
+----
+
+Create a new path in Vault where the database password will be added:
+
+[source,shell]
+----
+# set the root token again
+export VAULT_TOKEN={root-token}
+vault kv put secret/myapps/vault-quickstart/db password=connor
+----
+
+Since we allowed read access on `secret/myapps/vault-quickstart/` subpaths in the policy, there is nothing else
+we have to do to allow the application to read it.
+
+When fetching credentials from Vault that are intended to be used by the Agroal connection pool, we need
+first to create a named Vault credentials provider in the {config-file}:
+
+[source,properties]
+----
+quarkus.vault.credentials-provider.mydatabase.kv-path=myapps/vault-quickstart/db
+----
+
+This defines a credentials provider `mydatabase` that will fetch the password from key `password`
+at path `myapps/vault-quickstart/db`.
+
+The credentials provider can now be used in the datasource configuration, in place of the `password`
+property:
+
+[source,properties]
+----
+# configure your datasource
+quarkus.datasource.url = jdbc:postgresql://localhost:5432/mydatabase
+quarkus.datasource.driver = org.postgresql.Driver
+quarkus.datasource.username = sarah
+#quarkus.datasource.password = connor
+quarkus.datasource.credentials-provider = mydatabase
+
+# drop and create the database at startup (use `update` to only update the schema)
+quarkus.hibernate-orm.database.generation=drop-and-create
+----
+
+Restart the application after rebuilding it, and test it with the new endpoint:
+
+[source,shell]
+----
+curl http://localhost:8080/hello/gift-count
+----
+
+You should see:
+
+[source,shell]
+----
+0
+----
+
+[NOTE]
+====
+The Vault extension also supports using https://www.vaultproject.io/docs/secrets/databases/index.html[dynamic database credentials]
+through the `database-credentials-role` property on the `credentials-provider`. The Vault setup is more
+involved and goes beyond the scope of that quickstart guide.
+====
+
+== Programmatic access to the KV secret engine
+
+Sometimes secrets are retrieved from an arbitrary path that is known only at runtime through an application
+specific property, or a method argument for instance.
+In that case it is possible to inject a Quarkus VaultKVSecretEngine, and retrieve secrets programmatically.
+
+For instance, in `GreetingResource`, add:
+
+[source,java]
+----
+@Inject
+VaultKVSecretEngine kvSecretEngine;
+
+...
+
+@GET
+@Path("/secrets/{vault-path}")
+@Produces(MediaType.TEXT_PLAIN)
+public String getSecrets(@PathParam("vault-path") String vaultPath) {
+    return kvSecretEngine.readSecret("myapps/vault-quickstart/" + vaultPath).toString();
+}
+----
+
+Restart the application after rebuilding it, and test it with the new endpoint:
+
+[source,shell]
+----
+curl http://localhost:8080/hello/secrets/db
+----
+
+You should see:
+[source,shell]
+----
+{password=connor}
+----
+
+== TLS
+
+In production mode, TLS should be activated between the Quarkus application and Vault to prevent _man-in-the-middle_ attacks.
+
+There are several ways to configure the Quarkus application:
+
+* through the standard `javax.net.ssl.trustStore` system property, which should refer to a JKS truststore containing
+the trusted certificates
+* using property `quarkus.vault.tls.ca-cert`, which should refer to a pem encoded file.
+
+If `quarkus.vault.tls.ca-cert` is not set and the Quarkus application is using the Kubernetes authentication,
+TLS will be active and use the CA certificate bundle located in `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt`.
+If you want to disable this behavior (for instance when using a trust store), you need to set it explicitly using:
+`quarkus.vault.tls.use-kubernetes-ca-cert=false`.
+
+The last relevant property is `quarkus.vault.tls.skip-verify`, which allows to communicate with Vault using TLS,
+but without checking the certificate authenticity. This may be convenient in development, but is strongly
+discouraged in production as it is not more secure than talking to Vault in plain HTTP.
+
+== Conclusion
+
+As a general matter, you should consider reading the extensive https://www.vaultproject.io/docs/[Vault documentation]
+and apply best practices.
+
+The features exposed today through the Vault extension covers only a small fraction of what the product is capable of.
+Still, it addresses already some of the most common microservices scenarii (e.g. sensitive configuration and database
+credentials), which goes a long way towards creating secured applications.
+
+[[configuration-reference]]
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-vault.adoc[opts=optional, leveloffset=+1]

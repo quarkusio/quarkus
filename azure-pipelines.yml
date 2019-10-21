@@ -239,11 +239,12 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          timeoutInMinutes: 20
+          timeoutInMinutes: 25
           modules:
             - elytron-security-oauth2
             - elytron-security
             - oidc
+            - vault-app
           name: security
           keycloak: true
 

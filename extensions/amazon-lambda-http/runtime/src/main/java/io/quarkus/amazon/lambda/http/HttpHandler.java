@@ -113,13 +113,12 @@ public class HttpHandler implements RequestStreamHandler {
     private AwsProxyResponse buildResponse(VirtualClientConnection connection) throws InterruptedException {
         AwsProxyResponse response = null;
         ByteArrayOutputStream baos = null;
-        for (;;) {
-            // todo should we timeout? have a timeout config?
-            //log.info("waiting for message");
+        while (true) {
             Object msg = connection.queue().poll(100, TimeUnit.MILLISECONDS);
             try {
-                if (msg == null)
+                if (msg == null) {
                     continue;
+                }
 
                 if (msg instanceof HttpResponse) {
                     HttpResponse res = (HttpResponse) msg;
@@ -131,8 +130,7 @@ public class HttpHandler implements RequestStreamHandler {
                 if (msg instanceof HttpContent) {
                     HttpContent content = (HttpContent) msg;
                     if (baos == null) {
-                        // todo what is right size?
-                        baos = new ByteArrayOutputStream(500);
+                        baos = new ByteArrayOutputStream(content.content().readableBytes());
                     }
                     int readable = content.content().readableBytes();
                     for (int i = 0; i < readable; i++) {
@@ -157,8 +155,9 @@ public class HttpHandler implements RequestStreamHandler {
                     return response;
                 }
             } finally {
-                if (msg != null)
+                if (msg != null) {
                     ReferenceCountUtil.release(msg);
+                }
             }
         }
     }

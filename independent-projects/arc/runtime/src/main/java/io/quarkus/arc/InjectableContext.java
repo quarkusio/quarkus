@@ -25,7 +25,7 @@ public interface InjectableContext extends AlterableContext {
     interface ContextState {
 
         /**
-         * The changes to the map are not reflected in the underlying context state.
+         * The changes to the map are not reflected in the underlying context.
          * 
          * @return a map of contextual instances
          */

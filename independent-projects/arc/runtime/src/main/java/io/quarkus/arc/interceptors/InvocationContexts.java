@@ -1,4 +1,4 @@
-package io.quarkus.arc;
+package io.quarkus.arc.interceptors;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -10,6 +10,9 @@ import java.util.function.Supplier;
 import javax.interceptor.InvocationContext;
 
 public final class InvocationContexts {
+
+    private InvocationContexts() {
+    }
 
     /**
      * 

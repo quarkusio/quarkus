@@ -12,11 +12,6 @@ import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.util.Arrays;
 
-/**
- * TODO security
- *
- * @author Martin Kouba
- */
 public final class Reflections {
 
     private Reflections() {
@@ -115,6 +110,7 @@ public final class Reflections {
         return (T) obj;
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> Class<T> getRawType(Type type) {
         if (type instanceof Class<?>) {
             return (Class<T>) type;

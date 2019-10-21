@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Destroyed;
@@ -48,6 +47,9 @@ class RequestContext implements ManagedContext {
     @SuppressWarnings("unchecked")
     @Override
     public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext) {
+        if (contextual == null) {
+            throw new IllegalArgumentException("Contextual parameter must not be null");
+        }
         Map<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
         if (ctx == null) {
             // Thread local not set - context is not active!
@@ -93,8 +95,8 @@ class RequestContext implements ManagedContext {
             // Fire an event with qualifier @Initialized(RequestScoped.class) if there are any observers for it
             fireIfNotEmpty(initializedNotifier);
         } else {
-            if (initialState instanceof RequestContextState) {
-                currentContext.set(((RequestContextState) initialState).value);
+            if (initialState instanceof InstanceHandlesContextState) {
+                currentContext.set(((InstanceHandlesContextState) initialState).toConcurrentMap());
             } else {
                 throw new IllegalArgumentException("Invalid inital state: " + initialState);
             }
@@ -108,7 +110,7 @@ class RequestContext implements ManagedContext {
             // Thread local not set - context is not active!
             throw new ContextNotActiveException();
         }
-        return new RequestContextState(ctx);
+        return new InstanceHandlesContextState(ctx.values());
     }
 
     @Override
@@ -170,19 +172,4 @@ class RequestContext implements ManagedContext {
                 ArcContainerImpl.instance());
     }
 
-    private static class RequestContextState implements ContextState {
-
-        private final ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value;
-
-        RequestContextState(ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value) {
-            this.value = value;
-        }
-
-        @Override
-        public Map<InjectableBean<?>, Object> getContextualInstances() {
-            return value.values().stream()
-                    .collect(Collectors.toMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
-        }
-
-    }
 }

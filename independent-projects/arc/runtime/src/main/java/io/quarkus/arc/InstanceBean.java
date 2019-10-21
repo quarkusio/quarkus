@@ -24,6 +24,7 @@ public class InstanceBean extends BuiltInBean<Instance<?>> {
         return InstanceImpl.class;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Instance<?> get(CreationalContext<Instance<?>> creationalContext) {
         // Obtain current IP to get the required type and qualifiers

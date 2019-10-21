@@ -1,5 +1,7 @@
-package io.quarkus.arc;
+package io.quarkus.arc.interceptors;
 
+import io.quarkus.arc.ArcInvocationContext;
+import io.quarkus.arc.LazyValue;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

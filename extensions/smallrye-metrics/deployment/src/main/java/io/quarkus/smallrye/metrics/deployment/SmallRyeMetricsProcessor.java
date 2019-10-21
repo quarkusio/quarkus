@@ -120,6 +120,13 @@ public class SmallRyeMetricsProcessor {
     @BuildStep
     AnnotationsTransformerBuildItem transformBeanScope(BeanArchiveIndexBuildItem index) {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+
+            @Override
+            public int getPriority() {
+                // this specifically should run after the JAX-RS AnnotationTransformers
+                return BuildExtension.DEFAULT_PRIORITY - 100;
+            }
+
             @Override
             public boolean appliesTo(AnnotationTarget.Kind kind) {
                 return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
@@ -128,11 +135,11 @@ public class SmallRyeMetricsProcessor {
             @Override
             public void transform(TransformationContext ctx) {
                 if (ctx.isClass()) {
-                    if (BuiltinScope.isDeclaredOn(ctx.getTarget().asClass())) {
+                    if (BuiltinScope.isIn(ctx.getAnnotations())) {
                         return;
                     }
                     ClassInfo clazz = ctx.getTarget().asClass();
-                    if (!isJaxRsEndpoint(clazz)) {
+                    if (!isJaxRsEndpoint(clazz) && !isJaxRsProvider(clazz)) {
                         while (clazz != null && clazz.superName() != null) {
                             Map<DotName, List<AnnotationInstance>> annotations = clazz.annotations();
                             if (annotations.containsKey(GAUGE)
@@ -389,6 +396,10 @@ public class SmallRyeMetricsProcessor {
     private boolean isJaxRsEndpoint(ClassInfo clazz) {
         return clazz.annotations().containsKey(SmallRyeMetricsDotNames.JAXRS_PATH) ||
                 clazz.annotations().containsKey(SmallRyeMetricsDotNames.REST_CONTROLLER);
+    }
+
+    private boolean isJaxRsProvider(ClassInfo clazz) {
+        return clazz.annotations().containsKey(SmallRyeMetricsDotNames.JAXRS_PROVIDER);
     }
 
 }

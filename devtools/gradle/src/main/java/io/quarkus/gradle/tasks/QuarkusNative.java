@@ -257,7 +257,7 @@ public class QuarkusNative extends QuarkusTask {
         return autoServiceLoaderRegistration;
     }
 
-    @Option(description = "Auto ServiceLoader registration", option = "auto-serviceloader-registration")
+    @Option(description = "Auto ServiceLoader registration", option = "auto-service-loader-registration")
     public void setAutoServiceLoaderRegistration(boolean autoServiceLoaderRegistration) {
         this.autoServiceLoaderRegistration = autoServiceLoaderRegistration;
     }

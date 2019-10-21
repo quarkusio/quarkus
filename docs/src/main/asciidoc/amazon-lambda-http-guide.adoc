@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Amazon SAM Applications 
+= Quarkus - Amazon Lambda HTTP Applications 
 
 include::./attributes.adoc[]
 
@@ -24,7 +24,15 @@ To complete this guide, you need:
 
 == Getting Started
 
-This guide can be used on existing projects or new projects.  It will cover a number of scenarios:
+This guide can be used on existing projects or new projects.  Whether the project is a new green field project or you're
+attempting to migrate an existing application, this guide will walk you through the steps necessary to use Quarkus powered
+applications on Amazon's infrastructure.
 
-1.  An existing application that is already being deployed to AWS using SAM and the desire is to supercharge it using quarkus.
-2.  An entirely new project designed from the start to run with quarkus on Amazon's infrastructure.
+=== New Projects
+
+The simplest scenario is when starting a completely new project.  Once you've <<getting-started-guide.adoc,generated>> a new
+Quarkus project, you'll need to configure your application for deployment to Amazon.  The steps to achieve this are beyond
+the scope of this document but you can find the full guide on
+https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-getting-started.html[Amazon's website].
+
+For the purposes of this guide, we'll be using RESTEasy and maven.

@@ -140,20 +140,15 @@ function reinstallClickHandlers(input, table){
             var iconDecoration1 = decoration.children.item(0);
             var iconDecoration2 = decoration.children.item(1);
             var iconDecoration3 = decoration.children.item(2);
-            var collapsibleLink = content.children.item(1);
-            var collapsibleAllLink = content.children.item(0);
+            var collapsibleLink = content.children.item(0);
             var iconExpand = collapsibleLink.children.item(0);
             var iconCollapse = collapsibleLink.children.item(1);
-            var iconExpandAll = collapsibleAllLink.children.item(0);
-            var iconCollapseAll = collapsibleAllLink.children.item(1);
             var collapsibleHandler = makeCollapsibleHandler(input, descDiv, td, row, 
-                                                            collapsibleLink, collapsibleAllLink,
-                                                            iconCollapse, iconCollapseAll, iconExpand, iconExpandAll,
+                                                            collapsibleLink, 
+                                                            iconCollapse, iconExpand,
                                                             iconDecoration1, iconDecoration2, iconDecoration3);
-            var collapsibleAllHandler = makeCollapsibleAllHandler(input, descDiv);
         
             collapsibleLink.addEventListener('click', collapsibleHandler);
-            collapsibleAllLink.addEventListener('click', collapsibleAllHandler);
         
             row.addEventListener("click", collapsibleHandler);
         }
@@ -261,14 +256,9 @@ function makeCollapsible(input, descDiv){
 
         var iconExpand = document.createElement("i");
         iconExpand.classList.add('fa', 'fa-chevron-down');
-        var iconExpandAll = document.createElement("i");
-        iconExpandAll.classList.add('fa', 'fa-chevron-circle-down');
         var iconCollapse = document.createElement("i");
         iconCollapse.classList.add('fa', 'fa-chevron-up');
         iconCollapse.style.display = "none";
-        var iconCollapseAll = document.createElement("i");
-        iconCollapseAll.classList.add('fa', 'fa-chevron-circle-up');
-        iconCollapseAll.style.display = "none";
 
         var collapsibleLink = document.createElement("a");
         collapsibleLink.setAttribute("href", "#");
@@ -277,25 +267,15 @@ function makeCollapsible(input, descDiv){
         collapsibleLink.appendChild(document.createTextNode("Expand"));
         collapsibleLink.classList.add('link-collapsible');
 
-        var collapsibleAllLink = document.createElement("a");
-        collapsibleAllLink.setAttribute("href", "#");
-        collapsibleAllLink.appendChild(iconExpandAll);
-        collapsibleAllLink.appendChild(iconCollapseAll);
-        collapsibleAllLink.appendChild(document.createTextNode("(All)"));
-        collapsibleAllLink.classList.add('link-collapsible');
-        
         var collapsibleHandler = makeCollapsibleHandler(input, descDiv, td, row, 
-                                                        collapsibleLink, collapsibleAllLink,
-                                                        iconCollapse, iconCollapseAll, iconExpand, iconExpandAll,
+                                                        collapsibleLink,
+                                                        iconCollapse, iconExpand,
                                                         iconDecoration1, iconDecoration2, iconDecoration3);
-        var collapsibleAllHandler = makeCollapsibleAllHandler(input, descDiv);
 
         collapsibleLink.addEventListener('click', collapsibleHandler);
-        collapsibleAllLink.addEventListener('click', collapsibleAllHandler);
 
         var parent = descDiv.parentNode;
         parent.insertBefore(collapsibleLink, parent.firstChild);
-        parent.insertBefore(collapsibleAllLink, parent.firstChild);
 
         parent.appendChild(descDecoration);
         row.classList.add("row-collapsible", "row-collapsed");
@@ -308,8 +288,8 @@ function makeCollapsible(input, descDiv){
 };
 
 function makeCollapsibleHandler(input, descDiv, td, row, 
-    collapsibleLink, collapsibleAllLink,
-    iconCollapse, iconCollapseAll, iconExpand, iconExpandAll,
+    collapsibleLink,
+    iconCollapse, iconExpand,
     iconDecoration1, iconDecoration2, iconDecoration3) {
     
     return function(event) {
@@ -324,8 +304,6 @@ function makeCollapsibleHandler(input, descDiv, td, row,
             iconCollapse.style.removeProperty("display");
             iconExpand.style.display = "none";
             collapsibleLink.childNodes.item(1).nodeValue = 'Collapse';
-            iconCollapseAll.style.removeProperty("display");
-            iconExpandAll.style.display = "none";
             iconDecoration1.classList.replace('fa-chevron-down', 'fa-chevron-up');
             iconDecoration2.classList.replace('fa-chevron-down', 'fa-chevron-up');
             iconDecoration3.classList.replace('fa-chevron-down', 'fa-chevron-up');
@@ -355,8 +333,6 @@ function makeCollapsibleHandler(input, descDiv, td, row,
             iconExpand.style.removeProperty("display");
             iconCollapse.style.display = "none";
             collapsibleLink.childNodes.item(1).nodeValue = 'Expand';
-            iconExpandAll.style.removeProperty("display");
-            iconCollapseAll.style.display = "none";
             iconDecoration1.classList.replace('fa-chevron-up', 'fa-chevron-down');
             iconDecoration2.classList.replace('fa-chevron-up', 'fa-chevron-down');
             iconDecoration3.classList.replace('fa-chevron-up', 'fa-chevron-down');
@@ -381,32 +357,5 @@ function makeCollapsibleHandler(input, descDiv, td, row,
     };
 }
 
-
-function makeCollapsibleAllHandler(input, descDiv) {
-    return function(event){
-        var target = event.target;
-
-        var isCollapsed = descDiv.classList.contains('description-collapsed');
-        
-        var table = getShadowTable(input);
-        collapseAll(table, isCollapsed);
-        applySearch(table, inputs[input.id].lastSearch, false);
-        swapShadowTable(input);
-        
-        event.preventDefault();
-        event.stopPropagation();
-    };
-}
-
-function collapseAll(table, isCollapsed){
-    var target = isCollapsed ? ".description-collapsed" : ".description-expanded";
-    var toClickList = table.querySelectorAll(target);
-    if(toClickList){
-        for(var toClick of toClickList){
-            var tr = getAncestor(toClick, "tr");
-            tr.click();
-        }
-    }
-}
 
 });

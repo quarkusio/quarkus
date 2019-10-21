@@ -46,7 +46,7 @@ public class AllConfigGenerator {
         File jsonFile = new File("devtools/core-extensions-json/target/extensions.json");
         if (!jsonFile.exists()) {
             System.err.println("WARNING: could not generate all-config file because extensions list is missing: " + jsonFile);
-            System.exit(0);
+            return;
         }
         ObjectMapper mapper = new ObjectMapper();
         MavenArtifactResolver resolver = MavenArtifactResolver.builder().build();

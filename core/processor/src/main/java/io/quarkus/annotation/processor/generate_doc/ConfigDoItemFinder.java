@@ -176,18 +176,18 @@ class ConfigDoItemFinder {
                     if (!typeArguments.isEmpty()) {
                         // FIXME: this is super dodgy: we should check the type!!
                         if (typeArguments.size() == 2) {
-                            final String mapKey = String.format(NAMED_MAP_CONFIG_ITEM_FORMAT, configDocMapKey);
                             type = typeArguments.get(1).toString();
                             configGroup = configGroups.get(type);
-                            name += mapKey;
 
                             if (configGroup != null) {
                                 name += String.format(NAMED_MAP_CONFIG_ITEM_FORMAT, configDocMapKey);
                                 List<ConfigDocItem> groupConfigItems = recordConfigItemsFromConfigGroup(configPhase, name,
-                                        configGroup, configSection, true, sectionLevel);
+                                        configGroup,
+                                        configSection, true, sectionLevel);
                                 configDocItems.addAll(groupConfigItems);
                                 continue;
                             } else {
+                                configDocKey.setPassThroughMap(true);
                                 configDocKey.setWithinAMap(true);
                             }
                         } else {
@@ -215,6 +215,7 @@ class ConfigDoItemFinder {
                 configDocKey.setDefaultValue(defaultValue);
                 configDocKey.setOptional(optional);
                 configDocKey.setList(list);
+                configDocKey.setDocMapKey(configDocMapKey);
                 configDocKey.setConfigDoc(configDescription);
                 configDocKey.setAcceptedValues(acceptedValues);
                 configDocKey.setJavaDocSiteLink(getJavaDocSiteLink(type));

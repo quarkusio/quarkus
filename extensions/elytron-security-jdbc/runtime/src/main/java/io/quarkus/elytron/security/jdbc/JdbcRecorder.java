@@ -41,9 +41,6 @@ public class JdbcRecorder {
     }
 
     private void registerPrincipalQuery(PrincipalQueryConfig principalQuery, JdbcSecurityRealmBuilder builder) {
-        if (Arc.container() == null) {
-            Arc.initialize();
-        }
         DataSource dataSource = (DataSource) principalQuery.datasource
                 .map(name -> Arc.container().instance(name).get())
                 .orElse(Arc.container().instance(DataSource.class).get());

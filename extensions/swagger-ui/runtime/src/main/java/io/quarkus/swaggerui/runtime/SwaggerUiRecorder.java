@@ -11,7 +11,8 @@ public class SwaggerUiRecorder {
     public Handler<RoutingContext> handler(String swaggerUiFinalDestination, String swaggerUiPath) {
 
         Handler<RoutingContext> handler = StaticHandler.create().setAllowRootFileSystemAccess(true)
-                .setWebRoot(swaggerUiFinalDestination);
+                .setWebRoot(swaggerUiFinalDestination)
+                .setDefaultContentEncoding("UTF-8");
 
         return new Handler<RoutingContext>() {
             @Override

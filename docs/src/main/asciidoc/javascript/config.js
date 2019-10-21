@@ -311,7 +311,7 @@ function makeCollapsibleHandler(input, descDiv, td, row,
         if( isCollapsed ) {
             iconCollapse.style.removeProperty("display");
             iconExpand.style.display = "none";
-            collapsibleLink.childNodes.item(1).nodeValue = 'Collapse';
+            collapsibleLink.childNodes.item(2).nodeValue = 'Collapse';
             iconDecoration1.classList.replace('fa-chevron-down', 'fa-chevron-up');
             iconDecoration2.classList.replace('fa-chevron-down', 'fa-chevron-up');
             iconDecoration3.classList.replace('fa-chevron-down', 'fa-chevron-up');
@@ -319,7 +319,7 @@ function makeCollapsibleHandler(input, descDiv, td, row,
         else {
             iconExpand.style.removeProperty("display");
             iconCollapse.style.display = "none";
-            collapsibleLink.childNodes.item(1).nodeValue = 'Expand';
+            collapsibleLink.childNodes.item(2).nodeValue = 'Expand';
             iconDecoration1.classList.replace('fa-chevron-up', 'fa-chevron-down');
             iconDecoration2.classList.replace('fa-chevron-up', 'fa-chevron-down');
             iconDecoration3.classList.replace('fa-chevron-up', 'fa-chevron-down');

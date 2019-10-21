@@ -76,6 +76,11 @@
             <artifactId>jaxb-runtime</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jackson</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

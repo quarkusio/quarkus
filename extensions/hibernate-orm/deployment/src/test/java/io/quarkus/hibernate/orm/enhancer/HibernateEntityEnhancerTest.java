@@ -10,7 +10,6 @@ import java.util.Set;
 
 import org.hibernate.engine.spi.ManagedEntity;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
-import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -51,8 +50,7 @@ public class HibernateEntityEnhancerTest {
         Set<Class> interfaces = new HashSet<Class>(Arrays.asList(modifiedClass.getInterfaces()));
         //Assert it now implements these three interfaces:
         return interfaces.contains(ManagedEntity.class) &&
-                interfaces.contains(PersistentAttributeInterceptable.class) &&
-                interfaces.contains(SelfDirtinessTracker.class);
+                interfaces.contains(PersistentAttributeInterceptable.class);
     }
 
 }

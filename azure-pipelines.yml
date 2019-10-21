@@ -59,7 +59,7 @@ stages:
             inputs:
               goals: 'package'
               mavenOptions: $(MAVEN_OPTS)
-              options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format'
+              options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs'
       - job: Cache_Windows_Maven_Repo #windows has different line endings so the cache key is different
         displayName: 'Windows Maven Repo'
         timeoutInMinutes: 30
@@ -85,7 +85,7 @@ stages:
             inputs:
               goals: 'package'
               mavenOptions: $(MAVEN_OPTS)
-              options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format'
+              options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs'
 
   #This stage builds the Quarkus artifacts needed for native image testing
   - stage: build_artifact_for_native_stage

@@ -12,6 +12,7 @@ final public class ConfigDocSection implements ConfigDocElement, Comparable<Conf
     private String sectionDetails;
     private String sectionDetailsTitle;
     private ConfigPhase configPhase;
+
     private List<ConfigDocItem> configDocItems = new ArrayList<>();
 
     public ConfigDocSection() {
@@ -65,6 +66,10 @@ final public class ConfigDocSection implements ConfigDocElement, Comparable<Conf
         this.configDocItems = configDocItems;
     }
 
+    public void addConfigDocItems(List<ConfigDocItem> configDocItems) {
+        this.configDocItems.addAll(configDocItems);
+    }
+
     @Override
     public void accept(Writer writer, DocFormatter docFormatter) throws IOException {
         docFormatter.format(writer, this);
@@ -82,24 +87,21 @@ final public class ConfigDocSection implements ConfigDocElement, Comparable<Conf
         if (o == null || getClass() != o.getClass())
             return false;
         ConfigDocSection that = (ConfigDocSection) o;
-        return withinAMap == that.withinAMap &&
-                Objects.equals(name, that.name) &&
-                Objects.equals(sectionDetails, that.sectionDetails) &&
-                configPhase == that.configPhase &&
-                Objects.equals(configDocItems, that.configDocItems);
+        return sectionDetailsTitle.equals(that.sectionDetailsTitle);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, withinAMap, sectionDetails, configPhase, configDocItems);
+        return Objects.hash(sectionDetailsTitle);
     }
 
     @Override
     public String toString() {
         return "ConfigDocSection{" +
-                ", name='" + name + '\'' +
+                "name='" + name + '\'' +
                 ", withinAMap=" + withinAMap +
                 ", sectionDetails='" + sectionDetails + '\'' +
+                ", sectionDetailsTitle='" + sectionDetailsTitle + '\'' +
                 ", configPhase=" + configPhase +
                 ", configDocItems=" + configDocItems +
                 '}';

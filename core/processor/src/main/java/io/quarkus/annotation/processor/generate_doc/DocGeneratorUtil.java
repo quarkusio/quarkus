@@ -295,4 +295,46 @@ public class DocGeneratorUtil {
         key.append(Constants.ADOC_EXTENSION);
         return key.toString();
     }
+
+    static void appendConfigItemsIntoExistingOnes(List<ConfigDocItem> existingConfigItems,
+            List<ConfigDocItem> configDocItems) {
+        for (ConfigDocItem configDocItem : configDocItems) {
+            if (configDocItem.isConfigKey()) {
+                existingConfigItems.add(configDocItem);
+            } else {
+                ConfigDocSection configDocSection = configDocItem.getConfigDocSection();
+                boolean configSectionMerged = mergeSectionIntoPreviousExistingConfigItems(configDocSection,
+                        existingConfigItems);
+                if (!configSectionMerged) {
+                    existingConfigItems.add(configDocItem);
+                }
+            }
+        }
+    }
+
+    /**
+     * returns true if section is merged into one of the existing config items, false otherwise
+     */
+    private static boolean mergeSectionIntoPreviousExistingConfigItems(ConfigDocSection section,
+            List<ConfigDocItem> configDocItems) {
+        for (ConfigDocItem configDocItem : configDocItems) {
+            if (configDocItem.isConfigKey()) {
+                continue;
+            }
+
+            ConfigDocSection configDocSection = configDocItem.getConfigDocSection();
+            if (configDocSection.equals(section)) {
+                configDocSection.addConfigDocItems(section.getConfigDocItems());
+                return true;
+            } else {
+                boolean configSectionMerged = mergeSectionIntoPreviousExistingConfigItems(section,
+                        configDocSection.getConfigDocItems());
+                if (configSectionMerged) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }

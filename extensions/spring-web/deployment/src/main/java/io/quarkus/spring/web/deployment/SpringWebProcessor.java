@@ -178,11 +178,6 @@ public class SpringWebProcessor {
     private void validate(Collection<AnnotationInstance> restControllerInstances) {
         for (AnnotationInstance restControllerInstance : restControllerInstances) {
             ClassInfo restControllerClass = restControllerInstance.target().asClass();
-            if (restControllerClass.classAnnotation(REQUEST_MAPPING) == null) {
-                throw new IllegalArgumentException(
-                        "Currently any class annotated with @RestController also needs to be annotated with @RequestMapping. " +
-                                "Offending class is " + restControllerClass.name());
-            }
 
             Map<DotName, List<AnnotationInstance>> annotations = restControllerClass.annotations();
             for (Map.Entry<DotName, List<AnnotationInstance>> entry : annotations.entrySet()) {

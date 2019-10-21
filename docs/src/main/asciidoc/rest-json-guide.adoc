@@ -133,7 +133,7 @@ public class FruitResource {
 
     @DELETE
     public Set<Fruit> delete(Fruit fruit) {
-        fruits.remove(fruit);
+        fruits.removeIf(existingFruit -> existingFruit.name.contentEquals(fruit.name));
         return fruits;
     }
 }

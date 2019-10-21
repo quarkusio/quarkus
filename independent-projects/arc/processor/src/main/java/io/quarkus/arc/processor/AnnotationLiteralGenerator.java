@@ -252,13 +252,24 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
     }
 
     static String generatedSharedName(DotName annotationName) {
+        // when the annotation is a java.lang annotation we need to use a different package in which to generate the literal
+        // otherwise a security exception will be thrown when the literal is loaded
+        String nameToUse = isJavaLang(annotationName.toString())
+                ? AbstractGenerator.DEFAULT_PACKAGE + annotationName.withoutPackagePrefix()
+                : annotationName.toString();
+
         // com.foo.MyQualifier -> com.foo.MyQualifier1_Shared_AnnotationLiteral
-        return annotationName + SHARED_SUFFIX + ANNOTATION_LITERAL_SUFFIX;
+        return nameToUse + SHARED_SUFFIX + ANNOTATION_LITERAL_SUFFIX;
+    }
+
+    private static boolean isJavaLang(String s) {
+        return s.startsWith("java.lang");
     }
 
     static String generatedLocalName(String targetPackage, String simpleName, String hash) {
         // com.foo.MyQualifier -> com.bar.MyQualifier_somehashvalue_AnnotationLiteral
-        return targetPackage + "." + simpleName + hash + AnnotationLiteralGenerator.ANNOTATION_LITERAL_SUFFIX;
+        return (isJavaLang(targetPackage) ? AbstractGenerator.DEFAULT_PACKAGE : targetPackage) + "." + simpleName + hash
+                + AnnotationLiteralGenerator.ANNOTATION_LITERAL_SUFFIX;
     }
 
 }

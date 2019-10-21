@@ -98,7 +98,9 @@ public class SmallRyeMetricsProcessor {
             SmallRyeMetricsRecorder recorder,
             HttpRootPathBuildItem httpRoot) {
         Function<Router, Route> route = recorder.route(metrics.path + (metrics.path.endsWith("/") ? "*" : "/*"));
+        Function<Router, Route> slash = recorder.route(metrics.path);
         routes.produce(new RouteBuildItem(route, recorder.handler(httpRoot.adjustPath(metrics.path)), HandlerType.BLOCKING));
+        routes.produce(new RouteBuildItem(slash, recorder.handler(httpRoot.adjustPath(metrics.path)), HandlerType.BLOCKING));
     }
 
     @BuildStep

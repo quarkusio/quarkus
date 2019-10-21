@@ -58,6 +58,7 @@ class NettyProcessor {
         reflectiveClass
                 .produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioServerSocketChannel"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "java.util.LinkedHashMap"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, "sun.nio.ch.SelectorImpl"));
 
         SubstrateConfigBuildItem.Builder builder = SubstrateConfigBuildItem.builder()
                 //.addNativeImageSystemProperty("io.netty.noUnsafe", "true")
@@ -74,6 +75,8 @@ class NettyProcessor {
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufAllocator")
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ConscryptAlpnSslEngine")
+                .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
+                .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ConnectionHandler")
                 .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED");
         try {
             Class.forName("io.netty.handler.codec.http.HttpObjectEncoder");

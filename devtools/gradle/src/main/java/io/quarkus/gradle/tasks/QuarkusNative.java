@@ -257,7 +257,7 @@ public class QuarkusNative extends QuarkusTask {
         return autoServiceLoaderRegistration;
     }
 
-    @Option(description = "Auto ServiceLoader registration", option = "auto-serviceloader-registration")
+    @Option(description = "Auto ServiceLoader registration", option = "auto-service-loader-registration")
     public void setAutoServiceLoaderRegistration(boolean autoServiceLoaderRegistration) {
         this.autoServiceLoaderRegistration = autoServiceLoaderRegistration;
     }
@@ -420,8 +420,7 @@ public class QuarkusNative extends QuarkusTask {
             @Override
             public void accept(ConfigBuilder configBuilder) {
                 InMemoryConfigSource type = new InMemoryConfigSource(Integer.MAX_VALUE, "Native Image Type")
-                        .add("quarkus.package.types", "NATIVE");
-                configBuilder.withSources(type);
+                        .add("quarkus.package.types", "native");
 
                 InMemoryConfigSource configs = new InMemoryConfigSource(0, "Native Image Maven Settings");
 
@@ -430,7 +429,7 @@ public class QuarkusNative extends QuarkusTask {
                 if (additionalBuildArgs != null) {
                     configs.add("quarkus.native.additional-build-args", additionalBuildArgs);
                 }
-                configs.add("quarkus.native.auto-serviceloader-registration", autoServiceLoaderRegistration);
+                configs.add("quarkus.native.auto-service-loader-registration", autoServiceLoaderRegistration);
 
                 configs.add("quarkus.native.cleanup-server", cleanupServer);
                 configs.add("quarkus.native.debug-build-process", debugBuildProcess);
@@ -473,6 +472,7 @@ public class QuarkusNative extends QuarkusTask {
 
                 configs.add("quarkus.native.report-exception-stack-traces", reportExceptionStackTraces);
 
+                configBuilder.withSources(type, configs);
             }
         };
 

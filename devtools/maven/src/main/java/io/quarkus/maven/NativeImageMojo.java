@@ -36,9 +36,9 @@ import io.quarkus.creator.CuratedApplicationCreator;
 import io.quarkus.creator.phase.augment.AugmentTask;
 
 /**
- * Lecacy mojo for backwards compatibility reasons. This should not be used in new projects
+ * Legacy mojo for backwards compatibility reasons. This should not be used in new projects
  *
- * This has been replaced by setting quarkus.package.types=NATIVE in the configuration.
+ * This has been replaced by setting quarkus.package.types=native in the configuration.
  *
  * @deprecated
  */
@@ -321,7 +321,7 @@ public class NativeImageMojo extends AbstractMojo {
                     configs.add("quarkus.native.additional-build-args", additionalBuildArgs.toString());
                 }
                 if (autoServiceLoaderRegistration != null) {
-                    configs.add("quarkus.native.auto-serviceloader-registration", autoServiceLoaderRegistration.toString());
+                    configs.add("quarkus.native.auto-service-loader-registration", autoServiceLoaderRegistration.toString());
                 }
                 if (cleanupServer != null) {
                     configs.add("quarkus.native.cleanup-server", cleanupServer.toString());

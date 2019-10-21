@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -39,7 +40,9 @@ public final class ServiceUtil {
 
         while (resources.hasMoreElements()) {
             final URL url = resources.nextElement();
-            try (InputStream is = url.openStream()) {
+            URLConnection con = url.openConnection();
+            con.setUseCaches(false);
+            try (InputStream is = con.getInputStream()) {
                 try (BufferedInputStream bis = new BufferedInputStream(is)) {
                     try (InputStreamReader isr = new InputStreamReader(bis, StandardCharsets.UTF_8)) {
                         try (BufferedReader br = new BufferedReader(isr)) {
@@ -47,6 +50,8 @@ public final class ServiceUtil {
                         }
                     }
                 }
+            } catch (IOException e) {
+                throw new IOException("Error reading " + url, e);
             }
         }
 

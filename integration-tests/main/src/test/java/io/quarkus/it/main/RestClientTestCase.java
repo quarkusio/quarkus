@@ -57,6 +57,11 @@ public class RestClientTestCase {
     }
 
     @Test
+    void testMicroprofileClientTiemout() {
+        RestAssured.when().get("/client/cdi/timeout").then().body(is("READ TIMED OUT"));
+    }
+
+    @Test
     void testMicroprofileAsyncRestClient() {
         RestAssured.when().get("/client/async/cdi").then().body(is("TEST"));
         JsonPath jsonPath = RestAssured.when().get("/client/async/cdi/jackson").thenReturn().jsonPath();

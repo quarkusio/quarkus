@@ -138,6 +138,17 @@ The default scope can also be defined on the interface.
 
 Note that `org.acme.restclient.CountriesService` _must_ match the fully qualified name of the `CountriesService` interface we created in the previous section.
 
+The REST Client also supports the following optional properties:
+[source,shell]
+----
+org.acme.restclient.CountriesService/mp-rest/connectTimeout=1000 # // <1>
+org.acme.restclient.CountriesService/mp-rest/readTimeout=5000 # // <2>
+----
+
+<1> Timeout specified in milliseconds to wait to connect to the remote endpoint.
+<2> Timeout specified in milliseconds to wait for a response from the remote endpoint.
+
+
 == Update the JAX-RS resource
 
 Open the `src/main/java/org/acme/restclient/CountriesResource.java` file and update it with the following content:

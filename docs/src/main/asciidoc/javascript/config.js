@@ -182,6 +182,7 @@ function applySearch(table, search, autoExpand){
     // clear highlights
     clearHighlights(table);
     var lastSectionHeader = null;
+    var lastColumnHeader = null;
     for (var row of table.querySelectorAll("tr")) {
         if(!search){
             row.style.removeProperty("display");
@@ -194,8 +195,10 @@ function applySearch(table, search, autoExpand){
             var heads = row.querySelectorAll("th");
             if(heads && heads.length > 0){
                 if(heads.length > 1){
-                    // always show the top header, never highlight it
+                    // keep the column header with no highlight, but start hidden
                     row.style.removeProperty("display");
+                    lastColumnHeader = row;
+                    row.style.display = "none";
                 }else{
                     // keep the header rows for rows who matched, but start hidden
                     lastSectionHeader = row;
@@ -212,6 +215,11 @@ function applySearch(table, search, autoExpand){
                     lastSectionHeader.style.removeProperty("display");
                     // avoid showing it more than once
                     lastSectionHeader = null;
+                }
+                if(lastColumnHeader){
+                    lastColumnHeader.style.removeProperty("display");
+                    // avoid showing it more than once
+                    lastColumnHeader = null;
                 }
             }else{
                 row.style.display = "none";

@@ -41,19 +41,19 @@ public class SyslogConfig {
     /**
      * Sets the facility used when calculating the priority of the message as defined by RFC-5424 and RFC-3164
      */
-    @ConfigItem(defaultValue = "USER_LEVEL")
+    @ConfigItem(defaultValue = "user-level")
     Facility facility;
 
     /**
      * Set the {@link SyslogType syslog type} this handler should use to format the message sent
      */
-    @ConfigItem(defaultValue = "RFC5424")
+    @ConfigItem(defaultValue = "rfc5424")
     SyslogType syslogType;
 
     /**
      * Sets the protocol used to connect to the syslog server
      */
-    @ConfigItem(defaultValue = "TCP")
+    @ConfigItem(defaultValue = "tcp")
     Protocol protocol;
 
     /**

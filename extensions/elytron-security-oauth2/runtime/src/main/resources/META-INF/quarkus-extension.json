@@ -1,6 +1,6 @@
 
 {
-    "name": "Security OAuth2",
+    "name": "Elytron Security OAuth 2.0",
     "labels": [
         "security",
         "oauth2"

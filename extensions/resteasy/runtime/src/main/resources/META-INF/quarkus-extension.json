@@ -1,6 +1,6 @@
 
 {
-    "name": "RESTEasy",
+    "name": "RESTEasy JAX-RS",
     "shortName": "jax-rs",
     "labels": [
         "resteasy",

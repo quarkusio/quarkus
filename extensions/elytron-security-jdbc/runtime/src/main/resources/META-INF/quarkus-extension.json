@@ -1,6 +1,6 @@
 
 {
-    "name": "JDBC based Security",
+    "name": "Elytron Security JDBC Realm",
     "labels": [
         "security",
         "jdbc"

@@ -12,6 +12,7 @@
 
   <artifactId>quarkus-smallrye-openapi</artifactId>
   <name>Quarkus - SmallRye OpenAPI - Runtime</name>
+  <description>Document your REST APIs with OpenAPI - comes with Swagger UI</description>
 
   <dependencies>
     <dependency>

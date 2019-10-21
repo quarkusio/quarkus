@@ -5,6 +5,7 @@ import java.util.Map;
 
 import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
+import javax.json.JsonString;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -25,8 +26,13 @@ public class PermissionResource {
     public Map<String, Object> permissions() {
         Map<String, Object> claims = new HashMap<>();
         for (String i : jwt.getClaimNames()) {
-            claims.put(i, jwt.claim(i));
+            claims.put(i, fromJsonWebObject(jwt.getClaim(i)));
         }
         return claims;
     }
+
+    private Object fromJsonWebObject(Object claim) {
+        return claim instanceof JsonString ? ((JsonString) claim).getString() : claim != null ? claim.toString() : null;
+    }
+
 }

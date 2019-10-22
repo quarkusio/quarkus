@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.zip.Checksum;
 
+import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
+import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
 import org.apache.kafka.clients.consumer.RangeAssignor;
 import org.apache.kafka.clients.consumer.RoundRobinAssignor;
 import org.apache.kafka.clients.consumer.StickyAssignor;
@@ -59,7 +61,6 @@ public class KafkaProcessor {
             ByteBufferSerializer.class,
             StringSerializer.class,
             FloatSerializer.class,
-            JsonbSerializer.class,
 
             //deserializers
             ShortDeserializer.class,
@@ -70,8 +71,7 @@ public class KafkaProcessor {
             IntegerDeserializer.class,
             ByteBufferDeserializer.class,
             StringDeserializer.class,
-            FloatDeserializer.class,
-            JsonbDeserializer.class,
+            FloatDeserializer.class
     };
     static final String TARGET_JAVA_9_CHECKSUM_FACTORY = "io.quarkus.kafka.client.generated.Target_Java9ChecksumFactory";
 
@@ -105,6 +105,15 @@ public class KafkaProcessor {
 
         // enable JNI
         jni.produce(new JniBuildItem());
+    }
+
+    @BuildStep
+    public void registerJsonbSerDeser(BuildProducer<JsonbSerializerBuildItem> jsonbSerializers,
+                               BuildProducer<JsonbDeserializerBuildItem> jsonbDeserializers) {
+        jsonbSerializers
+                .produce(new JsonbSerializerBuildItem(JsonbSerializer.class.getName()));
+        jsonbDeserializers
+                .produce(new JsonbDeserializerBuildItem(JsonbDeserializer.class.getName()));
     }
 
     /**

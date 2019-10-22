@@ -12,6 +12,7 @@ include::./attributes.adoc[]
 This guide explains how your Quarkus application can utilize {mp-jwt} to provide
 secured access to the JAX-RS endpoints.
 
+[[configuration-reference]]
 == Configuration Reference
 
 === Quarkus configuration
@@ -279,7 +280,7 @@ Excellent, we have not provided any JWT in the request, so we should not be able
 
 == Configuring the {extension-name} Extension Security Information
 
-In the <<Configuration>> section we introduce the `application.properties` file that affect the {extension-name} extension.
+In the <<configuration-reference,Configuration Reference>> section we introduce the `application.properties` file that affect the {extension-name} extension.
 
 === Setting up application.properties
  For part A of step 1, create a using-jwt-rbac/src/main/resources/application.properties with the following content:

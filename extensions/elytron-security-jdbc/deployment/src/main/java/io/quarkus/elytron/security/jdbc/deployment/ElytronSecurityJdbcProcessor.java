@@ -5,7 +5,6 @@ import java.util.Optional;
 import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.agroal.deployment.DataSourceInitializedBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -41,7 +40,6 @@ class ElytronSecurityJdbcProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void configureJdbcRealmAuthConfig(JdbcRecorder recorder,
             BuildProducer<SecurityRealmBuildItem> securityRealm,
-            BeanContainerBuildItem beanContainerBuildItem, //we need this to make sure ArC is initialized
             Optional<DataSourceInitializedBuildItem> dataSourceInitialized) throws Exception {
         if (jdbc.enabled) {
             RuntimeValue<SecurityRealm> realm = recorder.createRealm(jdbc);

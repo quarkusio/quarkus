@@ -54,6 +54,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -125,6 +126,7 @@ public final class HibernateOrmProcessor {
             List<NonJpaModelBuildItem> nonJpaModelBuildItems,
             List<IgnorableNonIndexedClasses> ignorableNonIndexedClassesBuildItems,
             CombinedIndexBuildItem index,
+            ApplicationIndexBuildItem applicationIndex,
             ArchiveRootBuildItem archiveRoot,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             Optional<DataSourceDriverBuildItem> driverBuildItem,

@@ -20,7 +20,7 @@ To complete this guide, you need:
 * JDK 1.8 (Azure requires JDK 1.8)
 * Apache Maven 3.5.3+
 * https://aws.amazon.com[An Amazon AWS account]
-* https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-reference.html#serverless-sam-cli[Amazon SAM CLI]
+* https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-reference.html#serverless-sam-CLI[Amazon SAM CLI]
 
 == Getting Started
 
@@ -38,7 +38,8 @@ https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/s
 For the purposes of this guide, we'll be using RESTEasy and maven.  In order to deploy your REST application on AWS,
 you'll need to add two dependencies:
 
-```xml
+[source,xml]
+----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-amazon-lambda-http</artifactId>
@@ -47,13 +48,13 @@ you'll need to add two dependencies:
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-resteasy</artifactId>
 </dependency>
-```
+----
 
 NOTE: This example assumes the project is configured to use the BOM provided by the Quarkus project.
 
 Assuming you have properly configured your project to use Quarkus, this is almost all that is necessary.  Now dev mode is available
 as one would expect with a Quarkus application but, additionally, you can use
-https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-local-start-api.html[SAM local]
+https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-CLI-command-reference-sam-local-start-api.html[SAM local]
 if you are more comfortable with that approach.
 
 === Existing Projects
@@ -79,16 +80,17 @@ dependency can also be added:
 </dependency>
 ----
 
-Assuming the application is already configured with a YAML template for the SAM cli to use, you should be almost ready
-to begin using Quarkus.  One step remains, however.
+Assuming the application is already configured with a YAML template for the SAM CLI to use, you should be almost ready
+to begin using Quarkus.  One step remains, however.  Your template file should look something like
+https://github.com/awslabs/serverless-application-model/blob/master/examples/apps/hello-world/template.yaml[this].
 
 === Updating the SAM template file
 
-In an existing AWS project, there will likely already be a yaml file for the SAM cli to use when developing locally and
+In an existing AWS project, there will likely already be a YAML file for the SAM CLI to use when developing locally and
 deploying.  However others will need an initial template to work with.  To create that initial template, the following
 plugin can be run from the root of the project:
 
-[source,shell script]
+[source,shell]
 ----
 mvn io.quarkus:quarkus-amazon-lambda-http-maven:configure-aws-lambda
 ----

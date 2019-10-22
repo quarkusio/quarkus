@@ -40,7 +40,6 @@ public class VertxHotReplacementSetup implements HotReplacementSetup {
             routingContext.next();
             return;
         }
-        routingContext.request().pause();
         routingContext.vertx().executeBlocking(new Handler<Promise<Boolean>>() {
             @Override
             public void handle(Promise<Boolean> event) {
@@ -65,9 +64,6 @@ public class VertxHotReplacementSetup implements HotReplacementSetup {
         }, false, new Handler<AsyncResult<Boolean>>() {
             @Override
             public void handle(AsyncResult<Boolean> event) {
-                if (!routingContext.request().isEnded()) {
-                    routingContext.request().resume();
-                }
                 if (event.failed()) {
                     handleDeploymentProblem(routingContext, event.cause());
                 } else {

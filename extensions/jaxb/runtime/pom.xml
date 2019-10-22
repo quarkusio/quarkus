@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-jaxb</artifactId>
     <name>Quarkus - JAXB - Runtime</name>
-
+    <description>XML serialization support</description>
     <dependencies>
         <dependency>
             <groupId>com.oracle.substratevm</groupId>

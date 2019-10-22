@@ -12,9 +12,8 @@
 
     <artifactId>quarkus-jaeger</artifactId>
     <name>Quarkus - Jaeger - Runtime</name>
-
+    <description>Trace your services with Jaeger</description>
     <dependencies>
-
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>

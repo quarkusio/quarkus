@@ -13,7 +13,7 @@
 
     <artifactId>quarkus-spring-data-jpa</artifactId>
     <name>Quarkus - Spring - Data JPA - Runtime</name>
-
+    <description>Use Spring Data JPA annotations to create your data access layer</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

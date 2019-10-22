@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-elytron-security-oauth2</artifactId>
     <name>Quarkus - Security OAuth2 - Runtime</name>
-
+    <description>Secure your applications with OAuth2 opaque tokens</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-kubernetes-client</artifactId>
     <name>Quarkus - Kubernetes Client - Runtime</name>
-
+    <description>Interact with Kubernetes and develop Kubernetes Operators</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

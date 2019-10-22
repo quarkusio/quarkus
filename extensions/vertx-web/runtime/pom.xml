@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-vertx-web</artifactId>
     <name>Quarkus - Vert.x Web - Runtime</name>
-
+    <description>Vert.x Web</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

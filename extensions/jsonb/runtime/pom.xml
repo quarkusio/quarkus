@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-jsonb</artifactId>
     <name>Quarkus - JSON-B - Runtime</name>
-
+    <description>JSON Binding support</description>
     <dependencies>
         <dependency>
             <groupId>org.eclipse</groupId>

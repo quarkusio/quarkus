@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-jdbc-derby</artifactId>
     <name>Quarkus - JDBC - Derby - Runtime</name>
-
+    <description>Derby database connector</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-kogito</artifactId>
     <name>Quarkus - Kogito - Runtime</name>
-
+    <description>Add business automation capabilities with Kogito</description>
     <dependencies>
 
         <!-- quarkus -->

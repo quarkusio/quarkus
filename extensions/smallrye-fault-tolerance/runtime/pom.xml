@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
     <name>Quarkus - SmallRye Fault tolerance - Runtime</name>
-
+    <description>Define fault-tolerant services</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

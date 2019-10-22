@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-smallrye-reactive-type-converters</artifactId>
     <name>Quarkus - SmallRye Reactive Type Converters - Runtime</name>
-
+    <description>Converters for reactive types from various reactive programming libraries</description>
     <dependencies>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>

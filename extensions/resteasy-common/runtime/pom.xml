@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-resteasy-common</artifactId>
     <name>Quarkus - RESTEasy - Common - Runtime</name>
-
+    <description>REST framework implementing JAX-RS and more</description>
     <dependencies>
         <dependency>
             <groupId>com.oracle.substratevm</groupId>

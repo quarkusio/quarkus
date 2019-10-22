@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-smallrye-metrics</artifactId>
     <name>Quarkus - SmallRye Metrics - Runtime</name>
-
+    <description>Extract metrics out of your services</description>
     <dependencies>
 
         <dependency>

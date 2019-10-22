@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-jdbc-h2</artifactId>
     <name>Quarkus - JDBC - H2 - Runtime</name>
-
+    <description>H2 database connector</description>
     <dependencies>
         <dependency>
             <groupId>com.h2database</groupId>

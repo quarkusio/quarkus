@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-security</artifactId>
     <name>Quarkus - Security - Runtime</name>
-
+    <description>Security</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

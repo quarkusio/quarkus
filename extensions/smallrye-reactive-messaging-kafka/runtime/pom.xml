@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
     <name>Quarkus - SmallRye Reactive Messaging - Kafka - Runtime</name>
-
+    <description>Kafka reactive messaging connector</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

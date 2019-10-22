@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-smallrye-context-propagation</artifactId>
     <name>Quarkus - SmallRye Context Propagation - Runtime</name>
-
+    <description>SmallRye Context Propagation</description>
     <dependencies>
         <dependency>
             <groupId>io.smallrye</groupId>

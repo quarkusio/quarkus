@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-kafka-client</artifactId>
     <name>Quarkus - Kafka - Client - Runtime</name>
-
+    <description>A client for Apache Kafka</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

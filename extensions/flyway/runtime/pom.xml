@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-flyway</artifactId>
     <name>Quarkus - Flyway - Runtime</name>
-
+    <description>Handle your database schema migrations</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

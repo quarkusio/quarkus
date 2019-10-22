@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-hibernate-search-elasticsearch</artifactId>
     <name>Quarkus - Hibernate Search - Elasticsearch - Runtime</name>
-
+    <description>Automatically index your Hibernate entities in Elasticsearch</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -13,6 +13,7 @@
 
     <artifactId>quarkus-amazon-lambda-http</artifactId>
     <name>Quarkus - Amazon Lambda HTTP - Runtime</name>
+    <description>Allows Java applications written for a servlet container to run in AWS Lambda</description>
 
     <dependencies>
         <dependency>

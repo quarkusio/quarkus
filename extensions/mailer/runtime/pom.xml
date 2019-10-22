@@ -14,7 +14,7 @@
     <artifactId>quarkus-mailer</artifactId>
 
     <name>Quarkus - Mailer - Runtime</name>
-
+    <description>Send emails</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

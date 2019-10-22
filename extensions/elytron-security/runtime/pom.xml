@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-elytron-security</artifactId>
     <name>Quarkus - Elytron Security - Runtime</name>
-
+    <description>Secure your services</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

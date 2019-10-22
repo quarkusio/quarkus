@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-vertx</artifactId>
     <name>Quarkus - Vert.x - Runtime</name>
-
+    <description>Reactive application toolkit</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

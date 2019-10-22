@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-panache-common</artifactId>
     <name>Quarkus - Panache - Common - Runtime</name>
-
+    <description>An opinionated approach to make Hibernate as easy as possible</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

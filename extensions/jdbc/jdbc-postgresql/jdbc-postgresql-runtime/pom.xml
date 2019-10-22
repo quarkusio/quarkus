@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-jdbc-postgresql</artifactId>
     <name>Quarkus - JDBC - PostgreSQL - Runtime</name>
-
+    <description>PostgreSQL database connector</description>
     <dependencies>
         <dependency>
             <groupId>org.postgresql</groupId>

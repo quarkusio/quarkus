@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-jackson</artifactId>
     <name>Quarkus - Jackson - Runtime</name>
-
+    <description>Jackson Databind support</description>
     <dependencies>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

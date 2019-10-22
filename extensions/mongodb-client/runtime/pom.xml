@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-mongodb-client</artifactId>
     <name>Quarkus - MongoDB Client - Runtime</name>
-
+    <description>An imperative and reactive client for MongoDB</description>
     <dependencies>
 
         <dependency>

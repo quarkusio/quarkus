@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-kotlin</artifactId>
     <name>Quarkus - Kotlin - Runtime</name>
-
+    <description>Write your services in Kotlin</description>
     <build>
         <plugins>
             <plugin>

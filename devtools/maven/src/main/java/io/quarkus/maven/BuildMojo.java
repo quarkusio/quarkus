@@ -168,8 +168,10 @@ public class BuildMojo extends AbstractMojo {
                 realProperties.setProperty(name, projectProperties.getProperty(name));
             }
         }
+        boolean clear = false;
         if (uberJar && System.getProperty("quarkus.package.types") == null) {
             System.setProperty("quarkus.package.types", "uber-jar");
+            clear = true;
         }
         realProperties.putIfAbsent("quarkus.application.name", project.getArtifactId());
         realProperties.putIfAbsent("quarkus.application.version", project.getVersion());
@@ -196,6 +198,10 @@ public class BuildMojo extends AbstractMojo {
 
         } catch (AppCreatorException e) {
             throw new MojoExecutionException("Failed to build a runnable JAR", e);
+        } finally {
+            if (clear) {
+                System.clearProperty("quarkus.package.types");
+            }
         }
     }
 }

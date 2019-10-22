@@ -12,13 +12,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class JdbcSecurityRealmConfig {
 
     /**
-     * The authentication mechanism
-     */
-    @ConfigItem(defaultValue = "BASIC")
-    public String authMechanism;
-
-    /**
-     * The authentication mechanism
+     * The realm name
      */
     @ConfigItem(defaultValue = "Quarkus")
     public String realmName;
@@ -39,7 +33,6 @@ public class JdbcSecurityRealmConfig {
     @Override
     public String toString() {
         return "JdbcRealmConfig{" +
-                "authMechanism='" + authMechanism + '\'' +
                 ", realmName='" + realmName + '\'' +
                 ", enabled=" + enabled +
                 ", principalQueries=" + principalQueries +

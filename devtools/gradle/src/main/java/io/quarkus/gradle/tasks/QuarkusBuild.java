@@ -152,6 +152,11 @@ public class QuarkusBuild extends QuarkusTask {
         realProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
         realProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
 
+        boolean clear = false;
+        if (uberJar && System.getProperty("quarkus.package.types") == null) {
+            System.setProperty("quarkus.package.types", "uber-jar");
+            clear = true;
+        }
         try (CuratedApplicationCreator appCreationContext = CuratedApplicationCreator.builder()
                 .setWorkDir(getProject().getBuildDir().toPath())
                 .setModelResolver(modelResolver)
@@ -165,6 +170,10 @@ public class QuarkusBuild extends QuarkusTask {
 
         } catch (AppCreatorException e) {
             throw new GradleException("Failed to build a runnable JAR", e);
+        } finally {
+            if (clear) {
+                System.clearProperty("quarkus.package.types");
+            }
         }
     }
 }

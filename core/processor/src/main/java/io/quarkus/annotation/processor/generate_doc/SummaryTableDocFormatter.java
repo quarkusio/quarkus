@@ -24,6 +24,11 @@ final class SummaryTableDocFormatter implements DocFormatter {
         final String tableHeaders = String.format(TABLE_HEADER_FORMAT, Constants.CONFIG_PHASE_LEGEND);
         writer.append(tableHeaders);
 
+        // make sure that section-less configs get a legend
+        if (configDocItems.isEmpty() || configDocItems.get(0).isConfigKey()) {
+            writer.append(String.format(TABLE_SECTION_ROW_FORMAT, "Configuration property"));
+        }
+
         for (ConfigDocItem configDocItem : configDocItems) {
             configDocItem.accept(writer, this);
         }

@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -57,6 +58,8 @@ import io.quarkus.maven.utilities.MojoUtils;
  */
 @Mojo(name = "create", requiresProject = false)
 public class CreateProjectMojo extends AbstractMojo {
+
+    final private static boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
 
     private static String pluginKey;
 
@@ -216,7 +219,8 @@ public class CreateProjectMojo extends AbstractMojo {
 
     private void createGradleWrapper(File projectDirectory) {
         try {
-            ProcessBuilder pb = new ProcessBuilder("gradle", "wrapper",
+            String gradleName = IS_WINDOWS ? "gradle.bat" : "gradle";
+            ProcessBuilder pb = new ProcessBuilder(gradleName, "wrapper",
                     "--gradle-version=" + MojoUtils.getGradleWrapperVersion()).directory(projectDirectory)
                             .inheritIO();
             Process x = pb.start();
@@ -224,7 +228,7 @@ public class CreateProjectMojo extends AbstractMojo {
             x.waitFor();
 
             if (x.exitValue() != 0) {
-                getLog().error("Unable to install the Gradle wrapper (./gradlew) in project. See log for details.");
+                getLog().warn("Unable to install the Gradle wrapper (./gradlew) in project. See log for details.");
             }
 
         } catch (InterruptedException | IOException e) {

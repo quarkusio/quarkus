@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
     <name>Quarkus - SmallRye Reactive Streams Operators - Runtime</name>
-
+    <description>Operators for Reactive Streams programming</description>
     <dependencies>
         <dependency>
             <groupId>org.eclipse.microprofile.reactive-streams-operators</groupId>

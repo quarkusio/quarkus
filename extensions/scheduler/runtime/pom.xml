@@ -12,7 +12,7 @@
 
   <artifactId>quarkus-scheduler</artifactId>
   <name>Quarkus - Scheduler - Runtime</name>
-
+  <description>Schedule jobs and tasks</description>
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>

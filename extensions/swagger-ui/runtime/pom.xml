@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-swagger-ui</artifactId>
     <name>Quarkus - Swagger UI - Runtime</name>
-
+    <description>Swagger UI</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

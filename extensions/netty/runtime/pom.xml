@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-netty</artifactId>
     <name>Quarkus - Netty - Runtime</name>
-
+    <description>Netty is a non-blocking I/O client-server framework. Used by Quarkus as foundation layer.</description>
     <dependencies>
         <!--
           Netty is broken down in multiple modules; we depend only on a core selection

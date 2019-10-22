@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-azure-functions-http</artifactId>
     <name>Quarkus - HTTP Azure Functions - Runtime</name>
+    <description>This package contains all Java interfaces and annotations to interact with Microsoft Azure functions runtime.</description>
 
     <dependencies>
         <dependency>

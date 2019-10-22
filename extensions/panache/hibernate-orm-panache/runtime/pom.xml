@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-hibernate-orm-panache</artifactId>
     <name>Quarkus - Hibernate ORM with Panache - Runtime</name>
-
+    <description>Define your persistent model in Hibernate ORM with Panache</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

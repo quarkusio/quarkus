@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-tika</artifactId>
     <name>Quarkus - Apache Tika - Runtime</name>
-
+    <description>Extract data from your documents with Apache Tika</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-jsonp</artifactId>
     <name>Quarkus - JSON-P - Runtime</name>
-
+    <description>JSON Processing support</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

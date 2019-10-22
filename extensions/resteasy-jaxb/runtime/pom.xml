@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-resteasy-jaxb</artifactId>
     <name>Quarkus - RESTEasy - JAXB - Runtime</name>
-
+    <description>XML serialization support for RESTEasy</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

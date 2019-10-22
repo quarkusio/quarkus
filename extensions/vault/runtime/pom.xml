@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-vault</artifactId>
     <name>Quarkus - Vault - Runtime</name>
-
+    <description>Store your credentials securely in HashiCorp Vault</description>
     <dependencies>
 
         <dependency>

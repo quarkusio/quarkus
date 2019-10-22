@@ -12,7 +12,7 @@
 
    <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
    <name>Quarkus - SmallRye Reactive Messaging - Runtime</name>
-
+   <description>Asynchronous messaging for Reactive Streams</description>
    <dependencies>
       <dependency>
          <groupId>io.quarkus</groupId>

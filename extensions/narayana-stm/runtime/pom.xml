@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-narayana-stm</artifactId>
     <name>Quarkus - Narayana STM - Runtime</name>
-
+    <description>Software Transactional Memory (stm) support</description>
     <dependencies>
         <dependency>
             <groupId>org.jboss.narayana.stm</groupId>

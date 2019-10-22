@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-kubernetes</artifactId>
     <name>Quarkus - Kubernetes - Runtime</name>
-
+    <description>Generate Kubernetes resources from annotations</description>
     <build>
         <plugins>
             <plugin>

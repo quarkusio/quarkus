@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-hibernate-orm</artifactId>
     <name>Quarkus - Hibernate ORM - Runtime</name>
-
+    <description>Define your persistent model with Hibernate ORM and JPA</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

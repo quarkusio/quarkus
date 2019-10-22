@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-elasticsearch-rest-client</artifactId>
     <name>Quarkus - Elasticsearch REST client - Runtime</name>
-
+    <description>Elasticsearch REST client</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

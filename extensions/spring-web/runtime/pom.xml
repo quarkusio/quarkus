@@ -13,7 +13,7 @@
 
     <artifactId>quarkus-spring-web</artifactId>
     <name>Quarkus - Spring - Web - Runtime</name>
-
+    <description>Use Spring Web annotations to create your REST services</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

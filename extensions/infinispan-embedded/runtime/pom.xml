@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-infinispan-embedded</artifactId>
     <name>Quarkus - Infinispan - Embedded - Runtime</name>
-
+    <description>Run an embedded Infinispan data grid server for distributed caching</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

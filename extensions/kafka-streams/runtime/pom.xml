@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-kafka-streams</artifactId>
     <name>Quarkus - Kafka Streams - Runtime</name>
-
+    <description>Implement stream processing applications based on Apache Kafka</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

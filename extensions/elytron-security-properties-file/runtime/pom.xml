@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-elytron-security-properties-file</artifactId>
     <name>Quarkus - Elytron Security Properties File - Runtime</name>
-
+    <description>Secure your applications using properties files</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

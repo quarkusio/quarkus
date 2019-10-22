@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-agroal</artifactId>
     <name>Quarkus - Agroal - Runtime</name>
-
+    <description>Pool your database connections (included in Hibernate ORM)</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

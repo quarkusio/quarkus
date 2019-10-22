@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-smallrye-health</artifactId>
     <name>Quarkus - SmallRye Health - Runtime</name>
-
+    <description>Monitor service health</description>
     <dependencies>
 
         <dependency>

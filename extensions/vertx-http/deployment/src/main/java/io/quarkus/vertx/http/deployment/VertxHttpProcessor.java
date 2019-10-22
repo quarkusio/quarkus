@@ -19,6 +19,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
@@ -30,6 +31,7 @@ import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
 import io.quarkus.vertx.http.runtime.filters.Filter;
+import io.vertx.core.impl.VertxImpl;
 import io.vertx.ext.web.Router;
 
 class VertxHttpProcessor {
@@ -50,6 +52,19 @@ class VertxHttpProcessor {
     @BuildStep
     AdditionalBeanBuildItem additionalBeans() {
         return AdditionalBeanBuildItem.unremovableOf(RouterProducer.class);
+    }
+
+    /**
+     * Workaround for https://github.com/quarkusio/quarkus/issues/4720 by filtering Vertx multiple instance warning in dev
+     * mode.
+     */
+    @BuildStep
+    void filterMultipleVertxInstancesWarning(LaunchModeBuildItem launchModeBuildItem,
+            BuildProducer<LogCleanupFilterBuildItem> logCleanupFilterBuildItemBuildProducer) {
+        if (launchModeBuildItem.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
+            logCleanupFilterBuildItemBuildProducer.produce(new LogCleanupFilterBuildItem(VertxImpl.class.getName(),
+                    "You're already on a Vert.x context, are you sure you want to create a new Vertx instance"));
+        }
     }
 
     @BuildStep(onlyIf = IsNormal.class)

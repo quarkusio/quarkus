@@ -246,14 +246,12 @@ public class JarResultBuildStep {
             PackageConfig packageConfig,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources) throws Exception {
-        Path thinJarDirectory = outputTargetBuildItem.getOutputDirectory()
-                .resolve(outputTargetBuildItem.getBaseName());
-        IoUtils.recursiveDelete(thinJarDirectory);
-        Files.createDirectories(thinJarDirectory);
 
-        Path runnerJar = thinJarDirectory
+        Path runnerJar = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
-        Path libDir = thinJarDirectory.resolve("lib");
+        Path libDir = outputTargetBuildItem.getOutputDirectory().resolve("lib");
+        Files.deleteIfExists(runnerJar);
+        IoUtils.recursiveDelete(libDir);
         Files.createDirectories(libDir);
 
         try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {

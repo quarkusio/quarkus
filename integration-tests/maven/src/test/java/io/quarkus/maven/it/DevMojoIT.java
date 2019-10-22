@@ -360,7 +360,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+                .atMost(60, TimeUnit.SECONDS)
                 .until(() -> getHttpResponse("/app/hello/greeting").contains(uuid));
     }
 

@@ -141,6 +141,10 @@ The OpenID Connect extension allows you to define the adapter configuration usin
 
 === Configuring using the application.properties file
 
+include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional, leveloffset=+1]
+
+Example configuration:
+
 [source,properties]
 ----
 quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus

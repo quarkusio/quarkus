@@ -7,7 +7,9 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-Quarkus comes with build in security to allow for RBAC (role based access control)
+## Securing REST endpoints
+
+Quarkus comes with build in security to allow for Role-Based Access Control (link:https://en.wikipedia.org/wiki/Role-based_access_control[RBAC])
 based on the common security annotations `@RolesAllowed`, `@DenyAll`, `@PermitAll` on REST endpoints and CDI beans.
 An example of an endpoint that makes use of both JAX-RS and Common Security annotations to describe and secure its endpoints is given in <<subject-example>>. Quarkus also provides
 the `io.quarkus.security.Authenticated` annotation that will permit any authenticated user to access the resource
@@ -168,25 +170,88 @@ specified roles to access the resources.
 
 Policies are pluggable so it is possible for other Quarkus extensions to provide additional policies.
 
+### Matching on paths, methods
+
 Permission sets can also specify paths and methods as a comma separated list. If a path ends with '*' then it is considered
-to be a wildcard match and will match all sub paths, otherwise it is an exact match and will only match that specific path.
+to be a wildcard match and will match all sub paths, otherwise it is an exact match and will only match that specific path:
+
+[source,properties]
+--
+quarkus.http.auth.permission.permit1.paths=/public/*,/css/*,/js/*,/robots.txt
+quarkus.http.auth.permission.permit1.policy=permit
+quarkus.http.auth.permission.permit1.methods=GET,HEAD
+--
+
+### Matching path but not method
 
 If a request would match one or more permission sets based on the path, but does not match any due to method requirements
 then the request is rejected.
 
+TIP: Given the above permission set, `GET /public/foo` would match both the path and method and thus be allowed,
+whereas `POST /public/foo` would match the path but not the method and would thus be rejected.
+
+### Matching multiple paths: longest wins
+
 Matching is always done on a longest path basis, less specific permission sets are not considered if a more specific one
-has been matched.
+has been matched:
+
+[source,properties]
+--
+quarkus.http.auth.permission.permit1.paths=/public/*
+quarkus.http.auth.permission.permit1.policy=permit
+quarkus.http.auth.permission.permit1.methods=GET,HEAD
+
+quarkus.http.auth.permission.deny1.paths=/public/forbidden-folder/*
+quarkus.http.auth.permission.deny1.policy=deny
+--
+
+TIP: Given the above permission set, `GET /public/forbidden-folder/foo` would match both permission sets' paths,
+but because it matches the `deny1` permission set's path on a longer match, `deny1` will be chosen and the request will
+be rejected.
+
+### Matching multiple paths: most specific method wins
 
 If a path is registered with multiple permission sets then any permission sets that specify a HTTP method will take
 precedence and permissions sets without a method will not be considered (assuming of course the method matches). In this
-instance permission sets will only come into effect if the request method does not match any of the sets with method permissions.
-If a request would have matched based on path, but does not match any permission sets because of method requirements
-then this request is rejected.
+instance, the permission sets without methods will only come into effect if the request method does not match any of the
+sets with method permissions.
+
+[source,properties]
+--
+quarkus.http.auth.permission.permit1.paths=/public/*
+quarkus.http.auth.permission.permit1.policy=permit
+quarkus.http.auth.permission.permit1.methods=GET,HEAD
+
+quarkus.http.auth.permission.deny1.paths=/public/*
+quarkus.http.auth.permission.deny1.policy=deny
+--
+
+TIP: Given the above permission set, `GET /public/foo` would match both permission sets' paths,
+but because it matches the `permit1` permission set's explicit method, `permit1` will be chosen and the request will
+be accepted. `PUT /public/foo` on the other hand, will not match the method permissions of `permit1` and so
+`deny1` will be activated and reject the request.
+
+### Matching multiple paths and methods: both win
 
 If multiple permission sets specify the same path and method (or multiple have no method) then both permissions have to
 allow access for the request to proceed. Note that for this to happen both have to either have specified the method, or
-have no method, method specific matches take precedence as stated above.
+have no method, method specific matches take precedence as stated above:
 
+[source,properties]
+--
+
+quarkus.http.auth.policy.user-policy1.roles-allowed=user
+quarkus.http.auth.policy.admin-policy1.roles-allowed=admin
+
+quarkus.http.auth.permission.roles1.paths=/api/*,/restricted/*
+quarkus.http.auth.permission.roles1.policy=user-policy1
+
+quarkus.http.auth.permission.roles2.paths=/api/*,/admin/*
+quarkus.http.auth.permission.roles2.policy=admin-policy1
+--
+
+TIP: Given the above permission set, `GET /api/foo` would match both permission sets' paths,
+so would require both the `user` and `admin` roles.
 
 ### Registering Security Providers
 When running in native mode the default behavior for Graal native image generation is to only include the main "SUN" provider

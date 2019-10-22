@@ -9,7 +9,8 @@ include::./attributes.adoc[]
 :extension-name: Smallrye JWT
 :mp-jwt: MicroProfile JWT RBAC
 
-This guide explains how your Quarkus application can utilize {mp-jwt} to provide
+This guide explains how your Quarkus application can utilize MicroProfile Json Web Token (link:https://jwt.io/[JWT]) 
+Role-Based Access Control (link:https://en.wikipedia.org/wiki/Role-based_access_control[RBAC]) to provide
 secured access to the JAX-RS endpoints.
 
 [[configuration-reference]]

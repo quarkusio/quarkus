@@ -10,9 +10,9 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-oidc</artifactId>
-    <name>Quarkus - Integration Tests - OpenID Connect Adapter</name>
-    <description>Module that contains OpenID Connect related tests</description>
+    <artifactId>quarkus-integration-test-keycloak-authorization</artifactId>
+    <name>Quarkus - Integration Tests - Keycloak Policy Enforcer</name>
+    <description>Module that contains Keycloak Policy Enforcer related tests</description>
 
     <properties>
         <keycloak.url>http://localhost:8180/auth</keycloak.url>
@@ -21,19 +21,15 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc</artifactId>
+            <artifactId>quarkus-keycloak-authorization</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jackson</artifactId>
+            <artifactId>quarkus-resteasy-jsonb</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-adapter-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-core</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc</artifactId>
         </dependency>
 
         <!-- test dependencies -->

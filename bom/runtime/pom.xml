@@ -166,6 +166,7 @@
         <antlr.version>4.7.2</antlr.version>
         <quarkus-security.version>1.0.0.Alpha2</quarkus-security.version>
         <javax.interceptor-api.version>1.2</javax.interceptor-api.version>
+        <keycloak.version>7.0.1</keycloak.version>
     </properties>
 
     <dependencyManagement>
@@ -328,6 +329,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-oidc</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-authorization</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2429,6 +2435,28 @@
                         <artifactId>spring-jcl</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            
+            <!-- Keycloak -->
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-adapter-core</artifactId>
+                <version>${keycloak.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-core</artifactId>
+                <version>${keycloak.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-adapter-spi</artifactId>
+                <version>${keycloak.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-authz-client</artifactId>
+                <version>${keycloak.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

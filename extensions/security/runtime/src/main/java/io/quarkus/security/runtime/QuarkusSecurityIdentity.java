@@ -65,7 +65,7 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
 
     @Override
     public <T> T getAttribute(String name) {
-        return null;
+        return (T) attributes.get(name);
     }
 
     @Override

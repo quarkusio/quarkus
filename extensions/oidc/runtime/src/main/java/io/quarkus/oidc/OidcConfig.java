@@ -49,6 +49,18 @@ public class OidcConfig {
     @ConfigItem
     Credentials credentials;
 
+    public String getAuthServerUrl() {
+        return authServerUrl;
+    }
+
+    public Optional<String> getClientId() {
+        return clientId;
+    }
+
+    public Credentials getCredentials() {
+        return credentials;
+    }
+
     @ConfigGroup
     public static class Credentials {
 
@@ -58,6 +70,9 @@ public class OidcConfig {
         @ConfigItem
         Optional<String> secret;
 
+        public Optional<String> getSecret() {
+            return secret;
+        }
     }
 
 }

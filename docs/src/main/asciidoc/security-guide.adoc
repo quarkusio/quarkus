@@ -86,6 +86,10 @@ very much a work in progress, so this list will be expanded over the coming week
 |link:oidc-guide.html[quarkus-oidc]
 |Provides support for authenticating via an OpenID Connect provider such as Keycloak.
 
+|link:keycloak-authorization-guide.html[quarkus-keycloak-authorization]
+|Provides support for a policy enforcer using Keycloak Authorization Services.
+
+
 |===
 
 Please see the linked documents above for details on how to setup the various extensions.

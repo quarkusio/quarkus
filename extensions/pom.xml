@@ -95,6 +95,7 @@
         <module>elytron-security-oauth2</module>
         <module>smallrye-jwt</module>
         <module>oidc</module>
+        <module>keycloak-authorization</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>

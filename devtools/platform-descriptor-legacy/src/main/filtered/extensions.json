@@ -301,6 +301,21 @@
     "guide": "https://quarkus.io/guides/oidc-guide"
   },
   {
+    "name": "Keycloak Authorization",
+    "labels": [
+      "oauth2",
+      "openid-connect",
+      "keycloak",
+      "authorization-services",
+      "policy-enforcer",
+      "fine-grained-permission",
+      "resource-based-authorization"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-keycloak-authorization",
+    "guide": "https://quarkus.io/guides/keycloak-authorization-guide"
+  },
+  {
     "name": "Kogito",
     "labels": [
       "kogito",

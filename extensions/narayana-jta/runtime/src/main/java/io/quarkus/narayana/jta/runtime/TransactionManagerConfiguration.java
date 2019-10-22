@@ -19,12 +19,6 @@ public final class TransactionManagerConfiguration {
     public String nodeName;
 
     /**
-     * The XA node name used by the transaction manager
-     */
-    @ConfigItem()
-    public Optional<String> xaNodeName;
-
-    /**
      * The default transaction timeout
      */
     @ConfigItem(defaultValue = "60")

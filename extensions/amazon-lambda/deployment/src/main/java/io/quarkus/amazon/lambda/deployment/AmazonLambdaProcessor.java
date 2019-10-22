@@ -102,7 +102,7 @@ public final class AmazonLambdaProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void processLambas(List<AmazonLambdaBuildItem> lambdas,
+    public void processLambdas(List<AmazonLambdaBuildItem> lambdas,
             BeanContainerBuildItem beanContainerBuildItem,
             AmazonLambdaRecorder recorder,
             LambdaConfig config,

@@ -14,6 +14,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.elytron.security.deployment.ElytronTokenMarkerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.oauth2.runtime.OAuth2Config;
 import io.quarkus.elytron.security.oauth2.runtime.OAuth2Recorder;
@@ -59,6 +60,14 @@ class OAuth2DeploymentProcessor {
             RuntimeValue<SecurityRealm> realm = recorder.createRealm(oauth2);
             securityRealm.produce(new SecurityRealmBuildItem(realm, REALM_NAME, null));
             return AdditionalBeanBuildItem.unremovableOf(OAuth2AuthMechanism.class);
+        }
+        return null;
+    }
+
+    @BuildStep
+    ElytronTokenMarkerBuildItem marker() {
+        if (oauth2.enabled) {
+            return new ElytronTokenMarkerBuildItem();
         }
         return null;
     }

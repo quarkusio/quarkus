@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,11 +28,7 @@ public class PackageIT extends MojoTestBase {
 
         running = new RunningInvoker(testDir, false);
         final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
-                new HashMap<String, String>() {
-                    {
-                        put("QUARKUS_PACKAGE_TYPES", "thin-jar");
-                    }
-                });
+                Collections.singletonMap("QUARKUS_PACKAGE_TYPES", "thin-jar"));
 
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
@@ -48,11 +43,7 @@ public class PackageIT extends MojoTestBase {
 
         running = new RunningInvoker(testDir, false);
         final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
-                new HashMap<String, String>() {
-                    {
-                        put("QUARKUS_PACKAGE_TYPES", "uber-jar");
-                    }
-                });
+                Collections.singletonMap("QUARKUS_PACKAGE_TYPES", "uber-jar"));
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
         final File targetDir = getTargetDir();

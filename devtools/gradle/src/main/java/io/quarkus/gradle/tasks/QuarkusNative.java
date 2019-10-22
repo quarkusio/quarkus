@@ -1,5 +1,7 @@
 package io.quarkus.gradle.tasks;
 
+import static java.util.stream.Collectors.joining;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -433,7 +435,11 @@ public class QuarkusNative extends QuarkusTask {
                 configs.add("quarkus.native.add-all-charsets", addAllCharsets);
 
                 if (additionalBuildArgs != null) {
-                    configs.add("quarkus.native.additional-build-args", additionalBuildArgs);
+                    configs.add("quarkus.native.additional-build-args",
+                            additionalBuildArgs.stream()
+                                    .map(val -> val.replace("\\", "\\\\"))
+                                    .map(val -> val.replace(",", "\\,"))
+                                    .collect(joining(",")));
                 }
                 configs.add("quarkus.native.auto-service-loader-registration", autoServiceLoaderRegistration);
 

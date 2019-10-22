@@ -1,5 +1,7 @@
 package io.quarkus.maven;
 
+import static java.util.stream.Collectors.joining;
+
 import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
@@ -322,7 +324,7 @@ public class NativeImageMojo extends AbstractMojo {
                     configs.add("quarkus.native.add-all-charsets", addAllCharsets.toString());
                 }
                 if (additionalBuildArgs != null) {
-                    configs.add("quarkus.native.additional-build-args", additionalBuildArgs.toString());
+                    configs.add("quarkus.native.additional-build-args", additionalBuildArgs);
                 }
                 if (autoServiceLoaderRegistration != null) {
                     configs.add("quarkus.native.auto-service-loader-registration", autoServiceLoaderRegistration.toString());
@@ -431,6 +433,14 @@ public class NativeImageMojo extends AbstractMojo {
 
         public InMemoryConfigSource add(String key, String value) {
             values.put(key, value);
+            return this;
+        }
+
+        public InMemoryConfigSource add(String key, List<String> value) {
+            values.put(key, value.stream()
+                    .map(val -> val.replace("\\", "\\\\"))
+                    .map(val -> val.replace(",", "\\,"))
+                    .collect(joining(",")));
             return this;
         }
 

@@ -72,7 +72,7 @@ public class QuarkusNative extends QuarkusTask {
 
     private boolean fullStackTraces = true;
 
-    private boolean disableReports;
+    private boolean enableReports;
 
     private List<String> additionalBuildArgs;
 
@@ -343,13 +343,19 @@ public class QuarkusNative extends QuarkusTask {
 
     @Optional
     @Input
-    public boolean isDisableReports() {
-        return disableReports;
+    public boolean isEnableReports() {
+        return enableReports;
     }
 
+    @Deprecated
     @Option(description = "Disable reports", option = "disable-reports")
     public void setDisableReports(boolean disableReports) {
-        this.disableReports = disableReports;
+        this.enableReports = !disableReports;
+    }
+
+    @Option(description = "Enable reports", option = "enable-reports")
+    public void setEnableReports(boolean enableReports) {
+        this.enableReports = enableReports;
     }
 
     @Optional
@@ -435,7 +441,7 @@ public class QuarkusNative extends QuarkusTask {
                 configs.add("quarkus.native.debug-build-process", debugBuildProcess);
 
                 configs.add("quarkus.native.debug-symbols", debugSymbols);
-                configs.add("quarkus.native.disable-reports", disableReports);
+                configs.add("quarkus.native.enable-reports", enableReports);
                 if (dockerBuild != null) {
                     configs.add("quarkus.native.docker-build", dockerBuild);
                 }

@@ -1,8 +1,8 @@
 package io.quarkus.amazon.lambda.deployment;
 
-import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
 
-public final class AmazonLambdaBuildItem extends MultiBuildItem {
+public final class AmazonLambdaBuildItem extends SimpleBuildItem {
 
     private final String handlerClass;
     private final String name;

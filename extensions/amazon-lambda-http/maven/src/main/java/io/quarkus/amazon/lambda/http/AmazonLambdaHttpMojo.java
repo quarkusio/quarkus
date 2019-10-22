@@ -18,7 +18,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 @Mojo(name = "configure-aws-lambda", requiresProject = false)
 public class AmazonLambdaHttpMojo extends AbstractMojo {
-    public static final String SAM_HANDLER = HttpHandler.class.getName() + "::handleRequest";
+    public static final String SAM_HANDLER = LambdaHttpHandler.class.getName() + "::handleRequest";
     public static final String SAM_RUNTIME = "java8";
     public static final String SAM_TEMPLATE = "quarkus.amazon-lambda-http.template";
     public static final String SAM_RESOURCE = "quarkus.amazon-lambda-http.resource-name";

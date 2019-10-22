@@ -19,8 +19,10 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
@@ -130,5 +132,14 @@ class VertxHttpProcessor {
                 eventLoopCountBuildItem.getEventLoopCount());
 
         return new ServiceStartBuildItem("vertx-http");
+    }
+
+    @BuildStep
+    public void registerReflectionClasses(Optional<RequireVirtualHttpBuildItem> requireVirtual,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
+        if (requireVirtual.isPresent() || httpConfiguration.virtual) {
+            reflectiveClassBuildItemBuildProducer
+                    .produce(new ReflectiveClassBuildItem(true, false, false, VirtualServerChannel.class));
+        }
     }
 }

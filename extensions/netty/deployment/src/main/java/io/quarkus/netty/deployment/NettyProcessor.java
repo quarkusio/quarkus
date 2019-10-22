@@ -174,5 +174,4 @@ class NettyProcessor {
         return new RuntimeReinitializedClassBuildItem(
                 "io.quarkus.netty.runtime.graal.Holder_io_netty_util_concurrent_ScheduledFutureTask");
     }
-
 }

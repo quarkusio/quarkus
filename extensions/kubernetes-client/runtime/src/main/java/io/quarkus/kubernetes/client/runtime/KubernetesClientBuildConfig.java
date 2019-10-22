@@ -2,6 +2,7 @@ package io.quarkus.kubernetes.client.runtime;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -20,73 +21,73 @@ public class KubernetesClientBuildConfig {
      * URL of the Kubernetes API server
      */
     @ConfigItem
-    String masterUrl;
+    Optional<String> masterUrl;
 
     /**
      * Default namespace to use
      */
     @ConfigItem
-    String namespace;
+    Optional<String> namespace;
 
     /**
      * CA certificate file
      */
     @ConfigItem
-    String caCertFile;
+    Optional<String> caCertFile;
 
     /**
      * CA certificate data
      */
     @ConfigItem
-    String caCertData;
+    Optional<String> caCertData;
 
     /**
      * Client certificate file
      */
     @ConfigItem
-    String clientCertFile;
+    Optional<String> clientCertFile;
 
     /**
      * Client certificate data
      */
     @ConfigItem
-    String clientCertData;
+    Optional<String> clientCertData;
 
     /**
      * Client key file
      */
     @ConfigItem
-    String clientKeyFile;
+    Optional<String> clientKeyFile;
 
     /**
      * Client key data
      */
     @ConfigItem
-    String clientKeyData;
+    Optional<String> clientKeyData;
 
     /**
      * Client key algorithm
      */
     @ConfigItem
-    String clientKeyAlgo;
+    Optional<String> clientKeyAlgo;
 
     /**
      * Client key passphrase
      */
     @ConfigItem
-    String clientKeyPassphrase;
+    Optional<String> clientKeyPassphrase;
 
     /**
      * Kubernetes auth username
      */
     @ConfigItem
-    String username;
+    Optional<String> username;
 
     /**
      * Kubernetes auth password
      */
     @ConfigItem
-    String password;
+    Optional<String> password;
 
     /**
      * Watch reconnect interval
@@ -123,29 +124,29 @@ public class KubernetesClientBuildConfig {
      * HTTP proxy used to access the Kubernetes API server
      */
     @ConfigItem
-    String httpProxy;
+    Optional<String> httpProxy;
 
     /**
      * HTTPS proxy used to access the Kubernetes API server
      */
     @ConfigItem
-    String httpsProxy;
+    Optional<String> httpsProxy;
 
     /**
      * Proxy username
      */
     @ConfigItem
-    String proxyUsername;
+    Optional<String> proxyUsername;
 
     /**
      * Proxy password
      */
     @ConfigItem
-    String proxyPassword;
+    Optional<String> proxyPassword;
 
     /**
      * IP addresses or hosts to exclude from proxying
      */
     @ConfigItem
-    List<String> noProxy;
+    List<Optional<String>> noProxy;
 }

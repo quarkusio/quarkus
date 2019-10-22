@@ -11,6 +11,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.jdbc.JdbcRecorder;
 import io.quarkus.elytron.security.jdbc.JdbcSecurityRealmConfig;
@@ -47,6 +48,14 @@ class ElytronSecurityJdbcProcessor {
             RuntimeValue<SecurityRealm> realm = recorder.createRealm(jdbc);
             securityRealm.produce(new SecurityRealmBuildItem(realm, jdbc.realmName, null));
         }
+    }
+
+    @BuildStep
+    ElytronPasswordMarkerBuildItem marker() {
+        if (jdbc.enabled) {
+            return new ElytronPasswordMarkerBuildItem();
+        }
+        return null;
     }
 
 }

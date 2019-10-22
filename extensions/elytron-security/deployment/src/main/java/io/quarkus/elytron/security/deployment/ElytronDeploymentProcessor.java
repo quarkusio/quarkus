@@ -52,12 +52,17 @@ class ElytronDeploymentProcessor {
     }
 
     @BuildStep
-    void addBeans(BuildProducer<AdditionalBeanBuildItem> beans) {
-
+    void addBeans(BuildProducer<AdditionalBeanBuildItem> beans, List<ElytronPasswordMarkerBuildItem> pw,
+            List<ElytronTokenMarkerBuildItem> token) {
         beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronSecurityDomainManager.class));
-        beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronTokenIdentityProvider.class));
-        beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronPasswordIdentityProvider.class));
         beans.produce(AdditionalBeanBuildItem.unremovableOf(DefaultRoleDecoder.class));
+
+        if (!token.isEmpty()) {
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronTokenIdentityProvider.class));
+        }
+        if (!pw.isEmpty()) {
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronPasswordIdentityProvider.class));
+        }
     }
 
     /**

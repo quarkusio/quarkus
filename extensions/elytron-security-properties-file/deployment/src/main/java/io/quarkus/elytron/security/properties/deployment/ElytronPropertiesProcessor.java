@@ -12,6 +12,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.runtime.ElytronPropertiesFileRecorder;
 import io.quarkus.elytron.security.runtime.MPRealmConfig;
@@ -77,6 +78,14 @@ class ElytronPropertiesProcessor {
                     .produce(new SecurityRealmBuildItem(realm, realmConfig.realmName, recorder.loadRealm(realm, realmConfig)));
             // Return the realm authentication mechanism build item
         }
+    }
+
+    @BuildStep
+    ElytronPasswordMarkerBuildItem marker() {
+        if (propertiesConfig.file.enabled || propertiesConfig.embedded.enabled) {
+            return new ElytronPasswordMarkerBuildItem();
+        }
+        return null;
     }
 
     /**

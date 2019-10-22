@@ -38,7 +38,7 @@ public class PackageIT extends MojoTestBase {
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
         final File targetDir = getTargetDir();
-        assertThat(getNumberOfFilesEndingWith(new File(targetDir, "acme-1.0-SNAPSHOT"), ".jar")).isEqualTo(1);
+        assertThat(getNumberOfFilesEndingWith(targetDir, ".jar")).isEqualTo(2);
     }
 
     @Test
@@ -77,13 +77,14 @@ public class PackageIT extends MojoTestBase {
                 Collections.emptyMap());
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
-        final File targetDir = new File(getTargetDir(), "acme-custom-packaging-app-1.0-SNAPSHOT"); //thin jars end up in a sub directory
+        final File targetDir = getTargetDir();
         final File[] files = targetDir.listFiles(f -> f.getName().endsWith(".jar"));
         Set<String> jarNames = new HashSet<>(files.length);
         for (File f : files) {
             jarNames.add(f.getName());
         }
-        assertEquals(new HashSet<>(Arrays.asList(new String[] { "acme-custom-packaging-app-1.0-SNAPSHOT-runner.jar" })),
+        assertEquals(new HashSet<>(Arrays.asList(new String[] { "acme-custom-packaging-app-1.0-SNAPSHOT-runner.jar",
+                "acme-custom-packaging-app-1.0-SNAPSHOT.jar" })),
                 jarNames);
     }
 

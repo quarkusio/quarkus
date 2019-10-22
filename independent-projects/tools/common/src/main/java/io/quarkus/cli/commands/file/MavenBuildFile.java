@@ -52,6 +52,11 @@ public class MavenBuildFile extends BuildFile {
     }
 
     @Override
+    public String getPlatformBomVersionExpression() {
+        return MojoUtils.QUARKUS_VERSION_PROPERTY;
+    }
+
+    @Override
     public void close() throws IOException {
         if(getModel() == null) {
             return;
@@ -117,7 +122,7 @@ public class MavenBuildFile extends BuildFile {
             Dependency bom = new Dependency();
             bom.setGroupId(getBomGroupId());
             bom.setArtifactId(getBomArtifactId());
-            bom.setVersion(getBomVersionForTemplate());
+            bom.setVersion(getBomVersionForTemplate(getPlatformBomVersionExpression()));
             bom.setType("pom");
             bom.setScope("import");
 

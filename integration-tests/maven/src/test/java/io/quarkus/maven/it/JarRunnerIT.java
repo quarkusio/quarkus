@@ -34,7 +34,7 @@ public class JarRunnerIT extends MojoTestBase {
         running.stop();
 
         Path jar = testDir.toPath().toAbsolutePath()
-                .resolve(Paths.get("target/acme-1.0-SNAPSHOT/acme-1.0-SNAPSHOT-runner.jar"));
+                .resolve(Paths.get("target/acme-1.0-SNAPSHOT-runner.jar"));
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
 

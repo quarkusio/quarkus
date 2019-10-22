@@ -32,6 +32,8 @@ public abstract class BuildFile implements Closeable {
         this.buildTool = buildTool;
     }
 
+    public abstract String getPlatformBomVersionExpression();
+
     protected void write(String fileName, String content) throws IOException {
         writer.write(fileName, content);
     }

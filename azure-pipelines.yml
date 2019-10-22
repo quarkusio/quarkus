@@ -284,6 +284,7 @@ stages:
           timeoutInMinutes: 25
           modules:
             - jackson
+            - jsonb
             - jgit
             - kogito
             - kubernetes-client

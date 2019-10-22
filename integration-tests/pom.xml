@@ -66,6 +66,7 @@
         <module>neo4j</module>
         <module>mongodb-client</module>
         <module>jackson</module>
+        <module>jsonb</module>
         <module>resteasy-jackson</module>
         <module>jgit</module>
         <module>virtual-http</module>

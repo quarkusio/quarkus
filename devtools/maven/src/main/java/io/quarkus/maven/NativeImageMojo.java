@@ -337,7 +337,7 @@ public class NativeImageMojo extends AbstractMojo {
                     configs.add("quarkus.native.debug-symbols", debugSymbols.toString());
                 }
                 if (disableReports != null) {
-                    configs.add("quarkus.native.enable-reports", new Boolean(!disableReports).toString());
+                    configs.add("quarkus.native.enable-reports", Boolean.toString(!disableReports));
                 }
                 if (enableReports != null) {
                     configs.add("quarkus.native.enable-reports", enableReports.toString());

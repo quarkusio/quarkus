@@ -1,9 +1,12 @@
 package io.quarkus.spring.web.deployment;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +32,10 @@ import org.jboss.resteasy.spring.web.ResponseStatusFeature;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
@@ -38,6 +43,8 @@ import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.runtime.ExceptionMapperRecorder;
+import io.quarkus.resteasy.runtime.NonJaxRsClassMappings;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
@@ -59,10 +66,10 @@ public class SpringWebProcessor {
             .createSimple("org.springframework.web.bind.annotation.RequestMapping");
     private static final DotName PATH_VARIABLE = DotName.createSimple("org.springframework.web.bind.annotation.PathVariable");
 
-    private static final List<DotName> MAPPING_CLASSES;
+    private static final List<DotName> MAPPING_ANNOTATIONS;
 
     static {
-        MAPPING_CLASSES = Arrays.asList(
+        MAPPING_ANNOTATIONS = Arrays.asList(
                 REQUEST_MAPPING,
                 DotName.createSimple("org.springframework.web.bind.annotation.GetMapping"),
                 DotName.createSimple("org.springframework.web.bind.annotation.PostMapping"),
@@ -106,7 +113,7 @@ public class SpringWebProcessor {
 
     @BuildStep
     public AdditionalJaxRsResourceMethodAnnotationsBuildItem additionalJaxRsResourceMethodAnnotationsBuildItem() {
-        return new AdditionalJaxRsResourceMethodAnnotationsBuildItem(MAPPING_CLASSES);
+        return new AdditionalJaxRsResourceMethodAnnotationsBuildItem(MAPPING_ANNOTATIONS);
     }
 
     @BuildStep
@@ -186,6 +193,82 @@ public class SpringWebProcessor {
         }
     }
 
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(STATIC_INIT)
+    public void registerWithDevModeNotFoundMapper(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            ExceptionMapperRecorder recorder) {
+        IndexView index = beanArchiveIndexBuildItem.getIndex();
+        Collection<AnnotationInstance> restControllerAnnotations = index.getAnnotations(REST_CONTROLLER_ANNOTATION);
+        if (restControllerAnnotations.isEmpty()) {
+            return;
+        }
+
+        Map<String, NonJaxRsClassMappings> nonJaxRsPaths = new HashMap<>();
+        for (AnnotationInstance restControllerInstance : restControllerAnnotations) {
+            String basePath = "/";
+            ClassInfo restControllerAnnotatedClass = restControllerInstance.target().asClass();
+
+            AnnotationInstance requestMappingInstance = restControllerAnnotatedClass.classAnnotation(REQUEST_MAPPING);
+            if (requestMappingInstance != null) {
+                String basePathFromAnnotation = getMappingValue(requestMappingInstance);
+                if (basePathFromAnnotation != null) {
+                    basePath = basePathFromAnnotation;
+                }
+            }
+            Map<String, String> methodNameToPath = new HashMap<>();
+            NonJaxRsClassMappings nonJaxRsClassMappings = new NonJaxRsClassMappings();
+            nonJaxRsClassMappings.setMethodNameToPath(methodNameToPath);
+            nonJaxRsClassMappings.setBasePath(basePath);
+
+            List<MethodInfo> methods = restControllerAnnotatedClass.methods();
+
+            // go through each of the methods and see if there are any mapping Spring annotation from which to get the path
+            METHOD: for (MethodInfo method : methods) {
+                String methodName = method.name();
+                String methodPath;
+                // go through each of the annotations that can be used to make a method handle an http request
+                for (DotName mappingClass : MAPPING_ANNOTATIONS) {
+                    AnnotationInstance mappingClassAnnotation = method.annotation(mappingClass);
+                    if (mappingClassAnnotation != null) {
+                        methodPath = getMappingValue(mappingClassAnnotation);
+                        if (methodPath == null) {
+                            methodPath = ""; // ensure that no nasty null values show up in the output
+                        } else if (!methodPath.startsWith("/")) {
+                            methodPath = "/" + methodPath;
+                        }
+                        // record the mapping of method to the http path
+                        methodNameToPath.put(methodName, methodPath);
+                        continue METHOD;
+                    }
+                }
+            }
+
+            // if there was at least one controller method, add the controller since it contains methods that handle http requests
+            if (!methodNameToPath.isEmpty()) {
+                nonJaxRsPaths.put(restControllerAnnotatedClass.name().toString(), nonJaxRsClassMappings);
+            }
+        }
+
+        if (!nonJaxRsPaths.isEmpty()) {
+            recorder.nonJaxRsClassNameToMethodPaths(nonJaxRsPaths);
+        }
+    }
+
+    /**
+     * Meant to be called with an instance of any of the MAPPING_CLASSES
+     */
+    private String getMappingValue(AnnotationInstance instance) {
+        if (instance == null) {
+            return null;
+        }
+        if (instance.value() != null) {
+            return instance.value().asStringArray()[0];
+        } else if (instance.value("path") != null) {
+            return instance.value("path").asStringArray()[0];
+        }
+        return null;
+    }
+
     @BuildStep
     public void registerProviders(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer) throws IOException {
@@ -206,7 +289,7 @@ public class SpringWebProcessor {
         boolean useAllAvailable = false;
         Set<String> providersToRegister = new HashSet<>();
 
-        OUTER: for (DotName mappingClass : MAPPING_CLASSES) {
+        OUTER: for (DotName mappingClass : MAPPING_ANNOTATIONS) {
             final Collection<AnnotationInstance> instances = beanArchiveIndexBuildItem.getIndex().getAnnotations(mappingClass);
             for (AnnotationInstance instance : instances) {
                 if (collectProviders(providersToRegister, categorizedWriters, instance, "produces")) {

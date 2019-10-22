@@ -45,6 +45,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
 
     private volatile static List<String> servletMappings = Collections.EMPTY_LIST;
     private volatile static List<String> staticResources = Collections.EMPTY_LIST;
+    private volatile static Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths = Collections.EMPTY_MAP;
 
     @Context
     private Registry registry = null;
@@ -105,11 +106,22 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
                     }
                     ResourceMethodInvoker method = (ResourceMethodInvoker) invoker;
                     Class<?> resourceClass = method.getResourceClass();
+                    String resourceClassName = resourceClass.getName();
+                    String basePath = null;
+                    NonJaxRsClassMappings nonJaxRsClassMappings = null;
                     Path path = resourceClass.getAnnotation(Path.class);
                     if (path == null) {
+                        nonJaxRsClassMappings = nonJaxRsClassNameToMethodPaths.get(resourceClassName);
+                        if (nonJaxRsClassMappings != null) {
+                            basePath = nonJaxRsClassMappings.getBasePath();
+                        }
+                    } else {
+                        basePath = path.value();
+                    }
+
+                    if (basePath == null) {
                         continue;
                     }
-                    String basePath = path.value();
 
                     if (!descriptions.containsKey(basePath)) {
                         descriptions.put(basePath, new ResourceDescription(basePath));
@@ -120,6 +132,14 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
                         if (annotation.annotationType().equals(Path.class)) {
                             subPath = ((Path) annotation).value();
                             break;
+                        }
+                    }
+                    // attempt to find a mapping in the non JAX-RS paths
+                    if (subPath.isEmpty() && (nonJaxRsClassMappings != null)) {
+                        String methodName = method.getMethod().getName();
+                        String subPathFromMethodName = nonJaxRsClassMappings.getMethodNameToPath().get(methodName);
+                        if (subPathFromMethodName != null) {
+                            subPath = subPathFromMethodName;
                         }
                     }
 
@@ -241,5 +261,9 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
 
     public static void staticResources(Set<String> knownFiles) {
         NotFoundExceptionMapper.staticResources = knownFiles.stream().sorted().collect(Collectors.toList());
+    }
+
+    public static void nonJaxRsClassNameToMethodPaths(Map<String, NonJaxRsClassMappings> nonJaxRsPaths) {
+        NotFoundExceptionMapper.nonJaxRsClassNameToMethodPaths = nonJaxRsPaths;
     }
 }

@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 This guide covers:
 
 * Compiling the application to a native executable
-* The packaging of the application in a container
+* Packaging the native executable in a container
 
 This guide takes as input the application developed in the link:getting-started-guide.html[Getting Started Guide].
 
@@ -21,64 +21,102 @@ To complete this guide, you need:
 * less than 15 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* GraalVM installed from the http://www.graalvm.org/downloads/[GraalVM web site].
-Using the community edition is enough.
-Version {graalvm-version} is required.
-* The `GRAALVM_HOME` environment variable configured appropriately
-* The `native-image` tool must be installed; this can be done by running `./gu install native-image` from your GraalVM
-`bin` directory
-* Apache Maven 3.5.3+
-* A working C developer environment (see the note below for details)
-* A running Docker
+* A xref:configuring-c-development[working C development environment]
+* GraalVM version {graalvm-version} installed and  xref:configuring-graalvm[configured appropriately]
+* A working container runtime (Docker, podman)
 * The code of the application developed in the link:getting-started-guide.html[Getting Started Guide].
 
-[NOTE]
-====
-Once you have downloaded GraalVM, expand the archive and set the `GRAALVM_HOME` variable to this location:
-
-`export GRAALVM_HOME=$HOME/Development/graalvm/`
-
-On MacOS, point the variable to the `Home` sub-directory:
-
-`export GRAALVM_HOME=$HOME/Development/graalvm/Contents/Home/`
-====
-
+.Supporting native compilation in C
+[[configuring-c-development]]
 [NOTE]
 ====
 What does having a working C developer environment mean?
 
- * On Linux, you will need GCC, the glibc and zlib headers (on common distributions: `sudo dnf install gcc glibc-devel zlib-devel` or `sudo apt-get install build-essential libz-dev`).
- * On macOS, execute `xcode-select --install`.
-====
-
-[NOTE]
-====
-Some previous releases of GraalVM included the `native-image` tool by default.  This is no longer the
-case; it now has to be installed as a second step after GraalVM itself is installed.  Use `gu install native-image`
-to do so.
-====
-
-[NOTE]
-====
-GraalVM binaries are not (yet) notarized for macOS Catalina as reported in this https://github.com/oracle/graal/issues/1724[GraalVM issue].
-To bypass the issue, it is recommended to run the below command instead of disabling macOS Gatekeeper entirely:
+* On Linux, you will need GCC, and the glibc and zlib headers. Examples for common distributions:
++
 [source,shell]
------
-xattr -r -d com.apple.quarantine $HOME/Development/graalvm <1>
------
-
-1. Recursively delete the `com.apple.quarantine` extended attribute on the GraalVM root directory `$HOME/Development/graalvm` we set up above.
+----
+# dnf (rpm-based)
+sudo dnf install gcc glibc-devel zlib-devel
+# Debian-based distributions:
+sudo apt-get install build-essential libz-dev
+----
+* XCode provides the required dependencies on macOS:
++
+[source,shell]
+----
+xcode-select --install
+----
 ====
+
+[[configuring-graalvm]]
+=== Configuring GraalVM
 
 [TIP]
 ====
 If you cannot install GraalVM, you can use a multi-stage Docker build to run Maven inside a Docker container that embeds GraalVM. There is an explanation of how to do this at the end of this guide.
 ====
 
+Version {graalvm-version} is required. Using the community edition is enough.
+
+1. Install GraalVM if you haven't already. You have a few options for this:
+** Use platform-specific install tools like https://github.com/graalvm/homebrew-tap[homebrew] or https://sdkman.io/jdks#Oracle[sdkman].
+** Download the appropriate Community Edition archive from <https://github.com/oracle/graal/releases>, and unpack it like you would any other JDK.
+2. Configure the runtime environment. Set `GRAALVM_HOME` environment variable to the GraalVM installation directory, for example:
++
+[source,shell]
+----
+export GRAALVM_HOME=$HOME/Development/graalvm/
+----
++
+On macOS, point the variable to the `Home` sub-directory:
++
+[source,shell]
+----
+export GRAALVM_HOME=$HOME/Development/graalvm/Contents/Home/
+----
+3. Install the `native-image` tool using `gu install`:
++
+[source,shell]
+----
+${GRAALVM_HOME}/bin/gu install native-image
+----
++
+Some previous releases of GraalVM included the `native-image` tool by default.  This is no longer the case; it must be installed as a second step after GraalVM itself is installed. Note: there is an outstanding issue xref:graal-and-catalina[using GraalVM with macOS Catalina].
+4. (Optional) Set the `JAVA_HOME` environment variable to the GraalVM installation directory.
++
+[source,shell]
+----
+export JAVA_HOME=${GRAALVM_HOME}
+----
+5. (Optional) Add the GraalVM `bin` directory to the path
++
+[source,shell]
+----
+export PATH=${GRAALVM_HOME}/bin:$PATH
+----
+
+[[graal-and-catalina]]
+.Issues using GraalVM with macOS Catalina
+[NOTE]
+====
+GraalVM binaries are not (yet) notarized for macOS Catalina as reported in this https://github.com/oracle/graal/issues/1724[GraalVM issue]. This means that you may see the following error when using `gu`:
+
+----
+“gu” cannot be opened because the developer cannot be verified
+----
+
+Use the following command to recursively delete the `com.apple.quarantine` extended attribute on the GraalVM install directory as a workaround:
+
+[source,shell]
+-----
+xattr -r -d com.apple.quarantine ${GRAALVM_HOME}
+-----
+====
+
 == Solution
 
-We recommend that you follow the instructions in the next sections and package the application step by step.
-However, you can go right to the completed example.
+We recommend that you follow the instructions in the next sections and package the application step by step. However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
@@ -86,13 +124,9 @@ The solution is located in the `getting-started` directory.
 
 == Producing a native executable
 
-Let's now produce a native executable for our application.
-It improves the startup time of the application, and produces a minimal disk footprint.
-The executable would have everything to run the application including the "JVM" (shrunk to be just enough to run the application), and the application.
+The native executable for our application will contain the application code, required libraries, Java APIs, and a reduced version of a VM. The smaller VM base improves the startup time of the application and produces a minimal disk footprint.
 
 image:native-executable-process.png[Creating a native executable]
-
-Before going further, be sure that the `GRAALVM_HOME` environment variable is configured appropriately.
 
 If you have generated the application from the previous tutorial, you can find in the `pom.xml` the following _profile_:
 
@@ -301,7 +335,7 @@ NOTE: Interested by tiny Docker images, check the {quarkus-images-url}/master/di
 
 The previous section showed you how to build a native executable using Maven, but implicitly required that the proper GraalVM version be installed on the building machine (be it your local machine or your CI/CD infrastructure).
 
-In cases where the GraalVM requirement cannot be met, you can use Docker to perform the Maven build by using a multi-stage Docker build. A multi-stage Docker build is like two Dockerfile files combined in one, the first is used to build the artifact used by the second. 
+In cases where the GraalVM requirement cannot be met, you can use Docker to perform the Maven build by using a multi-stage Docker build. A multi-stage Docker build is like two Dockerfile files combined in one, the first is used to build the artifact used by the second.
 
 In this guide we will use the first stage to generate the native executable using Maven and the second stage to create our runtime image.
 
@@ -357,4 +391,5 @@ Please see link:native-and-ssl-guide.html#working-with-containers[our Using SSL 
 This guide covered the creation of a native (binary) executable for your application.
 It provides an application exhibiting a swift startup time and consuming less memory.
 However, there is much more.
+
 We recommend continuing the journey with the link:kubernetes-guide.html[deployment to Kubernetes and OpenShift].

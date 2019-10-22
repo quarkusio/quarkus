@@ -437,11 +437,15 @@ public class MavenRepoInitializer {
     }
 
     public static String getLocalRepo(Settings settings) {
-        String env = System.getenv("QUARKUS_LOCAL_REPO");
-        if(env != null) {
-            return env;
+        String localRepo = System.getenv("QUARKUS_LOCAL_REPO");
+        if(localRepo != null) {
+            return localRepo;
         }
-        final String localRepo = settings.getLocalRepository();
+        localRepo = PropertyUtils.getProperty("maven.repo.local");
+        if(localRepo != null) {
+            return localRepo;
+        }
+        localRepo = settings.getLocalRepository();
         return localRepo == null ? getDefaultLocalRepo() : localRepo;
     }
 

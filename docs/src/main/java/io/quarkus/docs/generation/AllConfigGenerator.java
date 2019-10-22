@@ -36,14 +36,15 @@ import io.quarkus.docs.generation.ExtensionJson.Extension;
 public class AllConfigGenerator {
     public static void main(String[] args)
             throws AppModelResolverException, JsonParseException, JsonMappingException, IOException {
-        if (args.length != 1) {
+        if (args.length != 2) {
             // exit 1 will break Maven
-            throw new IllegalArgumentException("Missing version parameter.");
+            throw new IllegalArgumentException("Usage: <version> <extension.json>");
         }
         String version = args[0];
+        String extensionFile = args[1];
 
         // This is where we produce the entire list of extensions
-        File jsonFile = new File("devtools/bom-descriptor-json/target/extensions.json");
+        File jsonFile = new File(extensionFile);
         if (!jsonFile.exists()) {
             System.err.println("WARNING: could not generate all-config file because extensions list is missing: " + jsonFile);
             // exit 0 will break Maven

@@ -43,6 +43,8 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.kafka.client.serialization.JsonbDeserializer;
+import io.quarkus.kafka.client.serialization.JsonbSerializer;
 
 public class KafkaProcessor {
 
@@ -57,6 +59,7 @@ public class KafkaProcessor {
             ByteBufferSerializer.class,
             StringSerializer.class,
             FloatSerializer.class,
+            JsonbSerializer.class,
 
             //deserializers
             ShortDeserializer.class,
@@ -68,6 +71,7 @@ public class KafkaProcessor {
             ByteBufferDeserializer.class,
             StringDeserializer.class,
             FloatDeserializer.class,
+            JsonbDeserializer.class,
     };
     static final String TARGET_JAVA_9_CHECKSUM_FACTORY = "io.quarkus.kafka.client.generated.Target_Java9ChecksumFactory";
 

@@ -97,11 +97,11 @@ public class MojoUtils {
         return getPlatformDescriptor().getBomVersion();
     }
 
-    public static String getBomVersionForTemplate() {
+    public static String getBomVersionForTemplate(String defaultValue) {
         final String v = getBomVersion();
         if(v.equals(getQuarkusVersion())) {
             // this might not always work but at this point we're assuming the bom is coming from Quarkus itself
-            return QUARKUS_VERSION_PROPERTY;
+            return defaultValue;
         }
         return v;
     }

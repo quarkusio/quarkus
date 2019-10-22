@@ -30,6 +30,11 @@ public class GradleBuildFile extends BuildFile {
     }
 
     @Override
+    public String getPlatformBomVersionExpression() {
+        return "${quarkusVersion}";
+    }
+
+    @Override
     public void close() throws IOException {
         write(SETTINGS_GRADLE_PATH, getModel().getSettingsContent());
         write(BUILD_GRADLE_PATH, getModel().getBuildContent());
@@ -254,10 +259,6 @@ public class GradleBuildFile extends BuildFile {
 
         public void setBuildContent(String buildContent) {
             this.buildContent = buildContent;
-        }
-
-        public void setPropertiesContent(Properties propertiesContent) {
-            this.propertiesContent = propertiesContent;
         }
     }
 }

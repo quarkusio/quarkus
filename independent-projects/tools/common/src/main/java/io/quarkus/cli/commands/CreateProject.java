@@ -111,7 +111,7 @@ public class CreateProject {
         context.put(PROJECT_VERSION, version);
         context.put(BOM_GROUP_ID, getBomGroupId());
         context.put(BOM_ARTIFACT_ID, getBomArtifactId());
-        context.put(BOM_VERSION, getBomVersionForTemplate());
+        context.put(BOM_VERSION, getBomVersionForTemplate(getBuildFile().getPlatformBomVersionExpression()));
         context.put(QUARKUS_VERSION, getQuarkusVersion());
         context.put(SOURCE_TYPE, sourceType);
         context.put(BUILD_FILE, getBuildFile());

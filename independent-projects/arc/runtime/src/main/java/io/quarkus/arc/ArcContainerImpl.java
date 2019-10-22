@@ -15,6 +15,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -68,6 +70,8 @@ class ArcContainerImpl implements ArcContainer {
     private final ComputingCache<String, Set<InjectableBean<?>>> beansByName;
 
     private final List<ResourceReferenceProvider> resourceProviders;
+
+    private volatile ExecutorService executorService;
 
     public ArcContainerImpl() {
         id = "" + ID_GENERATOR.incrementAndGet();
@@ -249,6 +253,16 @@ class ArcContainerImpl implements ArcContainer {
     @Override
     public BeanManager beanManager() {
         return BeanManagerImpl.INSTANCE.get();
+    }
+
+    @Override
+    public ExecutorService getExecutorService() {
+        ExecutorService executor = executorService;
+        return executor != null ? executor : ForkJoinPool.commonPool();
+    }
+
+    void setExecutor(ExecutorService executor) {
+        this.executorService = executor;
     }
 
     @Override

@@ -1,5 +1,6 @@
 package io.quarkus.arc;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -10,7 +11,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class Arc {
 
     private static final AtomicReference<ArcContainerImpl> INSTANCE = new AtomicReference<>();
-
     private static final AtomicBoolean INITIALIZED = new AtomicBoolean(false);
 
     public static ArcContainer initialize() {
@@ -18,8 +18,13 @@ public final class Arc {
             ArcContainerImpl container = new ArcContainerImpl();
             INSTANCE.set(container);
             container.init();
+            return container;
         }
         return container();
+    }
+
+    public static void setExecutor(ExecutorService executor) {
+        INSTANCE.get().setExecutor(executor);
     }
 
     /**
@@ -33,8 +38,9 @@ public final class Arc {
     public static void shutdown() {
         if (INSTANCE.get() != null) {
             synchronized (INSTANCE) {
-                if (INSTANCE.get() != null) {
-                    INSTANCE.get().shutdown();
+                ArcContainerImpl container = INSTANCE.get();
+                if (container != null) {
+                    container.shutdown();
                     INSTANCE.set(null);
                     INITIALIZED.set(false);
                 }

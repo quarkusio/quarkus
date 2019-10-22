@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-vertx-core</artifactId>
     <name>Quarkus - Vert.x - Core - Runtime</name>
-
+    <description>Vert.x Core</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

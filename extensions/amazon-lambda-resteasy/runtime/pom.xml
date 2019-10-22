@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-amazon-lambda-resteasy</artifactId>
     <name>Quarkus - Amazon Lambda - RESTEasy - Runtime</name>
+    <description>Allows Java applications written for a servlet container to run in AWS Lambda</description>
 
     <dependencies>
         <dependency>

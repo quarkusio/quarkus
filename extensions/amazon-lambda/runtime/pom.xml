@@ -13,6 +13,7 @@
 
     <artifactId>quarkus-amazon-lambda</artifactId>
     <name>Quarkus - Amazon Lambda - Runtime</name>
+    <description>AWS Lambda support</description>
 
     <dependencies>
         <dependency>

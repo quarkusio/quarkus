@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-resteasy-server-common</artifactId>
     <name>Quarkus - RESTEasy - Server common - Runtime</name>
-
+    <description>RESTEasy Server common</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

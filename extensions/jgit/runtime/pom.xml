@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-jgit</artifactId>
     <name>Quarkus - JGit - Runtime</name>
-
+    <description>Access your Git repositories</description>
     <dependencies>
         <dependency>
             <groupId>com.oracle.substratevm</groupId>

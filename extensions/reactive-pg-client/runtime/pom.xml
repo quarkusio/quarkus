@@ -14,7 +14,7 @@
     <artifactId>quarkus-reactive-pg-client</artifactId>
 
     <name>Quarkus - Reactive Postgres Client - Runtime</name>
-
+    <description>A reactive client for the PostgreSQL database</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-jdbc-mysql</artifactId>
     <name>Quarkus - JDBC - MySQL - Runtime</name>
-
+    <description>MySQL database connector</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

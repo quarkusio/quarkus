@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-infinispan-client</artifactId>
     <name>Quarkus - Infinispan - Client - Runtime</name>
-
+    <description>Connect to the Infinispan data grid for distributed caching</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

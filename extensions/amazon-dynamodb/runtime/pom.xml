@@ -13,6 +13,7 @@
 
     <artifactId>quarkus-amazon-dynamodb</artifactId>
     <name>Quarkus - Amazon DynamoDB - Runtime</name>
+    <description>A client for the Amazon DynamoDB datastore</description>
 
     <dependencies>
         <dependency>

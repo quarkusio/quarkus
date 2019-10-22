@@ -30,7 +30,7 @@
     <artifactId>quarkus-reactive-mysql-client</artifactId>
 
     <name>Quarkus - Reactive MySQL Client - Runtime</name>
-
+    <description>A reactive client for the MySQL database</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

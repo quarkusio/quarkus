@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-scala</artifactId>
     <name>Quarkus - Scala - Runtime</name>
-
+    <description>Write your services in Scala</description>
     <build>
         <plugins>
             <plugin>

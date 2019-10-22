@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-elytron-security-jdbc</artifactId>
     <name>Quarkus - Elytron Security JDBC - Runtime</name>
-
+    <description>Secure your applications with username/password stored in a database</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

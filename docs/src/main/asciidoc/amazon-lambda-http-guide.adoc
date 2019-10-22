@@ -35,4 +35,108 @@ Quarkus project, you'll need to configure your application for deployment to Ama
 the scope of this document but you can find the full guide on
 https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-getting-started.html[Amazon's website].
 
-For the purposes of this guide, we'll be using RESTEasy and maven.
+For the purposes of this guide, we'll be using RESTEasy and maven.  In order to deploy your REST application on AWS,
+you'll need to add two dependencies:
+
+```xml
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-amazon-lambda-http</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy</artifactId>
+</dependency>
+```
+
+NOTE: This example assumes the project is configured to use the BOM provided by the Quarkus project.
+
+Assuming you have properly configured your project to use Quarkus, this is almost all that is necessary.  Now dev mode is available
+as one would expect with a Quarkus application but, additionally, you can use
+https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-local-start-api.html[SAM local]
+if you are more comfortable with that approach.
+
+=== Existing Projects
+
+For existing projects, the following dependency will need to be added:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-amazon-lambda-http</artifactId>
+</dependency>
+----
+
+It's likely there is already an HTTP dependency defined to serve your application.  If not, however, the following
+dependency can also be added:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy</artifactId>
+</dependency>
+----
+
+Assuming the application is already configured with a YAML template for the SAM cli to use, you should be almost ready
+to begin using Quarkus.  One step remains, however.
+
+=== Updating the SAM template file
+
+In an existing AWS project, there will likely already be a yaml file for the SAM cli to use when developing locally and
+deploying.  However others will need an initial template to work with.  To create that initial template, the following
+plugin can be run from the root of the project:
+
+[source,shell script]
+----
+mvn io.quarkus:quarkus-amazon-lambda-http-maven:configure-aws-lambda
+----
+
+If there is no existing template file one will be created with the default name of `template.yaml` and the resource name
+will default to `Quarkus`.  These names might not be preferable or there might be an existing template file to work with.
+In this case, there are two properties that can configure these values:
+
+|===
+|Name |Description
+
+|amazon-lambda-http.template| The template file to use
+|amazon-lambda-http.resource| The resource to manage
+|===
+
+NOTE: Running this plugin in an existing project will attempt to update the existing configuration.  If the template
+file has a different name, the plugin will assume there is no configuration and will generate a new file.
+
+This plugin will update the `Handler` and `Runtime` values for the named resource.  Running this plugin once might be
+sufficient.  However, you might choose to always run this plugin to make sure your template file is always correct.
+e.g., should implementation details on the Quarkus side ever change, it might be nice to have things automatically update
+without having to worry about tracking changes.  The pom can be configured to run automatically by adding the following
+to the `plugins` section:
+
+[source,xml]
+----
+<plugin>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-amazon-lambda-http-maven</artifactId>
+    <version>${quarkus.version}</version>
+    <executions>
+        <execution>
+            <id>amazon-lambda-http</id>
+            <goals>
+                <goal>configure-aws-lambda</goal>
+            </goals>
+            <phase>compile</phase>
+        </execution>
+    </executions>
+</plugin>
+----
+
+This will bind the plugin to the `compile` phase and will ensure that the configuration is always up to date.  If this
+option is chosen some extra configuration will be required since always having to pass the properties above is not ideal.
+It is possible to store these values in `src/main/properties/application.properties` alongside all of the other Quarkus
+configuration values.  In this case, you'll need to define the following entries:
+
+*  quarkus.amazon-lambda-http.resource
+*  quarkus.amazon-lambda-http.template
+
+With these defined, the properties no longer need to be defined when invoking maven.

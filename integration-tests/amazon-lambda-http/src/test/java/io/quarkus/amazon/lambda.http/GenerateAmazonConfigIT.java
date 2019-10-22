@@ -79,10 +79,10 @@ public class GenerateAmazonConfigIT extends MojoTestBase {
         mavenProperties.put("projectArtifactId", "acme");
         mavenProperties.put("projectVersion", "1.0-SNAPSHOT");
         if (template != null) {
-            mavenProperties.put("sam.template", template);
+            mavenProperties.put("amazon-lambda-http.template", template);
         }
         if (resource != null) {
-            mavenProperties.put("sam.resource", resource);
+            mavenProperties.put("amazon-lambda-http.resource", resource);
         }
 
         final MavenProcessInvocationResult result = new RunningInvoker(testDir, false)

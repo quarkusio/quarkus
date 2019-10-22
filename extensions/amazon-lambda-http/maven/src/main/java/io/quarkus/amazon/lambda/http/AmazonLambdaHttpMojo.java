@@ -21,17 +21,17 @@ public class AmazonLambdaHttpMojo extends AbstractMojo {
     public static final String SAM_HANDLER = HttpHandler.class.getName() + "::handleRequest";
     public static final String SAM_RUNTIME = "java8";
     public static final String SAM_TEMPLATE = "quarkus.amazon-lambda-http.template";
-    public static final String SAM_RESOURCE = "quarkus.amazon-lambda-http.resource-name";
+    public static final String SAM_RESOURCE = "quarkus.amazon-lambda-http.resource";
     public static final String DEFAULT_TEMPLATE = "template.yaml";
     public static final String DEFAULT_RESOURCE = "Quarkus";
 
     @Parameter(defaultValue = "${project}")
     protected MavenProject project;
 
-    @Parameter(property = "sam.template", defaultValue = DEFAULT_TEMPLATE)
+    @Parameter(property = "amazon-lambda-http.template", defaultValue = DEFAULT_TEMPLATE)
     private String templateFile;
 
-    @Parameter(property = "sam.resource", defaultValue = DEFAULT_RESOURCE)
+    @Parameter(property = "amazon-lambda-http.resource", defaultValue = DEFAULT_RESOURCE)
     private String resourceName;
 
     @SuppressWarnings("unchecked")

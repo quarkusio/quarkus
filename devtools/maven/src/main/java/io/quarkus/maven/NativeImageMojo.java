@@ -408,7 +408,7 @@ public class NativeImageMojo extends AbstractMojo {
                     configs.add("quarkus.native.report-exception-stack-traces", reportExceptionStackTraces.toString());
                 }
                 if (publishDebugBuildProcessPort) {
-                    configs.add("quarkus.native-image.publish-debug-build-process-port",
+                    configs.add("quarkus.native.publish-debug-build-process-port",
                             Boolean.toString(publishDebugBuildProcessPort));
                 }
                 configBuilder.withSources(configs);

@@ -61,7 +61,7 @@ quarkus.application.name=test-quarkus-app # this is also optional and defaults t
 ----
 
 and following the execution of `mvn package` you will notice amongst the other files that are created, two files named
-`kubernetes.json` and `kubernetes.yaml` in the `target/wiring-classes/META-INF/kubernetes/` directory.
+`kubernetes.json` and `kubernetes.yaml` in the `target/kubernetes/` directory.
 
 If you look at either file you will see that it contains both a Kubernetes `Deployment` and a `Service`.
 

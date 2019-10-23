@@ -21,6 +21,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaProducers;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaRecorder;
 import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
@@ -41,6 +42,12 @@ class NarayanaJtaProcessor {
 
     @Inject
     BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit;
+
+    @BuildStep()
+    public SubstrateSystemPropertyBuildItem substrateSystemPropertyBuildItem() {
+        return new SubstrateSystemPropertyBuildItem("CoordinatorEnvironmentBean.transactionStatusManagerEnable",
+                String.valueOf(transactions.enableTransactionStatusManager));
+    }
 
     /**
      * The transactions configuration.

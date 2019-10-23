@@ -49,7 +49,7 @@ public class PropertiesRealmConfig {
     public String roles;
 
     public String help() {
-        return "{enabled,users,roles,authMechanism,realmName}";
+        return "{enabled,users,roles,realm-name,plain-text}";
     }
 
     public boolean isEnabled() {

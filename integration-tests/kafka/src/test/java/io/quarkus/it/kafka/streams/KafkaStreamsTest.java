@@ -24,8 +24,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.it.kafka.KafkaTestResource;
-import io.quarkus.kafka.client.serialization.JsonbDeserializer;
-import io.quarkus.kafka.client.serialization.JsonbSerializer;
+import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
+import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -42,7 +42,7 @@ public class KafkaStreamsTest {
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "streams-test-producer");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonbSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ObjectMapperSerializer.class.getName());
 
         return new KafkaProducer<Integer, Customer>(props);
     }
@@ -52,7 +52,7 @@ public class KafkaStreamsTest {
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "streams-test-producer");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonbSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ObjectMapperSerializer.class.getName());
 
         return new KafkaProducer<>(props);
     }
@@ -168,7 +168,7 @@ public class KafkaStreamsTest {
         return result;
     }
 
-    public static class EnrichedCustomerDeserializer extends JsonbDeserializer<EnrichedCustomer> {
+    public static class EnrichedCustomerDeserializer extends ObjectMapperDeserializer<EnrichedCustomer> {
 
         public EnrichedCustomerDeserializer() {
             super(EnrichedCustomer.class);

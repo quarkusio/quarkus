@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.util.Map;
 
 import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
 
 import org.apache.kafka.common.serialization.Deserializer;
 
@@ -20,7 +19,7 @@ public class JsonbDeserializer<T> implements Deserializer<T> {
     private final boolean jsonbNeedsClosing;
 
     public JsonbDeserializer(Class<T> type) {
-        this(type, JsonbBuilder.create(), true);
+        this(type, JsonbProducer.get(), true);
     }
 
     public JsonbDeserializer(Class<T> type, Jsonb jsonb) {

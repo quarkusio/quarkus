@@ -15,7 +15,7 @@ import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.state.KeyValueBytesStoreSupplier;
 import org.apache.kafka.streams.state.Stores;
 
-import io.quarkus.kafka.client.serialization.JsonbSerde;
+import io.quarkus.kafka.client.serialization.ObjectMapperSerde;
 
 @ApplicationScoped
 public class KafkaStreamsPipeline {
@@ -24,9 +24,9 @@ public class KafkaStreamsPipeline {
     public Topology buildTopology() {
         StreamsBuilder builder = new StreamsBuilder();
 
-        JsonbSerde<Category> categorySerde = new JsonbSerde<>(Category.class);
-        JsonbSerde<Customer> customerSerde = new JsonbSerde<>(Customer.class);
-        JsonbSerde<EnrichedCustomer> enrichedCustomerSerde = new JsonbSerde<>(EnrichedCustomer.class);
+        ObjectMapperSerde<Category> categorySerde = new ObjectMapperSerde<>(Category.class);
+        ObjectMapperSerde<Customer> customerSerde = new ObjectMapperSerde<>(Customer.class);
+        ObjectMapperSerde<EnrichedCustomer> enrichedCustomerSerde = new ObjectMapperSerde<>(EnrichedCustomer.class);
 
         KTable<Integer, Category> categories = builder.table(
                 "streams-test-categories",

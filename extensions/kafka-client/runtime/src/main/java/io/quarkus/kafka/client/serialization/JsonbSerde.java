@@ -3,7 +3,6 @@ package io.quarkus.kafka.client.serialization;
 import java.util.Map;
 
 import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
 
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
@@ -21,7 +20,7 @@ public class JsonbSerde<T> implements Serde<T> {
     private final JsonbDeserializer<T> deserializer;
 
     public JsonbSerde(Class<T> type) {
-        this(type, JsonbBuilder.create(), true);
+        this(type, JsonbProducer.get(), true);
     }
 
     public JsonbSerde(Class<T> type, Jsonb jsonb) {

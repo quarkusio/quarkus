@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
 
 import org.apache.kafka.common.serialization.Serializer;
 
@@ -18,7 +17,7 @@ public class JsonbSerializer<T> implements Serializer<T> {
     private final boolean jsonbNeedsClosing;
 
     public JsonbSerializer() {
-        this(JsonbBuilder.create(), true);
+        this(JsonbProducer.get(), true);
     }
 
     public JsonbSerializer(Jsonb jsonb) {

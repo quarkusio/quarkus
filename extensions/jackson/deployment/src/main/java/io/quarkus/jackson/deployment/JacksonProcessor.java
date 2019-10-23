@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -63,7 +64,7 @@ public class JacksonProcessor {
     @Inject
     List<IgnoreJsonDeserializeClassBuildItem> ignoreJsonDeserializeClassBuildItems;
 
-    @BuildStep
+    @BuildStep(providesCapabilities = Capabilities.JACKSON)
     void register() {
         addReflectiveClass(true, false,
                 "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",

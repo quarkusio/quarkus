@@ -33,6 +33,7 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -45,6 +46,8 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.kafka.client.serialization.JsonbDeserializer;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
+import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
+import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
 
 public class KafkaProcessor {
 
@@ -59,7 +62,6 @@ public class KafkaProcessor {
             ByteBufferSerializer.class,
             StringSerializer.class,
             FloatSerializer.class,
-            JsonbSerializer.class,
 
             //deserializers
             ShortDeserializer.class,
@@ -71,13 +73,12 @@ public class KafkaProcessor {
             ByteBufferDeserializer.class,
             StringDeserializer.class,
             FloatDeserializer.class,
-            JsonbDeserializer.class,
     };
     static final String TARGET_JAVA_9_CHECKSUM_FACTORY = "io.quarkus.kafka.client.generated.Target_Java9ChecksumFactory";
 
     @BuildStep
     public void build(CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<JniBuildItem> jni) {
+            BuildProducer<JniBuildItem> jni, Capabilities capabilities) {
         Collection<ClassInfo> serializers = indexBuildItem.getIndex()
                 .getAllKnownSubclasses(DotName.createSimple(Serializer.class.getName()));
         Collection<ClassInfo> deserializers = indexBuildItem.getIndex()
@@ -89,6 +90,13 @@ public class KafkaProcessor {
 
         for (Class i : BUILT_INS) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, i.getName()));
+        }
+        if (capabilities.isCapabilityPresent(Capabilities.JSONB)) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, JsonbSerializer.class, JsonbDeserializer.class));
+        }
+        if (capabilities.isCapabilityPresent(Capabilities.JACKSON)) {
+            reflectiveClass.produce(
+                    new ReflectiveClassBuildItem(false, false, ObjectMapperSerializer.class, ObjectMapperDeserializer.class));
         }
 
         for (Collection<ClassInfo> list : Arrays.asList(serializers, deserializers, partitioners, partitionAssignors)) {

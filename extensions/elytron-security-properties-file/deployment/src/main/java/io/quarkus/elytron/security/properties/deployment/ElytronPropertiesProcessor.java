@@ -68,8 +68,8 @@ class ElytronPropertiesProcessor {
             BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
         if (propertiesConfig.file.enabled) {
             PropertiesRealmConfig realmConfig = propertiesConfig.file;
-            log.debugf("Configuring from PropertiesRealmConfig, users=%s, roles=%s", realmConfig.getUsers(),
-                    realmConfig.getRoles());
+            log.debugf("Configuring from PropertiesRealmConfig, users=%s, roles=%s", realmConfig.users,
+                    realmConfig.roles);
             // Add the users/roles properties files resource names to build artifact
             resources.produce(new SubstrateResourceBuildItem(realmConfig.users, realmConfig.roles));
             // Have the runtime recorder create the LegacyPropertiesSecurityRealm and create the build item

@@ -13,7 +13,7 @@
 
     <artifactId>quarkus-reactive-pg-client-deployment</artifactId>
 
-    <name>Quarkus - Reactive Postgres Client - Deployment</name>
+    <name>Quarkus - Reactive PostgreSQL Client - Deployment</name>
 
     <dependencies>
         <dependency>

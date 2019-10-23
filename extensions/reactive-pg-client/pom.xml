@@ -14,7 +14,7 @@
     <artifactId>quarkus-reactive-pg-client-parent</artifactId>
     <packaging>pom</packaging>
 
-    <name>Quarkus - Reactive Postgres Client</name>
+    <name>Quarkus - Reactive PostgreSQL Client</name>
 
     <modules>
         <module>deployment</module>

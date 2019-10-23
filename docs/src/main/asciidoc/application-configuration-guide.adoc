@@ -212,7 +212,7 @@ This class could then be injected into the `GreetingResource` using the familiar
 [source,java]
 ----
 @Inject
-GreetingConfiguation greetingConfigation;
+GreetingConfiguration greetingConfiguration;
 ----
 
 Another alternative style provided by Quarkus is to create `GreetingConfiguration` as an interface like so:

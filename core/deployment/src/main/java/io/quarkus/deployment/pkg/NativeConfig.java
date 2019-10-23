@@ -47,7 +47,7 @@ public class NativeConfig {
     /**
      * If the HTTP url handler should be enabled, allowing you to do URL.openConnection() for HTTP URLs
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem(defaultValue = "true")
     public boolean enableHttpUrlHandler;
 
     /**
@@ -131,13 +131,21 @@ public class NativeConfig {
     public Optional<String> nativeImageXmx;
 
     /**
+     * If this build should be done using a container runtime. If this is set docker will be used by default,
+     * unless container-runtime is also set.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean containerBuild;
+
+    /**
      * The docker image to use to do the image build
      */
     @ConfigItem(defaultValue = "quay.io/quarkus/ubi-quarkus-native-image:19.2.1")
     public String builderImage;
 
     /**
-     * The container runtime (e.g. docker) that is used to do an image based build
+     * The container runtime (e.g. docker) that is used to do an image based build. If this is set then
+     * a container build is always done.
      */
     @ConfigItem
     public String containerRuntime = "";

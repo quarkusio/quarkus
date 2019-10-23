@@ -39,7 +39,7 @@ public abstract class ExecutableOutputOutcomeTestBase extends CreatorOutcomeTest
         final AugmentOutcome outcome = creator
                 .runTask(AugmentTask.builder().build());
 
-        final Path libDir = outcome.getThinJar().getLibraryDir();
+        final Path libDir = outcome.getJar().getLibraryDir();
         assertTrue(Files.isDirectory(libDir));
         final Set<String> actualLib = new HashSet<>();
         try (Stream<Path> stream = Files.list(libDir)) {
@@ -49,7 +49,7 @@ public abstract class ExecutableOutputOutcomeTestBase extends CreatorOutcomeTest
             }
         }
 
-        final Path runnerJar = outcome.getThinJar().getPath();
+        final Path runnerJar = outcome.getJar().getPath();
         assertTrue(Files.exists(runnerJar));
         try (JarFile jar = new JarFile(runnerJar.toFile())) {
             final Attributes mainAttrs = jar.getManifest().getMainAttributes();

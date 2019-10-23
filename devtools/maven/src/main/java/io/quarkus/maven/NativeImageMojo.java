@@ -40,14 +40,15 @@ import io.quarkus.creator.phase.augment.AugmentTask;
 /**
  * Legacy mojo for backwards compatibility reasons. This should not be used in new projects
  *
- * This has been replaced by setting quarkus.package.types=native in the configuration.
+ * This has been replaced by setting quarkus.package.type=native in the configuration.
  *
  * @deprecated
  */
 @Mojo(name = "native-image", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.RUNTIME)
+@Deprecated
 public class NativeImageMojo extends AbstractMojo {
 
-    protected static final String QUARKUS_PACKAGE_TYPES = "quarkus.package.types";
+    protected static final String QUARKUS_PACKAGE_TYPE = "quarkus.package.type";
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     protected MavenProject project;
 
@@ -286,8 +287,8 @@ public class NativeImageMojo extends AbstractMojo {
         projectProperties.putIfAbsent("quarkus.application.version", project.getVersion());
 
         Consumer<ConfigBuilder> config = createCustomConfig();
-        String old = System.getProperty(QUARKUS_PACKAGE_TYPES);
-        System.setProperty(QUARKUS_PACKAGE_TYPES, "native");
+        String old = System.getProperty(QUARKUS_PACKAGE_TYPE);
+        System.setProperty(QUARKUS_PACKAGE_TYPE, "native");
 
         try (CuratedApplicationCreator appCreationContext = creatorBuilder
                 .setWorkDir(buildDir.toPath())
@@ -304,9 +305,9 @@ public class NativeImageMojo extends AbstractMojo {
             throw new MojoExecutionException("Failed to generate a native image", e);
         } finally {
             if (old == null) {
-                System.clearProperty(QUARKUS_PACKAGE_TYPES);
+                System.clearProperty(QUARKUS_PACKAGE_TYPE);
             } else {
-                System.setProperty(QUARKUS_PACKAGE_TYPES, old);
+                System.setProperty(QUARKUS_PACKAGE_TYPE, old);
             }
         }
     }
@@ -316,7 +317,7 @@ public class NativeImageMojo extends AbstractMojo {
             @Override
             public void accept(ConfigBuilder configBuilder) {
                 InMemoryConfigSource type = new InMemoryConfigSource(Integer.MAX_VALUE, "Native Image Type")
-                        .add("quarkus.package.types", "native");
+                        .add("quarkus.package.type", "native");
                 configBuilder.withSources(type);
 
                 InMemoryConfigSource configs = new InMemoryConfigSource(0, "Native Image Maven Settings");

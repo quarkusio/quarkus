@@ -4,14 +4,20 @@ import java.nio.file.Path;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
-public final class ThinJarBuildItem extends SimpleBuildItem {
+public final class JarBuildItem extends SimpleBuildItem {
 
     private final Path path;
+    private final Path originalArtifact;
     private final Path libraryDir;
 
-    public ThinJarBuildItem(Path path, Path libraryDir) {
+    public JarBuildItem(Path path, Path originalArtifact, Path libraryDir) {
         this.path = path;
+        this.originalArtifact = originalArtifact;
         this.libraryDir = libraryDir;
+    }
+
+    public boolean isUberJar() {
+        return libraryDir == null;
     }
 
     public Path getPath() {
@@ -20,5 +26,9 @@ public final class ThinJarBuildItem extends SimpleBuildItem {
 
     public Path getLibraryDir() {
         return libraryDir;
+    }
+
+    public Path getOriginalArtifact() {
+        return originalArtifact;
     }
 }

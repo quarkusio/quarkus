@@ -34,9 +34,8 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
-import io.quarkus.deployment.pkg.builditem.ThinJarBuildItem;
-import io.quarkus.deployment.pkg.builditem.UberJarBuildItem;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
@@ -184,7 +183,7 @@ public class AugmentTask implements CuratedTask<AugmentOutcome> {
                 Thread.currentThread().setContextClassLoader(old);
             }
             return new AugmentOutcome(result.consumeMulti(ArtifactResultBuildItem.class),
-                    result.consumeOptional(ThinJarBuildItem.class), result.consumeOptional(UberJarBuildItem.class),
+                    result.consumeOptional(JarBuildItem.class),
                     result.consumeOptional(NativeImageBuildItem.class));
 
         } catch (Exception e) {

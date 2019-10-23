@@ -8,18 +8,22 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot
 public class PackageConfig {
 
-    public static final String THIN_JAR = "thin-jar";
-    public static final String UBER_JAR = "uber-jar";
+    public static final String JAR = "jar";
     public static final String NATIVE = "native";
 
     /**
-     * A list of requested output types. Even if some types are not explicitly requested as output
-     * they may still be built if they are needed.
+     * The requested output type.
      * 
-     * The default build in types are thin-jar, uber-jar and native
+     * The default built in types are jar and native
      */
-    @ConfigItem(defaultValue = THIN_JAR)
-    public List<String> types;
+    @ConfigItem(defaultValue = JAR)
+    public String type;
+
+    /**
+     * If the java runner should be packed as an uberjar
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean uberJar;
 
     /**
      * The entry point of the application. In most cases this should not be modified.

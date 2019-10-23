@@ -135,36 +135,21 @@ If you have generated the application from the previous tutorial, you can find i
 <profiles>
     <profile>
         <id>native</id>
-        <build>
-            <plugins>
-                <plugin>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-maven-plugin</artifactId>
-                    <version>${quarkus.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>native-image</goal>
-                            </goals>
-                            <configuration>
-                                <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </build>
+        <properties>
+            <quarkus.package.type>native</quarkus.package.type>
+        </properties>
     </profile>
 </profiles>
 ----
 
 [TIP]
 ====
-You can provide additional options for `native-image` command using `<additionalBuildArgs>foo,bar</additionalBuildArgs>`
-configuration element. Provided options have to be `,` separated.
+You can provide additional options for `native-image` command using `quarkus.native.additional-build-args=foo,bar` in `application.properties`. Provided options have to be `,` separated.
 ====
 
-We use a profile because, you will see very soon, packaging the native executable takes a _few_ seconds.
+We use a profile because, you will see very soon, packaging the native executable takes a _few_ minutes. You could
+just pass -Dquarkus.package.type=native as a property on the command line, however it is better to use a profile as
+this allows native image tests to also be run.
 
 Create a native executable using: `./mvnw package -Pnative`.
 
@@ -286,7 +271,7 @@ we will instruct the Maven build to produce an executable from inside a containe
 
 [source, shell]
 ----
-./mvnw package -Pnative -Dnative-image.docker-build=true
+./mvnw package -Pnative -Dquarkus.native.container-build=true
 ----
 
 [TIP]
@@ -295,10 +280,14 @@ You can also select the container runtime to use with:
 [source,shell]
 ----
 # Docker
-./mvnw package -Pnative -Dnative-image.container-runtime=docker
+./mvnw package -Pnative -Dquarkus.native.container-runtime=docker
 # Podman
-./mvnw package -Pnative -Dnative-image.container-runtime=podman
+./mvnw package -Pnative -Dquarkus.native.container-runtime=podman
 ----
+
+These are normal Quarkus config properties, so if you always want to build in a container
+it is recommended you add these to your `application.properties` so you do not need to specify them every time.
+
 ====
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
@@ -385,6 +374,15 @@ If you need SSL support in your native executable, you can easily include the ne
 
 Please see link:native-and-ssl-guide.html#working-with-containers[our Using SSL With Native Executables guide] for more information.
 ====
+
+== Configuring the Native Image
+
+There are a lot of different configuration options that can affect how the native image is generated.
+These are provided in `application.properties` the same as any other config property.
+
+The properties are shown below:
+
+include::{generated-dir}/config/quarkus-core-native-config.adoc[opts=optional]
 
 == What's next?
 

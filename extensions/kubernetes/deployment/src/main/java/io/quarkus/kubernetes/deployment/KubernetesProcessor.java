@@ -25,7 +25,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
@@ -33,7 +33,7 @@ import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 class KubernetesProcessor {
 
     @Inject
-    BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer;
+    BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer;
 
     @Inject
     BuildProducer<FeatureBuildItem> featureProducer;
@@ -77,10 +77,14 @@ class KubernetesProcessor {
         // write the generated resources to the filesystem
         final Map<String, String> generatedResourcesMap = session.close();
         for (Map.Entry<String, String> resourceEntry : generatedResourcesMap.entrySet()) {
+            String relativePath = resourceEntry.getKey().replace(root.toAbsolutePath() + "/", "kubernetes/");
+            if (relativePath.startsWith("kubernetes/.")) { // ignore some of Dekorate's internal files
+                continue;
+            }
             generatedResourceProducer.produce(
-                    new GeneratedResourceBuildItem(
+                    new GeneratedFileSystemResourceBuildItem(
                             // we need to make sure we are only passing the relative path to the build item
-                            resourceEntry.getKey().replace(root.toAbsolutePath() + "/", "META-INF/kubernetes/"),
+                            relativePath,
                             resourceEntry.getValue().getBytes("UTF-8")));
         }
 

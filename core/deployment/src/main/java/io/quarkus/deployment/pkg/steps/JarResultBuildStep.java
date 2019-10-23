@@ -46,6 +46,7 @@ import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedSubstrateClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
@@ -120,7 +121,8 @@ public class JarResultBuildStep {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             PackageConfig packageConfig,
             List<GeneratedClassBuildItem> generatedClasses,
-            List<GeneratedResourceBuildItem> generatedResources) throws Exception {
+            List<GeneratedResourceBuildItem> generatedResources,
+            List<GeneratedFileSystemResourceBuildItem> generatedFileSystemResources) throws Exception {
 
         //for uberjars we move the original jar, so there is only a single jar in the output directory
         Path standardJar = outputTargetBuildItem.getOutputDirectory().resolve(outputTargetBuildItem.getBaseName() + ".jar");
@@ -238,6 +240,8 @@ public class JarResultBuildStep {
 
         runnerJar.toFile().setReadable(true, false);
 
+        generateFileSystemResources(outputTargetBuildItem, generatedFileSystemResources);
+
         return new UberJarBuildItem(runnerJar, originalJar);
     }
 
@@ -248,7 +252,8 @@ public class JarResultBuildStep {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             PackageConfig packageConfig,
             List<GeneratedClassBuildItem> generatedClasses,
-            List<GeneratedResourceBuildItem> generatedResources) throws Exception {
+            List<GeneratedResourceBuildItem> generatedResources,
+            List<GeneratedFileSystemResourceBuildItem> generatedFileSystemResources) throws Exception {
 
         Path runnerJar = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
@@ -275,7 +280,21 @@ public class JarResultBuildStep {
 
         }
         runnerJar.toFile().setReadable(true, false);
+
+        generateFileSystemResources(outputTargetBuildItem, generatedFileSystemResources);
+
         return new ThinJarBuildItem(runnerJar, libDir);
+    }
+
+    private void generateFileSystemResources(OutputTargetBuildItem outputTargetBuildItem,
+            List<GeneratedFileSystemResourceBuildItem> generatedFileSystemResources) throws IOException {
+        for (GeneratedFileSystemResourceBuildItem generatedFileSystemResource : generatedFileSystemResources) {
+            Path outputPath = outputTargetBuildItem.getOutputDirectory().resolve(generatedFileSystemResource.getName());
+            Files.createDirectories(outputPath.getParent());
+            try (OutputStream out = Files.newOutputStream(outputPath)) {
+                out.write(generatedFileSystemResource.getData());
+            }
+        }
     }
 
     /**

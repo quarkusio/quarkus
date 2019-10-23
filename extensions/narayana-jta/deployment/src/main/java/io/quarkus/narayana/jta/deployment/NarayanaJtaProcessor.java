@@ -45,8 +45,7 @@ class NarayanaJtaProcessor {
 
     @BuildStep()
     public SubstrateSystemPropertyBuildItem substrateSystemPropertyBuildItem() {
-        return new SubstrateSystemPropertyBuildItem("CoordinatorEnvironmentBean.transactionStatusManagerEnable",
-                String.valueOf(transactions.enableTransactionStatusManager));
+        return new SubstrateSystemPropertyBuildItem("CoordinatorEnvironmentBean.transactionStatusManagerEnable", "false");
     }
 
     /**
@@ -80,7 +79,7 @@ class NarayanaJtaProcessor {
         Properties defaultProperties = PropertiesFactory.getDefaultProperties();
         recorder.setDefaultProperties(defaultProperties);
         // This must be done before setNodeName as the code in setNodeName will create a TSM based on the value of this property
-        recorder.setTransactionStatusManagerEnabled(transactions);
+        recorder.disableTransactionStatusManager();
         recorder.setNodeName(transactions);
         recorder.setDefaultTimeout(transactions);
     }

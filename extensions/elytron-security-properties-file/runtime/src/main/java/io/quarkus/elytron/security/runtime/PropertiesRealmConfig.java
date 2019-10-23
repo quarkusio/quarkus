@@ -52,38 +52,6 @@ public class PropertiesRealmConfig {
         return "{enabled,users,roles,realm-name,plain-text}";
     }
 
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public String getUsers() {
-        return users;
-    }
-
-    public void setUsers(String users) {
-        this.users = users;
-    }
-
-    public String getRoles() {
-        return roles;
-    }
-
-    public void setRoles(String roles) {
-        this.roles = roles;
-    }
-
-    public String getRealmName() {
-        return realmName;
-    }
-
-    public void setRealmName(String realmName) {
-        this.realmName = realmName;
-    }
-
     @Override
     public String toString() {
         return "PropertiesRealmConfig{" +
@@ -91,6 +59,7 @@ public class PropertiesRealmConfig {
                 ", enabled=" + enabled +
                 ", users='" + users + '\'' +
                 ", roles='" + roles + '\'' +
+                ", plainText=" + plainText +
                 '}';
     }
 }

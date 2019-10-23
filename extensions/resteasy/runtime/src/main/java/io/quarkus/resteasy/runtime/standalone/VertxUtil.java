@@ -44,6 +44,11 @@ public class VertxUtil {
             uriString = protocol + "://" + host + uri;
         }
 
+        // ResteasyUriInfo expects a context path to start with a "/" character
+        if (!contextPath.startsWith("/")) {
+            contextPath = "/" + contextPath;
+        }
+
         return new ResteasyUriInfo(uriString, contextPath);
     }
 

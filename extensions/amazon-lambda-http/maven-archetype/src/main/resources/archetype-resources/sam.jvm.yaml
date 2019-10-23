@@ -1,0 +1,54 @@
+#set($resourceName = $artifactId)
+#macro(replaceChar $originalName, $char)
+#if($originalName.contains($char))
+#set($tokens = $originalName.split($char))
+#set($newResourceName = "")
+#foreach($token in $tokens)
+#set($newResourceName = $newResourceName + $token.substring(0,1).toUpperCase() + $token.substring(1).toLowerCase())
+#end
+  ${newResourceName}
+  #else
+  #set($newResourceName = $originalName.substring(0,1).toUpperCase() + $originalName.substring(1))
+  ${newResourceName}
+  #end
+  #end
+  #set($resourceName = "#replaceChar($resourceName, '-')")
+  #set($resourceName = "#replaceChar($resourceName, '.')")
+  #set($resourceName = $resourceName.replaceAll("\n", "").trim())
+  #macro(regionVar)
+  AWS::Region
+#end
+#set($awsRegion = "#regionVar()")
+#set($awsRegion = $awsRegion.replaceAll("\n", "").trim())
+AWSTemplateFormatVersion: '2010-09-09'
+  Transform: AWS::Serverless-2016-10-31
+  Description: AWS Serverless Quarkus HTTP - ${groupId}::${artifactId}
+  Globals:
+    Api:
+      EndpointConfiguration: REGIONAL
+      BinaryMediaTypes:
+        - "*/*"
+
+  Resources:
+    ${resourceName}Function:
+      Type: AWS::Serverless::Function
+      Properties:
+        Handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
+        Runtime: java8
+        CodeUri: target/${artifactId}-${version}-runner.jar
+        MemorySize: 512
+        Policies: AWSLambdaBasicExecutionRole
+        Timeout: 15
+        Events:
+          GetResource:
+            Type: Api
+            Properties:
+              Path: /{proxy+}
+              Method: any
+
+  Outputs:
+    ${resourceName}Api:
+      Description: URL for application
+      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${${awsRegion}}.amazonaws.com/Prod/'
+      Export:
+        Name: ${resourceName}Api

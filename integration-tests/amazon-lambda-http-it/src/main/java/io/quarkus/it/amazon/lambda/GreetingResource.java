@@ -33,4 +33,11 @@ public class GreetingResource {
         byte[] rtn = { 4, 5, 6 };
         return rtn;
     }
+
+    @POST
+    @Path("empty")
+    public void empty() {
+
+    }
+
 }

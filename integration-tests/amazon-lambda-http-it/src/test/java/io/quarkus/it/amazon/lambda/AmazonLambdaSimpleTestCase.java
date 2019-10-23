@@ -17,12 +17,23 @@ public class AmazonLambdaSimpleTestCase {
 
     @Test
     public void testGetText() throws Exception {
+        testGetText("/servlet/hello");
+        testGetText("/hello");
+    }
+
+    private String body(AwsProxyResponse response) {
+        if (!response.isBase64Encoded())
+            return response.getBody();
+        return new String(Base64.decodeBase64(response.getBody()));
+    }
+
+    private void testGetText(String path) {
         AwsProxyRequest request = new AwsProxyRequest();
         request.setHttpMethod("GET");
-        request.setPath("/hello");
+        request.setPath(path);
         AwsProxyResponse out = LambdaClient.invoke(AwsProxyResponse.class, request);
         Assertions.assertEquals(out.getStatusCode(), 200);
-        Assertions.assertEquals(out.getBody(), "hello");
+        Assertions.assertEquals(body(out), "hello");
         Assertions.assertTrue(out.getMultiValueHeaders().getFirst("Content-Type").startsWith("text/plain"));
     }
 
@@ -37,17 +48,21 @@ public class AmazonLambdaSimpleTestCase {
 
     @Test
     public void testPostText() throws Exception {
+        testPostText("/hello");
+        testPostText("/servlet/hello");
+    }
+
+    private void testPostText(String path) {
         AwsProxyRequest request = new AwsProxyRequest();
         request.setHttpMethod("POST");
         request.setMultiValueHeaders(new Headers());
         request.getMultiValueHeaders().add("Content-Type", "text/plain");
-        request.setPath("/hello");
+        request.setPath(path);
         request.setBody("Bill");
         AwsProxyResponse out = LambdaClient.invoke(AwsProxyResponse.class, request);
         Assertions.assertEquals(out.getStatusCode(), 200);
-        Assertions.assertEquals(out.getBody(), "hello Bill");
+        Assertions.assertEquals(body(out), "hello Bill");
         Assertions.assertTrue(out.getMultiValueHeaders().getFirst("Content-Type").startsWith("text/plain"));
-
     }
 
     @Test
@@ -69,6 +84,17 @@ public class AmazonLambdaSimpleTestCase {
         Assertions.assertEquals(rtn[0], 4);
         Assertions.assertEquals(rtn[1], 5);
         Assertions.assertEquals(rtn[2], 6);
+
+    }
+
+    @Test
+    public void testPostEmpty() throws Exception {
+        AwsProxyRequest request = new AwsProxyRequest();
+        request.setHttpMethod("POST");
+        request.setMultiValueHeaders(new Headers());
+        request.setPath("/hello/empty");
+        AwsProxyResponse out = LambdaClient.invoke(AwsProxyResponse.class, request);
+        Assertions.assertEquals(out.getStatusCode(), 204);
 
     }
 

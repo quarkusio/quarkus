@@ -125,29 +125,19 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                 }
                 if (msg instanceof HttpContent) {
                     HttpContent content = (HttpContent) msg;
-                    if (baos == null) {
+                    int readable = content.content().readableBytes();
+                    if (baos == null && readable > 0) {
                         // todo what is right size?
                         baos = new ByteArrayOutputStream(500);
                     }
-                    int readable = content.content().readableBytes();
                     for (int i = 0; i < readable; i++) {
                         baos.write(content.content().readByte());
                     }
                 }
                 if (msg instanceof LastHttpContent) {
-                    String contentType = responseBuilder.getMultiValueHeaders().getFirst("Content-Type");
-                    //TODO: big hack, we should handle charset properly, base64 is always safe though
-                    boolean requiresEncoding = true;
-                    if (contentType != null) {
-                        String ct = contentType.toLowerCase();
-                        requiresEncoding = !ct.contains("charset=utf-8") && !ct.contains("json");
-                    }
-                    if (requiresEncoding) {
+                    if (baos != null) {
                         responseBuilder.setBase64Encoded(true);
                         responseBuilder.setBody(Base64.getMimeEncoder().encodeToString(baos.toByteArray()));
-                    } else {
-                        responseBuilder.setBase64Encoded(false);
-                        responseBuilder.setBody(new String(baos.toByteArray(), StandardCharsets.UTF_8));
                     }
                     return responseBuilder;
                 }

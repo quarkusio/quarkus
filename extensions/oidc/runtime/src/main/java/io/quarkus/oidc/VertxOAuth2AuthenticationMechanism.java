@@ -24,16 +24,6 @@ public class VertxOAuth2AuthenticationMechanism implements HttpAuthenticationMec
 
     private volatile String authServerURI;
     private volatile OAuth2Auth auth;
-    private volatile OidcConfig config;
-
-    public OidcConfig getConfig() {
-        return config;
-    }
-
-    public VertxOAuth2AuthenticationMechanism setConfig(OidcConfig config) {
-        this.config = config;
-        return this;
-    }
 
     public String getAuthServerURI() {
         return authServerURI;

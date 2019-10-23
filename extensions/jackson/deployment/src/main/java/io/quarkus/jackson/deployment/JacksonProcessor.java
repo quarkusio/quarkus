@@ -1,6 +1,9 @@
 package io.quarkus.jackson.deployment;
 
-import java.util.Collection;
+import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+import static org.jboss.jandex.AnnotationTarget.Kind.FIELD;
+import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -20,6 +23,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -41,6 +45,7 @@ import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 public class JacksonProcessor {
 
     private static final DotName JSON_DESERIALIZE = DotName.createSimple(JsonDeserialize.class.getName());
+    private static final DotName JSON_SERIALIZE = DotName.createSimple(JsonSerialize.class.getName());
     private static final DotName BUILDER_VOID = DotName.createSimple(Void.class.getName());
 
     @Inject
@@ -73,20 +78,39 @@ public class JacksonProcessor {
             ignoredDotNames.add(ignoreJsonDeserializeClassBuildItem.getDotName());
         }
 
-        Collection<AnnotationInstance> pojoBuilderInstances = index.getAnnotations(JSON_DESERIALIZE);
-        for (AnnotationInstance pojoBuilderInstance : pojoBuilderInstances) {
-            if (AnnotationTarget.Kind.CLASS.equals(pojoBuilderInstance.target().kind())) {
-                DotName dotName = pojoBuilderInstance.target().asClass().name();
+        // handle the various @JsonDeserialize cases
+        for (AnnotationInstance deserializeInstance : index.getAnnotations(JSON_DESERIALIZE)) {
+            AnnotationTarget annotationTarget = deserializeInstance.target();
+            if (CLASS.equals(annotationTarget.kind())) {
+                DotName dotName = annotationTarget.asClass().name();
                 if (!ignoredDotNames.contains(dotName)) {
                     addReflectiveHierarchyClass(dotName);
                 }
 
-                AnnotationValue annotationValue = pojoBuilderInstance.value("builder");
+                AnnotationValue annotationValue = deserializeInstance.value("builder");
                 if (null != annotationValue && AnnotationValue.Kind.CLASS.equals(annotationValue.kind())) {
                     DotName builderClassName = annotationValue.asClass().name();
                     if (!BUILDER_VOID.equals(builderClassName)) {
                         addReflectiveHierarchyClass(builderClassName);
                     }
+                }
+            } else if (FIELD.equals(annotationTarget.kind()) || METHOD.equals(annotationTarget.kind())) {
+                AnnotationValue usingValue = deserializeInstance.value("using");
+                if (usingValue != null) {
+                    // the Deserializers are constructed internally by Jackson using a no-args constructor
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, usingValue.asClass().toString()));
+                }
+            }
+        }
+
+        // handle the various @JsonSerialize cases
+        for (AnnotationInstance serializeInstance : index.getAnnotations(JSON_SERIALIZE)) {
+            AnnotationTarget annotationTarget = serializeInstance.target();
+            if (FIELD.equals(annotationTarget.kind()) || METHOD.equals(annotationTarget.kind())) {
+                AnnotationValue usingValue = serializeInstance.value("using");
+                if (usingValue != null) {
+                    // the Deserializers are constructed internally by Jackson using a no-args constructor
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, usingValue.asClass().toString()));
                 }
             }
         }

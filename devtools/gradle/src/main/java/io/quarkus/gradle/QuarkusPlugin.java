@@ -60,11 +60,13 @@ public class QuarkusPlugin implements Plugin<Project> {
                     quarkusBuild.dependsOn(classesTask);
                 });
 
-        Task buildNative = tasks.create("buildNative", QuarkusNative.class).dependsOn(quarkusBuild);
+        Task buildNative = tasks.create("buildNative", QuarkusNative.class);
 
         // set up the source set for the testNative
         JavaPluginConvention javaPlugin = project.getConvention().findPlugin(JavaPluginConvention.class);
         if (javaPlugin != null) {
+            buildNative.dependsOn(tasks.getByName(BasePlugin.ASSEMBLE_TASK_NAME));
+
             SourceSetContainer sourceSets = javaPlugin.getSourceSets();
             SourceSet nativeTestSourceSet = sourceSets.create("native-test"); // this name has to be the same as the directory in which the tests reside
             SourceSetOutput mainSourceSetOutput = sourceSets.getByName("main").getOutput();

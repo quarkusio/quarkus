@@ -13,6 +13,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -51,6 +52,9 @@ public class HttpSecurityRecorder {
                             }
                             return null;
                         }
+                        if (event.response().ended()) {
+                            return null;
+                        }
                         if (identity != null) {
                             event.setUser(new QuarkusHttpUser(identity));
                         }
@@ -84,5 +88,10 @@ public class HttpSecurityRecorder {
                 container.instance(HttpAuthorizer.class).init(permissions, policies);
             }
         };
+    }
+
+    public void setupFormAuth(BeanContainer container, HttpConfiguration httpConfiguration,
+            HttpBuildTimeConfig buildTimeConfig) {
+        container.instance(FormAuthenticationMechanism.class).init(httpConfiguration, buildTimeConfig);
     }
 }

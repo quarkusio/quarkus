@@ -65,22 +65,25 @@ public class UnauthorizedExceptionMapper implements ExceptionMapper<Unauthorized
                 }
             }
         }
-        HttpAuthenticator authenticator = identity.getAttribute(HttpAuthenticator.class.getName());
         RoutingContext context = ResteasyContext.getContextData(RoutingContext.class);
-        if (authenticator != null && context != null) {
-            try {
-                ChallengeData challengeData = authenticator.getChallenge(context)
-                        .toCompletableFuture()
-                        .get();
-                return Response.status(challengeData.status)
-                        .header(challengeData.headerName.toString(), challengeData.headerContent)
-                        .build();
-            } catch (InterruptedException | ExecutionException e) {
-                log.error("Failed to read challenge data for unauthorized response", e);
-                return Response.status(401).entity("Not authorized").build();
+        if (context != null) {
+            HttpAuthenticator authenticator = context.get(HttpAuthenticator.class.getName());
+            if (authenticator != null) {
+                try {
+                    ChallengeData challengeData = authenticator.getChallenge(context)
+                            .toCompletableFuture()
+                            .get();
+                    Response.ResponseBuilder status = Response.status(challengeData.status);
+                    if (challengeData.headerName != null) {
+                        status.header(challengeData.headerName.toString(), challengeData.headerContent);
+                    }
+                    return status.build();
+                } catch (InterruptedException | ExecutionException e) {
+                    log.error("Failed to read challenge data for unauthorized response", e);
+                    return Response.status(401).entity("Not authorized").build();
+                }
             }
-        } else {
-            return Response.status(401).entity("Not authorized").build();
         }
+        return Response.status(401).entity("Not authorized").build();
     }
 }

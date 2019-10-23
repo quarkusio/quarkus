@@ -29,14 +29,14 @@ public class DenyAllJaxRsTest {
     @Test
     public void shouldDenyUnannotated() {
         String path = "/unsecured/defaultSecurity";
-        assertStatus(path, 401, IdentityMock.ANONYMOUS);
+        assertStatus(path, 403, IdentityMock.ANONYMOUS);
         assertStatus(path, 403, IdentityMock.USER, IdentityMock.ADMIN);
     }
 
     @Test
     public void shouldDenyDenyAllMethod() {
         String path = "/unsecured/denyAll";
-        assertStatus(path, 401, IdentityMock.ANONYMOUS);
+        assertStatus(path, 403, IdentityMock.ANONYMOUS);
         assertStatus(path, 403, IdentityMock.USER, IdentityMock.ADMIN);
     }
 
@@ -48,7 +48,7 @@ public class DenyAllJaxRsTest {
     @Test
     public void shouldDenySubResource() {
         String path = "/unsecured/sub/subMethod";
-        assertStatus(path, 401, IdentityMock.ANONYMOUS);
+        assertStatus(path, 403, IdentityMock.ANONYMOUS);
         assertStatus(path, 403, IdentityMock.USER, IdentityMock.ADMIN);
     }
 

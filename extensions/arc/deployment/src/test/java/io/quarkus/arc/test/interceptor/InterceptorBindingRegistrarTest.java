@@ -7,8 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Priority;
 import javax.inject.Inject;
@@ -41,8 +42,8 @@ public class InterceptorBindingRegistrarTest {
                     public void execute(BuildContext context) {
                         context.produce(new InterceptorBindingRegistrarBuildItem(new InterceptorBindingRegistrar() {
                             @Override
-                            public Collection<DotName> registerAdditionalBindings() {
-                                return Collections.singleton(DotName.createSimple(NotAnInterceptorBinding.class.getName()));
+                            public Map<DotName, Set<String>> registerAdditionalBindings() {
+                                return Collections.singletonMap(DotName.createSimple(NotAnInterceptorBinding.class.getName()), Collections.emptySet());
                             }
 
                         }));

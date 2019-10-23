@@ -193,11 +193,9 @@ public abstract class AbstractDataSourceProducer {
         }
 
         // Explicit reference to bypass reflection need of the ServiceLoader used by AgroalDataSource#from
-        AgroalDataSource dataSource = new io.agroal.pool.DataSource(dataSourceConfiguration.get());
-
-        if (log.isDebugEnabled()) {
-            log.debug("Started data source " + dataSourceName + " connected to " + url);
-        }
+        AgroalDataSource dataSource = new io.agroal.pool.DataSource(dataSourceConfiguration.get(),
+                new AgroalListener(dataSourceName));
+        log.debugv("Started data source {0} connected to {1}", dataSource, url);
 
         this.dataSources.add(dataSource);
 

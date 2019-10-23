@@ -157,7 +157,7 @@ public class JavaDocConfigDescriptionParserTest {
     @Test
     public void parseJavaDocWithLinkTag() {
         String javaDoc = "this is a <a href='http://link.com'>hello</a> link";
-        String expectedOutput = "this is a http://link.com[hello] link";
+        String expectedOutput = "this is a link:http://link.com[hello] link";
         String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);

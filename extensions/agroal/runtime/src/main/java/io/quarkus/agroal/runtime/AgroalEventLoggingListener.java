@@ -62,6 +62,11 @@ final class AgroalEventLoggingListener implements AgroalDataSourceListener {
     }
 
     @Override
+    public void onInfo(String message) {
+        log.infov("{0}: {1}", datasourceName, message);
+    }
+
+    @Override
     public void onWarning(Throwable throwable) {
         log.warnv("{0}: {1}", datasourceName, throwable.getMessage());
         log.debug("Cause: ", throwable);

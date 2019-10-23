@@ -83,7 +83,7 @@ to your project by running the following command in your project base directory.
 
 [source,bash]
 ----
-mvn quarkus:add-extension -Dextensions="tika,resteasy"
+./mvnw quarkus:add-extension -Dextensions="tika,resteasy"
 ----
 
 This will add the following to your pom.xml:
@@ -187,7 +187,7 @@ and you should see output similar to:
 .quarkus:dev Output
 [source,shell]
 ----
-$ mvn clean compile quarkus:dev
+$ ./mvnw clean compile quarkus:dev
 [INFO] Scanning for projects...
 [INFO]
 INFO] --------------------< org.acme.example:apache-tika >--------------------

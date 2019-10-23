@@ -73,7 +73,7 @@ If you have an already created project, the `reactive-pg-client` extension can b
 
 [source,shell]
 ----
-mvn quarkus:add-extension -Dextensions="reactive-pg-client"
+./mvnw quarkus:add-extension -Dextensions="reactive-pg-client"
 ----
 
 Otherwise, you can manually add this to the dependencies section of your `pom.xml` file:
@@ -96,7 +96,7 @@ Consequently, you also need to add the `quarkus-resteasy-jsonb` extension:
 
 [source,shell]
 ----
-mvn quarkus:add-extension -Dextensions="resteasy-jsonb"
+./mvnw quarkus:add-extension -Dextensions="resteasy-jsonb"
 ----
 
 If you prefer not to use the command line, manually add this to the dependencies section of your `pom.xml` file:
@@ -264,7 +264,7 @@ Now start Quarkus in `dev` mode with:
 
 [source, shell]
 ----
-mvn compile quarkus:dev
+./mvnw compile quarkus:dev
 ----
 
 Lastly, open your browser and navigate to http://localhost:8080/fruits, you should see:

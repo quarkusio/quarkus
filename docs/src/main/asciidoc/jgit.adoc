@@ -18,7 +18,7 @@ to your project by running the following command in your project base directory.
 
 [source,bash]
 ----
-mvn quarkus:add-extension -Dextensions="jgit"
+./mvnw quarkus:add-extension -Dextensions="jgit"
 ----
 
 This will add the following to your pom.xml:

@@ -66,7 +66,7 @@ Importing the `smallrye-health` extension directly exposes three REST endpoints:
  
 To check that the `smallrye-health` extension is working as expected:
 
-* start your Quarkus application with `mvn compile quarkus:dev`
+* start your Quarkus application with `./mvnw compile quarkus:dev`
 * access the `http://localhost:8080/health/live` endpoint using your browser or 
 `curl http://localhost:8080/health/live`
 

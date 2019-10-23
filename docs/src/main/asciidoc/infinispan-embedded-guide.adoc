@@ -16,7 +16,7 @@ After you set up your Quarkus project, run the following command from the base d
 
 [source]
 ----
-mvn quarkus:add-extension -Dextensions="infinispan-embedded"
+./mvnw quarkus:add-extension -Dextensions="infinispan-embedded"
 ----
 
 The command adds the following dependency to your `pom.xml`:

@@ -1,10 +1,11 @@
 package io.quarkus.vertx.http;
 
+import static io.restassured.RestAssured.given;
+import static io.restassured.config.RedirectConfig.redirectConfig;
+import static io.restassured.config.RestAssuredConfig.newConfig;
 import static org.hamcrest.core.Is.is;
 
 import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
@@ -14,13 +15,11 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
-import io.restassured.response.ValidatableResponse;
 import io.vertx.ext.web.Router;
 
 public class DisableHttpPortTest {
@@ -30,7 +29,8 @@ public class DisableHttpPortTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(MyBean.class)
                     .addAsResource(new File("src/test/resources/conf/disable-http.conf"), "application.properties")
-                    .addAsResource(new File("src/test/resources/conf/server-keystore.jks"), "server-keystore.jks"));
+                    .addAsResource(new File("src/test/resources/conf/server-key.pem"), "server-key.pem")
+                    .addAsResource(new File("src/test/resources/conf/server-cert.pem"), "server-cert.pem"));
 
     @BeforeAll
     public static void setupRestAssured() {
@@ -42,13 +42,11 @@ public class DisableHttpPortTest {
         RestAssured.reset();
     }
 
-    @Disabled
     @Test
-    public void testDisabledHttpPortForwardsRequest() throws MalformedURLException {
-        URL url = new URL("http://localhost:8081/ssl");
-        RestAssured.config().getRedirectConfig().followRedirects(false);
-        ValidatableResponse response = RestAssured.get(url).then().statusCode(301).body(is("ssl"));
-        response.header("Location", "https://localhost:8443/ssl");
+    public void testDisabledHttpPortForwardsRequest() {
+        given().config(newConfig().redirect(redirectConfig().followRedirects(false)))
+                .get("/ssl").then().statusCode(301)
+                .header("Location", is("https://localhost:8444/ssl"));
     }
 
     @ApplicationScoped

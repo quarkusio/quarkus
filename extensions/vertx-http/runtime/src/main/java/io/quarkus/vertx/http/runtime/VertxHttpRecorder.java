@@ -567,7 +567,7 @@ public class VertxHttpRecorder {
 
         @Override
         public void start(Future<Void> startFuture) {
-            if (httpOptions == null && httpsOptions == null) {
+            if (redirectHttp && httpsOptions == null) {
                 throw new RuntimeException("No HTTPS options specified and HTTP has been disabled");
             }
 
@@ -582,14 +582,12 @@ public class VertxHttpRecorder {
                             req.response().setStatusCode(HttpResponseStatus.NOT_FOUND.code()).end();
                         } else {
                             int includedPort = host.indexOf(":");
-                            int port = 80;
                             if (includedPort != -1) {
-                                port = Integer.parseInt(host.substring(includedPort + 1));
                                 host = host.substring(0, includedPort);
                             }
                             req.response()
                                     .setStatusCode(301)
-                                    .putHeader("Location", "https://" + host + ":" + port + req.uri())
+                                    .putHeader("Location", "https://" + host + ":" + httpsOptions.getPort() + req.uri())
                                     .end();
                         }
                     } catch (Exception e) {

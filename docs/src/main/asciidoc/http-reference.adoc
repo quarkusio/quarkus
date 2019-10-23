@@ -114,10 +114,10 @@ Add the following property to your `application.properties`:
 
 [source, properties]
 ----
-quarkus.http.port-enabled=false
+quarkus.http.redirect-insecure-requests=true
 ----
 
-_Note: if you disable the HTTP port and have not added a SSL certificate or keystore, your server will not start!_
+_Note: if you set this option and have not added a SSL certificate or keystore, your server will not start!_
 
 == CORS filter
 

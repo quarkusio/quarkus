@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>quarkus-amazon-lambda-http-maven</artifactId>
+    <name>Quarkus - Amazon Lambda HTTP - Maven plugin</name>
     <packaging>maven-plugin</packaging>
 
     <dependencies>

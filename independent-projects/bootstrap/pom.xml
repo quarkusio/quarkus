@@ -33,6 +33,7 @@
         <maven-wagon.version>3.0.0</maven-wagon.version>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
+        <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
     </properties>
     <modules>
         <module>core</module>
@@ -85,7 +86,17 @@
                         <groupId>org.sonatype.plexus</groupId>
                         <artifactId>plexus-cipher</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>javax.annotation</groupId>
+                        <artifactId>jsr250-api</artifactId>
+                    </exclusion>
                 </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>javax.annotation</groupId>
+                <artifactId>javax.annotation-api</artifactId>
+                <version>${javax.annotation-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>

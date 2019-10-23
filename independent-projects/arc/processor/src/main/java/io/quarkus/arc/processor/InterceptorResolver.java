@@ -76,9 +76,12 @@ public class InterceptorResolver {
         if (candidate.name().equals(interceptorBinding.name())) {
             // Must have the same annotation member value for each member which is not annotated @Nonbinding
             boolean matches = true;
+            Set<String> nonBindingFields = beanDeployment.getNonBindingFields(interceptorBinding.name());
             for (AnnotationValue value : candidate.valuesWithDefaults(beanDeployment.getIndex())) {
-                if (!interceptorBindingClass.method(value.name()).hasAnnotation(DotNames.NONBINDING)
-                        && !value.equals(interceptorBinding.value(value.name()))) {
+                String annotationField = value.name();
+                if (!interceptorBindingClass.method(annotationField).hasAnnotation(DotNames.NONBINDING)
+                        && !nonBindingFields.contains(annotationField)
+                        && !value.equals(interceptorBinding.value(annotationField))) {
                     matches = false;
                     break;
                 }

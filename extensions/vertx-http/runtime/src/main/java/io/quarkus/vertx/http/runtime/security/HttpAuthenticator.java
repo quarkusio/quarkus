@@ -44,13 +44,13 @@ public class HttpAuthenticator {
                 //TODO: config
                 mechanism = new BasicAuthenticationMechanism("Quarkus");
             } else {
-                mechanism = null;
+                mechanism = new NoAuthenticationMechanism();
             }
         }
     }
 
     public HttpAuthenticator(HttpAuthenticationMechanism mechanism) {
-        this.mechanism = mechanism;
+        this.mechanism = mechanism == null ? new NoAuthenticationMechanism() : mechanism;
     }
 
     /**
@@ -63,9 +63,6 @@ public class HttpAuthenticator {
      * If no credentials are present it will resolve to null.
      */
     public CompletionStage<SecurityIdentity> attemptAuthentication(RoutingContext routingContext) {
-        if (mechanism == null) {
-            return CompletableFuture.completedFuture(null);
-        }
         return mechanism.authenticate(routingContext, identityProviderManager);
     }
 
@@ -78,12 +75,27 @@ public class HttpAuthenticator {
         if (closeTask == null) {
             closeTask = NoopCloseTask.INSTANCE;
         }
-        if (mechanism == null) {
-            routingContext.response().setStatusCode(HttpResponseStatus.FORBIDDEN.code());
-            closeTask.run();
+        return mechanism.sendChallenge(routingContext).thenRun(closeTask);
+    }
+
+    public CompletionStage<ChallengeData> getChallenge(RoutingContext context) {
+        return mechanism.getChallenge(context);
+    }
+
+    static class NoAuthenticationMechanism implements HttpAuthenticationMechanism {
+
+        @Override
+        public CompletionStage<SecurityIdentity> authenticate(RoutingContext context,
+                IdentityProviderManager identityProviderManager) {
             return CompletableFuture.completedFuture(null);
         }
-        return mechanism.sendChallenge(routingContext).thenRun(closeTask);
+
+        @Override
+        public CompletionStage<ChallengeData> getChallenge(RoutingContext context) {
+            ChallengeData challengeData = new ChallengeData(HttpResponseStatus.FORBIDDEN.code(), null, null);
+            return CompletableFuture.completedFuture(challengeData);
+        }
+
     }
 
     static class NoopCloseTask implements Runnable {

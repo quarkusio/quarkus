@@ -13,6 +13,7 @@ import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
+import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.vertx.ext.web.RoutingContext;
 
@@ -49,10 +50,11 @@ public class OAuth2AuthMechanism implements HttpAuthenticationMechanism {
     }
 
     @Override
-    public CompletionStage<Boolean> sendChallenge(RoutingContext context) {
-        context.response().headers().set(HttpHeaderNames.WWW_AUTHENTICATE, "Bearer {token}");
-        context.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code());
-        log.debugf("Sending Bearer {token} challenge for %s", context);
-        return CompletableFuture.completedFuture(true);
+    public CompletionStage<ChallengeData> getChallenge(RoutingContext context) {
+        ChallengeData result = new ChallengeData(
+                HttpResponseStatus.UNAUTHORIZED.code(),
+                HttpHeaderNames.WWW_AUTHENTICATE,
+                "Bearer {token}");
+        return CompletableFuture.completedFuture(result);
     }
 }

@@ -10,14 +10,23 @@ import java.util.Set;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.security.runtime.IdentityProviderManagerCreator;
+import io.quarkus.security.runtime.SecurityBuildTimeConfig;
 import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.quarkus.security.runtime.SecurityIdentityProxy;
+import io.quarkus.security.runtime.interceptor.AuthenticatedInterceptor;
+import io.quarkus.security.runtime.interceptor.DenyAllInterceptor;
+import io.quarkus.security.runtime.interceptor.PermitAllInterceptor;
+import io.quarkus.security.runtime.interceptor.RolesAllowedInterceptor;
+import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
+import io.quarkus.security.runtime.interceptor.SecurityHandler;
 
 public class SecurityProcessor {
 
@@ -55,6 +64,24 @@ public class SecurityProcessor {
                 log.debugf("Register JCA class: %s", className);
             }
         }
+    }
+
+    @BuildStep
+    void transformSecurityAnnotations(BuildProducer<AnnotationsTransformerBuildItem> transformers,
+            SecurityBuildTimeConfig config) {
+        if (config.denyUnannotated) {
+            transformers.produce(new AnnotationsTransformerBuildItem(new DenyingUnannotatedTransformer()));
+        }
+    }
+
+    @BuildStep
+    void registerSecurityInterceptors(BuildProducer<InterceptorBindingRegistrarBuildItem> registrars,
+            BuildProducer<AdditionalBeanBuildItem> beans) {
+        registrars.produce(new InterceptorBindingRegistrarBuildItem(new SecurityAnnotationsRegistrar()));
+        Class[] interceptors = { AuthenticatedInterceptor.class, DenyAllInterceptor.class, PermitAllInterceptor.class,
+                RolesAllowedInterceptor.class };
+        beans.produce(new AdditionalBeanBuildItem(interceptors));
+        beans.produce(new AdditionalBeanBuildItem(SecurityHandler.class, SecurityConstrainer.class));
     }
 
     /**

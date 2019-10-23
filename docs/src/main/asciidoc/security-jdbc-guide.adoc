@@ -245,7 +245,7 @@ HTTP/1.1 403 Forbidden
 Content-Length: 34
 Content-Type: text/html;charset=UTF-8
 
-Access forbidden: role not allowed%
+Forbidden%
 ----
 
 Finally, using the user `user` works and the security context contains the principal details (username for instance).

@@ -52,6 +52,7 @@ public class ResteasyFilter extends Filter30Dispatcher {
         @Override
         public void sendError(int sc, String msg) throws IOException {
             if (sc == 404 || sc == 403) {
+
                 servletContainerDispatcher.service(request.getMethod(), request, response, true);
             } else {
                 super.sendError(sc, msg);

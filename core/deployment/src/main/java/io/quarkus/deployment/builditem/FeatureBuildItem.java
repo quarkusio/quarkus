@@ -17,6 +17,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String ELASTICSEARCH_REST_CLIENT = "elasticsearch-rest-client";
     public static final String FLYWAY = "flyway";
     public static final String HIBERNATE_ORM = "hibernate-orm";
+    public static final String HIBERNATE_ORM_PANACHE = "hibernate-orm-panache";
     public static final String HIBERNATE_VALIDATOR = "hibernate-validator";
     public static final String HIBERNATE_SEARCH_ELASTICSEARCH = "hibernate-search-elasticsearch";
     public static final String INFINISPAN_CLIENT = "infinispan-client";

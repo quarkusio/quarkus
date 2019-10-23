@@ -19,6 +19,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
@@ -39,6 +40,11 @@ public final class PanacheResourceProcessor {
 
     private static final Set<DotName> UNREMOVABLE_BEANS = Collections.singleton(
             DotName.createSimple(EntityManager.class.getName()));
+
+    @BuildStep
+    FeatureBuildItem featureBuildItem() {
+        return new FeatureBuildItem(FeatureBuildItem.HIBERNATE_ORM_PANACHE);
+    }
 
     @BuildStep
     List<AdditionalJpaModelBuildItem> produceModel() {

@@ -6,13 +6,13 @@ import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSourceListener;
 
-public class AgroalListener implements AgroalDataSourceListener {
+final class AgroalEventLoggingListener implements AgroalDataSourceListener {
 
     private static final Logger log = Logger.getLogger("io.agroal.pool");
 
     private final String datasourceName;
 
-    public AgroalListener(String name) {
+    public AgroalEventLoggingListener(String name) {
         this.datasourceName = name;
     }
 

@@ -1,6 +1,7 @@
 package io.quarkus.bootstrap.util;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.DirectoryStream;
@@ -168,4 +169,46 @@ public class ZipUtils {
              throw new IOException("Failed to create a new filesystem for " + path, ioe);
          }
      }
+
+    /**
+     * This is a hack to get past the <a href="https://bugs.openjdk.java.net/browse/JDK-8232879">JDK-8232879</a>
+     * issue which causes CRC errors when writing out data to (jar) files using ZipFileSystem.
+     * TODO: Get rid of this method as soon as JDK-8232879 gets fixed and released in a public version
+     *
+     * @param original The original outputstream which will be wrapped into a new outputstream
+     *                 that delegates to this one.
+     * @return
+     */
+    public static OutputStream wrapForJDK8232879(final OutputStream original) {
+        return new OutputStream() {
+            @Override
+            public void write(final byte[] b) throws IOException {
+                original.write(b);
+            }
+
+            @Override
+            public void write(final byte[] b, final int off, final int len) throws IOException {
+                original.write(b, off, len);
+            }
+
+            @Override
+            public void flush() throws IOException {
+                original.flush();
+            }
+
+            @Override
+            public void close() throws IOException {
+                original.close();
+            }
+
+            @Override
+            public void write(final int b) throws IOException {
+                // we call the 3 arg write(...) method here, instead
+                // of the single arg one to bypass the JDK-8232879 issue
+                final byte[] buf = new byte[1];
+                buf[0] = (byte) (b & 0xff);
+                this.write(buf, 0, 1);
+            }
+        };
+    }
 }

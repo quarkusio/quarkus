@@ -33,6 +33,7 @@ public class SimpleRouteTest {
     @Test
     public void testSimpleRoute() {
         RestAssured.when().get("/hello").then().statusCode(200).body(is("Hello world!"));
+        RestAssured.when().get("/no-slash").then().statusCode(200).body(is("Hello world!"));
         RestAssured.when().get("/rx-hello").then().statusCode(200).body(is("Hello world!"));
         RestAssured.when().get("/bzuk").then().statusCode(200).body(is("Hello world!"));
         RestAssured.when().get("/hello-event-bus?name=ping").then().statusCode(200).body(is("Hello PING!"));
@@ -48,6 +49,7 @@ public class SimpleRouteTest {
 
         @Route(path = "/hello")
         @Route(path = "/foo")
+        @Route(path = "no-slash")
         void hello(RoutingContext context) {
             String name = context.request().getParam("name");
             context.response().setStatusCode(200).end("Hello " + (name != null ? name : "world") + "!");

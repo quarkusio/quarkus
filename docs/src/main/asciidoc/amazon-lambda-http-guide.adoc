@@ -110,10 +110,10 @@ NOTE: Running this plugin in an existing project will attempt to update the exis
 file has a different name, the plugin will assume there is no configuration and will generate a new file.
 
 This plugin will update the `Handler` and `Runtime` values for the named resource.  Running this plugin once might be
-sufficient.  However, you might choose to always run this plugin to make sure your template file is always correct.
-e.g., should implementation details on the Quarkus side ever change, it might be nice to have things automatically update
-without having to worry about tracking changes.  The pom can be configured to run automatically by adding the following
-to the `plugins` section:
+sufficient.  However, you might choose to always run this plugin to make sure your template file is correct.
+e.g., Should implementation details on the Quarkus side ever change, automatically updating the SAM template would
+help eliminate any breakage due to Quarkus changes.  The pom can be configured to run automatically by adding the
+following to the `plugins` section:
 
 [source,xml]
 ----
@@ -141,4 +141,4 @@ configuration values.  In this case, you'll need to define the following entries
 *  quarkus.amazon-lambda-http.resource
 *  quarkus.amazon-lambda-http.template
 
-With these defined, the properties no longer need to be defined when invoking maven.
+With these defined, the properties no longer need to be passed to maven when building the project.

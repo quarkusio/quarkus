@@ -10,9 +10,9 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-oidc</artifactId>
-    <name>Quarkus - Integration Tests - OpenID Connect Adapter</name>
-    <description>Module that contains OpenID Connect related tests</description>
+    <artifactId>quarkus-integration-test-keycloak-authorization</artifactId>
+    <name>Quarkus - Integration Tests - Keycloak Policy Enforcer</name>
+    <description>Module that contains Keycloak Policy Enforcer related tests</description>
 
     <properties>
         <keycloak.url>http://localhost:8180/auth</keycloak.url>
@@ -21,19 +21,15 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc</artifactId>
+            <artifactId>quarkus-keycloak-authorization</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jackson</artifactId>
+            <artifactId>quarkus-resteasy-jsonb</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-adapter-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-core</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc</artifactId>
         </dependency>
 
         <!-- test dependencies -->
@@ -115,7 +111,6 @@
                     <plugin>
                         <groupId>io.quarkus</groupId>
                         <artifactId>quarkus-maven-plugin</artifactId>
-                        <version>${project.version}</version>
                         <executions>
                             <execution>
                                 <goals>
@@ -157,7 +152,6 @@
                     <plugin>
                         <groupId>io.quarkus</groupId>
                         <artifactId>quarkus-maven-plugin</artifactId>
-                        <version>${project.version}</version>
                         <executions>
                             <execution>
                                 <id>native-image</id>
@@ -212,6 +206,11 @@
                                         <env>
                                             <KEYCLOAK_USER>admin</KEYCLOAK_USER>
                                             <KEYCLOAK_PASSWORD>admin</KEYCLOAK_PASSWORD>
+                                            <JAVA_OPTS>
+                                                -server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m                                                      -Djava.net.preferIPv4Stack=true 
+                                                -Djava.awt.headless=true  
+                                                -Dkeycloak.profile.feature.upload_scripts=enabled
+                                            </JAVA_OPTS>
                                         </env>
                                         <log>
                                             <prefix>Keycloak:</prefix>

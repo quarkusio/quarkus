@@ -473,20 +473,20 @@ In our existing `LibraryResource`, we just need to inject the following methods 
     }
 
     @GET
-    @Path("author/search")
+    @Path("author/search") // <3>
     @Transactional
-    public List<Author> searchAuthors(@QueryParam String pattern, // <3>
+    public List<Author> searchAuthors(@QueryParam String pattern, // <4>
             @QueryParam Optional<Integer> size) {
-        return Search.session(em) // <4>
-                .search(Author.class) // <5>
+        return Search.session(em) // <5>
+                .search(Author.class) // <6>
                 .predicate(f ->
                     pattern == null || pattern.trim().isEmpty() ?
-                            f.matchAll() : // <6>
+                            f.matchAll() : // <7>
                             f.simpleQueryString()
-                                .fields("firstName", "lastName", "books.title").matching(pattern) // <7>
+                                .fields("firstName", "lastName", "books.title").matching(pattern) // <8>
                 )
-                .sort(f -> f.field("lastName_sort").then().field("firstName_sort")) // <8>
-                .fetchHits(size.orElse(20)); // <9>
+                .sort(f -> f.field("lastName_sort").then().field("firstName_sort")) // <9>
+                .fetchHits(size.orElse(20)); // <10>
     }
 ----
 <1> Important point: we need a transactional context for these methods.
@@ -496,12 +496,13 @@ All the upcoming updates coming through Hibernate ORM operations will be synchro
 If you don't import data manually in the database, you don't need that:
 the mass indexer should then only be used when you change your indexing configuration (adding a new field, changing an analyzer's configuration...) and you want the new configuration to be applied to your existing entities.
 <3> This is where the magic begins: just adding the annotations to our entities makes them available for full text search: we can now query the index using the Hibernate Search DSL.
-<4> First, we get an Hibernate Search session from the injected entity manager.
-<5> We indicate that we are searching for ``Author``s.
-<6> We create a predicate: if the pattern is empty, we use a `matchAll()` predicate.
-<7> If we have a valid pattern, we create a https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-simple-query-string-query.html[`simpleQueryString()`] predicate on the `firstName`, `lastName` and `books.title` fields matching our pattern.
-<8> We define the sort order of our results. Here we sort by last name, then by first name. Note that we use the specific fields we created for sorting.
-<9> Fetch the `size` top hits, `20` by default. Obviously, paging is also supported.
+<4> Use the `org.jboss.resteasy.annotations.jaxrs.QueryParam` annotation type to avoid repeating the parameter name.
+<5> First, we get an Hibernate Search session from the injected entity manager.
+<6> We indicate that we are searching for ``Author``s.
+<7> We create a predicate: if the pattern is empty, we use a `matchAll()` predicate.
+<8> If we have a valid pattern, we create a https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-simple-query-string-query.html[`simpleQueryString()`] predicate on the `firstName`, `lastName` and `books.title` fields matching our pattern.
+<9> We define the sort order of our results. Here we sort by last name, then by first name. Note that we use the specific fields we created for sorting.
+<10> Fetch the `size` top hits, `20` by default. Obviously, paging is also supported.
 
 [NOTE]
 ====

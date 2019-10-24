@@ -17,12 +17,12 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.ComputingCache;
 import io.quarkus.arc.ContextInstanceHandle;
-import io.quarkus.arc.ContextInstanceHandleImpl;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.impl.ComputingCache;
+import io.quarkus.arc.impl.ContextInstanceHandleImpl;
 import io.undertow.servlet.handlers.ServletRequestContext;
 
 @WebListener

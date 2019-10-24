@@ -1,8 +1,8 @@
 package io.quarkus.arc.processor;
 
 import io.quarkus.arc.AlternativePriority;
-import io.quarkus.arc.ComputingCache;
 import io.quarkus.arc.DefaultBean;
+import io.quarkus.arc.impl.ComputingCache;
 import java.util.Optional;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;

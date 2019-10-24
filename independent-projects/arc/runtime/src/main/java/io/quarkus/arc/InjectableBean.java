@@ -1,5 +1,6 @@
 package io.quarkus.arc;
 
+import io.quarkus.arc.impl.Qualifiers;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Collections;
@@ -10,7 +11,8 @@ import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.InjectionPoint;
 
 /**
- * Represents an injectable bean.
+ * Quarkus representation of an injectable bean.
+ * This interface extends the standard CDI {@link Bean} interface.
  *
  * @author Martin Kouba
  *

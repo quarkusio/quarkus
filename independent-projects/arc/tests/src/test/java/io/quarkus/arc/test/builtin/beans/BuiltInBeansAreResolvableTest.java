@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.CreationalContextImpl;
+import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.test.ArcTestContainer;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;

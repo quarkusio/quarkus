@@ -17,6 +17,7 @@ public class AmazonLambdaSimpleTestCase {
 
     @Test
     public void testGetText() throws Exception {
+        testGetText("/vertx/hello");
         testGetText("/servlet/hello");
         testGetText("/hello");
     }
@@ -50,6 +51,7 @@ public class AmazonLambdaSimpleTestCase {
     public void testPostText() throws Exception {
         testPostText("/hello");
         testPostText("/servlet/hello");
+        testPostText("/vertx/hello");
     }
 
     private void testPostText(String path) {

@@ -163,8 +163,6 @@ which permit all, deny all and only allow authenticated users respectively.
 It is also possible to define role based policies, as shown in the example. These policies will only allow users with the
 specified roles to access the resources.
 
-Policies are pluggable so it is possible for other Quarkus extensions to provide additional policies.
-
 ### Matching on paths, methods
 
 Permission sets can also specify paths and methods as a comma separated list. If a path ends with '*' then it is considered

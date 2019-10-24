@@ -1,7 +1,8 @@
-
 {
-    "name": "Security",
-    "labels": [
-        "security"
+  "name": "Security",
+  "metadata": {
+    "keywords": [
+      "security"
     ]
+  }
 }

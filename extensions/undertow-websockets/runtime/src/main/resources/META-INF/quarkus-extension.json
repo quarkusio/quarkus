@@ -1,14 +1,15 @@
-
 {
-    "name": "Undertow WebSockets",
-    "shortName": "websockets",
-    "labels": [
-        "undertow-websockets",
-        "undertow-websocket",
-        "websocket",
-        "websockets",
-        "web-socket",
-        "web-sockets"
-    ],
-    "guide": "https://quarkus.io/guides/websocket-guide"
+  "name": "Undertow WebSockets",
+  "shortName": "websockets",
+  "guide": "https://quarkus.io/guides/websocket-guide",
+  "metadata": {
+    "keywords": [
+      "undertow-websockets",
+      "undertow-websocket",
+      "websocket",
+      "websockets",
+      "web-socket",
+      "web-sockets"
+    ]
+  }
 }

@@ -1,10 +1,11 @@
-
 {
-    "name": "JSON-B",
-    "labels": [
-        "jsonb",
-        "json-b",
-        "json"
-    ],
-    "guide": "https://quarkus.io/guides/rest-json-guide"
+  "name": "JSON-B",
+  "guide": "https://quarkus.io/guides/rest-json-guide",
+  "metadata": {
+    "keywords": [
+      "jsonb",
+      "json-b",
+      "json"
+    ]
+  }
 }

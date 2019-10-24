@@ -1,8 +1,9 @@
-
 {
-    "name": "Elytron Security OAuth 2.0",
-    "labels": [
-        "security",
-        "oauth2"
+  "name": "Elytron Security OAuth 2.0",
+  "metadata": {
+    "keywords": [
+      "security",
+      "oauth2"
     ]
+  }
 }

@@ -1,10 +1,11 @@
-
 {
-    "name": "Scheduler - tasks",
-    "labels": [
-        "scheduler",
-        "tasks",
-        "periodic-tasks"
-    ],
-    "guide": "https://quarkus.io/guides/scheduled-guide"
+  "name": "Scheduler - tasks",
+  "guide": "https://quarkus.io/guides/scheduled-guide",
+  "metadata": {
+    "keywords": [
+      "scheduler",
+      "tasks",
+      "periodic-tasks"
+    ]
+  }
 }

@@ -1,10 +1,11 @@
-
 {
-    "name": "Amazon DynamoDB client",
-    "labels": [
-        "dynamodb",
-        "dynamo",
-        "aws",
-        "amazon"
+  "name": "Amazon DynamoDB client",
+  "metadata": {
+    "keywords": [
+      "dynamodb",
+      "dynamo",
+      "aws",
+      "amazon"
     ]
+  }
 }

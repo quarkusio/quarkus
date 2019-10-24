@@ -1,13 +1,14 @@
-
 {
-    "name": "SmallRye Reactive Streams Operators",
-    "shortName": "reactive streams",
-    "labels": [
-        "smallrye-reactive-streams-operators",
-        "smallrye-reactive-streams",
-        "reactive-streams-operators",
-        "reactive-streams",
-        "microprofile-reactive-streams",
-        "reactive"
+  "name": "SmallRye Reactive Streams Operators",
+  "shortName": "reactive streams",
+  "metadata": {
+    "keywords": [
+      "smallrye-reactive-streams-operators",
+      "smallrye-reactive-streams",
+      "reactive-streams-operators",
+      "reactive-streams",
+      "microprofile-reactive-streams",
+      "reactive"
     ]
+  }
 }

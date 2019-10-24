@@ -1,9 +1,10 @@
-
 {
-    "name": "Elytron Security JDBC Realm",
-    "labels": [
-        "security",
-        "jdbc"
-    ],
-    "guide": "https://quarkus.io/guides/security-jdbc-guide"
+  "name": "Elytron Security JDBC Realm",
+  "guide": "https://quarkus.io/guides/security-jdbc-guide",
+  "metadata": {
+    "keywords": [
+      "security",
+      "jdbc"
+    ]
+  }
 }

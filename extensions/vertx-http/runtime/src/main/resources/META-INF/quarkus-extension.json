@@ -1,11 +1,12 @@
-
 {
-    "name": "Eclipse Vert.x - HTTP",
-    "labels": [
-        "eclipse-vert.x",
-        "vertx",
-        "vert.x",
-        "reactive",
-        "vertx-http"
+  "name": "Eclipse Vert.x - HTTP",
+  "metadata": {
+    "keywords": [
+      "eclipse-vert.x",
+      "vertx",
+      "vert.x",
+      "reactive",
+      "vertx-http"
     ]
+  }
 }

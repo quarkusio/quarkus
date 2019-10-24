@@ -1,9 +1,10 @@
-
 {
-    "name": "SmallRye Reactive Messaging - AMQP Connector",
-    "labels": [
-        "amqp",
-        "reactive-amqp"
-    ],
-    "guide": "https://quarkus.io/guides/amqp-guide"
+  "name": "SmallRye Reactive Messaging - AMQP Connector",
+  "guide": "https://quarkus.io/guides/amqp-guide",
+  "metadata": {
+    "keywords": [
+      "amqp",
+      "reactive-amqp"
+    ]
+  }
 }

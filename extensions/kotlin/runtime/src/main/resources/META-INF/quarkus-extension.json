@@ -1,8 +1,9 @@
-
 {
-    "name": "Kotlin",
-    "labels": [
-        "kotlin"
-    ],
-    "guide": "https://quarkus.io/guides/kotlin"
+  "name": "Kotlin",
+  "guide": "https://quarkus.io/guides/kotlin",
+  "metadata": {
+    "keywords": [
+      "kotlin"
+    ]
+  }
 }

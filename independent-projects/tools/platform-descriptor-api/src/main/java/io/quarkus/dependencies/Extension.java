@@ -1,7 +1,10 @@
 package io.quarkus.dependencies;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -24,14 +27,15 @@ public class Extension {
 
     private String name;
     private String description;
-    private boolean internal = false;
-    private String[] labels;
     private String guide;
-
+    private boolean unlisted;
+    
     private String simplifiedArtifactId;
     private static final Pattern QUARKUS_PREFIX = Pattern.compile("^quarkus-");
     private String shortName;
 
+    private Map<String, Object> metadata = new HashMap<String, Object>(3);
+    
     public Extension() {
         // Use by mapper.
     }
@@ -98,11 +102,15 @@ public class Extension {
     }
 
     public String[] getLabels() {
-        return labels;
+    	List<String> keywords = (List<String>) getMetadata().get("keywords");
+    	if(keywords != null) {
+    		return (String[]) keywords.toArray(new String[keywords.size()]);
+    	}
+    	return null;
     }
 
     public Extension setLabels(String[] labels) {
-        this.labels = labels;
+        getMetadata().put("keywords", Arrays.asList(labels));
         return this;
     }
 
@@ -124,17 +132,18 @@ public class Extension {
         return this;
     }
 
-    public boolean isInternal() {
-        return internal;
+    public Map<String, Object> getMetadata() {
+    	return metadata;
     }
-
-    public Extension setInternal(boolean internal) {
-        this.internal = internal;
-        return this;
+    
+    public Extension setMetadata(Map<String, Object> metadata) {
+    	this.metadata = metadata;
+    	return this;
     }
-
+    
     public List<String> labels() {
         List<String> list = new ArrayList<>();
+        String[] labels = getLabels();
         if (labels != null) {
             list.addAll(Stream.of(labels).map(String::toLowerCase).collect(Collectors.toList()));
         }
@@ -228,6 +237,11 @@ public class Extension {
         return true;
     }
 
+    public Extension setGuide(String guide) {
+    	this.guide = guide;
+    	return this;
+    }
+    
     public String getGuide() {
         return guide;
     }
@@ -243,4 +257,12 @@ public class Extension {
         this.shortName = shortName;
         return this;
     }
+
+	public boolean isUnlisted() {
+		return unlisted;
+	}
+
+	public void setUnlisted(boolean unlisted) {
+		this.unlisted = unlisted;
+	}
 }

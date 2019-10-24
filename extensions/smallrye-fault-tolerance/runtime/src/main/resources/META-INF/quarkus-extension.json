@@ -1,11 +1,12 @@
-
 {
-    "name": "SmallRye Fault Tolerance",
-    "labels": [
-        "smallrye-fault-tolerance",
-        "fault-tolerance",
-        "microprofile-fault-tolerance",
-        "circuit-breaker",
-        "bulkhead"
+  "name": "SmallRye Fault Tolerance",
+  "metadata": {
+    "keywords": [
+      "smallrye-fault-tolerance",
+      "fault-tolerance",
+      "microprofile-fault-tolerance",
+      "circuit-breaker",
+      "bulkhead"
     ]
+  }
 }

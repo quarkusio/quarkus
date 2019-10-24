@@ -1,11 +1,12 @@
-
 {
-    "name": "Eclipse Vert.x",
-    "labels": [
-        "eclipse-vert.x",
-        "vertx",
-        "vert.x",
-        "reactive"
-    ],
-    "guide": "https://quarkus.io/guides/using-vertx"
+  "name": "Eclipse Vert.x",
+  "guide": "https://quarkus.io/guides/using-vertx",
+  "metadata": {
+    "keywords": [
+      "eclipse-vert.x",
+      "vertx",
+      "vert.x",
+      "reactive"
+    ]
+  }
 }

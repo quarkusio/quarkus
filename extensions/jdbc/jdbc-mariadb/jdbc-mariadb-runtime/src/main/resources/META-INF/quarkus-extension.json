@@ -1,9 +1,10 @@
-
 {
-    "name": "JDBC Driver - MariaDB",
-    "labels": [
-        "jdbc-mariadb",
-        "jdbc",
-        "mariadb"
+  "name": "JDBC Driver - MariaDB",
+  "metadata": {
+    "keywords": [
+      "jdbc-mariadb",
+      "jdbc",
+      "mariadb"
     ]
+  }
 }

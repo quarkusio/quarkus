@@ -1,8 +1,9 @@
-
 {
-    "name": "Agroal - Database connection pool",
-    "labels": [
-        "agroal",
-        "database-connection-pool"
+  "name": "Agroal - Database connection pool",
+  "metadata": {
+    "keywords": [
+      "agroal",
+      "database-connection-pool"
     ]
+  }
 }

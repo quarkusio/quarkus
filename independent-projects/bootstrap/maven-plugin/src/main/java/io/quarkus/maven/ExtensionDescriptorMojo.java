@@ -22,7 +22,9 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonValue;
 import com.eclipsesource.json.WriterConfig;
 
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -110,6 +112,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             extObject = Json.object();
         }
 
+        transformLegacyToNew(output, extObject);
+      
+        
         if(extObject.get("groupId") == null) {
             extObject.add("groupId", project.getGroupId());
         }
@@ -153,11 +158,31 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if(extObject.get("description") == null && project.getDescription() != null) {
             extObject.add("description", project.getDescription());
         }
-
+        
         try (BufferedWriter bw = Files.newBufferedWriter(output.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME))) {
             extObject.writeTo(bw, WriterConfig.PRETTY_PRINT);
         } catch (IOException e) {
             throw new MojoExecutionException("Failed to persist " + output.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME), e);
         }
     }
+
+	private void transformLegacyToNew(final Path output, JsonObject extObject) throws MojoExecutionException {
+		JsonObject metadata = null;
+        
+        JsonValue mvalue = extObject.get("metadata");
+        if(mvalue!=null && mvalue.isObject()) {
+        	metadata = mvalue.asObject();
+        } else {
+        	metadata = new JsonObject();
+        }
+        
+        if(extObject.get("labels") != null) {
+        	metadata.add("keywords", extObject.get("labels"));
+        	extObject.remove("labels");
+        }
+        
+        extObject.set("metadata", metadata );
+        
+	}
+    
 }

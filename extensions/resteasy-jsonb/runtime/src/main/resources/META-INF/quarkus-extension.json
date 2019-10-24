@@ -1,14 +1,15 @@
-
 {
-    "name": "RESTEasy JSON-B",
-    "labels": [
-        "resteasy-jsonb",
-        "jaxrs-json",
-        "resteasy-json",
-        "resteasy",
-        "jaxrs",
-        "json",
-        "jsonb"
-    ],
-    "guide": "https://quarkus.io/guides/rest-json-guide"
+  "name": "RESTEasy JSON-B",
+  "guide": "https://quarkus.io/guides/rest-json-guide",
+  "metadata": {
+    "keywords": [
+      "resteasy-jsonb",
+      "jaxrs-json",
+      "resteasy-json",
+      "resteasy",
+      "jaxrs",
+      "json",
+      "jsonb"
+    ]
+  }
 }

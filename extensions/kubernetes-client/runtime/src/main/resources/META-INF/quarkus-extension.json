@@ -1,7 +1,8 @@
-
 {
-    "name": "Kubernetes Client",
-    "labels": [
-        "kubernetes-client"
+  "name": "Kubernetes Client",
+  "metadata": {
+    "keywords": [
+      "kubernetes-client"
     ]
+  }
 }

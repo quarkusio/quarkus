@@ -1,9 +1,10 @@
-
 {
-    "name": "AWS Lambda",
-    "labels": [
-        "lambda",
-        "aws",
-        "amazon"
+  "name": "AWS Lambda",
+  "metadata": {
+    "keywords": [
+      "lambda",
+      "aws",
+      "amazon"
     ]
+  }
 }

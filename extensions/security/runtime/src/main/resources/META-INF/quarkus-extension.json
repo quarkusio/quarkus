@@ -1,7 +1,8 @@
-
 {
-    "name": "Jaeger",
-    "labels": [
-        "jaeger"
+  "name": "Jaeger",
+  "metadata": {
+    "keywords": [
+      "jaeger"
     ]
+  }
 }

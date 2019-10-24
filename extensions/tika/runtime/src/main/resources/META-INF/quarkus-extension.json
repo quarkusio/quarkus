@@ -1,8 +1,9 @@
-
 {
-    "name": "Apache Tika",
-    "labels": [
-        "tika",
-        "parser"
+  "name": "Apache Tika",
+  "metadata": {
+    "keywords": [
+      "tika",
+      "parser"
     ]
+  }
 }

@@ -1,9 +1,10 @@
-
 {
-    "name": "Undertow Servlet",
-    "shortName": "servlet",
-    "labels": [
-        "undertow",
-        "servlet"
+  "name": "Undertow Servlet",
+  "shortName": "servlet",
+  "metadata": {
+    "keywords": [
+      "undertow",
+      "servlet"
     ]
+  }
 }

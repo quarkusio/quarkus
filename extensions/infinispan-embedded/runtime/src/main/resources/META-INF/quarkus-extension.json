@@ -1,7 +1,8 @@
-
 {
-    "name": "Infinispan Embedded",
-    "labels": [
-        "infinispan"
+  "name": "Infinispan Embedded",
+  "metadata": {
+    "keywords": [
+      "infinispan"
     ]
+  }
 }

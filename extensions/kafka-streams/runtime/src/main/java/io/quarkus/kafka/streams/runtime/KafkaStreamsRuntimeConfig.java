@@ -3,6 +3,7 @@ package io.quarkus.kafka.streams.runtime;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -30,15 +31,19 @@ public class KafkaStreamsRuntimeConfig {
     public Optional<String> applicationServer;
 
     /**
-     * A comma-separated list of topic names processed by this stream processing application.
+     * A comma-separated list of topic names.
      * The pipeline will only be started once all these topics are present in the Kafka cluster.
      */
     @ConfigItem
-    public Optional<String> topics;
+    public List<String> topics;
 
     @Override
     public String toString() {
         return "KafkaStreamsRuntimeConfig [applicationId=" + applicationId + ", bootstrapServers=" + bootstrapServers
                 + ", applicationServer=" + applicationServer + ", topics=" + topics + "]";
+    }
+
+    public List<String> getTrimmedTopics() {
+        return topics.stream().map(String::trim).collect(Collectors.toList());
     }
 }

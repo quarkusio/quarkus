@@ -2,10 +2,10 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
-import io.quarkus.arc.GenericArrayTypeImpl;
-import io.quarkus.arc.ParameterizedTypeImpl;
-import io.quarkus.arc.TypeVariableImpl;
-import io.quarkus.arc.WildcardTypeImpl;
+import io.quarkus.arc.impl.GenericArrayTypeImpl;
+import io.quarkus.arc.impl.ParameterizedTypeImpl;
+import io.quarkus.arc.impl.TypeVariableImpl;
+import io.quarkus.arc.impl.WildcardTypeImpl;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;

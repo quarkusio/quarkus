@@ -6,7 +6,7 @@ import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.Components;
 import io.quarkus.arc.ComponentsProvider;
-import io.quarkus.arc.LazyValue;
+import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;

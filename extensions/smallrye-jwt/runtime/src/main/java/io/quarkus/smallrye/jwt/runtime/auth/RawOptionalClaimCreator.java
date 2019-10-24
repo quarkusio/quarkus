@@ -8,7 +8,7 @@ import javax.enterprise.inject.spi.InjectionPoint;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.BeanCreator;
-import io.quarkus.arc.InjectionPointProvider;
+import io.quarkus.arc.impl.InjectionPointProvider;
 import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 
 public class RawOptionalClaimCreator implements BeanCreator<Optional<?>> {

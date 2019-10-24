@@ -6,12 +6,12 @@ import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
-import io.quarkus.arc.CreationalContextImpl;
-import io.quarkus.arc.CurrentInjectionPointProvider;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableReferenceProvider;
-import io.quarkus.arc.interceptors.InitializedInterceptor;
+import io.quarkus.arc.impl.CreationalContextImpl;
+import io.quarkus.arc.impl.CurrentInjectionPointProvider;
+import io.quarkus.arc.impl.InitializedInterceptor;
 import io.quarkus.arc.processor.BeanInfo.InterceptionInfo;
 import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
 import io.quarkus.arc.processor.BuiltinBean.GeneratorContext;

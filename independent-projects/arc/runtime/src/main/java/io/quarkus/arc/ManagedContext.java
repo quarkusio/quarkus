@@ -1,6 +1,8 @@
 package io.quarkus.arc;
 
 /**
+ * A context implementing this interface can be manually managed.
+ * It can be activated with certain state hence allowing for context propagation and then deactivated on demand.
  *
  * @author Martin Kouba
  */

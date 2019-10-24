@@ -1,5 +1,6 @@
 package io.quarkus.arc;
 
+import io.quarkus.arc.impl.ArcContainerImpl;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;

@@ -12,7 +12,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
 import io.quarkus.arc.BeanCreator;
-import io.quarkus.arc.InjectionPointProvider;
+import io.quarkus.arc.impl.InjectionPointProvider;
 import io.smallrye.config.SmallRyeConfig;
 
 public class ConfigBeanCreator implements BeanCreator<Object> {

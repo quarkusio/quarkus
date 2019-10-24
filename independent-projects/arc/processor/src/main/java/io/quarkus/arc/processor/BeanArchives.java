@@ -2,8 +2,8 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByNameNoLogging;
 
-import io.quarkus.arc.ActivateRequestContextInterceptor;
-import io.quarkus.arc.InjectableRequestContextController;
+import io.quarkus.arc.impl.ActivateRequestContextInterceptor;
+import io.quarkus.arc.impl.InjectableRequestContextController;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;

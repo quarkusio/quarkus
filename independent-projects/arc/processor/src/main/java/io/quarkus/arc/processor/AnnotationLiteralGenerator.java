@@ -4,7 +4,7 @@ import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
-import io.quarkus.arc.ComputingCache;
+import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.arc.processor.AnnotationLiteralProcessor.Key;
 import io.quarkus.arc.processor.AnnotationLiteralProcessor.Literal;
 import io.quarkus.arc.processor.ResourceOutput.Resource;

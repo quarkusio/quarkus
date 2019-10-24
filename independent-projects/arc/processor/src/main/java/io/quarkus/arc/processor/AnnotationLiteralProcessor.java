@@ -1,6 +1,6 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.ComputingCache;
+import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodDescriptor;

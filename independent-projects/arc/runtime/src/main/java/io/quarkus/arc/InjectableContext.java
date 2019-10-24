@@ -4,6 +4,8 @@ import java.util.Map;
 import javax.enterprise.context.spi.AlterableContext;
 
 /**
+ * A context implementing this interface allows to capture and view its state via {@link ContextState}.
+ * It also allows user to destroy all contextual instances within this context.
  *
  * @author Martin Kouba
  */

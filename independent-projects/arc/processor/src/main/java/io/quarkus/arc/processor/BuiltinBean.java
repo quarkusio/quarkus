@@ -2,14 +2,14 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
-import io.quarkus.arc.BeanManagerProvider;
-import io.quarkus.arc.BeanMetadataProvider;
-import io.quarkus.arc.EventProvider;
 import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectionPointProvider;
-import io.quarkus.arc.InstanceProvider;
-import io.quarkus.arc.InterceptedBeanMetadataProvider;
-import io.quarkus.arc.ResourceProvider;
+import io.quarkus.arc.impl.BeanManagerProvider;
+import io.quarkus.arc.impl.BeanMetadataProvider;
+import io.quarkus.arc.impl.EventProvider;
+import io.quarkus.arc.impl.InjectionPointProvider;
+import io.quarkus.arc.impl.InstanceProvider;
+import io.quarkus.arc.impl.InterceptedBeanMetadataProvider;
+import io.quarkus.arc.impl.ResourceProvider;
 import io.quarkus.arc.processor.InjectionPointInfo.InjectionPointKind;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;

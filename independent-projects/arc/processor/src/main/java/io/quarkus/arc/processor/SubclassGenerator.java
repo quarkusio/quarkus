@@ -7,7 +7,7 @@ import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.Subclass;
-import io.quarkus.arc.SubclassMethodMetadata;
+import io.quarkus.arc.impl.SubclassMethodMetadata;
 import io.quarkus.arc.processor.BeanInfo.InterceptionInfo;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo.BytecodeCreator;

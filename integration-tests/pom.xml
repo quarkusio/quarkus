@@ -61,6 +61,7 @@
         <module>amazon-lambda-http</module>
         <module>kogito</module>
         <module>kogito-maven</module>
+        <module>kubernetes</module>
         <module>kubernetes-client</module>
         <module>tika</module>
         <module>neo4j</module>

@@ -1,8 +1,9 @@
-
 {
-    "name": "Jackson",
-    "labels": [
-        "jackson",
-        "json"
+  "name": "Jackson",
+  "metadata": {
+    "keywords": [
+      "jackson",
+      "json"
     ]
+  }
 }

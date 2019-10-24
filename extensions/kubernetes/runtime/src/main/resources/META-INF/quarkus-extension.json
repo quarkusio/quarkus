@@ -1,8 +1,9 @@
-
 {
-    "name": "Kubernetes",
-    "labels": [
-        "kubernetes"
-    ],
-    "guide": "https://quarkus.io/guides/kubernetes-guide"
+  "name": "Kubernetes",
+  "guide": "https://quarkus.io/guides/kubernetes-guide",
+  "metadata": {
+    "keywords": [
+      "kubernetes"
+    ]
+  }
 }

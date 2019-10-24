@@ -1,10 +1,11 @@
-
 {
-    "name": "MongoDB client",
-    "labels": [
-        "mongo",
-        "mongodb",
-        "nosql",
-        "datastore"
+  "name": "MongoDB client",
+  "metadata": {
+    "keywords": [
+      "mongo",
+      "mongodb",
+      "nosql",
+      "datastore"
     ]
+  }
 }

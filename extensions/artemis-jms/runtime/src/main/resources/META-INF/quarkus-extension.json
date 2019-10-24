@@ -1,8 +1,9 @@
-
 {
-    "name": "Artemis JMS",
-    "labels": [
-        "artemis-jms",
-        "artemis"
+  "name": "Artemis JMS",
+  "metadata": {
+    "keywords": [
+      "artemis-jms",
+      "artemis"
     ]
+  }
 }

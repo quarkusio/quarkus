@@ -1,15 +1,16 @@
-
 {
-    "name": "Narayana STM - Software Transactional Memory",
-    "labels": [
-        "narayana-stm",
-        "narayana",
-        "stm",
-        "transactions",
-        "transaction",
-        "software-transactional-memory",
-        "tx",
-        "txs"
-    ],
-    "guide": "https://quarkus.io/guides/stm-guide"
+  "name": "Narayana STM - Software Transactional Memory",
+  "guide": "https://quarkus.io/guides/stm-guide",
+  "metadata": {
+    "keywords": [
+      "narayana-stm",
+      "narayana",
+      "stm",
+      "transactions",
+      "transaction",
+      "software-transactional-memory",
+      "tx",
+      "txs"
+    ]
+  }
 }

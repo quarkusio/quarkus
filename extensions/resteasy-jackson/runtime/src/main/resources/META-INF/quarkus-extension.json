@@ -1,13 +1,14 @@
-
 {
-    "name": "RESTEasy Jackson",
-    "labels": [
-        "resteasy-jackson",
-        "jaxrs-json",
-        "resteasy-json",
-        "resteasy",
-        "jaxrs",
-        "json",
-        "jackson"
+  "name": "RESTEasy Jackson",
+  "metadata": {
+    "keywords": [
+      "resteasy-jackson",
+      "jaxrs-json",
+      "resteasy-json",
+      "resteasy",
+      "jaxrs",
+      "json",
+      "jackson"
     ]
+  }
 }

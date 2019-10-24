@@ -1,10 +1,11 @@
-
 {
-    "name": "Flyway",
-    "labels": [
-        "flyway",
-        "database",
-        "data"
-    ],
-    "guide": "https://quarkus.io/guides/flyway-guide"
+  "name": "Flyway",
+  "guide": "https://quarkus.io/guides/flyway-guide",
+  "metadata": {
+    "keywords": [
+      "flyway",
+      "database",
+      "data"
+    ]
+  }
 }

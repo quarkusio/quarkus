@@ -1,8 +1,9 @@
-
 {
-    "name": "Quarkus Extension for Spring Data JPA API",
-    "labels": [
-        "spring-data"
-    ],
-    "guide": "https://quarkus.io/guides/spring-data-jpa-guide"
+  "name": "Quarkus Extension for Spring Data JPA API",
+  "guide": "https://quarkus.io/guides/spring-data-jpa-guide",
+  "metadata": {
+    "keywords": [
+      "spring-data"
+    ]
+  }
 }

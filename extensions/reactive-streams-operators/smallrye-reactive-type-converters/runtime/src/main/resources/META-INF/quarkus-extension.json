@@ -1,12 +1,13 @@
-
 {
-    "name": "SmallRye Reactive Type Converters",
-    "labels": [
-        "smallrye-reactive-type-converters",
-        "reactive-type-converters",
-        "reactive-streams-operators",
-        "reactive-streams",
-        "microprofile-reactive-streams",
-        "reactive"
+  "name": "SmallRye Reactive Type Converters",
+  "metadata": {
+    "keywords": [
+      "smallrye-reactive-type-converters",
+      "reactive-type-converters",
+      "reactive-streams-operators",
+      "reactive-streams",
+      "microprofile-reactive-streams",
+      "reactive"
     ]
+  }
 }

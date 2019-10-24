@@ -1,11 +1,12 @@
-
 {
-    "name": "SmallRye JWT",
-    "labels": [
-        "smallrye-jwt",
-        "jwt",
-        "json-web-token",
-        "rbac"
-    ],
-    "guide": "https://quarkus.io/guides/jwt-guide"
+  "name": "SmallRye JWT",
+  "guide": "https://quarkus.io/guides/jwt-guide",
+  "metadata": {
+    "keywords": [
+      "smallrye-jwt",
+      "jwt",
+      "json-web-token",
+      "rbac"
+    ]
+  }
 }

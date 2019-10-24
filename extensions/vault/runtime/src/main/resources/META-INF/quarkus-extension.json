@@ -1,8 +1,10 @@
 {
-    "name": "Vault",
-    "labels": [
-        "vault",
-        "security"
-    ],
-    "guide": "https://quarkus.io/guides/vault-guide"
+  "name": "Vault",
+  "guide": "https://quarkus.io/guides/vault-guide",
+  "metadata": {
+    "keywords": [
+      "vault",
+      "security"
+    ]
+  }
 }

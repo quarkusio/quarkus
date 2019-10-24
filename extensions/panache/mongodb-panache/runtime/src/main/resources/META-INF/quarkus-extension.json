@@ -1,11 +1,12 @@
-
 {
-    "name": "MongoDB with Panache",
-    "labels": [
-        "mongo",
-        "mongodb",
-        "nosql",
-        "datastore",
-        "panache"
+  "name": "MongoDB with Panache",
+  "metadata": {
+    "keywords": [
+      "mongo",
+      "mongodb",
+      "nosql",
+      "datastore",
+      "panache"
     ]
+  }
 }

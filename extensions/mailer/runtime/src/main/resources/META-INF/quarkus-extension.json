@@ -1,9 +1,10 @@
-
 {
-    "name": "Mailer",
-    "labels": [
-        "mail",
-        "mailer"
-    ],
-    "guide": "https://quarkus.io/guides/sending-emails"
+  "name": "Mailer",
+  "guide": "https://quarkus.io/guides/sending-emails",
+  "metadata": {
+    "keywords": [
+      "mail",
+      "mailer"
+    ]
+  }
 }

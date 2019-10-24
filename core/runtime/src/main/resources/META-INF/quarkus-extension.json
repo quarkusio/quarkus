@@ -1,6 +1,8 @@
-
 {
-    "name": "Quarkus - Core",
-    "labels": [
+  "name": "Quarkus - Core",
+  "metadata": {
+    "keywords": [
+      
     ]
+  }
 }

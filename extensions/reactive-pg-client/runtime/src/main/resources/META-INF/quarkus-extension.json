@@ -1,13 +1,14 @@
-
 {
-    "name": "Reactive PostgreSQL client",
-    "labels": [
-        "eclipse-vert.x",
-        "vertx",
-        "vert.x",
-        "reactive",
-        "database",
-        "data",
-        "postgresql"
+  "name": "Reactive PostgreSQL client",
+  "metadata": {
+    "keywords": [
+      "eclipse-vert.x",
+      "vertx",
+      "vert.x",
+      "reactive",
+      "database",
+      "data",
+      "postgresql"
     ]
+  }
 }

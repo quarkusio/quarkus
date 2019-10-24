@@ -1,13 +1,14 @@
-
 {
-    "name": "SmallRye Metrics",
-    "shortName": "metrics",
-    "labels": [
-        "smallrye-metrics",
-        "metrics",
-        "metric",
-        "prometheus",
-        "monitoring"
-    ],
-    "guide": "https://quarkus.io/guides/metrics-guide"
+  "name": "SmallRye Metrics",
+  "shortName": "metrics",
+  "guide": "https://quarkus.io/guides/metrics-guide",
+  "metadata": {
+    "keywords": [
+      "smallrye-metrics",
+      "metrics",
+      "metric",
+      "prometheus",
+      "monitoring"
+    ]
+  }
 }

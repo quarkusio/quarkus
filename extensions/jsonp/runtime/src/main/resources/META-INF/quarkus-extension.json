@@ -1,9 +1,10 @@
-
 {
-    "name": "JSON-P",
-    "labels": [
-        "jsonp",
-        "json-p",
-        "json"
+  "name": "JSON-P",
+  "metadata": {
+    "keywords": [
+      "jsonp",
+      "json-p",
+      "json"
     ]
+  }
 }

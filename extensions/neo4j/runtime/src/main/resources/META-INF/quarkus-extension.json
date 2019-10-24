@@ -1,10 +1,11 @@
-
 {
-    "name": "Neo4j client",
-    "labels": [
-        "neo4j",
-        "graph",
-        "nosql",
-        "datastore"
+  "name": "Neo4j client",
+  "metadata": {
+    "keywords": [
+      "neo4j",
+      "graph",
+      "nosql",
+      "datastore"
     ]
+  }
 }

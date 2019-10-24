@@ -1,13 +1,14 @@
-
 {
-    "name": "Reactive MySQL client",
-    "labels": [
-        "eclipse-vert.x",
-        "vertx",
-        "vert.x",
-        "reactive",
-        "database",
-        "data",
-        "mysql"
+  "name": "Reactive MySQL client",
+  "metadata": {
+    "keywords": [
+      "eclipse-vert.x",
+      "vertx",
+      "vert.x",
+      "reactive",
+      "database",
+      "data",
+      "mysql"
     ]
+  }
 }

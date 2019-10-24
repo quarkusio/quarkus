@@ -1,10 +1,11 @@
-
 {
-    "name": "Kogito",
-    "labels": [
-        "kogito",
-        "drools",
-        "jbpm"
-    ],
-    "guide": "https://quarkus.io/guides/kogito-guide"
+  "name": "Kogito",
+  "guide": "https://quarkus.io/guides/kogito-guide",
+  "metadata": {
+    "keywords": [
+      "kogito",
+      "drools",
+      "jbpm"
+    ]
+  }
 }

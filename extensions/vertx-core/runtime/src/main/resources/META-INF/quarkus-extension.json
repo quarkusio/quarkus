@@ -1,11 +1,11 @@
-
 {
-
-    "name": "Eclipse Vert.x - Core",
-    "labels": [
-        "eclipse-vert.x",
-        "vertx",
-        "vert.x",
-        "reactive"
+  "name": "Eclipse Vert.x - Core",
+  "metadata": {
+    "keywords": [
+      "eclipse-vert.x",
+      "vertx",
+      "vert.x",
+      "reactive"
     ]
+  }
 }

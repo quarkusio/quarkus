@@ -206,6 +206,11 @@
                                         <env>
                                             <KEYCLOAK_USER>admin</KEYCLOAK_USER>
                                             <KEYCLOAK_PASSWORD>admin</KEYCLOAK_PASSWORD>
+                                            <JAVA_OPTS>
+                                                -server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m                                                      -Djava.net.preferIPv4Stack=true 
+                                                -Djava.awt.headless=true  
+                                                -Dkeycloak.profile.feature.upload_scripts=enabled
+                                            </JAVA_OPTS>
                                         </env>
                                         <log>
                                             <prefix>Keycloak:</prefix>

@@ -99,8 +99,6 @@ public class RolesAllowedUnitTest {
                 .get("/endp/echo").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
-        String replyString = response.body().asString();
-        Assertions.assertEquals("Not authorized", replyString);
     }
 
     /**

@@ -25,6 +25,6 @@ public class SmallryeJwtDisabledTest {
     public void serviceIsNotSecured() throws Exception {
         io.restassured.response.Response response = RestAssured.given().get("/endp/echo").andReturn();
 
-        Assertions.assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
+        Assertions.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatusCode());
     }
 }

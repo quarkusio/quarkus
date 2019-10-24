@@ -6,6 +6,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.oidc.OidcConfig;
 import io.quarkus.oidc.VertxJwtPrincipalProducer;
 import io.quarkus.oidc.VertxKeycloakRecorder;
@@ -16,11 +17,15 @@ import io.quarkus.vertx.deployment.VertxBuildItem;
 public class VertxKeycloakBuildStep {
 
     @BuildStep
-    public AdditionalBeanBuildItem beans() {
-        return AdditionalBeanBuildItem.builder().setUnremovable()
-                .addBeanClass(VertxOAuth2AuthenticationMechanism.class)
-                .addBeanClass(VertxJwtPrincipalProducer.class)
-                .addBeanClass(VertxOAuth2IdentityProvider.class).build();
+    public AdditionalBeanBuildItem beans(OidcConfig config) {
+        if (config.enabled) {
+            return AdditionalBeanBuildItem.builder().setUnremovable()
+                    .addBeanClass(VertxOAuth2AuthenticationMechanism.class)
+                    .addBeanClass(VertxJwtPrincipalProducer.class)
+                    .addBeanClass(VertxOAuth2IdentityProvider.class).build();
+        }
+
+        return null;
     }
 
     @BuildStep
@@ -32,6 +37,8 @@ public class VertxKeycloakBuildStep {
     @BuildStep
     public void setup(OidcConfig config, VertxKeycloakRecorder recorder, VertxBuildItem vertxBuildItem,
             BeanContainerBuildItem bc) {
-        recorder.setup(config, vertxBuildItem.getVertx(), bc.getValue());
+        if (config.enabled) {
+            recorder.setup(config, vertxBuildItem.getVertx(), bc.getValue());
+        }
     }
 }

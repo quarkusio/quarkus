@@ -19,11 +19,13 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 import io.quarkus.arc.config.ConfigProperties;
+import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.gizmo.ClassCreator;
@@ -36,7 +38,9 @@ public class ConfigPropertiesBuildStep {
             ApplicationIndexBuildItem applicationIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues) {
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
+            BuildProducer<ConfigPropertyBuildItem> configProperties,
+            DeploymentClassLoaderBuildItem deploymentClassLoader) {
         IndexView index = combinedIndex.getIndex();
         Collection<AnnotationInstance> instances = index.getAnnotations(DotNames.CONFIG_PROPERTIES);
         if (instances.isEmpty()) {
@@ -76,12 +80,12 @@ public class ConfigPropertiesBuildStep {
                 /*
                  * In this case we need to generate an implementation of the interface that for each interface method
                  * simply pulls data from MP Config and returns it.
-                 * The generated producer bean simply needs to return a instance of the generated class
+                 * The generated producer bean simply needs to return an instance of the generated class
                  */
 
                 String generatedClassName = InterfaceConfigPropertiesUtil.generateImplementationForInterfaceConfigProperties(
                         classInfo, nonBeansClassOutput, index, prefixStr,
-                        defaultConfigValues);
+                        defaultConfigValues, configProperties);
                 InterfaceConfigPropertiesUtil.addProducerMethodForInterfaceConfigProperties(producerClassCreator,
                         classInfo.name(), generatedClassName);
 
@@ -90,10 +94,9 @@ public class ConfigPropertiesBuildStep {
                  * In this case the producer method contains all the logic to instantiate the config class
                  * and call setters for value obtained from MP Config
                  */
-                boolean needsValidation = ClassConfigPropertiesUtil.addProducerMethodForClassConfigProperties(classInfo,
-                        producerClassCreator,
-                        prefixStr,
-                        applicationIndex.getIndex());
+                boolean needsValidation = ClassConfigPropertiesUtil.addProducerMethodForClassConfigProperties(
+                        deploymentClassLoader.getClassLoader(), classInfo, producerClassCreator, prefixStr,
+                        applicationIndex.getIndex(), configProperties);
                 if (needsValidation) {
                     configClassesThatNeedValidation.add(classInfo.name());
                 }

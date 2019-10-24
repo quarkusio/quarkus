@@ -37,7 +37,7 @@ public interface HttpAuthenticationMechanism {
             if (challengeData.headerName != null) {
                 context.response().headers().set(challengeData.headerName, challengeData.headerContent);
             }
-            return null;
+            return true;
         }
     }
 }

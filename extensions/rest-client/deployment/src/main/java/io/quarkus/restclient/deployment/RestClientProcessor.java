@@ -66,7 +66,7 @@ import io.quarkus.restclient.runtime.IncomingHeadersProvider;
 import io.quarkus.restclient.runtime.RestClientBase;
 import io.quarkus.restclient.runtime.RestClientRecorder;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
-import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
+import io.quarkus.resteasy.common.deployment.ReflectionHierarchyUtil;
 import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 
 class RestClientProcessor {
@@ -190,7 +190,7 @@ class RestClientProcessor {
 
         // Register Interface return types for reflection
         for (Type returnType : returnTypes) {
-            if (isReflectionDeclarationRequiredFor(returnType)) {
+            if (ReflectionHierarchyUtil.isReflectionDeclarationRequiredFor(returnType)) {
                 reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(returnType));
             }
         }
@@ -312,21 +312,4 @@ class RestClientProcessor {
                 && index.getAllKnownImplementors(classInfo.name()).isEmpty();
     }
 
-    private static boolean isReflectionDeclarationRequiredFor(Type type) {
-        DotName className = getClassName(type);
-
-        return className != null && !ResteasyDotNames.TYPES_IGNORED_FOR_REFLECTION.contains(className);
-    }
-
-    private static DotName getClassName(Type type) {
-        switch (type.kind()) {
-            case CLASS:
-            case PARAMETERIZED_TYPE:
-                return type.name();
-            case ARRAY:
-                return getClassName(type.asArrayType().component());
-            default:
-                return null;
-        }
-    }
 }

@@ -3,6 +3,7 @@ package io.quarkus.resteasy.common.deployment;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
 
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.Consumes;
@@ -42,6 +43,7 @@ public final class ResteasyDotNames {
             .createSimple(org.jboss.resteasy.annotations.jaxrs.HeaderParam.class.getName());
     public static final DotName RESTEASY_MATRIX_PARAM = DotName
             .createSimple(org.jboss.resteasy.annotations.jaxrs.MatrixParam.class.getName());
+    public static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
 
     // Types ignored for reflection used by the RESTEasy and SmallRye REST client extensions.
     public static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(

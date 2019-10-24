@@ -61,6 +61,7 @@ import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
+import io.quarkus.resteasy.common.deployment.ReflectionHierarchyUtil;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor.ResteasyCommonConfig;
 import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
 import io.quarkus.resteasy.common.runtime.QuarkusInjectorFactory;
@@ -682,34 +683,16 @@ public class ResteasyServerCommonProcessor {
                 continue;
             }
             MethodInfo method = instance.target().asMethod();
-            if (isReflectionDeclarationRequiredFor(method.returnType())) {
+            if (ReflectionHierarchyUtil.isReflectionDeclarationRequiredFor(method.returnType())) {
                 reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType(), index));
             }
             for (short i = 0; i < method.parameters().size(); i++) {
                 Type parameterType = method.parameters().get(i);
-                if (isReflectionDeclarationRequiredFor(parameterType)
+                if (ReflectionHierarchyUtil.isReflectionDeclarationRequiredFor(parameterType)
                         && !hasAnnotation(method, i, ResteasyDotNames.CONTEXT)) {
                     reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(parameterType, index));
                 }
             }
-        }
-    }
-
-    private static boolean isReflectionDeclarationRequiredFor(Type type) {
-        DotName className = getClassName(type);
-
-        return className != null && !ResteasyDotNames.TYPES_IGNORED_FOR_REFLECTION.contains(className);
-    }
-
-    private static DotName getClassName(Type type) {
-        switch (type.kind()) {
-            case CLASS:
-            case PARAMETERIZED_TYPE:
-                return type.name();
-            case ARRAY:
-                return getClassName(type.asArrayType().component());
-            default:
-                return null;
         }
     }
 

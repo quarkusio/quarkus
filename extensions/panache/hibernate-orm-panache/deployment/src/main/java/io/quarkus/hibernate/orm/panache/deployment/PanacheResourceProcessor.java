@@ -26,6 +26,7 @@ import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
+import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
@@ -60,7 +61,8 @@ public final class PanacheResourceProcessor {
     void build(CombinedIndexBuildItem index,
             ApplicationIndexBuildItem applicationIndex,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
-            HibernateEnhancersRegisteredBuildItem hibernateMarker) throws Exception {
+            HibernateEnhancersRegisteredBuildItem hibernateMarker,
+            BuildProducer<PanacheEntityClassesBuildItem> entityClasses) throws Exception {
 
         PanacheJpaRepositoryEnhancer daoEnhancer = new PanacheJpaRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
@@ -99,6 +101,9 @@ public final class PanacheResourceProcessor {
         }
         for (String modelClass : modelClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(modelClass, modelEnhancer));
+        }
+        if (!modelClasses.isEmpty()) {
+            entityClasses.produce(new PanacheEntityClassesBuildItem(modelClasses));
         }
 
         MetamodelInfo<EntityModel<EntityField>> modelInfo = modelEnhancer.getModelInfo();

@@ -61,7 +61,8 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
             key = httpConfiguration.encryptionKey;
         }
         FormAuthConfig form = buildTimeConfig.auth.form;
-        loginManager = new PersistentLoginManager(key, "quarkus-credential", form.timeout.toMillis());
+        loginManager = new PersistentLoginManager(key, "quarkus-credential", form.timeout.toMillis(),
+                form.newCookieInterval.toMillis());
         loginPage = form.loginPage.startsWith("/") ? form.loginPage : "/" + form.loginPage;
         errorPage = form.errorPage.startsWith("/") ? form.errorPage : "/" + form.errorPage;
         landingPage = form.landingPage.startsWith("/") ? form.landingPage : "/" + form.landingPage;

@@ -41,6 +41,20 @@ public class FormAuthConfig {
     public Duration timeout;
 
     /**
+     * How old a cookie can get before it will be replaced with a new cookie with an updated timeout.
+     *
+     * Not that smaller values will result in slightly more server load (as new encrypted cookies will be
+     * generated more often), however larger values affect the inactivity timeout as the timeout is set
+     * when a cookie is generated.
+     *
+     * For example if this is set to 10 minutes, and the inactivity timeout is 30m, if a users last request
+     * is when the cookie is 9m old then the actual timeout will happen 21m after the last request, as the timeout
+     * is only refreshed when a new cookie is generated.
+     */
+    @ConfigItem(defaultValue = "PT1M")
+    public Duration newCookieInterval;
+
+    /**
      * The cookie that is used to store the persistent session
      */
     @ConfigItem(defaultValue = "quarkus-credential")

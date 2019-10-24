@@ -35,10 +35,12 @@ public class PersistentLoginManager {
     private final String cookieName;
     private final long timeoutMillis;
     private final SecureRandom secureRandom = new SecureRandom();
+    private final long newCookieMillis;
 
-    public PersistentLoginManager(String encryptionKey, String cookieName, long timeoutMillis) {
+    public PersistentLoginManager(String encryptionKey, String cookieName, long timeoutMillis, long newCookieMillis) {
         try {
             this.cookieName = cookieName;
+            this.newCookieMillis = newCookieMillis;
             this.timeoutMillis = timeoutMillis;
             if (encryptionKey == null) {
                 secretKey = KeyGenerator.getInstance("AES").generateKey();
@@ -79,7 +81,7 @@ public class PersistentLoginManager {
             if (System.currentTimeMillis() > expire) {
                 return null;
             }
-            return new RestoreResult(result.substring(sep + 1), (System.currentTimeMillis() - expire) > 1000 * 60); //new cookie every minute
+            return new RestoreResult(result.substring(sep + 1), (System.currentTimeMillis() - expire) > newCookieMillis);
         } catch (Exception e) {
             log.debug("Failed to restore persistent user session", e);
             return null;

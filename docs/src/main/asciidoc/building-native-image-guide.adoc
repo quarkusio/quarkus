@@ -110,7 +110,7 @@ Use the following command to recursively delete the `com.apple.quarantine` exten
 
 [source,shell]
 -----
-xattr -r -d com.apple.quarantine ${GRAALVM_HOME}
+xattr -r -d com.apple.quarantine $HOME/Development/graalvm/
 -----
 ====
 

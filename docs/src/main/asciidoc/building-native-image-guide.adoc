@@ -20,14 +20,13 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* GraalVM installed from the http://www.graalvm.org/downloads/[GraalVM web site].
+* `JDK 8 or 11+` installed with `JAVA_HOME` configured appropriately
+* `GraalVM {graalvm-version}` installed from the http://www.graalvm.org/downloads/[GraalVM web site].
 Using the community edition is enough.
-Version {graalvm-version} is required.
 * The `GRAALVM_HOME` environment variable configured appropriately
 * The `native-image` tool must be installed; this can be done by running `./gu install native-image` from your GraalVM
 `bin` directory
-* Apache Maven 3.5.3+
+* `Apache Maven 3.5.3+`
 * A working C developer environment (see the note below for details)
 * A running Docker
 * The code of the application developed in the link:getting-started-guide.html[Getting Started Guide].

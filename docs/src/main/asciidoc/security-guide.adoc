@@ -66,6 +66,8 @@ public class SubjectExposingResource {
 <4> This call to obtain the user principal will return null if the caller is unauthenticated, non-null if the caller is authenticated.
 <5> The `/subject/denied` endpoint disallows any access regardless of whether the call is authenticated by specifying the `@DenyAll` annotation.
 
+## Configuration
+
 There are two configuration settings that alter the RBAC behavior:
 
 - `quarkus.jaxrs.deny-uncovered=true|false` - if set to true, the access will be denied for all JAX-RS endpoints will be

@@ -1,5 +1,6 @@
 package io.quarkus.kubernetes.deployment;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
@@ -96,8 +97,8 @@ class KubernetesProcessor {
         // write the generated resources to the filesystem
         final Map<String, String> generatedResourcesMap = session.close();
         for (Map.Entry<String, String> resourceEntry : generatedResourcesMap.entrySet()) {
-            String relativePath = resourceEntry.getKey().replace(root.toAbsolutePath() + "/", "kubernetes/");
-            if (relativePath.startsWith("kubernetes/.")) { // ignore some of Dekorate's internal files
+            String relativePath = resourceEntry.getKey().replace(root.toAbsolutePath().toString(), "kubernetes");
+            if (relativePath.startsWith("kubernetes" + File.separator + ".")) { // ignore some of Dekorate's internal files
                 continue;
             }
             generatedResourceProducer.produce(

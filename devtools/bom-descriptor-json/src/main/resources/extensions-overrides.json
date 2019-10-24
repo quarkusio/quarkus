@@ -1,0 +1,31 @@
+
+{
+    "categories": [
+        { "name": "Web",
+          "id": "web",
+          "metadata": {
+              "pinned": [
+                  "blha",
+                  "wodf"
+              ]
+          }
+        }
+    ],
+
+
+    "extensions": [
+        {
+            "groupId": "io.quarkus",
+            "artifactId": "quarkus-core",
+
+            "name": "Quarkus - Core",
+            "metadata": {
+                "keywords": [
+                    "wonka"
+                ]
+            },
+            "description": "monkey",
+            "status": "stable"
+        }
+    ]
+}

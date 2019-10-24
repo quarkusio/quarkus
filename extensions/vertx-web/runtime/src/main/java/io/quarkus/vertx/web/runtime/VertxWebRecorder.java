@@ -44,7 +44,7 @@ public class VertxWebRecorder {
                 if (!routeAnnotation.regex().isEmpty()) {
                     route = router.routeWithRegex(routeAnnotation.regex());
                 } else if (!routeAnnotation.path().isEmpty()) {
-                    route = router.route(routeAnnotation.path());
+                    route = router.route(ensureStartWithSlash(routeAnnotation.path()));
                 } else {
                     route = router.route();
                 }
@@ -92,4 +92,13 @@ public class VertxWebRecorder {
             }
         };
     }
+
+    private String ensureStartWithSlash(String path) {
+        if (path.startsWith("/")) {
+            return path;
+        } else {
+            return "/" + path;
+        }
+    }
+
 }

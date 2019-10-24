@@ -232,7 +232,7 @@ We're now able to distinguish unit tests and integration tests. Now, let's bind 
 ----
 
 NOTE: This way, the `QuarkusTest` instances will be executed as part of the `integration-test` build phase while the other JUnit tests will still be ran during the `test` phase.
-You can run all the tests with the command `mvn clean verify` (and you will notice that two tests are ran in different phases).
+You can run all the tests with the command `./mvnw clean verify` (and you will notice that two tests are ran in different phases).
 
 == Measuring the coverage of JUnit tests using JaCoCo
 
@@ -275,7 +275,7 @@ It is now time to introduce JaCoCo to measure the coverage. The straightforward 
     </build>
 ----
 
-NOTE: If you run `mvn clean test` the coverage information will be collected during the execution of the unit tests in the file `jacoco.exec`.
+NOTE: If you run `./mvnw clean test` the coverage information will be collected during the execution of the unit tests in the file `jacoco.exec`.
 
 == Measuring separately the coverage of each test type
 
@@ -345,7 +345,7 @@ We also need to generate a separate report for each test execution. Let's adjust
 
 == The coverage does not seem to correspond to the reality
 
-You can now run the tests: `mvn clean verify` As explained earlier, it will run the unit tests first, then the integration tests. And finally, it will generate two separate reports. First a report of the coverage of the unit tests in `target/site/jacoco-ut` then a report of the coverage of the integration tests in `target/site/jacoco-it`.
+You can now run the tests: `./mvnw clean verify` As explained earlier, it will run the unit tests first, then the integration tests. And finally, it will generate two separate reports. First a report of the coverage of the unit tests in `target/site/jacoco-ut` then a report of the coverage of the integration tests in `target/site/jacoco-it`.
 
 Given the content of `GreetingResourceTest`, `GreetingResource` should have been covered. But when we open the report `target/site/jacoco-it/index.html`, the class `GreetingResource` is reported with 0% of coverage. But the fact that `GreetingService` is reported as covered shows that the test execution was actually recorded. How come?
 

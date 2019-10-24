@@ -145,7 +145,7 @@ If you have an already created project, the `neo4j` extension can be added to an
 
 [source,shell]
 ----
-mvn quarkus:add-extension -Dextensions="neo4j"
+./mvnw quarkus:add-extension -Dextensions="neo4j"
 ----
 
 Otherwise, you can manually add this to the dependencies section of your `pom.xml` file:
@@ -248,7 +248,7 @@ Now start Quarkus in `dev` mode with:
 
 [source, shell]
 ----
-mvn compile quarkus:dev
+./mvnw compile quarkus:dev
 ----
 
 and retrieve the endpoint like this

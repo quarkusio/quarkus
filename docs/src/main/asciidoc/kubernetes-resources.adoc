@@ -60,7 +60,7 @@ quarkus.kubernetes.group=yourDockerUsername # this is optional and defaults to y
 quarkus.application.name=test-quarkus-app # this is also optional and defaults to the project name if not set
 ----
 
-and following the execution of `mvn package` you will notice amongst the other files that are created, two files named
+and following the execution of `./mvnw package` you will notice amongst the other files that are created, two files named
 `kubernetes.json` and `kubernetes.yaml` in the `target/kubernetes/` directory.
 
 If you look at either file you will see that it contains both a Kubernetes `Deployment` and a `Service`.

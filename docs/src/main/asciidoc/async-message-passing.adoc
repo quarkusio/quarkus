@@ -222,7 +222,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dextensions="vertx"
 ----
 
-You can already start the application in _dev mode_ using `mvn compile quarkus:dev`.
+You can already start the application in _dev mode_ using `./mvnw compile quarkus:dev`.
 
 Then, creates a new JAX-RS resource with the following content:
 

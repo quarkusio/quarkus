@@ -137,7 +137,7 @@ and you should see output similar to:
 .quarkus:dev Output
 [source,shell]
 ----
-$ mvn clean compile quarkus:dev
+$ ./mvnw clean compile quarkus:dev
 [INFO] Scanning for projects...
 [INFO] 
 [INFO] ---------------------< org.acme:using-oauth2-rbac >---------------------

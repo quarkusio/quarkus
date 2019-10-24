@@ -11,6 +11,12 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class OidcConfig {
 
     /**
+     * If the OIDC extension is enabled.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled;
+
+    /**
      * The base URL of the OpenID Connect (OIDC) server, for example, 'https://host:port/auth'.
      * All the other OIDC server page and service URLs are derived from this URL.
      * Note if you work with Keycloak OIDC server, make sure the base URL is in the following format:

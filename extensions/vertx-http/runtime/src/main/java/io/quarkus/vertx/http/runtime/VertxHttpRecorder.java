@@ -162,7 +162,6 @@ public class VertxHttpRecorder {
 
         //allow the router to be modified programmatically
         Event<Object> event = Arc.container().beanManager().getEvent();
-        event.select(Router.class).fire(router);
 
         // First, fire an event with the filter collector
         Filters filters = new Filters();

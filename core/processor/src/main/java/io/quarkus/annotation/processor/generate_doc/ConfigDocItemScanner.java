@@ -163,12 +163,12 @@ final public class ConfigDocItemScanner {
             }
 
             final String fileName = computeExtensionDocFileName(member);
-            final List<ConfigDocItem> previousExtensionConfigDocKeys = foundExtensionConfigurationItems.get(fileName);
+            final List<ConfigDocItem> existingConfigDocItems = foundExtensionConfigurationItems.get(fileName);
 
-            if (previousExtensionConfigDocKeys == null) {
+            if (existingConfigDocItems == null) {
                 foundExtensionConfigurationItems.put(fileName, configDocItems);
             } else {
-                previousExtensionConfigDocKeys.addAll(configDocItems);
+                DocGeneratorUtil.appendConfigItemsIntoExistingOnes(existingConfigDocItems, configDocItems);
             }
         }
 
@@ -314,9 +314,9 @@ final public class ConfigDocItemScanner {
                     configSection = new ConfigDocSection();
                     configSection.setWithinAMap(withinAMap);
                     configSection.setConfigPhase(configPhase);
-                    configSection.setName(parentName + Constants.DOT + hyphenatedFieldName);
                     configSection.setSectionDetails(sectionHolder.details);
                     configSection.setSectionDetailsTitle(sectionHolder.title);
+                    configSection.setName(parentName + Constants.DOT + hyphenatedFieldName);
                 }
             }
 
@@ -342,7 +342,8 @@ final public class ConfigDocItemScanner {
                 if (!typeMirror.getKind().isPrimitive()) {
                     DeclaredType declaredType = (DeclaredType) typeMirror;
                     TypeElement typeElement = (TypeElement) declaredType.asElement();
-                    Name qualifiedName = ((TypeElement) typeElement).getQualifiedName();
+                    Name qualifiedName = typeElement.getQualifiedName();
+
                     if (qualifiedName.contentEquals("java.util.Optional")
                             || qualifiedName.contentEquals("java.util.OptionalInt")
                             || qualifiedName.contentEquals("java.util.OptionalDouble")

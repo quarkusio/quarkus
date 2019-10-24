@@ -133,6 +133,9 @@ public class SubjectExposingResource {
 Quarkus has an integrated plugable web security layer. If security is enabled all HTTP requests will have a permission
 check performed to make sure they are permitted to continue.
 
+NOTE: Configuration authorization checks are executed before any annotation-based authorization check is done, so both
+checks have to pass for a request to be allowed.
+
 The default implementation allows you to define permissions using config in `application.properties`. An example
 config is shown below:
 

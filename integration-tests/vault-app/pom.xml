@@ -156,6 +156,7 @@
                     <plugin>
                         <groupId>${project.groupId}</groupId>
                         <artifactId>quarkus-maven-plugin</artifactId>
+                        <version>${project.version}</version>
                         <executions>
                             <execution>
                                 <id>native-image</id>

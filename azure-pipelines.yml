@@ -245,6 +245,7 @@ stages:
             - elytron-security
             - oidc
             - vault-app
+            - keycloak-authorization
           name: security
           keycloak: true
 

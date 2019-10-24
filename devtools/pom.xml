@@ -20,13 +20,12 @@
     </properties>
 
     <modules>
+        <module>platform-descriptor-json-plugin</module>
         <module>bom-descriptor-json</module>
         <module>platform-descriptor-json</module>
-        <module>platform-descriptor-legacy</module>
         <module>maven</module>
         <module>gradle</module>
         <module>aesh</module>
         <module>reflection-agent</module>
-        <module>templates</module>
     </modules>
 </project>

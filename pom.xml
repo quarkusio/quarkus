@@ -39,6 +39,12 @@
     </properties>
 
     <modules>
+        <!-- External projects -->
+        <module>independent-projects/arc</module>
+        <module>independent-projects/bootstrap</module>
+        <module>independent-projects/tools</module>
+
+        <!-- BOMs and parent POM -->
         <module>bom/runtime</module>
         <module>bom/deployment</module>
         <module>build-parent</module>
@@ -50,16 +56,14 @@
         <!-- Extensions -->
         <module>extensions</module>
 
+        <!-- Devtools (Maven, cli, gradle) -->
+        <!-- MUST BE BUILT AFTER EXTENSIONS BUT BEFORE IT -->
+        <!-- the tools are generating the JSON descriptor for the BOM -->
+        <!-- relying on the fact that the extension descriptor, generated as part of an extension build, is available -->
+        <module>devtools</module>
+
         <!-- Integration Tests -->
         <module>integration-tests</module>
-
-        <!-- External projects -->
-        <module>independent-projects/arc</module>
-        <module>independent-projects/bootstrap</module>
-        <module>independent-projects/tools</module>
-
-        <!-- Devtools (Maven, cli, gradle) -->
-        <module>devtools</module>
 
         <!-- Misc. -->
         <module>docs</module>

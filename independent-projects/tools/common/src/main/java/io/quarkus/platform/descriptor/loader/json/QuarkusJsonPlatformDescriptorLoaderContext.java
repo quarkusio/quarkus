@@ -1,13 +1,13 @@
 package io.quarkus.platform.descriptor.loader.json;
 
 import java.nio.file.Path;
+import java.util.function.Function;
 
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoaderContext;
 
 public interface QuarkusJsonPlatformDescriptorLoaderContext extends QuarkusPlatformDescriptorLoaderContext {
 
-    Path getJsonDescriptorFile();
+    <T> T parseJson(Function<Path, T> parser);
 
-    MavenArtifactResolver getMavenArtifactResolver();
+    ArtifactResolver getArtifactResolver();
 }

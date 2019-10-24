@@ -17,6 +17,11 @@ import io.quarkus.vertx.deployment.VertxBuildItem;
 public class VertxKeycloakBuildStep {
 
     @BuildStep
+    FeatureBuildItem featureBuildItem() {
+        return new FeatureBuildItem(FeatureBuildItem.OIDC);
+    }
+
+    @BuildStep
     public AdditionalBeanBuildItem beans(OidcConfig config) {
         if (config.enabled) {
             return AdditionalBeanBuildItem.builder().setUnremovable()

@@ -88,6 +88,9 @@ very much a work in progress, so this list will be expanded over the coming week
 |link:elytron-properties-guide.html[quarkus-elytron-security-properties-file]
 |Provides support for simples properties files that can be used for testing security. This supports both embedding user info in `application.properties` and standalone properties files.
 
+|link:security-jdbc-guide.html[quarkus-elytron-security-jdbc]
+|Provides support for authenticating via JDBC.
+
 |link:oauth2-guide.html[quarkus-elytron-security-oauth2]
 |Provides support for OAuth2 flows using Elytron. This extension will likely be deprecated soon and replaced by a reactive Vert.x version.
 

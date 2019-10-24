@@ -249,6 +249,13 @@ quarkus.http.auth.permission.roles2.policy=admin-policy1
 TIP: Given the above permission set, `GET /api/foo` would match both permission sets' paths,
 so would require both the `user` and `admin` roles.
 
+## Authenticated representation
+
+For every authenticated resource, you can inject an `SecurityIdentity` instance to get the authenticated identity information.
+
+In some other contexts you may have other parallel representations of the same information (or parts of it) such as `SecurityContext`
+for JAX-RS or `JsonWebToken` for JWT.
+
 ## Configuration
 
 There are two configuration settings that alter the RBAC behavior:

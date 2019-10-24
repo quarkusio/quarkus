@@ -55,7 +55,7 @@
         <javax.ws.rs-api.version>2.1.1</javax.ws.rs-api.version>
         <asm.version>7.1</asm.version>
         <cdi-api.version>2.0.SP1</cdi-api.version>
-        <commons-io.version>2.5</commons-io.version>
+        <commons-io.version>2.6</commons-io.version>
         <jboss-metadata-web.version>11.0.0.Final</jboss-metadata-web.version>
         <maven-core.version>3.5.4</maven-core.version>
         <maven-resolver.version>1.1.1</maven-resolver.version>
@@ -70,8 +70,8 @@
         <gizmo.version>1.0.0.Alpha8</gizmo.version>
         <jackson.version>2.9.10.20191020</jackson.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
-        <commons-lang3.version>3.8.1</commons-lang3.version>
-        <commons-codec.version>1.11</commons-codec.version>
+        <commons-lang3.version>3.9</commons-lang3.version>
+        <commons-codec.version>1.13</commons-codec.version>
         <validation-api.version>2.0.1.Final</validation-api.version>
         <classmate.version>1.3.4</classmate.version>
         <javax.el-impl.version>3.0.1-b11</javax.el-impl.version>

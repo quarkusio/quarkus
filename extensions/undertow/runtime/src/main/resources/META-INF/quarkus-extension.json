@@ -1,6 +1,6 @@
 {
   "name": "Undertow Servlet",
-  "shortName": "servlet",
+  "short-name": "servlet",
   "metadata": {
     "keywords": [
       "undertow",

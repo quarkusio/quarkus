@@ -1,6 +1,6 @@
 {
   "name": "Undertow WebSockets",
-  "shortName": "websockets",
+  "short-name": "websockets",
   "guide": "https://quarkus.io/guides/websocket-guide",
   "metadata": {
     "keywords": [

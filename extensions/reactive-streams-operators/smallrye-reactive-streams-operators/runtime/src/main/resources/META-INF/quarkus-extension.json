@@ -1,6 +1,6 @@
 {
   "name": "SmallRye Reactive Streams Operators",
-  "shortName": "reactive streams",
+  "short-name": "reactive streams",
   "metadata": {
     "keywords": [
       "smallrye-reactive-streams-operators",

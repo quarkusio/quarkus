@@ -1,6 +1,6 @@
 {
   "name": "SmallRye Context Propagation",
-  "shortName": "context propagation",
+  "short-name": "context propagation",
   "metadata": {
     "keywords": [
       "smallrye-context-propagation",

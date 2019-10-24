@@ -40,7 +40,9 @@ import io.quarkus.bootstrap.BootstrapConstants;
 @Mojo(name = "extension-descriptor", defaultPhase = LifecyclePhase.PROCESS_RESOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class ExtensionDescriptorMojo extends AbstractMojo {
 
-    /**
+    private static final String ARTIFACT_ID = "artifact-id";
+
+	/**
      * The entry point to Aether, i.e. the component doing all the work.
      *
      * @component
@@ -116,10 +118,10 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
       
         
         if(extObject.get("groupId") == null) {
-            extObject.add("groupId", project.getGroupId());
+            extObject.add("group-id", project.getGroupId());
         }
         if(extObject.get("artifactId") == null) {
-            extObject.add("artifactId", project.getArtifactId());
+            extObject.add(ARTIFACT_ID, project.getArtifactId());
         }
         if(extObject.get("version") == null) {
             extObject.add("version", project.getVersion());
@@ -128,7 +130,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             if (project.getName() != null) {
                 extObject.add("name", project.getName());
             } else {
-                String defaultName = extObject.getString("artifactId", null);
+                String defaultName = extObject.getString(ARTIFACT_ID, null);
                 int i = 0;
                 if (defaultName.startsWith("quarkus-")) {
                     i = "quarkus-".length();
@@ -150,8 +152,8 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                     }
                 }
                 defaultName = buf.toString();
-                getLog().warn("Extension name has not been provided for " + extObject.getString("groupId", null) + ":"
-                        + extObject.getString("artifactId", null) + "! Using '" + defaultName + "' as the default one.");
+                getLog().warn("Extension name has not been provided for " + extObject.getString("group-id", null) + ":"
+                        + extObject.getString("artifact-dd", null) + "! Using '" + defaultName + "' as the default one.");
                 extObject.set("name", defaultName);
             }
         }

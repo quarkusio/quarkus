@@ -1,6 +1,6 @@
 {
   "name": "SmallRye Metrics",
-  "shortName": "metrics",
+  "short-name": "metrics",
   "guide": "https://quarkus.io/guides/metrics-guide",
   "metadata": {
     "keywords": [

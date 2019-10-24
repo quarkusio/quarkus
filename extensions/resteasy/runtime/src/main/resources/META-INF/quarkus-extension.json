@@ -1,6 +1,6 @@
 {
   "name": "RESTEasy JAX-RS",
-  "shortName": "jax-rs",
+  "short-name": "jax-rs",
   "guide": "https://quarkus.io/guides/rest-json-guide",
   "metadata": {
     "keywords": [

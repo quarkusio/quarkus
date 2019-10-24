@@ -168,8 +168,8 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         final JsonObjectBuilder platformJson = Json.createObjectBuilder();
         // Add information about the BOM to it
         final JsonObjectBuilder bomJson = Json.createObjectBuilder();
-        bomJson.add("groupId", bomGroupId);
-        bomJson.add("artifactId", bomArtifactId);
+        bomJson.add("group-id", bomGroupId);
+        bomJson.add("artifact-id", bomArtifactId);
         bomJson.add("version", bomVersion);
         platformJson.add("bom", bomJson.build());
         // And add the list of extensions
@@ -227,8 +227,8 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
             final Path props = metaInfDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
             if (Files.exists(props)) {
                 return Json.createObjectBuilder()
-                        .add("artifactId", artifact.getArtifactId())
-                        .add("groupId", artifact.getGroupId())
+                        .add("artifact-id", artifact.getArtifactId())
+                        .add("group-id", artifact.getGroupId())
                         .add("version", artifact.getVersion())
                         .add("name", artifact.getArtifactId())
                         .build();

@@ -1,6 +1,6 @@
 {
   "name": "SmallRye Health",
-  "shortName": "health",
+  "short-name": "health",
   "guide": "https://quarkus.io/guides/health-guide",
   "metadata": {
     "keywords": [

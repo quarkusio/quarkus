@@ -1,6 +1,6 @@
 {
   "name": "ArC",
-  "shortName": "CDI",
+  "short-name": "CDI",
   "guide": "https://quarkus.io/guides/cdi-reference",
   "metadata": {
     "keywords": [

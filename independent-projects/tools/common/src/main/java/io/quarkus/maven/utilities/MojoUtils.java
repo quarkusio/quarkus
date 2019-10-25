@@ -7,8 +7,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
@@ -19,9 +23,14 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
 
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.descriptor.loader.json.ArtifactResolver;
 import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 
 /**
@@ -81,6 +90,10 @@ public class MojoUtils {
         return get("plugin-groupId");
     }
 
+    public static String getPluginKey() {
+        return MojoUtils.getPluginGroupId() + ":" + MojoUtils.getPluginArtifactId();
+    }
+
     public static String getPluginVersion() {
         return getPlatformDescriptor().getQuarkusVersion();
     }
@@ -124,27 +137,6 @@ public class MojoUtils {
 
     public static String get(String key) {
         return getProperties().getProperty(key);
-    }
-
-    /**
-     * Checks whether or not the given project has a plugin with the given key. The key is given using the
-     * "groupId:artifactId" syntax.
-     *
-     * @param project the project
-     * @param pluginKey the plugin
-     * @return an Optional completed if the plugin is found.
-     */
-    public static Optional<Plugin> hasPlugin(MavenProject project, String pluginKey) {
-        Optional<Plugin> optPlugin = project.getBuildPlugins().stream()
-                .filter(plugin -> pluginKey.equals(plugin.getKey()))
-                .findFirst();
-
-        if (!optPlugin.isPresent() && project.getPluginManagement() != null) {
-            optPlugin = project.getPluginManagement().getPlugins().stream()
-                    .filter(plugin -> pluginKey.equals(plugin.getKey()))
-                    .findFirst();
-        }
-        return optPlugin;
     }
 
     /**
@@ -373,4 +365,72 @@ public class MojoUtils {
         return gavOut;
     }
 
+    /**
+     * Returns the JAR or the root directory that contains the class file that is on the
+     * classpath of the context classloader
+     */
+    public static Path getClassOrigin(Class<?> cls) throws IOException {
+        final String pluginClassPath = cls.getName().replace('.', '/') + ".class";
+        URL url = cls.getClassLoader().getResource(pluginClassPath);
+        if (url == null) {
+            throw new IOException("Failed to locate the origin of " + cls);
+        }
+        String classLocation = url.toExternalForm();
+        if (url.getProtocol().equals("jar")) {
+            classLocation = classLocation.substring(4, classLocation.length() - pluginClassPath.length() - 2);
+        } else {
+            classLocation = classLocation.substring(0, classLocation.length() - pluginClassPath.length());
+        }
+        return urlSpecToPath(classLocation);
+    }
+
+    private static Path urlSpecToPath(String urlSpec) throws IOException {
+        try {
+            return Paths.get(new URL(urlSpec).toURI());
+        } catch (Throwable e) {
+            throw new IOException(
+                    "Failed to create an instance of " + Path.class.getName() + " from " + urlSpec, e);
+        }
+    }
+
+    public static ArtifactResolver toJsonArtifactResolver(MavenArtifactResolver mvn) {
+        return new ArtifactResolver() {
+
+            @Override
+            public List<Dependency> getManagedDependencies(String groupId, String artifactId, String version) {
+                final DefaultArtifact artifact = new DefaultArtifact(groupId, artifactId, null, "pom", version);
+                final List<org.eclipse.aether.graph.Dependency> managedDeps;
+                try {
+                    managedDeps = mvn.resolveDescriptor(artifact).getManagedDependencies();
+                } catch (AppModelResolverException e) {
+                    throw new IllegalStateException("Failed to resolve the pom of " + artifact, e);
+                }
+                final List<Dependency> result = new ArrayList<>(managedDeps.size());
+                for(org.eclipse.aether.graph.Dependency dep : managedDeps) {
+                    final Dependency d = new Dependency();
+                    Artifact a = dep.getArtifact();
+                    d.setGroupId(a.getGroupId());
+                    d.setArtifactId(a.getArtifactId());
+                    d.setVersion(a.getVersion());
+                    d.setClassifier(a.getClassifier());
+                    d.setType(a.getExtension());
+                    d.setOptional(d.isOptional());
+                    d.setScope(d.getScope());
+                    result.add(d);
+                }
+                return result;
+            }
+
+            @Override
+            public <T> T process(String groupId, String artifactId, String classifier, String type, String version,
+                    Function<Path, T> processor) {
+                final DefaultArtifact artifact = new DefaultArtifact(groupId, artifactId, classifier, type, version);
+                try {
+                    return processor.apply(mvn.resolve(artifact).getArtifact().getFile().toPath());
+                } catch (AppModelResolverException e) {
+                    throw new IllegalStateException("Failed to resolve " + artifact, e);
+                }
+            }
+        };
+    }
 }

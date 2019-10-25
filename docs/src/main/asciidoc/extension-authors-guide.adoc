@@ -1233,6 +1233,132 @@ HealthBuildItem addHealthCheck(AgroalBuildTimeConfig agroalBuildTimeConfig) {
 }
 ----
 
+=== Customizing JSON handling from an extension
+Extensions often need to register serializers and/or deserializers for types the extension provides.
+
+For this, both JSON-B and Jackson extension provide a way to register serializer/deserializer from within an
+extension deployment module.
+
+Keep in mind that not everybody will need JSON, so you need to make it optional.
+
+If an extension intends to provide JSON related customization,
+it is strongly advised to provide customization for both JSON-B and Jackson.
+
+==== Customizing JSON-B
+First, add an *optional* dependency to `quarkus-jsonb` on your extension's runtime module.
+
+[source%nowrap,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-jsonb</artifactId>
+  <optional>true</optional>
+</dependency>
+----
+
+Then create a serializer and/or a deserializer for JSON-B, an example of which can be seen in the `mongodb-panache` extension.
+
+[source%nowrap,java]
+----
+public class ObjectIdSerializer implements JsonbSerializer<ObjectId> {
+    @Override
+    public void serialize(ObjectId obj, JsonGenerator generator, SerializationContext ctx) {
+        if (obj != null) {
+            generator.write(obj.toString());
+        }
+    }
+}
+----
+
+Add a dependency to `quarkus-jsonb-spi` on your extension's deployment module.
+
+[source%nowrap,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-jsonb-spi</artifactId>
+</dependency>
+----
+
+Add a build step to your processor to register the serializer via the `JsonbSerializerBuildItem`.
+
+[source%nowrap,java]
+----
+@BuildStep
+JsonbSerializerBuildItem registerJsonbSerializer() {
+    return new JsonbSerializerBuildItem(io.quarkus.mongodb.panache.jsonb.ObjectIdSerializer.class.getName()));
+}
+----
+
+The JSON-B extension will then use the produced build item to register your serializer/deserializer automatically.
+
+If you need more customization capabilities than registering a serializer or a deserializer,
+you can produce a CDI bean that implements `io.quarkus.jsonb.JsonbConfigCustomizer` via an `AdditionalBeanBuildItem`.
+More info about customizing JSON-B can be found on the JSON guide link:rest-json-guide.html#configuring-json-support[Configuring JSON support]
+
+==== Customizing Jackson
+
+First, add an *optional* dependency to `quarkus-jackson` on your extension's runtime module.
+
+[source%nowrap,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-jackson</artifactId>
+  <optional>true</optional>
+</dependency>
+----
+
+Then create a serializer or a deserializer (or both) for Jackson, an example of which can be seen in the `mongodb-panache` extension.
+
+[source%nowrap,java]
+----
+public class ObjectIdSerializer extends StdSerializer<ObjectId> {
+    public ObjectIdSerializer() {
+        super(ObjectId.class);
+    }
+    @Override
+    public void serialize(ObjectId objectId, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+            throws IOException {
+        if (objectId != null) {
+            jsonGenerator.writeString(objectId.toString());
+        }
+    }
+}
+----
+
+Add a dependency to `quarkus-jackson-spi` on your extension's deployment module.
+
+[source%nowrap,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-jackson-spi</artifactId>
+</dependency>
+----
+
+Add a build step to your processor to register a Jackson module via the `JacksonModuleBuildItem`.
+You need to name your module in a unique way across all Jackson modules.
+
+[source%nowrap,java]
+----
+@BuildStep
+JacksonModuleBuildItem registerJacksonSerDeser() {
+    return new JacksonModuleBuildItem.Builder("ObjectIdModule")
+                    .add(io.quarkus.mongodb.panache.jackson.ObjectIdSerializer.class.getName(),
+                            io.quarkus.mongodb.panache.jackson.ObjectIdDeserializer.class.getName(),
+                            ObjectId.class.getName())
+                    .build();
+}
+----
+
+The Jackson extension will then use the produced build item to register a module within Jackson automatically.
+
+If you need more customization capabilities than registering a module,
+you can produce a CDI bean that implements `io.quarkus.jackson.ObjectMapperCustomizer` via an `AdditionalBeanBuildItem`.
+More info about customizing Jackson can be found on the JSON guide link:rest-json-guide.html#configuring-json-support[Configuring JSON support]
+----
+
 === Testing Extensions
 
 Testing of extensions should be done with the `io.quarkus.test.QuarkusUnitTest` runner. This runner allows

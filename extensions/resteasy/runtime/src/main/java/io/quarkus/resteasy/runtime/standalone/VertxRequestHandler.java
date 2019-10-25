@@ -34,7 +34,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
 
     protected final Vertx vertx;
     protected final RequestDispatcher dispatcher;
-    protected final String servletMappingPrefix;
+    protected final String rootPath;
     protected final BufferAllocator allocator;
     protected final BeanContainer beanContainer;
     protected final CurrentIdentityAssociation association;
@@ -42,13 +42,13 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     public VertxRequestHandler(Vertx vertx,
             BeanContainer beanContainer,
             ResteasyDeployment deployment,
-            String servletMappingPrefix,
+            String rootPath,
             BufferAllocator allocator) {
         this.vertx = vertx;
         this.beanContainer = beanContainer;
         this.dispatcher = new RequestDispatcher((SynchronousDispatcher) deployment.getDispatcher(),
                 deployment.getProviderFactory(), null);
-        this.servletMappingPrefix = servletMappingPrefix;
+        this.rootPath = rootPath;
         this.allocator = allocator;
         Instance<CurrentIdentityAssociation> association = CDI.current().select(CurrentIdentityAssociation.class);
         this.association = association.isResolvable() ? association.get() : null;
@@ -90,7 +90,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         try {
             Context ctx = vertx.getOrCreateContext();
             HttpServerRequest request = routingContext.request();
-            ResteasyUriInfo uriInfo = VertxUtil.extractUriInfo(request, servletMappingPrefix);
+            ResteasyUriInfo uriInfo = VertxUtil.extractUriInfo(request, rootPath);
             ResteasyHttpHeaders headers = VertxUtil.extractHttpHeaders(request);
             HttpServerResponse response = request.response();
             VertxHttpResponse vertxResponse = new VertxHttpResponse(request, dispatcher.getProviderFactory(),

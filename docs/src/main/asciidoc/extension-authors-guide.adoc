@@ -1502,12 +1502,21 @@ The only particular aspect of writing Quarkus extensions in Eclipse is that APT 
 
 The class augmentation step of Quarkus generates classes for various purposes. Sometimes you need to view these
 classes/bytecode to debug or understand an issue. Classes that are related to application augmentation are currently held in
-memory in a runtime class loader. To have these classes written out to disk for inspection, specify the
+memory in a runtime class loader.
+
+When using the dev mode (running `mvn clean compile quarkus:dev) you can have these classes written out to disk for inspection, for this, you need to specify the
 `quarkus.debug.generated-classes-dir` system property, for example:
 
 [source,shell]
 ----
-./mvnw clean install -Dquarkus.debug.generated-classes-dir=./target/app-generated-classes
+./mvnw clean compile quarkus:dev -Dquarkus.debug.generated-classes-dir=app-generated-classes
+----
+
+You will see a line of log for each class outputed to the directory:
+
+[source,shell]
+----
+2019-10-25 18:12:34,262 INFO  [io.qua.run.RuntimeClassLoader] (main) Wrote /path/to/my/app/target/generated-devmode/io.quarkus.runner.GeneratedMain.class
 ----
 
 ==== Multi-module Maven Projects and the Development Mode

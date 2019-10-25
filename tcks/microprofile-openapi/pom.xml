@@ -33,9 +33,6 @@
                     <excludes>
                         <!-- java.lang.IllegalArgumentException: Class 'org.eclipse.microprofile.openapi.models.Constructible' is not Constructible -->
                         <exclude>org.eclipse.microprofile.openapi.tck.OASFactoryErrorTest</exclude>
-                        <!-- JSON path paths.'/reviews/users/{user}'.get.parameters.find{ it.name == 'user' }.content.'*/*'.schema.type doesn't match. Is null but expected string -->
-                        <!-- Only testParameter.testAvailabilityGetParamater fails, but need to exclude whole test class -->
-                        <exclude>org.eclipse.microprofile.openapi.tck.AirlinesAppTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>

@@ -5,11 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 
+import org.apache.maven.model.Dependency;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.platform.descriptor.loader.json.ArtifactResolver;
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoader;
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoaderContext;
 import io.quarkus.platform.descriptor.loader.json.impl.QuarkusJsonPlatformDescriptor;
@@ -34,28 +37,43 @@ class PlatformDescriptorLoaderTest {
             }
 
             @Override
-            public MavenArtifactResolver getMavenArtifactResolver() {
-                try {
-                    return MavenArtifactResolver.builder()
-                            .setRepoHome(new File("~/.m2").toPath())
-                            .setOffline(true)
-                            .build();
-                } catch (AppModelResolverException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-                return null;
+            public ArtifactResolver getArtifactResolver() {
+                return new ArtifactResolver() {
+
+                    @Override
+                    public List<Dependency> getManagedDependencies(String groupId, String artifactId,
+                            String version) {
+                        List<Dependency> lx = new ArrayList<Dependency>();
+
+                        Dependency core = new Dependency();
+                        core.setArtifactId("quarkus-core");
+                        core.setGroupId("io.quarkus");
+                        core.setVersion("I don't care!");
+                        lx.add(core);
+                        return lx;
+                    }
+
+                    @Override
+                    public <T> T process(String groupId, String artifactId, String classifier, String type,
+                            String version, Function<Path, T> processor) {
+                        // TODO Auto-generated method stub
+                        return null;
+                    }
+                };
+
             }
 
             @Override
-            public Path getJsonDescriptorFile() {
+            public <T> T parseJson(Function<Path, T> parser) {
                 String resourceName = "fakeextensions.json";
 
                 ClassLoader classLoader = getClass().getClassLoader();
                 File file = new File(classLoader.getResource(resourceName).getFile());
 
-                return file.toPath();
+                return parser.apply(file.toPath());
+
             }
+
         };
 
         QuarkusJsonPlatformDescriptor load = qpd.load(context);

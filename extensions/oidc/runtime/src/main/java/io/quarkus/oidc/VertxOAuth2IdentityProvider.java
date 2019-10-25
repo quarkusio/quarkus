@@ -5,9 +5,11 @@ import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -15,8 +17,6 @@ import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.oauth2.AccessToken;
 import io.vertx.ext.auth.oauth2.OAuth2Auth;
 
@@ -24,6 +24,7 @@ import io.vertx.ext.auth.oauth2.OAuth2Auth;
 public class VertxOAuth2IdentityProvider implements IdentityProvider<TokenAuthenticationRequest> {
 
     private volatile OAuth2Auth auth;
+    private volatile OidcConfig config;
 
     public OAuth2Auth getAuth() {
         return auth;
@@ -34,11 +35,17 @@ public class VertxOAuth2IdentityProvider implements IdentityProvider<TokenAuthen
         return this;
     }
 
+    public VertxOAuth2IdentityProvider setConfig(OidcConfig config) {
+        this.config = config;
+        return this;
+    }
+
     @Override
     public Class<TokenAuthenticationRequest> getRequestType() {
         return TokenAuthenticationRequest.class;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public CompletionStage<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
@@ -53,27 +60,24 @@ public class VertxOAuth2IdentityProvider implements IdentityProvider<TokenAuthen
                 AccessToken token = event.result();
                 QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
 
-                //this is not great, we are re-parsing
-                //this needs some love from someone who knows smallrye JWT better to avoid re-parsing
+                JsonWebToken jwtPrincipal = null;
                 try {
-                    JwtClaims jwtClaims = JwtClaims.parse(token.accessToken().encode());
-
-                    String username = token.principal().getString("username");
-                    builder.setPrincipal(new VertxJwtCallerPrincipal(username, jwtClaims));
+                    jwtPrincipal = new VertxJwtCallerPrincipal(JwtClaims.parse(token.accessToken().encode()));
                 } catch (InvalidJwtException e) {
                     result.completeExceptionally(e);
                     return;
                 }
-
-                JsonObject realmAccess = token.accessToken().getJsonObject("realm_access");
-                if (realmAccess != null) {
-                    JsonArray roles = realmAccess.getJsonArray("roles");
-                    if (roles != null) {
-                        for (Object authority : roles) {
-                            builder.addRole(authority.toString());
-                        }
+                builder.setPrincipal(jwtPrincipal);
+                try {
+                    String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
+                    for (String role : OidcUtils.findRoles(clientId, config.getRoles(), token.accessToken())) {
+                        builder.addRole(role);
                     }
+                } catch (Exception e) {
+                    result.completeExceptionally(e);
+                    return;
                 }
+
                 builder.addCredential(request.getToken());
                 result.complete(builder.build());
             }
@@ -81,4 +85,5 @@ public class VertxOAuth2IdentityProvider implements IdentityProvider<TokenAuthen
 
         return result;
     }
+
 }

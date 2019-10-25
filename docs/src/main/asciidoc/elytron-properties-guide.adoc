@@ -27,14 +27,14 @@ Add the following to your `pom.xml`:
 == Configuration
 
 The elytron-security-properties-file extension currently supports two different realms for the storage of authentication
-and authorization information. Both support storage of this information in properties type files. The following sections
+and authorization information. Both support storage of this information in properties files. The following sections
 detail the specific configuration properties.
 
 include::{generated-dir}/config/quarkus-elytron-security.adoc[opts=optional, leveloffset=+2]
 
-=== Property Files Realm Configuration
+=== Properties Files Realm Configuration
 
-The property files realm supports mapping of users to password and users to roles with a combination of properties files. They are configured with properties starting with `quarkus.security.users.file`.
+The properties files realm supports mapping of users to password and users to roles with a combination of properties files. They are configured with properties starting with `quarkus.security.users.file`.
 
 .example application.properties file section for property files realm
 [source,properties]
@@ -82,7 +82,7 @@ noadmin=user
 
 === Embedded Realm Configuration
 
-The embedded realm also supports mapping of users to password and users to roles. It uses the main application.properties Quarkus configuration file to embed this information. They are configured with properties starting with `quarkus.security.users.embedded`.
+The embedded realm also supports mapping of users to password and users to roles. It uses the main `application.properties` Quarkus configuration file to embed this information. They are configured with properties starting with `quarkus.security.users.embedded`.
 
 The following is an example application.properties file section illustrating the embedded realm configuration:
 
@@ -108,7 +108,7 @@ be generated for the first example above by running the command `echo -n scott:M
 
 ==== Embedded Users
 
-The user to password mappings are specified in the `application.properties` file by property names of the form `quarkus.security.users.embedded.users.<user>=<password>`. The following <<password-example>> illustrates the syntax with 4 user to password mappings:
+The user to password mappings are specified in the `application.properties` file by properties keys of the form `quarkus.security.users.embedded.users.<user>=<password>`. The following <<password-example>> illustrates the syntax with 4 user to password mappings:
 
 [#password-example]
 .Example Passwords
@@ -124,7 +124,7 @@ quarkus.security.users.embedded.users.noadmin=n0Adm1n
 
 ==== Embedded Roles
 
-The user to role mappings are specified in the `application.properties` file by property names of the form `quarkus.security.users.embedded.roles.<user>=role1[,role2[,role3[,...]]]`. The following <<roles-example>> illustrates the syntax with 4 user to role mappings:
+The user to role mappings are specified in the `application.properties` file by properties keys of the form `quarkus.security.users.embedded.roles.<user>=role1[,role2[,role3[,...]]]`. The following <<roles-example>> illustrates the syntax with 4 user to role mappings:
 
 [#roles-example]
 .Example Roles

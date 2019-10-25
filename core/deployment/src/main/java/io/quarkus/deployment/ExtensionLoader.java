@@ -111,6 +111,7 @@ public final class ExtensionLoader {
 
     private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
 
+    @SuppressWarnings("deprecation")
     private static boolean isRecorder(AnnotatedElement element) {
         return element.isAnnotationPresent(Recorder.class) || element.isAnnotationPresent(Template.class);
     }
@@ -530,7 +531,7 @@ public final class ExtensionLoader {
             if (isRecorder) {
                 boolean recorderFound = false;
                 for (Class<?> p : method.getParameterTypes()) {
-                    if (p.isAnnotationPresent(Recorder.class) || p.isAnnotationPresent(Template.class)) {
+                    if (isRecorder(p)) {
                         recorderFound = true;
                         break;
                     }

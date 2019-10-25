@@ -260,9 +260,8 @@ for JAX-RS or `JsonWebToken` for JWT.
 
 There are two configuration settings that alter the RBAC behavior:
 
-- `quarkus.jaxrs.deny-uncovered=true|false` - if set to true, the access will be denied for all JAX-RS endpoints will be
-denied by default. That is if the security annotations do not define the access control.
-Defaults to `false`
+- `quarkus.jaxrs.deny-uncovered=true|false` - if set to true, the access will be denied for all JAX-RS endpoints by default.
+That is if the security annotations do not define the access control. Defaults to `false`
 - `quarkus.security.deny-unannotated=true|false` - if set to true, the access will be denied to all CDI methods
 and JAX-RS endpoints that do not have security annotations but are defined in classes that contain methods with
 security annotations. Defaults to `false`.

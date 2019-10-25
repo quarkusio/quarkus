@@ -25,6 +25,12 @@
             <artifactId>quarkus-bom-descriptor-json</artifactId>
             <version>${project.version}</version>
             <type>json</type>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -42,6 +48,24 @@
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-platform-descriptor-json-plugin</artifactId>
+                <version>${project.version}</version>
+                <executions>
+                    <execution>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>validate-extensions-json</goal>
+                        </goals>
+                        <configuration>
+                            <jsonGroupId>io.quarkus</jsonGroupId>
+                            <jsonArtifactId>quarkus-bom-descriptor-json</jsonArtifactId>
+                            <jsonVersion>${project.version}</jsonVersion>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-invoker-plugin</artifactId>
@@ -69,8 +93,18 @@
                 <dependencies>
                     <dependency>
                         <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-platform-descriptor-legacy</artifactId>
+                        <artifactId>quarkus-platform-descriptor-json</artifactId>
                         <version>${project.version}</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>io.quarkus</groupId>
+                                <artifactId>quarkus-bootstrap-core</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>org.apache.maven</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -94,13 +128,6 @@
                         <project.version>${project.version}</project.version>
                     </systemPropertyVariables>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-platform-descriptor-legacy</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
         </plugins>
     </build>

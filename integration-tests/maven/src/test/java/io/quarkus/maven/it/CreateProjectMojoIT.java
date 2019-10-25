@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
-import io.quarkus.maven.CreateProjectMojo;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.maven.utilities.MojoUtils;
 
@@ -316,7 +315,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
-                CreateProjectMojo.getPluginKey() + ":" + MojoUtils.getPluginVersion() + ":create"));
+                MojoUtils.getPluginKey() + ":" + MojoUtils.getPluginVersion() + ":create"));
         request.setDebug(false);
         request.setShowErrors(false);
         request.setProperties(params);

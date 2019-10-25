@@ -35,6 +35,12 @@ public class Extension {
 
 	private String simplifiedArtifactId;
 	private static final Pattern QUARKUS_PREFIX = Pattern.compile("^quarkus-");
+
+	public static final String GROUP_ID = "group-id";
+
+	public static final String ARTIFACT_ID = "artifact-id";
+
+	public static final String VERSION = "version";
 	private String shortName;
 
 	private Map<String, Object> metadata = new HashMap<String, Object>(3);

@@ -40,7 +40,8 @@ import io.quarkus.bootstrap.BootstrapConstants;
 @Mojo(name = "extension-descriptor", defaultPhase = LifecyclePhase.PROCESS_RESOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class ExtensionDescriptorMojo extends AbstractMojo {
 
-    private static final String ARTIFACT_ID = "artifact-id";
+    private static final String GROUP_ID = "group-id";
+	private static final String ARTIFACT_ID = "artifact-id";
 
 	/**
      * The entry point to Aether, i.e. the component doing all the work.
@@ -118,7 +119,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
       
         
         if(extObject.get("groupId") == null) {
-            extObject.add("group-id", project.getGroupId());
+            extObject.add(GROUP_ID, project.getGroupId());
         }
         if(extObject.get("artifactId") == null) {
             extObject.add(ARTIFACT_ID, project.getArtifactId());
@@ -152,7 +153,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                     }
                 }
                 defaultName = buf.toString();
-                getLog().warn("Extension name has not been provided for " + extObject.getString("group-id", null) + ":"
+                getLog().warn("Extension name has not been provided for " + extObject.getString(GROUP_ID, null) + ":"
                         + extObject.getString("artifact-dd", null) + "! Using '" + defaultName + "' as the default one.");
                 extObject.set("name", defaultName);
             }

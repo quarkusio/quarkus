@@ -70,7 +70,7 @@ public class TransactionContext implements InjectableContext {
         TransactionContextState contextState = (TransactionContextState) transactionSynchronizationRegistry
                 .getResource(TRANSACTION_CONTEXT_MARKER);
         if (contextState == null) {
-            result = new TransactionContextState<>();
+            result = new TransactionContextState();
         } else {
             result = contextState;
         }
@@ -92,12 +92,12 @@ public class TransactionContext implements InjectableContext {
             throw new IllegalArgumentException("Contextual parameter must not be null");
         }
 
-        TransactionContextState<T> contextState;
-        contextState = (TransactionContextState<T>) transactionSynchronizationRegistry
+        TransactionContextState contextState;
+        contextState = (TransactionContextState) transactionSynchronizationRegistry
                 .getResource(TRANSACTION_CONTEXT_MARKER);
 
         if (contextState == null) {
-            contextState = new TransactionContextState<>();
+            contextState = new TransactionContextState();
             transactionSynchronizationRegistry.putResource(TRANSACTION_CONTEXT_MARKER, contextState);
         }
 
@@ -158,9 +158,9 @@ public class TransactionContext implements InjectableContext {
      * Representing of the context state. It's a container for all available beans in the context.
      * It's filled during bean usage and cleared on destroy.
      */
-    private static class TransactionContextState<T> implements ContextState {
+    private static class TransactionContextState implements ContextState {
 
-        private final ConcurrentMap<Contextual<T>, ContextInstanceHandle<T>> mapBeanToInstanceHandle = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> mapBeanToInstanceHandle = new ConcurrentHashMap<>();
 
         /**
          * Put the contextual bean and its handle to the container.
@@ -168,7 +168,7 @@ public class TransactionContext implements InjectableContext {
          * @param bean bean to be added
          * @param handle handle for the bean which incorporates the bean, contextual instance and the context
          */
-        void put(Contextual<T> bean, ContextInstanceHandle<T> handle) {
+        <T> void put(Contextual<T> bean, ContextInstanceHandle<T> handle) {
             mapBeanToInstanceHandle.put(bean, handle);
         }
 
@@ -177,7 +177,7 @@ public class TransactionContext implements InjectableContext {
          *
          * @param bean contextual bean instance
          */
-        void remove(Contextual<T> bean) {
+        <T> void remove(Contextual<T> bean) {
             mapBeanToInstanceHandle.remove(bean);
         }
 
@@ -186,15 +186,15 @@ public class TransactionContext implements InjectableContext {
          *
          * @param bean retrieving the bean from the container, otherwise {@code null} is returned
          */
-        ContextInstanceHandle<T> get(Contextual<T> bean) {
-            return mapBeanToInstanceHandle.get(bean);
+        <T> ContextInstanceHandle<T> get(Contextual<T> bean) {
+            return (ContextInstanceHandle<T>) mapBeanToInstanceHandle.get(bean);
         }
 
         /**
          * Destroying all the beans in the container and clearing the container.
          */
         void destroy() {
-            for (ContextInstanceHandle<T> handle : mapBeanToInstanceHandle.values()) {
+            for (ContextInstanceHandle<?> handle : mapBeanToInstanceHandle.values()) {
                 handle.destroy();
             }
             mapBeanToInstanceHandle.clear();

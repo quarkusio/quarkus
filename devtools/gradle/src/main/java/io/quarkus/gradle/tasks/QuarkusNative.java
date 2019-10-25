@@ -448,11 +448,16 @@ public class QuarkusNative extends QuarkusTask {
 
                 configs.add("quarkus.native.debug-symbols", debugSymbols);
                 configs.add("quarkus.native.enable-reports", enableReports);
-                if (dockerBuild != null) {
-                    configs.add("quarkus.native.docker-build", dockerBuild);
-                }
                 if (containerRuntime != null) {
                     configs.add("quarkus.native.container-runtime", containerRuntime);
+                } else if (dockerBuild != null) {
+                    if (!dockerBuild.isEmpty() && !dockerBuild.toLowerCase().equals("false")) {
+                        if (dockerBuild.toLowerCase().equals("true")) {
+                            configs.add("quarkus.native.container-runtime", "docker");
+                        } else {
+                            configs.add("quarkus.native.container-runtime", dockerBuild);
+                        }
+                    }
                 }
                 if (containerRuntimeOptions != null) {
                     configs.add("quarkus.native.container-runtime-options", containerRuntimeOptions);

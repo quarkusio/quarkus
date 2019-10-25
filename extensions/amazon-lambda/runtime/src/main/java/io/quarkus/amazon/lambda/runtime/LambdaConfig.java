@@ -19,6 +19,14 @@ public class LambdaConfig {
      *
      */
     @ConfigItem
-    Optional<String> handler;
+    public Optional<String> handler;
+
+    /**
+     * If true, this will enable the aws event poll loop within a Quarkus test run. This loop normally only runs in native
+     * image. This option is strictly for testing purposes.
+     *
+     */
+    @ConfigItem
+    public boolean enablePollingJvmMode;
 
 }

@@ -1,12 +1,13 @@
 package io.quarkus.amazon.lambda.deployment;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.inject.Named;
 
@@ -14,6 +15,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.logging.Logger;
 
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
@@ -22,16 +24,20 @@ import io.quarkus.amazon.lambda.runtime.FunctionError;
 import io.quarkus.amazon.lambda.runtime.LambdaConfig;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedSubstrateClassBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.runtime.LaunchMode;
 
 @SuppressWarnings("unchecked")
 public final class AmazonLambdaProcessor {
@@ -40,16 +46,26 @@ public final class AmazonLambdaProcessor {
     private static final DotName REQUEST_HANDLER = DotName.createSimple(RequestHandler.class.getName());
 
     private static final DotName NAMED = DotName.createSimple(Named.class.getName());
+    private static final Logger log = Logger.getLogger(AmazonLambdaProcessor.class);
 
     @BuildStep(applicationArchiveMarkers = { AWS_LAMBDA_EVENTS_ARCHIVE_MARKERS })
     List<AmazonLambdaBuildItem> discover(CombinedIndexBuildItem combinedIndexBuildItem,
+            Optional<ProvidedAmazonLambdaHandlerBuildItem> providedLambda,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) throws BuildException {
+        Collection<ClassInfo> allKnownImplementors = combinedIndexBuildItem.getIndex().getAllKnownImplementors(REQUEST_HANDLER);
+        if (allKnownImplementors.size() > 0 && providedLambda.isPresent()) {
+            throw new BuildException(
+                    "Multiple handler classes.  You have a custom handler class and the " + providedLambda.get().getProvider()
+                            + " extension.  Please remove one of them from your deployment.",
+                    Collections.emptyList());
+
+        }
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
         List<AmazonLambdaBuildItem> ret = new ArrayList<>();
 
-        for (ClassInfo info : combinedIndexBuildItem.getIndex().getAllKnownImplementors(REQUEST_HANDLER)) {
+        for (ClassInfo info : allKnownImplementors) {
             final DotName name = info.name();
             builder.addBeanClass(name.toString());
             String cdiName = null;
@@ -79,46 +95,94 @@ public final class AmazonLambdaProcessor {
             }
         }
         additionalBeanBuildItemBuildProducer.produce(builder.build());
+        reflectiveClassBuildItemBuildProducer
+                .produce(new ReflectiveClassBuildItem(true, true, true, FunctionError.class));
         return ret;
     }
 
     @BuildStep
-    ReflectiveClassBuildItem functionError() {
-        return new ReflectiveClassBuildItem(true, true, FunctionError.class);
-    }
+    void processProvidedLambda(Optional<ProvidedAmazonLambdaHandlerBuildItem> providedLambda,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
+        if (!providedLambda.isPresent())
+            return;
 
-    @BuildStep
-    void bootstrap(BuildProducer<GeneratedResourceBuildItem> generatedResources) throws IOException {
-        try (final InputStream stream = getClass().getResourceAsStream("/bootstrap");
-                final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            byte[] bytes = new byte[4096];
-            int read;
-            while ((read = stream.read(bytes)) != -1) {
-                outputStream.write(bytes, 0, read);
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
+        Class handlerClass = providedLambda.get().getHandlerClass();
+        builder.addBeanClass(handlerClass);
+        additionalBeanBuildItemBuildProducer.produce(builder.build());
+
+        reflectiveClassBuildItemBuildProducer
+                .produce(new ReflectiveClassBuildItem(true, true, true, handlerClass));
+
+        // TODO
+        // This really isn't good enough.  We should recursively add reflection for all method and field types of the parameter
+        // and return type.  Otherwise Jackson won't work.  In AWS Lambda HTTP extension, the whole jackson model is registered
+        // for reflection.  Shouldn't have to do this.
+        for (Method method : handlerClass.getMethods()) {
+            if (method.getName().equals("handleRequest")
+                    && method.getParameterTypes().length == 2
+                    && !method.getParameterTypes()[0].equals(Object.class)) {
+                reflectiveClassBuildItemBuildProducer
+                        .produce(new ReflectiveClassBuildItem(true, true, true, method.getParameterTypes()[0].getName()));
+                reflectiveClassBuildItemBuildProducer
+                        .produce(new ReflectiveClassBuildItem(true, true, true, method.getReturnType().getName()));
+                break;
             }
-            generatedResources.produce(new GeneratedResourceBuildItem("bootstrap", outputStream.toByteArray()));
         }
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void processLambdas(List<AmazonLambdaBuildItem> lambdas,
+    public void recordHandlerClass(List<AmazonLambdaBuildItem> lambdas,
+            Optional<ProvidedAmazonLambdaHandlerBuildItem> providedLambda,
             BeanContainerBuildItem beanContainerBuildItem,
             AmazonLambdaRecorder recorder,
             LambdaConfig config,
-            RecorderContext context,
-            ShutdownContextBuildItem shutdownContextBuildItem) throws IOException {
-        List<Class<? extends RequestHandler<?, ?>>> unnamed = new ArrayList<>();
-        Map<String, Class<? extends RequestHandler<?, ?>>> named = new HashMap<>();
-        for (AmazonLambdaBuildItem i : lambdas) {
-            if (i.getName() == null) {
-                unnamed.add((Class<? extends RequestHandler<?, ?>>) context.classProxy(i.getHandlerClass()));
-            } else {
-                named.put(i.getName(), (Class<? extends RequestHandler<?, ?>>) context.classProxy(i.getHandlerClass()));
-            }
-        }
-        recorder.start(unnamed, named,
-                shutdownContextBuildItem, config, beanContainerBuildItem.getValue());
+            RecorderContext context) {
+        if (providedLambda.isPresent()) {
+            Class<? extends RequestHandler<?, ?>> handlerClass = (Class<? extends RequestHandler<?, ?>>) context
+                    .classProxy(providedLambda.get().getHandlerClass().getName());
+            recorder.setHandlerClass(handlerClass, beanContainerBuildItem.getValue());
 
+        } else if (lambdas != null) {
+            List<Class<? extends RequestHandler<?, ?>>> unnamed = new ArrayList<>();
+            Map<String, Class<? extends RequestHandler<?, ?>>> named = new HashMap<>();
+            for (AmazonLambdaBuildItem i : lambdas) {
+                if (i.getName() == null) {
+                    unnamed.add((Class<? extends RequestHandler<?, ?>>) context.classProxy(i.getHandlerClass()));
+                } else {
+                    named.put(i.getName(), (Class<? extends RequestHandler<?, ?>>) context.classProxy(i.getHandlerClass()));
+                }
+            }
+            recorder.chooseHandlerClass(unnamed, named, beanContainerBuildItem.getValue(), config);
+        }
     }
+
+    /**
+     * This should only run when building a native image
+     */
+    @BuildStep
+    @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
+    void bootNativeEventLoop(AmazonLambdaRecorder recorder,
+            ShutdownContextBuildItem shutdownContextBuildItem,
+            List<ServiceStartBuildItem> orderServicesFirst, // force some ordering of recorders
+            BuildProducer<GeneratedSubstrateClassBuildItem> substrate // hack to try to force native only
+    ) {
+        recorder.startPollLoop(shutdownContextBuildItem);
+    }
+
+    @BuildStep
+    @Record(value = ExecutionTime.RUNTIME_INIT)
+    void enableNativeEventLoop(LambdaConfig config,
+            AmazonLambdaRecorder recorder,
+            List<ServiceStartBuildItem> orderServicesFirst, // force some ordering of recorders
+            ShutdownContextBuildItem shutdownContextBuildItem,
+            LaunchModeBuildItem launchModeBuildItem) {
+        LaunchMode mode = launchModeBuildItem.getLaunchMode();
+        if (config.enablePollingJvmMode && mode.isDevOrTest()) {
+            recorder.startPollLoop(shutdownContextBuildItem);
+        }
+    }
+
 }

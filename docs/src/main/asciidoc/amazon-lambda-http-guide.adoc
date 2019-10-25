@@ -3,36 +3,230 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Amazon Lambda HTTP Applications 
+= Quarkus - Amazon Lambda with Resteasy, Undertow, or Vert.x Web 
 
 include::./attributes.adoc[]
 
 
 The `quarkus-amazon-lambda-http` extension allows you to write microservices with Resteasy (JAX-RS),
-Undertow (servlet), or Vert.x Web and make these microservices deployable to Amazon AWS using
-https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html[Amazon's SAM] framework.
+Undertow (servlet), or Vert.x Web and make these microservices deployable as an Amazon Lambda
+using https://aws.amazon.com/api-gateway/[Amazon's API Gateway] and https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html[Amazon's SAM framework].
+
+You can deploy your Lambda as a pure Java jar, or you can compile your project to a native image (Graal) and deploy that for a smaller
+memory footprint and startup time.
 
 == Prerequisites
 
 To complete this guide, you need:
 
-* less than 15 minutes
-* JDK 1.8 (Azure requires JDK 1.8)
+* less than 30 minutes
+* JDK 1.8 (AWS requires JDK 1.8)
 * Apache Maven 3.5.3+
 * https://aws.amazon.com[An Amazon AWS account]
-* https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-reference.html#serverless-sam-cli[Amazon SAM CLI]
+* https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html[AWS SAM CLI]
 
 == Getting Started
 
-This guide can be used on existing projects or new projects.  Whether the project is a new green field project or you're
-attempting to migrate an existing application, this guide will walk you through the steps necessary to use Quarkus powered
-applications on Amazon's infrastructure.
+This guide walks you through generating an example Java project via a maven archetype.  Later on it walks through the structure
+of the project so you can adapt any existing projects you have to use Amazon Lambda.
 
-=== New Projects
+== Installing AWS bits
 
-The simplest scenario is when starting a completely new project.  Once you've <<getting-started-guide.adoc,generated>> a new
-Quarkus project, you'll need to configure your application for deployment to Amazon.  The steps to achieve this are beyond
-the scope of this document but you can find the full guide on
-https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-getting-started.html[Amazon's website].
+Installing all the AWS bits is probably the most difficult thing about this guide.  Make sure that you follow all the steps
+for installing AWS SAM CLI.
 
-For the purposes of this guide, we'll be using RESTEasy and maven.
+== Creating the Maven Deployment Project
+
+Create the Quarkus AWS Lambda maven project using our Maven Archetype.
+
+
+[source, subs=attributes+]
+----
+mvn archetype:generate \
+       -DarchetypeGroupId=io.quarkus \
+       -DarchetypeArtifactId=quarkus-amazon-lambda-http-archetype \
+       -DarchetypeVersion={quarkus-version}
+----
+
+== Build and Deploy
+
+Build the project using maven.
+
+[source, subs=attributes+]
+----
+mvn clean install
+----
+
+This will compile the code and run the unit tests included within the generated project.
+Unit testing is all regular local Java and does not require running on Amazon.  Quarkus dev-mode is also
+usable.
+
+If you want to build for native too, make sure you have Graal installed correctly and just add a `native` property
+to the build
+
+[source, subs=attributes+]
+----
+mvn clean install -Dnative
+----
+
+== Simulate Amazon Lambda Deployment
+
+The AWS SAM CLI allows you to run your lambda's locally on your laptop in a simulated Lambda environment.  This requires docker to be installed (see their install docs).
+After you have built your maven project, execute this command
+
+[source, subs=attributes+]
+----
+sam local start-api --template sam.jvm.yaml
+----
+
+This will start a docker container that mimic's Amazon's Lamba's deployment environment.  Once the environment
+is started, you can invoke the example lambda in your browser by going to
+
+http://127.0.0.1:3000/hello
+
+In the console you'll see startup messages of the example lambda.  This particular deployment starts a JVM and loads your
+lambda as pure Java.
+
+If you want to deploy a native Graal executable of your lambda, use a different yaml template that is provided in your
+generated project:
+
+[source, subs=attributes+]
+----
+sam local start-api --template sam.native.yaml
+----
+
+== Deploy to AWS
+
+There are a few steps to get your lambda running on AWS.
+
+=== Package your deployment.
+
+[source, subs=attributes+]
+----
+sam package --template-file sam.jvm.yaml --output-template-file packaged.yaml --s3-bucket <YOUR_S3_BUCKET>
+----
+
+Type the simple name of your S3 bucket you created during.
+
+=== Deploy your package
+
+[source, subs=attributes+]
+----
+sam deploy --template-file packaged.yaml --capabilities CAPABILITY_IAM --stack-name <YOUR_STACK_NAME>
+----
+
+The stack name can be anything you want.
+
+=== Debugging AWS Deployment Problems
+
+If `sam deploy`, run the `describe-stack-events` command
+to get information about your deployment and what happened.
+
+[source, subs=attributes+]
+----
+aws cloudformation describe-stack-events --stack-name <YOUR_STACK_NAME>
+----
+
+One common issue that you may run across is that your S3 bucket has to be in the same region as Amazon Lambda.
+Look for this error from `describe-stack-events` output:
+
+[source, subs=attributes+]
+----
+Error occurred while GetObject. S3 Error Code: AuthorizationHeaderMalformed. S3 Error Message:
+The authorization header is malformed; the region 'us-east-1' is wrong; expecting 'us-east-2'
+(Service: AWSLambdaInternal; Status Code: 400; Error Code: InvalidParameterValueException;
+Request ID: aefcf978-ad2a-4b53-9ffe-cea3fcd0f868)
+----
+
+The above error is stating that my S3 bucket should be in `us-east-2`, not `us-east-1`.
+To fix this error you'll need to create an S3 bucket in that region and redo steps 1 and 2 from above.
+
+Another annoying this is that if there is an error in deployment, you also have to completely delete
+it before trying to deploy again:
+
+[source, subs=attributes+]
+----
+aws cloudformation delete-stack --stack-name <YOUR_STACK_NAME>
+----
+
+== Execute your REST Lambda on AWS
+
+To get the root URL for your service, type the following command and see the following output:
+
+[source, subs=attributes+]
+----
+aws cloudformation describe-stacks --stack-name <YOUR_STACK_NAME>
+----
+
+It should give you something like the following output:
+[source, subs=attributes+]
+----
+{
+    "Stacks": [
+        {
+            "StackId": "arn:aws:cloudformation:us-east-1:502833056128:stack/QuarkusNativeRestExample2/b35b0200-f685-11e9-aaa0-0e8cd4caae34",
+            "DriftInformation": {
+                "StackDriftStatus": "NOT_CHECKED"
+            },
+            "Description": "AWS Serverless Quarkus HTTP - io.demo::rest-example",
+            "Tags": [],
+            "Outputs": [
+                {
+                    "Description": "URL for application",
+                    "ExportName": "RestExampleNativeApi",
+                    "OutputKey": "RestExampleNativeApi",
+                    "OutputValue": "https://234234234.execute-api.us-east-1.amazonaws.com/Prod/"
+                }
+            ],
+----
+
+The `OutputValue` attribute is the root URL for your lambda. Copy it to your browser and add `hello` at the end.
+
+== Examine the POM
+
+If you want to adapt an existing Resteasy, Undertow, or Vert.x Web project to Amazon Lambda, there's a couple
+of things you need to do.  Take a look at the generate example project to get an example of what you need to adapt.
+
+1. Include the `quarkus-amazon-lambda-http` extension as a pom dependency
+2. Configure Quarkus build an `uber-jar`
+3. If you are doing a native Graal build, Amazon requires you to rename your executable to `bootstrap` and zip it up.
+
+== Examine sam.yaml
+
+The `sam.yaml` syntax is beyond the scope of this document.  There's a couple of things to note though that are particular
+to the `quarkus-amazon-lambda-http` extension.
+
+Amazon's API Gateway assumes that HTTP response bodies are text unless you explicitly tell it which media types are
+binary through configuration.  To make things easier, the Quarkus extension forces a binary (base 64) encoding of all
+HTTP response messages and the `sam.yaml` file must configure the API Gateway to assume all media types are binary:
+
+[source, subs=attributes+]
+----
+  Globals:
+    Api:
+      EndpointConfiguration: REGIONAL
+      BinaryMediaTypes:
+        - "*/*"
+----
+
+Another thing to note is that for pure Java lambda deployments, do not change the Lambda handler name.
+
+[source, subs=attributes+]
+----
+     Properties:
+        Handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
+        Runtime: java8
+----
+
+This particular handler handles all the intricacies of integrating with the Quarkus runtime.  So you must use that
+handler.
+
+
+
+
+
+
+
+
+
+

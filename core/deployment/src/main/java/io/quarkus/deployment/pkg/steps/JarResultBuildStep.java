@@ -1,6 +1,9 @@
 package io.quarkus.deployment.pkg.steps;
 
 import static io.quarkus.bootstrap.util.ZipUtils.wrapForJDK8232879;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
@@ -12,6 +15,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
@@ -101,6 +105,9 @@ public class JarResultBuildStep {
             "LICENSE")));
 
     private static final Logger log = Logger.getLogger(JarResultBuildStep.class);
+    // we shouldn't have to specify these flags when opening a ZipFS (since they are the default ones), but failure to do so
+    // makes a subsequent uberJar creation fail in java 8 (but works fine in Java 11)
+    private static final OpenOption[] DEFAULT_OPEN_OPTIONS = { TRUNCATE_EXISTING, WRITE, CREATE };
 
     @BuildStep(onlyIf = ThinJarRequired.class)
     ArtifactResultBuildItem thinJarOutput(ThinJarBuildItem thinJarBuildItem) {
@@ -389,7 +396,7 @@ public class JarResultBuildStep {
             for (TransformedClassesBuildItem.TransformedClass i : transformed) {
                 Path target = runnerZipFs.getPath(i.getFileName());
                 handleParent(runnerZipFs, i.getFileName(), seen);
-                try (final OutputStream out = wrapForJDK8232879(Files.newOutputStream(target))) {
+                try (final OutputStream out = wrapForJDK8232879(Files.newOutputStream(target, DEFAULT_OPEN_OPTIONS))) {
                     out.write(i.getData());
                 }
                 seen.put(i.getFileName(), "Current Application");
@@ -403,7 +410,7 @@ public class JarResultBuildStep {
             if (Files.exists(target)) {
                 continue;
             }
-            try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(target))) {
+            try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(target, DEFAULT_OPEN_OPTIONS))) {
                 os.write(i.getClassData());
             }
         }
@@ -417,7 +424,7 @@ public class JarResultBuildStep {
             if (i.getName().startsWith("META-INF/services")) {
                 services.computeIfAbsent(i.getName(), (u) -> new ArrayList<>()).add(i.getClassData());
             } else {
-                try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(target))) {
+                try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(target, DEFAULT_OPEN_OPTIONS))) {
                     os.write(i.getClassData());
                 }
             }
@@ -426,7 +433,8 @@ public class JarResultBuildStep {
         copyFiles(appArchives.getRootArchive().getArchiveRoot(), runnerZipFs, services);
 
         for (Map.Entry<String, List<byte[]>> entry : services.entrySet()) {
-            try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(runnerZipFs.getPath(entry.getKey())))) {
+            try (final OutputStream os = wrapForJDK8232879(
+                    Files.newOutputStream(runnerZipFs.getPath(entry.getKey()), DEFAULT_OPEN_OPTIONS))) {
                 for (byte[] i : entry.getValue()) {
                     os.write(i);
                     os.write('\n');
@@ -504,7 +512,7 @@ public class JarResultBuildStep {
             }
         }
         attributes.put(Attributes.Name.MAIN_CLASS, config.mainClass);
-        try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(manifestPath))) {
+        try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(manifestPath, DEFAULT_OPEN_OPTIONS))) {
             manifest.write(os);
         }
     }

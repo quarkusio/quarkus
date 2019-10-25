@@ -19,9 +19,9 @@ import javax.transaction.TransactionSynchronizationRegistry;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple;
 
 import io.quarkus.arc.ContextInstanceHandle;
-import io.quarkus.arc.ContextInstanceHandleImpl;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.impl.ContextInstanceHandleImpl;
 
 /**
  * {@link javax.enterprise.context.spi.Context} class which defines the {@link TransactionScoped} context.

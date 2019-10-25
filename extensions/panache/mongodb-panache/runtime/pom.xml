@@ -34,14 +34,14 @@
         <!-- But needed to provides default serializer/deserializer for JsonB -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jsonb</artifactId>
+            <artifactId>quarkus-jsonb</artifactId>
             <optional>true</optional>
         </dependency>
         <!-- This is optional to avoid pulling libraries if jackson is not on the path-->
         <!-- But needed to provides default serializer/deserializer for Jackson -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jackson</artifactId>
+            <artifactId>quarkus-jackson</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>

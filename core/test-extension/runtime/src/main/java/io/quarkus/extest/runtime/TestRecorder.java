@@ -21,6 +21,7 @@ import io.quarkus.runtime.annotations.Template;
  * note that the use of the deprecated @Template is deliberate, to ensure that it still works.
  *
  */
+@SuppressWarnings("deprecation")
 @Template
 public class TestRecorder {
     static final Logger log = Logger.getLogger(TestRecorder.class);

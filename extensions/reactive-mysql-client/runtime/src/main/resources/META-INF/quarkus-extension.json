@@ -1,5 +1,6 @@
 {
   "name": "Reactive MySQL client",
+  "guide": "https://quarkus.io/guides/reactive-sql-clients",
   "metadata": {
     "keywords": [
       "eclipse-vert.x",

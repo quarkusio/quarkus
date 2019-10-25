@@ -233,10 +233,11 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          timeoutInMinutes: 20
+          timeoutInMinutes: 25
           modules:
             - elytron-resteasy
             - oidc
+            - oidc-code-flow
             - vault-app
             - keycloak-authorization
           name: security_2

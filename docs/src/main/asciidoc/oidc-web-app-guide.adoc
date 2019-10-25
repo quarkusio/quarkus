@@ -1,0 +1,162 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Protecting Web Applications Using OpenID Connect
+
+include::./attributes.adoc[]
+
+This guide demonstrates how to use the OpenID Connect Extension to protect your application using Quarkus, where authentication and authorization are based on tokens issued by OpenId Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak].
+
+The extension allows you to easily enable authentication to your web application based on the Authorization Code Flow so that your users are redirected to a
+OpenID Connect Provider (e.g.: Keycloak) to authenticate and, once the authentication is complete, return back to your application.
+
+We are going to give you a guideline on how to use OpenId Connect to authenticate users using the Quarkus OpenID Connect Extenson.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.5.3+
+* https://stedolan.github.io/jq/[jq tool]
+* Docker
+
+== Architecture
+
+In this example, we build a very simple web application with a single page:
+
+* `/index.html`
+
+This page is protected and can only be accessed by authenticated users.
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `openid-connect-web-authentication` {quickstarts-tree-url}/openid-connect-web-authentication[directory].
+
+== Creating the Maven Project
+
+First, we need a new project. Create a new project with the following command:
+
+[source, subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=openid-connect-web-authentication \
+    -Dextensions="oidc"
+----
+
+== Configuring the application
+
+The OpenID Connect extension allows you to define the configuration using the `application.properties` file which should be located at the `src/main/resources` directory.
+
+=== Configuring using the application.properties file
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.client-id=frontend
+quarkus.oidc.client-type=web-app
+
+----
+
+Note that the `quarkus.oidc.client-type` is set to `web-app`. This setting tells Quarkus that you want to enable the OpenID Connect Authorization Code Flow, so that your users are redirected to the OpenID Connect Provider to authenticate.
+
+== Starting and Configuring the Keycloak Server
+
+To start a Keycloak Server you can use Docker and just run the following command:
+
+[source,bash]
+----
+docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak
+----
+
+You should be able to access your Keycloak Server at http://localhost:8180/auth[localhost:8180/auth].
+
+Log in as the `admin` user to access the Keycloak Administration Console. Username should be `admin` and password `admin`.
+
+Import the {quickstarts-tree-url}/openid-connect-web-authentication/config/quarkus-realm.json[realm configuration file] to create a new realm. For more details, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
+
+== Running and Using the Application
+
+=== Running in Developer Mode
+
+To run the microservice in dev mode, use `./mvnw clean compile quarkus:dev`.
+
+=== Running in JVM Mode
+
+When you're done playing with "dev-mode" you can run it as a standard Java application.
+
+First compile it:
+
+[source,bash]
+----
+./mvnw package
+----
+
+Then run it:
+
+[source,bash]
+----
+java -jar ./target/openid-connect-runner.jar
+----
+
+=== Running in Native Mode
+
+This same demo can be compiled into native code: no modifications required.
+
+This implies that you no longer need to install a JVM on your
+production environment, as the runtime technology is included in
+the produced binary, and optimized to run with minimal resource overhead.
+
+Compilation will take a bit longer, so this step is disabled by default;
+let's build again by enabling the `native` profile:
+
+[source,bash]
+----
+./mvnw package -Pnative
+----
+
+After getting a cup of coffee, you'll be able to run this binary directly:
+
+[source,bash]
+----
+./target/openid-connect-web-authentication-runner
+----
+
+== Testing the Application
+
+To test the application, you should open your browser and access the following URL:
+
+* http://localhost:8080[http://localhost:8080]
+
+If everything is working as expected, you should be redirected to the Keycloak server to authenticate.
+
+In order to authenticate to the application you should type the following credentials when at the Keycloak login page:
+
+* Username: *alice*
+* Password: *alice*
+
+After clicking the `Login` button you should be redirected back to the application.
+
+== Logout
+
+The extension only supports logout based on the expiration time of the ID Token issued by the OpenID Connect Provider. When the token expires, users are redirected to the OpenID Connect Provider again to authenticate. If the session at the OpenID Connect Provider is still active, users are automatically re-authenticated without having to provide their credentials again.
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]
+
+== References
+
+* https://www.keycloak.org/documentation.html[Keycloak Documentation]
+* https://openid.net/connect/[OpenID Connect]
+* https://tools.ietf.org/html/rfc7519[JSON Web Token]

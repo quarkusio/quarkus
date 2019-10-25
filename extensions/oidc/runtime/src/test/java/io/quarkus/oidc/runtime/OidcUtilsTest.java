@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.oidc.OidcConfig;
 import io.vertx.core.json.JsonObject;
 
 public class OidcUtilsTest {

@@ -10,9 +10,9 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-oidc</artifactId>
-    <name>Quarkus - Integration Tests - OpenID Connect Adapter</name>
-    <description>Module that contains OpenID Connect related tests</description>
+    <artifactId>quarkus-integration-test-oidc-code-flow</artifactId>
+    <name>Quarkus - Integration Tests - OpenID Connect Adapter Code Flow</name>
+    <description>Module that contains OpenID Connect Code Flow related tests</description>
 
     <properties>
         <keycloak.url>http://localhost:8180/auth</keycloak.url>

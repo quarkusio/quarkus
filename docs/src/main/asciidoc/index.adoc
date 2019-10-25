@@ -45,7 +45,8 @@ include::quarkus-intro.adoc[tag=intro]
 * link:writing-native-applications-tips.html[Tips for writing native applications] _(advanced)_
 * link:performance-measure.html[Measuring Performance] _(advanced)_
 * link:cdi-reference.html[Contexts and Dependency Injection] _(advanced)_
-* link:oidc-guide.html[Using OpenID Connect Adapter]
+* link:oidc-guide.html[Using OpenID Connect Adapter to Protect JAX-RS Applications]
+* link:oidc-web-app-guide.html[Protecting Web Applications Using OpenID Connect]
 * link:keycloak-authorization-guide.html[Keycloak Authorization]
 * link:kogito-guide.html[Using Kogito (business automation with processes and rules)]
 * link:oauth2-guide.html[Using OAuth2 RBAC]

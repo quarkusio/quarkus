@@ -1,7 +1,7 @@
 package io.quarkus.keycloak.pep;
 
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.oidc.OidcConfig;
+import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder

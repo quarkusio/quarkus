@@ -19,7 +19,7 @@ import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 
 import io.quarkus.arc.AlternativePriority;
-import io.quarkus.oidc.OidcConfig;
+import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;

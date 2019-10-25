@@ -6,7 +6,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
-import io.quarkus.oidc.OidcConfig;
+import io.quarkus.oidc.runtime.OidcConfig;
 
 public class KeycloakPolicyEnforcerBuildStep {
 

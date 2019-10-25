@@ -17,6 +17,10 @@ The metrics can be read remotely using JSON format or the OpenMetrics format, so
 they can be processed by additional tools such as Prometheus, and stored for analysis
 and visualisation.
 
+Apart from application-specific metrics, which are described in this guide, you may also utilize built-in metrics
+exposed by various Quarkus extensions. These are described in the guide for each particular extension that supports
+built-in metrics.
+
 == Prerequisites
 
 To complete this guide, you need:

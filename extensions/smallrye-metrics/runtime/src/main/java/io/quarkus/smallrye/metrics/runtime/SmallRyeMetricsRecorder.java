@@ -9,17 +9,24 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
 import javax.enterprise.inject.spi.BeanManager;
 
+import org.eclipse.microprofile.metrics.ConcurrentGauge;
+import org.eclipse.microprofile.metrics.Counter;
+import org.eclipse.microprofile.metrics.Gauge;
+import org.eclipse.microprofile.metrics.Histogram;
 import org.eclipse.microprofile.metrics.Metadata;
+import org.eclipse.microprofile.metrics.Metered;
 import org.eclipse.microprofile.metrics.Metric;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.MetricType;
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.Tag;
+import org.eclipse.microprofile.metrics.Timer;
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 
@@ -151,6 +158,58 @@ public class SmallRyeMetricsRecorder {
                 .notReusable()
                 .build();
         registry.register(metadata, reference, TagsUtils.parseTagsAsArray(tags));
+    }
+
+    public void registerMetric(MetricRegistry.Type scope,
+            MetadataHolder metadataHolder,
+            TagHolder[] tagHolders,
+            Object implementor,
+            ShutdownContext shutdown) {
+        Metadata metadata = metadataHolder.toMetadata();
+        Tag[] tags = Arrays.stream(tagHolders).map(TagHolder::toTag).toArray(Tag[]::new);
+        MetricRegistry registry = MetricRegistries.get(scope);
+
+        switch (metadata.getTypeRaw()) {
+            case GAUGE:
+                registry.register(metadata, (Gauge) implementor, tags);
+                break;
+            case TIMER:
+                if (implementor == null) {
+                    registry.timer(metadata, tags);
+                } else {
+                    registry.register(metadata, (Timer) implementor);
+                }
+                break;
+            case COUNTER:
+                if (implementor == null) {
+                    registry.counter(metadata, tags);
+                } else {
+                    registry.register(metadata, (Counter) implementor, tags);
+                }
+                break;
+            case HISTOGRAM:
+                if (implementor == null) {
+                    registry.histogram(metadata, tags);
+                } else {
+                    registry.register(metadata, (Histogram) implementor, tags);
+                }
+                break;
+            case CONCURRENT_GAUGE:
+                if (implementor == null) {
+                    registry.concurrentGauge(metadata, tags);
+                } else {
+                    registry.register(metadata, (ConcurrentGauge) implementor, tags);
+                }
+                break;
+            case METERED:
+                if (implementor == null) {
+                    registry.meter(metadata, tags);
+                } else {
+                    registry.register(metadata, (Metered) implementor, tags);
+                }
+                break;
+        }
+        shutdown.addShutdownTask(() -> registry.remove(metadata.getName()));
     }
 
     public void createRegistries(BeanContainer container) {

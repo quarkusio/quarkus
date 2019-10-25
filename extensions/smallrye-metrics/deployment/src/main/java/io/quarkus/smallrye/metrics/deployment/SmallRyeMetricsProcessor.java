@@ -15,6 +15,7 @@ import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.MET
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.TIMER_INTERFACE;
 
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -63,7 +64,10 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.smallrye.metrics.deployment.jandex.JandexBeanInfoAdapter;
 import io.quarkus.smallrye.metrics.deployment.jandex.JandexMemberInfoAdapter;
+import io.quarkus.smallrye.metrics.deployment.spi.MetricBuildItem;
+import io.quarkus.smallrye.metrics.runtime.MetadataHolder;
 import io.quarkus.smallrye.metrics.runtime.SmallRyeMetricsRecorder;
+import io.quarkus.smallrye.metrics.runtime.TagHolder;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
@@ -92,6 +96,13 @@ public class SmallRyeMetricsProcessor {
          */
         @ConfigItem(defaultValue = "/metrics")
         String path;
+
+        /**
+         * Whether or not metrics published by Quarkus extensions should be enabled.
+         */
+        @ConfigItem(name = "extensions.enabled", defaultValue = "true")
+        public boolean extensionsEnabled;
+
     }
 
     SmallRyeMetricsConfig metrics;
@@ -369,6 +380,37 @@ public class SmallRyeMetricsProcessor {
                             metricAnnotation.valueWithDefault(index, "description").asString(),
                             metricAnnotation.valueWithDefault(index, "displayName").asString(),
                             metricAnnotation.valueWithDefault(index, "unit").asString());
+                }
+            }
+        }
+    }
+
+    /**
+     * Register metrics required by other Quarkus extensions.
+     */
+    @BuildStep
+    @Record(STATIC_INIT)
+    void extensionMetrics(SmallRyeMetricsRecorder recorder,
+            List<MetricBuildItem> additionalMetrics,
+            ShutdownContextBuildItem shutdown,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+        if (metrics.extensionsEnabled) {
+            if (!additionalMetrics.isEmpty()) {
+                unremovableBeans.produce(new UnremovableBeanBuildItem(
+                        new UnremovableBeanBuildItem.BeanClassNameExclusion(MetricRegistry.class.getName())));
+                unremovableBeans.produce(new UnremovableBeanBuildItem(
+                        new UnremovableBeanBuildItem.BeanClassNameExclusion(MetricRegistries.class.getName())));
+            }
+            for (MetricBuildItem additionalMetric : additionalMetrics) {
+                if (additionalMetric.isEnabled()) {
+                    TagHolder[] tags = Arrays.stream(additionalMetric.getTags())
+                            .map(TagHolder::from)
+                            .toArray(TagHolder[]::new);
+                    recorder.registerMetric(MetricRegistry.Type.VENDOR,
+                            MetadataHolder.from(additionalMetric.getMetadata()),
+                            tags,
+                            additionalMetric.getImplementor(),
+                            shutdown);
                 }
             }
         }

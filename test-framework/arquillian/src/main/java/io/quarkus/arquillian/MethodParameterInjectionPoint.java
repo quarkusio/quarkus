@@ -13,19 +13,16 @@ import javax.enterprise.inject.spi.Annotated;
 import javax.enterprise.inject.spi.AnnotatedCallable;
 import javax.enterprise.inject.spi.AnnotatedParameter;
 import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Qualifier;
 
 public class MethodParameterInjectionPoint<T> implements InjectionPoint {
     private Method method;
     private int position;
-    private BeanManager beanManager;
 
-    public MethodParameterInjectionPoint(Method method, int position, BeanManager beanManager) {
+    public MethodParameterInjectionPoint(Method method, int position) {
         this.method = method;
         this.position = position;
-        this.beanManager = beanManager;
     }
 
     public Bean<?> getBean() {

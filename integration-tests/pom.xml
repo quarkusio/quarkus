@@ -79,6 +79,7 @@
         <module>kotlin</module>
         <module>mongodb-panache</module>
         <module>narayana-stm</module>
+        <module>narayana-jta</module>
         <module>elytron-security-jdbc</module>
     </modules>
 

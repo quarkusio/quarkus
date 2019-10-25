@@ -1357,7 +1357,6 @@ The Jackson extension will then use the produced build item to register a module
 If you need more customization capabilities than registering a module,
 you can produce a CDI bean that implements `io.quarkus.jackson.ObjectMapperCustomizer` via an `AdditionalBeanBuildItem`.
 More info about customizing Jackson can be found on the JSON guide link:rest-json-guide.html#configuring-json-support[Configuring JSON support]
-----
 
 === Testing Extensions
 

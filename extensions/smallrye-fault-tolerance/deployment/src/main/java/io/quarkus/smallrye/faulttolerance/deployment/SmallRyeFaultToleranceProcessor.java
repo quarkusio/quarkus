@@ -16,13 +16,25 @@ import org.eclipse.microprofile.faulttolerance.Fallback;
 import org.eclipse.microprofile.faulttolerance.FallbackHandler;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.faulttolerance.Timeout;
-import org.jboss.jandex.*;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 
 import com.netflix.hystrix.HystrixCircuitBreaker;
 
-import io.quarkus.arc.deployment.*;
-import io.quarkus.arc.processor.*;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuildExtension;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;

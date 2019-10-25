@@ -2,6 +2,7 @@ package io.quarkus.dependencies;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -144,7 +145,8 @@ public class Extension {
 	}
 
 	public List<String> getKeywords() {
-		return (List<String>) getMetadata().get(MD_KEYWORDS);
+		List<String> kw = (List<String>) getMetadata().get(MD_KEYWORDS);
+		return kw == null ? Collections.emptyList() : kw;
 	}
 
 	public Extension setKeywords(String[] keywords) {

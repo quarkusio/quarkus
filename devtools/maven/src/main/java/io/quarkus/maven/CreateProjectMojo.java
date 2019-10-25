@@ -61,6 +61,12 @@ public class CreateProjectMojo extends AbstractMojo {
 
     final private static boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
 
+    private static String pluginKey;
+
+    public static String getPluginKey() {
+        return pluginKey == null ? pluginKey = MojoUtils.getPluginGroupId() + ":" + MojoUtils.getPluginArtifactId() : pluginKey;
+    }
+
     private static final String DEFAULT_GROUP_ID = "org.acme.quarkus.sample";
 
     @Parameter(defaultValue = "${project}")

@@ -17,6 +17,7 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
+import io.quarkus.maven.CreateProjectMojo;
 import io.quarkus.maven.utilities.MojoUtils;
 
 public class SetupVerifier {
@@ -49,7 +50,7 @@ public class SetupVerifier {
 
         MavenProject project = new MavenProject(model);
 
-        Optional<Plugin> maybe = hasPlugin(project, MojoUtils.getPluginKey());
+        Optional<Plugin> maybe = MojoUtils.hasPlugin(project, CreateProjectMojo.getPluginKey());
         assertThat(maybe).isNotEmpty();
 
         //Check if the properties have been set correctly
@@ -74,26 +75,13 @@ public class SetupVerifier {
         assertThat(model.getProfiles()).hasSize(1);
         Profile profile = model.getProfiles().get(0);
         assertThat(profile.getId()).isEqualTo("native");
-        Plugin actual = profile.getBuild().getPluginsAsMap().get(MojoUtils.getPluginKey());
+        Plugin actual = profile.getBuild().getPluginsAsMap().get(CreateProjectMojo.getPluginKey());
         assertThat(actual).isNotNull();
         assertThat(actual.getExecutions()).hasSize(1).allSatisfy(exec -> {
             assertThat(exec.getGoals()).containsExactly("native-image");
             assertThat(exec.getConfiguration()).isInstanceOf(Xpp3Dom.class)
                     .satisfies(o -> assertThat(o.toString()).contains("enableHttpUrlHandler"));
         });
-    }
-
-    public static Optional<Plugin> hasPlugin(MavenProject project, String pluginKey) {
-        Optional<Plugin> optPlugin = project.getBuildPlugins().stream()
-                .filter(plugin -> pluginKey.equals(plugin.getKey()))
-                .findFirst();
-
-        if (!optPlugin.isPresent() && project.getPluginManagement() != null) {
-            optPlugin = project.getPluginManagement().getPlugins().stream()
-                    .filter(plugin -> pluginKey.equals(plugin.getKey()))
-                    .findFirst();
-        }
-        return optPlugin;
     }
 
     public static void verifySetupWithVersion(File pomFile) throws Exception {
@@ -106,4 +94,5 @@ public class SetupVerifier {
         assertFalse(projectProps.isEmpty());
         assertEquals(MojoUtils.getPluginVersion(), projectProps.getProperty("quarkus.version"));
     }
+
 }

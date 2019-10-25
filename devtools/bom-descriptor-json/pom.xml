@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-bom-descriptor-json</artifactId>
     <packaging>pom</packaging>
-    <name>Quarkus - BOM - Descriptor JSON</name>
+    <name>Quarkus - Core Extensions JSON</name>
 
     <dependencies>
     </dependencies>
@@ -21,8 +21,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-platform-descriptor-json-plugin</artifactId>
-                <version>${project.version}</version>
+                <artifactId>quarkus-maven-plugin</artifactId>
                 <executions>
                     <execution>
                         <phase>process-resources</phase>

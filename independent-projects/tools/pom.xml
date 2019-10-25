@@ -76,6 +76,16 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devtools-templates</artifactId>
+                <version>${quarkus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-platform-descriptor-legacy</artifactId>
+                <version>${quarkus.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.quarkus.http</groupId>
                 <artifactId>quarkus-http-websockets-jsr</artifactId>
                 <version>${quarkus-http.version}</version>

@@ -22,6 +22,7 @@ import org.apache.maven.shared.invoker.PrintStreamLogger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.maven.CreateProjectMojo;
 import io.quarkus.maven.utilities.MojoUtils;
 
 class GenerateConfigIT extends MojoTestBase {
@@ -63,7 +64,7 @@ class GenerateConfigIT extends MojoTestBase {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections
-                .singletonList(MojoUtils.getPluginKey() + ":" + MojoUtils.getPluginVersion() + ":generate-config"));
+                .singletonList(CreateProjectMojo.getPluginKey() + ":" + MojoUtils.getPluginVersion() + ":generate-config"));
         Properties properties = new Properties();
         properties.setProperty("file", filename);
         request.setProperties(properties);

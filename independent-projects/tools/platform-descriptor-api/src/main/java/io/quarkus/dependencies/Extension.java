@@ -27,16 +27,15 @@ public class Extension {
 
     private String name;
     private String description;
-
     private String guide;
     private boolean unlisted;
-
+    
     private String simplifiedArtifactId;
     private static final Pattern QUARKUS_PREFIX = Pattern.compile("^quarkus-");
     private String shortName;
 
     private Map<String, Object> metadata = new HashMap<String, Object>(3);
-
+    
     public Extension() {
         // Use by mapper.
     }
@@ -103,15 +102,14 @@ public class Extension {
     }
 
     public String[] getLabels() {
-    	@SuppressWarnings("unchecked")
-        List<String> keywords = (List<String>) getMetadata().get("keywords");
+    	List<String> keywords = (List<String>) getMetadata().get("keywords");
     	if(keywords != null) {
     		return (String[]) keywords.toArray(new String[keywords.size()]);
     	}
-        return new String[0];
+    	return null;
     }
 
-    public Extension setLabels(String... labels) {
+    public Extension setLabels(String[] labels) {
         getMetadata().put("keywords", Arrays.asList(labels));
         return this;
     }
@@ -137,12 +135,12 @@ public class Extension {
     public Map<String, Object> getMetadata() {
     	return metadata;
     }
-
+    
     public Extension setMetadata(Map<String, Object> metadata) {
     	this.metadata = metadata;
     	return this;
     }
-
+    
     public List<String> labels() {
         List<String> list = new ArrayList<>();
         String[] labels = getLabels();
@@ -243,7 +241,7 @@ public class Extension {
     	this.guide = guide;
     	return this;
     }
-
+    
     public String getGuide() {
         return guide;
     }

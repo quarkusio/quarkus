@@ -11,7 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.ServiceLoader;
-import java.util.function.Function;
 
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -27,9 +26,7 @@ import com.eclipsesource.json.WriterConfig;
 
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.descriptor.loader.json.ArtifactResolver;
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoader;
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoaderContext;
 import io.quarkus.platform.tools.DefaultMessageWriter;
@@ -129,7 +126,7 @@ public class QuarkusJsonPlatformDescriptorResolver {
 
         // Resolve the platform JSON artifact
         Artifact jsonArtifact = new DefaultArtifact(jsonGroupId, jsonArtifactId, null, "json", jsonVersion);
-        log.debug("Platform JSON artifact: %s", jsonArtifact);
+        log.info("Platform JSON artifact: %s", jsonArtifact);
         final File jsonFile;
         try {
             jsonFile = mvn.resolve(jsonArtifact).getArtifact().getFile();
@@ -197,21 +194,20 @@ public class QuarkusJsonPlatformDescriptorResolver {
             if(i.hasNext()) {
                 throw new IllegalStateException("Located more than one implementation of " + QuarkusJsonPlatformDescriptorLoader.class.getName());
             }
-            final ArtifactResolver loaderResolver = MojoUtils.toJsonArtifactResolver(mvn);
             platform = jsonDescrLoader.load(new QuarkusJsonPlatformDescriptorLoaderContext() {
                 @Override
-                public <T> T parseJson(Function<Path, T> parser) {
-                    return parser.apply(jsonFile.toPath());
+                public Path getJsonDescriptorFile() {
+                    return jsonFile.toPath();
+                }
+
+                @Override
+                public MavenArtifactResolver getMavenArtifactResolver() {
+                    return mvn;
                 }
 
                 @Override
                 public MessageWriter getMessageWriter() {
                     return log;
-                }
-
-                @Override
-                public ArtifactResolver getArtifactResolver() {
-                    return loaderResolver;
                 }});
         } finally {
             try {

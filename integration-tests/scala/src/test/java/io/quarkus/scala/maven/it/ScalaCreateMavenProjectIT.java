@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
+import io.quarkus.maven.CreateProjectMojo;
 import io.quarkus.maven.it.MojoTestBase;
 import io.quarkus.maven.utilities.MojoUtils;
 
@@ -76,7 +77,7 @@ public class ScalaCreateMavenProjectIT extends MojoTestBase {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
-                MojoUtils.getPluginKey() + ":" + MojoUtils.getPluginVersion() + ":create"));
+                CreateProjectMojo.getPluginKey() + ":" + MojoUtils.getPluginVersion() + ":create"));
         request.setProperties(params);
         getEnv().forEach(request::addShellEnvironment);
         File log = new File(testDir, "build-create-" + testDir.getName() + ".log");

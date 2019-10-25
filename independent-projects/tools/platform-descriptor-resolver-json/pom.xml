@@ -10,7 +10,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-platform-descriptor-resolver-json</artifactId>
+    <artifactId>quarkus-descriptor-resolver-json</artifactId>
     <name>Quarkus - Dev tools - Platform JSON descriptor resolver</name>
 
     <dependencies>
@@ -26,13 +26,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-common</artifactId>
         </dependency>
-        <!--
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-platform-descriptor-json</artifactId>
-            <version>${quarkus.version}</version>
+            <artifactId>quarkus-platform-descriptor-legacy</artifactId>
         </dependency>
-        -->
         <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging</artifactId>

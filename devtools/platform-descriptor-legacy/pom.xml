@@ -10,16 +10,33 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-platform-descriptor-json</artifactId>
-    <name>Quarkus - Dev tools - Platform Descriptor - JSON</name>
+    <artifactId>quarkus-platform-descriptor-legacy</artifactId>
+    <name>Quarkus - Dev tools - Platform Descriptor - Legacy</name>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>src/main/filtered</directory>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>${project.basedir}/../../bom/runtime</directory>
+                <targetPath>quarkus-bom</targetPath>
+                <filtering>false</filtering>
+                <includes>
+                    <include>pom.xml</include>
+                </includes>
+            </resource>
+        </resources>
     </build>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devtools-common</artifactId>
+            <artifactId>quarkus-platform-descriptor-api</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

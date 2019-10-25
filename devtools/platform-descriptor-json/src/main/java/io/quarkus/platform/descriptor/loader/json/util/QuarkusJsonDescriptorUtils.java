@@ -1,14 +1,11 @@
 package io.quarkus.platform.descriptor.loader.json.util;
 
 import java.nio.file.Path;
-import java.util.function.Function;
 
 import org.eclipse.aether.artifact.Artifact;
 
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.platform.descriptor.loader.json.ArtifactResolver;
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoaderContext;
 import io.quarkus.platform.descriptor.loader.json.impl.QuarkusJsonPlatformDescriptor;
 import io.quarkus.platform.descriptor.loader.json.impl.QuarkusJsonPlatformDescriptorLoaderImpl;
@@ -31,7 +28,6 @@ public class QuarkusJsonDescriptorUtils {
         final Path platformJson = jsonArtifact.getFile().toPath();
 
         log.debug("Quarkus platform JSON descriptor %s", jsonArtifact);
-        final ArtifactResolver resolver = MojoUtils.toJsonArtifactResolver(mvn);
         return new QuarkusJsonPlatformDescriptorLoaderImpl()
                 .load(new QuarkusJsonPlatformDescriptorLoaderContext() {
 
@@ -41,13 +37,13 @@ public class QuarkusJsonDescriptorUtils {
                     }
 
                     @Override
-                    public <T> T parseJson(Function<Path, T> parser) {
-                        return parser.apply(platformJson);
+                    public Path getJsonDescriptorFile() {
+                        return platformJson;
                     }
 
                     @Override
-                    public ArtifactResolver getArtifactResolver() {
-                        return resolver;
+                    public MavenArtifactResolver getMavenArtifactResolver() {
+                        return mvn;
                     }
                 });
     }

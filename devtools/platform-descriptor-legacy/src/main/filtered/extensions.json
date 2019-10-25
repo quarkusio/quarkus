@@ -1,0 +1,849 @@
+[
+  {
+    "name": "Agroal - Database connection pool",
+    "labels": [
+      "agroal",
+      "database-connection-pool"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-agroal",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Amazon DynamoDB",
+    "labels": [
+      "dynamodb",
+      "dynamo",
+      "aws",
+      "amazon"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-amazon-dynamodb",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Apache Kafka Client",
+    "labels": [
+      "kafka"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kafka-client",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Apache Kafka Streams",
+    "labels": [
+      "kafka",
+      "kafka-streams"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kafka-streams",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Apache Tika",
+    "labels": [
+      "tika",
+      "parser"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-tika",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Arc",
+    "shortName": "CDI",
+    "labels": [
+      "arc",
+      "cdi",
+      "dependency-injection",
+      "di"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-arc",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/cdi-reference"
+  },
+  {
+    "name": "AWS Lambda",
+    "labels": [
+      "lambda",
+      "aws",
+      "amazon"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-amazon-lambda",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Artemis Core",
+    "labels": [
+      "artemis-core",
+      "artemis"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-artemis-core",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Artemis JMS",
+    "labels": [
+      "artemis-jms",
+      "artemis"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-artemis-jms",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Flyway",
+    "labels": [
+      "flyway",
+      "database",
+      "data"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-flyway",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/flyway-guide"
+  },
+  {
+    "name": "Hibernate ORM",
+    "shortName": "JPA",
+    "labels": [
+      "hibernate-orm",
+      "jpa",
+      "hibernate"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-hibernate-orm",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/hibernate-orm-guide"
+  },
+  {
+    "name": "Hibernate ORM with Panache",
+    "labels": [
+      "hibernate-orm-panache",
+      "panache",
+      "hibernate",
+      "jpa"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-hibernate-orm-panache",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/hibernate-orm-panache-guide"
+  },
+  {
+    "name": "Hibernate Search + Elasticsearch",
+    "labels": [
+      "hibernate-search-elasticsearch",
+      "search",
+      "full-text",
+      "hibernate",
+      "elasticsearch"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-hibernate-search-elasticsearch",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/hibernate-search-guide"
+  },
+  {
+    "name": "Hibernate Validator",
+    "shortName": "bean validation",
+    "labels": [
+      "hibernate-validator",
+      "bean-validation",
+      "validation"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-hibernate-validator",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/validation-guide"
+  },
+  {
+    "name": "Infinispan Client",
+    "labels": [
+      "infinispan-client",
+      "data-grid-client",
+      "infinispan"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-infinispan-client",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/infinispan-client-guide"
+  },
+  {
+    "name": "JDBC Driver - Derby",
+    "labels": [
+      "jdbc-derby",
+      "jdbc",
+      "derby"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jdbc-derby"
+  },
+  {
+    "name": "JDBC Driver - H2",
+    "labels": [
+      "jdbc-h2",
+      "jdbc",
+      "h2"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jdbc-h2",
+    "version": "${project.version}"
+  },
+  {
+    "name": "JDBC Driver - MariaDB",
+    "labels": [
+      "jdbc-mariadb",
+      "jdbc",
+      "mariadb"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jdbc-mariadb",
+    "version": "${project.version}"
+  },
+  {
+    "name": "JDBC Driver - MySQL",
+    "labels": [
+      "jdbc-mysql",
+      "jdbc",
+      "mysql"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jdbc-mysql",
+    "version": "${project.version}"
+  },
+  {
+    "name": "JDBC Driver - PostgreSQL",
+    "labels": [
+      "jdbc-postgresql",
+      "jdbc",
+      "postgresql"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jdbc-postgresql",
+    "version": "${project.version}"
+  },
+  {
+    "name": "JDBC Driver - Microsoft SQL Server",
+    "labels": [
+      "jdbc-mssql",
+      "jdbc",
+      "mssql",
+      "sql-server"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jdbc-mssql",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Jackson",
+    "labels": [
+      "jackson",
+      "json"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jackson",
+    "version": "${project.version}"
+  },
+  {
+    "name": "JAXB",
+    "labels": [
+      "jaxb"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jaxb",
+    "version": "${project.version}"
+  },
+  {
+    "name": "JGit",
+    "labels": [
+      "git"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jgit",
+    "version": "${project.version}"
+  },
+  {
+    "name": "JSON-B",
+    "labels": [
+      "jsonb",
+      "json-b",
+      "json"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jsonb",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/rest-json-guide"
+  },
+  {
+    "name": "JSON-P",
+    "labels": [
+      "jsonp",
+      "json-p",
+      "json"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jsonp",
+    "version": "${project.version}"
+  },
+  {
+    "name": "OpenID Connect",
+    "labels": [
+      "oauth2",
+      "openid-connect"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-oidc",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/oidc-guide"
+  },
+  {
+    "name": "Keycloak Authorization",
+    "labels": [
+      "oauth2",
+      "openid-connect",
+      "keycloak",
+      "authorization-services",
+      "policy-enforcer",
+      "fine-grained-permission",
+      "resource-based-authorization"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-keycloak-authorization",
+    "guide": "https://quarkus.io/guides/keycloak-authorization-guide"
+  },
+  {
+    "name": "Kogito",
+    "labels": [
+      "kogito",
+      "drools",
+      "jbpm"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kogito",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/kogito-guide"
+  },
+  {
+    "name": "Kotlin",
+    "labels": [
+      "kotlin"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kotlin",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/kotlin"
+  },
+  {
+    "name": "Kubernetes",
+    "labels": [
+      "kubernetes"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kubernetes",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/kubernetes-guide"
+  },
+  {
+    "name": "Kubernetes Client",
+    "labels": [
+      "kubernetes-client"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kubernetes-client",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Mailer",
+    "labels": [
+      "mail",
+      "mailer"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-mailer",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/sending-emails"
+  },
+  {
+    "name": "MongoDB Client",
+    "labels": [
+      "mongo",
+      "mongodb",
+      "nosql",
+      "datastore"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-mongodb-client",
+    "version": "${project.version}"
+  },
+  {
+    "name": "MongoDB with Panache",
+    "labels": [
+      "mongo",
+      "mongodb",
+      "nosql",
+      "datastore",
+      "panache"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-mongodb-panache",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Narayana JTA - Transaction manager",
+    "labels": [
+      "narayana-jta",
+      "narayana",
+      "jta",
+      "transactions",
+      "transaction",
+      "tx",
+      "txs"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-narayana-jta",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/transaction-guide"
+  },
+  {
+    "name": "Narayana STM - Software Transactional Memory",
+    "labels": [
+      "narayana-stm",
+      "narayana",
+      "stm",
+      "transactions",
+      "transaction",
+      "software-transactional-memory",
+      "tx",
+      "txs"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-narayana-stm",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/stm-guide"
+  },
+  {
+    "name": "Neo4j client",
+    "labels": [
+      "neo4j",
+      "graph",
+      "nosql",
+      "datastore"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-neo4j",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Reactive PostgreSQL Client",
+    "labels": [
+      "eclipse-vert.x",
+      "vertx",
+      "vert.x",
+      "reactive",
+      "database",
+      "data",
+      "postgresql"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-reactive-pg-client",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Reactive MySQL Client",
+    "labels": [
+      "eclipse-vert.x",
+      "vertx",
+      "vert.x",
+      "reactive",
+      "database",
+      "data",
+      "mysql"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-reactive-mysql-client",
+    "version": "${project.version}"
+  },
+  {
+    "name": "RESTEasy",
+    "shortName": "jax-rs",
+    "labels": [
+      "resteasy",
+      "jaxrs",
+      "web",
+      "rest"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-resteasy",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/rest-json-guide"
+  },
+  {
+    "name": "RESTEasy - JAXB",
+    "labels": [
+      "resteasy-jaxb",
+      "jaxrs-jaxb",
+      "resteasy",
+      "jaxb"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-resteasy-jaxb",
+    "version": "${project.version}"
+  },
+  {
+    "name": "RESTEasy - Jackson",
+    "labels": [
+      "resteasy-jackson",
+      "jaxrs-json",
+      "resteasy-json",
+      "resteasy",
+      "jaxrs",
+      "json",
+      "jackson"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-resteasy-jackson",
+    "version": "${project.version}"
+  },
+  {
+    "name": "RESTEasy - JSON-B",
+    "labels": [
+      "resteasy-jsonb",
+      "jaxrs-json",
+      "resteasy-json",
+      "resteasy",
+      "jaxrs",
+      "json",
+      "jsonb"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-resteasy-jsonb",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/rest-json-guide"
+  },
+  {
+    "name": "Scala",
+    "labels": [
+      "scala"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-scala",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Scheduler",
+    "labels": [
+      "scheduler",
+      "tasks",
+      "periodic-tasks"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-scheduler",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/scheduled-guide"
+  },
+  {
+    "name": "Properties File based Security",
+    "labels": [
+      "security"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-elytron-security-properties-file",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/elytron-properties-guide"
+  },
+  {
+    "name": "JDBC based Security",
+    "labels": [
+      "security",
+      "jdbc"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-elytron-security-jdbc",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Security OAuth2",
+    "labels": [
+      "security",
+      "oauth2"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-elytron-security-oauth2",
+    "version": "${project.version}"
+  },
+  {
+    "name": "SmallRye Context Propagation",
+    "shortName": "context propagation",
+    "labels": [
+      "smallrye-context-propagation",
+      "microprofile-context-propagation",
+      "context-propagation",
+      "context",
+      "reactive"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-context-propagation",
+    "version": "${project.version}"
+  },
+  {
+    "name": "SmallRye Fault Tolerance",
+    "labels": [
+      "smallrye-fault-tolerance",
+      "fault-tolerance",
+      "microprofile-fault-tolerance",
+      "circuit-breaker",
+      "bulkhead"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-fault-tolerance",
+    "version": "${project.version}"
+  },
+  {
+    "name": "SmallRye Health",
+    "shortName": "health",
+    "labels": [
+      "smallrye-health",
+      "health-check",
+      "health",
+      "microprofile-health",
+      "microprofile-health-check"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-health",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/health-guide"
+  },
+  {
+    "name": "SmallRye JWT",
+    "labels": [
+      "smallrye-jwt",
+      "jwt",
+      "json-web-token",
+      "rbac"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-jwt",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/jwt-guide"
+  },
+  {
+    "name": "SmallRye Metrics",
+    "shortName": "metrics",
+    "labels": [
+      "smallrye-metrics",
+      "metrics",
+      "metric",
+      "prometheus",
+      "monitoring"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-metrics",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/metrics-guide"
+  },
+  {
+    "name": "SmallRye OpenAPI",
+    "labels": [
+      "smallrye-openapi",
+      "openapi",
+      "open-api"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-openapi",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/openapi-swaggerui-guide"
+  },
+  {
+    "name": "SmallRye OpenTracing",
+    "labels": [
+      "smallrye-opentracing",
+      "opentracing",
+      "tracing",
+      "distributed-tracing",
+      "jaeger"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-opentracing",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/opentracing-guide"
+  },
+  {
+    "name": "SmallRye Reactive Streams Operators",
+    "shortName": "reactive streams",
+    "labels": [
+      "smallrye-reactive-streams-operators",
+      "smallrye-reactive-streams",
+      "reactive-streams-operators",
+      "reactive-streams",
+      "microprofile-reactive-streams",
+      "reactive"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-reactive-streams-operators",
+    "version": "${project.version}"
+  },
+  {
+    "name": "SmallRye Reactive Type Converters",
+    "labels": [
+      "smallrye-reactive-type-converters",
+      "reactive-type-converters",
+      "reactive-streams-operators",
+      "reactive-streams",
+      "microprofile-reactive-streams",
+      "reactive"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-reactive-type-converters",
+    "version": "${project.version}"
+  },
+  {
+    "name": "SmallRye Reactive Messaging",
+    "labels": [
+      "smallrye-reactive-messaging",
+      "reactive-messaging",
+      "reactive"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-reactive-messaging",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/async-message-passing"
+  },
+  {
+    "name": "SmallRye Reactive Messaging - Kafka Connector",
+    "shortName": "kafka",
+    "labels": [
+      "kafka",
+      "reactive-kafka"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-reactive-messaging-kafka",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/kafka-guide"
+  },
+  {
+    "name": "SmallRye Reactive Messaging - AMQP Connector",
+    "labels": [
+      "amqp",
+      "reactive-amqp"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-reactive-messaging-amqp",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/amqp-guide"
+  },
+  {
+    "name": "SmallRye Reactive Messaging - MQTT Connector",
+    "labels": [
+      "mqtt",
+      "reactive-mqtt"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-reactive-messaging-mqtt",
+    "version": "${project.version}"
+  },
+  {
+    "name": "REST Client",
+    "labels": [
+      "rest-client",
+      "web-client",
+      "microprofile-rest-client"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-rest-client",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/rest-client-guide"
+  },
+  {
+    "name": "Quarkus Extension for Spring DI API",
+    "labels": [
+      "spring-di"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-spring-di",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/spring-di-guide"
+  },
+  {
+    "name": "Quarkus Extension for Spring Web API",
+    "labels": [
+      "spring-web"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-spring-web",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/spring-web-guide"
+  },
+  {
+    "name": "Quarkus Extension for Spring Data API",
+    "labels": [
+      "spring-data"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-spring-data-jpa",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/spring-data-jpa-guide"
+  },
+  {
+    "name": "Swagger UI",
+    "labels": [
+      "swagger-ui"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-swagger-ui",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/openapi-swaggerui-guide"
+  },
+  {
+    "name": "Undertow",
+    "shortName": "servlet",
+    "labels": [
+      "undertow",
+      "servlet"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-undertow",
+    "version": "${project.version}"
+  },
+  {
+    "name": "Undertow WebSockets",
+    "shortName": "websockets",
+    "labels": [
+      "undertow-websockets",
+      "undertow-websocket",
+      "websocket",
+      "websockets",
+      "web-socket",
+      "web-sockets"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-undertow-websockets",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/websocket-guide"
+  },
+  {
+    "name": "Vault",
+    "labels": [
+      "vault",
+      "security"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-vault"
+  },
+  {
+    "name": "Eclipse Vert.x",
+    "labels": [
+      "eclipse-vert.x",
+      "vertx",
+      "vert.x",
+      "reactive"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-vertx",
+    "version": "${project.version}",
+    "guide": "https://quarkus.io/guides/using-vertx"
+  }
+]

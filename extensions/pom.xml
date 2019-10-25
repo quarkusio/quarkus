@@ -128,10 +128,6 @@
         <module>vault</module>
     </modules>
 
-    <!-- Unfortunately the config below introduces a build dependency on the maven plugin
-         which leads to an ordering that prevents the tooling to include the generated
-         JSON platform descriptor.
-         Hopefully, this can be re-enabled once we refactor the tools.
     <build>
         <plugins>
             <plugin>
@@ -139,9 +135,9 @@
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>${project.version}</version>
                 <inherited>false</inherited>
-                < ! - - Settings for stubbing new extensions via
+                <!-- Settings for stubbing new extensions via
                      mvn quarkus:create-extension -N -Dquarkus.artifactIdBase=my-ext -Dquarkus.nameBase="My Extension"
-                - - >
+                -->
                 <configuration>
                     <artifactIdPrefix>quarkus-</artifactIdPrefix>
                     <namePrefix xml:space="preserve">Quarkus - </namePrefix>
@@ -153,5 +149,5 @@
             </plugin>
         </plugins>
     </build>
-    -->
+
 </project>

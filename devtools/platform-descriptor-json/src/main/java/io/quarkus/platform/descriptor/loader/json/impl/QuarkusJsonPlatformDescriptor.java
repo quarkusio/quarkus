@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -101,31 +100,23 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor 
         if (templatesJar == null) {
             return null;
         }
-        try {
-            if (Files.isDirectory(templatesJar)) {
-                return readTemplate(name, templatesJar.resolve(name));
+        try (FileSystem fs = ZipUtils.newFileSystem(templatesJar)) {
+            final Path p = fs.getPath(name);
+            if (!Files.exists(p)) {
+                throw new RuntimeException("Failed to locate template " + name + " in " + templatesJar);
             }
-            try (FileSystem fs = ZipUtils.newFileSystem(templatesJar)) {
-                return readTemplate(name, fs.getPath(name));
+            try (BufferedReader reader = Files.newBufferedReader(p)) {
+                return reader.lines().collect(Collectors.joining("\n"));
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to resolve template " + name, e);
         }
     }
 
-    private String readTemplate(String name, final Path p) throws IOException {
-        if (!Files.exists(p)) {
-            throw new RuntimeException("Failed to locate template " + name + " in " + templatesJar);
-        }
-        try (BufferedReader reader = Files.newBufferedReader(p)) {
-            return reader.lines().collect(Collectors.joining("\n"));
-        }
-    }
-
     @Override
     public <T> T loadResource(String name, ResourceInputStreamConsumer<T> consumer) throws IOException {
         getLog().debug("Loading Quarkus platform resource %s", name);
-        try (FileSystem fs = FileSystems.newFileSystem(templatesJar, null)) {
+        try (FileSystem fs = ZipUtils.newFileSystem(templatesJar)) {
             final Path p = fs.getPath(name);
             if (!Files.exists(p)) {
                 throw new IOException("Failed to locate resource " + name);

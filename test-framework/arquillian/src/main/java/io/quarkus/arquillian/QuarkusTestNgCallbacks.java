@@ -8,7 +8,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 
 /**
  * Note that we cannot use event.getExecutor().invoke() directly because the callbacks would be invoked upon the original test
@@ -25,8 +27,12 @@ public class QuarkusTestNgCallbacks {
         if (testInstance != null) {
             List<Method> beforeClasses = new ArrayList<>();
             collectCallbacks(testInstance.getClass(), beforeClasses, BeforeClass.class);
-            for (Method beforeClass : beforeClasses) {
-                beforeClass.invoke(testInstance);
+            for (Method m : beforeClasses) {
+                // we don't know the values for parameterized methods that TestNG allows, we just skip those
+                if (m.getParameterCount() == 0) {
+                    m.setAccessible(true);
+                    m.invoke(testInstance);
+                }
             }
         }
     }
@@ -36,8 +42,42 @@ public class QuarkusTestNgCallbacks {
         if (testInstance != null) {
             List<Method> afterClasses = new ArrayList<>();
             collectCallbacks(testInstance.getClass(), afterClasses, AfterClass.class);
-            for (Method afterClass : afterClasses) {
-                afterClass.invoke(testInstance);
+            for (Method m : afterClasses) {
+                // we don't know the values for parameterized methods that TestNG allows, we just skip those
+                if (m.getParameterCount() == 0) {
+                    m.setAccessible(true);
+                    m.invoke(testInstance);
+                }
+            }
+        }
+    }
+
+    static void invokeTestNgAfterMethods() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+        Object testInstance = QuarkusDeployableContainer.testInstance;
+        if (testInstance != null) {
+            List<Method> afterMethods = new ArrayList<>();
+            collectCallbacks(testInstance.getClass(), afterMethods, AfterMethod.class);
+            for (Method m : afterMethods) {
+                // we don't know the values for parameterized methods that TestNG allows, we just skip those
+                if (m.getParameterCount() == 0) {
+                    m.setAccessible(true);
+                    m.invoke(testInstance);
+                }
+            }
+        }
+    }
+
+    static void invokeTestNgBeforeMethods() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+        Object testInstance = QuarkusDeployableContainer.testInstance;
+        if (testInstance != null) {
+            List<Method> beforeMethods = new ArrayList<>();
+            collectCallbacks(testInstance.getClass(), beforeMethods, BeforeMethod.class);
+            for (Method m : beforeMethods) {
+                // we don't know the values for parameterized methods that TestNG allows, we just skip those
+                if (m.getParameterCount() == 0) {
+                    m.setAccessible(true);
+                    m.invoke(testInstance);
+                }
             }
         }
     }

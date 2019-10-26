@@ -13,16 +13,24 @@ public class QuarkusBeforeAfterLifecycle {
     private static final String JUNIT_INVOKE_AFTERS = "invokeJunitAfters";
     private static final String TESTNG_INVOKE_BEFORE_CLASS = "invokeTestNgBeforeClasses";
     private static final String TESTNG_INVOKE_AFTER_CLASS = "invokeTestNgAfterClasses";
+    private static final String TESTNG_INVOKE_BEFORE_METHOD = "invokeTestNgBeforeMethods";
+    private static final String TESTNG_INVOKE_AFTER_METHOD = "invokeTestNgAfterMethods";
 
     public void on(@Observes(precedence = -100) org.jboss.arquillian.test.spi.event.suite.Before event) throws Throwable {
         if (isJunitAvailable()) {
             invokeCallbacks(JUNIT_INVOKE_BEFORES, JUNIT_CALLBACKS);
+        }
+        if (isTestNGAvailable()) {
+            invokeCallbacks(TESTNG_INVOKE_BEFORE_METHOD, TESTNG_CALLBACKS);
         }
     }
 
     public void on(@Observes(precedence = 100) org.jboss.arquillian.test.spi.event.suite.After event) throws Throwable {
         if (isJunitAvailable()) {
             invokeCallbacks(JUNIT_INVOKE_AFTERS, JUNIT_CALLBACKS);
+        }
+        if (isTestNGAvailable()) {
+            invokeCallbacks(TESTNG_INVOKE_AFTER_METHOD, TESTNG_CALLBACKS);
         }
     }
 

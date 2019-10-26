@@ -11,7 +11,7 @@ Quarkus comes with build in security to allow for RBAC (role based access contro
 based on the common security annotations `@RolesAllowed`, `@DenyAll`, `@PermitAll` on REST endpoints and CDI beans.
 An example of an endpoint that makes use of both JAX-RS and Common Security annotations to describe and secure its endpoints is given in <<subject-example>>. Quarkus also provides
 the `io.quarkus.security.Authenticated` annotation that will permit any authenticated user to access the resource
-(equivalent to `@RolesAllowed("*"))`.
+(equivalent to `@RolesAllowed("*")`).
 
 [#subject-example]
 .SubjectExposingResource Example

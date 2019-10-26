@@ -49,7 +49,7 @@ public class VertxKeycloakRecorder {
             @Override
             public void handle(AsyncResult<OAuth2Auth> event) {
                 if (event.failed()) {
-                    cf.completeExceptionally(event.cause());
+                    cf.completeExceptionally(toOidcException(event.cause()));
                 } else {
                     cf.complete(event.result());
                 }
@@ -62,4 +62,12 @@ public class VertxKeycloakRecorder {
         mechanism.setAuth(auth);
         mechanism.setAuthServerURI(config.authServerUrl);
     }
+
+    protected static OIDCException toOidcException(Throwable cause) {
+        final String message = "OIDC server is not available at the 'quarkus.oidc.auth-server-url' URL. "
+                + "Please make sure it is correct. Note it has to end with a realm value if you work with Keycloak, for example:"
+                + " 'https://localhost:8180/auth/realms/quarkus'";
+        return new OIDCException(message, cause);
+    }
+
 }

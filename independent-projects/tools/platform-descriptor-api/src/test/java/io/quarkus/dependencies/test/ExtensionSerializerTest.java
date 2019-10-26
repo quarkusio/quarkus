@@ -13,14 +13,15 @@ class ExtensionSerializerTest {
 	@Test
 	void testLegacyLabelsMapToKeywords() {
 		Extension e = new Extension();
-		
+
 		String[] input = new String[] { "what", "not", "to", "do"};
-		
+
 		e.setLabels(input);
-		
-		List<String> list = (List<String>) e.getMetadata().get("keywords");
-		
-		assertNotNull(list);	
+
+		@SuppressWarnings("unchecked")
+        List<String> list = (List<String>) e.getMetadata().get("keywords");
+
+		assertNotNull(list);
 		assertArrayEquals(input, list.toArray(new String[0]));
 		assertArrayEquals(input,e.getLabels());
 	}

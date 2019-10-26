@@ -186,6 +186,9 @@ Similar to the Maven configuration, when using Gradle, the following modificatio
 
 [source,groovy,subs=attributes+]
 ----
+group = '...' // set your group
+version = '1.0.0-SNAPSHOT'
+
 plugins {
     id 'java'
     id 'io.quarkus' version '{quarkus-version}' // <1>
@@ -198,9 +201,6 @@ repositories {
     mavenCentral()
 }
 
-group = '...' // set your group
-version = '1.0.0-SNAPSHOT'
-
 dependencies { 
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:{kotlin-version}'
 
@@ -211,7 +211,7 @@ dependencies {
     implementation 'io.quarkus:quarkus-kotlin'
 
     testImplementation 'io.quarkus:quarkus-junit5'
-    testImplementation 'io.rest-assured:rest-assured'
+    testImplementation 'io.rest-assured:rest-assured:{rest-assured-version}'  // <4>
 }
 
 sourceCompatibility = '1.8'
@@ -226,7 +226,7 @@ buildNative {
     enableHttpUrlHandler = true
 }
 
-allOpen { // <4>
+allOpen { // <5>
     annotation("javax.ws.rs.Path")
     annotation("javax.enterprise.context.ApplicationScoped")
     annotation("io.quarkus.test.junit.QuarkusTest")
@@ -236,7 +236,8 @@ allOpen { // <4>
 <1> The Quarkus plugin needs to be applied.
 <2> The Kotlin plugin version needs to be specified.
 <3> We include the Quarkus BOM using Gradle's link:https://docs.gradle.org/5.4.1/userguide/managing_transitive_dependencies.html#sec:bom_import[relevant syntax]
-<4> The all-open configuration required, as per Maven guide above
+<4> The rest-assured version needs to be specified
+<5> The all-open configuration required, as per Maven guide above
 
 or, if you use the Gradle Kotlin DSL:
 
@@ -270,7 +271,7 @@ dependencies {
     implementation("io.quarkus:quarkus-resteasy-jsonb")
 
     testImplementation("io.quarkus:quarkus-junit5")
-    testImplementation("io.rest-assured:rest-assured")
+    testImplementation("io.rest-assured:rest-assured:{rest-assured-version}") // <4>
 }
 
 tasks {
@@ -279,7 +280,7 @@ tasks {
     }
 }
 
-allOpen { // <4>
+allOpen { // <5>
     annotation("javax.ws.rs.Path")
     annotation("javax.enterprise.context.ApplicationScoped")
     annotation("io.quarkus.test.junit.QuarkusTest")
@@ -304,7 +305,8 @@ compileTestKotlin.kotlinOptions {
 <1> The Quarkus plugin needs to be applied.
 <2> The Kotlin plugin version needs to be specified.
 <3> We include the Quarkus BOM using Gradle's link:https://docs.gradle.org/5.4.1/userguide/managing_transitive_dependencies.html#sec:bom_import[relevant syntax]
-<4> The all-open configuration required, as per Maven guide above
+<4> The rest-assured version needs to be specified
+<5> The all-open configuration required, as per Maven guide above
 
 == CDI @Inject with Kotlin
 

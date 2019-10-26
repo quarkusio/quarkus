@@ -14,6 +14,31 @@
     <name>Quarkus - Dev tools - Platform Descriptor - JSON</name>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>src/main/filtered</directory>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>${project.basedir}/../../bom/runtime</directory>
+                <targetPath>quarkus-bom</targetPath>
+                <filtering>true</filtering>
+                <includes>
+                    <include>pom.xml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>${project.basedir}/../bom-descriptor-json/target</directory>
+                <targetPath>quarkus-bom-descriptor</targetPath>
+                <filtering>false</filtering>
+                <includes>
+                    <include>extensions.json</include>
+                </includes>
+            </resource>
+        </resources>
     </build>
 
     <dependencies>
@@ -23,11 +48,13 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devtools-templates</artifactId>
+            <artifactId>quarkus-bootstrap-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bootstrap-core</artifactId>
+            <artifactId>quarkus-bom-descriptor-json</artifactId>
+            <version>${project.version}</version>
+            <type>json</type>
         </dependency>
         <!-- extensions reader -->
         <dependency>

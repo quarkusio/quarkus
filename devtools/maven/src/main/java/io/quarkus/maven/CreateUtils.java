@@ -1,11 +1,9 @@
 package io.quarkus.maven;
 
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -27,11 +25,11 @@ import org.w3c.dom.NodeList;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoaderContext;
+import io.quarkus.platform.descriptor.loader.json.impl.QuarkusJsonPlatformDescriptorLoaderBootstrap;
 import io.quarkus.platform.descriptor.loader.json.util.QuarkusJsonDescriptorUtils;
-import io.quarkus.platform.descriptor.loader.legacy.QuarkusLegacyPlatformDescriptor;
-import io.quarkus.platform.descriptor.loader.legacy.QuarkusLegacyPlatformDescriptorLoader;
 import io.quarkus.platform.tools.MessageWriter;
 import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 import io.quarkus.platform.tools.maven.MojoMessageWriter;
@@ -57,6 +55,14 @@ public final class CreateUtils {
             final Log log)
             throws MojoExecutionException {
 
+        final Artifact platformArtifact = new DefaultArtifact(platformGroupId, platformArtifactId, null, "json",
+                defaultPlatformVersion);
+
+        if (isOnClasspath(platformArtifact)) {
+            loadDescriptorFromClasspath(log);
+            return;
+        }
+
         final MavenArtifactResolver mvn;
         try {
             mvn = MavenArtifactResolver.builder()
@@ -68,68 +74,73 @@ public final class CreateUtils {
             throw new MojoExecutionException("Failed to initialize artifact resolver", e);
         }
 
-        final Artifact platformArtifact = new DefaultArtifact(platformGroupId, platformArtifactId, null, "json",
-                defaultPlatformVersion);
-
-        setupQuarkusJsonPlatformDescriptor(mvn, platformArtifact, log);
+        doSetupQuarkusJsonPlatformDescriptor(mvn, platformArtifact, log);
     }
 
     public static void setupQuarkusJsonPlatformDescriptor(MavenArtifactResolver mvn, Artifact platformArtifact, final Log log)
             throws MojoExecutionException {
 
+        if (isOnClasspath(platformArtifact)) {
+            loadDescriptorFromClasspath(log);
+            return;
+        }
+
+        doSetupQuarkusJsonPlatformDescriptor(mvn, platformArtifact, log);
+    }
+
+    private static void doSetupQuarkusJsonPlatformDescriptor(MavenArtifactResolver mvn, Artifact platformArtifact,
+            final Log log)
+            throws MojoExecutionException {
         if (platformArtifact.getVersion() == null || platformArtifact.getVersion().isEmpty()) {
             platformArtifact = platformArtifact.setVersion(resolvePluginInfo(CreateUtils.class).getVersion());
         }
 
-        final MessageWriter msgWriter = new MojoMessageWriter(log);
-        QuarkusPlatformDescriptor platformDescr;
+        final QuarkusPlatformDescriptor platformDescr;
         try {
-            platformDescr = QuarkusJsonDescriptorUtils.loadDescriptor(mvn, platformArtifact, msgWriter);
+            platformDescr = QuarkusJsonDescriptorUtils.loadDescriptor(mvn, platformArtifact, new MojoMessageWriter(log));
         } catch (Throwable t) {
-            log.warn(
-                    "The JSON platform descriptor couldn't be loaded for " + platformArtifact
-                            + ". Falling back to the legacy platform descriptor.");
-            platformDescr = newLegacyDescriptor(msgWriter);
+            throw new MojoExecutionException("Failed to resolve platform descriptor " + platformArtifact, t);
         }
         QuarkusPlatformConfig.defaultConfigBuilder()
                 .setPlatformDescriptor(platformDescr)
                 .build();
     }
 
-    public static void setupQuarkusLegacyPlatformDescriptor(Log log) {
+    private static void loadDescriptorFromClasspath(Log log) {
         QuarkusPlatformConfig.defaultConfigBuilder()
-                .setPlatformDescriptor(newLegacyDescriptor(new MojoMessageWriter(log)))
+                .setPlatformDescriptor(new QuarkusJsonPlatformDescriptorLoaderBootstrap()
+                        .load(new QuarkusPlatformDescriptorLoaderContext() {
+                            final MessageWriter msgWriter = new MojoMessageWriter(log);
+
+                            @Override
+                            public MessageWriter getMessageWriter() {
+                                return msgWriter;
+                            }
+                        }))
                 .build();
     }
 
-    private static QuarkusLegacyPlatformDescriptor newLegacyDescriptor(final MessageWriter msgWriter) {
-        return new QuarkusLegacyPlatformDescriptorLoader().load(new QuarkusPlatformDescriptorLoaderContext() {
-            @Override
-            public MessageWriter getMessageWriter() {
-                return msgWriter;
-            }
-        });
+    private static boolean isOnClasspath(Artifact platformArtifact) throws MojoExecutionException {
+        return "quarkus-bom-descriptor-json".equals(platformArtifact.getArtifactId())
+                && "io.quarkus".equals(platformArtifact.getGroupId())
+                && (platformArtifact.getVersion() == null
+                        || platformArtifact.getVersion().isEmpty()
+                        || platformArtifact.getVersion()
+                                .equals(CreateUtils.resolvePluginInfo(CreateUtils.class).getVersion()));
     }
 
     public static Plugin resolvePluginInfo(Class<?> cls) throws MojoExecutionException {
-        final String pluginClassPath = cls.getName().replace('.', '/') + ".class";
-        URL url = Thread.currentThread().getContextClassLoader().getResource(pluginClassPath);
-        if (url == null) {
-            throw new MojoExecutionException("Failed to locate the origin of " + cls);
-        }
-        String classLocation = url.toExternalForm();
-        if (url.getProtocol().equals("jar")) {
-            classLocation = classLocation.substring(4, classLocation.length() - pluginClassPath.length() - 2);
-            try (FileSystem fs = ZipUtils.newFileSystem(toPath(classLocation))) {
-                return resolvePluginInfo(fs.getPath("META-INF", "maven", "plugin.xml"));
-            } catch (Exception e) {
-                throw new MojoExecutionException("Failed to resolve plugin version for " + classLocation, e);
+        try {
+            final Path classOrigin = MojoUtils.getClassOrigin(cls);
+            if (Files.isDirectory(classOrigin)) {
+                return resolvePluginInfo(classOrigin);
             }
-        } else {
-            classLocation = classLocation.substring(0, classLocation.length() - pluginClassPath.length());
-            return resolvePluginInfo(toPath(classLocation));
+            try (FileSystem fs = ZipUtils.newFileSystem(classOrigin)) {
+                return resolvePluginInfo(fs.getPath("META-INF", "maven", "plugin.xml"));
+            }
+        } catch (Exception e) {
+            throw new MojoExecutionException("Failed to resolve maven plugin version containing " + cls, e);
         }
-
     }
 
     private static Plugin resolvePluginInfo(Path pluginXml) throws MojoExecutionException {
@@ -161,15 +172,6 @@ public final class CreateUtils {
                     "The " + parentNode.getNodeName() + " element description is missing child " + childName);
         }
         return text;
-    }
-
-    private static Path toPath(String classLocation) throws MojoExecutionException {
-        try {
-            return Paths.get(new URL(classLocation).toURI());
-        } catch (Throwable e) {
-            throw new MojoExecutionException(
-                    "Failed to create an instance of " + Path.class.getName() + " from " + classLocation, e);
-        }
     }
 
     private static Node getElement(NodeList nodeList, String name) throws MojoExecutionException {

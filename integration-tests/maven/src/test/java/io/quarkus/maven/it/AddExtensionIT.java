@@ -12,7 +12,6 @@ import org.apache.maven.model.Model;
 import org.apache.maven.shared.invoker.*;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.maven.CreateProjectMojo;
 import io.quarkus.maven.utilities.MojoUtils;
 
 class AddExtensionIT extends MojoTestBase {
@@ -107,7 +106,7 @@ class AddExtensionIT extends MojoTestBase {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
-                CreateProjectMojo.getPluginKey() + ":" + MojoUtils.getPluginVersion() + ":add-extension"));
+                MojoUtils.getPluginKey() + ":" + MojoUtils.getPluginVersion() + ":add-extension"));
         Properties properties = new Properties();
         if (plural) {
             properties.setProperty("extensions", ext);

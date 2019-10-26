@@ -23,7 +23,7 @@ repositories {
 dependencies {
     compile "io.quarkus:quarkus-bootstrap-core:${version}"
     compile "io.quarkus:quarkus-devtools-common:${version}"
-    compile "io.quarkus:quarkus-platform-descriptor-legacy:${version}"
+    compile "io.quarkus:quarkus-platform-descriptor-json:${version}"
     compile "io.quarkus:quarkus-development-mode:${version}"
     compile "io.quarkus:quarkus-creator:${version}"
     compile "org.gradle:gradle-tooling-api:5.5.1"

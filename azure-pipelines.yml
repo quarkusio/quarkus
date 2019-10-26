@@ -264,6 +264,7 @@ stages:
           modules:
             - infinispan-cache-jpa
             - infinispan-client
+            - infinispan-embedded
             - mongodb-client
             - mongodb-panache
             - neo4j

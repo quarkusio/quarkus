@@ -17,7 +17,7 @@ public class ClassPathArtifactResolverTestCase {
 
     @Test
     public void testMultipleGroupArtifact() throws Exception {
-        assertNotNull(RESOLVER.getArtifact("javax.annotation", "javax.annotation-api", null));
+        assertNotNull(RESOLVER.getArtifact("jakarta.annotation", "jakarta.annotation-api", null));
     }
 
     @Test

@@ -193,11 +193,9 @@
                                     </requireMavenVersion>
                                     <bannedDependencies>
                                         <excludes>
-                                            <!-- Use javax.annotation-api -->
-                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec
-                                            </exclude>
-                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec
-                                            </exclude>
+                                            <!-- Use Jakarta artifacts -->
+                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec</exclude>
+                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec</exclude>
                                             <!-- use our jboss-logmanager -->
                                             <exclude>org.jboss.logging:jboss-logmanager</exclude>
                                             <!-- We don't want all the API's in one jar-->
@@ -210,11 +208,24 @@
                                             <exclude>org.jboss.marshalling:jboss-marshalling-osgi</exclude>
                                             <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</exclude>
                                             <!-- The API is packaged by the implementation-->
-                                            <exclude>javax.json:javax.json-api</exclude>
-                                            <!-- Do not use Jakarta APIs for JSON -->
-                                            <exclude>org.glassfish:jakarta.json</exclude>
-                                            <exclude>jakarta.json.bind:jakarta.json.bind-api</exclude>
                                             <exclude>jakarta.json:jakarta.json-api</exclude>
+                                            <!-- Exclude javax dependencies in favor of Jakarta -->
+                                            <exclude>javax.activation:activation</exclude>
+                                            <exclude>javax.activation:javax.activation-api</exclude>
+                                            <exclude>javax.annotation:javax.annotation-api</exclude>
+                                            <exclude>javax.enterprise:cdi-api</exclude>
+                                            <exclude>javax.inject:javax.inject</exclude>
+                                            <exclude>javax.json:javax.json-api</exclude>
+                                            <exclude>org.glassfish:javax.json</exclude>
+                                            <exclude>org.glassfish:javax.el</exclude>
+                                            <exclude>javax.persistence:javax.persistence-api</exclude>
+                                            <exclude>javax.persistence:persistence-api</exclude>
+                                            <exclude>javax.security.enterprise:javax.security.enterprise-api</exclude>
+                                            <exclude>javax.servlet:servlet-api</exclude>
+                                            <exclude>javax.transaction:jta</exclude>
+                                            <exclude>javax.transaction:javax.transaction-api</exclude>
+                                            <exclude>javax.validation:validation-api</exclude>
+                                            <exclude>javax.xml.bind:jaxb-api</exclude>
                                             <!-- Ensure none of the deps use netty-all. This forces deps to use more fine grained netty artifacts -->
                                             <exclude>io.netty:netty-all</exclude>
                                             <!-- Ban Log4J (use org.jboss.logmanager:log4j-jboss-logmanager instead) -->

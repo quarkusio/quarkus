@@ -35,6 +35,10 @@
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-core</artifactId>
             <exclusions>
+                <exclusion>
+                    <groupId>javax.persistence</groupId>
+                    <artifactId>javax.persistence-api</artifactId>
+                </exclusion>
 
                 <!-- Javassist is never used in Quarkus -->
                 <exclusion>
@@ -57,8 +61,11 @@
                     <groupId>javax.activation</groupId>
                     <artifactId>javax.activation-api</artifactId>
                 </exclusion>
-
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.persistence</groupId>
+            <artifactId>jakarta.persistence-api</artifactId>
         </dependency>
         <dependency>
             <groupId>com.oracle.substratevm</groupId>

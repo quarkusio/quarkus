@@ -29,6 +29,16 @@
         <dependency>
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-context-propagation-jta</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.transaction</groupId>
+                    <artifactId>javax.transaction-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.transaction</groupId>
+            <artifactId>jakarta.transaction-api</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>

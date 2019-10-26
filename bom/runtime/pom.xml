@@ -43,18 +43,25 @@
         <smallrye-converter-api.version>1.0.10</smallrye-converter-api.version>
         <smallrye-reactive-messaging.version>1.0.8</smallrye-reactive-messaging.version>
         <swagger-ui.version>3.20.9</swagger-ui.version>
-        <javax.activation.version>1.1.1</javax.activation.version>
-        <javax.inject.version>1</javax.inject.version>
-        <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
+        <jakarta.activation.version>1.2.1</jakarta.activation.version>
+        <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
+        <jakarta.el-impl.version>3.0.3</jakarta.el-impl.version>
+        <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
+        <jakarta.inject-api.version>1.0</jakarta.inject-api.version>
+        <jakarta.interceptor-api.version>1.2.5</jakarta.interceptor-api.version>
+        <jakarta.json.version>1.1.6</jakarta.json.version>
+        <jakarta.json.bind-api.version>1.0.2</jakarta.json.bind-api.version>
+        <jakarta.persistence-api.version>2.2.3</jakarta.persistence-api.version>
+        <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
+        <jakarta.transaction-api.version>1.3.3</jakarta.transaction-api.version>
+        <jakarta.validation-api.version>2.0.2</jakarta.validation-api.version>
+        <jakarta.xml.bind-api.version>2.3.2</jakarta.xml.bind-api.version>
+        <jaxb-runtime.version>2.3.3-b01</jaxb-runtime.version>
         <javax.security.jacc-api.version>1.0.2.Final</javax.security.jacc-api.version>
         <javax.security.jaspi-api.version>1.0.2.Final</javax.security.jaspi-api.version>
-        <javax.json.version>1.1.4</javax.json.version>
-        <javax.json.bind-api.version>1.0</javax.json.bind-api.version>
-        <javax.xml.bind.version>2.3.1</javax.xml.bind.version>
         <jboss-jaxrs-api_2.1_spec.version>1.0.2.Final</jboss-jaxrs-api_2.1_spec.version>
         <javax.ws.rs-api.version>2.1.1</javax.ws.rs-api.version>
         <asm.version>7.1</asm.version>
-        <cdi-api.version>2.0.SP1</cdi-api.version>
         <commons-io.version>2.6</commons-io.version>
         <jboss-metadata-web.version>11.0.0.Final</jboss-metadata-web.version>
         <maven-core.version>3.5.4</maven-core.version>
@@ -72,9 +79,7 @@
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.9</commons-lang3.version>
         <commons-codec.version>1.13</commons-codec.version>
-        <validation-api.version>2.0.1.Final</validation-api.version>
         <classmate.version>1.3.4</classmate.version>
-        <javax.el-impl.version>3.0.1-b11</javax.el-impl.version>
         <hibernate-validator.version>6.1.0.Final</hibernate-validator.version>
         <hibernate-orm.version>5.4.7.Final</hibernate-orm.version>
         <hibernate-search.version>6.0.0.Beta2</hibernate-search.version>
@@ -82,7 +87,6 @@
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.6</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
-        <javax.persistence-api.version>2.2</javax.persistence-api.version>
         <elasticsearch-rest-client.version>7.4.0</elasticsearch-rest-client.version>
         <rxjava1.version>1.3.8</rxjava1.version>
         <rxjava.version>2.2.13</rxjava.version>
@@ -100,7 +104,6 @@
         <httpcore.version>4.4.11</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>
         <quartz.version>2.3.1</quartz.version>
-        <jakarta-activation.version>1.2.1</jakarta-activation.version>
         <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
         <postgresql-jdbc.version>42.2.6</postgresql-jdbc.version>
         <mariadb-jdbc.version>2.4.4</mariadb-jdbc.version>
@@ -165,7 +168,6 @@
         <jna.version>5.3.1</jna.version>
         <antlr.version>4.7.2</antlr.version>
         <quarkus-security.version>1.0.0.Beta1</quarkus-security.version>
-        <javax.interceptor-api.version>1.2</javax.interceptor-api.version>
         <keycloak.version>7.0.1</keycloak.version>
     </properties>
 
@@ -805,7 +807,7 @@
             <dependency>
                 <groupId>com.sun.activation</groupId>
                 <artifactId>jakarta.activation</artifactId>
-                <version>${jakarta-activation.version}</version>
+                <version>${jakarta.activation.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.jaegertracing</groupId>
@@ -908,6 +910,10 @@
                     <exclusion>
                         <groupId>javax.activation</groupId>
                         <artifactId>activation</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.xml.bind</groupId>
+                        <artifactId>jaxb-api</artifactId>
                     </exclusion>
                     <exclusion>
                         <!-- https://github.com/quarkusio/quarkus/issues/1991 -->
@@ -1151,35 +1157,44 @@
                 <version>${sundr.version}</version>
             </dependency>
             <dependency>
-                <groupId>javax.activation</groupId>
-                <artifactId>activation</artifactId>
-                <version>${javax.activation.version}</version>
+                <groupId>jakarta.activation</groupId>
+                <artifactId>jakarta.activation-api</artifactId>
+                <version>${jakarta.activation.version}</version>
             </dependency>
             <dependency>
-                <groupId>javax.inject</groupId>
-                <artifactId>javax.inject</artifactId>
-                <version>${javax.inject.version}</version>
+                <groupId>jakarta.inject</groupId>
+                <artifactId>jakarta.inject-api</artifactId>
+                <version>${jakarta.inject-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>javax.annotation</groupId>
-                <artifactId>javax.annotation-api</artifactId>
-                <version>${javax.annotation-api.version}</version>
+                <groupId>jakarta.annotation</groupId>
+                <artifactId>jakarta.annotation-api</artifactId>
+                <version>${jakarta.annotation-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>javax.persistence</groupId>
-                <artifactId>javax.persistence-api</artifactId>
-                <version>${javax.persistence-api.version}</version>
+                <groupId>jakarta.persistence</groupId>
+                <artifactId>jakarta.persistence-api</artifactId>
+                <version>${jakarta.persistence-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>javax.validation</groupId>
-                <artifactId>validation-api</artifactId>
-                <version>${validation-api.version}</version>
+                <groupId>jakarta.servlet</groupId>
+                <artifactId>jakarta.servlet-api</artifactId>
+                <version>${jakarta.servlet-api.version}</version>
             </dependency>
-
             <dependency>
-                <groupId>javax.interceptor</groupId>
-                <artifactId>javax.interceptor-api</artifactId>
-                <version>${javax.interceptor-api.version}</version>
+                <groupId>jakarta.transaction</groupId>
+                <artifactId>jakarta.transaction-api</artifactId>
+                <version>${jakarta.transaction-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.validation</groupId>
+                <artifactId>jakarta.validation-api</artifactId>
+                <version>${jakarta.validation-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.interceptor</groupId>
+                <artifactId>jakarta.interceptor-api</artifactId>
+                <version>${jakarta.interceptor-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>javax.ws.rs</groupId>
@@ -1404,14 +1419,7 @@
                 <artifactId>yasson</artifactId>
                 <version>${yasson.version}</version>
                 <exclusions>
-                    <exclusion>
-                        <groupId>org.glassfish</groupId>
-                        <artifactId>jakarta.json</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>jakarta.json.bind</groupId>
-                        <artifactId>jakarta.json.bind-api</artifactId>
-                    </exclusion>
+                    <!-- The API is coming with the impl -->
                     <exclusion>
                         <groupId>jakarta.json</groupId>
                         <artifactId>jakarta.json-api</artifactId>
@@ -1420,40 +1428,28 @@
             </dependency>
             <dependency>
                 <groupId>org.glassfish</groupId>
-                <artifactId>javax.el</artifactId>
-                <version>${javax.el-impl.version}</version>
+                <artifactId>jakarta.el</artifactId>
+                <version>${jakarta.el-impl.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.glassfish</groupId>
-                <artifactId>javax.json</artifactId>
-                <version>${javax.json.version}</version>
+                <artifactId>jakarta.json</artifactId>
+                <version>${jakarta.json.version}</version>
             </dependency>
             <dependency>
-                <groupId>javax.json.bind</groupId>
-                <artifactId>javax.json.bind-api</artifactId>
-                <version>${javax.json.bind-api.version}</version>
+                <groupId>jakarta.json.bind</groupId>
+                <artifactId>jakarta.json.bind-api</artifactId>
+                <version>${jakarta.json.bind-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.glassfish.jaxb</groupId>
                 <artifactId>jaxb-runtime</artifactId>
-                <version>${javax.xml.bind.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.activation</groupId>
-                        <artifactId>javax.activation-api</artifactId>
-                    </exclusion>
-                </exclusions>
+                <version>${jaxb-runtime.version}</version>
             </dependency>
             <dependency>
-                <groupId>javax.xml.bind</groupId>
-                <artifactId>jaxb-api</artifactId>
-                <version>${javax.xml.bind.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.activation</groupId>
-                        <artifactId>javax.activation-api</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>jakarta.xml.bind</groupId>
+                <artifactId>jakarta.xml.bind-api</artifactId>
+                <version>${jakarta.xml.bind-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.spec.javax.security.jacc</groupId>
@@ -1587,11 +1583,11 @@
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-json-binding-provider</artifactId>
                 <version>${resteasy.version}</version>
-                <!-- In javax.json 1.1.4, the API is included in the impl jar -->
+                <!-- In jakarta.json 1.1.6, the API is included in the impl jar -->
                 <exclusions>
                     <exclusion>
-                        <groupId>javax.json</groupId>
-                        <artifactId>javax.json-api</artifactId>
+                        <groupId>jakarta.json</groupId>
+                        <artifactId>jakarta.json-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -1599,13 +1595,6 @@
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-jaxb-provider</artifactId>
                 <version>${resteasy.version}</version>
-                <exclusions>
-                    <!-- The JBoss JAXB API artifact is used instead -->
-                    <exclusion>
-                        <groupId>javax.xml.bind</groupId>
-                        <artifactId>jaxb-api</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>
@@ -1794,9 +1783,9 @@
                 <version>${slf4j-jboss-logging.version}</version>
             </dependency>
             <dependency>
-                <groupId>javax.enterprise</groupId>
-                <artifactId>cdi-api</artifactId>
-                <version>${cdi-api.version}</version>
+                <groupId>jakarta.enterprise</groupId>
+                <artifactId>jakarta.enterprise.cdi-api</artifactId>
+                <version>${jakarta.enterprise.cdi-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>commons-io</groupId>

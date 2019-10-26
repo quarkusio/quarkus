@@ -30,8 +30,8 @@
             <artifactId>quarkus-panache-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>javax.json.bind</groupId>
-            <artifactId>javax.json.bind-api</artifactId>
+            <groupId>jakarta.json.bind</groupId>
+            <artifactId>jakarta.json.bind-api</artifactId>
             <optional>true</optional>
         </dependency>
     </dependencies>

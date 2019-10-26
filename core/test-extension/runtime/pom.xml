@@ -44,8 +44,8 @@
         </dependency>
         <!-- Don't rely on JDK JAXB so code compiles and runs under both JDK8/11 -->
         <dependency>
-            <groupId>javax.xml.bind</groupId>
-            <artifactId>jaxb-api</artifactId>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jaxb</groupId>
@@ -55,7 +55,7 @@
             <groupId>com.sun.activation</groupId>
             <artifactId>jakarta.activation</artifactId>
         </dependency>
-</dependencies>
+    </dependencies>
 
     <build>
         <plugins>

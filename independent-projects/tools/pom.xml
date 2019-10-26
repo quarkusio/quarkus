@@ -40,6 +40,7 @@
         <assertj.version>3.13.2</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jackson.version>2.9.10</jackson.version>
+        <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <junit.version>5.5.2</junit.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
         <maven-core.version>3.5.4</maven-core.version>
@@ -90,6 +91,11 @@
                 <groupId>org.apache.maven</groupId>
                 <artifactId>maven-plugin-api</artifactId>
                 <version>${maven-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.enterprise</groupId>
+                <artifactId>jakarta.enterprise.cdi-api</artifactId>
+                <version>${jakarta.enterprise.cdi-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>
@@ -144,6 +150,84 @@
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce</id>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <!-- Use javax.annotation-api -->
+                                        <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec
+                                        </exclude>
+                                        <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec
+                                        </exclude>
+                                        <!-- use our jboss-logmanager -->
+                                        <exclude>org.jboss.logging:jboss-logmanager</exclude>
+                                        <!-- We don't want all the API's in one jar-->
+                                        <exclude>javax:javaee-api</exclude>
+                                        <!-- Prevent incompatible config from coming in -->
+                                        <exclude>org.wildfly.client:wildfly-client-config</exclude>
+                                        <!-- Use Jakarta Activation -->
+                                        <exclude>javax.activation:javax-activation-api</exclude>
+                                        <exclude>javax.activation:activation</exclude>
+                                        <exclude>org.jboss.marshalling:jboss-marshalling-osgi</exclude>
+                                        <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</exclude>
+                                        <!-- The API is packaged by the implementation-->
+                                        <exclude>jakarta.json:jakarta.json-api</exclude>
+                                        <!-- Exclude javax dependencies in favor of Jakarta -->
+                                        <exclude>javax.activation:activation</exclude>
+                                        <exclude>javax.activation:javax.activation-api</exclude>
+                                        <exclude>javax.annotation:javax.annotation-api</exclude>
+                                        <exclude>javax.enterprise:cdi-api</exclude>
+                                        <exclude>javax.inject:javax.inject</exclude>
+                                        <exclude>javax.json:javax.json-api</exclude>
+                                        <exclude>org.glassfish:javax.json</exclude>
+                                        <exclude>org.glassfish:javax.el</exclude>
+                                        <exclude>javax.persistence:javax.persistence-api</exclude>
+                                        <exclude>javax.persistence:persistence-api</exclude>
+                                        <exclude>javax.security.enterprise:javax.security.enterprise-api</exclude>
+                                        <exclude>javax.servlet:servlet-api</exclude>
+                                        <exclude>javax.transaction:jta</exclude>
+                                        <exclude>javax.transaction:javax.transaction-api</exclude>
+                                        <exclude>javax.validation:validation-api</exclude>
+                                        <exclude>javax.xml.bind:jaxb-api</exclude>
+                                        <!-- Ensure none of the deps use netty-all. This forces deps to use more fine grained netty artifacts -->
+                                        <exclude>io.netty:netty-all</exclude>
+                                        <!-- Ban Log4J (use org.jboss.logmanager:log4j-jboss-logmanager instead) -->
+                                        <exclude>log4j:log4j</exclude>
+                                        <exclude>org.apache.logging.log4j:log4j-api</exclude>
+                                        <exclude>org.apache.logging.log4j:log4j-core</exclude>
+                                        <exclude>org.apache.logging.log4j:log4j-slf4j-impl</exclude>
+                                        <!-- Ban commons-logging (use org.jboss.logging:commons-logging-jboss-logging instead) -->
+                                        <exclude>commons-logging:commons-logging</exclude>
+                                        <exclude>commons-logging:commons-logging-api</exclude>
+                                        <exclude>org.springframework:spring-jcl</exclude>
+                                        <exclude>org.slf4j:jcl-over-slf4j</exclude>
+                                        <!-- Ban SLF4j implementations (use org.jboss.slf4j:slf4j-jboss-logging instead) -->
+                                        <exclude>org.slf4j:slf4j-simple</exclude>
+                                        <exclude>org.slf4j:slf4j-nop</exclude>
+                                        <exclude>org.slf4j:slf4j-jdk14</exclude>
+                                        <exclude>org.slf4j:slf4j-log4j12</exclude>
+                                        <exclude>org.slf4j:slf4j-log4j13</exclude>
+                                    </excludes>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
     <profiles>
         <profile>

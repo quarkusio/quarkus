@@ -18,6 +18,10 @@ import org.apache.maven.model.Dependency;
  */
 public class Extension {
 
+	private static final String MD_SHORT_NAME = "short-name";
+
+	private static final String MD_GUIDE = "guide";
+
 	/** Key used for keywords in metadata **/
 	public static String MD_KEYWORDS = "keywords";
 
@@ -31,9 +35,7 @@ public class Extension {
 
 	private String name;
 	private String description;
-	private String guide;
-	private boolean unlisted;
-
+	
 	private String simplifiedArtifactId;
 	private static final Pattern QUARKUS_PREFIX = Pattern.compile("^quarkus-");
 
@@ -42,8 +44,9 @@ public class Extension {
 	public static final String ARTIFACT_ID = "artifact-id";
 
 	public static final String VERSION = "version";
-	private String shortName;
 
+	private static final String MD_UNLISTED = "unlisted";
+	
 	private Map<String, Object> metadata = new HashMap<String, Object>(3);
 
 	public Extension() {
@@ -263,7 +266,7 @@ public class Extension {
 	}
 
 	public Extension setGuide(String guide) {
-		this.guide = guide;
+		getMetadata().put(MD_GUIDE, guide);
 		return this;
 	}
 
@@ -272,26 +275,23 @@ public class Extension {
 	 * @return string representing the location of primary guide for this extension.
 	 */
 	public String getGuide() {
-		return guide;
+		return (String) getMetadata().get(MD_GUIDE);
 	}
 
 	public String getShortName() {
-		if (shortName == null) {
-			return name;
-		}
-		return shortName;
+		return (String) getMetadata().get(MD_SHORT_NAME);
 	}
 
 	public Extension setShortName(String shortName) {
-		this.shortName = shortName;
+		getMetadata().put(MD_SHORT_NAME, shortName);
 		return this;
 	}
 
 	public boolean isUnlisted() {
-		return unlisted;
+		return (boolean) getMetadata().get(MD_UNLISTED);
 	}
 
 	public void setUnlisted(boolean unlisted) {
-		this.unlisted = unlisted;
+		getMetadata().put(MD_UNLISTED, Boolean.valueOf(unlisted));
 	}
 }

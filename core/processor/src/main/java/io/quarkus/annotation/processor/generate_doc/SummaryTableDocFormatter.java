@@ -45,7 +45,7 @@ final class SummaryTableDocFormatter implements DocFormatter {
             typeContent = configDocKey.computeTypeSimpleName();
             final String javaDocLink = configDocKey.getJavaDocSiteLink();
             if (!javaDocLink.isEmpty()) {
-                typeContent = String.format("link:%s[%s]\n", javaDocLink, typeContent);
+                typeContent = String.format("link:%s[%s,window=\"_blank\"]\n", javaDocLink, typeContent);
             }
         }
         if (configDocKey.isList()) {

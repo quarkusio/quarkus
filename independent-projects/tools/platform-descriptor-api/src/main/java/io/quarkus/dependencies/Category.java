@@ -4,33 +4,33 @@ import java.util.Map;
 
 public class Category {
 
-	String id;
-	String name;
-	
-	Map<String, Object> metadata;
+    String id;
+    String name;
 
-	public String getId() {
-		return id;
-	}
+    Map<String, Object> metadata;
 
-	public void setId(String id) {
-		this.id = id;
-	}
+    public String getId() {
+        return id;
+    }
 
-	public String getName() {
-		return name;
-	}
+    public void setId(String id) {
+        this.id = id;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public Map<String, Object> getMetadata() {
-		return metadata;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public void setMetadata(Map<String, Object> metadata) {
-		this.metadata = metadata;
-	}
-	
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
+    }
+
 }

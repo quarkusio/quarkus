@@ -18,280 +18,281 @@ import org.apache.maven.model.Dependency;
  */
 public class Extension {
 
-	private static final String MD_SHORT_NAME = "short-name";
+    private static final String MD_SHORT_NAME = "short-name";
 
-	private static final String MD_GUIDE = "guide";
+    private static final String MD_GUIDE = "guide";
 
-	/** Key used for keywords in metadata **/
-	public static String MD_KEYWORDS = "keywords";
+    /** Key used for keywords in metadata **/
+    public static String MD_KEYWORDS = "keywords";
 
-	private String artifactId;
-	private String groupId;
-	private String scope;
-	private String version;
+    private String artifactId;
+    private String groupId;
+    private String scope;
+    private String version;
 
-	private String type;
-	private String classifier;
+    private String type;
+    private String classifier;
 
-	private String name;
-	private String description;
-	
-	private String simplifiedArtifactId;
-	private static final Pattern QUARKUS_PREFIX = Pattern.compile("^quarkus-");
+    private String name;
+    private String description;
 
-	public static final String GROUP_ID = "group-id";
+    private String simplifiedArtifactId;
+    private static final Pattern QUARKUS_PREFIX = Pattern.compile("^quarkus-");
 
-	public static final String ARTIFACT_ID = "artifact-id";
+    public static final String GROUP_ID = "group-id";
 
-	public static final String VERSION = "version";
+    public static final String ARTIFACT_ID = "artifact-id";
 
-	private static final String MD_UNLISTED = "unlisted";
-	
-	private Map<String, Object> metadata = new HashMap<String, Object>(3);
+    public static final String VERSION = "version";
 
-	public Extension() {
-		// Use by mapper.
-	}
+    private static final String MD_UNLISTED = "unlisted";
 
-	public Extension(String groupId, String artifactId, String version) {
-		this.groupId = groupId;
-		this.setArtifactId(artifactId);
-		this.version = version;
-	}
+    private Map<String, Object> metadata = new HashMap<String, Object>(3);
 
-	public String getArtifactId() {
-		return artifactId;
-	}
+    public Extension() {
+        // Use by mapper.
+    }
 
-	public Extension setArtifactId(String artifactId) {
-		this.artifactId = artifactId;
-		this.simplifiedArtifactId = QUARKUS_PREFIX.matcher(artifactId).replaceFirst("");
-		return this;
-	}
+    public Extension(String groupId, String artifactId, String version) {
+        this.groupId = groupId;
+        this.setArtifactId(artifactId);
+        this.version = version;
+    }
 
-	/** Group Id for the extension artifact */
-	public String getGroupId() {
-		return groupId;
-	}
+    public String getArtifactId() {
+        return artifactId;
+    }
 
-	public Extension setGroupId(String groupId) {
-		this.groupId = groupId;
-		return this;
-	}
+    public Extension setArtifactId(String artifactId) {
+        this.artifactId = artifactId;
+        this.simplifiedArtifactId = QUARKUS_PREFIX.matcher(artifactId).replaceFirst("");
+        return this;
+    }
 
-	public String getScope() {
-		return scope;
-	}
+    /** Group Id for the extension artifact */
+    public String getGroupId() {
+        return groupId;
+    }
 
-	public Extension setScope(String scope) {
-		this.scope = scope;
-		return this;
-	}
+    public Extension setGroupId(String groupId) {
+        this.groupId = groupId;
+        return this;
+    }
 
-	public String getVersion() {
-		return version;
-	}
+    public String getScope() {
+        return scope;
+    }
 
-	public Extension setVersion(String version) {
-		this.version = version;
-		return this;
-	}
+    public Extension setScope(String scope) {
+        this.scope = scope;
+        return this;
+    }
 
-	public String getType() {
-		return type;
-	}
+    public String getVersion() {
+        return version;
+    }
 
-	public Extension setType(String type) {
-		this.type = type;
-		return this;
-	}
+    public Extension setVersion(String version) {
+        this.version = version;
+        return this;
+    }
 
-	public String getClassifier() {
-		return classifier;
-	}
+    public String getType() {
+        return type;
+    }
 
-	public Extension setClassifier(String classifier) {
-		this.classifier = classifier;
-		return this;
-	}
+    public Extension setType(String type) {
+        this.type = type;
+        return this;
+    }
 
-	public String getName() {
-		return name;
-	}
+    public String getClassifier() {
+        return classifier;
+    }
 
-	public Extension setName(String name) {
-		this.name = name;
-		return this;
-	}
+    public Extension setClassifier(String classifier) {
+        this.classifier = classifier;
+        return this;
+    }
 
-	public String getDescription() {
-		return description;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public Extension setDescription(String description) {
-		this.description = description;
-		return this;
-	}
+    public Extension setName(String name) {
+        this.name = name;
+        return this;
+    }
 
-	/**
-	 * Semi-Unstructured metadata used to provide metadata to tools and other
-	 * frontends.
-	 * 
-	 */
-	public Map<String, Object> getMetadata() {
-		return metadata;
-	}
+    public String getDescription() {
+        return description;
+    }
 
-	public Extension setMetadata(Map<String, Object> metadata) {
-		this.metadata = metadata;
-		return this;
-	}
+    public Extension setDescription(String description) {
+        this.description = description;
+        return this;
+    }
 
-	public List<String> getKeywords() {
-		List<String> kw = (List<String>) getMetadata().get(MD_KEYWORDS);
-		return kw == null ? Collections.emptyList() : kw;
-	}
+    /**
+     * Semi-Unstructured metadata used to provide metadata to tools and other
+     * frontends.
+     * 
+     */
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
 
-	public Extension setKeywords(String[] keywords) {
-		getMetadata().put(MD_KEYWORDS, Arrays.asList(keywords));
-		return this;
-	}
+    public Extension setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
+        return this;
+    }
 
-	/**
-	 * List of strings to use for matching.
-	 * 
-	 * Returns keywords + artifactid all in lowercase.
-	 * 
-	 * @return list of labels to use for matching.
-	 */
-	public List<String> labelsForMatching() {
-		List<String> list = new ArrayList<>();
-		List<String> keywords = getKeywords();
-		if (keywords != null) {
-			list.addAll(keywords.stream().map(String::toLowerCase).collect(Collectors.toList()));
-		}
-		list.add(artifactId.toLowerCase());
-		return list;
-	}
+    public List<String> getKeywords() {
+        List<String> kw = (List<String>) getMetadata().get(MD_KEYWORDS);
+        return kw == null ? Collections.emptyList() : kw;
+    }
 
-	/**
-	 * Convert this Extension into a dependency
-	 * @param stripVersion if provided version will not be set on the Dependency
-	 * @return
-	 */
-	public Dependency toDependency(boolean stripVersion) {
-		Dependency dependency = new Dependency();
-		dependency.setGroupId(groupId);
-		dependency.setArtifactId(artifactId);
-		if (scope != null && !scope.isEmpty()) {
-			dependency.setScope(scope);
-		}
-		if (classifier != null && !classifier.isEmpty()) {
-			dependency.setClassifier(classifier);
-		}
-		if (version != null && !version.isEmpty() && !stripVersion) {
-			dependency.setVersion(version);
-		}
-		return dependency;
-	}
+    public Extension setKeywords(String[] keywords) {
+        getMetadata().put(MD_KEYWORDS, Arrays.asList(keywords));
+        return this;
+    }
 
-	public String managementKey() {
-		return getGroupId() + ":" + getArtifactId();
-	}
+    /**
+     * List of strings to use for matching.
+     * 
+     * Returns keywords + artifactid all in lowercase.
+     * 
+     * @return list of labels to use for matching.
+     */
+    public List<String> labelsForMatching() {
+        List<String> list = new ArrayList<>();
+        List<String> keywords = getKeywords();
+        if (keywords != null) {
+            list.addAll(keywords.stream().map(String::toLowerCase).collect(Collectors.toList()));
+        }
+        list.add(artifactId.toLowerCase());
+        return list;
+    }
 
-	public String gav() {
-		return managementKey() + ":" + version;
-	}
+    /**
+     * Convert this Extension into a dependency
+     * 
+     * @param stripVersion if provided version will not be set on the Dependency
+     * @return
+     */
+    public Dependency toDependency(boolean stripVersion) {
+        Dependency dependency = new Dependency();
+        dependency.setGroupId(groupId);
+        dependency.setArtifactId(artifactId);
+        if (scope != null && !scope.isEmpty()) {
+            dependency.setScope(scope);
+        }
+        if (classifier != null && !classifier.isEmpty()) {
+            dependency.setClassifier(classifier);
+        }
+        if (version != null && !version.isEmpty() && !stripVersion) {
+            dependency.setVersion(version);
+        }
+        return dependency;
+    }
 
-	public String getSimplifiedArtifactId() {
-		return simplifiedArtifactId;
-	}
+    public String managementKey() {
+        return getGroupId() + ":" + getArtifactId();
+    }
 
-	@Override
-	public String toString() {
-		return gav();
-	}
+    public String gav() {
+        return managementKey() + ":" + version;
+    }
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((groupId == null) ? 0 : groupId.hashCode());
-		result = prime * result + ((artifactId == null) ? 0 : artifactId.hashCode());
-		result = prime * result + ((version == null) ? 0 : version.hashCode());
+    public String getSimplifiedArtifactId() {
+        return simplifiedArtifactId;
+    }
 
-		return result;
-	}
+    @Override
+    public String toString() {
+        return gav();
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((groupId == null) ? 0 : groupId.hashCode());
+        result = prime * result + ((artifactId == null) ? 0 : artifactId.hashCode());
+        result = prime * result + ((version == null) ? 0 : version.hashCode());
 
-		if (obj == null) {
-			return false;
-		}
+        return result;
+    }
 
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
 
-		Extension other = (Extension) obj;
-		if (groupId == null) {
-			if (other.groupId != null) {
-				return false;
-			}
-		} else if (!groupId.equals(other.groupId)) {
-			return false;
-		}
+        if (obj == null) {
+            return false;
+        }
 
-		if (artifactId == null) {
-			if (other.artifactId != null) {
-				return false;
-			}
-		} else if (!artifactId.equals(other.artifactId)) {
-			return false;
-		}
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
 
-		if (version == null) {
-			if (other.version != null) {
-				return false;
-			}
-		} else if (!version.equals(other.version)) {
-			return false;
-		}
+        Extension other = (Extension) obj;
+        if (groupId == null) {
+            if (other.groupId != null) {
+                return false;
+            }
+        } else if (!groupId.equals(other.groupId)) {
+            return false;
+        }
 
-		return true;
-	}
+        if (artifactId == null) {
+            if (other.artifactId != null) {
+                return false;
+            }
+        } else if (!artifactId.equals(other.artifactId)) {
+            return false;
+        }
 
-	public Extension setGuide(String guide) {
-		getMetadata().put(MD_GUIDE, guide);
-		return this;
-	}
+        if (version == null) {
+            if (other.version != null) {
+                return false;
+            }
+        } else if (!version.equals(other.version)) {
+            return false;
+        }
 
-	/**
-	 * 
-	 * @return string representing the location of primary guide for this extension.
-	 */
-	public String getGuide() {
-		return (String) getMetadata().get(MD_GUIDE);
-	}
+        return true;
+    }
 
-	public String getShortName() {
-		return (String) getMetadata().get(MD_SHORT_NAME);
-	}
+    public Extension setGuide(String guide) {
+        getMetadata().put(MD_GUIDE, guide);
+        return this;
+    }
 
-	public Extension setShortName(String shortName) {
-		getMetadata().put(MD_SHORT_NAME, shortName);
-		return this;
-	}
+    /**
+     * 
+     * @return string representing the location of primary guide for this extension.
+     */
+    public String getGuide() {
+        return (String) getMetadata().get(MD_GUIDE);
+    }
 
-	public boolean isUnlisted() {
-		return (boolean) getMetadata().get(MD_UNLISTED);
-	}
+    public String getShortName() {
+        return (String) getMetadata().get(MD_SHORT_NAME);
+    }
 
-	public void setUnlisted(boolean unlisted) {
-		getMetadata().put(MD_UNLISTED, Boolean.valueOf(unlisted));
-	}
+    public Extension setShortName(String shortName) {
+        getMetadata().put(MD_SHORT_NAME, shortName);
+        return this;
+    }
+
+    public boolean isUnlisted() {
+        return (boolean) getMetadata().get(MD_UNLISTED);
+    }
+
+    public void setUnlisted(boolean unlisted) {
+        getMetadata().put(MD_UNLISTED, Boolean.valueOf(unlisted));
+    }
 }

@@ -23,10 +23,10 @@ public class AuthConfig {
     public boolean basic;
 
     /**
-     * If form auth should be enabled.
+     * Form Auth config
      */
     @ConfigItem
-    public boolean form;
+    public FormAuthConfig form;
 
     /**
      * The authentication realm

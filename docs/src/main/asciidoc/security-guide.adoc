@@ -103,6 +103,34 @@ very much a work in progress, so this list will be expanded over the coming week
 
 Please see the linked documents above for details on how to setup the various extensions.
 
+### Authenticating Via HTTP
+
+Quarkus has two built in authentication mechanisms for HTTP based FORM and BASIC auth. This mechanism is pluggable
+however so extensions can add additional mechanisms (most notably OpenID Connect for Keycloak based auth).
+
+#### Basic Authentication
+
+To enable basic authentication set `quarkus.http.auth.basic=true`. You must also have at least one extension installed
+that provides a username/password based `IdentityProvider`, such as link:security-jdbc-guide.html[Elytron JDBC].
+
+#### Form Based Authentication
+
+Quarkus provides form based authentication that works in a similar manner to traditional Servlet form based auth. Unlike
+traditional form authentication the authenticated user is not stored in a HTTP session, as Quarkus does not provide
+clustered HTTP session support. Instead the authentication information is stored in an encrypted cookie, which can
+be read by all members of the cluster (provided they all share the same encryption key).
+
+The encryption key can be set using the `quarkus.http.auth.session.encryption-key` property, and it must be at least 16 characters
+long. This key is hashed using SHA-256 and the resulting digest is used as a key for AES-256 encryption of the cookie
+value. This cookie contains a expiry time as part of the encrypted value, so all nodes in the cluster must have their
+clocks synchronised. At one minute intervals a new cookie will be generated with an updated expiry time if the session
+is in use.
+
+The following properties can be used to configure form based auth:
+
+include::{generated-dir}/config/quarkus-http-auth-form.adoc[opts=optional, leveloffset=+1]
+
+
 ### Securing Web Endpoints
 
 Quarkus has an integrated plugable web security layer. If security is enabled all HTTP requests will have a permission

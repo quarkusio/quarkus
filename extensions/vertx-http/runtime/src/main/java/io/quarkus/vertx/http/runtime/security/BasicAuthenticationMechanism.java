@@ -29,7 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Pattern;
 
-import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
@@ -45,9 +45,8 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * The authentication handler responsible for BASIC authentication as described by RFC2617
  *
- * @author <a href="mailto:darran.lofthouse@jboss.com">Darran Lofthouse</a>
  */
-@ApplicationScoped
+@Singleton
 public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism {
 
     private static final Logger log = Logger.getLogger(BasicAuthenticationMechanism.class);

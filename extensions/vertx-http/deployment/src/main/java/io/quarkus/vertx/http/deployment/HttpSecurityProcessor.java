@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -13,10 +14,12 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.PolicyConfig;
 import io.quarkus.vertx.http.runtime.security.AuthenticatedHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.DenySecurityPolicy;
+import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
@@ -41,6 +44,18 @@ public class HttpSecurityProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void initFormAuth(
+            BeanContainerBuildItem beanContainerBuildItem,
+            HttpSecurityRecorder recorder,
+            HttpBuildTimeConfig buildTimeConfig,
+            HttpConfiguration httpConfiguration) {
+        if (buildTimeConfig.auth.form.enabled) {
+            recorder.setupFormAuth(beanContainerBuildItem.getValue(), httpConfiguration, buildTimeConfig);
+        }
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void setupAuthenticationMechanisms(
             HttpSecurityRecorder recorder,
@@ -58,7 +73,9 @@ public class HttpSecurityProcessor {
             policyMap.put(e.getName(), e.policySupplier);
         }
 
-        if (buildTimeConfig.auth.basic) {
+        if (buildTimeConfig.auth.form.enabled) {
+            beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(FormAuthenticationMechanism.class));
+        } else if (buildTimeConfig.auth.basic) {
             beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(BasicAuthenticationMechanism.class));
         }
 

@@ -18,6 +18,7 @@ import io.quarkus.elytron.security.runtime.ElytronPasswordIdentityProvider;
 import io.quarkus.elytron.security.runtime.ElytronRecorder;
 import io.quarkus.elytron.security.runtime.ElytronSecurityDomainManager;
 import io.quarkus.elytron.security.runtime.ElytronTokenIdentityProvider;
+import io.quarkus.elytron.security.runtime.ElytronTrustedIdentityProvider;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
@@ -56,12 +57,12 @@ class ElytronDeploymentProcessor {
             List<ElytronTokenMarkerBuildItem> token) {
         beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronSecurityDomainManager.class));
         beans.produce(AdditionalBeanBuildItem.unremovableOf(DefaultRoleDecoder.class));
-
         if (!token.isEmpty()) {
             beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronTokenIdentityProvider.class));
         }
         if (!pw.isEmpty()) {
             beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronPasswordIdentityProvider.class));
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronTrustedIdentityProvider.class));
         }
     }
 

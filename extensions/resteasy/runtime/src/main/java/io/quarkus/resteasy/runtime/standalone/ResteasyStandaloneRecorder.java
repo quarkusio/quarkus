@@ -114,6 +114,7 @@ public class ResteasyStandaloneRecorder {
                         staticHandler.setCachingEnabled(false);
                         staticHandler.setAllowRootFileSystemAccess(true);
                         staticHandler.setWebRoot(root);
+                        staticHandler.setDefaultContentEncoding("UTF-8");
                         return staticHandler;
                     }
                 });
@@ -132,7 +133,8 @@ public class ResteasyStandaloneRecorder {
             ThreadLocalHandler staticHandler = new ThreadLocalHandler(new Supplier<Handler<RoutingContext>>() {
                 @Override
                 public Handler<RoutingContext> get() {
-                    return StaticHandler.create(META_INF_RESOURCES);
+                    return StaticHandler.create(META_INF_RESOURCES)
+                            .setDefaultContentEncoding("UTF-8");
                 }
             });
             handlers.add(ctx -> {

@@ -256,6 +256,10 @@
                                             <exclude>org.slf4j:slf4j-log4j12</exclude>
                                             <exclude>org.slf4j:slf4j-log4j13</exclude>
                                         </excludes>
+                                        <includes>
+                                            <!-- this is for REST Assured -->
+                                            <include>javax.xml.bind:jaxb-api:*:*:test</include>
+                                        </includes>
                                     </bannedDependencies>
                                 </rules>
                             </configuration>

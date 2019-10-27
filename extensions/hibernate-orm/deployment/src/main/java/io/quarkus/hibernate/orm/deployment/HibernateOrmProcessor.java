@@ -667,10 +667,14 @@ public final class HibernateOrmProcessor {
                 }
 
                 // Caching
-                Map<String, String> cacheConfigEntries = HibernateConfigUtil
-                        .getCacheConfigEntries(hibernateConfig);
-                for (Entry<String, String> entry : cacheConfigEntries.entrySet()) {
-                    desc.getProperties().setProperty(entry.getKey(), entry.getValue());
+                if (hibernateConfig.useSecondLevelCache) {
+                    Map<String, String> cacheConfigEntries = HibernateConfigUtil
+                            .getCacheConfigEntries(hibernateConfig);
+                    for (Entry<String, String> entry : cacheConfigEntries.entrySet()) {
+                        desc.getProperties().setProperty(entry.getKey(), entry.getValue());
+                    }
+                } else {
+                    desc.getProperties().setProperty(AvailableSettings.USE_SECOND_LEVEL_CACHE, "false");
                 }
 
                 descriptors.add(desc);

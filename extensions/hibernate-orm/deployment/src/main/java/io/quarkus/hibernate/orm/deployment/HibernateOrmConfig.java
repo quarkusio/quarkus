@@ -130,6 +130,12 @@ public class HibernateOrmConfig {
     public HibernateOrmConfigLog log;
 
     /**
+     * Whether the second level cache is enabled.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean useSecondLevelCache;
+
+    /**
      * Caching configuration
      */
     @ConfigDocSection

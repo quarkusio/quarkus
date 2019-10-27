@@ -450,7 +450,11 @@ On top of immutable data, in certain contexts it might be acceptable to enable c
 Rather than enabling caching on mutable data, ideally a better solution would be to use a clustered cache; however at this time Quarkus doesn't provide any such implementation: feel free to get in touch and let this need known so that the team can take this into account.
 --
 
-Finally, the second-level cache can be disabled globally by setting `hibernate.cache.use_second_level_cache` to `false`; this is a setting that needs to be specified in the `persistence.xml` configuration file.
+Finally, the second-level cache can be disabled globally.
+There are two ways to do it:
+
+- by setting `quarkus.hibernate-orm.use-second-level-cache` to `false` in `application.properties`
+- by setting `hibernate.cache.use_second_level_cache` to `false` in `persistence.xml`
 
 When second-level cache is disabled, all cache annotations are ignored and all queries are run ignoring caches; this is generally useful only to diagnose issues.
 

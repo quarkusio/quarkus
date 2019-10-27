@@ -112,6 +112,7 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
 
         // Read the overrides file for the extensions (if it exists)
         Map<String, JsonObject> extOverrides = new HashMap<>();
+        JsonObject theRest = null;
         if (overridesFile.isFile()) {
             info("Found overrides file %s", overridesFile);
             try (JsonReader jsonReader = Json.createReader(new FileInputStream(overridesFile))) {
@@ -125,6 +126,8 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
                         extOverrides.put(key, extOverrideObject);
                     }
                 }
+                
+                theRest = overridesObject;
             } catch (IOException e) {
                 throw new MojoExecutionException("Failed to read " + overridesFile, e);
             }
@@ -172,6 +175,16 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         // And add the list of extensions
         platformJson.add("extensions", extListJson.build());
 
+        theRest.forEach((key, item) -> {
+        	// Ignore the two keys we are explicitly managing
+        	// but then add anything else found.
+        	// TODO: make a real merge if needed eventually.
+            if(!"bom".equals(key) && !"extensions".equals(key)) {
+            	platformJson.add(key, item);
+            	
+            }
+        });
+        
         // Write the JSON to the output file
         final File outputDir = outputFile.getParentFile();
         if (!outputDir.exists()) {
@@ -239,7 +252,7 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
     private String extensionId(JsonObject extObject) {
         String artId = extObject.getString("artifactId", "");
         if (artId.isEmpty()) {
-            getLog().warn("Missing artifactId in extension overrides");
+            getLog().warn("Missing artifactId in extension overrides in " + extObject.toString());
         }
         String groupId = extObject.getString("artifactId", "");
         if (groupId.isEmpty()) {

@@ -227,28 +227,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         extObject.set("metadata", metadata);
 
-        // TODO: remove before going to master
-        Path source = output
-                .resolve("../../../src/main/resources/META-INF/");
-        System.out.println("Try to save " + source);
-        if (source.toFile().exists()) {
-            try (BufferedWriter bw = Files
-                    .newBufferedWriter(source.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME));
-                    BufferedWriter by = Files.newBufferedWriter(source.resolve("quarkus-descriptor.yaml"))) {
-                String json = mapper.writer(prettyPrinter).writeValueAsString(extObject);
-                bw.write(json);
-
-                YAMLFactory yf = new YAMLFactory();
-                ObjectMapper ym = new ObjectMapper(yf).enable(SerializationFeature.INDENT_OUTPUT);
-                by.write(ym.writer(prettyPrinter).writeValueAsString(extObject));
-
-                //source.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME).toFile().delete();
-            } catch (IOException e) {
-                throw new MojoExecutionException(
-                        "Failed to persist " + output.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME), e);
-            }
-        }
-
     }
 
 }

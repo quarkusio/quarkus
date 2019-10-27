@@ -19,7 +19,7 @@ jobs:
     steps:
     - task: DownloadPipelineArtifact@2
       inputs:
-        artifact: BuiltMavenRepo
+        artifact: $(Build.SourceVersion)-BuiltMavenRepo
         path: $(Pipeline.Workspace)/.m2/repository/
 
     - ${{ if eq(parameters.postgres, 'true') }}:

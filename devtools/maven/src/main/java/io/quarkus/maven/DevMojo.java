@@ -17,6 +17,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -239,54 +241,38 @@ public class DevMojo extends AbstractMojo {
             String javaTool = JavaBinFinder.findBin();
             getLog().debug("Using javaTool: " + javaTool);
             args.add(javaTool);
-            String debugSuspend = "n";
             if (this.suspend != null) {
                 switch (this.suspend.toLowerCase(Locale.ENGLISH)) {
                     case "n":
                     case "false": {
-                        debugSuspend = "n";
+                        suspend = "n";
                         break;
                     }
                     case "y":
                     case "true": {
-                        debugSuspend = "y";
+                        suspend = "y";
                         break;
                     }
                     default: {
                         getLog().warn(
                                 "Ignoring invalid value \"" + suspend + "\" for \"suspend\" param and defaulting to \"n\"");
+                        suspend = "n";
                         break;
                     }
                 }
+            } else {
+                suspend = "n";
             }
-            if (debug == null) {
-                // debug mode not specified
-                // make sure 5005 is not used, we don't want to just fail if something else is using it
-                try (Socket socket = new Socket(InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 }), 5005)) {
-                    getLog().error("Port 5005 in use, not starting in debug mode");
-                } catch (IOException e) {
-                    args.add("-Xdebug");
-                    args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=" + debugSuspend);
-                }
-            } else if (debug.toLowerCase().equals("client")) {
-                args.add("-Xdebug");
-                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=" + debugSuspend);
-            } else if (debug.toLowerCase().equals("true")) {
-                args.add("-Xdebug");
-                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=y,suspend=" + debugSuspend);
-            } else if (!debug.toLowerCase().equals("false")) {
-                try {
-                    int port = Integer.parseInt(debug);
-                    if (port <= 0) {
-                        throw new MojoFailureException("The specified debug port must be greater than 0");
-                    }
-                    args.add("-Xdebug");
-                    args.add("-Xrunjdwp:transport=dt_socket,address=" + port + ",server=y,suspend=" + debugSuspend);
-                } catch (NumberFormatException e) {
-                    throw new MojoFailureException(
-                            "Invalid value for debug parameter: " + debug + " must be true|false|client|{port}");
-                }
+
+            boolean useDebugMode = true;
+            // debug mode not specified
+            // make sure 5005 is not used, we don't want to just fail if something else is using it
+            try (Socket socket = new Socket(InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 }), 5005)) {
+                getLog().error("Port 5005 in use, not starting in debug mode");
+                useDebugMode = false;
+            } catch (IOException e) {
             }
+
             if (jvmArgs != null) {
                 args.addAll(Arrays.asList(jvmArgs.split(" ")));
             }
@@ -297,6 +283,172 @@ public class DevMojo extends AbstractMojo {
                 args.add("-Xverify:none");
             }
 
+            DevModeRunner runner = new DevModeRunner(args, useDebugMode);
+
+            runner.prepare();
+            runner.run();
+            long nextCheck = System.currentTimeMillis() + 100;
+            Map<Path, Long> pomFiles = readPomFileTimestamps(runner);
+            for (;;) {
+                //we never suspend after the first run
+                suspend = "n";
+                long sleep = Math.max(0, nextCheck - System.currentTimeMillis()) + 1;
+                Thread.sleep(sleep);
+                if (System.currentTimeMillis() > nextCheck) {
+                    nextCheck = System.currentTimeMillis() + 100;
+                    if (!runner.process.isAlive()) {
+                        return;
+                    }
+                    boolean changed = false;
+                    for (Map.Entry<Path, Long> e : pomFiles.entrySet()) {
+                        long t = Files.getLastModifiedTime(e.getKey()).toMillis();
+                        if (t > e.getValue()) {
+                            changed = true;
+                            pomFiles.put(e.getKey(), t);
+                        }
+                    }
+                    if (changed) {
+                        DevModeRunner newRunner = new DevModeRunner(args, useDebugMode);
+                        try {
+                            newRunner.prepare();
+                        } catch (Exception e) {
+                            getLog().info("Could not load changed pom.xml file, changes not applied");
+                            continue;
+                        }
+                        runner.stop();
+                        newRunner.run();
+                        runner = newRunner;
+                    }
+                }
+
+            }
+
+        } catch (Exception e) {
+            throw new MojoFailureException("Failed to run", e);
+        }
+    }
+
+    private Map<Path, Long> readPomFileTimestamps(DevModeRunner runner) throws IOException {
+        Map<Path, Long> ret = new HashMap<>();
+        for (Path i : runner.getPomFiles()) {
+            ret.put(i, Files.getLastModifiedTime(i).toMillis());
+        }
+        return ret;
+    }
+
+    private String getSourceEncoding() {
+        Object sourceEncodingProperty = project.getProperties().get("project.build.sourceEncoding");
+        if (sourceEncodingProperty != null) {
+            return (String) sourceEncodingProperty;
+        }
+        return null;
+    }
+
+    private void addProject(DevModeContext devModeContext, LocalProject localProject) {
+
+        String projectDirectory = null;
+        Set<String> sourcePaths = null;
+        String classesPath = null;
+        String resourcePath = null;
+
+        final MavenProject mavenProject = session.getProjectMap().get(
+                String.format("%s:%s:%s", localProject.getGroupId(), localProject.getArtifactId(), localProject.getVersion()));
+
+        if (mavenProject == null) {
+            projectDirectory = localProject.getDir().toAbsolutePath().toString();
+            Path sourcePath = localProject.getSourcesSourcesDir().toAbsolutePath();
+            if (Files.isDirectory(sourcePath)) {
+                sourcePaths = Collections.singleton(
+                        sourcePath.toString());
+            } else {
+                sourcePaths = Collections.emptySet();
+            }
+        } else {
+            projectDirectory = mavenProject.getBasedir().getPath();
+            sourcePaths = mavenProject.getCompileSourceRoots().stream()
+                    .map(Paths::get)
+                    .filter(Files::isDirectory)
+                    .map(src -> src.toAbsolutePath().toString())
+                    .collect(Collectors.toSet());
+        }
+
+        Path classesDir = localProject.getClassesDir();
+        if (Files.isDirectory(classesDir)) {
+            classesPath = classesDir.toAbsolutePath().toString();
+        }
+        Path resourcesSourcesDir = localProject.getResourcesSourcesDir();
+        if (Files.isDirectory(resourcesSourcesDir)) {
+            resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
+        }
+        DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(
+                localProject.getArtifactId(),
+                projectDirectory,
+                sourcePaths,
+                classesPath,
+                resourcePath);
+        devModeContext.getModules().add(moduleInfo);
+    }
+
+    private void addToClassPaths(StringBuilder classPathManifest, DevModeContext classPath, File file) {
+        URI uri = file.toPath().toAbsolutePath().toUri();
+        try {
+            classPath.getClassPath().add(uri.toURL());
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+        String path = uri.getRawPath();
+        if (PropertyUtils.isWindows()) {
+            if (path.length() > 2 && Character.isLetter(path.charAt(0)) && path.charAt(1) == ':') {
+                path = "/" + path;
+            }
+        }
+        classPathManifest.append(path);
+        if (file.isDirectory() && path.charAt(path.length() - 1) != '/') {
+            classPathManifest.append("/");
+        }
+        classPathManifest.append(" ");
+    }
+
+    class DevModeRunner {
+
+        private final List<String> args;
+        private Process process;
+        private Set<Path> pomFiles = new HashSet<>();
+        private final boolean useDebugMode;
+
+        DevModeRunner(List<String> args, boolean useDebugMode) {
+            this.args = new ArrayList<>(args);
+            this.useDebugMode = useDebugMode;
+        }
+
+        /**
+         * Attempts to prepare the dev mode runner.
+         */
+        void prepare() throws Exception {
+            if (debug == null) {
+                if (useDebugMode) {
+                    args.add("-Xdebug");
+                    args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=" + suspend);
+                }
+            } else if (debug.toLowerCase().equals("client")) {
+                args.add("-Xdebug");
+                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=" + suspend);
+            } else if (debug.toLowerCase().equals("true")) {
+                args.add("-Xdebug");
+                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=y,suspend=" + suspend);
+            } else if (!debug.toLowerCase().equals("false")) {
+                try {
+                    int port = Integer.parseInt(debug);
+                    if (port <= 0) {
+                        throw new MojoFailureException("The specified debug port must be greater than 0");
+                    }
+                    args.add("-Xdebug");
+                    args.add("-Xrunjdwp:transport=dt_socket,address=" + port + ",server=y,suspend=" + suspend);
+                } catch (NumberFormatException e) {
+                    throw new MojoFailureException(
+                            "Invalid value for debug parameter: " + debug + " must be true|false|client|{port}");
+                }
+            }
             //build a class-path string for the base platform
             //this stuff does not change
             // Do not include URIs in the manifest, because some JVMs do not like that
@@ -357,6 +509,9 @@ public class DevMojo extends AbstractMojo {
                         addProject(devModeContext, project);
                     }
                 }
+                for (LocalProject i : localProject.getSelfWithLocalDeps()) {
+                    pomFiles.add(i.getDir().resolve("pom.xml"));
+                }
 
                 /*
                  * TODO: support multiple resources dirs for config hot deployment
@@ -375,6 +530,9 @@ public class DevMojo extends AbstractMojo {
                         .build())
                                 .setDevMode(true)
                                 .resolveModel(localProject.getAppArtifact());
+                if (appModel.getAllDependencies().isEmpty()) {
+                    throw new RuntimeException("Unable to resolve application dependencies");
+                }
             } catch (Exception e) {
                 throw new MojoExecutionException("Failed to resolve Quarkus application model", e);
             }
@@ -453,6 +611,14 @@ public class DevMojo extends AbstractMojo {
 
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
+
+        }
+
+        public Set<Path> getPomFiles() {
+            return pomFiles;
+        }
+
+        public void run() throws Exception {
             // Display the launch command line in debug mode
             getLog().debug("Launching JVM with command line: " + args.toString());
             ProcessBuilder pb = new ProcessBuilder(args.toArray(new String[0]));
@@ -460,100 +626,21 @@ public class DevMojo extends AbstractMojo {
             pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
             pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
             pb.directory(workingDir);
-            Process p = pb.start();
+            process = pb.start();
 
             //https://github.com/quarkusio/quarkus/issues/232
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    p.destroy();
+                    process.destroy();
                 }
             }, "Development Mode Shutdown Hook"));
-            try {
-                int ret = p.waitFor();
-                if (ret != 0) {
-                    throw new MojoFailureException("JVM exited with error code: " + ret);
-                }
-            } catch (Exception e) {
-                p.destroy();
-                throw e;
-            }
-
-        } catch (Exception e) {
-            throw new MojoFailureException("Failed to run", e);
-        }
-    }
-
-    private String getSourceEncoding() {
-        Object sourceEncodingProperty = project.getProperties().get("project.build.sourceEncoding");
-        if (sourceEncodingProperty != null) {
-            return (String) sourceEncodingProperty;
-        }
-        return null;
-    }
-
-    private void addProject(DevModeContext devModeContext, LocalProject localProject) {
-
-        String projectDirectory = null;
-        Set<String> sourcePaths = null;
-        String classesPath = null;
-        String resourcePath = null;
-
-        final MavenProject mavenProject = session.getProjectMap().get(
-                String.format("%s:%s:%s", localProject.getGroupId(), localProject.getArtifactId(), localProject.getVersion()));
-
-        if (mavenProject == null) {
-            projectDirectory = localProject.getDir().toAbsolutePath().toString();
-            Path sourcePath = localProject.getSourcesSourcesDir().toAbsolutePath();
-            if (Files.isDirectory(sourcePath)) {
-                sourcePaths = Collections.singleton(
-                        sourcePath.toString());
-            } else {
-                sourcePaths = Collections.emptySet();
-            }
-        } else {
-            projectDirectory = mavenProject.getBasedir().getPath();
-            sourcePaths = mavenProject.getCompileSourceRoots().stream()
-                    .map(Paths::get)
-                    .filter(Files::isDirectory)
-                    .map(src -> src.toAbsolutePath().toString())
-                    .collect(Collectors.toSet());
         }
 
-        Path classesDir = localProject.getClassesDir();
-        if (Files.isDirectory(classesDir)) {
-            classesPath = classesDir.toAbsolutePath().toString();
+        public void stop() throws InterruptedException {
+            process.destroy();
+            process.waitFor();
         }
-        Path resourcesSourcesDir = localProject.getResourcesSourcesDir();
-        if (Files.isDirectory(resourcesSourcesDir)) {
-            resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
-        }
-        DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(
-                localProject.getArtifactId(),
-                projectDirectory,
-                sourcePaths,
-                classesPath,
-                resourcePath);
-        devModeContext.getModules().add(moduleInfo);
-    }
 
-    private void addToClassPaths(StringBuilder classPathManifest, DevModeContext classPath, File file) {
-        URI uri = file.toPath().toAbsolutePath().toUri();
-        try {
-            classPath.getClassPath().add(uri.toURL());
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
-        String path = uri.getRawPath();
-        if (PropertyUtils.isWindows()) {
-            if (path.length() > 2 && Character.isLetter(path.charAt(0)) && path.charAt(1) == ':') {
-                path = "/" + path;
-            }
-        }
-        classPathManifest.append(path);
-        if (file.isDirectory() && path.charAt(path.length() - 1) != '/') {
-            classPathManifest.append("/");
-        }
-        classPathManifest.append(" ");
     }
 }

@@ -100,7 +100,7 @@ stages:
         steps:
           - template: ci-templates/jvm-build-steps.yaml
           - publish: $(MAVEN_CACHE_FOLDER)
-            artifact: BuiltMavenRepo
+            artifact: $(Build.SourceVersion)-BuiltMavenRepo
 
   - stage: run_jvm_tests_stage
     displayName: 'Run JVM Tests'

@@ -280,7 +280,12 @@ public class Extension {
     }
 
     public String getShortName() {
-        return (String) getMetadata().get(MD_SHORT_NAME);
+        String shortName = (String) getMetadata().get(MD_SHORT_NAME);
+        if (shortName == null) {
+            return name;
+        } else {
+            return shortName;
+        }
     }
 
     public Extension setShortName(String shortName) {

@@ -4,6 +4,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -11,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Providers;
@@ -25,6 +27,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.core.MediaTypeMap;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
+import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.jboss.resteasy.spi.metadata.SpringResourceBuilder;
 import org.jboss.resteasy.spring.web.ResponseEntityFeature;
 import org.jboss.resteasy.spring.web.ResponseStatusFeature;
@@ -45,6 +48,7 @@ import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.runtime.ExceptionMapperRecorder;
 import io.quarkus.resteasy.runtime.NonJaxRsClassMappings;
+import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentCustomizerBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
@@ -138,7 +142,8 @@ public class SpringWebProcessor {
     @BuildStep
     public void process(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ServletInitParamBuildItem> initParamProducer) {
+            BuildProducer<ServletInitParamBuildItem> initParamProducer,
+            BuildProducer<ResteasyDeploymentCustomizerBuildItem> deploymentCustomizerProducer) {
 
         final IndexView index = beanArchiveIndexBuildItem.getIndex();
         final Collection<AnnotationInstance> annotations = index.getAnnotations(REST_CONTROLLER_ANNOTATION);
@@ -153,10 +158,19 @@ public class SpringWebProcessor {
             classNames.add(annotation.target().asClass().toString());
         }
 
+        // initialize the init params that will be used in case of servlet
         initParamProducer.produce(
                 new ServletInitParamBuildItem(
                         ResteasyContextParameters.RESTEASY_SCANNED_RESOURCE_CLASSES_WITH_BUILDER,
                         SpringResourceBuilder.class.getName() + ":" + String.join(",", classNames)));
+        // customize the deployment that will be used in case of RESTEasy standalone
+        deploymentCustomizerProducer.produce(new ResteasyDeploymentCustomizerBuildItem(new Consumer<ResteasyDeployment>() {
+            @Override
+            public void accept(ResteasyDeployment resteasyDeployment) {
+                resteasyDeployment.getScannedResourceClassesWithBuilder().put(SpringResourceBuilder.class.getName(),
+                        new ArrayList<>(classNames));
+            }
+        }));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, SpringResourceBuilder.class.getName()));
     }

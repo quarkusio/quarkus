@@ -236,6 +236,7 @@ The following method return types are supported:
 
 In addition to the method parameters that can be annotated with the appropriate Spring Web annotations from the previous table,
 `javax.servlet.http.HttpServletRequest` and `javax.servlet.http.HttpServletResponse` are also supported.
+For this to function however, users need to add the `quarkus-undertow` dependency.
 
 
 == Important Technical Note

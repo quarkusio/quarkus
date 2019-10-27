@@ -158,6 +158,7 @@ public class ResteasyServerCommonProcessor {
             List<AdditionalJaxRsResourceDefiningAnnotationBuildItem> additionalJaxRsResourceDefiningAnnotations,
             List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
             List<AdditionalJaxRsResourceMethodParamAnnotations> additionalJaxRsResourceMethodParamAnnotations,
+            List<ResteasyDeploymentCustomizerBuildItem> deploymentCustomizers,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) throws Exception {
@@ -276,6 +277,11 @@ public class ResteasyServerCommonProcessor {
         }
         resteasyInitParameters.put("resteasy.injector.factory", QuarkusInjectorFactory.class.getName());
         deployment.setInjectorFactoryClass(QuarkusInjectorFactory.class.getName());
+
+        // apply all customizers
+        for (ResteasyDeploymentCustomizerBuildItem deploymentCustomizer : deploymentCustomizers) {
+            deploymentCustomizer.getConsumer().accept(deployment);
+        }
 
         if (commonConfig.gzip.enabled) {
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_GZIP_MAX_INPUT,

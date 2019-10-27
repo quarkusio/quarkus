@@ -67,9 +67,6 @@
 
         <!-- Misc. -->
         <module>docs</module>
-
-        <!-- Do not add modules after war-launcher. JVM state will fail CI -->
-        <module>war-launcher</module>
     </modules>
 
     <repositories>

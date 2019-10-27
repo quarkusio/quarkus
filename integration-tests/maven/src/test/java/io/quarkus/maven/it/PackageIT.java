@@ -47,6 +47,12 @@ public class PackageIT extends MojoTestBase {
             throws MavenInvocationException, FileNotFoundException, InterruptedException {
         testDir = initProject("projects/uberjar-check", "projects/project-uberjar-true");
 
+        createAndVerifyUberJar();
+        // ensure that subsequent package without clean also works
+        createAndVerifyUberJar();
+    }
+
+    private void createAndVerifyUberJar() throws FileNotFoundException, MavenInvocationException, InterruptedException {
         running = new RunningInvoker(testDir, false);
         final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
                 Collections.singletonMap("QUARKUS_PACKAGE_TYPES", "uber-jar"));

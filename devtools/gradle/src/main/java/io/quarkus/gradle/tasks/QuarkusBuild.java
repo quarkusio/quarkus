@@ -13,9 +13,7 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.creator.AppCreatorException;
 import io.quarkus.creator.CuratedApplicationCreator;
 import io.quarkus.creator.phase.augment.AugmentTask;
@@ -133,13 +131,7 @@ public class QuarkusBuild extends QuarkusTask {
         getLogger().lifecycle("building quarkus runner");
 
         final AppArtifact appArtifact = extension().getAppArtifact();
-        final AppModel appModel;
         final AppModelResolver modelResolver = extension().resolveAppModel();
-        try {
-            appModel = modelResolver.resolveModel(appArtifact);
-        } catch (AppModelResolverException e) {
-            throw new GradleException("Failed to resolve application model " + appArtifact + " dependencies", e);
-        }
         final Map<String, ?> properties = getProject().getProperties();
         final Properties realProperties = new Properties();
         for (Map.Entry<String, ?> entry : properties.entrySet()) {

@@ -1,6 +1,5 @@
 package io.quarkus.gradle.tasks;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.gradle.api.GradleException;
@@ -64,9 +63,10 @@ public class QuarkusListExtensions extends QuarkusTask {
     @TaskAction
     public void listExtensions() {
         try {
-            new ListExtensions(new GradleBuildFileFromConnector(new FileProjectWriter(new File(getPath())))).listExtensions(
-                    isAll(),
-                    getFormat(), getSearchPattern());
+            new ListExtensions(new GradleBuildFileFromConnector(new FileProjectWriter(this.getProject().getProjectDir())))
+                    .listExtensions(
+                            isAll(),
+                            getFormat(), getSearchPattern());
         } catch (IOException e) {
             throw new GradleException("Unable to list extensions", e);
         }

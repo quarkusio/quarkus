@@ -1,6 +1,36 @@
 package io.quarkus.runtime;
 
+import io.quarkus.runtime.util.ExceptionUtil;
+
 public class TemplateHtmlBuilder {
+
+    private static final String SCRIPT_STACKTRACE_MANIPULATION = "<script>\n" +
+            "	function toggleStackTraceOrder() {\n" +
+            "		var stElement = document.getElementById('stacktrace');\n" +
+            "		var current = stElement.getAttribute('data-current-setting');\n" +
+            "		if (current == 'original-stacktrace') {\n" +
+            "			var reverseOrder = document.getElementById('reversed-stacktrace');\n" +
+            "			stElement.innerHTML = reverseOrder.innerHTML;\n" +
+            "			stElement.setAttribute('data-current-setting', 'reversed-stacktrace');\n" +
+            "		} else {\n" +
+            "			var originalOrder = document.getElementById('original-stacktrace');\n" +
+            "			stElement.innerHTML = originalOrder.innerHTML;\n" +
+            "			stElement.setAttribute('data-current-setting', 'original-stacktrace');\n" +
+            "		}\n" +
+            "		return;\n" +
+            "	}\n" +
+            "	function showDefaultStackTraceOrder() {\n" +
+            "		var reverseOrder = document.getElementById('reversed-stacktrace');\n" +
+            "		var stElement = document.getElementById('stacktrace');\n" +
+            "       if (reverseOrder == null || stElement == null) {\n" +
+            "           return;\n" +
+            "       }\n" +
+            "		// default to reverse ordered stacktrace\n" +
+            "		stElement.innerHTML = reverseOrder.innerHTML;\n" +
+            "		stElement.setAttribute('data-current-setting', 'reversed-stacktrace');\n" +
+            "		return;\n" +
+            "	}\n" +
+            "</script>\n";
 
     private static final String HTML_TEMPLATE_START = "" +
             "<!doctype html>\n" +
@@ -9,8 +39,9 @@ public class TemplateHtmlBuilder {
             "    <title>%1$s%2$s</title>\n" +
             "    <meta charset=\"utf-8\">\n" +
             "    <style>%3$s</style>\n" +
+            SCRIPT_STACKTRACE_MANIPULATION +
             "</head>\n" +
-            "<body>\n";
+            "<body  onload=\"showDefaultStackTraceOrder()\">\n";
 
     private static final String HTML_TEMPLATE_END = "</div></body>\n" +
             "</html>\n";
@@ -43,7 +74,18 @@ public class TemplateHtmlBuilder {
 
     private static final String RESOURCES_END = "</div>";
 
-    private static final String ERROR_STACK = "    <div class=\"trace\">\n" +
+    private static final String STACKTRACE_DISPLAY_DIV = "<div id=\"stacktrace\"></div>";
+
+    private static final String ERROR_STACK = "    <div id=\"original-stacktrace\" class=\"trace hidden\">\n" +
+            "<p><em><a href=\"\" onClick=\"toggleStackTraceOrder(); return false;\">Click Here</a> " +
+            "to see the stacktrace in reversed  order (root-cause first)</em></p>" +
+            "        <pre>%1$s</pre>\n" +
+            "    </div>\n";
+
+    private static final String ERROR_STACK_REVERSED = "    <div id=\"reversed-stacktrace\" class=\"trace hidden\">\n" +
+            "<p><em>The stacktrace below has been reversed to show the root cause first. " +
+            "<a href=\"\" onClick=\"toggleStackTraceOrder(); return false;\">Click Here</a> " +
+            "to see the original stacktrace</em></p>" +
             "        <pre>%1$s</pre>\n" +
             "    </div>\n";
 
@@ -128,6 +170,9 @@ public class TemplateHtmlBuilder {
             ".trace {\n" +
             "    overflow-y: scroll;\n" +
             "}\n" +
+            ".hidden {\n" +
+            "   display: none;\n" +
+            "}\n" +
             "\n" +
             "pre {\n" +
             "    white-space: pre;\n" +
@@ -145,8 +190,10 @@ public class TemplateHtmlBuilder {
         result.append(String.format(HEADER_TEMPLATE, escapeHtml(title), escapeHtml(details)));
     }
 
-    public TemplateHtmlBuilder stack(String stack) {
-        result.append(String.format(ERROR_STACK, escapeHtml(stack)));
+    public TemplateHtmlBuilder stack(final Throwable throwable) {
+        result.append(String.format(ERROR_STACK, escapeHtml(ExceptionUtil.generateStackTrace(throwable))));
+        result.append(String.format(ERROR_STACK_REVERSED, escapeHtml(ExceptionUtil.rootCauseFirstStackTrace(throwable))));
+        result.append(STACKTRACE_DISPLAY_DIV);
         return this;
     }
 
@@ -235,5 +282,14 @@ public class TemplateHtmlBuilder {
                 .replace("&", "&amp;")
                 .replace("<", "&lt;")
                 .replace(">", "&gt;");
+    }
+
+    private static String extractFirstLine(final String message) {
+        if (null == message) {
+            return "";
+        }
+
+        String[] lines = message.split("\\r?\\n");
+        return lines[0].trim();
     }
 }

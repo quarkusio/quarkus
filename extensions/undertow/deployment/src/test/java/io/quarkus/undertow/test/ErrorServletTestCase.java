@@ -23,7 +23,7 @@ public class ErrorServletTestCase {
         RestAssured.when().get("/error").then()
                 .statusCode(500)
                 .body(containsString("<h1 class=\"container\">Internal Server Error</h1>"))
-                .body(containsString("<div class=\"trace\">"));
+                .body(containsString("<div id=\"stacktrace\">"));
     }
 
     @Test

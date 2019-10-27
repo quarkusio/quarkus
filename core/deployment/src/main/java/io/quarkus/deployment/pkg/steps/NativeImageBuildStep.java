@@ -82,7 +82,7 @@ public class NativeImageBuildStep {
             // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm quarkus/graalvm-native-image"
             nativeImage = new ArrayList<>();
             Collections.addAll(nativeImage, nativeConfig.containerRuntime, "run", "-v",
-                    outputDir.toAbsolutePath() + ":/project:z", "--rm");
+                    outputDir.toAbsolutePath() + ":/project:z");
 
             if (IS_LINUX) {
                 if ("docker".equals(nativeConfig.containerRuntime)) {
@@ -101,7 +101,7 @@ public class NativeImageBuildStep {
                 // publish the debug port onto the host if asked for
                 nativeImage.add("--publish=" + DEBUG_BUILD_PROCESS_PORT + ":" + DEBUG_BUILD_PROCESS_PORT);
             }
-            nativeImage.add(nativeConfig.builderImage);
+            Collections.addAll(nativeImage, "--rm", nativeConfig.builderImage);
         } else {
             if (IS_LINUX) {
                 noPIE = detectNoPIE();

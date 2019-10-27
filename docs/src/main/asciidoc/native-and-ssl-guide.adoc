@@ -63,7 +63,7 @@ The important elements are these 3 options:
 
 They enable the native SSL support for your native executable.
 
-As SSL is ipso facto the standard nowadays, we decided to enable its support automatically for some of our extensions:
+As SSL is de facto the standard nowadays, we decided to enable its support automatically for some of our extensions:
 
  * the Agroal connection pooling extension (`quarkus-agroal`),
  * the Amazon DynamoDB extension (`quarkus-amazon-dynamodb`),

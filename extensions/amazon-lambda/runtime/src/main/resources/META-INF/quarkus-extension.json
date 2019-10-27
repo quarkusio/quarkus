@@ -1,7 +1,7 @@
 {
-  "name": "AWS Lambda",
-  "metadata": {
-    "keywords": [
+  "name" : "AWS Lambda",
+  "metadata" : {
+    "keywords" : [
       "lambda",
       "aws",
       "amazon"

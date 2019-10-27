@@ -1,7 +1,7 @@
 {
-  "name": "SmallRye Fault Tolerance",
-  "metadata": {
-    "keywords": [
+  "name" : "SmallRye Fault Tolerance",
+  "metadata" : {
+    "keywords" : [
       "smallrye-fault-tolerance",
       "fault-tolerance",
       "microprofile-fault-tolerance",

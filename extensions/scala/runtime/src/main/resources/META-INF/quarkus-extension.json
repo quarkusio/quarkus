@@ -1,7 +1,7 @@
 {
-  "name": "Scala",
-  "metadata": {
-    "keywords": [
+  "name" : "Scala",
+  "metadata" : {
+    "keywords" : [
       "scala"
     ]
   }

@@ -1,7 +1,7 @@
 {
-  "name": "JDBC Driver - MySQL",
-  "metadata": {
-    "keywords": [
+  "name" : "JDBC Driver - MySQL",
+  "metadata" : {
+    "keywords" : [
       "jdbc-mysql",
       "jdbc",
       "mysql"

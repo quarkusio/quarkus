@@ -188,6 +188,16 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
             });
         }
 
+        theRest.forEach((key, item) -> {
+            // Ignore the two keys we are explicitly managing
+            // but then add anything else found.
+            // TODO: make a real merge if needed eventually.
+            if (!"bom".equals(key) && !"extensions".equals(key)) {
+                platformJson.add(key, item);
+
+            }
+        });
+
         // Write the JSON to the output file
         final File outputDir = outputFile.getParentFile();
         if (!outputDir.exists()) {

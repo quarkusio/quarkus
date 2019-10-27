@@ -1,7 +1,7 @@
 {
-  "name": "JGit",
-  "metadata": {
-    "keywords": [
+  "name" : "JGit",
+  "metadata" : {
+    "keywords" : [
       "git"
     ]
   }

@@ -221,12 +221,14 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 		}
 
 		if (extObject.get("shortName") != null) {
-			extObject.set("short-name", extObject.get("shortName"));
+			metadata.set("short-name", extObject.get("shortName"));
 			extObject.remove("shortName");
 		}
 
 		extObject.set("metadata", metadata);
 
+		
+		// TODO: remove before going to master
 		Path source = output
 				.resolve("../../../src/main/resources/META-INF/");
 		System.out.println("Try to save " + source);
@@ -241,6 +243,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 				ObjectMapper ym = new ObjectMapper(yf).enable(SerializationFeature.INDENT_OUTPUT);
 				by.write(ym.writer(prettyPrinter).writeValueAsString(extObject));
 				
+				//source.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME).toFile().delete();
 			} catch (IOException e) {
 				throw new MojoExecutionException(
 						"Failed to persist " + output.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME), e);

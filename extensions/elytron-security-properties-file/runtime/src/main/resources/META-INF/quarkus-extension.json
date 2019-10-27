@@ -1,9 +1,9 @@
 {
-  "name": "Properties File based Security",
-  "guide": "https://quarkus.io/guides/elytron-properties-guide",
-  "metadata": {
-    "keywords": [
+  "name" : "Properties File based Security",
+  "metadata" : {
+    "keywords" : [
       "security"
-    ]
+    ],
+    "guide" : "https://quarkus.io/guides/elytron-properties-guide"
   }
 }

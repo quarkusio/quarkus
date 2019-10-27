@@ -1,7 +1,7 @@
 {
-  "name": "RESTEasy Jackson",
-  "metadata": {
-    "keywords": [
+  "name" : "RESTEasy Jackson",
+  "metadata" : {
+    "keywords" : [
       "resteasy-jackson",
       "jaxrs-json",
       "resteasy-json",

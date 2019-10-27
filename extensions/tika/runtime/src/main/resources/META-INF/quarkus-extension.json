@@ -1,7 +1,7 @@
 {
-  "name": "Apache Tika",
-  "metadata": {
-    "keywords": [
+  "name" : "Apache Tika",
+  "metadata" : {
+    "keywords" : [
       "tika",
       "parser"
     ]

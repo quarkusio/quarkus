@@ -1,13 +1,13 @@
 {
-  "name": "Hibernate Search + Elasticsearch",
-  "guide": "https://quarkus.io/guides/hibernate-search-guide",
-  "metadata": {
-    "keywords": [
+  "name" : "Hibernate Search + Elasticsearch",
+  "metadata" : {
+    "keywords" : [
       "hibernate-search-elasticsearch",
       "search",
       "full-text",
       "hibernate",
       "elasticsearch"
-    ]
+    ],
+    "guide" : "https://quarkus.io/guides/hibernate-search-guide"
   }
 }

@@ -1,6 +1,4 @@
 {
-  "name": "Quarkus - Core",
-  "metadata": {
-    
-  }
+  "name" : "Quarkus - Core",
+  "metadata" : { }
 }

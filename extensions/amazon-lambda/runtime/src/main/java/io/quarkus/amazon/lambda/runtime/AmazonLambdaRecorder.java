@@ -106,7 +106,7 @@ public class AmazonLambdaRecorder {
                 }
             } else if (unamedHandlerClasses.size() > 1) {
                 throw new RuntimeException(
-                        "Multiple handler classes, either specify the quarkus.lambda.handler property, or make sure there is only a single"
+                        "Multiple handler classes, either specify the quarkus.lambda.handler property, or make sure there is only a single "
                                 + RequestHandler.class.getName() + " implementation in the deployment");
             } else {
                 handlerClass = unamedHandlerClasses.get(0);

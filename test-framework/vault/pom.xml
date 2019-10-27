@@ -48,8 +48,8 @@
             <artifactId>jakarta.annotation-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>jakarta.xml.bind</groupId>
-            <artifactId>jakarta.xml.bind-api</artifactId>
+            <groupId>org.jboss.spec.javax.xml.bind</groupId>
+            <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
         </dependency>
 
         <!-- resolve conflict on visible-assertions that depends on jna 5.2.0 instead of 5.3.1 for testcontainers 1.12.0 -->

@@ -52,15 +52,15 @@
         <jakarta.json.version>1.1.6</jakarta.json.version>
         <jakarta.json.bind-api.version>1.0.2</jakarta.json.bind-api.version>
         <jakarta.persistence-api.version>2.2.3</jakarta.persistence-api.version>
+        <jakarta.security.jacc-api.version>1.6.1</jakarta.security.jacc-api.version>
+        <jakarta.security.jaspi-api.version>1.1.3</jakarta.security.jaspi-api.version>
         <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
         <jakarta.transaction-api.version>1.3.3</jakarta.transaction-api.version>
         <jakarta.validation-api.version>2.0.2</jakarta.validation-api.version>
-        <jakarta.xml.bind-api.version>2.3.2</jakarta.xml.bind-api.version>
+        <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
         <jaxb-runtime.version>2.3.3-b01</jaxb-runtime.version>
-        <javax.security.jacc-api.version>1.0.2.Final</javax.security.jacc-api.version>
-        <javax.security.jaspi-api.version>1.0.2.Final</javax.security.jaspi-api.version>
-        <jboss-jaxrs-api_2.1_spec.version>1.0.2.Final</jboss-jaxrs-api_2.1_spec.version>
-        <javax.ws.rs-api.version>2.1.1</javax.ws.rs-api.version>
+        <jboss-jaxrs-api_2.1_spec.version>2.0.1.Final</jboss-jaxrs-api_2.1_spec.version>
+        <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
         <asm.version>7.1</asm.version>
         <commons-io.version>2.6</commons-io.version>
         <jboss-metadata-web.version>11.0.0.Final</jboss-metadata-web.version>
@@ -1197,9 +1197,14 @@
                 <version>${jakarta.interceptor-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>javax.ws.rs</groupId>
-                <artifactId>javax.ws.rs-api</artifactId>
-                <version>${javax.ws.rs-api.version}</version>
+                <groupId>org.jboss.spec.javax.xml.bind</groupId>
+                <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
+                <version>${jboss-jaxb-api_2.3_spec.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.spec.javax.ws.rs</groupId>
+                <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+                <version>${jboss-jaxrs-api_2.1_spec.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.testng</groupId>
@@ -1447,25 +1452,19 @@
                 <version>${jaxb-runtime.version}</version>
             </dependency>
             <dependency>
-                <groupId>jakarta.xml.bind</groupId>
-                <artifactId>jakarta.xml.bind-api</artifactId>
-                <version>${jakarta.xml.bind-api.version}</version>
+                <groupId>jakarta.security.jacc</groupId>
+                <artifactId>jakarta.security.jacc-api</artifactId>
+                <version>${jakarta.security.jacc-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.jboss.spec.javax.security.jacc</groupId>
-                <artifactId>jboss-jacc-api_1.5_spec</artifactId>
-                <version>${javax.security.jacc-api.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.jboss.spec.javax.servlet</groupId>
-                        <artifactId>jboss-servlet-api_3.1_spec</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>jakarta.security.auth.message</groupId>
+                <artifactId>jakarta.security.auth.message-api</artifactId>
+                <version>${jakarta.security.jaspi-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.jboss.spec.javax.security.auth.message</groupId>
-                <artifactId>jboss-jaspi-api_1.1_spec</artifactId>
-                <version>${javax.security.jaspi-api.version}</version>
+                <groupId>jakarta.websocket</groupId>
+                <artifactId>jakarta.websocket-api</artifactId>
+                <version>${jakarta.websocket-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>
@@ -1634,21 +1633,6 @@
                 <type>pom</type>
             </dependency>
 
-            <dependency>
-                <groupId>org.jboss.spec.javax.servlet</groupId>
-                <artifactId>jboss-servlet-api_4.0_spec</artifactId>
-                <version>${jboss-servlet-api_4.0_spec.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.spec.javax.transaction</groupId>
-                <artifactId>jboss-transaction-api_1.2_spec</artifactId>
-                <version>${jboss-transaction-api_1.2_spec.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.spec.javax.ws.rs</groupId>
-                <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
-                <version>${jboss-jaxrs-api_2.1_spec.version}</version>
-            </dependency>
             <dependency>
                 <groupId>org.jboss.threads</groupId>
                 <artifactId>jboss-threads</artifactId>

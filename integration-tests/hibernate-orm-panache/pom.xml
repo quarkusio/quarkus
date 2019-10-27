@@ -31,11 +31,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jaxb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jaxb-provider</artifactId>
+            <artifactId>quarkus-resteasy-jaxb</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

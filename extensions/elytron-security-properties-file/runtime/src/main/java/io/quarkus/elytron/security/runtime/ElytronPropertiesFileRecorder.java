@@ -3,6 +3,9 @@ package io.quarkus.elytron.security.runtime;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.Provider;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,25 +53,37 @@ public class ElytronPropertiesFileRecorder {
         return new Runnable() {
             @Override
             public void run() {
-                log.debugf("loadRealm, config=%s", config);
-                SecurityRealm secRealm = realm.getValue();
-                if (!(secRealm instanceof LegacyPropertiesSecurityRealm)) {
-                    return;
-                }
-                log.debugf("Trying to loader users: /%s", config.users);
-                URL users = Thread.currentThread().getContextClassLoader().getResource(config.users);
-                log.debugf("users: %s", users);
-                log.debugf("Trying to loader roles: %s", config.roles);
-                URL roles = Thread.currentThread().getContextClassLoader().getResource(config.roles);
-                log.debugf("roles: %s", roles);
-                if (users == null && roles == null) {
-                    String msg = String.format(
-                            "No PropertiesRealmConfig users/roles settings found. Configure the quarkus.security.file.%s properties",
-                            config.help());
-                    throw new IllegalStateException(msg);
-                }
-                LegacyPropertiesSecurityRealm propsRealm = (LegacyPropertiesSecurityRealm) secRealm;
                 try {
+                    log.debugf("loadRealm, config=%s", config);
+                    SecurityRealm secRealm = realm.getValue();
+                    if (!(secRealm instanceof LegacyPropertiesSecurityRealm)) {
+                        return;
+                    }
+                    log.debugf("Trying to loader users: /%s", config.users);
+                    URL users;
+                    Path p = Paths.get(config.users);
+                    if (Files.exists(p)) {
+                        users = p.toUri().toURL();
+                    } else {
+                        users = Thread.currentThread().getContextClassLoader().getResource(config.users);
+                    }
+                    log.debugf("users: %s", users);
+                    log.debugf("Trying to loader roles: %s", config.roles);
+                    URL roles;
+                    p = Paths.get(config.roles);
+                    if (Files.exists(p)) {
+                        roles = p.toUri().toURL();
+                    } else {
+                        roles = Thread.currentThread().getContextClassLoader().getResource(config.roles);
+                    }
+                    log.debugf("roles: %s", roles);
+                    if (users == null && roles == null) {
+                        String msg = String.format(
+                                "No PropertiesRealmConfig users/roles settings found. Configure the quarkus.security.file.%s properties",
+                                config.help());
+                        throw new IllegalStateException(msg);
+                    }
+                    LegacyPropertiesSecurityRealm propsRealm = (LegacyPropertiesSecurityRealm) secRealm;
                     propsRealm.load(users.openStream(), roles.openStream());
                 } catch (IOException e) {
                     throw new RuntimeException(e);

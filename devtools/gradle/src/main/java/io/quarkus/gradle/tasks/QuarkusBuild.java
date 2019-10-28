@@ -14,6 +14,7 @@ import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.creator.AppCreatorException;
 import io.quarkus.creator.CuratedApplicationCreator;
 import io.quarkus.creator.phase.augment.AugmentTask;
@@ -132,6 +133,12 @@ public class QuarkusBuild extends QuarkusTask {
 
         final AppArtifact appArtifact = extension().getAppArtifact();
         final AppModelResolver modelResolver = extension().resolveAppModel();
+        try {
+            // this needs to be done otherwise the app artifact doesn't get a proper path
+            modelResolver.resolveModel(appArtifact);
+        } catch (AppModelResolverException e) {
+            throw new GradleException("Failed to resolve application model " + appArtifact + " dependencies", e);
+        }
         final Map<String, ?> properties = getProject().getProperties();
         final Properties realProperties = new Properties();
         for (Map.Entry<String, ?> entry : properties.entrySet()) {

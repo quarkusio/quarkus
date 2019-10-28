@@ -228,8 +228,8 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
             final Path props = metaInfDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
             if (Files.exists(props)) {
                 return Json.createObjectBuilder()
-                        .add("artifact-id", artifact.getArtifactId())
-                        .add("group-id", artifact.getGroupId())
+                        .add(Extension.ARTIFACT_ID, artifact.getArtifactId())
+                        .add(Extension.GROUP_ID, artifact.getGroupId())
                         .add("version", artifact.getVersion())
                         .add("name", artifact.getArtifactId())
                         .build();
@@ -244,7 +244,7 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         try (InputStream is = Files.newInputStream(descriptor)) {
             try (JsonReader reader = Json.createReader(is)) {
                 final JsonObject object = reader.readObject();
-                debug("Adding Quarkus extension %s:%s", object.get("groupId"), object.get("artifactId"));
+                debug("Adding Quarkus extension %s:%s", object.get(Extension.GROUP_ID), object.get(Extension.ARTIFACT_ID));
                 return object;
             }
         } catch (IOException e) {
@@ -253,15 +253,15 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
     }
 
     private String extensionId(JsonObject extObject) {
-        String artId = extObject.getString("artifactId", "");
+        String artId = extObject.getString(Extension.ARTIFACT_ID, "");
         if (artId.isEmpty()) {
             getLog().warn("Missing artifactId in extension overrides in " + extObject.toString());
         }
-        String groupId = extObject.getString("artifactId", "");
+        String groupId = extObject.getString(Extension.GROUP_ID, "");
         if (groupId.isEmpty()) {
             return artId;
         } else {
-            return extObject.getString("groupId", "") + ":" + artId;
+            return extObject.getString(Extension.GROUP_ID, "") + ":" + artId;
         }
     }
 

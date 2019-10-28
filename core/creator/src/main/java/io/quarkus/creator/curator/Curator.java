@@ -5,8 +5,12 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
@@ -38,6 +42,8 @@ import io.quarkus.creator.VersionUpdate;
 public class Curator {
 
     private static final Logger log = Logger.getLogger(Curator.class);
+
+    private static final Map<String, String> BANNED_DEPENDENCIES = createBannedDependenciesMap();
 
     public static CurateOutcome run(CuratedApplicationCreator ctx) throws AppCreatorException {
 
@@ -155,6 +161,10 @@ public class Curator {
         }
 
         outcome.setAppModel(initialDepsList);
+
+        log.debug("Checking for potential banned dependencies");
+        checkBannedDependencies(initialDepsList);
+
         if (ctx.getUpdate() == VersionUpdate.NONE) {
             return outcome.build();
         }
@@ -224,4 +234,83 @@ public class Curator {
         mvnPolicy.setUpdatePolicy(policy.getUpdatePolicy());
         return mvnPolicy;
     }
+
+    private static void checkBannedDependencies(AppModel initialDepsList) {
+        List<String> detectedBannedDependencies = new ArrayList<>();
+
+        try {
+            for (AppDependency userDependency : initialDepsList.getUserDependencies()) {
+                String ga = userDependency.getArtifact().getGroupId() + ":" + userDependency.getArtifact().getArtifactId();
+                if (!"test".equals(userDependency.getScope()) && BANNED_DEPENDENCIES.containsKey(ga)) {
+                    detectedBannedDependencies.add(ga);
+                }
+            }
+        } catch (BootstrapDependencyProcessingException e) {
+            // ignore this
+        }
+
+        if (!detectedBannedDependencies.isEmpty()) {
+            String warnMessage = detectedBannedDependencies.stream()
+                    .sorted()
+                    .map(d -> "\t- " + d + " should be replaced by " + BANNED_DEPENDENCIES.get(d))
+                    .collect(Collectors.joining("\n"));
+            log.warnf(
+                    "These dependencies are not recommended:%n" +
+                            "%s%n" +
+                            "You might end up with two different versions of the same classes or with an artifact you shouldn't have in your classpath.",
+                    warnMessage);
+        }
+    }
+
+    private static Map<String, String> createBannedDependenciesMap() {
+        Map<String, String> bannedDependencies = new HashMap<>();
+
+        bannedDependencies.put("org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec",
+                "jakarta.annotation:jakarta.annotation-api");
+        bannedDependencies.put("org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec",
+                "jakarta.annotation:jakarta.annotation-api");
+        bannedDependencies.put("org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec",
+                "jakarta.transaction:jakarta.transaction-api");
+        bannedDependencies.put("org.jboss.spec.javax.transaction:jboss-transaction-api_1.3_spec",
+                "jakarta.transaction:jakarta.transaction-api");
+        bannedDependencies.put("org.jboss.spec.javax.servlet:jboss-servlet-api_4.0_spec",
+                "jakarta.servlet:jakarta.servlet-api");
+        bannedDependencies.put("org.jboss.spec.javax.security.jacc:jboss-jacc-api_1.5_spec",
+                "jakarta.security.jacc:jakarta.security.jacc-api");
+        bannedDependencies.put("org.jboss.spec.javax.security.auth.message:jboss-jaspi-api_1.1_spec",
+                "jakarta.security.auth.message:jakarta.security.auth.message-api");
+        bannedDependencies.put("org.jboss.spec.javax.websocket:jboss-websocket-api_1.1_spec",
+                "jakarta.websocket:jakarta.websocket-api");
+        bannedDependencies.put("org.jboss.spec.javax.interceptor:jboss-interceptors-api_1.2_spec",
+                "jakarta.interceptor:jakarta.interceptor-api");
+
+        bannedDependencies.put("javax.activation:activation", "com.sun.activation:jakarta.activation");
+        bannedDependencies.put("javax.activation:javax.activation-api", "jakarta.activation:jakarta.activation-api");
+        bannedDependencies.put("javax.annotation:javax.annotation-api", "jakarta.annotation:jakarta.annotation-api");
+        bannedDependencies.put("javax.enterprise:cdi-api", "jakarta.enterprise:jakarta.enterprise.cdi-api");
+        bannedDependencies.put("javax.inject:javax.inject", "jakarta.inject:jakarta.inject-api");
+        bannedDependencies.put("javax.json:javax.json-api", "jakarta.json:jakarta.json-api");
+        bannedDependencies.put("javax.json.bind:javax.json.bind-api", "jakarta.json.bind:jakarta.json.bind-api");
+        bannedDependencies.put("org.glassfish:javax.json", "org.glassfish:jakarta.json");
+        bannedDependencies.put("org.glassfish:javax.el", "org.glassfish:jakarta.el");
+        bannedDependencies.put("javax.persistence:javax.persistence-api", "jakarta.persistence:jakarta.persistence-api");
+        bannedDependencies.put("javax.persistence:persistence-api", "jakarta.persistence:jakarta.persistence-api");
+        bannedDependencies.put("javax.security.enterprise:javax.security.enterprise-api", "");
+        bannedDependencies.put("javax.servlet:servlet-api", "jakarta.servlet:jakarta.servlet-api");
+        bannedDependencies.put("javax.servlet:javax.servlet-api", "jakarta.servlet:jakarta.servlet-api");
+        bannedDependencies.put("javax.transaction:jta", "jakarta.transaction:jakarta.transaction-api");
+        bannedDependencies.put("javax.transaction:javax.transaction-api", "jakarta.transaction:jakarta.transaction-api");
+        bannedDependencies.put("javax.validation:validation-api", "jakarta.validation:jakarta.validation-api");
+        bannedDependencies.put("javax.xml.bind:jaxb-api", "org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec");
+        bannedDependencies.put("javax.websocket:javax.websocket-api", "jakarta.websocket:jakarta.websocket-api");
+        bannedDependencies.put("javax.ws.rs:javax.ws.rs-api", "org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec");
+
+        // for now, we use the JBoss API Spec artifacts for those two as that's what RESTEasy use
+        bannedDependencies.put("jakarta.xml.bind:jakarta.xml.bind-api",
+                "org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec");
+        bannedDependencies.put("jakarta.ws.rs:jakarta.ws.rs-api", "org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec");
+
+        return Collections.unmodifiableMap(bannedDependencies);
+    }
+
 }

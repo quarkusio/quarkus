@@ -97,7 +97,14 @@
                                 <configuration>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
+                                    <!-- Include the server certificate -->
+                                    <additionalBuildArgs>
+                                        <additionalBuildArg>-H:ResourceConfigurationFiles=${project.basedir}/src/main/resources/resources-config.json</additionalBuildArg>
+                                        <additionalBuildArg>-H:EnableURLProtocols=http,https</additionalBuildArg>
+                                    </additionalBuildArgs>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
+                                    <enableJni>true</enableJni>
+                                    <enableAllSecurityServices>true</enableAllSecurityServices>
                                 </configuration>
                             </execution>
                         </executions>

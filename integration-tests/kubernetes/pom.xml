@@ -25,6 +25,11 @@
       <artifactId>kubernetes-annotations</artifactId>
       <classifier>noapt</classifier>
     </dependency>
+    <dependency>
+      <groupId>io.dekorate</groupId>
+      <artifactId>openshift-annotations</artifactId>
+      <classifier>noapt</classifier>
+    </dependency>
   </dependencies>
   <build>
     <resources>

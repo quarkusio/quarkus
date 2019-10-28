@@ -36,7 +36,8 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 == Enable Kubernetes support
 
 Quarkus offers the ability to automatically generate Kubernetes resources based on sane defaults and user supplied configuration. The implementation that takes care
-of generating the actual Kubernetes resources is provided by https://github.com/dekorateio/dekorate/[dekorate].
+of generating the actual Kubernetes resources is provided by https://github.com/dekorateio/dekorate/[dekorate]. Currently it supports the generation of resources for
+vanilla Kubernetes and Openshift.
 
 When we added the `kubernetes` extension to the command line invocation above, the following dependency was added to the `pom.xml`
 
@@ -392,4 +393,68 @@ Below you will find tables describing all available types.
 | registry | String |   |  |
 | auto-push-enabled | boolean |   | false 
 | auto-build-enabled | boolean |   | false 
+|====
+
+=== Openshift support
+
+To enable the generation of Openshift resources, you need to include Openshift in the target platforms:
+
+[source]
+----
+kubernetes.deployment.target=openshift
+----
+
+If you need to generate resources for both platforms (vanilla kubernetes and opesnhift), then you need to include both (coma separated).
+
+[source]
+----
+kubernetes.deployment.target=kubernetes, openshift
+----
+
+The Openshfit resources can be customized in a similar approach with kubernetes.
+
+.Openshift
+|====
+| Property | Type | Description | Default Value 
+| openshift.group | String |   |  
+| openshift.name | String |   |  
+| openshift.version | String |   |  
+| openshift.init-containers | Container[] |   |  
+| openshift.labels | Label[] |   |  
+| openshift.annotations | Annotation[] |   |  
+| openshift.env-vars | Env[] |   |  
+| openshift.working-dir | String |   |  
+| openshift.command | String[] |   |  
+| openshift.arguments | String[] |   |  
+| openshift.replicas | int |   | 1 
+| openshift.service-account | String |   |  
+| openshift.host | String |   |  
+| openshift.ports | Port[] |   |  
+| openshift.service-type | ServiceType |   | ClusterIP 
+| openshift.pvc-volumes | PersistentVolumeClaimVolume[] |   |  
+| openshift.secret-volumes | SecretVolume[] |   |  
+| openshift.config-map-volumes | ConfigMapVolume[] |   |  
+| openshift.git-repo-volumes | GitRepoVolume[] |   |  
+| openshift.aws-elastic-block-store-volumes | AwsElasticBlockStoreVolume[] |   |  
+| openshift.azure-disk-volumes | AzureDiskVolume[] |   |  
+| openshift.azure-file-volumes | AzureFileVolume[] |   |  
+| openshift.mounts | Mount[] |   |  
+| openshift.image-pull-policy | ImagePullPolicy |   | IfNotPresent 
+| openshift.image-pull-secrets | String[] |   |  
+| openshift.liveness-probe | Probe |   | ( see Probe ) 
+| openshift.readiness-probe | Probe |   | ( see Probe ) 
+| openshift.sidecars | Container[] |   |  
+| openshift.expose | boolean |   | false 
+| openshift.auto-deploy-enabled | boolean |   | false 
+|====
+
+.S2i
+|====
+| Property | Type | Description | Default Value 
+| s2i.enabled | boolean |   | true 
+| s2i.registry | String |   |  
+| s2i.builder-image | String |   | fabric8/s2i-java:2.3 
+| s2i.build-env-vars | Env[] |   |  
+| s2i.auto-push-enabled | boolean |   | false 
+| s2i.auto-build-enabled | boolean |   | false 
 |====

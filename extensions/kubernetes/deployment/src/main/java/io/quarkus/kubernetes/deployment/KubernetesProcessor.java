@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -48,6 +49,9 @@ class KubernetesProcessor {
     private static final String PROPERTY_PREFIX = "dekorate.";
     private static final String ALLOWED_GENERATOR = "kubernetes";
 
+    private static final String DEPLOYMENT_TARGET = "kubernetes.deployment.target";
+    private static final String KUBERNETES = "kubernetes";
+
     @Inject
     BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer;
 
@@ -79,6 +83,12 @@ class KubernetesProcessor {
         }
 
         Config config = ConfigProvider.getConfig();
+        List<String> deploymentTargets = Arrays
+                .stream(config.getOptionalValue(DEPLOYMENT_TARGET, String.class)
+                        .orElse(KUBERNETES).split(","))
+                .map(String::trim)
+                .collect(Collectors.toList());
+
         Map<String, Object> configAsMap = StreamSupport.stream(config.getPropertyNames().spliterator(), false)
                 .filter(k -> ALLOWED_GENERATOR.equals(generatorName(k)))
                 .collect(Collectors.toMap(k -> PROPERTY_PREFIX + k, k -> config.getValue(k, String.class)));
@@ -90,17 +100,27 @@ class KubernetesProcessor {
         session.setWriter(sessionWriter);
         session.feed(Maps.fromProperties(configAsMap));
 
-        //Apply build item configurations to the dekorate session.
+        //apply build item configurations to the dekorate session.
         applyBuildItems(session, applicationInfo, kubernetesPortBuildItems, kubernetesHealthLivenessPathBuildItem,
                 kubernetesHealthReadinessPathBuildItem);
 
         // write the generated resources to the filesystem
         final Map<String, String> generatedResourcesMap = session.close();
         for (Map.Entry<String, String> resourceEntry : generatedResourcesMap.entrySet()) {
+            String fileName = resourceEntry.getKey().replace(root.toAbsolutePath().toString(), "");
             String relativePath = resourceEntry.getKey().replace(root.toAbsolutePath().toString(), "kubernetes");
-            if (relativePath.startsWith("kubernetes" + File.separator + ".")) { // ignore some of Dekorate's internal files
-                continue;
+
+            if (fileName.endsWith(".yml") || fileName.endsWith(".json")) {
+                String target = fileName.substring(0, fileName.lastIndexOf("."));
+                if (target.startsWith(File.separator)) {
+                    target = target.substring(1);
+                }
+
+                if (!deploymentTargets.contains(target)) {
+                    continue;
+                }
             }
+
             generatedResourceProducer.produce(
                     new GeneratedFileSystemResourceBuildItem(
                             // we need to make sure we are only passing the relative path to the build item
@@ -159,7 +179,8 @@ class KubernetesProcessor {
         //Let dekorate create a Project instance and then override with what is found in ApplicationInfoBuildItem.
         Project project = FileProjectFactory.create(archiveRootBuildItem.getArchiveLocation().toFile());
         BuildInfo buildInfo = new BuildInfo(app.getName(), app.getVersion(),
-                "jar", project.getBuildInfo().getOutputFile(),
+                "jar", project.getBuildInfo().getBuildTool(),
+                project.getBuildInfo().getOutputFile(),
                 project.getBuildInfo().getClassOutputDir());
 
         return new Project(project.getRoot(), buildInfo, project.getScmInfo());

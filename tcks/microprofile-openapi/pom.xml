@@ -67,6 +67,10 @@
                     <groupId>javax.xml.bind</groupId>
                     <artifactId>jaxb-api</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>javax.servlet-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -76,6 +80,10 @@
         <dependency>
             <groupId>org.jboss.spec.javax.ws.rs</groupId>
             <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.logging</groupId>

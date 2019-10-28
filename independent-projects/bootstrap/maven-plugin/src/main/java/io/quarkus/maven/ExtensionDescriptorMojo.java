@@ -244,7 +244,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         extObject.set("metadata", metadata);
         
         
-       updateSourceFiles(output, extObject, mapper);
+    //   updateSourceFiles(output, extObject, mapper);
 
     }
 

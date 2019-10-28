@@ -177,7 +177,7 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
                         fs.getPath("/", BootstrapConstants.META_INF, descriptorName),
                         extensions);
             } catch (IOException e) {
-                getLog().debug("Failed to read " + file,e);
+                getLog().debug("Failed to read " + file, e);
                 return false;
             }
         }

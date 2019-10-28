@@ -57,7 +57,9 @@ public class VertxKeycloakRecorder {
         });
 
         OAuth2Auth auth = cf.join();
-        beanContainer.instance(VertxOAuth2IdentityProvider.class).setAuth(auth);
+        VertxOAuth2IdentityProvider identityProvider = beanContainer.instance(VertxOAuth2IdentityProvider.class);
+        identityProvider.setAuth(auth);
+        identityProvider.setConfig(config);
         VertxOAuth2AuthenticationMechanism mechanism = beanContainer.instance(VertxOAuth2AuthenticationMechanism.class);
         mechanism.setAuth(auth);
         mechanism.setAuthServerURI(config.authServerUrl);

@@ -9,21 +9,13 @@ import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
  */
 public class VertxJwtCallerPrincipal extends DefaultJWTCallerPrincipal {
     private JwtClaims claims;
-    private String customPrincipalName;
 
-    public VertxJwtCallerPrincipal(final String customPrincipalName, final JwtClaims claims) {
+    public VertxJwtCallerPrincipal(final JwtClaims claims) {
         super(claims);
         this.claims = claims;
-        this.customPrincipalName = customPrincipalName;
     }
 
     public JwtClaims getClaims() {
         return claims;
     }
-
-    @Override
-    public String getName() {
-        return customPrincipalName != null ? customPrincipalName : super.getName();
-    }
-
 }

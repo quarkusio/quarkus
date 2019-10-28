@@ -50,6 +50,12 @@ public class OidcConfig {
     Optional<String> clientId;
 
     /**
+     * Configuration to find and parse a custom claim containing the roles information.
+     */
+    @ConfigItem
+    Roles roles;
+
+    /**
      * Credentials which the OIDC adapter will use to authenticate to the OIDC server.
      */
     @ConfigItem
@@ -67,6 +73,10 @@ public class OidcConfig {
         return credentials;
     }
 
+    public Roles getRoles() {
+        return roles;
+    }
+
     @ConfigGroup
     public static class Credentials {
 
@@ -78,6 +88,45 @@ public class OidcConfig {
 
         public Optional<String> getSecret() {
             return secret;
+        }
+    }
+
+    @ConfigGroup
+    public static class Roles {
+
+        /**
+         * Path to the claim containing an array of groups. It starts from the top level JWT JSON object and
+         * can contain multiple segments where each segment represents a JSON object name only, example: "realm/groups".
+         * This property can be used if a token has no 'groups' claim but has the groups set in a different claim.
+         */
+        @ConfigItem
+        Optional<String> roleClaimPath;
+
+        /**
+         * Separator for splitting a string which may contain multiple group values.
+         * It will only be used if the "role-claim-path" property points to a custom claim whose value is a string.
+         * A single space will be used by default because the standard 'scope' claim may contain a space separated sequence.
+         */
+        @ConfigItem
+        Optional<String> roleClaimSeparator;
+
+        public Optional<String> getRoleClaimPath() {
+            return roleClaimPath;
+        }
+
+        public Optional<String> getRoleClaimSeparator() {
+            return roleClaimSeparator;
+        }
+
+        public static Roles fromClaimPath(String path) {
+            return fromClaimPathAndSeparator(path, null);
+        }
+
+        public static Roles fromClaimPathAndSeparator(String path, String sep) {
+            Roles roles = new Roles();
+            roles.roleClaimPath = Optional.ofNullable(path);
+            roles.roleClaimSeparator = Optional.ofNullable(sep);
+            return roles;
         }
     }
 

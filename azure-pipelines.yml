@@ -110,7 +110,7 @@ stages:
             inputs:
               goals: 'install'
               mavenOptions: $(MAVEN_OPTS)
-              options: '-DskipTests -Dno-format'
+              options: '-B --settings azure-mvn-settings.xml -DskipTests -Dno-format'
           - publish: $(MAVEN_CACHE_FOLDER)
             artifact: BuiltMavenRepo
 
@@ -185,6 +185,7 @@ stages:
             inputs:
               goals: 'verify'
               mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml'
               mavenPomFile: 'tcks/pom.xml'
 
 

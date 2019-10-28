@@ -53,8 +53,7 @@ public class HibernateSearchElasticsearchRecorder {
 
         @Override
         public void contributeBootProperties(BiConsumer<String, Object> propertyCollector) {
-            // Use the radical only as a workaround for https://hibernate.atlassian.net/browse/HSEARCH-3734
-            addConfig(propertyCollector, HibernateOrmMapperSpiSettings.Radicals.REFLECTION_STRATEGY,
+            addConfig(propertyCollector, HibernateOrmMapperSpiSettings.REFLECTION_STRATEGY,
                     HibernateOrmReflectionStrategyName.JAVA_LANG_REFLECT);
 
             if (buildTimeConfig.defaultBackend.isPresent()) {

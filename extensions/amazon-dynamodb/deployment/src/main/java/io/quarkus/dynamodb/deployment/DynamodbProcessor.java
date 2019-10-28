@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.enterprise.inject.spi.DeploymentException;
+
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 
@@ -27,25 +29,28 @@ import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
-import io.quarkus.dynamodb.runtime.ApacheHttpClientConfig;
 import io.quarkus.dynamodb.runtime.AwsCredentialsProviderType;
 import io.quarkus.dynamodb.runtime.DynamodbClientProducer;
 import io.quarkus.dynamodb.runtime.DynamodbConfig;
 import io.quarkus.dynamodb.runtime.DynamodbRecorder;
 import io.quarkus.dynamodb.runtime.NettyHttpClientConfig;
+import io.quarkus.dynamodb.runtime.SyncHttpClientConfig;
+import io.quarkus.dynamodb.runtime.SyncHttpClientConfig.SyncClientType;
 import io.quarkus.dynamodb.runtime.TlsManagersProviderConfig;
 import io.quarkus.dynamodb.runtime.TlsManagersProviderType;
 import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
 import software.amazon.awssdk.http.SdkHttpService;
-import software.amazon.awssdk.http.apache.ApacheSdkHttpService;
 import software.amazon.awssdk.http.async.SdkAsyncHttpService;
-import software.amazon.awssdk.http.nio.netty.NettySdkAsyncHttpService;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.utils.StringUtils;
 
 public class DynamodbProcessor {
     public static final String AWS_SDK_APPLICATION_ARCHIVE_MARKERS = "software/amazon/awssdk";
+
+    private static final String APACHE_HTTP_SERVICE = "software.amazon.awssdk.http.apache.ApacheSdkHttpService";
+    private static final String NETTY_HTTP_SERVICE = "software.amazon.awssdk.http.nio.netty.NettySdkAsyncHttpService";
+    private static final String URL_HTTP_SERVICE = "software.amazon.awssdk.http.urlconnection.UrlConnectionSdkHttpService";
 
     private static final List<String> INTERCEPTOR_PATHS = Arrays.asList(
             "software/amazon/awssdk/global/handlers/execution.interceptors",
@@ -112,24 +117,38 @@ public class DynamodbProcessor {
         }
 
         if (createSyncClient) {
-            //Register Apache client as sync client
-            proxyDefinition
-                    .produce(new SubstrateProxyDefinitionBuildItem("org.apache.http.conn.HttpClientConnectionManager",
-                            "org.apache.http.pool.ConnPoolControl",
-                            "software.amazon.awssdk.http.apache.internal.conn.Wrapped"));
+            if (config.syncClient.type == SyncClientType.APACHE) {
+                checkClasspath(APACHE_HTTP_SERVICE, "apache-client");
 
-            serviceProvider.produce(
-                    new ServiceProviderBuildItem(SdkHttpService.class.getName(), ApacheSdkHttpService.class.getName()));
+                //Register Apache client as sync client
+                proxyDefinition.produce(
+                        new SubstrateProxyDefinitionBuildItem("org.apache.http.conn.HttpClientConnectionManager",
+                                "org.apache.http.pool.ConnPoolControl",
+                                "software.amazon.awssdk.http.apache.internal.conn.Wrapped"));
+
+                serviceProvider.produce(new ServiceProviderBuildItem(SdkHttpService.class.getName(), APACHE_HTTP_SERVICE));
+            } else {
+                checkClasspath(URL_HTTP_SERVICE, "url-connection-client");
+                serviceProvider.produce(new ServiceProviderBuildItem(SdkHttpService.class.getName(), URL_HTTP_SERVICE));
+            }
         }
 
         if (createAsyncClient) {
+            checkClasspath(NETTY_HTTP_SERVICE, "netty-nio-client");
             //Register netty as async client
-            serviceProvider.produce(
-                    new ServiceProviderBuildItem(SdkAsyncHttpService.class.getName(),
-                            NettySdkAsyncHttpService.class.getName()));
+            serviceProvider.produce(new ServiceProviderBuildItem(SdkAsyncHttpService.class.getName(), NETTY_HTTP_SERVICE));
         }
 
         return new DynamodbClientBuildItem(createSyncClient, createAsyncClient);
+    }
+
+    private void checkClasspath(String className, String dependencyName) {
+        try {
+            Class.forName(className, true, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new DeploymentException(
+                    "Missing 'software.amazon.awssdk:" + dependencyName + "' dependency on the classpath");
+        }
     }
 
     @BuildStep
@@ -193,17 +212,19 @@ public class DynamodbProcessor {
         }
     }
 
-    private static void checkSyncClientConfig(ApacheHttpClientConfig syncClient) {
-        if (syncClient.maxConnections <= 0) {
-            throw new ConfigurationError("quarkus.dynamodb.sync-client.max-connections may not be negative or zero.");
-        }
-        if (syncClient.proxy != null && syncClient.proxy.enabled) {
-            URI proxyEndpoint = syncClient.proxy.endpoint;
-            if (proxyEndpoint != null) {
-                validateProxyEndpoint(proxyEndpoint, "sync");
+    private static void checkSyncClientConfig(SyncHttpClientConfig syncClient) {
+        if (syncClient.type == SyncClientType.APACHE) {
+            if (syncClient.apache.maxConnections <= 0) {
+                throw new ConfigurationError("quarkus.dynamodb.sync-client.max-connections may not be negative or zero.");
             }
+            if (syncClient.apache.proxy != null && syncClient.apache.proxy.enabled) {
+                URI proxyEndpoint = syncClient.apache.proxy.endpoint;
+                if (proxyEndpoint != null) {
+                    validateProxyEndpoint(proxyEndpoint, "sync");
+                }
+            }
+            validateTlsManagersProvider(syncClient.apache.tlsManagersProvider, "sync");
         }
-        validateTlsManagersProvider(syncClient.tlsManagersProvider, "sync");
     }
 
     private static void checkAsyncClientConfig(NettyHttpClientConfig asyncClient) {

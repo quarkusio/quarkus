@@ -26,10 +26,10 @@ public class DynamodbConfig {
     public AwsConfig aws;
 
     /**
-     * Apache HTTP client transport configuration
+     * Sync client transport configuration
      */
     @ConfigItem
-    public ApacheHttpClientConfig syncClient;
+    public SyncHttpClientConfig syncClient;
 
     /**
      * Netty HTTP client transport configuration

@@ -112,12 +112,12 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         }
 
         // Read the overrides file for the extensions (if it exists)
+        JsonObject overridesObject = Json.createObjectBuilder().build();
         Map<String, JsonObject> extOverrides = new HashMap<>();
-        JsonObject theRest = null;
         if (overridesFile.isFile()) {
             info("Found overrides file %s", overridesFile);
             try (JsonReader jsonReader = Json.createReader(new FileInputStream(overridesFile))) {
-                JsonObject overridesObject = jsonReader.readObject();
+                overridesObject = jsonReader.readObject();
                 JsonArray extOverrideObjects = overridesObject.getJsonArray("extensions");
                 if (extOverrideObjects != null) {
                     // Put the extension overrides into a map keyed to their GAV
@@ -127,8 +127,6 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
                         extOverrides.put(key, extOverrideObject);
                     }
                 }
-
-                theRest = overridesObject;
             } catch (IOException e) {
                 throw new MojoExecutionException("Failed to read " + overridesFile, e);
             }
@@ -165,8 +163,8 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
             }
         }
 
-        // Create the toplevel JSON
-        final JsonObjectBuilder platformJson = Json.createObjectBuilder();
+        // Create the toplevel JSON taking the overrides as a starting point
+        final JsonObjectBuilder platformJson = Json.createObjectBuilder(overridesObject);
         // Add information about the BOM to it
         final JsonObjectBuilder bomJson = Json.createObjectBuilder();
         bomJson.add(Extension.GROUP_ID, bomGroupId);
@@ -175,18 +173,7 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         platformJson.add("bom", bomJson.build());
         // And add the list of extensions
         platformJson.add("extensions", extListJson.build());
-
-        if (theRest != null) {
-            theRest.forEach((key, item) -> {
-                // Ignore the two keys we are explicitly managing
-                // but then add anything else found.
-                // TODO: make a real merge if needed eventually.
-                if (!"bom".equals(key) && !"extensions".equals(key)) {
-                    platformJson.add(key, item);
-
-                }
-            });
-        }
+        JsonObject platformObject = platformJson.build();
 
         // Write the JSON to the output file
         final File outputDir = outputFile.getParentFile();
@@ -198,7 +185,7 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         final JsonWriterFactory jsonWriterFactory = Json
                 .createWriterFactory(Collections.singletonMap(JsonGenerator.PRETTY_PRINTING, true));
         try (JsonWriter jsonWriter = jsonWriterFactory.createWriter(new FileOutputStream(outputFile))) {
-            jsonWriter.writeObject(platformJson.build());
+            jsonWriter.writeObject(platformObject);
         } catch (IOException e) {
             throw new MojoExecutionException("Failed to persist " + outputFile, e);
         }
@@ -255,7 +242,7 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
     private String extensionId(JsonObject extObject) {
         String artId = extObject.getString(Extension.ARTIFACT_ID, "");
         if (artId.isEmpty()) {
-            getLog().warn("Missing artifactId in extension overrides in " + extObject.toString());
+            getLog().warn("Missing " + Extension.ARTIFACT_ID + " in extension overrides in " + extObject.toString());
         }
         String groupId = extObject.getString(Extension.GROUP_ID, "");
         if (groupId.isEmpty()) {

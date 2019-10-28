@@ -30,6 +30,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedSubstrateClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -47,6 +48,11 @@ public final class AmazonLambdaProcessor {
 
     private static final DotName NAMED = DotName.createSimple(Named.class.getName());
     private static final Logger log = Logger.getLogger(AmazonLambdaProcessor.class);
+
+    @BuildStep
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(FeatureBuildItem.AMAZON_LAMBDA);
+    }
 
     @BuildStep(applicationArchiveMarkers = { AWS_LAMBDA_EVENTS_ARCHIVE_MARKERS })
     List<AmazonLambdaBuildItem> discover(CombinedIndexBuildItem combinedIndexBuildItem,

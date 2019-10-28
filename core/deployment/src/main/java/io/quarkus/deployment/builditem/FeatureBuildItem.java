@@ -10,6 +10,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class FeatureBuildItem extends MultiBuildItem {
 
     public static final String AGROAL = "agroal";
+    public static final String AMAZON_LAMBDA = "amazon-lambda";
     public static final String ARTEMIS_CORE = "artemis-core";
     public static final String ARTEMIS_JMS = "artemis-jms";
     public static final String CDI = "cdi";

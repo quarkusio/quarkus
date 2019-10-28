@@ -193,27 +193,52 @@
                                     </requireMavenVersion>
                                     <bannedDependencies>
                                         <excludes>
-                                            <!-- Use javax.annotation-api -->
-                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec
-                                            </exclude>
-                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec
-                                            </exclude>
+                                            <!-- Use Jakarta artifacts instead of JBoss specific ones -->
+                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec</exclude>
+                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec</exclude>
+                                            <exclude>org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec</exclude>
+                                            <exclude>org.jboss.spec.javax.transaction:jboss-transaction-api_1.3_spec</exclude>
+                                            <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_4.0_spec</exclude>
+                                            <exclude>org.jboss.spec.javax.security.jacc:jboss-jacc-api_1.5_spec</exclude>
+                                            <exclude>org.jboss.spec.javax.security.auth.message:jboss-jaspi-api_1.1_spec</exclude>
+                                            <exclude>org.jboss.spec.javax.websocket:jboss-websocket-api_1.1_spec</exclude>
+                                            <exclude>org.jboss.spec.javax.interceptor:jboss-interceptors-api_1.2_spec</exclude>
+                                            <!-- except for these 2 for now as most of the RESTEasy optional artifacts depend on them
+                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>
+                                            <exclude>org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec</exclude>
+                                            -->
+                                            <exclude>jakarta.xml.bind:jakarta.xml.bind-api</exclude>
+                                            <exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>
+                                            <!-- Exclude javax dependencies in favor of Jakarta -->
+                                            <exclude>javax.activation:activation</exclude>
+                                            <exclude>javax.activation:javax.activation-api</exclude>
+                                            <exclude>javax.annotation:javax.annotation-api</exclude>
+                                            <exclude>javax.enterprise:cdi-api</exclude>
+                                            <exclude>javax.inject:javax.inject</exclude>
+                                            <exclude>javax.json:javax.json-api</exclude>
+                                            <exclude>javax.json.bind:javax.json.bind-api</exclude>
+                                            <exclude>org.glassfish:javax.json</exclude>
+                                            <exclude>org.glassfish:javax.el</exclude>
+                                            <exclude>javax.persistence:javax.persistence-api</exclude>
+                                            <exclude>javax.persistence:persistence-api</exclude>
+                                            <exclude>javax.security.enterprise:javax.security.enterprise-api</exclude>
+                                            <exclude>javax.servlet:servlet-api</exclude>
+                                            <exclude>javax.servlet:javax.servlet-api</exclude>
+                                            <exclude>javax.transaction:jta</exclude>
+                                            <exclude>javax.transaction:javax.transaction-api</exclude>
+                                            <exclude>javax.validation:validation-api</exclude>
+                                            <exclude>javax.xml.bind:jaxb-api</exclude>
+                                            <exclude>javax.websocket:javax.websocket-api</exclude>
+                                            <exclude>javax.ws.rs:javax.ws.rs-api</exclude>
                                             <!-- use our jboss-logmanager -->
                                             <exclude>org.jboss.logging:jboss-logmanager</exclude>
                                             <!-- We don't want all the API's in one jar-->
                                             <exclude>javax:javaee-api</exclude>
                                             <!-- Prevent incompatible config from coming in -->
                                             <exclude>org.wildfly.client:wildfly-client-config</exclude>
-                                            <!-- Use Jakarta Activation -->
-                                            <exclude>javax.activation:javax-activation-api</exclude>
-                                            <exclude>javax.activation:activation</exclude>
                                             <exclude>org.jboss.marshalling:jboss-marshalling-osgi</exclude>
                                             <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</exclude>
                                             <!-- The API is packaged by the implementation-->
-                                            <exclude>javax.json:javax.json-api</exclude>
-                                            <!-- Do not use Jakarta APIs for JSON -->
-                                            <exclude>org.glassfish:jakarta.json</exclude>
-                                            <exclude>jakarta.json.bind:jakarta.json.bind-api</exclude>
                                             <exclude>jakarta.json:jakarta.json-api</exclude>
                                             <!-- Ensure none of the deps use netty-all. This forces deps to use more fine grained netty artifacts -->
                                             <exclude>io.netty:netty-all</exclude>
@@ -234,6 +259,10 @@
                                             <exclude>org.slf4j:slf4j-log4j12</exclude>
                                             <exclude>org.slf4j:slf4j-log4j13</exclude>
                                         </excludes>
+                                        <includes>
+                                            <!-- this is for REST Assured -->
+                                            <include>javax.xml.bind:jaxb-api:*:*:test</include>
+                                        </includes>
                                     </bannedDependencies>
                                 </rules>
                             </configuration>

@@ -30,6 +30,18 @@
         <dependency>
             <groupId>io.quarkus.http</groupId>
             <artifactId>quarkus-http-websockets-jsr</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jboss.spec.javax.websocket</groupId>
+                    <artifactId>
+                        jboss-websocket-api_1.1_spec
+                    </artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.websocket</groupId>
+            <artifactId>jakarta.websocket-api</artifactId>
         </dependency>
     </dependencies>
 

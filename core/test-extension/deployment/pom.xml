@@ -14,10 +14,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.quarkus.http</groupId>
-            <artifactId>quarkus-http-servlet</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-undertow-deployment</artifactId>
         </dependency>

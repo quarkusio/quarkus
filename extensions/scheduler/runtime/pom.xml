@@ -43,8 +43,8 @@
       </exclusions>
     </dependency>
     <dependency>
-       <groupId>org.jboss.spec.javax.transaction</groupId>
-       <artifactId>jboss-transaction-api_1.2_spec</artifactId>
+       <groupId>jakarta.transaction</groupId>
+       <artifactId>jakarta.transaction-api</artifactId>
        <!--
           TODO: Make this an optional dependency?
           Graal compiler not happy with broken classpaths

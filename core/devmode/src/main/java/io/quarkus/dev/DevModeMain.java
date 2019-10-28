@@ -96,10 +96,6 @@ public class DevModeMain implements Closeable {
             if (context.isAbortOnFailedStart()) {
                 throw new RuntimeException(deploymentProblem == null ? compileProblem : deploymentProblem);
             }
-            log.error("Failed to start Quarkus, attempting to start hot replacement endpoint to recover");
-            if (runtimeUpdatesProcessor != null) {
-                runtimeUpdatesProcessor.startupFailed();
-            }
         }
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
@@ -180,6 +176,20 @@ public class DevModeMain implements Closeable {
                 runner.run();
                 DevModeMain.runner = runner;
                 deploymentProblem = null;
+
+            } catch (Throwable t) {
+                deploymentProblem = t;
+                if (context.isAbortOnFailedStart() || liveReload) {
+                    log.error("Failed to start quarkus", t);
+                } else {
+                    //we need to set this here, while we still have the correct TCCL
+                    //this is so the config is still valid, and we can read HTTP config from application.properties
+                    log.error("Failed to start Quarkus, attempting to start hot replacement endpoint to recover");
+                    if (runtimeUpdatesProcessor != null) {
+                        runtimeUpdatesProcessor.startupFailed();
+                    }
+                }
+
             } finally {
                 Thread.currentThread().setContextClassLoader(old);
             }

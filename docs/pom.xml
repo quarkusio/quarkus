@@ -32,12 +32,12 @@
             <artifactId>jsoup</artifactId>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-extension-processor</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-core</artifactId>
             <version>${project.version}</version>
             <exclusions>

@@ -99,7 +99,12 @@ public class VertxHttpRecorder {
         if (closeTask != null) {
             //it is possible start failed after the server was started
             //we shut it down in this case, as we have no idea what state it is in
+            final Handler<RoutingContext> prevHotReplacementHandler = hotReplacementHandler;
             shutDownDevMode();
+            // reset back to the older hot replacement handler, so that it can be used
+            // to watch any artifacts that need hot deployment to fix the reason which caused
+            // the server start to fail
+            hotReplacementHandler = prevHotReplacementHandler;
         }
         VertxConfiguration vertxConfiguration = new VertxConfiguration();
         ConfigInstantiator.handleObject(vertxConfiguration);

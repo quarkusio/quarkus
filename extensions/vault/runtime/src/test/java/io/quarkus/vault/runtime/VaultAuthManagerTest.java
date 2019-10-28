@@ -13,11 +13,11 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.vault.runtime.client.OkHttpVaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
-import io.quarkus.vault.runtime.client.dto.VaultLookupSelf;
-import io.quarkus.vault.runtime.client.dto.VaultRenewSelf;
-import io.quarkus.vault.runtime.client.dto.VaultRenewSelfAuth;
-import io.quarkus.vault.runtime.client.dto.VaultUserPassAuth;
-import io.quarkus.vault.runtime.client.dto.VaultUserPassAuthAuth;
+import io.quarkus.vault.runtime.client.dto.auth.VaultLookupSelf;
+import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelf;
+import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelfAuth;
+import io.quarkus.vault.runtime.client.dto.auth.VaultUserPassAuth;
+import io.quarkus.vault.runtime.client.dto.auth.VaultUserPassAuthAuth;
 import io.quarkus.vault.runtime.config.VaultAppRoleAuthenticationConfig;
 import io.quarkus.vault.runtime.config.VaultAuthenticationConfig;
 import io.quarkus.vault.runtime.config.VaultKubernetesAuthenticationConfig;

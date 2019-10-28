@@ -6,14 +6,17 @@ import static io.quarkus.vault.runtime.config.VaultAuthenticationType.APPROLE;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.USERPASS;
 import static io.quarkus.vault.test.VaultTestExtension.APP_SECRET_PATH;
 import static io.quarkus.vault.test.VaultTestExtension.DB_PASSWORD;
+import static io.quarkus.vault.test.VaultTestExtension.ENCRYPTION_KEY_NAME;
 import static io.quarkus.vault.test.VaultTestExtension.SECRET_KEY;
 import static io.quarkus.vault.test.VaultTestExtension.SECRET_PATH_V1;
 import static io.quarkus.vault.test.VaultTestExtension.SECRET_PATH_V2;
 import static io.quarkus.vault.test.VaultTestExtension.SECRET_VALUE;
+import static io.quarkus.vault.test.VaultTestExtension.SIGN_KEY_NAME;
 import static io.quarkus.vault.test.VaultTestExtension.VAULT_AUTH_APPROLE;
 import static io.quarkus.vault.test.VaultTestExtension.VAULT_AUTH_USERPASS_PASSWORD;
 import static io.quarkus.vault.test.VaultTestExtension.VAULT_AUTH_USERPASS_USER;
 import static io.quarkus.vault.test.VaultTestExtension.VAULT_DBROLE;
+import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,19 +39,37 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.vault.runtime.Base64String;
 import io.quarkus.vault.runtime.VaultManager;
 import io.quarkus.vault.runtime.client.VaultClient;
-import io.quarkus.vault.runtime.client.dto.VaultAppRoleAuth;
-import io.quarkus.vault.runtime.client.dto.VaultDatabaseCredentials;
-import io.quarkus.vault.runtime.client.dto.VaultKvSecretV1;
-import io.quarkus.vault.runtime.client.dto.VaultKvSecretV2;
-import io.quarkus.vault.runtime.client.dto.VaultLeasesLookup;
-import io.quarkus.vault.runtime.client.dto.VaultLookupSelf;
-import io.quarkus.vault.runtime.client.dto.VaultRenewLease;
-import io.quarkus.vault.runtime.client.dto.VaultRenewSelf;
-import io.quarkus.vault.runtime.client.dto.VaultUserPassAuth;
+import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuth;
+import io.quarkus.vault.runtime.client.dto.auth.VaultLookupSelf;
+import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelf;
+import io.quarkus.vault.runtime.client.dto.auth.VaultUserPassAuth;
+import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentials;
+import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV1;
+import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2;
+import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
+import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecrypt;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecryptBatchInput;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecryptBody;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitEncrypt;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitEncryptBatchInput;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitEncryptBody;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitRewrapBatchInput;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitRewrapBody;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitSign;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitSignBatchInput;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitSignBody;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerify;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerifyBatchInput;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerifyBody;
 import io.quarkus.vault.runtime.config.VaultAuthenticationType;
 import io.quarkus.vault.test.VaultTestLifecycleManager;
+import io.quarkus.vault.test.client.TestVaultClient;
+import io.quarkus.vault.test.client.dto.VaultTransitHash;
+import io.quarkus.vault.test.client.dto.VaultTransitHashBody;
 
 @DisabledOnOs(OS.WINDOWS)
 @QuarkusTestResource(VaultTestLifecycleManager.class)
@@ -130,9 +151,89 @@ public class VaultITCase {
         log.info("userPassClientToken = " + userPassClientToken);
         assertNotNull(userPassClientToken);
 
+        assertTransit(vaultClient, appRoleClientToken);
+
         assertTokenUserPass(vaultClient, userPassClientToken);
         assertKvSecrets(vaultClient, userPassClientToken);
         assertDynamicCredentials(vaultClient, userPassClientToken, USERPASS);
+    }
+
+    private void assertTransit(VaultClient vaultClient, String token) {
+
+        Base64String context = Base64String.from("mycontext");
+
+        assertTransitEncryption(vaultClient, token, ENCRYPTION_KEY_NAME, null);
+        assertTransitEncryption(vaultClient, token, ENCRYPTION_KEY_NAME, context);
+
+        assertTransitSign(vaultClient, token, SIGN_KEY_NAME, null);
+        assertTransitSign(vaultClient, token, SIGN_KEY_NAME, context);
+
+        new TestVaultClient().rotate(token, ENCRYPTION_KEY_NAME);
+
+        assertHash(vaultClient, token);
+    }
+
+    private void assertHash(VaultClient vaultClient, String token) {
+        VaultTransitHashBody body = new VaultTransitHashBody();
+        body.input = Base64String.from("coucou");
+        body.format = "base64";
+        VaultTransitHash hash = new TestVaultClient().hash(token, "sha2-512", body);
+        Base64String sum = hash.data.sum;
+        String expected = "4FrxOZ9PS+t5NMnxK6WpyI9+4ejvP+ehZ75Ll5xRXSQQKtkNOgdU1I/Fkw9jaaMIfmhulzLvNGDmQ5qVCJtIAA==";
+        assertEquals(expected, sum.getValue());
+    }
+
+    private void assertTransitSign(VaultClient vaultClient, String token, String keyName, Base64String context) {
+
+        String data = "coucou";
+
+        VaultTransitSignBody batchBody = new VaultTransitSignBody();
+        batchBody.batchInput = singletonList(new VaultTransitSignBatchInput(Base64String.from(data), context));
+
+        VaultTransitSign batchSign = vaultClient.sign(token, keyName, null, batchBody);
+
+        VaultTransitVerifyBody verifyBody = new VaultTransitVerifyBody();
+        VaultTransitVerifyBatchInput batchInput = new VaultTransitVerifyBatchInput(Base64String.from(data), context);
+        batchInput.signature = batchSign.data.batchResults.get(0).signature;
+        verifyBody.batchInput = singletonList(batchInput);
+
+        VaultTransitVerify verify = vaultClient.verify(token, keyName, null, verifyBody);
+        assertEquals(1, verify.data.batchResults.size());
+        assertTrue(verify.data.batchResults.get(0).valid);
+
+    }
+
+    private void assertTransitEncryption(VaultClient vaultClient, String token, String keyName, Base64String context) {
+
+        String data = "coucou";
+
+        VaultTransitEncryptBatchInput encryptBatchInput = new VaultTransitEncryptBatchInput(Base64String.from(data), context);
+        VaultTransitEncryptBody encryptBody = new VaultTransitEncryptBody();
+        encryptBody.batchInput = singletonList(encryptBatchInput);
+        VaultTransitEncrypt encryptBatchResult = vaultClient.encrypt(token, keyName, encryptBody);
+        String ciphertext = encryptBatchResult.data.batchResults.get(0).ciphertext;
+
+        String batchDecryptedString = decrypt(vaultClient, token, keyName, ciphertext, context);
+        assertEquals(data, batchDecryptedString);
+
+        VaultTransitRewrapBatchInput rewrapBatchInput = new VaultTransitRewrapBatchInput(ciphertext, context);
+        VaultTransitRewrapBody rewrapBody = new VaultTransitRewrapBody();
+        rewrapBody.batchInput = singletonList(rewrapBatchInput);
+        VaultTransitEncrypt rewrap = vaultClient.rewrap(token, keyName, rewrapBody);
+        assertEquals(1, rewrap.data.batchResults.size());
+        String rewrappedCiphertext = rewrap.data.batchResults.get(0).ciphertext;
+
+        batchDecryptedString = decrypt(vaultClient, token, keyName, rewrappedCiphertext, context);
+        assertEquals(data, batchDecryptedString);
+
+    }
+
+    private String decrypt(VaultClient vaultClient, String token, String keyName, String ciphertext, Base64String context) {
+        VaultTransitDecryptBatchInput decryptBatchInput = new VaultTransitDecryptBatchInput(ciphertext, context);
+        VaultTransitDecryptBody decryptBody = new VaultTransitDecryptBody();
+        decryptBody.batchInput = singletonList(decryptBatchInput);
+        VaultTransitDecrypt decryptBatchResult = vaultClient.decrypt(token, keyName, decryptBody);
+        return decryptBatchResult.data.batchResults.get(0).plaintext.decodeAsString();
     }
 
     private void assertDynamicCredentials(VaultClient vaultClient, String clientToken, VaultAuthenticationType authType) {

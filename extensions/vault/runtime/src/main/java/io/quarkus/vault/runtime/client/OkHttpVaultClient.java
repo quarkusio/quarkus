@@ -13,21 +13,30 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.vault.VaultException;
-import io.quarkus.vault.runtime.client.dto.VaultAppRoleAuth;
-import io.quarkus.vault.runtime.client.dto.VaultAppRoleAuthBody;
-import io.quarkus.vault.runtime.client.dto.VaultDatabaseCredentials;
-import io.quarkus.vault.runtime.client.dto.VaultKubernetesAuth;
-import io.quarkus.vault.runtime.client.dto.VaultKubernetesAuthBody;
-import io.quarkus.vault.runtime.client.dto.VaultKvSecretV1;
-import io.quarkus.vault.runtime.client.dto.VaultKvSecretV2;
-import io.quarkus.vault.runtime.client.dto.VaultLeasesBody;
-import io.quarkus.vault.runtime.client.dto.VaultLeasesLookup;
-import io.quarkus.vault.runtime.client.dto.VaultLookupSelf;
-import io.quarkus.vault.runtime.client.dto.VaultRenewLease;
-import io.quarkus.vault.runtime.client.dto.VaultRenewSelf;
-import io.quarkus.vault.runtime.client.dto.VaultRenewSelfBody;
-import io.quarkus.vault.runtime.client.dto.VaultUserPassAuth;
-import io.quarkus.vault.runtime.client.dto.VaultUserPassAuthBody;
+import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuth;
+import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuthBody;
+import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuth;
+import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthBody;
+import io.quarkus.vault.runtime.client.dto.auth.VaultLookupSelf;
+import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelf;
+import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelfBody;
+import io.quarkus.vault.runtime.client.dto.auth.VaultUserPassAuth;
+import io.quarkus.vault.runtime.client.dto.auth.VaultUserPassAuthBody;
+import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentials;
+import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV1;
+import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2;
+import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesBody;
+import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
+import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecrypt;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecryptBody;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitEncrypt;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitEncryptBody;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitRewrapBody;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitSign;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitSignBody;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerify;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerifyBody;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -107,7 +116,40 @@ public class OkHttpVaultClient implements VaultClient {
         return get("database/creds/" + databaseCredentialsRole, token, VaultDatabaseCredentials.class);
     }
 
+    @Override
+    public VaultTransitEncrypt encrypt(String token, String keyName, VaultTransitEncryptBody body) {
+        return post("transit/encrypt/" + keyName, token, body, VaultTransitEncrypt.class);
+    }
+
+    @Override
+    public VaultTransitDecrypt decrypt(String token, String keyName, VaultTransitDecryptBody body) {
+        return post("transit/decrypt/" + keyName, token, body, VaultTransitDecrypt.class);
+    }
+
+    @Override
+    public VaultTransitSign sign(String token, String keyName, String hashAlgorithm,
+            VaultTransitSignBody body) {
+        String path = "transit/sign/" + keyName + (hashAlgorithm == null ? "" : "/" + hashAlgorithm);
+        return post(path, token, body, VaultTransitSign.class);
+    }
+
+    @Override
+    public VaultTransitVerify verify(String token, String keyName, String hashAlgorithm, VaultTransitVerifyBody body) {
+        String path = "transit/verify/" + keyName + (hashAlgorithm == null ? "" : "/" + hashAlgorithm);
+        return post(path, token, body, VaultTransitVerify.class);
+    }
+
+    @Override
+    public VaultTransitEncrypt rewrap(String token, String keyName, VaultTransitRewrapBody body) {
+        return post("transit/rewrap/" + keyName, token, body, VaultTransitEncrypt.class);
+    }
+
     // ---
+
+    protected <T> T post(String path, String token, Object body, Class<T> resultClass, int expectedCode) {
+        Request request = builder(path, token).post(requestBody(body)).build();
+        return exec(request, resultClass, expectedCode);
+    }
 
     protected <T> T post(String path, String token, Object body, Class<T> resultClass) {
         Request request = builder(path, token).post(requestBody(body)).build();
@@ -125,12 +167,16 @@ public class OkHttpVaultClient implements VaultClient {
     }
 
     private <T> T exec(Request request, Class<T> resultClass) {
+        return exec(request, resultClass, 200);
+    }
+
+    private <T> T exec(Request request, Class<T> resultClass, int expectedCode) {
         try (Response response = client.newCall(request).execute()) {
-            if (response.code() != 200) {
+            if (response.code() != expectedCode) {
                 throwVaultException(response);
             }
             String jsonBody = response.body().string();
-            return mapper.readValue(jsonBody, resultClass);
+            return resultClass == null ? null : mapper.readValue(jsonBody, resultClass);
         } catch (IOException e) {
             throw new VaultException(e);
         }

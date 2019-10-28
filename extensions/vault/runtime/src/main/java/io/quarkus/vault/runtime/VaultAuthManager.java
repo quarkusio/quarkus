@@ -15,9 +15,9 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
-import io.quarkus.vault.runtime.client.dto.AbstractVaultAuthAuth;
-import io.quarkus.vault.runtime.client.dto.VaultKubernetesAuthAuth;
-import io.quarkus.vault.runtime.client.dto.VaultRenewSelfAuth;
+import io.quarkus.vault.runtime.client.dto.auth.AbstractVaultAuthAuth;
+import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthAuth;
+import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelfAuth;
 import io.quarkus.vault.runtime.config.VaultAuthenticationType;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 

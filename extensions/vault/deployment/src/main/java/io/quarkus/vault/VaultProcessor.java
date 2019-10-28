@@ -16,6 +16,8 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.vault.runtime.Base64StringDeserializer;
+import io.quarkus.vault.runtime.Base64StringSerializer;
 import io.quarkus.vault.runtime.VaultRecorder;
 import io.quarkus.vault.runtime.VaultServiceProducer;
 import io.quarkus.vault.runtime.client.dto.VaultModel;
@@ -42,6 +44,8 @@ public class VaultProcessor {
                 .map(c -> c.name().toString())
                 .toArray(String[]::new);
         reflectiveClasses.produce(ReflectiveClassBuildItem.weakClass(modelClasses));
+        reflectiveClasses.produce(
+                new ReflectiveClassBuildItem(false, false, Base64StringDeserializer.class, Base64StringSerializer.class));
 
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.VAULT));
     }
@@ -61,6 +65,16 @@ public class VaultProcessor {
                 .addBeanClass(VaultKVSecretEngine.class)
                 .build();
     }
+
+    //    @BuildStep
+    //    void registerJacksonSerDeser(BuildProducer<JacksonModuleBuildItem> customSerDeser) {
+    //        customSerDeser.produce(
+    //                new JacksonModuleBuildItem.Builder("Base64StringModule")
+    //                        .add(Base64StringDeserializer.class.getName(),
+    //                                Base64StringSerializer.class.getName(),
+    //                                Base64String.class.getName())
+    //                        .build());
+    //    }
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep

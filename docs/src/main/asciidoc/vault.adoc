@@ -241,7 +241,7 @@ a-private-key    123456
 
 == Create a quarkus application with a secret configuration
 
-[source, subs=attributes+]
+[source, shell, subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -254,7 +254,7 @@ cd vault-quickstart
 
 Configure access to vault from the `{config-file}`:
 
-[source,properties]
+[source, properties]
 ----
 # vault url
 quarkus.vault.url=http://localhost:8200
@@ -271,7 +271,7 @@ This should mount whatever keys are stored in `secret/myapps/vault-quickstart` a
 
 Let's verify that by adding a new endpoint in GreetingResource:
 
-[source,java]
+[source, java]
 ----
 @Path("/hello")
 public class GreetingResource {
@@ -292,7 +292,7 @@ public class GreetingResource {
 
 Now compile the application and run it:
 
-[source,shell]
+[source, shell]
 ----
 ./mvnw clean install
 java -jar target/vault-quickstart-1.0-SNAPSHOT-runner.jar
@@ -300,14 +300,14 @@ java -jar target/vault-quickstart-1.0-SNAPSHOT-runner.jar
 
 Finally test the new endpoint:
 
-[source,shell]
+[source, shell]
 ----
 curl http://localhost:8080/hello/private-key
 ----
 
 You should see:
 
-[source,shell]
+[source, shell]
 ----
 123456
 ----
@@ -316,14 +316,14 @@ You should see:
 
 Start a PostgreSQL database:
 
-[source,shell]
+[source, shell]
 ----
 docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name postgres-quarkus-hibernate -e POSTGRES_USER=sarah -e POSTGRES_PASSWORD=connor -e POSTGRES_DB=mydatabase -p 5432:5432 postgres:10.5
 ----
 
 Create a simple service:
 
-[source,java]
+[source, java]
 ----
 @ApplicationScoped
 public class SantaClausService {
@@ -340,7 +340,7 @@ public class SantaClausService {
 
 With its `Gift` entity:
 
-[source,java]
+[source, java]
 ----
 @Entity
 public class Gift {
@@ -370,7 +370,7 @@ public class Gift {
 
 Finally, add a new endpoint in `GreetingResource`:
 
-[source,java]
+[source, java]
 ----
 @Inject
 SantaClausService santaClausService;
@@ -385,7 +385,7 @@ public int geGiftCount() {
 
 Create a new path in Vault where the database password will be added:
 
-[source,shell]
+[source, shell, subs=attributes+]
 ----
 # set the root token again
 export VAULT_TOKEN={root-token}
@@ -398,7 +398,7 @@ we have to do to allow the application to read it.
 When fetching credentials from Vault that are intended to be used by the Agroal connection pool, we need
 first to create a named Vault credentials provider in the {config-file}:
 
-[source,properties]
+[source, properties]
 ----
 quarkus.vault.credentials-provider.mydatabase.kv-path=myapps/vault-quickstart/db
 ----
@@ -409,7 +409,7 @@ at path `myapps/vault-quickstart/db`.
 The credentials provider can now be used in the datasource configuration, in place of the `password`
 property:
 
-[source,properties]
+[source, properties]
 ----
 # configure your datasource
 quarkus.datasource.url = jdbc:postgresql://localhost:5432/mydatabase
@@ -439,14 +439,14 @@ creation is attempted.
 
 Restart the application after rebuilding it, and test it with the new endpoint:
 
-[source,shell]
+[source, shell]
 ----
 curl http://localhost:8080/hello/gift-count
 ----
 
 You should see:
 
-[source,shell]
+[source, shell]
 ----
 0
 ----
@@ -466,7 +466,7 @@ In that case it is possible to inject a Quarkus VaultKVSecretEngine, and retriev
 
 For instance, in `GreetingResource`, add:
 
-[source,java]
+[source, java]
 ----
 @Inject
 VaultKVSecretEngine kvSecretEngine;
@@ -483,13 +483,13 @@ public String getSecrets(@PathParam("vault-path") String vaultPath) {
 
 Restart the application after rebuilding it, and test it with the new endpoint:
 
-[source,shell]
+[source, shell]
 ----
 curl http://localhost:8080/hello/secrets/db
 ----
 
 You should see:
-[source,shell]
+[source, shell]
 ----
 {password=connor}
 ----

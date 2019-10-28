@@ -1,12 +1,15 @@
 {
-  "name" : "MongoDB with Panache",
-  "metadata" : {
-    "keywords" : [
+  "name": "MongoDB with Panache",
+  "metadata": {
+    "keywords": [
       "mongo",
       "mongodb",
       "nosql",
       "datastore",
       "panache"
+    ],
+    "categories": [
+      "data"
     ]
   }
 }

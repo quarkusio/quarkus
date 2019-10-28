@@ -1,8 +1,11 @@
 {
-  "name" : "Scala",
-  "metadata" : {
-    "keywords" : [
+  "name": "Scala",
+  "metadata": {
+    "keywords": [
       "scala"
+    ],
+    "categories": [
+      "alt-languages"
     ]
   }
 }

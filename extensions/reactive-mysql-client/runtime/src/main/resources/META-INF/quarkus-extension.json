@@ -1,7 +1,7 @@
 {
-  "name" : "Reactive MySQL client",
-  "metadata" : {
-    "keywords" : [
+  "name": "Reactive MySQL client",
+  "metadata": {
+    "keywords": [
       "eclipse-vert.x",
       "vertx",
       "vert.x",
@@ -10,6 +10,9 @@
       "data",
       "mysql"
     ],
-    "guide" : "https://quarkus.io/guides/reactive-sql-clients"
+    "guide": "https://quarkus.io/guides/reactive-sql-clients",
+    "categories": [
+      "data"
+    ]
   }
 }

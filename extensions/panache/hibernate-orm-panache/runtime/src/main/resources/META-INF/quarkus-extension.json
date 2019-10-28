@@ -1,12 +1,15 @@
 {
-  "name" : "Hibernate ORM with Panache",
-  "metadata" : {
-    "keywords" : [
+  "name": "Hibernate ORM with Panache",
+  "metadata": {
+    "keywords": [
       "hibernate-orm-panache",
       "panache",
       "hibernate",
       "jpa"
     ],
-    "guide" : "https://quarkus.io/guides/hibernate-orm-panache-guide"
+    "guide": "https://quarkus.io/guides/hibernate-orm-panache-guide",
+    "categories": [
+      "data"
+    ]
   }
 }

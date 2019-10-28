@@ -1,11 +1,14 @@
 {
-  "name" : "JSON-B",
-  "metadata" : {
-    "keywords" : [
+  "name": "JSON-B",
+  "metadata": {
+    "keywords": [
       "jsonb",
       "json-b",
       "json"
     ],
-    "guide" : "https://quarkus.io/guides/rest-json-guide"
+    "guide": "https://quarkus.io/guides/rest-json-guide",
+    "categories": [
+      "serialization"
+    ]
   }
 }

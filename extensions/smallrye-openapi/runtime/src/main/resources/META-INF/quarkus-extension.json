@@ -1,11 +1,14 @@
 {
-  "name" : "SmallRye OpenAPI",
-  "metadata" : {
-    "keywords" : [
+  "name": "SmallRye OpenAPI",
+  "metadata": {
+    "keywords": [
       "smallrye-openapi",
       "openapi",
       "open-api"
     ],
-    "guide" : "https://quarkus.io/guides/openapi-swaggerui-guide"
+    "guide": "https://quarkus.io/guides/openapi-swaggerui-guide",
+    "categories": [
+      "web"
+    ]
   }
 }

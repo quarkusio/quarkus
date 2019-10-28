@@ -1,11 +1,14 @@
 {
-  "name" : "MongoDB client",
-  "metadata" : {
-    "keywords" : [
+  "name": "MongoDB client",
+  "metadata": {
+    "keywords": [
       "mongo",
       "mongodb",
       "nosql",
       "datastore"
+    ],
+    "categories": [
+      "data"
     ]
   }
 }

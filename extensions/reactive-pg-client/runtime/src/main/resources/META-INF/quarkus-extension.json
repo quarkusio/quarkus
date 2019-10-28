@@ -1,7 +1,7 @@
 {
-  "name" : "Reactive PostgreSQL client",
-  "metadata" : {
-    "keywords" : [
+  "name": "Reactive PostgreSQL client",
+  "metadata": {
+    "keywords": [
       "eclipse-vert.x",
       "vertx",
       "vert.x",
@@ -10,6 +10,10 @@
       "data",
       "postgresql"
     ],
-    "guide" : "https://quarkus.io/guides/reactive-sql-clients"
+    "guide": "https://quarkus.io/guides/reactive-sql-clients",
+    "categories": [
+      "data",
+      "reactive"
+    ]
   }
 }

@@ -1,9 +1,12 @@
 {
-  "name" : "Kubernetes",
-  "metadata" : {
-    "keywords" : [
+  "name": "Kubernetes",
+  "metadata": {
+    "keywords": [
       "kubernetes"
     ],
-    "guide" : "https://quarkus.io/guides/kubernetes-guide"
+    "guide": "https://quarkus.io/guides/kubernetes-guide",
+    "categories": [
+      "cloud"
+    ]
   }
 }

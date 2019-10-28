@@ -1,7 +1,7 @@
 {
-  "name" : "RESTEasy JSON-B",
-  "metadata" : {
-    "keywords" : [
+  "name": "RESTEasy JSON-B",
+  "metadata": {
+    "keywords": [
       "resteasy-jsonb",
       "jaxrs-json",
       "resteasy-json",
@@ -10,6 +10,10 @@
       "json",
       "jsonb"
     ],
-    "guide" : "https://quarkus.io/guides/rest-json-guide"
+    "guide": "https://quarkus.io/guides/rest-json-guide",
+    "categories": [
+      "web",
+      "serialization"
+    ]
   }
 }

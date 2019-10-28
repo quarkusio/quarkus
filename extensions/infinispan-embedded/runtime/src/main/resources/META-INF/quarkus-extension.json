@@ -1,8 +1,11 @@
 {
-  "name" : "Infinispan Embedded",
-  "metadata" : {
-    "keywords" : [
+  "name": "Infinispan Embedded",
+  "metadata": {
+    "keywords": [
       "infinispan"
+    ],
+    "categories": [
+      "data"
     ]
   }
 }

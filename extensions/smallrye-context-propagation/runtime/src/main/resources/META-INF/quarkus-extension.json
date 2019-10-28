@@ -1,12 +1,15 @@
 {
-  "name" : "SmallRye Context Propagation",
-  "short-name" : "context propagation",
-  "metadata" : {
-    "keywords" : [
+  "name": "SmallRye Context Propagation",
+  "short-name": "context propagation",
+  "metadata": {
+    "keywords": [
       "smallrye-context-propagation",
       "microprofile-context-propagation",
       "context-propagation",
       "context",
+      "reactive"
+    ],
+    "categories": [
       "reactive"
     ]
   }

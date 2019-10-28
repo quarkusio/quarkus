@@ -1,12 +1,16 @@
 {
-  "name" : "Hibernate Validator",
-  "short-name" : "bean validation",
-  "metadata" : {
-    "keywords" : [
+  "name": "Hibernate Validator",
+  "short-name": "bean validation",
+  "metadata": {
+    "keywords": [
       "hibernate-validator",
       "bean-validation",
       "validation"
     ],
-    "guide" : "https://quarkus.io/guides/validation-guide"
+    "guide": "https://quarkus.io/guides/validation-guide",
+    "categories": [
+      "web",
+      "data"
+    ]
   }
 }

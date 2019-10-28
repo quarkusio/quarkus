@@ -1,13 +1,16 @@
 {
-  "name" : "ArC",
-  "short-name" : "CDI",
-  "metadata" : {
-    "keywords" : [
+  "name": "ArC",
+  "short-name": "CDI",
+  "metadata": {
+    "keywords": [
       "arc",
       "cdi",
       "dependency-injection",
       "di"
     ],
-    "guide" : "https://quarkus.io/guides/cdi-reference"
+    "guide": "https://quarkus.io/guides/cdi-reference",
+    "categories": [
+      "core"
+    ]
   }
 }

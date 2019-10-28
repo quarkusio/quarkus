@@ -96,6 +96,11 @@ public class VertxHttpRecorder {
     }
 
     public static void startServerAfterFailedStart() {
+        if (closeTask != null) {
+            //it is possible start failed after the server was started
+            //we shut it down in this case, as we have no idea what state it is in
+            shutDownDevMode();
+        }
         VertxConfiguration vertxConfiguration = new VertxConfiguration();
         ConfigInstantiator.handleObject(vertxConfiguration);
         VertxCoreRecorder.initializeWeb(vertxConfiguration);

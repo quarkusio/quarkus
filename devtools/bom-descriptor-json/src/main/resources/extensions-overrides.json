@@ -1,0 +1,56 @@
+{
+  "categories": [
+    {
+      "name": "Core",
+      "id": "core"
+    },
+    {
+      "name": "Web",
+      "id": "web"
+    },
+    {
+      "name": "Data",
+      "id": "data"
+    },
+    {
+      "name": "Messaging",
+      "id": "messaging"
+    },
+    {
+      "name": "Reactive",
+      "id": "reactive"
+    },
+    {
+      "name": "Business Automation",
+      "id": "business-automation"
+    },
+    {
+      "name": "Cloud",
+      "id": "cloud"
+    },
+    {
+      "name": "Observability",
+      "id": "observability"
+    },
+    {
+      "name": "Security",
+      "id": "security"
+    },
+    {
+      "name": "Serialization",
+      "id": "serialization"
+    },
+    {
+      "name": "Miscellaneous",
+      "id": "miscellaneous"
+    },
+    {
+      "name": "Compatibility",
+      "id": "compatibility"
+    },
+    {
+      "name": "Alternative languages",
+      "id": "alt-languages"
+    }
+  ]
+}

@@ -15,10 +15,16 @@ public class StartupContext implements Closeable {
 
     private final Map<String, Object> values = new HashMap<>();
     private final List<Runnable> shutdownTasks = new ArrayList<>();
+    private final List<Runnable> lastShutdownTasks = new ArrayList<>();
     private final ShutdownContext shutdownContext = new ShutdownContext() {
         @Override
         public void addShutdownTask(Runnable runnable) {
             shutdownTasks.add(runnable);
+        }
+
+        @Override
+        public void addLastShutdownTask(Runnable runnable) {
+            lastShutdownTasks.add(runnable);
         }
     };
 
@@ -36,7 +42,14 @@ public class StartupContext implements Closeable {
 
     @Override
     public void close() {
-        List<Runnable> toClose = new ArrayList<>(shutdownTasks);
+        runAllInReverseOrder(shutdownTasks);
+        shutdownTasks.clear();
+        runAllInReverseOrder(lastShutdownTasks);
+        lastShutdownTasks.clear();
+    }
+
+    private void runAllInReverseOrder(List<Runnable> tasks) {
+        List<Runnable> toClose = new ArrayList<>(tasks);
         Collections.reverse(toClose);
         for (Runnable r : toClose) {
             try {
@@ -45,6 +58,5 @@ public class StartupContext implements Closeable {
                 LOG.error("Running a shutdown task failed", e);
             }
         }
-        shutdownTasks.clear();
     }
 }

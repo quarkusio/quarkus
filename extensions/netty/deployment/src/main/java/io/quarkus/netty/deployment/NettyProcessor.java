@@ -66,6 +66,7 @@ class NettyProcessor {
                 // Since buffers are cached to threads, the malloc overhead is temporary anyway
                 .addNativeImageSystemProperty("io.netty.allocator.maxOrder", "1")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.JdkNpnApplicationProtocolNegotiator")
+                .addRuntimeInitializedClass("io.netty.handler.ssl.ConscryptAlpnSslEngine")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslEngine")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslContext")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslClientContext")
@@ -74,15 +75,17 @@ class NettyProcessor {
                 .addRuntimeInitializedClass("io.netty.buffer.PooledByteBufAllocator")
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufAllocator")
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil")
-                .addRuntimeInitializedClass("io.netty.handler.ssl.ConscryptAlpnSslEngine")
-                .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
-                .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ConnectionHandler")
                 .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED");
+
         try {
             Class.forName("io.netty.handler.codec.http.HttpObjectEncoder");
-            builder.addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2CodecUtil")
+            builder
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.HttpObjectEncoder")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2CodecUtil")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ClientUpgradeCodec")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http2.DefaultHttp2FrameWriter")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ConnectionHandler")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder");
         } catch (ClassNotFoundException e) {
             //ignore

@@ -28,10 +28,12 @@ class VertxCoreProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, VertxLogDelegateFactory.class.getName()));
         return SubstrateConfigBuildItem.builder()
                 .addRuntimeInitializedClass("io.vertx.core.net.impl.PartialPooledByteBufAllocator")
+                .addRuntimeInitializedClass("io.vertx.core.http.impl.VertxHttp2ClientUpgradeCodec")
+                .addRuntimeInitializedClass("io.vertx.core.eventbus.impl.clustered.ClusteredEventBus")
+
                 .addNativeImageSystemProperty("vertx.disableDnsResolver", "true")
                 .addNativeImageSystemProperty("vertx.logger-delegate-factory-class-name",
                         VertxLogDelegateFactory.class.getName())
-                .addRuntimeInitializedClass("io.vertx.core.http.impl.VertxHttp2ClientUpgradeCodec")
                 .build();
     }
 

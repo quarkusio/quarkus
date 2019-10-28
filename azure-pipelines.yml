@@ -215,6 +215,7 @@ stages:
             - jpa
             - jpa-postgresql
             - jpa-mysql
+            - reactive-mysql-client
           name: jpa
           postgres: true
           mysql: true
@@ -225,6 +226,7 @@ stages:
           modules:
             - amazon-dynamodb
             - amazon-lambda
+            - amazon-lambda-http-it
           name: amazon
           dynamodb: true
 
@@ -239,10 +241,13 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          timeoutInMinutes: 25
+          timeoutInMinutes: 35
           modules:
             - elytron-security-oauth2
             - elytron-security
+            - elytron-security-jdbc
+            - elytron-undertow
+            - elytron-resteasy
             - oidc
             - vault-app
             - keycloak-authorization
@@ -261,14 +266,22 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
+          timeoutInMinutes: 30
           modules:
-            - infinispan-cache-jpa
-            - infinispan-client
             - mongodb-client
             - mongodb-panache
             - neo4j
             - narayana-stm
+            - narayana-jta
           name: data
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          timeoutInMinutes: 25
+          modules:
+            - infinispan-cache-jpa
+            - infinispan-client
+          name: infinispan
 
       - template: ci-templates/native-build-steps.yaml
         parameters:

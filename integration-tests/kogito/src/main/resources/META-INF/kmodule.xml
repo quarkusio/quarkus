@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<kmodule xmlns="http://jboss.org/kie/6.0.0/kmodule">
-    <kbase name="simpleKB" packages="org.drools.project">
-        <ksession name="simpleKS" default="true"/>
-    </kbase>
-    <kbase name="canDrinkKB" packages="org.drools.candrink">
-        <ksession name="canDrinkKS"/>
-    </kbase>
+<kmodule xmlns="http://www.drools.org/xsd/kmodule" 
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <kbase name="simpleKB" packages="org.drools.project">
+    <ksession name="simpleKS" default="true" />
+  </kbase>
+  <kbase name="canDrinkKB" packages="org.drools.candrink">
+    <ksession name="canDrinkKS" />
+  </kbase>
 </kmodule>

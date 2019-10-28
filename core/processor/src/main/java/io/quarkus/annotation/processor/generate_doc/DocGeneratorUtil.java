@@ -296,7 +296,7 @@ public class DocGeneratorUtil {
         return key.toString();
     }
 
-    static void appendConfigItemsIntoExistingOnes(List<ConfigDocItem> existingConfigItems,
+    public static void appendConfigItemsIntoExistingOnes(List<ConfigDocItem> existingConfigItems,
             List<ConfigDocItem> configDocItems) {
         for (ConfigDocItem configDocItem : configDocItems) {
             if (configDocItem.isConfigKey()) {

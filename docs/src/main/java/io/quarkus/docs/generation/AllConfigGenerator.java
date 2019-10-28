@@ -121,6 +121,7 @@ public class AllConfigGenerator {
         ConfigDocItemScanner configDocItemScanner = new ConfigDocItemScanner();
         Map<String, List<ConfigDocItem>> docItemsByConfigRoots = configDocItemScanner
                 .loadAllExtensionsConfigurationItems();
+        Map<String, String> artifactIdsByName = new HashMap<>();
         ConfigDocWriter configDocWriter = new ConfigDocWriter();
 
         // build a list of sorted config items by extension
@@ -141,9 +142,15 @@ public class AllConfigGenerator {
                     System.err.println("WARNING: Extension name missing for " + extensionGav + " using guessed extension name: "
                             + extensionName);
                 }
-                List<ConfigDocItem> configItems = sortedConfigItemsByExtension.computeIfAbsent(extensionName,
-                        k -> new ArrayList<>());
-                configItems.addAll(items);
+                artifactIdsByName.put(extensionName, entry.getValue().artifactId);
+                List<ConfigDocItem> existingConfigDocItems = sortedConfigItemsByExtension.get(extensionName);
+                if (existingConfigDocItems != null) {
+                    DocGeneratorUtil.appendConfigItemsIntoExistingOnes(existingConfigDocItems, items);
+                } else {
+                    ArrayList<ConfigDocItem> configItems = new ArrayList<>();
+                    sortedConfigItemsByExtension.put(extensionName, configItems);
+                    configItems.addAll(items);
+                }
             }
         }
 
@@ -155,6 +162,7 @@ public class AllConfigGenerator {
             // insert a header
             ConfigDocSection header = new ConfigDocSection();
             header.setSectionDetailsTitle(entry.getKey());
+            header.setAnchorPrefix(artifactIdsByName.get(entry.getKey()));
             allItems.add(new ConfigDocItem(header, null));
             // add all the configs for this extension
             allItems.addAll(configDocItems);

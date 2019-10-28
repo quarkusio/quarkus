@@ -1,0 +1,8 @@
+---
+name: "Quarkus Extension for Spring DI API"
+metadata:
+  keywords:
+  - "spring-di"
+  guide: "https://quarkus.io/guides/spring-di-guide"
+  categories:
+  - "compatibility"

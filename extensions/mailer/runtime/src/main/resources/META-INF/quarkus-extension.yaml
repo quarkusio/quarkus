@@ -1,0 +1,9 @@
+---
+name: "Mailer"
+metadata:
+  keywords:
+  - "mail"
+  - "mailer"
+  guide: "https://quarkus.io/guides/sending-emails"
+  categories:
+  - "miscellaneous"

@@ -1,0 +1,9 @@
+---
+name: "OpenID Connect"
+metadata:
+  keywords:
+  - "oauth2"
+  - "openid-connect"
+  guide: "https://quarkus.io/guides/oidc-guide"
+  categories:
+  - "security"

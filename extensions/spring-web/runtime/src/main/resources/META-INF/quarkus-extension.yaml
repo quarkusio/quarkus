@@ -1,0 +1,8 @@
+---
+name: "Quarkus Extension for Spring Web API"
+metadata:
+  keywords:
+  - "spring-web"
+  guide: "https://quarkus.io/guides/spring-web-guide"
+  categories:
+  - "compatibility"

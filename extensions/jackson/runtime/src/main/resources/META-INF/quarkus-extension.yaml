@@ -1,0 +1,8 @@
+---
+name: "Jackson"
+metadata:
+  keywords:
+  - "jackson"
+  - "json"
+  categories:
+  - "serialization"

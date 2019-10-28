@@ -1,0 +1,9 @@
+---
+name: "Elytron Security JDBC Realm"
+metadata:
+  keywords:
+  - "security"
+  - "jdbc"
+  guide: "https://quarkus.io/guides/security-jdbc-guide"
+  categories:
+  - "security"

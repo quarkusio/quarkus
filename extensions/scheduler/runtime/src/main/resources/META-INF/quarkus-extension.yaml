@@ -1,0 +1,10 @@
+---
+name: "Scheduler - tasks"
+metadata:
+  keywords:
+  - "scheduler"
+  - "tasks"
+  - "periodic-tasks"
+  guide: "https://quarkus.io/guides/scheduled-guide"
+  categories:
+  - "miscellaneous"

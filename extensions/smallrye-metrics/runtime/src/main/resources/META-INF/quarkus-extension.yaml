@@ -1,0 +1,13 @@
+---
+name: "SmallRye Metrics"
+short-name: "metrics"
+metadata:
+  keywords:
+  - "smallrye-metrics"
+  - "metrics"
+  - "metric"
+  - "prometheus"
+  - "monitoring"
+  guide: "https://quarkus.io/guides/metrics-guide"
+  categories:
+  - "observability"

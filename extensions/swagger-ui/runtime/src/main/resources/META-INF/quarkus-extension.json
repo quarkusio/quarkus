@@ -1,9 +1,9 @@
 {
-  "name": "Swagger UI",
-  "guide": "https://quarkus.io/guides/openapi-swaggerui-guide",
-  "metadata": {
-    "keywords": [
+  "name" : "Swagger UI",
+  "metadata" : {
+    "keywords" : [
       "swagger-ui"
-    ]
+    ],
+    "guide" : "https://quarkus.io/guides/openapi-swaggerui-guide"
   }
 }

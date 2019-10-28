@@ -78,7 +78,7 @@ public class AddExtensions {
         List<Extension> matchesLabels;
         if (labelLookup) {
             matchesLabels = extensions.stream()
-                    .filter(extension -> extension.labels().contains(q)).collect(Collectors.toList());
+                    .filter(extension -> extension.labelsForMatching().contains(q)).collect(Collectors.toList());
         } else {
             matchesLabels = Collections.emptyList();
         }
@@ -91,7 +91,7 @@ public class AddExtensions {
                     .filter(extension -> pattern.matcher(extension.getName().toLowerCase()).matches()
                             || pattern.matcher(extension.getArtifactId().toLowerCase()).matches()
                             || pattern.matcher(extension.getShortName().toLowerCase()).matches()
-                            || matchLabels(pattern, extension.getLabels()))
+                            || matchLabels(pattern, extension.getKeywords()))
                     .collect(Collectors.toSet());
             return new SelectionResult(matchesPatterns, true);
         } else {
@@ -107,11 +107,11 @@ public class AddExtensions {
         return new SelectionResult(candidates, false);
     }
 
-    private static boolean matchLabels(Pattern pattern, String[] labels) {
+    private static boolean matchLabels(Pattern pattern, List<String> labels) {
         boolean matches = false;
         // if any label match it's ok
-        for (int i = 0; i < labels.length; i++) {
-            matches = matches | pattern.matcher(labels[i].toLowerCase()).matches();
+        for(String label : labels) {
+            matches = matches | pattern.matcher(label.toLowerCase()).matches();
         }
         return matches;
     }

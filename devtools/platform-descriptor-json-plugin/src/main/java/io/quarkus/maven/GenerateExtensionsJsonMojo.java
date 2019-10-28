@@ -46,6 +46,7 @@ import org.eclipse.aether.resolution.ArtifactResult;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.dependencies.Extension;
 
 /**
  * This goal generates a list of extensions for a given BOM
@@ -168,9 +169,9 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         final JsonObjectBuilder platformJson = Json.createObjectBuilder();
         // Add information about the BOM to it
         final JsonObjectBuilder bomJson = Json.createObjectBuilder();
-        bomJson.add("groupId", bomGroupId);
-        bomJson.add("artifactId", bomArtifactId);
-        bomJson.add("version", bomVersion);
+        bomJson.add(Extension.GROUP_ID, bomGroupId);
+        bomJson.add(Extension.ARTIFACT_ID, bomArtifactId);
+        bomJson.add(Extension.VERSION, bomVersion);
         platformJson.add("bom", bomJson.build());
         // And add the list of extensions
         platformJson.add("extensions", extListJson.build());
@@ -227,8 +228,8 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
             final Path props = metaInfDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
             if (Files.exists(props)) {
                 return Json.createObjectBuilder()
-                        .add("artifactId", artifact.getArtifactId())
-                        .add("groupId", artifact.getGroupId())
+                        .add("artifact-id", artifact.getArtifactId())
+                        .add("group-id", artifact.getGroupId())
                         .add("version", artifact.getVersion())
                         .add("name", artifact.getArtifactId())
                         .build();

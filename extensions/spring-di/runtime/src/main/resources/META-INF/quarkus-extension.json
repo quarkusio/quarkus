@@ -1,9 +1,9 @@
 {
-  "name": "Quarkus Extension for Spring DI API",
-  "guide": "https://quarkus.io/guides/spring-di-guide",
-  "metadata": {
-    "keywords": [
+  "name" : "Quarkus Extension for Spring DI API",
+  "metadata" : {
+    "keywords" : [
       "spring-di"
-    ]
+    ],
+    "guide" : "https://quarkus.io/guides/spring-di-guide"
   }
 }

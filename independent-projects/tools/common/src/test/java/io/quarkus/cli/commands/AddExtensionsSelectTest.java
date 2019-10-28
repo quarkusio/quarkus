@@ -16,13 +16,13 @@ class AddExtensionsSelectTest {
     void testMultiMatchByLabels() {
         Extension e1 = new Extension("org.acme", "e1", "1.0")
                 .setName("some extension 1")
-                .setLabels(new String[] { "foo", "bar" });
+                .setKeywords(new String[] { "foo", "bar" });
         Extension e2 = new Extension("org.acme", "e2", "1.0")
                 .setName("some extension 2")
-                .setLabels(new String[] { "foo", "bar", "baz" });
+                .setKeywords(new String[] { "foo", "bar", "baz" });
         Extension e3 = new Extension("org.acme", "e3", "1.0")
                 .setName("unrelated")
-                .setLabels(new String[] { "bar" });
+                .setKeywords(new String[] { "bar" });
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
@@ -39,10 +39,10 @@ class AddExtensionsSelectTest {
     void testThatSingleLabelMatchIsNotAMatch() {
         Extension e1 = new Extension("org.acme", "e1", "1.0")
                 .setName("e1")
-                .setLabels(new String[] { "foo", "bar" });
+                .setKeywords(new String[] { "foo", "bar" });
         Extension e2 = new Extension("org.acme", "e2", "1.0")
                 .setName("e2")
-                .setLabels(new String[] { "bar", "baz" });
+                .setKeywords(new String[] { "bar", "baz" });
 
         List<Extension> extensions = asList(e1, e2);
         Collections.shuffle(extensions);
@@ -55,13 +55,13 @@ class AddExtensionsSelectTest {
     void testMultiMatchByArtifactIdsAndNames() {
         Extension e1 = new Extension("org.acme", "e1", "1.0")
                 .setName("foo")
-                .setLabels(new String[] { "foo", "bar" });
+                .setKeywords(new String[] { "foo", "bar" });
         Extension e2 = new Extension("org.acme", "quarkus-foo", "1.0")
                 .setName("some foo bar")
-                .setLabels(new String[] { "foo", "bar", "baz" });
+                .setKeywords(new String[] { "foo", "bar", "baz" });
         Extension e3 = new Extension("org.acme", "e3", "1.0")
                 .setName("unrelated")
-                .setLabels(new String[] { "foo" });
+                .setKeywords(new String[] { "foo" });
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
@@ -80,13 +80,13 @@ class AddExtensionsSelectTest {
         Extension e1 = new Extension("org.acme", "some-complex-seo-unaware-artifactid", "1.0")
                 .setName("some complex seo unaware name")
                 .setShortName("foo")
-                .setLabels(new String[] { "foo", "bar" });
+                .setKeywords(new String[] { "foo", "bar" });
         Extension e2 = new Extension("org.acme", "some-foo-bar", "1.0")
                 .setName("some foo bar")
-                .setLabels(new String[] { "foo", "bar", "baz" });
+                .setKeywords(new String[] { "foo", "bar", "baz" });
         Extension e3 = new Extension("org.acme", "unrelated", "1.0")
                 .setName("unrelated")
-                .setLabels(new String[] { "foo" });
+                .setKeywords(new String[] { "foo" });
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
@@ -103,13 +103,13 @@ class AddExtensionsSelectTest {
         Extension e1 = new Extension("org.acme", "quarkus-foo", "1.0")
                 .setName("some complex seo unaware name")
                 .setShortName("foo")
-                .setLabels(new String[] { "foo", "bar" });
+                .setKeywords(new String[] { "foo", "bar" });
         Extension e2 = new Extension("org.acme", "quarkus-foo-bar", "1.0")
                 .setName("some foo bar")
-                .setLabels(new String[] { "foo", "bar", "baz" });
+                .setKeywords(new String[] { "foo", "bar", "baz" });
         Extension e3 = new Extension("org.acme", "quarkus-unrelated", "1.0")
                 .setName("unrelated")
-                .setLabels(new String[] { "foo" });
+                .setKeywords(new String[] { "foo" });
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);

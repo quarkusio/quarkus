@@ -11,6 +11,7 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoader;
@@ -31,7 +32,8 @@ public class QuarkusJsonPlatformDescriptorLoaderImpl
                     try {
                         ObjectMapper mapper = new ObjectMapper()
                                 .enable(JsonParser.Feature.ALLOW_COMMENTS)
-                                .enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS);
+                                .enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS)
+                                .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
                         try (InputStream is = Files.newInputStream(p)) {
                             return mapper.readValue(is, QuarkusJsonPlatformDescriptor.class);
                         }

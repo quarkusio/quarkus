@@ -1,7 +1,7 @@
 {
-  "name": "JDBC Driver - PostgreSQL",
-  "metadata": {
-    "keywords": [
+  "name" : "JDBC Driver - PostgreSQL",
+  "metadata" : {
+    "keywords" : [
       "jdbc-postgresql",
       "jdbc",
       "postgresql"

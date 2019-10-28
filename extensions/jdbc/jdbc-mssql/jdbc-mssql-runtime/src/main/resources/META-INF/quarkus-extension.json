@@ -1,7 +1,7 @@
 {
-  "name": "JDBC Driver - Microsoft SQL Server",
-  "metadata": {
-    "keywords": [
+  "name" : "JDBC Driver - Microsoft SQL Server",
+  "metadata" : {
+    "keywords" : [
       "jdbc-mssql",
       "jdbc",
       "mssql",

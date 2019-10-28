@@ -34,6 +34,7 @@
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
+        <jackson.version>2.9.10</jackson.version>
     </properties>
     <modules>
         <module>core</module>
@@ -150,16 +151,20 @@
                 <version>${commons-logging-jboss-logging.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.eclipsesource.minimal-json</groupId>
-                <artifactId>minimal-json</artifactId>
-                <version>${eclipse-minimal-json.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
                 <version>${junit.version}</version>
                 <scope>test</scope>
             </dependency>
+             <!-- Jackson dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+           
         </dependencies>
     </dependencyManagement>
     <build>

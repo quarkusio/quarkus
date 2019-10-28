@@ -1,7 +1,7 @@
 {
-  "name": "SmallRye Reactive Messaging - MQTT Connector",
-  "metadata": {
-    "keywords": [
+  "name" : "SmallRye Reactive Messaging - MQTT Connector",
+  "metadata" : {
+    "keywords" : [
       "mqtt",
       "reactive-mqtt"
     ]

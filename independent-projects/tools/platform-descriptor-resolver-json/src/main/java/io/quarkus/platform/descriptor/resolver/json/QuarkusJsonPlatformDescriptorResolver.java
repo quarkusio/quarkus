@@ -27,6 +27,7 @@ import com.eclipsesource.json.WriterConfig;
 
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.dependencies.Extension;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.loader.json.ArtifactResolver;
@@ -151,15 +152,15 @@ public class QuarkusJsonPlatformDescriptorResolver {
                 throw new IllegalStateException("Failed to determine the platform BOM behind " + jsonFile);
             }
             jsonObject = value.asObject();
-            platformBomGroupId = resolveRequired(jsonObject, "groupId");
-            platformBomArtifactId = resolveRequired(jsonObject, "artifactId");
-            platformBomVersion = resolveRequired(jsonObject, "version");
+            platformBomGroupId = resolveRequired(jsonObject, Extension.GROUP_ID);
+            platformBomArtifactId = resolveRequired(jsonObject, Extension.ARTIFACT_ID);
+            platformBomVersion = resolveRequired(jsonObject, Extension.VERSION);
         } catch (IOException e) {
             e.printStackTrace();
             throw new IllegalStateException("Failed to parse extensions JSON file " + jsonFile);
         }
         log.debug("Platform BOM: %s:%s:%s", platformBomGroupId, platformBomArtifactId, platformBomVersion);
-
+        
         // Resolve the Quarkus version used by the platform
         final ArtifactDescriptorResult platformDescr;
         final String quarkusCoreVersion;

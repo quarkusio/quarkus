@@ -12,6 +12,7 @@ import java.util.Properties;
 
 import org.apache.maven.model.Dependency;
 
+import io.quarkus.dependencies.Category;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
@@ -139,7 +140,12 @@ public class QuarkusTestPlatformDescriptorLoader implements QuarkusPlatformDescr
             @Override
             public <T> T loadResource(String name, ResourceInputStreamConsumer<T> consumer) throws IOException {
                 return loadStaticResource(name, consumer);
-            }};
+            }
+
+			@Override
+			public List<Category> getCategories() {
+				return new ArrayList<Category>();
+			}};
     }
 
     private static <T> T loadStaticResource(String name, ResourceInputStreamConsumer<T> consumer) throws IOException {

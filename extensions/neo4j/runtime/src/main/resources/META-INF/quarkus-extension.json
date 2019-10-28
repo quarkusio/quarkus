@@ -1,7 +1,7 @@
 {
-  "name": "Neo4j client",
-  "metadata": {
-    "keywords": [
+  "name" : "Neo4j client",
+  "metadata" : {
+    "keywords" : [
       "neo4j",
       "graph",
       "nosql",

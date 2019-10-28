@@ -21,8 +21,10 @@ import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResult;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 
 import io.quarkus.annotation.processor.generate_doc.ConfigDocItem;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocItemScanner;
@@ -50,7 +52,10 @@ public class AllConfigGenerator {
             // exit 0 will break Maven
             return;
         }
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper()
+                .enable(JsonParser.Feature.ALLOW_COMMENTS)
+                .enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS)
+                .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
         MavenArtifactResolver resolver = MavenArtifactResolver.builder().build();
 
         // let's read it (and ignore the fields we don't need)

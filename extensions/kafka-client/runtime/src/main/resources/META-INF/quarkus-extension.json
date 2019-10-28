@@ -1,7 +1,7 @@
 {
-  "name": "Apache Kafka Client",
-  "metadata": {
-    "keywords": [
+  "name" : "Apache Kafka Client",
+  "metadata" : {
+    "keywords" : [
       "kafka"
     ]
   }

@@ -1,7 +1,7 @@
 {
-  "name": "Eclipse Vert.x - HTTP",
-  "metadata": {
-    "keywords": [
+  "name" : "Eclipse Vert.x - HTTP",
+  "metadata" : {
+    "keywords" : [
       "eclipse-vert.x",
       "vertx",
       "vert.x",

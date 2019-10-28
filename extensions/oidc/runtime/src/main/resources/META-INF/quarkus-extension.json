@@ -1,10 +1,10 @@
 {
-  "name": "OpenID Connect",
-  "guide": "https://quarkus.io/guides/oidc-guide",
-  "metadata": {
-    "keywords": [
+  "name" : "OpenID Connect",
+  "metadata" : {
+    "keywords" : [
       "oauth2",
       "openid-connect"
-    ]
+    ],
+    "guide" : "https://quarkus.io/guides/oidc-guide"
   }
 }

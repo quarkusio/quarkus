@@ -1,9 +1,9 @@
 {
-  "name": "Quarkus Extension for Spring Web API",
-  "guide": "https://quarkus.io/guides/spring-web-guide",
-  "metadata": {
-    "keywords": [
+  "name" : "Quarkus Extension for Spring Web API",
+  "metadata" : {
+    "keywords" : [
       "spring-web"
-    ]
+    ],
+    "guide" : "https://quarkus.io/guides/spring-web-guide"
   }
 }

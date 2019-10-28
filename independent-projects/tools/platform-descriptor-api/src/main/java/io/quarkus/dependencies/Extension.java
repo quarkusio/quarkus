@@ -2,6 +2,7 @@ package io.quarkus.dependencies;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,13 @@ import org.apache.maven.model.Dependency;
  */
 public class Extension {
 
+    private static final String MD_SHORT_NAME = "short-name";
+
+    private static final String MD_GUIDE = "guide";
+
+    /** Key used for keywords in metadata **/
+    public static String MD_KEYWORDS = "keywords";
+
     private String artifactId;
     private String groupId;
     private String scope;
@@ -28,12 +36,16 @@ public class Extension {
     private String name;
     private String description;
 
-    private String guide;
-    private boolean unlisted;
-
     private String simplifiedArtifactId;
     private static final Pattern QUARKUS_PREFIX = Pattern.compile("^quarkus-");
-    private String shortName;
+
+    public static final String GROUP_ID = "group-id";
+
+    public static final String ARTIFACT_ID = "artifact-id";
+
+    public static final String VERSION = "version";
+
+    private static final String MD_UNLISTED = "unlisted";
 
     private Map<String, Object> metadata = new HashMap<String, Object>(3);
 
@@ -57,6 +69,7 @@ public class Extension {
         return this;
     }
 
+    /** Group Id for the extension artifact */
     public String getGroupId() {
         return groupId;
     }
@@ -102,20 +115,6 @@ public class Extension {
         return this;
     }
 
-    public String[] getLabels() {
-    	@SuppressWarnings("unchecked")
-        List<String> keywords = (List<String>) getMetadata().get("keywords");
-    	if(keywords != null) {
-    		return (String[]) keywords.toArray(new String[keywords.size()]);
-    	}
-        return new String[0];
-    }
-
-    public Extension setLabels(String... labels) {
-        getMetadata().put("keywords", Arrays.asList(labels));
-        return this;
-    }
-
     public String getName() {
         return name;
     }
@@ -134,25 +133,53 @@ public class Extension {
         return this;
     }
 
+    /**
+     * Semi-Unstructured metadata used to provide metadata to tools and other
+     * frontends.
+     * 
+     */
     public Map<String, Object> getMetadata() {
-    	return metadata;
+        return metadata;
     }
 
     public Extension setMetadata(Map<String, Object> metadata) {
-    	this.metadata = metadata;
-    	return this;
+        this.metadata = metadata;
+        return this;
     }
 
-    public List<String> labels() {
+    public List<String> getKeywords() {
+        List<String> kw = (List<String>) getMetadata().get(MD_KEYWORDS);
+        return kw == null ? Collections.emptyList() : kw;
+    }
+
+    public Extension setKeywords(String[] keywords) {
+        getMetadata().put(MD_KEYWORDS, Arrays.asList(keywords));
+        return this;
+    }
+
+    /**
+     * List of strings to use for matching.
+     * 
+     * Returns keywords + artifactid all in lowercase.
+     * 
+     * @return list of labels to use for matching.
+     */
+    public List<String> labelsForMatching() {
         List<String> list = new ArrayList<>();
-        String[] labels = getLabels();
-        if (labels != null) {
-            list.addAll(Stream.of(labels).map(String::toLowerCase).collect(Collectors.toList()));
+        List<String> keywords = getKeywords();
+        if (keywords != null) {
+            list.addAll(keywords.stream().map(String::toLowerCase).collect(Collectors.toList()));
         }
         list.add(artifactId.toLowerCase());
         return list;
     }
 
+    /**
+     * Convert this Extension into a dependency
+     * 
+     * @param stripVersion if provided version will not be set on the Dependency
+     * @return
+     */
     public Dependency toDependency(boolean stripVersion) {
         Dependency dependency = new Dependency();
         dependency.setGroupId(groupId);
@@ -240,31 +267,37 @@ public class Extension {
     }
 
     public Extension setGuide(String guide) {
-    	this.guide = guide;
-    	return this;
-    }
-
-    public String getGuide() {
-        return guide;
-    }
-
-    public String getShortName() {
-        if (shortName == null) {
-            return name;
-        }
-        return shortName;
-    }
-
-    public Extension setShortName(String shortName) {
-        this.shortName = shortName;
+        getMetadata().put(MD_GUIDE, guide);
         return this;
     }
 
-	public boolean isUnlisted() {
-		return unlisted;
-	}
+    /**
+     * 
+     * @return string representing the location of primary guide for this extension.
+     */
+    public String getGuide() {
+        return (String) getMetadata().get(MD_GUIDE);
+    }
 
-	public void setUnlisted(boolean unlisted) {
-		this.unlisted = unlisted;
-	}
+    public String getShortName() {
+        String shortName = (String) getMetadata().get(MD_SHORT_NAME);
+        if (shortName == null) {
+            return name;
+        } else {
+            return shortName;
+        }
+    }
+
+    public Extension setShortName(String shortName) {
+        getMetadata().put(MD_SHORT_NAME, shortName);
+        return this;
+    }
+
+    public boolean isUnlisted() {
+        return (boolean) getMetadata().get(MD_UNLISTED);
+    }
+
+    public void setUnlisted(boolean unlisted) {
+        getMetadata().put(MD_UNLISTED, Boolean.valueOf(unlisted));
+    }
 }

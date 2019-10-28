@@ -1,7 +1,7 @@
 {
-  "name": "Artemis Core",
-  "metadata": {
-    "keywords": [
+  "name" : "Artemis Core",
+  "metadata" : {
+    "keywords" : [
       "artemis-core",
       "artemis"
     ]

@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.apache.maven.model.Dependency;
 
+import io.quarkus.dependencies.Category;
 import io.quarkus.dependencies.Extension;
 
 public interface QuarkusPlatformDescriptor {
@@ -20,6 +21,8 @@ public interface QuarkusPlatformDescriptor {
     List<Dependency> getManagedDependencies();
 
     List<Extension> getExtensions();
+    
+    List<Category> getCategories();
 
     String getTemplate(String name);
 

@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.apache.maven.model.Dependency;
 
 import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.dependencies.Category;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
@@ -29,6 +30,7 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor 
 
     private List<Extension> extensions = Collections.emptyList();
     private List<Dependency> managedDeps = Collections.emptyList();
+    private List<Category> categories = Collections.emptyList();
     private Path templatesJar;
     private MessageWriter log;
 
@@ -134,5 +136,10 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor 
                 return consumer.handle(is);
             }
         }
+    }
+
+    @Override
+    public List<Category> getCategories() {
+        return categories;
     }
 }

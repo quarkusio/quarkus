@@ -1,7 +1,7 @@
 {
-  "name": "Amazon DynamoDB client",
-  "metadata": {
-    "keywords": [
+  "name" : "Amazon DynamoDB client",
+  "metadata" : {
+    "keywords" : [
       "dynamodb",
       "dynamo",
       "aws",

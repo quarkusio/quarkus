@@ -56,6 +56,10 @@ public class HibernateSearchElasticsearchRecorder {
             addConfig(propertyCollector, HibernateOrmMapperSpiSettings.REFLECTION_STRATEGY,
                     HibernateOrmReflectionStrategyName.JAVA_LANG_REFLECT);
 
+            addConfig(propertyCollector,
+                    EngineSettings.BACKGROUND_FAILURE_HANDLER,
+                    buildTimeConfig.backgroundFailureHandler);
+
             if (buildTimeConfig.defaultBackend.isPresent()) {
                 // we have a named default backend
                 addConfig(propertyCollector, EngineSettings.DEFAULT_BACKEND,

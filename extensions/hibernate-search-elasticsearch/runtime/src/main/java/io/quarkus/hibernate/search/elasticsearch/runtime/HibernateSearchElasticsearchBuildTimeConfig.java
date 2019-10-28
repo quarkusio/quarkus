@@ -35,6 +35,15 @@ public class HibernateSearchElasticsearchBuildTimeConfig {
     @ConfigDocMapKey("backend-name")
     public Map<String, ElasticsearchBackendBuildTimeConfig> additionalBackends;
 
+    /**
+     * The class or the name of the bean that should be notified of any failure occurring in a background process
+     * (mainly index operations).
+     * <p>
+     * Must implement {@link org.hibernate.search.engine.reporting.FailureHandler}.
+     */
+    @ConfigItem
+    public Optional<Class<?>> backgroundFailureHandler;
+
     @ConfigGroup
     public static class ElasticsearchBackendBuildTimeConfig {
         /**

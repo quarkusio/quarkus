@@ -136,6 +136,11 @@ class HibernateSearchElasticsearchProcessor {
                     new ReflectiveClassBuildItem(true, false, buildTimeConfig.elasticsearch.analysis.configurer.get()));
         }
 
+        if (buildTimeConfig.backgroundFailureHandler.isPresent()) {
+            reflectiveClass.produce(
+                    new ReflectiveClassBuildItem(true, false, buildTimeConfig.backgroundFailureHandler.get()));
+        }
+
         for (DotName fieldAnnotation : FIELD_ANNOTATIONS) {
             for (AnnotationInstance fieldAnnotationInstance : index.getAnnotations(fieldAnnotation)) {
                 AnnotationTarget annotationTarget = fieldAnnotationInstance.target();

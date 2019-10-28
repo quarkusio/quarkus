@@ -153,18 +153,35 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
         if (!file.exists()) {
             throw new MojoExecutionException("Failed to locate " + artifact + " at " + file);
         }
+
+        if (!doesDescriptorExistAndCanBeRead(artifact, extensions, file, BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME) &&
+                !doesDescriptorExistAndCanBeRead(artifact, extensions, file,
+                        BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME)) {
+
+            throw new MojoExecutionException("Failed to locate and read neither "
+                    + BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME
+                    + " or " + BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME
+                    + " for '" + artifact + "' in " + file);
+        }
+    }
+
+    private boolean doesDescriptorExistAndCanBeRead(Artifact artifact, Map<String, Artifact> extensions, final File file,
+            String descriptorName)
+            throws MojoExecutionException {
         if (file.isDirectory()) {
             processExtensionDescriptor(artifact, file.toPath().resolve(BootstrapConstants.META_INF)
-                    .resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME), extensions);
+                    .resolve(descriptorName), extensions);
         } else {
             try (FileSystem fs = FileSystems.newFileSystem(file.toPath(), null)) {
                 processExtensionDescriptor(artifact,
-                        fs.getPath("/", BootstrapConstants.META_INF, BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME),
+                        fs.getPath("/", BootstrapConstants.META_INF, descriptorName),
                         extensions);
             } catch (IOException e) {
-                throw new MojoExecutionException("Failed to read " + file, e);
+                getLog().debug("Failed to read " + file,e);
+                return false;
             }
         }
+        return true;
     }
 
     private void processExtensionDescriptor(Artifact artifact, Path p, Map<String, Artifact> extensions) {

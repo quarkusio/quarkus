@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,6 +44,13 @@ import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
+
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.util.ZipUtils;
@@ -208,6 +216,19 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
     }
 
     private JsonObject processDependency(Artifact artifact) throws IOException {
+        JsonNode onode = processDependencyToObjectNode(artifact);
+
+        if (onode != null) {
+            // TODO: this is a dirty hack to avoid redoing existing javax.json code
+            String json = getMapper(false).writeValueAsString(onode);
+            JsonReader jsonReader = Json.createReader(new StringReader(json));
+            return jsonReader.readObject();
+        } else {
+            return null;
+        }
+    }
+
+    private JsonNode processDependencyToObjectNode(Artifact artifact) throws IOException {
         final Path path = artifact.getFile().toPath();
         if (Files.isDirectory(path)) {
             return processMetaInfDir(artifact, path.resolve(BootstrapConstants.META_INF));
@@ -218,37 +239,70 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         }
     }
 
-    private JsonObject processMetaInfDir(Artifact artifact, Path metaInfDir)
+    /**
+     * Load and return javax.jsonObject based on yaml, json or properties file.
+     * 
+     * @param artifact
+     * @param metaInfDir
+     * @return
+     * @throws IOException
+     */
+    private JsonNode processMetaInfDir(Artifact artifact, Path metaInfDir)
             throws IOException {
+
+        ObjectMapper mapper = null;
+
         if (!Files.exists(metaInfDir)) {
             return null;
         }
-        final Path p = metaInfDir.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME);
-        if (!Files.exists(p)) {
-            final Path props = metaInfDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
-            if (Files.exists(props)) {
-                return Json.createObjectBuilder()
-                        .add(Extension.ARTIFACT_ID, artifact.getArtifactId())
-                        .add(Extension.GROUP_ID, artifact.getGroupId())
-                        .add("version", artifact.getVersion())
-                        .add("name", artifact.getArtifactId())
-                        .build();
+        Path jsonOrYaml = null;
+
+        Path yaml = metaInfDir.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME);
+        if (Files.exists(yaml)) {
+            mapper = getMapper(true);
+            jsonOrYaml = yaml;
+        } else {
+            Path json = metaInfDir.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME);
+            if (!Files.exists(json)) {
+                final Path props = metaInfDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
+                if (Files.exists(props)) {
+                    return mapper.createObjectNode()
+                            .put(Extension.ARTIFACT_ID, artifact.getArtifactId())
+                            .put(Extension.GROUP_ID, artifact.getGroupId())
+                            .put("version", artifact.getVersion())
+                            .put("name", artifact.getArtifactId());
+                } else {
+                    return null;
+                }
+            } else {
+                jsonOrYaml = json;
+                mapper = getMapper(false);
             }
-            return null;
         }
-        return processPlatformArtifact(artifact, p);
+        return processPlatformArtifact(artifact, jsonOrYaml, mapper);
     }
 
-    private JsonObject processPlatformArtifact(Artifact artifact, Path descriptor)
+    private JsonNode processPlatformArtifact(Artifact artifact, Path descriptor, ObjectMapper mapper)
             throws IOException {
         try (InputStream is = Files.newInputStream(descriptor)) {
-            try (JsonReader reader = Json.createReader(is)) {
-                final JsonObject object = reader.readObject();
-                debug("Adding Quarkus extension %s:%s", object.get(Extension.GROUP_ID), object.get(Extension.ARTIFACT_ID));
-                return object;
-            }
-        } catch (IOException e) {
-            throw new IOException("Failed to parse " + descriptor, e);
+            JsonNode object = mapper.readTree(is);
+            debug("Adding Quarkus extension %s:%s", object.get(Extension.GROUP_ID), object.get(Extension.ARTIFACT_ID));
+            return object;
+        } catch (IOException io) {
+            throw new IOException("Failed to parse " + descriptor, io);
+        }
+    }
+
+    private ObjectMapper getMapper(boolean yaml) {
+
+        if (yaml) {
+            YAMLFactory yf = new YAMLFactory();
+            return new ObjectMapper(yf)
+                    .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
+        } else {
+            return new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
+                    .enable(JsonParser.Feature.ALLOW_COMMENTS).enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS)
+                    .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
         }
     }
 

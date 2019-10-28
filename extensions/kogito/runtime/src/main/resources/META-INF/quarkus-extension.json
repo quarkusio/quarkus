@@ -1,11 +1,14 @@
 {
-  "name" : "Kogito",
-  "metadata" : {
-    "keywords" : [
+  "name": "Kogito",
+  "metadata": {
+    "keywords": [
       "kogito",
       "drools",
       "jbpm"
     ],
-    "guide" : "https://quarkus.io/guides/kogito-guide"
+    "guide": "https://quarkus.io/guides/kogito-guide",
+    "categories": [
+      "business-automation"
+    ]
   }
 }

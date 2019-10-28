@@ -1,13 +1,16 @@
 {
-  "name" : "SmallRye OpenTracing",
-  "metadata" : {
-    "keywords" : [
+  "name": "SmallRye OpenTracing",
+  "metadata": {
+    "keywords": [
       "smallrye-opentracing",
       "opentracing",
       "tracing",
       "distributed-tracing",
       "jaeger"
     ],
-    "guide" : "https://quarkus.io/guides/opentracing-guide"
+    "guide": "https://quarkus.io/guides/opentracing-guide",
+    "categories": [
+      "observability"
+    ]
   }
 }

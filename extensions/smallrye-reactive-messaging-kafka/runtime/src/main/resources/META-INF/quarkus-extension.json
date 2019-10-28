@@ -1,11 +1,14 @@
 {
-  "name" : "SmallRye Reactive Messaging - Kafka Connector",
-  "short-name" : "kafka",
-  "metadata" : {
-    "keywords" : [
+  "name": "SmallRye Reactive Messaging - Kafka Connector",
+  "short-name": "kafka",
+  "metadata": {
+    "keywords": [
       "kafka",
       "reactive-kafka"
     ],
-    "guide" : "https://quarkus.io/guides/kafka-guide"
+    "guide": "https://quarkus.io/guides/kafka-guide",
+    "categories": [
+      "messaging"
+    ]
   }
 }

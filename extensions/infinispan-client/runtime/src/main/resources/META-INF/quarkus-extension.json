@@ -1,11 +1,14 @@
 {
-  "name" : "Infinispan Client",
-  "metadata" : {
-    "keywords" : [
+  "name": "Infinispan Client",
+  "metadata": {
+    "keywords": [
       "infinispan-client",
       "data-grid-client",
       "infinispan"
     ],
-    "guide" : "https://quarkus.io/guides/infinispan-client-guide"
+    "guide": "https://quarkus.io/guides/infinispan-client-guide",
+    "categories": [
+      "data"
+    ]
   }
 }

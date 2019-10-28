@@ -1,11 +1,14 @@
 {
-  "name" : "REST Client",
-  "metadata" : {
-    "keywords" : [
+  "name": "REST Client",
+  "metadata": {
+    "keywords": [
       "rest-client",
       "web-client",
       "microprofile-rest-client"
     ],
-    "guide" : "https://quarkus.io/guides/rest-client-guide"
+    "guide": "https://quarkus.io/guides/rest-client-guide",
+    "categories": [
+      "web"
+    ]
   }
 }

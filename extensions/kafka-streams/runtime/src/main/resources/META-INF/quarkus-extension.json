@@ -1,9 +1,12 @@
 {
-  "name" : "Apache Kafka Streams",
-  "metadata" : {
-    "keywords" : [
+  "name": "Apache Kafka Streams",
+  "metadata": {
+    "keywords": [
       "kafka",
       "kafka-streams"
+    ],
+    "categories": [
+      "messaging"
     ]
   }
 }

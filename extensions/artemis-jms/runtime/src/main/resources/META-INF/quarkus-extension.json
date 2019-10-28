@@ -1,9 +1,12 @@
 {
-  "name" : "Artemis JMS",
-  "metadata" : {
-    "keywords" : [
+  "name": "Artemis JMS",
+  "metadata": {
+    "keywords": [
       "artemis-jms",
       "artemis"
+    ],
+    "categories": [
+      "messaging"
     ]
   }
 }

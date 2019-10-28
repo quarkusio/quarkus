@@ -1,7 +1,7 @@
 {
-  "name" : "Narayana JTA - Transaction manager",
-  "metadata" : {
-    "keywords" : [
+  "name": "Narayana JTA - Transaction manager",
+  "metadata": {
+    "keywords": [
       "narayana-jta",
       "narayana",
       "jta",
@@ -10,6 +10,9 @@
       "tx",
       "txs"
     ],
-    "guide" : "https://quarkus.io/guides/transaction-guide"
+    "guide": "https://quarkus.io/guides/transaction-guide",
+    "categories": [
+      "data"
+    ]
   }
 }

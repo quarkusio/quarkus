@@ -1,10 +1,13 @@
 {
-  "name" : "JSON-P",
-  "metadata" : {
-    "keywords" : [
+  "name": "JSON-P",
+  "metadata": {
+    "keywords": [
       "jsonp",
       "json-p",
       "json"
+    ],
+    "categories": [
+      "serialization"
     ]
   }
 }

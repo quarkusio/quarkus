@@ -1,12 +1,15 @@
 {
-  "name" : "Hibernate ORM",
-  "short-name" : "JPA",
-  "metadata" : {
-    "keywords" : [
+  "name": "Hibernate ORM",
+  "short-name": "JPA",
+  "metadata": {
+    "keywords": [
       "hibernate-orm",
       "jpa",
       "hibernate"
     ],
-    "guide" : "https://quarkus.io/guides/hibernate-orm-guide"
+    "guide": "https://quarkus.io/guides/hibernate-orm-guide",
+    "categories": [
+      "data"
+    ]
   }
 }

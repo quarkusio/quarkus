@@ -366,6 +366,17 @@ final class Target_io_netty_util_concurrent_ScheduledFutureTask {
     }
 }
 
+@TargetClass(className = "io.netty.channel.ChannelHandlerMask")
+final class Target_io_netty_channel_ChannelHandlerMask {
+
+    // Netty tries to self-optimized itself, but it requires lots of reflection. We disable this behavior and avoid
+    // misleading DEBUG messages in the log.
+    @Substitute
+    private static boolean isSkippable(final Class<?> handlerType, final String methodName, final Class... paramTypes) {
+        return false;
+    }
+}
+
 class NettySubstitutions {
 
 }

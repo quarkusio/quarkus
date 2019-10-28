@@ -75,7 +75,6 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <version>${project.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -109,6 +108,12 @@
                                 <javax.net.ssl.trustStore>${project.basedir}/src/test/resources/vaultTrustStore</javax.net.ssl.trustStore>
                                 <vault-test-extension.use-tls>false</vault-test-extension.use-tls>
                             </systemProperties>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <skip>false</skip>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -149,12 +154,9 @@
                                 </configuration>
                             </execution>
                         </executions>
-                        <configuration>
-                            <skip>false</skip>
-                        </configuration>
                     </plugin>
                     <plugin>
-                        <groupId>${project.groupId}</groupId>
+                        <groupId>io.quarkus</groupId>
                         <artifactId>quarkus-maven-plugin</artifactId>
                         <version>${project.version}</version>
                         <executions>

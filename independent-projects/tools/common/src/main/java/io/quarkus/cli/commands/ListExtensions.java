@@ -16,6 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.Dependency;
 
 import io.quarkus.cli.commands.file.BuildFile;
+import io.quarkus.cli.commands.file.GradleBuildFile;
 import io.quarkus.dependencies.Extension;
 
 public class ListExtensions {
@@ -63,11 +64,22 @@ public class ListExtensions {
             loadedExtensions.forEach(extension -> display(extension, installed, all, currentFormatter));
 
             if ("concise".equalsIgnoreCase(format)) {
-                System.out.println("\nTo get more information, append -Dquarkus.extension.format=full to your command line.");
+            	if (this.buildFile instanceof GradleBuildFile) {
+            		System.out.println("\nTo get more information, append --format=full to your command line.");
+            	}
+            	else {
+            		System.out.println("\nTo get more information, append -Dquarkus.extension.format=full to your command line.");
+            	}
             }
 
-            System.out.println("\nAdd an extension to your project by adding the dependency to your " +
-                    "project or use `mvn quarkus:add-extension -Dextensions=\"artifactId\"`");
+            if (this.buildFile instanceof GradleBuildFile) {
+            	System.out.println("\nAdd an extension to your project by adding the dependency to your " +
+                        "build.gradle or use `./gradlew addExtension --extensions=\"artifactId\"`");
+            }
+            else {
+            	System.out.println("\nAdd an extension to your project by adding the dependency to your " +
+                        "pom.xml or use `./mvnw quarkus:add-extension -Dextensions=\"artifactId\"`");
+            }
         }
     }
 

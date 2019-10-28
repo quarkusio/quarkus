@@ -6,14 +6,14 @@ import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSourceListener;
 
-public class AgroalListener implements AgroalDataSourceListener {
+final class AgroalEventLoggingListener implements AgroalDataSourceListener {
 
     private static final Logger log = Logger.getLogger("io.agroal.pool");
 
     private final String datasourceName;
 
-    public AgroalListener(String name) {
-        this.datasourceName = name;
+    public AgroalEventLoggingListener(String name) {
+        this.datasourceName = "Datasource '" + name + "'";
     }
 
     @Override
@@ -59,6 +59,11 @@ public class AgroalListener implements AgroalDataSourceListener {
     @Override
     public void onWarning(String warning) {
         log.warnv("{0}: {1}", datasourceName, warning);
+    }
+
+    @Override
+    public void onInfo(String message) {
+        log.infov("{0}: {1}", datasourceName, message);
     }
 
     @Override

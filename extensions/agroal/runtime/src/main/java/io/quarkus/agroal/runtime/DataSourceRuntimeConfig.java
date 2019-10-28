@@ -46,7 +46,9 @@ public class DataSourceRuntimeConfig {
     public Optional<String> credentialsProviderType;
 
     /**
-     * The initial size of the pool
+     * The initial size of the pool. Usually you will want to set the initial size to match at least the
+     * minimal size, but this is not enforced so to allow for architectures which prefer a lazy initialization
+     * of the connections on boot, while being able to sustain a minimal pool size after boot.
      */
     @ConfigItem
     public Optional<Integer> initialSize;
@@ -54,7 +56,7 @@ public class DataSourceRuntimeConfig {
     /**
      * The datasource pool minimum size
      */
-    @ConfigItem(defaultValue = "5")
+    @ConfigItem(defaultValue = "0")
     public int minSize;
 
     /**

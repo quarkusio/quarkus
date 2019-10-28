@@ -53,7 +53,7 @@
         <jakarta.json.bind-api.version>1.0.2</jakarta.json.bind-api.version>
         <jakarta.persistence-api.version>2.2.3</jakarta.persistence-api.version>
         <jakarta.security.jacc-api.version>1.6.1</jakarta.security.jacc-api.version>
-        <jakarta.security.jaspi-api.version>1.1.3</jakarta.security.jaspi-api.version>
+        <jakarta.security.auth.message-api.version>1.1.3</jakarta.security.auth.message-api.version>
         <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
         <jakarta.transaction-api.version>1.3.3</jakarta.transaction-api.version>
         <jakarta.validation-api.version>2.0.2</jakarta.validation-api.version>
@@ -1466,7 +1466,7 @@
             <dependency>
                 <groupId>jakarta.security.auth.message</groupId>
                 <artifactId>jakarta.security.auth.message-api</artifactId>
-                <version>${jakarta.security.jaspi-api.version}</version>
+                <version>${jakarta.security.auth.message-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.websocket</groupId>

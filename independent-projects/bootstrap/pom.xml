@@ -253,6 +253,7 @@
                                             <exclude>javax.enterprise:cdi-api</exclude>
                                             <exclude>javax.inject:javax.inject</exclude>
                                             <exclude>javax.json:javax.json-api</exclude>
+                                            <exclude>javax.json.bind:javax.json.bind-api</exclude>
                                             <exclude>org.glassfish:javax.json</exclude>
                                             <exclude>org.glassfish:javax.el</exclude>
                                             <exclude>javax.persistence:javax.persistence-api</exclude>
@@ -264,6 +265,8 @@
                                             <exclude>javax.transaction:javax.transaction-api</exclude>
                                             <exclude>javax.validation:validation-api</exclude>
                                             <exclude>javax.xml.bind:jaxb-api</exclude>
+                                            <exclude>javax.websocket:javax.websocket-api</exclude>
+                                            <exclude>javax.ws.rs:javax.ws.rs-api</exclude>
                                             <!-- use our jboss-logmanager -->
                                             <exclude>org.jboss.logging:jboss-logmanager</exclude>
                                             <!-- We don't want all the API's in one jar-->

@@ -51,7 +51,9 @@ public class VertxCoreRecorder {
         VertxCoreProducer producer = container.instance(VertxCoreProducer.class);
         producer.initialize(vertx);
         if (launchMode != LaunchMode.DEVELOPMENT) {
-            shutdown.addShutdownTask(new Runnable() {
+            // we need this to be part of the last shutdown tasks because closing it early (basically before Arc)
+            // could cause problem to beans that rely on Vert.x and contain shutdown tasks
+            shutdown.addLastShutdownTask(new Runnable() {
                 @Override
                 public void run() {
                     destroy();

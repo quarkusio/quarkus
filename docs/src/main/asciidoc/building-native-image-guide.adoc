@@ -20,9 +20,9 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* JDK 8 installed with `JAVA_HOME` configured appropriately
 * A xref:configuring-c-development[working C development environment]
-* GraalVM version {graalvm-version} installed and  xref:configuring-graalvm[configured appropriately]
+* GraalVM version {graalvm-version} installed and xref:configuring-graalvm[configured appropriately]
 * A working container runtime (Docker, podman)
 * The code of the application developed in the link:getting-started-guide.html[Getting Started Guide].
 

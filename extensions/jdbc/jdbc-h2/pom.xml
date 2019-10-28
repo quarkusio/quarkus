@@ -13,8 +13,8 @@
     <name>Quarkus - JDBC - H2</name>
     <packaging>pom</packaging>
     <modules>
-        <module>jdbc-h2-deployment</module>
-        <module>jdbc-h2-runtime</module>
+        <module>deployment</module>
+        <module>runtime</module>
     </modules>
 
 

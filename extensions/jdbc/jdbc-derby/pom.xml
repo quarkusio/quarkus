@@ -13,8 +13,8 @@
     <name>Quarkus - JDBC - Derby</name>
     <packaging>pom</packaging>
     <modules>
-        <module>jdbc-derby-deployment</module>
-        <module>jdbc-derby-runtime</module>
+        <module>deployment</module>
+        <module>runtime</module>
     </modules>
 
 </project>

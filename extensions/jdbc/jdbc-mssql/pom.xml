@@ -13,8 +13,8 @@
     <name>Quarkus - JDBC - MSSQL</name>
     <packaging>pom</packaging>
     <modules>
-        <module>jdbc-mssql-deployment</module>
-        <module>jdbc-mssql-runtime</module>
+        <module>deployment</module>
+        <module>runtime</module>
     </modules>
 
 

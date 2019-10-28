@@ -1,0 +1,12 @@
+---
+name: "SmallRye JWT"
+metadata:
+  keywords:
+  - "smallrye-jwt"
+  - "jwt"
+  - "json-web-token"
+  - "rbac"
+  guide: "https://quarkus.io/guides/jwt-guide"
+  categories:
+  - "web"
+  - "security"

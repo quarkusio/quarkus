@@ -1,0 +1,10 @@
+---
+name: "SmallRye Reactive Messaging"
+metadata:
+  keywords:
+  - "smallrye-reactive-messaging"
+  - "reactive-messaging"
+  - "reactive"
+  guide: "https://quarkus.io/guides/async-message-passing"
+  categories:
+  - "messaging"

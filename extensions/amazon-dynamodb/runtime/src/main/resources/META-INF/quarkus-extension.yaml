@@ -1,0 +1,10 @@
+---
+name: "Amazon DynamoDB client"
+metadata:
+  keywords:
+  - "dynamodb"
+  - "dynamo"
+  - "aws"
+  - "amazon"
+  categories:
+  - "data"

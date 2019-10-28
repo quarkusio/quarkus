@@ -100,6 +100,7 @@ public class JarResultBuildStep {
             "META-INF/quarkus-javadoc.properties",
             "META-INF/quarkus-extension.properties",
             "META-INF/quarkus-extension.json",
+            "META-INF/quarkus-extension.yaml",
             "META-INF/quarkus-deployment-dependency.graph",
             "META-INF/jandex.idx",
             "LICENSE")));

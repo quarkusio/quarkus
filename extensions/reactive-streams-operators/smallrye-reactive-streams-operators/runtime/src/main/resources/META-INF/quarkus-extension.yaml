@@ -1,0 +1,13 @@
+---
+name: "SmallRye Reactive Streams Operators"
+short-name: "reactive streams"
+metadata:
+  keywords:
+  - "smallrye-reactive-streams-operators"
+  - "smallrye-reactive-streams"
+  - "reactive-streams-operators"
+  - "reactive-streams"
+  - "microprofile-reactive-streams"
+  - "reactive"
+  categories:
+  - "reactive"

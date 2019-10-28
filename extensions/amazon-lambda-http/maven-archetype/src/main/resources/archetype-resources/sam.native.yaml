@@ -39,6 +39,9 @@ AWSTemplateFormatVersion: '2010-09-09'
         MemorySize: 128
         Policies: AWSLambdaBasicExecutionRole
         Timeout: 15
+        Environment:
+          Variables:
+            DISABLE_SIGNAL_HANDLERS: true
         Events:
           GetResource:
             Type: Api

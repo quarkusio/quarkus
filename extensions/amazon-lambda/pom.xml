@@ -18,6 +18,7 @@
     <modules>
         <module>runtime</module>
         <module>deployment</module>
+        <module>maven-archetype</module>
     </modules>
     
 </project>

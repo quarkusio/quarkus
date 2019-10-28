@@ -35,8 +35,9 @@ import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.runtime.LaunchMode;
 
@@ -176,6 +177,18 @@ public final class AmazonLambdaProcessor {
             BuildProducer<GeneratedNativeImageClassBuildItem> nativeImage // hack to try to force native only
     ) {
         recorder.startPollLoop(shutdownContextBuildItem);
+    }
+
+    /**
+     * Lambda custom runtime does not like ipv6.
+     *
+     * TODO This should only run when building a native image. But I couldn't figure out how
+     * to filter this from JVM builds.
+     */
+    @BuildStep
+    void ipv4Only(BuildProducer<SystemPropertyBuildItem> systemProperty) {
+        // lambda custom runtime does not like IPv6
+        systemProperty.produce(new SystemPropertyBuildItem("java.net.preferIPv4Stack", "true"));
     }
 
     @BuildStep

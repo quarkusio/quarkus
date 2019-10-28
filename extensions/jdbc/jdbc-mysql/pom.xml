@@ -13,8 +13,8 @@
     <name>Quarkus - JDBC - MySQL</name>
     <packaging>pom</packaging>
     <modules>
-        <module>jdbc-mysql-deployment</module>
-        <module>jdbc-mysql-runtime</module>
+        <module>deployment</module>
+        <module>runtime</module>
     </modules>
 
 </project>

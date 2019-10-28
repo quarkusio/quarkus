@@ -1,0 +1,13 @@
+{
+  "name": "JDBC Driver - MariaDB",
+  "metadata": {
+    "keywords": [
+      "jdbc-mariadb",
+      "jdbc",
+      "mariadb"
+    ],
+    "categories": [
+      "data"
+    ]
+  }
+}

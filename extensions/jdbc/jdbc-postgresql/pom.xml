@@ -13,8 +13,8 @@
     <name>Quarkus - JDBC - PostgreSQL</name>
     <packaging>pom</packaging>
     <modules>
-        <module>jdbc-postgresql-deployment</module>
-        <module>jdbc-postgresql-runtime</module>
+        <module>deployment</module>
+        <module>runtime</module>
     </modules>
 
 

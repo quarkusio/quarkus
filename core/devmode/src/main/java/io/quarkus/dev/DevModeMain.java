@@ -5,6 +5,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.net.BindException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -21,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.builder.BuildChainBuilder;
@@ -194,8 +196,27 @@ public class DevModeMain implements Closeable {
                 Thread.currentThread().setContextClassLoader(old);
             }
         } catch (Throwable t) {
-            deploymentProblem = t;
-            log.error("Failed to start quarkus", t);
+            Throwable rootCause = t;
+            while (rootCause.getCause() != null) {
+                rootCause = rootCause.getCause();
+            }
+            if (rootCause instanceof BindException) {
+                int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
+
+                log.error("Port " + port
+                        + " seems to be in use by another process. Quarkus may already be running or the port is used by another application.");
+                if (System.getProperty("os.name").startsWith("Windows")) {
+                    log.info("Use 'netstat -a -b -n -o' to identify the process occupying the port.");
+                    log.info("You can try to kill it with 'taskkill /PID <pid>' or via the Task Manager.");
+                } else {
+                    log.info("Use 'netstat -anop | grep " + port + "' to identify the process occupying the port.");
+                    log.info("You can try to kill it with 'kill -9 <pid>'.");
+                }
+                System.exit(-1);
+            } else {
+                deploymentProblem = t;
+                log.error("Failed to start quarkus", t);
+            }
         }
     }
 

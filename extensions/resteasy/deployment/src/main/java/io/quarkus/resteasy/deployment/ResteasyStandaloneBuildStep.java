@@ -42,6 +42,8 @@ public class ResteasyStandaloneBuildStep {
     protected static final String META_INF_RESOURCES_SLASH = "META-INF/resources/";
     protected static final String META_INF_RESOURCES = "META-INF/resources";
 
+    private static final int URI_INFO_CACHE_MAX_SIZE = 100; // TODO we should set this via config
+
     public static final class ResteasyStandaloneBuildItem extends SimpleBuildItem {
 
         final String deploymentRootPath;
@@ -88,10 +90,10 @@ public class ResteasyStandaloneBuildStep {
                 }
                 rootPath += deploymentRootPath;
             }
-            recorder.staticInit(deployment.getDeployment(), rootPath, knownPaths);
+            recorder.staticInit(deployment.getDeployment(), rootPath, knownPaths, URI_INFO_CACHE_MAX_SIZE);
 
         } else if (!knownPaths.isEmpty()) {
-            recorder.staticInit(null, rootPath, knownPaths);
+            recorder.staticInit(null, rootPath, knownPaths, URI_INFO_CACHE_MAX_SIZE);
         }
 
         if (deployment != null || !knownPaths.isEmpty()) {

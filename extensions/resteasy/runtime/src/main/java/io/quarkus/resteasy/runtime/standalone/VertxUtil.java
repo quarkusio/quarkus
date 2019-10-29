@@ -27,7 +27,7 @@ public class VertxUtil {
 
     private static final Pattern COMMA_PATTERN = Pattern.compile(",");
 
-    public static ResteasyUriInfo extractUriInfo(HttpServerRequest req, String contextPath) {
+    public static String getUriString(HttpServerRequest req) {
         String uri = req.absoluteURI();
         String protocol = req.scheme();
 
@@ -44,12 +44,16 @@ public class VertxUtil {
             uriString = protocol + "://" + host + uri;
         }
 
-        // ResteasyUriInfo expects a context path to start with a "/" character
-        if (!contextPath.startsWith("/")) {
-            contextPath = "/" + contextPath;
-        }
+        return uriString;
+    }
 
-        return new ResteasyUriInfo(uriString, contextPath);
+    public static ResteasyUriInfo.InitData extractUriInfoInitData(String uriString, String contextPath,
+            Map<String, ResteasyUriInfo.InitData> resteasyUriInfoInitDataMap) {
+        if (ResteasyUriInfo.InitData.canBeCached(uriString)) {
+            String cacheKey = ResteasyUriInfo.InitData.getCacheKey(uriString, contextPath);
+            return resteasyUriInfoInitDataMap.get(cacheKey);
+        }
+        return null;
     }
 
     public static ResteasyHttpHeaders extractHttpHeaders(HttpServerRequest request) {

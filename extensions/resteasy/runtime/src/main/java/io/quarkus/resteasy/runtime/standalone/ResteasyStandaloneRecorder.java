@@ -78,14 +78,16 @@ public class ResteasyStandaloneRecorder {
     private static ResteasyDeployment deployment;
     private static Set<String> knownPaths;
     private static String contextPath;
+    private static int resteasyUriInfoCacheMaxSize;
 
-    public void staticInit(ResteasyDeployment dep, String path, Set<String> known) {
+    public void staticInit(ResteasyDeployment dep, String path, Set<String> known, int uriInfoCacheMaxSize) {
         if (dep != null) {
             deployment = dep;
             deployment.start();
         }
         knownPaths = known;
         contextPath = path;
+        resteasyUriInfoCacheMaxSize = uriInfoCacheMaxSize;
     }
 
     public Consumer<Route> start(RuntimeValue<Vertx> vertx,
@@ -163,7 +165,8 @@ public class ResteasyStandaloneRecorder {
     public Handler<RoutingContext> vertxRequestHandler(RuntimeValue<Vertx> vertx,
             BeanContainer beanContainer) {
         if (deployment != null) {
-            return new VertxRequestHandler(vertx.getValue(), beanContainer, deployment, contextPath, ALLOCATOR);
+            return new VertxRequestHandler(vertx.getValue(), beanContainer, deployment, contextPath,
+                    resteasyUriInfoCacheMaxSize, ALLOCATOR);
         }
         return null;
     }

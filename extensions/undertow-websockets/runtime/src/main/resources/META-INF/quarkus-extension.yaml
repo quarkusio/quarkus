@@ -1,7 +1,7 @@
 ---
 name: "Undertow WebSockets"
-short-name: "websockets"
 metadata:
+  short-name: "websockets"
   keywords:
   - "undertow-websockets"
   - "undertow-websocket"

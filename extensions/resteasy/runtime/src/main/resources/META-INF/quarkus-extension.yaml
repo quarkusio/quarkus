@@ -1,7 +1,7 @@
 ---
 name: "RESTEasy JAX-RS"
-short-name: "jax-rs"
 metadata:
+  short-name: "jax-rs"
   keywords:
   - "resteasy"
   - "jaxrs"

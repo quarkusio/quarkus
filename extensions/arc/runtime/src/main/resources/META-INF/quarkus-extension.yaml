@@ -1,7 +1,7 @@
 ---
 name: "ArC"
-short-name: "CDI"
 metadata:
+  short-name: "CDI"
   keywords:
   - "arc"
   - "cdi"

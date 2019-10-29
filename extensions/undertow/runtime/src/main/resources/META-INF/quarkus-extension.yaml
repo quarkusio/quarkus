@@ -1,7 +1,7 @@
 ---
 name: "Undertow Servlet"
-short-name: "servlet"
 metadata:
+  short-name: "servlet"
   keywords:
   - "undertow"
   - "servlet"

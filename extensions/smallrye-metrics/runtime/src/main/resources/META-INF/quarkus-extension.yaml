@@ -1,7 +1,7 @@
 ---
 name: "SmallRye Metrics"
-short-name: "metrics"
 metadata:
+  short-name: "metrics"
   keywords:
   - "smallrye-metrics"
   - "metrics"

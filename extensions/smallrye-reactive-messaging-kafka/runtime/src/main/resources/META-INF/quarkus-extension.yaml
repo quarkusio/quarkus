@@ -1,7 +1,7 @@
 ---
 name: "SmallRye Reactive Messaging - Kafka Connector"
-short-name: "kafka"
 metadata:
+  short-name: "kafka"
   keywords:
   - "kafka"
   - "reactive-kafka"

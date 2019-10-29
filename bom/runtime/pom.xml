@@ -120,7 +120,7 @@
         <infinispan.version>10.0.0.CR1</infinispan.version>
         <infinispan.protostream.version>4.3.0.Alpha10</infinispan.protostream.version>
         <caffeine.version>2.6.2</caffeine.version>
-        <netty.version>4.1.39.Final</netty.version>
+        <netty.version>4.1.42.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <test-containers.version>1.12.0</test-containers.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>

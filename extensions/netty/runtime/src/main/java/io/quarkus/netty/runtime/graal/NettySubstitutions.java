@@ -345,6 +345,11 @@ final class Target_io_netty_util_concurrent_ScheduledFutureTask {
     public static long START_TIME = 0;
 
     @Substitute
+    static long initialNanoTime() {
+        return Holder_io_netty_util_concurrent_ScheduledFutureTask.START_TIME;
+    }
+
+    @Substitute
     static long nanoTime() {
         return System.nanoTime() - Holder_io_netty_util_concurrent_ScheduledFutureTask.START_TIME;
     }
@@ -358,6 +363,17 @@ final class Target_io_netty_util_concurrent_ScheduledFutureTask {
     public long delayNanos(long currentTimeNanos) {
         return Math.max(0,
                 deadlineNanos() - (currentTimeNanos - Holder_io_netty_util_concurrent_ScheduledFutureTask.START_TIME));
+    }
+}
+
+@TargetClass(className = "io.netty.channel.ChannelHandlerMask")
+final class Target_io_netty_channel_ChannelHandlerMask {
+
+    // Netty tries to self-optimized itself, but it requires lots of reflection. We disable this behavior and avoid
+    // misleading DEBUG messages in the log.
+    @Substitute
+    private static boolean isSkippable(final Class<?> handlerType, final String methodName, final Class... paramTypes) {
+        return false;
     }
 }
 

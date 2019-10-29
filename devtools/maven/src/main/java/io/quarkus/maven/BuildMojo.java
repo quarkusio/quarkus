@@ -187,11 +187,13 @@ public class BuildMojo extends AbstractMojo {
                             .setConfigDir(outputDirectory.toPath())
                             .setBuildSystemProperties(realProperties).build());
             Artifact original = project.getArtifact();
-            if (result.getJar().isUberJar() && result.getJar().getOriginalArtifact() != null) {
-                original.setFile(result.getJar().getOriginalArtifact().toFile());
-            }
-            if (result.getJar().isUberJar()) {
-                projectHelper.attachArtifact(project, result.getJar().getPath().toFile(), "runner");
+            if (result.getJar() != null) {
+                if (result.getJar().isUberJar() && result.getJar().getOriginalArtifact() != null) {
+                    original.setFile(result.getJar().getOriginalArtifact().toFile());
+                }
+                if (result.getJar().isUberJar()) {
+                    projectHelper.attachArtifact(project, result.getJar().getPath().toFile(), "runner");
+                }
             }
 
         } catch (AppCreatorException e) {

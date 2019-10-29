@@ -1,4 +1,4 @@
-package io.quarkus.oidc;
+package io.quarkus.oidc.runtime;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -9,7 +9,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 
-import io.quarkus.oidc.runtime.OidcUtils;
+import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -21,7 +21,7 @@ import io.vertx.ext.auth.oauth2.AccessToken;
 import io.vertx.ext.auth.oauth2.OAuth2Auth;
 
 @ApplicationScoped
-public class VertxOAuth2IdentityProvider implements IdentityProvider<TokenAuthenticationRequest> {
+public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticationRequest> {
 
     private volatile OAuth2Auth auth;
     private volatile OidcConfig config;
@@ -30,12 +30,12 @@ public class VertxOAuth2IdentityProvider implements IdentityProvider<TokenAuthen
         return auth;
     }
 
-    public VertxOAuth2IdentityProvider setAuth(OAuth2Auth auth) {
+    public OidcIdentityProvider setAuth(OAuth2Auth auth) {
         this.auth = auth;
         return this;
     }
 
-    public VertxOAuth2IdentityProvider setConfig(OidcConfig config) {
+    public OidcIdentityProvider setConfig(OidcConfig config) {
         this.config = config;
         return this;
     }
@@ -54,15 +54,15 @@ public class VertxOAuth2IdentityProvider implements IdentityProvider<TokenAuthen
             @Override
             public void handle(AsyncResult<AccessToken> event) {
                 if (event.failed()) {
-                    result.completeExceptionally(event.cause());
+                    result.completeExceptionally(new AuthenticationFailedException());
                     return;
                 }
                 AccessToken token = event.result();
                 QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
 
-                JsonWebToken jwtPrincipal = null;
+                JsonWebToken jwtPrincipal;
                 try {
-                    jwtPrincipal = new VertxJwtCallerPrincipal(JwtClaims.parse(token.accessToken().encode()));
+                    jwtPrincipal = new OidcJwtCallerPrincipal(JwtClaims.parse(token.accessToken().encode()));
                 } catch (InvalidJwtException e) {
                     result.completeExceptionally(e);
                     return;

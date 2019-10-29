@@ -1,13 +1,13 @@
 package io.quarkus.it.keycloak;
 
-import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -20,6 +20,11 @@ import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.util.JsonSerialization;
 
+import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.html.HtmlForm;
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import com.gargoylesoftware.htmlunit.util.Cookie;
+
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
@@ -27,7 +32,7 @@ import io.restassured.RestAssured;
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @QuarkusTest
-public class BearerTokenAuthorizationTest {
+public class CodeFlowTest {
 
     private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
     private static final String KEYCLOAK_REALM = "quarkus";
@@ -57,7 +62,7 @@ public class BearerTokenAuthorizationTest {
                 .given()
                 .auth().oauth2(getAdminAccessToken())
                 .when()
-                .delete(KEYCLOAK_SERVER_URL + "/admin/realms/" + KEYCLOAK_REALM).then().statusCode(204);
+                .delete(KEYCLOAK_SERVER_URL + "/admin/realms/" + KEYCLOAK_REALM).thenReturn().prettyPrint();
     }
 
     private static String getAdminAccessToken() {
@@ -79,6 +84,8 @@ public class BearerTokenAuthorizationTest {
         realm.setEnabled(true);
         realm.setUsers(new ArrayList<>());
         realm.setClients(new ArrayList<>());
+        realm.setSsoSessionMaxLifespan(2); // sec
+        realm.setAccessTokenLifespan(3); // 3 seconds
 
         RolesRepresentation roles = new RolesRepresentation();
         List<RoleRepresentation> realmRoles = new ArrayList<>();
@@ -97,10 +104,10 @@ public class BearerTokenAuthorizationTest {
         ClientRepresentation client = new ClientRepresentation();
 
         client.setClientId(clientId);
-        client.setPublicClient(false);
-        client.setSecret("secret");
+        client.setPublicClient(true);
         client.setDirectAccessGrantsEnabled(true);
         client.setEnabled(true);
+        client.setRedirectUris(Arrays.asList("*"));
 
         return client;
     }
@@ -125,83 +132,103 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
-    public void testSecureAccessSuccessWithCors() {
-        String origin = "http://custom.origin.quarkus";
-        String methods = "GET";
-        String headers = "X-Custom";
-        RestAssured.given().header("Origin", origin)
-                .header("Access-Control-Request-Method", methods)
-                .header("Access-Control-Request-Headers", headers)
-                .when()
-                .options("/api").then()
-                .statusCode(200)
-                .header("Access-Control-Allow-Origin", origin)
-                .header("Access-Control-Allow-Methods", methods)
-                .header("Access-Control-Allow-Headers", headers);
+    public void testCodeFlowNoConsent() throws IOException {
+        try (final WebClient webClient = new WebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
 
-        for (String username : Arrays.asList("alice", "jdoe", "admin")) {
-            RestAssured.given().auth().oauth2(getAccessToken(username))
-                    .when().get("/api/users/me")
-                    .then()
-                    .statusCode(200)
-                    .body("userName", equalTo(username));
+            assertEquals("Log in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
+
+            assertEquals("Welcome to Test App", page.getTitleText());
+
+            page = webClient.getPage("http://localhost:8081/index.html");
+
+            assertEquals("Welcome to Test App", page.getTitleText(),
+                    "A second request should not redirect and just re-authenticate the user");
         }
     }
 
     @Test
-    public void testSecureAccessSuccess() {
-        for (String username : Arrays.asList("alice", "jdoe", "admin")) {
-            RestAssured.given().auth().oauth2(getAccessToken(username))
-                    .when().get("/api/users/me")
-                    .then()
-                    .statusCode(200)
-                    .body("userName", equalTo(username));
+    public void testTokenTimeoutLogout() throws IOException, InterruptedException {
+        try (final WebClient webClient = new WebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
+
+            assertEquals("Log in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
+
+            assertEquals("Welcome to Test App", page.getTitleText());
+
+            Thread.sleep(5000);
+
+            page = webClient.getPage("http://localhost:8081/index.html");
+
+            Cookie sessionCookie = getSessionCookie(webClient);
+
+            assertNull(sessionCookie);
+
+            page = webClient.getPage("http://localhost:8081/index.html");
+
+            assertEquals("Log in to quarkus", page.getTitleText());
         }
     }
 
     @Test
-    public void testAccessAdminResource() {
-        RestAssured.given().auth().oauth2(getAccessToken("admin"))
-                .when().get("/api/admin")
-                .then()
-                .statusCode(200)
-                .body(Matchers.containsString("granted"));
+    public void testIdTokenInjection() throws IOException, InterruptedException {
+        try (final WebClient webClient = new WebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
+
+            assertEquals("Log in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
+
+            assertEquals("Welcome to Test App", page.getTitleText());
+
+            page = webClient.getPage("http://localhost:8081/web-app");
+
+            assertEquals("alice", page.getBody().asText());
+        }
     }
 
     @Test
-    public void testPermissionHttpInformationProvider() {
-        RestAssured.given().auth().oauth2(getAccessToken("alice"))
-                .when().get("/api/permission/http-cip")
-                .then()
-                .statusCode(200)
-                .body("preferred_username", equalTo("alice"));
+    public void testRefreshTokenInjection() throws IOException, InterruptedException {
+        try (final WebClient webClient = new WebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
+
+            assertEquals("Log in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
+
+            assertEquals("Welcome to Test App", page.getTitleText());
+
+            page = webClient.getPage("http://localhost:8081/web-app/refresh");
+
+            assertEquals("injected", page.getBody().asText());
+        }
     }
 
-    @Test
-    public void testDeniedAccessAdminResource() {
-        RestAssured.given().auth().oauth2(getAccessToken("alice"))
-                .when().get("/api/admin")
-                .then()
-                .statusCode(403);
-    }
-
-    @Test
-    public void testDeniedNoBearerToken() {
-        RestAssured.given()
-                .when().get("/api/users/me").then()
-                .statusCode(401);
-    }
-
-    private String getAccessToken(String userName) {
-        return RestAssured
-                .given()
-                .param("grant_type", "password")
-                .param("username", userName)
-                .param("password", userName)
-                .param("client_id", "quarkus-app")
-                .param("client_secret", "secret")
-                .when()
-                .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token")
-                .as(AccessTokenResponse.class).getToken();
+    private Cookie getSessionCookie(WebClient webClient) {
+        return webClient.getCookieManager().getCookie("q_session");
     }
 }

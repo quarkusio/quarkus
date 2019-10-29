@@ -1,5 +1,6 @@
-package io.quarkus.oidc;
+package io.quarkus.oidc.runtime;
 
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -61,6 +62,17 @@ public class OidcConfig {
     @ConfigItem
     Credentials credentials;
 
+    /**
+     * Different options to configure authorization requests
+     */
+    Authentication authentication;
+
+    /**
+     * The application type, which can be one of the following values from enum {@link ApplicationType}..
+     */
+    @ConfigItem(defaultValue = "service")
+    ApplicationType applicationType;
+
     public String getAuthServerUrl() {
         return authServerUrl;
     }
@@ -75,6 +87,10 @@ public class OidcConfig {
 
     public Roles getRoles() {
         return roles;
+    }
+
+    public ApplicationType getApplicationType() {
+        return applicationType;
     }
 
     @ConfigGroup
@@ -130,4 +146,31 @@ public class OidcConfig {
         }
     }
 
+    @ConfigGroup
+    public static class Authentication {
+
+        /**
+         * Defines a fixed list of scopes which should be added to authorization requests when authenticating users using the
+         * Authorization Code Grant Type.
+         *
+         */
+        @ConfigItem
+        public List<String> scopes;
+    }
+
+    public enum ApplicationType {
+        /**
+         * A {@code WEB_APP} is a client that server pages, usually a frontend application. For this type of client the
+         * Authorization Code Flow is
+         * defined as the preferred method for authenticating users.
+         */
+        WEB_APP,
+
+        /**
+         * A {@code SERVICE} is a client that has a set of protected HTTP resources, usually a backend application following the
+         * RESTful Architectural Design. For this type of client, the Bearer Authorization method is defined as the preferred
+         * method for authenticating and authorizing users.
+         */
+        SERVICE
+    }
 }

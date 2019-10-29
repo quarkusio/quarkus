@@ -1,8 +1,9 @@
-package io.quarkus.oidc;
+package io.quarkus.oidc.runtime;
 
 import java.util.concurrent.CompletableFuture;
 
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.oidc.OIDCException;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.AsyncResult;
@@ -14,7 +15,7 @@ import io.vertx.ext.auth.oauth2.OAuth2ClientOptions;
 import io.vertx.ext.auth.oauth2.providers.KeycloakAuth;
 
 @Recorder
-public class VertxKeycloakRecorder {
+public class OidcRecorder {
 
     public void setup(OidcConfig config, RuntimeValue<Vertx> vertx, BeanContainer beanContainer) {
         OAuth2ClientOptions options = new OAuth2ClientOptions();
@@ -57,12 +58,19 @@ public class VertxKeycloakRecorder {
         });
 
         OAuth2Auth auth = cf.join();
-        VertxOAuth2IdentityProvider identityProvider = beanContainer.instance(VertxOAuth2IdentityProvider.class);
+
+        OidcIdentityProvider identityProvider = beanContainer.instance(OidcIdentityProvider.class);
         identityProvider.setAuth(auth);
         identityProvider.setConfig(config);
-        VertxOAuth2AuthenticationMechanism mechanism = beanContainer.instance(VertxOAuth2AuthenticationMechanism.class);
-        mechanism.setAuth(auth);
-        mechanism.setAuthServerURI(config.authServerUrl);
+        AbstractOidcAuthenticationMechanism mechanism = null;
+
+        if (OidcConfig.ApplicationType.SERVICE.equals(config.applicationType)) {
+            mechanism = beanContainer.instance(BearerAuthenticationMechanism.class);
+        } else if (OidcConfig.ApplicationType.WEB_APP.equals(config.applicationType)) {
+            mechanism = beanContainer.instance(CodeAuthenticationMechanism.class);
+        }
+
+        mechanism.setAuth(auth, config);
     }
 
     protected static OIDCException toOidcException(Throwable cause) {

@@ -30,10 +30,6 @@
                     <dependenciesToScan>
                         <dependency>org.eclipse.microprofile.openapi:microprofile-openapi-tck</dependency>
                     </dependenciesToScan>
-                    <excludes>
-                        <!-- java.lang.IllegalArgumentException: Class 'org.eclipse.microprofile.openapi.models.Constructible' is not Constructible -->
-                        <exclude>org.eclipse.microprofile.openapi.tck.OASFactoryErrorTest</exclude>
-                    </excludes>
                 </configuration>
             </plugin>
         </plugins>

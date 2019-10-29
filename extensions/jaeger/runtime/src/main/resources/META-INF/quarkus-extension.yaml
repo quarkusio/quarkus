@@ -1,5 +1,10 @@
 ---
-name: "Security"
+name: "Jaeger"
 metadata:
   keywords:
-  - "security"
+    - "tracing"
+    - "distributed-tracing"
+    - "jaeger"
+  categories:
+    - "observability"
+  unlisted: "true"

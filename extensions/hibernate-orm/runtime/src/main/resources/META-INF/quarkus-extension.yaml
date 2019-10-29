@@ -1,7 +1,7 @@
 ---
 name: "Hibernate ORM"
-short-name: "JPA"
 metadata:
+  short-name: "JPA"
   keywords:
   - "hibernate-orm"
   - "jpa"

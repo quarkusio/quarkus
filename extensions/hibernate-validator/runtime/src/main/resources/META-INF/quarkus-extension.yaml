@@ -1,7 +1,7 @@
 ---
 name: "Hibernate Validator"
-short-name: "bean validation"
 metadata:
+  short-name: "bean validation"
   keywords:
   - "hibernate-validator"
   - "bean-validation"

@@ -1,7 +1,7 @@
 ---
 name: "SmallRye Context Propagation"
-short-name: "context propagation"
 metadata:
+  short-name: "context propagation"
   keywords:
   - "smallrye-context-propagation"
   - "microprofile-context-propagation"

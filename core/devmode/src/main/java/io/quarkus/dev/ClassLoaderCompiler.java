@@ -65,7 +65,7 @@ public class ClassLoaderCompiler {
                 String path = url.getPath();
                 if (path.startsWith("file:")) {
                     path = path.substring(5, path.lastIndexOf('!'));
-                    urls.add(new File(URLDecoder.decode(path, StandardCharsets.UTF_8.name())).toURL());
+                    urls.add(new File(URLDecoder.decode(path, StandardCharsets.UTF_8.name())).toURI().toURL());
                 }
             }
         }

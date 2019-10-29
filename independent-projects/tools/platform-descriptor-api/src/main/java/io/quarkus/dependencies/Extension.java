@@ -18,12 +18,22 @@ import org.apache.maven.model.Dependency;
  */
 public class Extension {
 
-    private static final String MD_SHORT_NAME = "short-name";
+    public static final String GROUP_ID = "group-id";
 
-    private static final String MD_GUIDE = "guide";
+    public static final String ARTIFACT_ID = "artifact-id";
+
+    public static final String VERSION = "version";
+
+    public static final String MD_SHORT_NAME = "short-name";
+
+    public static final String MD_GUIDE = "guide";
 
     /** Key used for keywords in metadata **/
     public static String MD_KEYWORDS = "keywords";
+
+    public static final String MD_UNLISTED = "unlisted";
+
+    public static final String MD_STATUS = "status";
 
     private String artifactId;
     private String groupId;
@@ -39,13 +49,7 @@ public class Extension {
     private String simplifiedArtifactId;
     private static final Pattern QUARKUS_PREFIX = Pattern.compile("^quarkus-");
 
-    public static final String GROUP_ID = "group-id";
 
-    public static final String ARTIFACT_ID = "artifact-id";
-
-    public static final String VERSION = "version";
-
-    private static final String MD_UNLISTED = "unlisted";
 
     private Map<String, Object> metadata = new HashMap<String, Object>(3);
 

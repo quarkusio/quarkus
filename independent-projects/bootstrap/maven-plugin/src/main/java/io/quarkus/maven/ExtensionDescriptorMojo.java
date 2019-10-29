@@ -189,7 +189,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                 extObject.put("name", defaultName);
             }
         }
-        if (extObject.has("description") && project.getDescription() != null) {
+        if (!extObject.has("description") && project.getDescription() != null) {
             extObject.put("description", project.getDescription());
         }
 

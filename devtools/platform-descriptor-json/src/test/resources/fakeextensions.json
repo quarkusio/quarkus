@@ -10,6 +10,7 @@
     	{
     	"name" : "Web",
     	"id" : "web",
+    	"description": "web is webby",
     	"metadata": {
     		"pinned": [
     			"x.y.z",

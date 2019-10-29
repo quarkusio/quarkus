@@ -22,9 +22,10 @@ final class SummaryTableDocFormatter implements DocFormatter {
      * @param configDocItems
      */
     @Override
-    public void format(Writer writer, boolean useAnchorPrefixes, List<ConfigDocItem> configDocItems) throws IOException {
+    public void format(Writer writer, String initialAnchorPrefix, List<ConfigDocItem> configDocItems) throws IOException {
         final String tableHeaders = String.format(TABLE_HEADER_FORMAT, Constants.CONFIG_PHASE_LEGEND);
         writer.append(tableHeaders);
+        anchorPrefix = initialAnchorPrefix;
 
         // make sure that section-less configs get a legend
         if (configDocItems.isEmpty() || configDocItems.get(0).isConfigKey()) {
@@ -33,7 +34,7 @@ final class SummaryTableDocFormatter implements DocFormatter {
         }
 
         for (ConfigDocItem configDocItem : configDocItems) {
-            if (useAnchorPrefixes && configDocItem.isConfigSection()
+            if (configDocItem.isConfigSection()
                     && configDocItem.getConfigDocSection().getAnchorPrefix() != null) {
                 anchorPrefix = configDocItem.getConfigDocSection().getAnchorPrefix() + "_";
             }

@@ -77,4 +77,10 @@ public class SpringControllerTest {
                 .body(containsString("hello from error"))
                 .statusCode(417);
     }
+
+    @Test
+    public void testRestControllerWithoutRequestMapping() {
+        RestAssured.when().get("/hello").then()
+                .body(containsString("hello"));
+    }
 }

@@ -12,3 +12,4 @@ metadata:
   guide: "https://quarkus.io/guides/reactive-sql-clients"
   categories:
   - "data"
+  - "reactive"

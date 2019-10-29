@@ -3,6 +3,7 @@ package io.quarkus.platform.descriptor.loader.json.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -75,11 +76,22 @@ public class QuarkusJsonPlatformDescriptorLoaderImpl
             throw new RuntimeException("Failed to determine the Quarkus version for the platform " + platformBom);
         }
 
+        final Path classOrigin;
         try {
-            platform.setTemplatesJar(MojoUtils.getClassOrigin(getClass()));
+            classOrigin = MojoUtils.getClassOrigin(getClass());
         } catch (Exception e) {
             throw new IllegalStateException("Failed to determine the origin of " + getClass().getName(), e);
         }
+
+        final ResourceLoader resourceLoader;
+        if (Files.isDirectory(classOrigin)) {
+            resourceLoader = new DirectoryResourceLoader(classOrigin);
+        } else {
+            // this means the class belongs to a JAR which is on the classpath
+            resourceLoader = new ClassPathResourceLoader(getClass().getClassLoader());
+        }
+        platform.setResourceLoader(resourceLoader);
+
         platform.setQuarkusVersion(quarkusVersion);
         platform.setMessageWriter(context.getMessageWriter());
 

@@ -30,6 +30,11 @@
       <artifactId>openshift-annotations</artifactId>
       <classifier>noapt</classifier>
     </dependency>
+    <dependency>
+      <groupId>io.dekorate</groupId>
+      <artifactId>knative-annotations</artifactId>
+      <classifier>noapt</classifier>
+    </dependency>
   </dependencies>
   <build>
     <resources>

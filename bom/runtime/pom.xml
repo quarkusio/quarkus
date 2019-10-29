@@ -744,7 +744,12 @@
                 <version>${dekorate.version}</version>
                 <classifier>noapt</classifier>
             </dependency>
-
+            <dependency>
+                <groupId>io.dekorate</groupId>
+                <artifactId>knative-annotations</artifactId>
+                <version>${dekorate.version}</version>
+                <classifier>noapt</classifier>
+            </dependency>
             <dependency>
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging</artifactId>

@@ -3,9 +3,9 @@ package io.quarkus.jgit.runtime.deployment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 
 class JGitProcessor {
 
@@ -89,7 +89,7 @@ class JGitProcessor {
     }
 
     @BuildStep
-    SubstrateResourceBundleBuildItem includeResourceBundle() {
-        return new SubstrateResourceBundleBuildItem("org.eclipse.jgit.internal.JGitText");
+    NativeImageResourceBundleBuildItem includeResourceBundle() {
+        return new NativeImageResourceBundleBuildItem("org.eclipse.jgit.internal.JGitText");
     }
 }

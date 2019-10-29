@@ -8,7 +8,11 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A build item that indicates that a static resource should be included in the native image
+ * 
+ * @deprecated Use {@link io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem NativeImageResourceBuildItem}
+ *             instead.
  */
+@Deprecated
 public final class SubstrateResourceBuildItem extends MultiBuildItem {
 
     private final List<String> resources;

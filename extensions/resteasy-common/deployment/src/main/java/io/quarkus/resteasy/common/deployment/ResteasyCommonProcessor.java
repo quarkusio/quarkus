@@ -43,7 +43,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ProxyUnwrapperBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.runtime.ResteasyInjectorFactoryRecorder;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;

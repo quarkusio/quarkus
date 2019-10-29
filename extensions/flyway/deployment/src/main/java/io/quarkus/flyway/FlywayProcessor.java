@@ -33,7 +33,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.flyway.runtime.FlywayBuildConfig;
 import io.quarkus.flyway.runtime.FlywayProducer;
 import io.quarkus.flyway.runtime.FlywayRecorder;
@@ -55,7 +55,7 @@ class FlywayProcessor {
     @BuildStep(providesCapabilities = "io.quarkus.flyway")
     void build(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer,
             BuildProducer<FeatureBuildItem> featureProducer,
-            BuildProducer<SubstrateResourceBuildItem> resourceProducer,
+            BuildProducer<NativeImageResourceBuildItem> resourceProducer,
             BuildProducer<BeanContainerListenerBuildItem> containerListenerProducer,
             BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
             FlywayRecorder recorder,
@@ -66,7 +66,7 @@ class FlywayProcessor {
         AdditionalBeanBuildItem unremovableProducer = AdditionalBeanBuildItem.unremovableOf(FlywayProducer.class);
         additionalBeanProducer.produce(unremovableProducer);
 
-        registerSubstrateResources(resourceProducer, generatedResourceProducer, flywayBuildConfig);
+        registerNativeImageResources(resourceProducer, generatedResourceProducer, flywayBuildConfig);
 
         containerListenerProducer.produce(
                 new BeanContainerListenerBuildItem(recorder.setFlywayBuildConfig(flywayBuildConfig)));
@@ -89,7 +89,7 @@ class FlywayProcessor {
         recorder.doStartActions(flywayRuntimeConfig, beanContainer.getValue());
     }
 
-    private void registerSubstrateResources(BuildProducer<SubstrateResourceBuildItem> resource,
+    private void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
             FlywayBuildConfig flywayBuildConfig)
             throws IOException, URISyntaxException {
@@ -105,7 +105,7 @@ class FlywayProcessor {
                         QuarkusPathLocationScanner.MIGRATIONS_LIST_FILE,
                         resourcesList.getBytes(StandardCharsets.UTF_8)));
         nativeResources.add(QuarkusPathLocationScanner.MIGRATIONS_LIST_FILE);
-        resource.produce(new SubstrateResourceBuildItem(nativeResources.toArray(new String[0])));
+        resource.produce(new NativeImageResourceBuildItem(nativeResources.toArray(new String[0])));
     }
 
     private List<String> discoverApplicationMigrations(FlywayBuildConfig flywayBuildConfig)

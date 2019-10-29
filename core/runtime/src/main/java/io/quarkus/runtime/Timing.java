@@ -7,7 +7,7 @@ import org.jboss.logging.Logger;
 /**
  * Class that is responsible for printing out timing results.
  * <p>
- * It is modified on substrate by {@link io.quarkus.runtime.graal.TimingReplacement}, in that mainStarted it rewritten to
+ * It is modified in native mode by {@link io.quarkus.runtime.graal.TimingReplacement}, in that mainStarted it rewritten to
  * actually update the start time.
  */
 public class Timing {
@@ -43,7 +43,7 @@ public class Timing {
     }
 
     /**
-     * This method is replaced by substrate
+     * This method is replaced in native mode
      */
     public static void mainStarted() {
     }

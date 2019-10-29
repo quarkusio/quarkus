@@ -22,16 +22,16 @@ import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.GeneratedSubstrateClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveFieldBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
-import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
+import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -41,7 +41,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.ResourceHelper;
 
-public class SubstrateAutoFeatureStep {
+public class NativeImageAutoFeatureStep {
 
     private static final String GRAAL_AUTOFEATURE = "io/quarkus/runner/AutoFeature";
     private static final MethodDescriptor IMAGE_SINGLETONS_LOOKUP = ofMethod(ImageSingletons.class, "lookup", Object.class,
@@ -56,12 +56,12 @@ public class SubstrateAutoFeatureStep {
     static final String LOCALIZATION_SUPPORT = "com.oracle.svm.core.jdk.LocalizationSupport";
 
     @BuildStep
-    void generateFeature(BuildProducer<GeneratedSubstrateClassBuildItem> substrateClass,
+    void generateFeature(BuildProducer<GeneratedNativeImageClassBuildItem> nativeImageClass,
             List<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems,
             List<RuntimeReinitializedClassBuildItem> runtimeReinitializedClassBuildItems,
-            List<SubstrateProxyDefinitionBuildItem> proxies,
-            List<SubstrateResourceBuildItem> resources,
-            List<SubstrateResourceBundleBuildItem> resourceBundles,
+            List<NativeImageProxyDefinitionBuildItem> proxies,
+            List<NativeImageResourceBuildItem> resources,
+            List<NativeImageResourceBundleBuildItem> resourceBundles,
             List<ReflectiveMethodBuildItem> reflectiveMethods,
             List<ReflectiveFieldBuildItem> reflectiveFields,
             List<ReflectiveClassBuildItem> reflectiveClassBuildItems,
@@ -69,7 +69,7 @@ public class SubstrateAutoFeatureStep {
         ClassCreator file = new ClassCreator(new ClassOutput() {
             @Override
             public void write(String s, byte[] bytes) {
-                substrateClass.produce(new GeneratedSubstrateClassBuildItem(s, bytes));
+                nativeImageClass.produce(new GeneratedNativeImageClassBuildItem(s, bytes));
             }
         }, GRAAL_AUTOFEATURE, null,
                 Object.class.getName(), Feature.class.getName());
@@ -125,7 +125,7 @@ public class SubstrateAutoFeatureStep {
             ResultHandle proxySupport = overallCatch.invokeStaticMethod(
                     IMAGE_SINGLETONS_LOOKUP,
                     proxySupportClass);
-            for (SubstrateProxyDefinitionBuildItem proxy : proxies) {
+            for (NativeImageProxyDefinitionBuildItem proxy : proxies) {
                 ResultHandle array = overallCatch.newArray(Class.class, overallCatch.load(proxy.getClasses().size()));
                 int i = 0;
                 for (String p : proxy.getClasses()) {
@@ -139,7 +139,7 @@ public class SubstrateAutoFeatureStep {
             }
         }
 
-        for (SubstrateResourceBuildItem i : resources) {
+        for (NativeImageResourceBuildItem i : resources) {
             for (String j : i.getResources()) {
                 overallCatch.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class),
                         overallCatch.load(j));
@@ -164,7 +164,7 @@ public class SubstrateAutoFeatureStep {
             ResultHandle locSupport = overallCatch.invokeStaticMethod(
                     IMAGE_SINGLETONS_LOOKUP,
                     locClass);
-            for (SubstrateResourceBundleBuildItem i : resourceBundles) {
+            for (NativeImageResourceBundleBuildItem i : resourceBundles) {
                 TryBlock et = overallCatch.tryBlock();
 
                 et.invokeVirtualMethod(ofMethod(Method.class, "invoke", Object.class, Object.class, Object[].class),

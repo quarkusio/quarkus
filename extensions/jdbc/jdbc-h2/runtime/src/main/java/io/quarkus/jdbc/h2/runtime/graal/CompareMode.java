@@ -19,7 +19,7 @@ public final class CompareMode {
     public static CompareMode getInstance(String name, int strength, boolean binaryUnsigned) {
         if (name != null || strength != 0 || binaryUnsigned != SysProperties.SORT_BINARY_UNSIGNED) {
             throw new UnsupportedOperationException(
-                    "Only the default Collator can be currently used in SubstrateVM; see https://github.com/oracle/graal/issues/839");
+                    "Only the default Collator can be currently used in native mode; see https://github.com/oracle/graal/issues/839");
         }
         CompareMode var3 = lastUsed;
         if (var3 != null) {

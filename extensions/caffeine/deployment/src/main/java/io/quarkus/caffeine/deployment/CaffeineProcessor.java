@@ -3,7 +3,7 @@ package io.quarkus.caffeine.deployment;
 import java.io.IOException;
 
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 public class CaffeineProcessor {
 

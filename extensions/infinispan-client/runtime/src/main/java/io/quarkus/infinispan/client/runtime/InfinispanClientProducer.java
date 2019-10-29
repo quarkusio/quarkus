@@ -125,7 +125,7 @@ public class InfinispanClientProducer {
      * @param properties the properties to be updated for querying
      */
     public static void handleProtoStreamRequirements(Properties properties) {
-        // We only apply this if we are substrate in build time to apply to the properties
+        // We only apply this if we are in native mode in build time to apply to the properties
         // Note that the other half is done in QuerySubstitutions.SubstituteMarshallerRegistration class
         // Note that the registration of these files are done twice in normal VM mode
         // (once during init and once at runtime)

@@ -36,7 +36,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.vertx.ConsumeEvent;

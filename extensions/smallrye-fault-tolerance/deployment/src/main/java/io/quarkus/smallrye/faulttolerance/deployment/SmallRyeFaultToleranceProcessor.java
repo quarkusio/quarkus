@@ -44,8 +44,8 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
@@ -63,13 +63,13 @@ public class SmallRyeFaultToleranceProcessor {
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
 
     @Inject
-    BuildProducer<SubstrateSystemPropertyBuildItem> nativeImageSystemProperty;
+    BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageSystemProperty;
 
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
 
-    SubstrateSystemPropertyBuildItem disableJmx() {
-        return new SubstrateSystemPropertyBuildItem("archaius.dynamicPropertyFactory.registerConfigWithJMX", "false");
+    NativeImageSystemPropertyBuildItem disableJmx() {
+        return new NativeImageSystemPropertyBuildItem("archaius.dynamicPropertyFactory.registerConfigWithJMX", "false");
     }
 
     @BuildStep
@@ -90,7 +90,7 @@ public class SmallRyeFaultToleranceProcessor {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         // Make sure rx.internal.util.unsafe.UnsafeAccess.DISABLED_BY_USER is set.
-        nativeImageSystemProperty.produce(new SubstrateSystemPropertyBuildItem("rx.unsafe-disable", "true"));
+        nativeImageSystemProperty.produce(new NativeImageSystemPropertyBuildItem("rx.unsafe-disable", "true"));
 
         // Add reflective acccess to fallback handlers
         Set<String> fallbackHandlers = new HashSet<>();

@@ -9,7 +9,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
 
 /**

@@ -53,9 +53,9 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveFieldBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 
 /**
  * This class contains build steps that trigger various phases of the bean processing.

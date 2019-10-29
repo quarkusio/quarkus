@@ -63,8 +63,8 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -130,7 +130,7 @@ public final class HibernateOrmProcessor {
             Optional<DataSourceDriverBuildItem> driverBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorProducer,
-            BuildProducer<SubstrateResourceBuildItem> resourceProducer,
+            BuildProducer<NativeImageResourceBuildItem> resourceProducer,
             BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<JpaEntitiesBuildItem> domainObjectsProducer,
@@ -228,7 +228,7 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
-    void handleNativeImageImportSql(BuildProducer<SubstrateResourceBuildItem> resources,
+    void handleNativeImageImportSql(BuildProducer<NativeImageResourceBuildItem> resources,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels,
             LaunchModeBuildItem launchMode) {
@@ -239,11 +239,11 @@ public final class HibernateOrmProcessor {
         for (PersistenceUnitDescriptorBuildItem i : descriptors) {
             //add resources
             if (i.getDescriptor().getProperties().containsKey("javax.persistence.sql-load-script-source")) {
-                resources.produce(new SubstrateResourceBuildItem(
+                resources.produce(new NativeImageResourceBuildItem(
                         (String) i.getDescriptor().getProperties().get("javax.persistence.sql-load-script-source")));
             } else {
                 getSqlLoadScript(launchMode.getLaunchMode()).ifPresent(script -> {
-                    resources.produce(new SubstrateResourceBuildItem(script));
+                    resources.produce(new NativeImageResourceBuildItem(script));
                 });
             }
         }
@@ -370,7 +370,7 @@ public final class HibernateOrmProcessor {
 
     private void handleHibernateORMWithNoPersistenceXml(
             List<ParsedPersistenceXmlDescriptor> descriptors,
-            BuildProducer<SubstrateResourceBuildItem> resourceProducer,
+            BuildProducer<NativeImageResourceBuildItem> resourceProducer,
             BuildProducer<SystemPropertyBuildItem> systemProperty,
             ArchiveRootBuildItem root,
             Optional<DataSourceDriverBuildItem> driverBuildItem,
@@ -466,7 +466,7 @@ public final class HibernateOrmProcessor {
                     if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
                         // enlist resource if present
                         String resourceAsString = root.getArchiveRoot().relativize(loadScriptPath).toString();
-                        resourceProducer.produce(new SubstrateResourceBuildItem(resourceAsString));
+                        resourceProducer.produce(new NativeImageResourceBuildItem(resourceAsString));
                         desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, importFile.get());
                         desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR,
                                 MultipleLinesSqlCommandExtractor.class.getName());

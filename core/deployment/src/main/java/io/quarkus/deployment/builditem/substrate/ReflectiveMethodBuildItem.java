@@ -8,11 +8,18 @@ import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
+/**
+ * @deprecated Use {@link io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem ReflectiveMethodBuildItem}
+ *             instead.
+ */
+@Deprecated
 public final class ReflectiveMethodBuildItem extends MultiBuildItem {
 
     final String declaringClass;
     final String name;
     final String[] params;
+    private final MethodInfo methodInfo;
+    private final Method method;
 
     public ReflectiveMethodBuildItem(MethodInfo methodInfo) {
         String[] params = new String[methodInfo.parameters().size()];
@@ -22,6 +29,8 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
         this.name = methodInfo.name();
         this.params = params;
         this.declaringClass = methodInfo.declaringClass().name().toString();
+        this.methodInfo = methodInfo;
+        this.method = null;
     }
 
     public ReflectiveMethodBuildItem(Method method) {
@@ -32,6 +41,8 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
         this.params = params;
         this.name = method.getName();
         this.declaringClass = method.getDeclaringClass().getName();
+        this.methodInfo = null;
+        this.method = method;
     }
 
     public String getName() {
@@ -44,6 +55,14 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
 
     public String getDeclaringClass() {
         return declaringClass;
+    }
+
+    public MethodInfo getMethodInfo() {
+        return methodInfo;
+    }
+
+    public Method getMethod() {
+        return method;
     }
 
     @Override

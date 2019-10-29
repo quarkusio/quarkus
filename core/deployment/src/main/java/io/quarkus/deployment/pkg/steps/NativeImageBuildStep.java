@@ -22,7 +22,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -63,7 +63,7 @@ public class NativeImageBuildStep {
     public NativeImageBuildItem build(NativeConfig nativeConfig, NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             PackageConfig packageConfig,
-            List<SubstrateSystemPropertyBuildItem> substrateProperties) {
+            List<NativeImageSystemPropertyBuildItem> nativeImageProperties) {
         Path runnerJar = nativeImageSourceJarBuildItem.getPath();
         log.info("Building native image from " + runnerJar);
         Path outputDir = nativeImageSourceJarBuildItem.getPath().getParent();
@@ -144,7 +144,7 @@ public class NativeImageBuildStep {
                 process.waitFor();
             }
             Boolean enableSslNative = false;
-            for (SubstrateSystemPropertyBuildItem prop : substrateProperties) {
+            for (NativeImageSystemPropertyBuildItem prop : nativeImageProperties) {
                 //todo: this should be specific build items
                 if (prop.getKey().equals("quarkus.ssl.native") && prop.getValue() != null) {
                     enableSslNative = Boolean.parseBoolean(prop.getValue());

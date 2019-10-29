@@ -48,9 +48,9 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyIgnoreWarningBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.runtime.LaunchMode;
 
@@ -70,7 +70,7 @@ public class KogitoAssetsProcessor {
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             IndexView index,
             LaunchModeBuildItem launchMode,
-            BuildProducer<SubstrateResourceBuildItem> resource) throws IOException {
+            BuildProducer<NativeImageResourceBuildItem> resource) throws IOException {
 
         Path projectPath = getProjectPath(root.getArchiveLocation());
         ClassInfo persistenceClass = index
@@ -107,7 +107,7 @@ public class KogitoAssetsProcessor {
         }
 
         if (usePersistence) {
-            resource.produce(new SubstrateResourceBuildItem("kogito-types.proto"));
+            resource.produce(new NativeImageResourceBuildItem("kogito-types.proto"));
         }
     }
 
@@ -133,7 +133,7 @@ public class KogitoAssetsProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             LaunchModeBuildItem launchMode,
             LiveReloadBuildItem liveReload,
-            BuildProducer<SubstrateResourceBuildItem> resource,
+            BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws IOException {
 
         if (liveReload.isLiveReload()) {

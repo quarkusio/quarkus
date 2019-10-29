@@ -10,6 +10,11 @@ import java.util.Set;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
+/**
+ * @deprecated Use {@link io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem NativeImageConfigBuildItem}
+ *             instead.
+ */
+@Deprecated
 public final class SubstrateConfigBuildItem extends MultiBuildItem {
 
     private final Set<String> runtimeInitializedClasses;

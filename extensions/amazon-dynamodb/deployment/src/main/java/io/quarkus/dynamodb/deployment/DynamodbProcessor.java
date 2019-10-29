@@ -24,10 +24,10 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.dynamodb.runtime.AwsCredentialsProviderType;
 import io.quarkus.dynamodb.runtime.DynamodbClientProducer;
@@ -73,14 +73,14 @@ public class DynamodbProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<SubstrateResourceBuildItem> resource) {
+            BuildProducer<NativeImageResourceBuildItem> resource) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.DYNAMODB));
 
         // Indicates that this extension would like the SSL support to be enabled
         extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.DYNAMODB));
 
-        INTERCEPTOR_PATHS.stream().forEach(path -> resource.produce(new SubstrateResourceBuildItem(path)));
+        INTERCEPTOR_PATHS.stream().forEach(path -> resource.produce(new NativeImageResourceBuildItem(path)));
 
         List<String> knownInterceptorImpls = combinedIndexBuildItem.getIndex()
                 .getAllKnownImplementors(EXECUTION_INTERCEPTOR_NAME)
@@ -98,7 +98,7 @@ public class DynamodbProcessor {
     @BuildStep
     DynamodbClientBuildItem analyzeDynamodbClientInjectionPoints(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
-            BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition) {
+            BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition) {
 
         boolean createSyncClient = false;
         boolean createAsyncClient = false;
@@ -122,7 +122,7 @@ public class DynamodbProcessor {
 
                 //Register Apache client as sync client
                 proxyDefinition.produce(
-                        new SubstrateProxyDefinitionBuildItem("org.apache.http.conn.HttpClientConnectionManager",
+                        new NativeImageProxyDefinitionBuildItem("org.apache.http.conn.HttpClientConnectionManager",
                                 "org.apache.http.pool.ConnPoolControl",
                                 "software.amazon.awssdk.http.apache.internal.conn.Wrapped"));
 

@@ -10,7 +10,11 @@ import io.quarkus.builder.item.MultiBuildItem;
  * A build item that represents a {@link java.lang.reflect.Proxy} definition
  * that will be required on substrate. This definition takes the form of an ordered
  * list of interfaces that this proxy will implement.
+ * 
+ * @deprecated Use {@link io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem
+ *             NativeImageProxyDefinitionBuildItem} instead.
  */
+@Deprecated
 public final class SubstrateProxyDefinitionBuildItem extends MultiBuildItem {
 
     private final List<String> classes;

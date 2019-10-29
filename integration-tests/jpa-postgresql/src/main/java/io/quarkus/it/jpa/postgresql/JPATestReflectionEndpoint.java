@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  * Various tests for the JPA integration.
- * WARNING: these tests will ONLY pass in Substrate, as it also verifies reflection non-functionality.
+ * WARNING: these tests will ONLY pass in native mode, as it also verifies reflection non-functionality.
  */
 @WebServlet(name = "JPATestReflectionEndpoint", urlPatterns = "/jpa/testreflection")
 public class JPATestReflectionEndpoint extends HttpServlet {

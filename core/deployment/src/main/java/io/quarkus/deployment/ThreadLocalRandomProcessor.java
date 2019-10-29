@@ -3,7 +3,7 @@ package io.quarkus.deployment;
 import java.util.concurrent.ThreadLocalRandom;
 
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 
 public class ThreadLocalRandomProcessor {
     @BuildStep

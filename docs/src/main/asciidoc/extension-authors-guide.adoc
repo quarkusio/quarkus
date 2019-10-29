@@ -1582,25 +1582,25 @@ There Quarkus provides a lot of build items that control aspects of the native e
 to programmatically perform tasks such as registering classes for reflection or adding static resources to the native
 executable. Some of these build items are listed below:
 
-`io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem`::
+`io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem`::
  Includes static resources into the native executable.
 
-`io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem`::
+`io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem`::
 A class that will be reinitialized at runtime by Substrate. This will result in the static initializer running twice.
 
-`io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem`::
+`io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem`::
 A system property that will be set at native executable build time.
 
-`io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem`::
+`io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem`::
 Includes a resource bundle in the native executable.
 
-`io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem`::
+`io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem`::
 Registers a class for reflection in Substrate. Constructors are always registered, while methods and fields are optional.
 
-`io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem`::
+`io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem`::
 A class that will be initialized at runtime rather than build time. This will cause the build to fail if the class is initialized as part of the native executable build process, so care must be taken.
 
-`io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem`::
+`io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem`::
 A convenience feature that allows you to control most of the above features from a single build item.
 
 `io.quarkus.deployment.builditem.NativeEnableAllCharsetsBuildItem`::
@@ -2003,25 +2003,25 @@ we saw the production of a `ServiceStartBuildItem` in the previous section, and 
 <1> Produce a `ServiceStartBuildItem` to indicate that this is a service starting step that needs to run before the `StartupEvent` is sent.
 
 ==== Register Resources for Use in Native Image
-Not all configuration or resources can be consumed at build time. If you have classpath resources that the runtime needs to access, you need to inform the build phase that these resources need to be copied into the native image. This is done by producing one or more `SubstrateResourceBuildItem` or `SubstrateResourceBundleBuildItem` in the case of resource bundles. Examples of this are shown in this sample `registerNativeImageReources` build step:
+Not all configuration or resources can be consumed at build time. If you have classpath resources that the runtime needs to access, you need to inform the build phase that these resources need to be copied into the native image. This is done by producing one or more `NativeImageResourceBuildItem` or `NativeImageResourceBundleBuildItem` in the case of resource bundles. Examples of this are shown in this sample `registerNativeImageReources` build step:
 
 .Registering Resources and ResourceBundles
 [source,java]
 ----
 public final class MyExtProcessor {
     @Inject
-    BuildProducer<SubstrateResourceBuildItem> resource;
+    BuildProducer<NativeImageResourceBuildItem> resource;
     @Inject
-    BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle;
+    BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle;
 
     @BuildStep
     void registerNativeImageReources() {
-        resource.produce(new SubstrateResourceBuildItem("/security/runtime.keys")); //<1>
+        resource.produce(new NativeImageResourceBuildItem("/security/runtime.keys")); //<1>
 
-        resource.produce(new SubstrateResourceBuildItem(
+        resource.produce(new NativeImageResourceBuildItem(
                 "META-INF/services/" + io.quarkus.SomeService.class.getName())); //<2>
 
-        resourceBundle.produce(new SubstrateResourceBuildItem("javax.xml.bind.Messages")); //<3>
+        resourceBundle.produce(new NativeImageResourceBuildItem("javax.xml.bind.Messages")); //<3>
     }
 }
 ----

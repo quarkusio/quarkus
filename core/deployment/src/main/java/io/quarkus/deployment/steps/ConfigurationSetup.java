@@ -48,9 +48,9 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceBuildItem;
 import io.quarkus.deployment.builditem.UnmatchedConfigBuildItem;
-import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.configuration.ConfigDefinition;
 import io.quarkus.deployment.configuration.ConfigPatternMap;
 import io.quarkus.deployment.configuration.LeafConfigType;
@@ -188,7 +188,7 @@ public class ConfigurationSetup {
             RunTimeConfigurationBuildItem runTimeConfigItem,
             BuildTimeRunTimeFixedConfigurationBuildItem buildTimeRunTimeConfigItem,
             Consumer<GeneratedResourceBuildItem> resourceConsumer,
-            Consumer<SubstrateResourceBuildItem> niResourceConsumer,
+            Consumer<NativeImageResourceBuildItem> niResourceConsumer,
             Consumer<RunTimeConfigurationDefaultBuildItem> runTimeDefaultConsumer,
             UnmatchedConfigBuildItem unmatchedConfigBuildItem,
             ExtensionClassLoaderBuildItem extensionClassLoaderBuildItem,
@@ -213,7 +213,7 @@ public class ConfigurationSetup {
         resourceConsumer.accept(
                 new GeneratedResourceBuildItem(BuildTimeConfigFactory.BUILD_TIME_CONFIG_NAME, bytes));
         niResourceConsumer.accept(
-                new SubstrateResourceBuildItem(BuildTimeConfigFactory.BUILD_TIME_CONFIG_NAME));
+                new NativeImageResourceBuildItem(BuildTimeConfigFactory.BUILD_TIME_CONFIG_NAME));
 
         // produce defaults for user-provided config
 
@@ -275,7 +275,7 @@ public class ConfigurationSetup {
     RunTimeConfigurationSourceBuildItem writeDefaults(
             List<RunTimeConfigurationDefaultBuildItem> defaults,
             Consumer<GeneratedResourceBuildItem> resourceConsumer,
-            Consumer<SubstrateResourceBuildItem> niResourceConsumer) throws IOException {
+            Consumer<NativeImageResourceBuildItem> niResourceConsumer) throws IOException {
         final Properties properties = new Properties();
         for (RunTimeConfigurationDefaultBuildItem item : defaults) {
             final String key = item.getKey();
@@ -298,7 +298,7 @@ public class ConfigurationSetup {
                 resourceConsumer.accept(
                         new GeneratedResourceBuildItem(DefaultConfigSource.DEFAULT_CONFIG_PROPERTIES_NAME, os.toByteArray()));
                 niResourceConsumer.accept(
-                        new SubstrateResourceBuildItem(DefaultConfigSource.DEFAULT_CONFIG_PROPERTIES_NAME));
+                        new NativeImageResourceBuildItem(DefaultConfigSource.DEFAULT_CONFIG_PROPERTIES_NAME));
             }
         }
         return new RunTimeConfigurationSourceBuildItem(DefaultConfigSource.class.getName(), OptionalInt.empty());

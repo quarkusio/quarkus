@@ -28,7 +28,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.index.ClassPathArtifactResolver;
 import io.quarkus.deployment.index.ResolvedArtifact;
@@ -77,7 +77,7 @@ public class SwaggerUiProcessor {
             BuildProducer<RouteBuildItem> routes,
             BeanContainerBuildItem container,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
-            BuildProducer<SubstrateResourceBuildItem> substrateResourceBuildItemBuildProducer,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResourceBuildItemBuildProducer,
             LiveReloadBuildItem liveReloadBuildItem,
             HttpRootPathBuildItem httpRootPathBuildItem) throws Exception {
 
@@ -141,7 +141,7 @@ public class SwaggerUiProcessor {
                             generatedResources
                                     .produce(new GeneratedResourceBuildItem(fileName,
                                             content));
-                            substrateResourceBuildItemBuildProducer.produce(new SubstrateResourceBuildItem(fileName));
+                            nativeImageResourceBuildItemBuildProducer.produce(new NativeImageResourceBuildItem(fileName));
 
                         }
                     }

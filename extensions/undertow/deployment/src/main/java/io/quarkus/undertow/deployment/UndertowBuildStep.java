@@ -91,8 +91,8 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.runtime.RuntimeValue;
@@ -183,7 +183,7 @@ public class UndertowBuildStep {
     public void registerUndertowHandlersConf(BuildProducer<ServletExtensionBuildItem> producer,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFile,
-            BuildProducer<SubstrateResourceBuildItem> substrateResourceBuildItemBuildProducer) {
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResourceBuildItemBuildProducer) {
         //we always watch the file, so if it gets added we restart
         watchedFile.produce(
                 new HotDeploymentWatchedFileBuildItem(UndertowHandlersConfServletExtension.META_INF_UNDERTOW_HANDLERS_CONF));
@@ -193,8 +193,8 @@ public class UndertowBuildStep {
                 .getChildPath(UndertowHandlersConfServletExtension.META_INF_UNDERTOW_HANDLERS_CONF);
         if (handlerPath != null) {
             producer.produce(new ServletExtensionBuildItem(new UndertowHandlersConfServletExtension()));
-            substrateResourceBuildItemBuildProducer.produce(
-                    new SubstrateResourceBuildItem(UndertowHandlersConfServletExtension.META_INF_UNDERTOW_HANDLERS_CONF));
+            nativeImageResourceBuildItemBuildProducer.produce(
+                    new NativeImageResourceBuildItem(UndertowHandlersConfServletExtension.META_INF_UNDERTOW_HANDLERS_CONF));
         }
     }
 

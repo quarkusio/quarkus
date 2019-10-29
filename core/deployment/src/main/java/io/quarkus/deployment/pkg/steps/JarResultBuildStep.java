@@ -52,8 +52,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
-import io.quarkus.deployment.builditem.GeneratedSubstrateClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -324,7 +324,7 @@ public class JarResultBuildStep {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             PackageConfig packageConfig,
             List<GeneratedClassBuildItem> generatedClasses,
-            List<GeneratedSubstrateClassBuildItem> substrateResources,
+            List<GeneratedNativeImageClassBuildItem> nativeImageResources,
             List<GeneratedResourceBuildItem> generatedResources) throws Exception {
         Path thinJarDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
@@ -337,7 +337,7 @@ public class JarResultBuildStep {
         Files.createDirectories(libDir);
 
         List<GeneratedClassBuildItem> allClasses = new ArrayList<>(generatedClasses);
-        allClasses.addAll(substrateResources.stream()
+        allClasses.addAll(nativeImageResources.stream()
                 .map((s) -> new GeneratedClassBuildItem(true, s.getName(), s.getClassData())).collect(Collectors.toList()));
 
         try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {

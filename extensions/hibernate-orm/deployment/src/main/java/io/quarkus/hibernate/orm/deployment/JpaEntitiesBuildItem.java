@@ -7,7 +7,7 @@ import javax.persistence.Entity;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 /**
  * Internal model to represent which objects are likely needing enhancement

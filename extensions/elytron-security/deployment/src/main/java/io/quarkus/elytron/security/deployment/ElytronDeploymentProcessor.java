@@ -12,7 +12,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.elytron.security.runtime.DefaultRoleDecoder;
 import io.quarkus.elytron.security.runtime.ElytronPasswordIdentityProvider;
 import io.quarkus.elytron.security.runtime.ElytronRecorder;

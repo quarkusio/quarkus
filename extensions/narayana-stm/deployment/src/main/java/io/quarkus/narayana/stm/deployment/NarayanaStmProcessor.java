@@ -21,9 +21,9 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 
 class NarayanaStmProcessor {
     private static final Logger log = Logger.getLogger(NarayanaStmProcessor.class.getName());
@@ -49,7 +49,7 @@ class NarayanaStmProcessor {
 
     // register STM dynamic proxies
     @BuildStep
-    SubstrateProxyDefinitionBuildItem stmProxies() {
+    NativeImageProxyDefinitionBuildItem stmProxies() {
         final DotName TRANSACTIONAL = DotName.createSimple(Transactional.class.getName());
         IndexView index = combinedIndexBuildItem.getIndex();
         Collection<String> proxies = new ArrayList<>();
@@ -73,6 +73,6 @@ class NarayanaStmProcessor {
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, classNames));
 
-        return new SubstrateProxyDefinitionBuildItem(classNames);
+        return new NativeImageProxyDefinitionBuildItem(classNames);
     }
 }

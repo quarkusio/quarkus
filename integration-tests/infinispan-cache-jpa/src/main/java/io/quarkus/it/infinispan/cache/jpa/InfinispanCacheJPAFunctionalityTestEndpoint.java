@@ -29,7 +29,7 @@ import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 /**
  * Basic test running JPA with the H2 database and Infinispan as second level cache provider.
- * The application can work in either standard JVM or SubstrateVM, while we run H2 as a separate JVM process.
+ * The application can work in either standard JVM or in native mode, while we run H2 as a separate JVM process.
  */
 @Path("/infinispan-cache-jpa")
 @ApplicationScoped

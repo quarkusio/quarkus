@@ -3,7 +3,7 @@ package io.quarkus.deployment;
 import java.util.*;
 
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 public class CollectionClassProcessor {
     @BuildStep

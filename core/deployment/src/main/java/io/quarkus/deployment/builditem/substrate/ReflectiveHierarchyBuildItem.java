@@ -21,7 +21,11 @@ import io.quarkus.builder.item.MultiBuildItem;
  * <p>
  * This discovery is applied recursively, so any additional types that are registered will also have their dependencies
  * discovered
+ * 
+ * @deprecated Use {@link io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem ReflectiveHierarchyBuildItem}
+ *             instead.
  */
+@Deprecated
 public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
 
     private final Type type;

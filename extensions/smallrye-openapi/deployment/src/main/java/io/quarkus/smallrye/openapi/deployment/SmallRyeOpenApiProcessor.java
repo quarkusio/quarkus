@@ -44,9 +44,9 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.resteasy.deployment.ResteasyJaxrsConfigBuildItem;
@@ -228,7 +228,7 @@ public class SmallRyeOpenApiProcessor {
             BuildProducer<FeatureBuildItem> feature,
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
             BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
-            BuildProducer<SubstrateResourceBuildItem> substrateResources,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
             DeploymentClassLoaderBuildItem deploymentClassLoaderBuildItem) throws Exception {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
@@ -252,7 +252,7 @@ public class SmallRyeOpenApiProcessor {
                 String name = OpenApiHandler.BASE_NAME + format;
                 resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name,
                         OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8)));
-                substrateResources.produce(new SubstrateResourceBuildItem(name));
+                nativeImageResources.produce(new NativeImageResourceBuildItem(name));
             }
         } finally {
             Thread.currentThread().setContextClassLoader(old);

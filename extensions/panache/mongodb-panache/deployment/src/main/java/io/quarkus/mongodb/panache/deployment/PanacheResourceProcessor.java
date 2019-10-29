@@ -16,7 +16,7 @@ import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;

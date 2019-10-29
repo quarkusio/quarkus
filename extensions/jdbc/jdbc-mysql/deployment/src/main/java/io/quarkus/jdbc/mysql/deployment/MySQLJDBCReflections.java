@@ -33,7 +33,7 @@ import com.mysql.cj.protocol.StandardSocketFactory;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 public final class MySQLJDBCReflections {
 

@@ -25,8 +25,8 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 public class ArtemisCoreProcessor {
 
@@ -44,8 +44,8 @@ public class ArtemisCoreProcessor {
     };
 
     @BuildStep
-    SubstrateConfigBuildItem config() {
-        return SubstrateConfigBuildItem.builder()
+    NativeImageConfigBuildItem config() {
+        return NativeImageConfigBuildItem.builder()
                 .addRuntimeInitializedClass("org.apache.activemq.artemis.api.core.ActiveMQBuffers").build();
     }
 

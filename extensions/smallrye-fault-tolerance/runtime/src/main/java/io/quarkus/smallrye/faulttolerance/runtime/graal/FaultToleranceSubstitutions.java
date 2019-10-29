@@ -39,6 +39,6 @@ final class Target_io_smallrye_faulttolerance_DefaultMethodFallbackProvider {
             Target_io_smallrye_faulttolerance_ExecutionContextWithInvocationContext ctx)
             throws IllegalAccessException, InstantiationException, IllegalArgumentException, InvocationTargetException,
             Throwable {
-        throw new RuntimeException("Not implemented in substrate");
+        throw new RuntimeException("Not implemented in native mode");
     }
 }

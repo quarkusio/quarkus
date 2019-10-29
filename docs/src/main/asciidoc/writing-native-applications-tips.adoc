@@ -310,15 +310,15 @@ As for applications, you can also use the `@RegisterForReflection` annotation if
 
 === Including resources
 
-In the context of an extension, Quarkus eliminates the need for a JSON configuration file by allowing extension authors to specify a `SubstrateResourceBuildItem`:
+In the context of an extension, Quarkus eliminates the need for a JSON configuration file by allowing extension authors to specify a `NativeImageResourceBuildItem`:
 
 [source,java]
 ----
 public class ResourcesProcessor {
 
     @BuildStep
-    SubstrateResourceBuildItem substrateResourceBuildItem() {
-        return new SubstrateResourceBuildItem("META-INF/extra.properties");
+    NativeImageResourceBuildItem nativeImageResourceBuildItem() {
+        return new NativeImageResourceBuildItem("META-INF/extra.properties");
     }
 
 }
@@ -355,15 +355,15 @@ For more information about `--initialize-at-run-time`, please read https://githu
 
 === Managing Proxy Classes
 
-Very similarly, Quarkus allows extensions authors to register a `SubstrateProxyDefinitionBuildItem`. An example of doing so is:
+Very similarly, Quarkus allows extensions authors to register a `NativeImageProxyDefinitionBuildItem`. An example of doing so is:
 
 [source,java]
 ----
 public class S3Processor {
 
     @BuildStep
-    SubstrateProxyDefinitionBuildItem httpProxies() {
-        return new SubstrateProxyDefinitionBuildItem("org.apache.http.conn.HttpClientConnectionManager",
+    NativeImageProxyDefinitionBuildItem httpProxies() {
+        return new NativeImageProxyDefinitionBuildItem("org.apache.http.conn.HttpClientConnectionManager",
                 "org.apache.http.pool.ConnPoolControl", "com.amazonaws.http.conn.Wrapped");
     }
 

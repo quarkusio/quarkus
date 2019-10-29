@@ -2,7 +2,7 @@ package io.quarkus.hibernate.orm.deployment;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 /**
  * TODO: is this the correct place for this? Should the cache have its own extension?

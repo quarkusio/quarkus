@@ -8,10 +8,10 @@ import org.graalvm.nativeimage.ImageInfo;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
- * Substrate system properties are not automatically propagated to runtime any more
+ * Native image system properties are not automatically propagated to runtime any more
  */
 @Recorder
-public class SubstrateRuntimePropertiesRecorder {
+public class NativeImageRuntimePropertiesRecorder {
 
     private static final Map<String, String> MAP = new HashMap<>();
 

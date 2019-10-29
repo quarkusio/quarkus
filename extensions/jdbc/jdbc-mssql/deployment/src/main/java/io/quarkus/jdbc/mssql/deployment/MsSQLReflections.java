@@ -2,7 +2,7 @@ package io.quarkus.jdbc.mssql.deployment;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 /**
  * Registers the {@code com.microsoft.sqlserver.jdbc.SQLServerDriver} so that it can be loaded

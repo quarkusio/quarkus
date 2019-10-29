@@ -16,7 +16,8 @@ class GreetingResourceTest {
                 .when().get("/greeting")
                 .then()
                 .statusCode(200)
-                .body(containsString("hello"));
+                .body(containsString("hello"))
+                .body(containsString("[2019,1,1]"));
     }
 
 }

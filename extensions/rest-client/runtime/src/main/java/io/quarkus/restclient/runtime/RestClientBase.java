@@ -5,7 +5,7 @@ import java.net.URL;
 import java.util.Optional;
 
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
 public class RestClientBase {
@@ -24,7 +24,8 @@ public class RestClientBase {
         this.proxyType = proxyType;
         this.baseUriFromAnnotation = baseUriFromAnnotation;
         this.propertyPrefixFromAnnotation = propertyPrefixFromAnnotation;
-        this.config = ConfigProvider.getConfig();
+        // this is the proper way to obtain the configuration that takes the deployment profiles into account
+        this.config = ConfigProviderResolver.instance().getConfig();
     }
 
     public Object create() {

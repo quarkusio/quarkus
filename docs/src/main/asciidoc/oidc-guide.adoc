@@ -281,10 +281,6 @@ export access_token=$(\
 )
 ----
 
-== Configuration Reference
-
-include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]
-
 == References
 
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]

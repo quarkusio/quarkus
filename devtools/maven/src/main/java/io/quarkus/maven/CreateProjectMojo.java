@@ -16,6 +16,7 @@ import static org.twdata.maven.mojoexecutor.MojoExecutor.version;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -245,12 +246,17 @@ public class CreateProjectMojo extends AbstractMojo {
 
     private void createGradleWrapper(File projectDirectory) {
         try {
-            String gradleName = IS_WINDOWS ? "gradle.bat" : "gradle";
-            ProcessBuilder pb = new ProcessBuilder(gradleName, "wrapper",
-                    "--gradle-version=" + MojoUtils.getGradleWrapperVersion()).directory(projectDirectory)
-                            .inheritIO();
+            List<String> arguments = new ArrayList<>();
+            arguments.add(IS_WINDOWS ? "gradle.bat" : "gradle");
+            arguments.add("wrapper");
+            arguments.add("--gradle-version=" + MojoUtils.getGradleWrapperVersion());
+            // CI sets a different maven.repo.local
+            if (System.getenv("MAVEN_OPTS") != null) {
+                arguments.add(System.getenv("MAVEN_OPTS"));
+            }
+            ProcessBuilder pb = new ProcessBuilder(arguments).directory(projectDirectory)
+                    .inheritIO();
             Process x = pb.start();
-
             x.waitFor();
 
             if (x.exitValue() != 0) {

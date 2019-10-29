@@ -157,12 +157,10 @@ public class CreateProjectMojo extends AbstractMojo {
 
         } else {
             askTheUserForMissingValues();
-            if (!isDirectoryEmpty(projectRoot)) {
-                projectRoot = new File(outputDirectory, projectArtifactId);
-                if (projectRoot.exists()) {
-                    throw new MojoExecutionException("Unable to create the project - the current directory is not empty and" +
-                            " the directory " + projectArtifactId + " exists");
-                }
+            projectRoot = new File(outputDirectory, projectArtifactId);
+            if (projectRoot.exists()) {
+                throw new MojoExecutionException("Unable to create the project, " +
+                        " the directory " + projectRoot.getAbsolutePath() + " already exists");
             }
         }
 
@@ -385,17 +383,4 @@ public class CreateProjectMojo extends AbstractMojo {
         getLog().info("");
     }
 
-    private boolean isDirectoryEmpty(File dir) {
-        if (!dir.isDirectory()) {
-            throw new IllegalArgumentException("The specified file must be a directory: " + dir.getAbsolutePath());
-        }
-
-        String[] children = dir.list();
-        if (children == null) {
-            // IO Issue
-            throw new IllegalArgumentException("The specified directory cannot be accessed: " + dir.getAbsolutePath());
-        }
-
-        return children.length == 0;
-    }
 }

@@ -1,7 +1,7 @@
 package io.quarkus.it.elytron;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.junit.NativeImageTest;
 
-@SubstrateTest
+@NativeImageTest
 public class X500PrincipalUtilITCase extends X500PrincipalUtilTestCase {
 }

@@ -1,7 +1,7 @@
 package io.quarkus.it.tika;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.junit.NativeImageTest;
 
-@SubstrateTest
+@NativeImageTest
 public class NativeTikaEmbeddedContentIT extends TikaEmbeddedContentTest {
 }

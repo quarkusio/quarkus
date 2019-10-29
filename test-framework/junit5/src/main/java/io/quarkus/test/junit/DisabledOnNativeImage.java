@@ -6,14 +6,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * @deprecated Use {@link DisabledOnNativeImage} instead.
- */
-@Deprecated
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface DisabledOnSubstrate {
+public @interface DisabledOnNativeImage {
     /**
      * Reason for disabling this test
      */

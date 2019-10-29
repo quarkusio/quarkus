@@ -354,7 +354,7 @@ There are a few system properties that can be used to tune the bootstrap of the 
 
 == Native Executable Testing
 
-It is also possible to test native executables using `@SubstrateTest`. This supports all the features mentioned in this
+It is also possible to test native executables using `@NativeImageTest`. This supports all the features mentioned in this
 guide except injecting into tests (and the native executable runs in a separate non-JVM process this is not really possible).
 
 

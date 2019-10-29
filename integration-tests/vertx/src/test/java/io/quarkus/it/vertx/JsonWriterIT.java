@@ -1,11 +1,11 @@
 package io.quarkus.it.vertx;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.junit.NativeImageTest;
 
 /**
  * @author Thomas Segismont
  */
-@SubstrateTest
+@NativeImageTest
 public class JsonWriterIT extends JsonWriterTest {
 
 }

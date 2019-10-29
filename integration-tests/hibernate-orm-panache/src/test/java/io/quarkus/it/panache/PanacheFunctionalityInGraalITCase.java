@@ -1,11 +1,11 @@
 package io.quarkus.it.panache;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.junit.NativeImageTest;
 
 /**
  * Test various Panache operations running in native mode
  */
-@SubstrateTest
+@NativeImageTest
 public class PanacheFunctionalityInGraalITCase extends PanacheFunctionalityTest {
 
 }

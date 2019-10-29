@@ -440,7 +440,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 <1> Optionally use a BOM file to omit the version of the different Quarkus dependencies.
 <2> Use the Quarkus Maven plugin that will hook into the build process
 <3> Use a native profile and plugin to activate GraalVM compilation
-<4> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@SubstrateTest` will be run against the native executable. See the link:building-native-image-guide.html[Native executable guide] for more info.
+<4> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image-guide.html[Native executable guide] for more info.
 
 [[uber-jar-maven]]
 === Uber-Jar Creation

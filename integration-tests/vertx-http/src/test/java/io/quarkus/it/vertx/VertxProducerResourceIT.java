@@ -1,8 +1,8 @@
 package io.quarkus.it.vertx;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.junit.NativeImageTest;
 
-@SubstrateTest
+@NativeImageTest
 public class VertxProducerResourceIT extends VertxProducerResourceTest {
 
 }

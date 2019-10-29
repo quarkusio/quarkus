@@ -1,7 +1,7 @@
 package io.quarkus.it.kogito.drools;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.junit.NativeImageTest;
 
-@SubstrateTest
+@NativeImageTest
 public class DroolsTestIT extends DroolsTest {
 }

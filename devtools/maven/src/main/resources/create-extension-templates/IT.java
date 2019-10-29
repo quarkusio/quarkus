@@ -1,8 +1,8 @@
 package [=javaPackageBase].it;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.junit.NativeImageTest;
 
-@SubstrateTest
+@NativeImageTest
 class [=artifactIdBaseCamelCase]IT extends [=artifactIdBaseCamelCase]Test {
 
 }

@@ -24,7 +24,7 @@ public class PropertiesRealmConfig {
     public String realmName;
 
     /**
-     * If the properties store is enabled.
+     * Determine whether security via the file realm is enabled.
      */
     @ConfigItem
     public boolean enabled;
@@ -37,13 +37,15 @@ public class PropertiesRealmConfig {
     public boolean plainText;
 
     /**
-     * The location of the users property resource
+     * Classpath resource name of properties file containing user to password mappings. See
+     * <a href="#users-properties">Users.properties</a>.
      */
     @ConfigItem(defaultValue = "users.properties")
     public String users;
 
     /**
-     * The location of the roles property file
+     * Classpath resource name of properties file containing user to role mappings. See
+     * <a href="#roles-properties">Roles.properties</a>.
      */
     @ConfigItem(defaultValue = "roles.properties")
     public String roles;

@@ -10,8 +10,9 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(name = "security", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class SecurityBuildTimeConfig {
     /**
-     * if set to true, access to all methods of beans that have any security annotations will be denied by default.
-     * E.g. if enabled, <code>methodB</code> in the following bean, will be denied.
+     * If set to true, access to all methods of beans that have any security annotations on other members will be denied by
+     * default.
+     * E.g. if enabled, in the following bean, <code>methodB</code> will be denied.
      * 
      * <pre>
      *   {@literal @}ApplicationScoped
@@ -26,7 +27,7 @@ public class SecurityBuildTimeConfig {
      *   }
      * </pre>
      */
-    @ConfigItem(name = "deny-unannotated", defaultValue = "false")
+    @ConfigItem(name = "deny-unannotated-members", defaultValue = "false")
     public boolean denyUnannotated;
 
 }

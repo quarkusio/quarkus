@@ -12,38 +12,40 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(name = "oauth2", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class OAuth2Config {
     /**
-     * If the OAuth2 extension is enabled.
+     * Determine if the OAuth2 extension is enabled. Enabled by default if you include the
+     * <code>elytron-security-oauth2</code> dependency, so this would be used to disable it.
      */
     @ConfigItem(defaultValue = "true")
     public boolean enabled;
 
     /**
-     * The identifier of the client on the OAuth2 Authorization Server
+     * The OAuth2 client id used to validate the token.
      */
     @ConfigItem
     public String clientId;
 
     /**
-     * The secret of the client
+     * The OAuth2 client secret used to validate the token.
      */
     @ConfigItem
     public String clientSecret;
 
     /**
-     * The URL of token introspection endpoint
+     * The OAuth2 introspection endpoint URL used to validate the token and gather the authentication claims.
      */
     @ConfigItem
     public String introspectionUrl;
 
     /**
-     * The path to a custom cert file
-     * This is not supported in native mode
+     * The OAuth2 server certificate file. <em>Warning</em>: this is not supported in native mode where the certificate
+     * must be included in the truststore used during the native image generation, see
+     * <a href="native-and-ssl-guide.html">Using SSL With Native Executables</a>.
      */
     @ConfigItem
     public Optional<String> caCertFile;
 
     /**
-     * The claim that provides the roles
+     * The claim that is used in the introspection endpoint response to load the roles.
      */
     @ConfigItem(defaultValue = "scope")
     public String roleClaim;

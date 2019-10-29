@@ -13,7 +13,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class MPRealmConfig {
 
     /**
-     * The authentication mechanism
+     * The realm name. This is used when generating a hashed password
      */
     @ConfigItem(defaultValue = "Quarkus")
     public String realmName;
@@ -25,17 +25,23 @@ public class MPRealmConfig {
     @ConfigItem
     public boolean plainText;
     /**
-     * If the embedded store is enabled.
+     * Determine whether security via the embedded realm is enabled.
      */
     @ConfigItem
     public boolean enabled;
 
-    /** The realm users user1=password\nuser2=password2... mapping */
-    @ConfigItem
+    /**
+     * The realm users user1=password\nuser2=password2... mapping.
+     * See <a href="#embedded-users">Embedded Users</a>.
+     */
+    @ConfigItem(defaultValueDocumentation = "none")
     public Map<String, String> users;
 
-    /** The realm roles user1=role1,role2,...\nuser2=role1,role2,... mapping */
-    @ConfigItem
+    /**
+     * The realm roles user1=role1,role2,...\nuser2=role1,role2,... mapping
+     * See <a href="#embedded-roles">Embedded Roles</a>.
+     */
+    @ConfigItem(defaultValueDocumentation = "none")
     public Map<String, String> roles;
 
     public String getRealmName() {

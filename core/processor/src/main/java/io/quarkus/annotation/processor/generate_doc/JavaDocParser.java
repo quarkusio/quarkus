@@ -25,6 +25,7 @@ final class JavaDocParser {
     private static final Pattern REPLACE_WINDOWS_EOL = Pattern.compile("\r\n");
     private static final Pattern REPLACE_MACOS_EOL = Pattern.compile("\r");
 
+    private static final String BACKTICK = "`";
     private static final String HASH = "#";
     private static final String STAR = "*";
     private static final String S_NODE = "s";
@@ -33,6 +34,7 @@ final class JavaDocParser {
     private static final String LINK_NODE = "a";
     private static final String BOLD_NODE = "b";
     private static final String BIG_NODE = "big";
+    private static final String CODE_NODE = "code";
     private static final String DEL_NODE = "del";
     private static final String ITALICS_NODE = "i";
     private static final String TEXT_NODE = "#text";
@@ -193,10 +195,16 @@ final class JavaDocParser {
                     break;
                 case LINK_NODE:
                     final String link = childNode.attr(HREF_ATTRIBUTE);
+                    sb.append("link:");
                     sb.append(link);
                     final StringBuilder caption = new StringBuilder();
                     appendHtml(caption, childNode);
                     sb.append(String.format(LINK_ATTRIBUTE_FORMAT, caption.toString().trim()));
+                    break;
+                case CODE_NODE:
+                    sb.append(BACKTICK);
+                    appendHtml(sb, childNode);
+                    sb.append(BACKTICK);
                     break;
                 case BOLD_NODE:
                 case EMPHASIS_NODE:

@@ -29,12 +29,14 @@ public class RequestDispatcher {
     protected final SynchronousDispatcher dispatcher;
     protected final ResteasyProviderFactory providerFactory;
     protected final SecurityDomain domain;
+    protected final ClassLoader classLoader;
 
     public RequestDispatcher(final SynchronousDispatcher dispatcher, final ResteasyProviderFactory providerFactory,
-            final SecurityDomain domain) {
+            final SecurityDomain domain, ClassLoader classLoader) {
         this.dispatcher = dispatcher;
         this.providerFactory = providerFactory;
         this.domain = domain;
+        this.classLoader = classLoader;
     }
 
     public SynchronousDispatcher getDispatcher() {
@@ -54,7 +56,9 @@ public class RequestDispatcher {
             HttpServerResponse resp,
             HttpRequest vertxReq, HttpResponse vertxResp, boolean handleNotFound) throws IOException {
 
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
+            Thread.currentThread().setContextClassLoader(classLoader);
             ResteasyProviderFactory defaultInstance = ResteasyProviderFactory.getInstance();
             if (defaultInstance instanceof ThreadLocalResteasyProviderFactory) {
                 ThreadLocalResteasyProviderFactory.push(providerFactory);
@@ -74,9 +78,13 @@ public class RequestDispatcher {
                 ResteasyContext.clearContextData();
             }
         } finally {
-            ResteasyProviderFactory defaultInstance = ResteasyProviderFactory.getInstance();
-            if (defaultInstance instanceof ThreadLocalResteasyProviderFactory) {
-                ThreadLocalResteasyProviderFactory.pop();
+            try {
+                ResteasyProviderFactory defaultInstance = ResteasyProviderFactory.getInstance();
+                if (defaultInstance instanceof ThreadLocalResteasyProviderFactory) {
+                    ThreadLocalResteasyProviderFactory.pop();
+                }
+            } finally {
+                Thread.currentThread().setContextClassLoader(old);
             }
 
         }

@@ -49,9 +49,11 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -212,14 +214,20 @@ public class SmallRyeMetricsProcessor {
     }
 
     @BuildStep
+    public CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.METRICS);
+    }
+
+    @BuildStep
+    public FeatureBuildItem feature() {
+        return new FeatureBuildItem(FeatureBuildItem.SMALLRYE_METRICS);
+    }
+
+    @BuildStep
     @Record(STATIC_INIT)
     public void build(BeanContainerBuildItem beanContainerBuildItem,
             SmallRyeMetricsRecorder metrics,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-            BuildProducer<FeatureBuildItem> feature) {
-
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_METRICS));
-
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         for (DotName metricsAnnotation : METRICS_ANNOTATIONS) {
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, metricsAnnotation.toString()));
         }

@@ -3,9 +3,8 @@ package io.quarkus.creator.phase.augment;
 import java.util.List;
 
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
-import io.quarkus.deployment.pkg.builditem.ThinJarBuildItem;
-import io.quarkus.deployment.pkg.builditem.UberJarBuildItem;
 
 /**
  * Represents an outcome of {@link AugmentTask}
@@ -15,15 +14,13 @@ import io.quarkus.deployment.pkg.builditem.UberJarBuildItem;
 public class AugmentOutcome {
 
     private final List<ArtifactResultBuildItem> packageOutput;
-    private final ThinJarBuildItem thinJar;
-    private final UberJarBuildItem uberJar;
+    private final JarBuildItem jar;
     private final NativeImageBuildItem nativeImage;
 
-    public AugmentOutcome(List<ArtifactResultBuildItem> packageOutput, ThinJarBuildItem thinJar, UberJarBuildItem uberJar,
+    public AugmentOutcome(List<ArtifactResultBuildItem> packageOutput, JarBuildItem thinJar,
             NativeImageBuildItem nativeImage) {
         this.packageOutput = packageOutput;
-        this.thinJar = thinJar;
-        this.uberJar = uberJar;
+        this.jar = thinJar;
         this.nativeImage = nativeImage;
     }
 
@@ -34,12 +31,8 @@ public class AugmentOutcome {
         return packageOutput;
     }
 
-    public ThinJarBuildItem getThinJar() {
-        return thinJar;
-    }
-
-    public UberJarBuildItem getUberJar() {
-        return uberJar;
+    public JarBuildItem getJar() {
+        return jar;
     }
 
     public NativeImageBuildItem getNativeImage() {

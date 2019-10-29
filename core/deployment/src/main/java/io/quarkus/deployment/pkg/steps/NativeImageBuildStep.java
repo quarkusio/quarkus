@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.BooleanSupplier;
 
 import org.jboss.logging.Logger;
 
@@ -55,7 +54,7 @@ public class NativeImageBuildStep {
      */
     private static final String PATH = "PATH";
 
-    @BuildStep(onlyIf = NativeRequired.class)
+    @BuildStep(onlyIf = NativeBuild.class)
     ArtifactResultBuildItem result(NativeImageBuildItem image) {
         return new ArtifactResultBuildItem(image.getPath(), PackageConfig.NATIVE, Collections.emptyMap());
     }
@@ -78,20 +77,21 @@ public class NativeImageBuildStep {
 
         String noPIE = "";
 
-        if (!"".equals(nativeConfig.containerRuntime)) {
+        if (!"".equals(nativeConfig.containerRuntime) || nativeConfig.containerBuild) {
+            String containerRuntime = nativeConfig.containerRuntime.isEmpty() ? "docker" : nativeConfig.containerRuntime;
             // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm quarkus/graalvm-native-image"
             nativeImage = new ArrayList<>();
-            Collections.addAll(nativeImage, nativeConfig.containerRuntime, "run", "-v",
+            Collections.addAll(nativeImage, containerRuntime, "run", "-v",
                     outputDir.toAbsolutePath() + ":/project:z");
 
             if (IS_LINUX) {
-                if ("docker".equals(nativeConfig.containerRuntime)) {
+                if ("docker".equals(containerRuntime)) {
                     String uid = getLinuxID("-ur");
                     String gid = getLinuxID("-gr");
                     if (uid != null & gid != null & !"".equals(uid) & !"".equals(gid)) {
                         Collections.addAll(nativeImage, "--user", uid + ":" + gid);
                     }
-                } else if ("podman".equals(nativeConfig.containerRuntime)) {
+                } else if ("podman".equals(containerRuntime)) {
                     // Needed to avoid AccessDeniedExceptions
                     nativeImage.add("--userns=keep-id");
                 }
@@ -409,20 +409,6 @@ public class NativeImageBuildStep {
         }
 
         return "";
-    }
-
-    static class NativeRequired implements BooleanSupplier {
-
-        private final PackageConfig packageConfig;
-
-        NativeRequired(PackageConfig packageConfig) {
-            this.packageConfig = packageConfig;
-        }
-
-        @Override
-        public boolean getAsBoolean() {
-            return packageConfig.types.contains(PackageConfig.NATIVE);
-        }
     }
 
 }

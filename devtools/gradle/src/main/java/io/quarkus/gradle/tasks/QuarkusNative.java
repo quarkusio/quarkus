@@ -428,7 +428,7 @@ public class QuarkusNative extends QuarkusTask {
             @Override
             public void accept(ConfigBuilder configBuilder) {
                 InMemoryConfigSource type = new InMemoryConfigSource(Integer.MAX_VALUE, "Native Image Type")
-                        .add("quarkus.package.types", "native");
+                        .add("quarkus.package.type", "native");
 
                 InMemoryConfigSource configs = new InMemoryConfigSource(0, "Native Image Maven Settings");
 

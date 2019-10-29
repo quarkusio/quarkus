@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.PackageTypeBuildItem;
 
@@ -16,17 +17,15 @@ public class PackageTypeVerificationBuildStep {
 
     @BuildStep
     List<PackageTypeBuildItem> builtins() {
-        return Arrays.asList(new PackageTypeBuildItem(PackageConfig.NATIVE), new PackageTypeBuildItem(PackageConfig.THIN_JAR),
-                new PackageTypeBuildItem(PackageConfig.UBER_JAR));
+        return Arrays.asList(new PackageTypeBuildItem(PackageConfig.NATIVE), new PackageTypeBuildItem(PackageConfig.JAR));
     }
 
     @BuildStep
-    void verify(List<PackageTypeBuildItem> items, PackageConfig config) {
+    ServiceStartBuildItem verify(List<PackageTypeBuildItem> items, PackageConfig config) {
         Set<String> registered = items.stream().map(PackageTypeBuildItem::getType).collect(Collectors.toSet());
-        for (String i : config.types) {
-            if (!registered.contains(i)) {
-                throw new IllegalStateException("Unknown packaging type " + i + " known types are " + registered);
-            }
+        if (!registered.contains(config.type)) {
+            throw new IllegalStateException("Unknown packaging type " + config.type + " known types are " + registered);
         }
+        return null;
     }
 }

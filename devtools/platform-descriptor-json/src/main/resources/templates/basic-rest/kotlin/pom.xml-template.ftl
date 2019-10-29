@@ -133,23 +133,11 @@
                     <name>native</name>
                 </property>
             </activation>
+            <properties>
+                <quarkus.package.type>native</quarkus.package.type>
+            </properties>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>${plugin_groupId}</groupId>
-                        <artifactId>${plugin_artifactId}</artifactId>
-                        <version>${quarkus.version}</version>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>native-image</goal>
-                                </goals>
-                                <configuration>
-                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>

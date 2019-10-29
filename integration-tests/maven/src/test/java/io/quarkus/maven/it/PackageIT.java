@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -34,7 +35,7 @@ public class PackageIT extends MojoTestBase {
 
         running = new RunningInvoker(testDir, false);
         final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
-                Collections.singletonMap("QUARKUS_PACKAGE_TYPES", "thin-jar"));
+                Collections.singletonMap("QUARKUS_PACKAGE_UBER_JAR", "false"));
 
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
@@ -53,9 +54,12 @@ public class PackageIT extends MojoTestBase {
     }
 
     private void createAndVerifyUberJar() throws FileNotFoundException, MavenInvocationException, InterruptedException {
+        Properties p = new Properties();
+        p.setProperty("quarkus.package.uber-jar", "true");
+
         running = new RunningInvoker(testDir, false);
         final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
-                Collections.singletonMap("QUARKUS_PACKAGE_TYPES", "uber-jar"));
+                Collections.emptyMap(), p);
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
         final File targetDir = getTargetDir();
@@ -104,8 +108,11 @@ public class PackageIT extends MojoTestBase {
         testDir = initProject("projects/uberjar-check", "projects/project-uberjar-true");
 
         running = new RunningInvoker(testDir, false);
+
+        Properties p = new Properties();
+        p.setProperty("quarkus.package.uber-jar", "true");
         final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
-                Collections.singletonMap("QUARKUS_PACKAGE_TYPES", "uber-jar"));
+                Collections.emptyMap(), p);
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
         final File targetDir = getTargetDir();

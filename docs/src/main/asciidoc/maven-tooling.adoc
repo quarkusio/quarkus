@@ -445,92 +445,16 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 [[uber-jar-maven]]
 === Uber-Jar Creation
 
-Quarkus Maven plugin supports the generation of Uber-Jars by specifying an `<uberJar>` configuration option in your `pom.xml`.
+Quarkus Maven plugin supports the generation of Uber-Jars by specifying a `quarkus.package.uber-jar=true` configuration option in your `application.properties`.
 
-[source,xml,subs=attributes+]
-----
-<build>
-    <plugins>
-        <plugin>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-maven-plugin</artifactId>
-            <version>${quarkus.version}</version>
-            <configuration>
-                <uberJar>true</uberJar> <1>
-            </configuration>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>build</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
-    </plugins>
-</build>
-----
+The original jar will still be present in the `target` directory but it will be renamed to contain the `.original` suffix.
 
-<1> Specifies that we want to build an Uber-Jar instead of a regular one. The regular jar will still be present in the `target` directory but it will be renamed to contain the `.original` suffix.
-
-When building an Uber-Jar you can specify entries that you want to exclude from the generated jar by using the `<ignoredEntries>` configuration option.
-
-[source,xml,subs=attributes+]
-----
-<build>
-    <plugins>
-        <plugin>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-maven-plugin</artifactId>
-            <version>${quarkus.version}</version>
-            <configuration>
-                <uberJar>true</uberJar>
-                <ignoredEntries>
-                    <ignoredEntry>META-INF/DEPENDENCIES.txt</ignoredEntry> <1>
-                </ignoredEntries>
-            </configuration>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>build</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
-    </plugins>
-</build>
-----
-
-<1> The entries are relative to the root of the generated Uber-Jar. You can specify multiple entries by adding extra `<ignoredEntry>` elements.
+When building an Uber-Jar you can specify entries that you want to exclude from the generated jar by using the `quarkus.package.ignored-entries` configuration
+option, this takes a comma seperated list of entries to ignore.
 
 Uber-Jar creation by default excludes link:https://docs.oracle.com/javase/tutorial/deployment/jar/intro.html[signature files] that might be present in the dependencies of the application.
 
-Uber-Jar's final name is configurable via a Maven's build settings `finalName` option or via a `finalName` configuration option as shown below.
-
-[source,xml,subs=attributes+]
-----
-<build>
-    <plugins>
-        <plugin>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-maven-plugin</artifactId>
-            <version>${quarkus.version}</version>
-            <configuration>
-                <uberJar>true</uberJar>
-                <finalName>uber-jar-name</finalName> <1>
-            </configuration>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>build</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
-    </plugins>
-</build>
-----
-
-<1> This configuration will output a file `uber-jar-name-runner.jar` inside the `target` directory. When `finalName` option is not set, project's build final name is used.
+Uber-Jar's final name is configurable via a Maven's build settings `finalName` option.
 
 [[custom-test-configuration-profile]]
 === Custom test configuration profile in JVM mode

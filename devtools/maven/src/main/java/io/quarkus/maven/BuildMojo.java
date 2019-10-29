@@ -37,6 +37,7 @@ import io.quarkus.creator.phase.augment.AugmentTask;
 @Mojo(name = "build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class BuildMojo extends AbstractMojo {
 
+    protected static final String QUARKUS_PACKAGE_UBER_JAR = "quarkus.package.uber-jar";
     /**
      * The entry point to Aether, i.e. the component doing all the work.
      *
@@ -166,8 +167,8 @@ public class BuildMojo extends AbstractMojo {
             }
         }
         boolean clear = false;
-        if (uberJar && System.getProperty("quarkus.package.types") == null) {
-            System.setProperty("quarkus.package.types", "uber-jar");
+        if (uberJar && System.getProperty(QUARKUS_PACKAGE_UBER_JAR) == null) {
+            System.setProperty(QUARKUS_PACKAGE_UBER_JAR, "true");
             clear = true;
         }
         realProperties.putIfAbsent("quarkus.application.name", project.getArtifactId());
@@ -186,18 +187,18 @@ public class BuildMojo extends AbstractMojo {
                             .setConfigDir(outputDirectory.toPath())
                             .setBuildSystemProperties(realProperties).build());
             Artifact original = project.getArtifact();
-            if (result.getUberJar() != null && result.getUberJar().getOriginalArtifact() != null) {
-                original.setFile(result.getUberJar().getOriginalArtifact().toFile());
+            if (result.getJar().isUberJar() && result.getJar().getOriginalArtifact() != null) {
+                original.setFile(result.getJar().getOriginalArtifact().toFile());
             }
-            if (result.getUberJar() != null) {
-                projectHelper.attachArtifact(project, result.getUberJar().getPath().toFile(), "runner");
+            if (result.getJar().isUberJar()) {
+                projectHelper.attachArtifact(project, result.getJar().getPath().toFile(), "runner");
             }
 
         } catch (AppCreatorException e) {
             throw new MojoExecutionException("Failed to build a runnable JAR", e);
         } finally {
             if (clear) {
-                System.clearProperty("quarkus.package.types");
+                System.clearProperty(QUARKUS_PACKAGE_UBER_JAR);
             }
         }
     }

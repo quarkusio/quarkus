@@ -47,7 +47,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         this.vertx = vertx;
         this.beanContainer = beanContainer;
         this.dispatcher = new RequestDispatcher((SynchronousDispatcher) deployment.getDispatcher(),
-                deployment.getProviderFactory(), null);
+                deployment.getProviderFactory(), null, Thread.currentThread().getContextClassLoader());
         this.rootPath = rootPath;
         this.allocator = allocator;
         Instance<CurrentIdentityAssociation> association = CDI.current().select(CurrentIdentityAssociation.class);

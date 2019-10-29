@@ -2,6 +2,7 @@ package io.quarkus.undertow.runtime;
 
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.undertow.httpcore.StatusCodes;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
@@ -30,6 +31,11 @@ public class QuarkusAuthMechanism implements AuthenticationMechanism {
         VertxHttpExchange delegate = (VertxHttpExchange) exchange.getDelegate();
         RoutingContext context = (RoutingContext) delegate.getContext();
         HttpAuthenticator authenticator = context.get(HttpAuthenticator.class.getName());
+        if (authenticator == null) {
+            exchange.setStatusCode(StatusCodes.UNAUTHORIZED);
+            exchange.endExchange();
+            return new ChallengeResult(true, exchange.getStatusCode());
+        }
         authenticator.sendChallenge(context, new Runnable() {
             @Override
             public void run() {

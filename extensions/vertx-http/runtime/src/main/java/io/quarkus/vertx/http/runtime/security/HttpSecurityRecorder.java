@@ -75,24 +75,7 @@ public class HttpSecurityRecorder {
                 if (authorizer == null) {
                     authorizer = CDI.current().select(HttpAuthorizer.class).get();
                 }
-                authorizer.checkPermission(event).handle(new BiFunction<SecurityIdentity, Throwable, SecurityIdentity>() {
-                    @Override
-                    public SecurityIdentity apply(SecurityIdentity identity, Throwable throwable) {
-                        if (throwable != null) {
-                            event.fail(throwable);
-                            return null;
-                        }
-                        if (identity != null) {
-                            if (!identity.isAnonymous()) {
-                                event.setUser(new QuarkusHttpUser(identity));
-                            }
-                            event.next();
-                            return identity;
-                        }
-                        event.response().end();
-                        return null;
-                    }
-                });
+                authorizer.checkPermission(event);
             }
         };
     }
@@ -102,7 +85,7 @@ public class HttpSecurityRecorder {
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer container) {
-                container.instance(HttpAuthorizer.class).init(permissions, policies);
+                container.instance(PathMatchingHttpSecurityPolicy.class).init(permissions, policies);
             }
         };
     }

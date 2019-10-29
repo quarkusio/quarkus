@@ -2,6 +2,8 @@ package io.quarkus.arquillian;
 
 import static io.quarkus.arquillian.QuarkusProtocol.convertToTCCL;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import javax.enterprise.context.spi.CreationalContext;
@@ -24,15 +26,14 @@ public class InjectionEnricher implements TestEnricher {
 
     @Inject
     @TestScoped
-    private InstanceProducer<CreationalContext> creationalContextProducer;
+    private InstanceProducer<CreationalContext<?>> creationalContextProducer;
 
     public BeanManager getBeanManager() {
         return Arc.container().beanManager();
     }
 
-    @SuppressWarnings("unchecked")
-    public CreationalContext<Object> getCreationalContext() {
-        CreationalContext<Object> cc = creationalContextProducer.get();
+    public CreationalContext<?> getCreationalContext() {
+        CreationalContext<?> cc = creationalContextProducer.get();
         if (cc == null) {
             cc = getBeanManager().createCreationalContext(null);
             creationalContextProducer.set(cc);
@@ -42,13 +43,31 @@ public class InjectionEnricher implements TestEnricher {
 
     @Override
     public void enrich(Object testCase) {
-
     }
 
     @Override
     public Object[] resolve(Method method) {
         Object[] values = new Object[method.getParameterTypes().length];
         if (values.length > 0) {
+
+            // TestNG - we want to skip resolution if a non-arquillian dataProvider is used
+            boolean hasNonArquillianDataProvider = false;
+            for (Annotation annotation : method.getAnnotations()) {
+                if (annotation.annotationType().getName().equals("org.testng.annotations.Test")) {
+                    try {
+                        Method dataProviderMember = annotation.annotationType().getDeclaredMethod("dataProvider");
+                        String value = dataProviderMember.invoke(annotation).toString();
+                        hasNonArquillianDataProvider = !value.equals("") || !value.equals("ARQUILLIAN_DATA_PROVIDER");
+                        break;
+                    } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
+                            | InvocationTargetException ignored) {
+                    }
+                }
+            }
+            if (hasNonArquillianDataProvider) {
+                return values;
+            }
+
             BeanManager beanManager = getBeanManager();
             if (beanManager == null) {
                 return values;
@@ -77,7 +96,7 @@ public class InjectionEnricher implements TestEnricher {
     @SuppressWarnings("unchecked")
     private <T> T getInstanceByType(BeanManager manager, final int position, final Method method) {
         CreationalContext<?> cc = getCreationalContext();
-        return (T) manager.getInjectableReference(new MethodParameterInjectionPoint<T>(method, position, manager), cc);
+        return (T) manager.getInjectableReference(new MethodParameterInjectionPoint<T>(method, position), cc);
     }
 
 }

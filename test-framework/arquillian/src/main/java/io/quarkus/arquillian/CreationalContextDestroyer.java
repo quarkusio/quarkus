@@ -11,13 +11,13 @@ import org.jboss.arquillian.test.spi.event.suite.After;
 public class CreationalContextDestroyer {
 
     @Inject
-    private Instance<CreationalContext> creationalContext;
+    private Instance<CreationalContext<?>> creationalContext;
 
     public void destroy(@Observes EventContext<After> event) {
         try {
             event.proceed();
         } finally {
-            CreationalContext<Object> cc = creationalContext.get();
+            CreationalContext<?> cc = creationalContext.get();
             if (cc != null) {
                 cc.release();
             }

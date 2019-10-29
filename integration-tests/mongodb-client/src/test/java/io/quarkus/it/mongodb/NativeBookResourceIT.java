@@ -1,8 +1,8 @@
 package io.quarkus.it.mongodb;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.junit.NativeImageTest;
 
-@SubstrateTest
+@NativeImageTest
 class NativeBookResourceIT extends BookResourceTest {
 
 }

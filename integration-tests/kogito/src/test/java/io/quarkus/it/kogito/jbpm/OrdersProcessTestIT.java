@@ -1,7 +1,7 @@
 package io.quarkus.it.kogito.jbpm;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.junit.NativeImageTest;
 
-@SubstrateTest
+@NativeImageTest
 public class OrdersProcessTestIT extends OrdersProcessTest {
 }

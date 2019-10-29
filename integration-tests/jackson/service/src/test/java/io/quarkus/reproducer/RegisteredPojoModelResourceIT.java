@@ -1,8 +1,8 @@
 package io.quarkus.reproducer;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.junit.NativeImageTest;
 
-@SubstrateTest
+@NativeImageTest
 public class RegisteredPojoModelResourceIT extends RegisteredPojoModelResourceTest {
 
     // Execute the same tests but in native mode.

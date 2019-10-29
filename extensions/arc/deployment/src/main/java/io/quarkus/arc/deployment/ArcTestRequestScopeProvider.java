@@ -11,8 +11,8 @@ public class ArcTestRequestScopeProvider implements TestScopeSetup {
     private static final Logger LOGGER = Logger.getLogger(ArcTestRequestScopeProvider.class);
 
     @Override
-    public void setup(boolean isSubstrateTest) {
-        if (isSubstrateTest) {
+    public void setup(boolean isNativeImageTest) {
+        if (isNativeImageTest) {
             return;
         }
         ArcContainer container = Arc.container();
@@ -25,8 +25,8 @@ public class ArcTestRequestScopeProvider implements TestScopeSetup {
     }
 
     @Override
-    public void tearDown(boolean isSubstrateTest) {
-        if (isSubstrateTest) {
+    public void tearDown(boolean isNativeImageTest) {
+        if (isNativeImageTest) {
             return;
         }
         ArcContainer container = Arc.container();

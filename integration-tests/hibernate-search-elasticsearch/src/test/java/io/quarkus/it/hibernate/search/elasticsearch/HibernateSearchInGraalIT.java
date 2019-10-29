@@ -1,8 +1,8 @@
 package io.quarkus.it.hibernate.search.elasticsearch;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.junit.NativeImageTest;
 
-@SubstrateTest
+@NativeImageTest
 public class HibernateSearchInGraalIT extends HibernateSearchTest {
 
 }

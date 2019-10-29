@@ -5,7 +5,7 @@ import static org.hamcrest.Matchers.is;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.DisabledOnSubstrate;
+import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -39,7 +39,7 @@ public class PanacheFunctionalityTest {
                         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><person><id>666</id><name>Eddie</name><serialisationTrick>1</serialisationTrick><status>DECEASED</status></person>"));
     }
 
-    @DisabledOnSubstrate
+    @DisabledOnNativeImage
     @Test
     public void testPanacheInTest() {
         Assertions.assertEquals(0, Person.count());

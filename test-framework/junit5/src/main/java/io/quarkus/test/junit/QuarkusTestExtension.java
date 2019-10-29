@@ -338,18 +338,20 @@ public class QuarkusTestExtension
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         if (!failedBoot) {
-            boolean substrateTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
+            boolean nativeImageTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class)
+                    || context.getRequiredTestClass().isAnnotationPresent(NativeImageTest.class);
             restAssuredURLManager.clearURL();
-            TestScopeManager.tearDown(substrateTest);
+            TestScopeManager.tearDown(nativeImageTest);
         }
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
         if (!failedBoot) {
-            boolean substrateTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
+            boolean nativeImageTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class)
+                    || context.getRequiredTestClass().isAnnotationPresent(NativeImageTest.class);
             restAssuredURLManager.setURL();
-            TestScopeManager.setup(substrateTest);
+            TestScopeManager.setup(nativeImageTest);
         }
     }
 
@@ -367,13 +369,14 @@ public class QuarkusTestExtension
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
         ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
         PropertyTestUtil.setLogFileProperty();
-        boolean substrateTest = extensionContext.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
+        boolean nativeImageTest = extensionContext.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class)
+                || extensionContext.getRequiredTestClass().isAnnotationPresent(NativeImageTest.class);
         if (state == null) {
             TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
             try {
                 Map<String, String> systemProps = testResourceManager.start();
 
-                if (substrateTest) {
+                if (nativeImageTest) {
                     NativeImageLauncher launcher = new NativeImageLauncher(extensionContext.getRequiredTestClass());
                     launcher.addSystemProperties(systemProps);
                     try {
@@ -401,9 +404,9 @@ public class QuarkusTestExtension
                 throw e;
             }
         } else {
-            if (substrateTest != state.isSubstrate()) {
+            if (nativeImageTest != state.isNativeImage()) {
                 throw new RuntimeException(
-                        "Attempted to mix @SubstrateTest and JVM mode tests in the same test run. This is not allowed.");
+                        "Attempted to mix @NativeImageTest and JVM mode tests in the same test run. This is not allowed.");
             }
         }
 
@@ -437,12 +440,12 @@ public class QuarkusTestExtension
 
         private final TestResourceManager testResourceManager;
         private final Closeable resource;
-        private final boolean substrate;
+        private final boolean nativeImage;
 
-        ExtensionState(TestResourceManager testResourceManager, Closeable resource, boolean substrate) {
+        ExtensionState(TestResourceManager testResourceManager, Closeable resource, boolean nativeImage) {
             this.testResourceManager = testResourceManager;
             this.resource = resource;
-            this.substrate = substrate;
+            this.nativeImage = nativeImage;
         }
 
         @Override
@@ -460,8 +463,16 @@ public class QuarkusTestExtension
             }
         }
 
+        /**
+         * @deprecated Use {@link #isNativeImage()} instead.
+         */
+        @Deprecated
         public boolean isSubstrate() {
-            return substrate;
+            return nativeImage;
+        }
+
+        public boolean isNativeImage() {
+            return nativeImage;
         }
     }
 

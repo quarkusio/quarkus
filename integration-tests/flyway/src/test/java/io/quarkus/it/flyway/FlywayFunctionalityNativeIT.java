@@ -1,7 +1,7 @@
 package io.quarkus.it.flyway;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.junit.NativeImageTest;
 
-@SubstrateTest
+@NativeImageTest
 public class FlywayFunctionalityNativeIT extends FlywayFunctionalityTest {
 }

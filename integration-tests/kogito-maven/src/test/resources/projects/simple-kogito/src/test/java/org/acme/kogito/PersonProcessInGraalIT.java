@@ -1,8 +1,8 @@
 package org.acme.kogito;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.junit.NativeImageTest;
 
-@SubstrateTest
+@NativeImageTest
 public class PersonProcessInGraalIT extends PersonProcessTest {
 
 }

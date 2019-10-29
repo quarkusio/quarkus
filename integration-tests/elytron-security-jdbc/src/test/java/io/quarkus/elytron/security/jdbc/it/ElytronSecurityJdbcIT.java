@@ -1,8 +1,8 @@
 package io.quarkus.elytron.security.jdbc.it;
 
-import io.quarkus.test.junit.SubstrateTest;
+import io.quarkus.test.junit.NativeImageTest;
 
-@SubstrateTest
+@NativeImageTest
 class ElytronSecurityJdbcIT extends ElytronSecurityJdbcTest {
 
 }

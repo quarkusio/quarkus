@@ -7,150 +7,67 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-== Gradle configuration
-
-Configure your project as indicated in the link:gradle-config.html[Gradle configuration page].
-
-At the moment there is no way of automatically generating a new project using the Quarkus Gradle plugin,
-luckily setting up a Quarkus project with Gradle is very simple. You only need to add the Quarkus Gradle plugin like this:
-
-[source,groovy,subs=attributes+]
-----
-plugins {
-    id 'java'
-}
-
-apply plugin: 'io.quarkus'
-----
-
-or, if you use the Gradle Kotlin DSL:
-
-[source,kotlin,subs=attributes+]
-----
-plugins {
-    java
-}
-
-apply(plugin = "io.quarkus")
-----
-
-=== Gradle configuration for a local SNAPSHOT version of Quarkus
-
-This paragraph is relevant for those who want to use a locally built version of Quarkus, instead of an official release. It appears the configuration described above will not work in this case due to an issue in Gradle. There is a workaround though that looks a bit more verbose but nevertheless works for both locally built and officially released versions.
-
-[source,groovy,subs=attributes+]
-----
-buildscript {
-    repositories {
-        mavenLocal()
-    }
-    dependencies {
-        classpath "io.quarkus:quarkus-gradle-plugin:999-SNAPSHOT"
-    }
-}
-
-plugins {
-    id 'java'
-}
-
-apply plugin: 'io.quarkus'
-----
-
-or, if you use the Gradle Kotlin DSL:
-
-[source,kotlin,subs=attributes+]
-----
-
-buildscript {
-    repositories {
-        mavenLocal()
-    }
-    dependencies {
-        classpath("io.quarkus:quarkus-gradle-plugin:999-SNAPSHOT")
-    }
-}
-
-plugins {
-    java
-}
-
-apply(plugin = "io.quarkus")
-----
-
-
 [[project-creation]]
 == Creating a new project
 
-For now we have to manually create a Gradle project file for Quarkus.
-Here is a complete sample file for a simple REST project:
+The easiest way to scaffold a Gradle project, is currently to use the Quarkus Maven plugin like so:
 
-[source,groovy,subs=attributes+]
+[source,shell,subs=attributes+]
 ----
-plugins {
-    id 'java'
-    id 'io.quarkus' version '{quarkus-version}' // <1>
-}
-
-repositories {
-    mavenCentral()
-}
-
-dependencies { // <2>
-    implementation enforcedPlatform('io.quarkus:quarkus-bom:{quarkus-version}')
-    implementation 'io.quarkus:quarkus-resteasy'
-}
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=my-groupId \
+    -DprojectArtifactId=my-artifactId \
+    -DprojectVersion=my-version \
+    -DclassName="org.my.group.MyResource" \
+    -Dextensions="resteasy-jsonb"
+    -DbuildTool=gradle
 ----
 
-<1> The Quarkus plugin needs to be applied.
-<2> We include the Quarkus BOM using Gradle's link:https://docs.gradle.org/5.4.1/userguide/managing_transitive_dependencies.html#sec:bom_import[relevant syntax] and add RESTEasy dependency since we are developing a REST application similar to the getting started example.
-Quarkus also need this dependency for running tests, to provide this we use the `implementation` configuration.
+NOTE: If you just launch `mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create` the Maven plugin asks
+for user inputs. You can disable (and use default values) this interactive mode by passing `-B` to the Maven command.
 
-Here's the same build script, using the Gradle Kotlin DSL:
+The following table lists the attributes you can pass to the `create` command:
 
-[source,kotlin,subs=attributes+]
-----
-plugins {
-    java
-}
-apply(plugin = "io.quarkus")
+[cols=3*,options="header"]
+|===
+| Attribute
+| Default Value
+| Description
 
-repositories {
-    mavenCentral()
-}
+| `projectGroupId`
+| `org.acme.sample`
+| The group id of the created project
 
-dependencies {
-    implementation(enforcedPlatform("io.quarkus:quarkus-bom:{quarkus-version}"))
-    implementation("io.quarkus:quarkus-resteasy")
-}
-----
+| `projectArtifactId`
+| _mandatory_
+| The artifact id of the created project. Not passing it triggers the interactive mode.
 
-== Enable Tests
+| `projectVersion`
+| `1.0-SNAPSHOT`
+| The version of the created project
 
-When the Quarkus Gradle plugin is applied to a build, the `test` task is configured to run regular tests while the `testNative` task
-is meant to run the native image tests.
-The source code for the native image tests should reside in `src/native-test` instead of `src/test` where the source code for regular tests resides.
+| `className`
+| _Not created if omitted_
+| The fully qualified name of the generated resource
 
-To follow up our Rest example from above, we would also need to add two test dependencies:
+| `path`
+| `/hello`
+| The resource path, only relevant if `className` is set.
 
-[source,groovy,subs=attributes+]
-----
-testCompile group: 'io.quarkus', name: 'quarkus-junit5', version: '{quarkus-version}'
-testCompile group: 'io.rest-assured', name: 'rest-assured', version: '{restassured-version}'
-----
+| `extensions`
+| _[]_
+| The list of extensions to add to the project (comma-separated)
 
-For the Kotlin DSL:
+|===
 
-[source,kotlin,subs=attributes+]
-----
-testCompile("io.quarkus:quarkus-junit5:{quarkus-version}")
-testCompile("io.rest-assured:rest-assured:{restassured-version}")
-----
+If you decide to generate a REST resource (using the `className` attribute), the endpoint is exposed at: `http://localhost:8080/$path`.
+If you use the default `path`, the URL is: http://localhost:8080/hello.
 
-Note: Quarkus do not allow both link:getting-started-testing.html[QuarkusTests] and link:getting-started-testing.html#native-executable-testing[SubstrateTests] to run in the same test run.
-SubstrateTests should be seen as integration tests and moved to a different folder
-as recommended here:
-https://docs.gradle.org/current/userguide/java_testing.html#sec:configuring_java_integration_tests[Configuring integration tests].
-Quarkus supports running Substrate tests with Gradle, but the `buildNative` task is required to be completed first.
+The project is either generated in the current directory or in a directory named after the passed artifactId.
+If the current directory is empty, the project is generated in-place.
+
+A pair of Dockerfiles for native and jvm mode are also generated in `src/main/docker`.
+Instructions to build the image and run the container are written in those Dockerfiles.
 
 [[custom-test-configuration-profile]]
 === Custom test configuration profile in JVM mode

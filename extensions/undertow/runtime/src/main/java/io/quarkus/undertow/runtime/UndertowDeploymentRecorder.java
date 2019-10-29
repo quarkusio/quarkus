@@ -64,11 +64,15 @@ import io.undertow.servlet.api.InstanceFactory;
 import io.undertow.servlet.api.InstanceHandle;
 import io.undertow.servlet.api.ListenerInfo;
 import io.undertow.servlet.api.LoginConfig;
+import io.undertow.servlet.api.SecurityConstraint;
+import io.undertow.servlet.api.SecurityInfo;
 import io.undertow.servlet.api.ServletContainer;
 import io.undertow.servlet.api.ServletContainerInitializerInfo;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
 import io.undertow.servlet.api.ThreadSetupHandler;
+import io.undertow.servlet.api.TransportGuaranteeType;
+import io.undertow.servlet.api.WebResourceCollection;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.servlet.handlers.ServletPathMatches;
 import io.undertow.servlet.handlers.ServletRequestContext;
@@ -202,6 +206,7 @@ public class UndertowDeploymentRecorder {
                 }
             }
         });
+
         return new RuntimeValue<>(d);
     }
 
@@ -306,6 +311,11 @@ public class UndertowDeploymentRecorder {
 
     public void addServletInitParameter(RuntimeValue<DeploymentInfo> info, String name, String value) {
         info.getValue().addInitParameter(name, value);
+    }
+
+    public void setupSecurity(DeploymentManager manager) {
+
+        CDI.current().select(ServletHttpSecurityPolicy.class).get().setDeployment(manager.getDeployment());
     }
 
     public Handler<RoutingContext> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
@@ -509,6 +519,27 @@ public class UndertowDeploymentRecorder {
 
     public void addContextParam(RuntimeValue<DeploymentInfo> deployment, String paramName, String paramValue) {
         deployment.getValue().addInitParameter(paramName, paramValue);
+    }
+
+    public void setDenyUncoveredHttpMethods(RuntimeValue<DeploymentInfo> deployment, boolean denyUncoveredHttpMethods) {
+        deployment.getValue().setDenyUncoveredHttpMethods(denyUncoveredHttpMethods);
+    }
+
+    public void addSecurityConstraint(RuntimeValue<DeploymentInfo> deployment, SecurityConstraint securityConstraint) {
+        deployment.getValue().addSecurityConstraint(securityConstraint);
+    }
+
+    public void addSecurityConstraint(RuntimeValue<DeploymentInfo> deployment, SecurityInfo.EmptyRoleSemantic emptyRoleSemantic,
+            TransportGuaranteeType transportGuaranteeType,
+            Set<String> rolesAllowed, Set<WebResourceCollection> webResourceCollections) {
+
+        SecurityConstraint securityConstraint = new SecurityConstraint()
+                .setEmptyRoleSemantic(emptyRoleSemantic)
+                .addRolesAllowed(rolesAllowed)
+                .setTransportGuaranteeType(transportGuaranteeType)
+                .addWebResourceCollections(webResourceCollections.toArray(new WebResourceCollection[0]));
+        deployment.getValue().addSecurityConstraint(securityConstraint);
+
     }
 
     /**

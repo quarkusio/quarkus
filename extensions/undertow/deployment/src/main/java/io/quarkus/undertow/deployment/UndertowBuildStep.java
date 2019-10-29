@@ -2,6 +2,7 @@ package io.quarkus.undertow.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.AUTHENTICATE;
 import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.DENY;
 import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.PERMIT;
 import static javax.servlet.DispatcherType.REQUEST;
@@ -66,12 +67,14 @@ import org.jboss.metadata.web.spec.FiltersMetaData;
 import org.jboss.metadata.web.spec.HttpMethodConstraintMetaData;
 import org.jboss.metadata.web.spec.ListenerMetaData;
 import org.jboss.metadata.web.spec.MultipartConfigMetaData;
+import org.jboss.metadata.web.spec.SecurityConstraintMetaData;
 import org.jboss.metadata.web.spec.ServletMappingMetaData;
 import org.jboss.metadata.web.spec.ServletMetaData;
 import org.jboss.metadata.web.spec.ServletSecurityMetaData;
 import org.jboss.metadata.web.spec.ServletsMetaData;
 import org.jboss.metadata.web.spec.TransportGuaranteeType;
 import org.jboss.metadata.web.spec.WebMetaData;
+import org.jboss.metadata.web.spec.WebResourceCollectionMetaData;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -97,6 +100,7 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.runtime.HttpSessionContext;
+import io.quarkus.undertow.runtime.ServletHttpSecurityPolicy;
 import io.quarkus.undertow.runtime.ServletProducer;
 import io.quarkus.undertow.runtime.ServletRuntimeConfig;
 import io.quarkus.undertow.runtime.ServletSecurityInfoProxy;
@@ -110,8 +114,10 @@ import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.HttpMethodSecurityInfo;
+import io.undertow.servlet.api.SecurityConstraint;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
+import io.undertow.servlet.api.WebResourceCollection;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
@@ -147,8 +153,12 @@ public class UndertowBuildStep {
             BuildProducer<RouteBuildItem> routeProducer,
             ExecutorBuildItem executorBuildItem, HttpConfiguration httpConfiguration,
             ServletRuntimeConfig servletRuntimeConfig,
-            ServletContextPathBuildItem servletContextPathBuildItem) throws Exception {
+            ServletContextPathBuildItem servletContextPathBuildItem,
+            Capabilities capabilities) throws Exception {
 
+        if (capabilities.isCapabilityPresent(Capabilities.SECURITY)) {
+            recorder.setupSecurity(servletDeploymentManagerBuildItem.getDeploymentManager());
+        }
         Handler<RoutingContext> ut = recorder.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
                 servletDeploymentManagerBuildItem.getDeploymentManager(),
                 wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()), httpConfiguration,
@@ -165,8 +175,12 @@ public class UndertowBuildStep {
     @BuildStep
     void integrateCdi(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ContextRegistrarBuildItem> contextRegistrars,
-            BuildProducer<ListenerBuildItem> listeners) {
+            BuildProducer<ListenerBuildItem> listeners,
+            Capabilities capabilities) {
         additionalBeans.produce(new AdditionalBeanBuildItem(ServletProducer.class));
+        if (capabilities.isCapabilityPresent(Capabilities.SECURITY)) {
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ServletHttpSecurityPolicy.class));
+        }
         contextRegistrars.produce(new ContextRegistrarBuildItem(new ContextRegistrar() {
             @Override
             public void register(RegistrationContext registrationContext) {
@@ -401,6 +415,37 @@ public class UndertowBuildStep {
                         }
                     }
                 }
+            }
+        }
+        if (webMetaData.getDenyUncoveredHttpMethods() != null) {
+            recorder.setDenyUncoveredHttpMethods(deployment, webMetaData.getDenyUncoveredHttpMethods());
+        }
+        if (webMetaData.getSecurityConstraints() != null) {
+            for (SecurityConstraintMetaData constraint : webMetaData.getSecurityConstraints()) {
+                SecurityConstraint securityConstraint = new SecurityConstraint()
+                        .setTransportGuaranteeType(transportGuaranteeType(constraint.getTransportGuarantee()));
+
+                List<String> roleNames = constraint.getRoleNames();
+                if (constraint.getAuthConstraint() == null) {
+                    // no auth constraint means we permit the empty roles
+                    securityConstraint.setEmptyRoleSemantic(PERMIT);
+                } else if (roleNames.size() == 1 && roleNames.contains("*")) {
+                    securityConstraint.setEmptyRoleSemantic(AUTHENTICATE);
+                } else {
+                    securityConstraint.addRolesAllowed(roleNames);
+                }
+
+                if (constraint.getResourceCollections() != null) {
+                    for (final WebResourceCollectionMetaData resourceCollection : constraint.getResourceCollections()) {
+                        securityConstraint.addWebResourceCollection(new WebResourceCollection()
+                                .addHttpMethods(resourceCollection.getHttpMethods())
+                                .addHttpMethodOmissions(resourceCollection.getHttpMethodOmissions())
+                                .addUrlPatterns(resourceCollection.getUrlPatterns()));
+                    }
+                }
+                recorder.addSecurityConstraint(deployment, securityConstraint.getEmptyRoleSemantic(),
+                        securityConstraint.getTransportGuaranteeType(), securityConstraint.getRolesAllowed(),
+                        securityConstraint.getWebResourceCollections());
             }
         }
 

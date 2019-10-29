@@ -23,8 +23,11 @@ final public class ConfigDocWriter {
             final String extensionFileName = entry.getKey();
 
             sort(configDocItems);
+            String anchorPrefix = extensionFileName;
+            if (extensionFileName.endsWith(".adoc"))
+                anchorPrefix = anchorPrefix.substring(0, anchorPrefix.length() - 5);
 
-            generateDocumentation(Constants.GENERATED_DOCS_PATH.resolve(extensionFileName), configDocItems);
+            generateDocumentation(Constants.GENERATED_DOCS_PATH.resolve(extensionFileName), anchorPrefix + "_", configDocItems);
         }
     }
 
@@ -33,7 +36,7 @@ final public class ConfigDocWriter {
      */
     public void writeAllExtensionConfigDocumentation(List<ConfigDocItem> allItems)
             throws IOException {
-        generateDocumentation(Constants.GENERATED_DOCS_PATH.resolve("all-config.adoc"), allItems);
+        generateDocumentation(Constants.GENERATED_DOCS_PATH.resolve("all-config.adoc"), "", allItems);
     }
 
     /**
@@ -60,9 +63,10 @@ final public class ConfigDocWriter {
      * @param configDocItems
      * @throws IOException
      */
-    private void generateDocumentation(Path targetPath, List<ConfigDocItem> configDocItems) throws IOException {
+    private void generateDocumentation(Path targetPath, String initialAnchorPrefix, List<ConfigDocItem> configDocItems)
+            throws IOException {
         try (Writer writer = Files.newBufferedWriter(targetPath)) {
-            summaryTableDocFormatter.format(writer, configDocItems);
+            summaryTableDocFormatter.format(writer, initialAnchorPrefix, configDocItems);
 
             boolean hasDuration = false, hasMemory = false;
             for (ConfigDocItem item : configDocItems) {

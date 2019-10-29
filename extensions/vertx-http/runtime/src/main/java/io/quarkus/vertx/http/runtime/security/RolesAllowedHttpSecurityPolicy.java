@@ -5,7 +5,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import io.quarkus.security.identity.SecurityIdentity;
-import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * permission checker that handles role based permissions
@@ -30,7 +30,8 @@ public class RolesAllowedHttpSecurityPolicy implements HttpSecurityPolicy {
     }
 
     @Override
-    public CompletionStage<CheckResult> checkPermission(HttpServerRequest request, SecurityIdentity identity) {
+    public CompletionStage<CheckResult> checkPermission(RoutingContext request, SecurityIdentity identity,
+            AuthorizationRequestContext requestContext) {
         for (String i : rolesAllowed) {
             if (identity.hasRole(i)) {
                 return CompletableFuture.completedFuture(CheckResult.PERMIT);

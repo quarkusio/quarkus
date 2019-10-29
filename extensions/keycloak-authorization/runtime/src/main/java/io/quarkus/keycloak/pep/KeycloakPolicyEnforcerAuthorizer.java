@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -18,45 +19,45 @@ import org.keycloak.adapters.authorization.PolicyEnforcer;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 
-import io.quarkus.arc.AlternativePriority;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
-import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
-import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.vertx.ext.web.RoutingContext;
 
 @Singleton
-@AlternativePriority(1)
-public class KeycloakPolicyEnforcerAuthorizer extends HttpAuthorizer {
+public class KeycloakPolicyEnforcerAuthorizer
+        implements HttpSecurityPolicy, BiFunction<RoutingContext, SecurityIdentity, HttpSecurityPolicy.CheckResult> {
 
     private KeycloakAdapterPolicyEnforcer delegate;
 
     @Override
-    public CompletionStage<SecurityIdentity> checkPermission(RoutingContext routingContext) {
+    public CompletionStage<CheckResult> checkPermission(RoutingContext request, SecurityIdentity identity,
+            AuthorizationRequestContext requestContext) {
+        return requestContext.runBlocking(request, identity, this);
+    }
+
+    @Override
+    public CheckResult apply(RoutingContext routingContext, SecurityIdentity identity) {
+
         VertxHttpFacade httpFacade = new VertxHttpFacade(routingContext);
         AuthorizationContext result = delegate.authorize(httpFacade);
 
         if (result.isGranted()) {
-            QuarkusHttpUser user = (QuarkusHttpUser) routingContext.user();
-
-            if (user == null) {
-                return attemptAnonymousAuthentication(routingContext);
-            }
-
-            return enhanceSecurityIdentity(user.getSecurityIdentity(), result);
+            SecurityIdentity newIdentity = enhanceSecurityIdentity(identity, result);
+            return new CheckResult(true, newIdentity);
         }
 
-        return CompletableFuture.completedFuture(null);
+        return CheckResult.DENY;
     }
 
-    private CompletableFuture<SecurityIdentity> enhanceSecurityIdentity(SecurityIdentity current,
+    private SecurityIdentity enhanceSecurityIdentity(SecurityIdentity current,
             AuthorizationContext context) {
         Map<String, Object> attributes = new HashMap<>(current.getAttributes());
 
         attributes.put("permissions", context.getPermissions());
 
-        return CompletableFuture.completedFuture(new QuarkusSecurityIdentity.Builder()
+        return new QuarkusSecurityIdentity.Builder()
                 .addAttributes(attributes)
                 .setPrincipal(current.getPrincipal())
                 .addRoles(current.getRoles())
@@ -82,7 +83,7 @@ public class KeycloakPolicyEnforcerAuthorizer extends HttpAuthorizer {
 
                         return CompletableFuture.completedFuture(false);
                     }
-                }).build());
+                }).build();
     }
 
     public void init(OidcConfig oidcConfig, KeycloakPolicyEnforcerConfig config) {

@@ -233,7 +233,7 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          timeoutInMinutes: 25
+          timeoutInMinutes: 45
           modules:
             - elytron-resteasy
             - oidc

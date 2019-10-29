@@ -207,7 +207,7 @@ stages:
             - jpa-mariadb
             - jpa-mssql
             - jpa-derby
-          name: jpa_db
+          name: data_1
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
@@ -217,7 +217,7 @@ stages:
             - jpa-postgresql
             - jpa-mysql
             - reactive-mysql-client
-          name: jpa
+          name: data_2
           postgres: true
           mysql: true
 
@@ -242,17 +242,24 @@ stages:
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          timeoutInMinutes: 35
+          timeoutInMinutes: 20
           modules:
             - elytron-security-oauth2
             - elytron-security
             - elytron-security-jdbc
             - elytron-undertow
+          name: security_1
+          keycloak: true
+
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          timeoutInMinutes: 20
+          modules:
             - elytron-resteasy
             - oidc
             - vault-app
             - keycloak-authorization
-          name: security
+          name: security_2
           keycloak: true
 
       - template: ci-templates/native-build-steps.yaml
@@ -262,7 +269,7 @@ stages:
             - flyway
             - hibernate-orm-panache
             - reactive-pg-client
-          name: database
+          name: data_3
           postgres: true
 
       - template: ci-templates/native-build-steps.yaml
@@ -272,9 +279,7 @@ stages:
             - mongodb-client
             - mongodb-panache
             - neo4j
-            - narayana-stm
-            - narayana-jta
-          name: data
+          name: data_4
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
@@ -303,7 +308,7 @@ stages:
             - jgit
             - kogito
             - kubernetes-client
-          name: misc1
+          name: misc_1
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
@@ -312,7 +317,7 @@ stages:
             - tika
             - hibernate-validator
             - test-extension
-          name: misc2
+          name: misc_2
 
       - template: ci-templates/native-build-steps.yaml
         parameters:
@@ -323,10 +328,11 @@ stages:
             - spring-data-jpa
           name: spring
 
-
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          timeoutInMinutes: 15
+          timeoutInMinutes: 25
           modules:
             - hibernate-search-elasticsearch
-          name: hibernate_search_elasticsearch
+            - narayana-stm
+            - narayana-jta
+          name: data_5

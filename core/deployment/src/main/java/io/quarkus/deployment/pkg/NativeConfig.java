@@ -165,7 +165,7 @@ public class NativeConfig {
     /**
      * If full stack traces are enabled in the resulting image
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem(defaultValue = "true")
     public boolean fullStackTraces;
 
     /**

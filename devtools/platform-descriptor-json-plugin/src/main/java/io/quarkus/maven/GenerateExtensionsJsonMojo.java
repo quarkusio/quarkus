@@ -50,6 +50,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -285,7 +286,8 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
     private JsonNode processPlatformArtifact(Artifact artifact, Path descriptor, ObjectMapper mapper)
             throws IOException {
         try (InputStream is = Files.newInputStream(descriptor)) {
-            JsonNode object = mapper.readTree(is);
+            ObjectNode object = mapper.readValue(is, ObjectNode.class);
+            transformLegacyToNew(object, mapper);
             debug("Adding Quarkus extension %s:%s", object.get(Extension.GROUP_ID), object.get(Extension.ARTIFACT_ID));
             return object;
         } catch (IOException io) {
@@ -359,4 +361,48 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         }
         getLog().debug(String.format(msg, args));
     }
+
+    //TODO: duplicate from ExtensionDescriptor - move to shared location?
+    private void transformLegacyToNew(ObjectNode extObject, ObjectMapper mapper) {
+        ObjectNode metadata = null;
+
+        // Note: groupId and artifactId shouldn't normally be in the source json but
+        // just putting it
+        // here for completenes
+        if (extObject.get("groupId") != null) {
+            extObject.set(Extension.GROUP_ID, extObject.get("groupId"));
+            extObject.remove("groupId");
+        }
+
+        if (extObject.get("artifactId") != null) {
+            extObject.set(Extension.ARTIFACT_ID, extObject.get("artifactId"));
+            extObject.remove("artifactId");
+        }
+
+        JsonNode mvalue = extObject.get("metadata");
+        if (mvalue != null && mvalue.isObject()) {
+            metadata = (ObjectNode) mvalue;
+        } else {
+            metadata = mapper.createObjectNode();
+        }
+
+        if (extObject.get("labels") != null) {
+            metadata.set("keywords", extObject.get("labels"));
+            extObject.remove("labels");
+        }
+
+        if (extObject.get("guide") != null) {
+            metadata.set("guide", extObject.get("guide"));
+            extObject.remove("guide");
+        }
+
+        if (extObject.get("shortName") != null) {
+            metadata.set("short-name", extObject.get("shortName"));
+            extObject.remove("shortName");
+        }
+
+        extObject.set("metadata", metadata);
+
+    }
+
 }

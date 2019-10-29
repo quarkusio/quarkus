@@ -99,7 +99,7 @@
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
                                     <!-- Include the server certificate -->
                                     <additionalBuildArgs>
-                                        <additionalBuildArg>-H:ResourceConfigurationFiles=${project.basedir}/src/main/resources/resources-config.json</additionalBuildArg>
+                                        <additionalBuildArg>-H:IncludeResources=.*\.jks</additionalBuildArg>
                                         <additionalBuildArg>-H:EnableURLProtocols=http,https</additionalBuildArg>
                                     </additionalBuildArgs>
                                     <graalvmHome>${graalvmHome}</graalvmHome>

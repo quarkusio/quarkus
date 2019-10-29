@@ -32,24 +32,11 @@
                 </methods>
             </class>
 
-            <!-- https://github.com/eclipse/microprofile-fault-tolerance/issues/464 -->
-            <class name="org.eclipse.microprofile.fault.tolerance.tck.metrics.BulkheadMetricTest">
-                <methods>
-                    <exclude name="bulkheadMetricAsyncTest"/>
-                    <exclude name="bulkheadMetricRejectionTest"/>
-                    <exclude name="bulkheadMetricTest"/>
-                </methods>
-            </class>
-            <class name="org.eclipse.microprofile.fault.tolerance.tck.metrics.AllMetricsTest">
-                <methods>
-                    <exclude name="testAllMetrics"/>
-                </methods>
-            </class>
             <class name="org.eclipse.microprofile.fault.tolerance.tck.metrics.CircuitBreakerMetricTest">
                 <methods>
                     <exclude name="testCircuitBreakerMetric"/>
                 </methods>
-            </class>
+            </class> 
 
         </classes>
     </test>

@@ -165,7 +165,7 @@ public class BearerTokenAuthorizationTest {
                 .when().get("/api/admin")
                 .then()
                 .statusCode(200)
-                .body(Matchers.containsString("granted"));
+                .body(Matchers.containsString("granted:admin"));
     }
 
     @Test

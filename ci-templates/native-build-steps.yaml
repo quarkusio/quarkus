@@ -18,6 +18,7 @@ jobs:
       imageName: 'quarkus:$(build.buildId)'
     steps:
     - script: echo POINT 1
+    - script: docker ps | awk '{print $1}' | grep -v CONTAINER | xargs docker kill || true
     - task: DownloadPipelineArtifact@2
       inputs:
         artifact: $(Build.SourceVersion)-BuiltMavenRepo

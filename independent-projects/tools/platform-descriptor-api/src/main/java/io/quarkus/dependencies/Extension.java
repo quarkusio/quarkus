@@ -294,10 +294,30 @@ public class Extension {
     }
 
     public boolean isUnlisted() {
-        return (boolean) getMetadata().get(MD_UNLISTED);
-    }
+        Object val = getMetadata().get(MD_UNLISTED);
+        if (val==null) {
+            return false;
+        } else if (val instanceof Boolean) {
+            return ((Boolean) val).booleanValue();
+        } else if (val instanceof String) {
+            return Boolean.valueOf((String)val);
+        }
+        
+        return false;
+     }
 
     public void setUnlisted(boolean unlisted) {
         getMetadata().put(MD_UNLISTED, Boolean.valueOf(unlisted));
     }
+
+    public Extension addMetadata(String key, Object value) {
+       getMetadata().put(key,value);
+       return this;
+        
+    }
+    
+    public Extension removeMetadata(String key) {
+        getMetadata().remove(key);
+        return this;
+     }
 }

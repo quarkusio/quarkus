@@ -11,22 +11,34 @@ include::./attributes.adoc[]
 Hibernate ORM is the de facto JPA implementation and offers you the full breath of an Object Relational Mapper.
 It works beautifully in Quarkus.
 
-== Setting up and configuring Hibernate ORM without `persistence.xml` (recommended)
+== Setting up and configuring Hibernate ORM
 
-More often than not, you need one _persistence unit_ with few configuration options.
+When using Hibernate ORM in Quarkus, you don't need to have a `persistence.xml` resource to configure it.
+
+Using such a classic configuration file is an option, but unnecessary unless you have specific advanced needs;
+so we'll see first how Hibernate ORM can be configured without a `persistence.xml` resource.
+
 In Quarkus, you just need to:
 
-* add your settings in `{config-file}`
-* annotate your entities with `@Entity` and friends
+* add your configuration settings in `{config-file}`
+* annotate your entities with `@Entity` and any other mapping annotation as usual
 
-and we make some opinionated choices and educated guesses.
+Other configuration needs have been automated: Quarkus will make some opinionated choices and educated guesses.
 
-In your `pom.xml`, add the following dependencies:
+Add the following dependencies to your project:
 
-* the Hibernate ORM extension
-* your JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
+* the Hibernate ORM extension: `io.quarkus:quarkus-hibernate-orm`
+* your JDBC driver extension; the following options are available:
+  - `quarkus-jdbc-derby` for link:https://db.apache.org/derby/[Apache Derby]
+  - `quarkus-jdbc-h2` for link:https://www.h2database.com/html/main.html[H2]
+  - `quarkus-jdbc-mariadb` for link:https://mariadb.com/[MariaDB]
+  - `quarkus-jdbc-mssql` for link:https://www.microsoft.com/en-gb/sql-server/[Microsoft SQL Server]
+  - `quarkus-jdbc-mysql` for link:https://www.mysql.com/[MySQL]
+  - `quarkus-jdbc-postgresql` for link:https://www.postgresql.org/[PostgreSQL]
+
 
 [source,xml]
+.Example dependencies using Maven
 --
 <dependencies>
     <!-- Hibernate ORM specific dependencies -->
@@ -47,8 +59,9 @@ Annotate your persistent objects with `@Entity`,
 then add the relevant configuration properties in `{config-file}`.
 
 [source,properties]
+.Example `{config-file}`
 --
-# configure your datasource
+# datasource configuration
 quarkus.datasource.url = jdbc:postgresql://localhost:5432/hibernate_db
 quarkus.datasource.driver = org.postgresql.Driver
 quarkus.datasource.username = hibernate
@@ -58,15 +71,21 @@ quarkus.datasource.password = hibernate
 quarkus.hibernate-orm.database.generation=drop-and-create
 --
 
-Note that these configuration properties are not the same ones as in your typical Hibernate ORM configuration file: they might differ in names, casing and don't necessarily map 1:1 to each other.
-Please see below for the list of properties you can define.
+Note that these configuration properties are not the same ones as in your typical Hibernate ORM configuration file: these drive Quarkus configuration properties,
+which often will map to Hibernate configuration properties but could have different names and don't necessarily map 1:1 to each other.
 
-An `EntityManagerFactory` will be created based on Quarkus `datasource` configuration as long as the Hibernate ORM extension is declared in your `pom.xml`.
-The dialect will be selected based on the JDBC driver.
+Also, Quarkus will set many Hibernate configuration settings automatically, and will often use more modern defaults.
+
+Please see below section <<hibernate-configuration-properties, Hibernate ORM configuration properties>> for the list of properties you can set in `{config-file}`.
+
+An `EntityManagerFactory` will be created based on the Quarkus `datasource` configuration as long as the Hibernate ORM extension is listed among your project dependencies.
+
+The dialect will be selected based on the JDBC driver - unless you set one explicitly.
 
 You can then happily inject your `EntityManager`:
 
 [source,java]
+.Example application bean using Hibernate
 --
 @ApplicationScoped
 public class SantaClausService {
@@ -80,8 +99,14 @@ public class SantaClausService {
         em.persist(gift);
     }
 }
+--
 
-//and of course our entity
+<1> Inject your entity manager and have fun
+<2> Mark your CDI bean method as `@Transactional` and the `EntityManager` will enlist and flush at commit.
+
+[source,java]
+.Example Entity
+--
 @Entity
 public class Gift {
     private Long id;
@@ -106,20 +131,25 @@ public class Gift {
 }
 --
 
-<1> Inject your entity manager and have fun
-<2> Mark your CDI bean method as `@Transactional` and the `EntityManager` will enlist and flush at commit.
-
-To load some SQL statements when Hibernate ORM starts, add a `import.sql` in the root of your resources directory.
-It contains SQL DML statements terminated by a semicolon.
+To load some SQL statements when Hibernate ORM starts, add an `import.sql` in the root of your resources directory.
+Such a script can contain any SQL DML statements; make sure to terminate each statement with a semicolon.
 This is useful to have a data set ready for your tests or demos.
 
 WARNING: Make sure to wrap methods modifying your database (e.g. `entity.persist()`) within a transaction. Marking a
 CDI bean method `@Transactional` will do that for you and make that method a transaction boundary. We recommend doing
 so at your application entry point boundaries like your REST endpoint controllers.
 
-=== Properties to refine your Hibernate ORM configuration
+[[hibernate-configuration-properties]]
+=== Hibernate ORM configuration properties
 
-There are optional properties useful to refine your `EntityManagerFactory` or guide guesses of Quarkus.
+There are various optional properties useful to refine your `EntityManagerFactory` or guide guesses of Quarkus.
+
+There are no required properties, as long as a default datasource is configured.
+
+When no property is set, Quarkus can typically infer everything it needs to setup Hibernate ORM
+and will have it use the default datasource.
+
+The configuration properties listed here allow you to override such defaults, and customize and tune various aspects.
 
 include::{generated-dir}/config/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]
 
@@ -142,11 +172,12 @@ docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 \
            -p 5432:5432 postgres:10.5
 --
 
+This will start a non-durable empty database: ideal for a quick experiment!
 ====
 
 == Setting up and configuring Hibernate ORM with a `persistence.xml`
 
-Alternatively, you can set a `META-INF/persistence.xml` to setup Hibernate ORM.
+Alternatively, you can use a `META-INF/persistence.xml` to setup Hibernate ORM.
 This is useful for:
 
 * migrating existing code
@@ -163,6 +194,7 @@ Your `pom.xml` dependencies as well as your Java code would be identical to the 
 difference is that you would specify your Hibernate ORM configuration in `META-INF/persistence.xml`:
 
 [source,xml]
+.Example persistence.xml resource
 --
 <persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -194,25 +226,36 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
 </persistence>
 --
 
+When using the `persistence.xml` configuration you are configuring Hibernate ORM directly,
+so in this case the appropriate reference is the link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#configurations[documentation on hibernate.org].
+
+Please remember these are not the same property names as the ones used in the Quarkus `{config-file}`, nor will
+the same defaults be applied.
+
 == Defining entities in external projects or jars
 
 Hibernate ORM in Quarkus relies on compile-time bytecode enhancements to your entities. If you define your entities in the
-same project where you build your Quarkus application, everything will work fine. If the entities come from external projects
+same project where you build your Quarkus application, everything will work fine.
+
+If the entities come from external projects
 or jars, you can make sure that your jar is treated like a Quarkus application library by adding an empty `META-INF/beans.xml` file.
+
 This will allow Quarkus to index and enhance your entities as if they were inside the current project.
 
 == Hibernate ORM in development mode
 
 Quarkus development mode is really useful for applications that mix front end or services and database access.
+
 There are a few common approaches to make the best of it.
 
 The first choice is to use `quarkus.hibernate-orm.database.generation=drop-and-create` in conjunction with `import.sql`.
+
 That way for every change to your app and in particular to your entities, the database schema will be properly recreated
 and your data fixture (stored in `import.sql`) will be used to repopulate it from scratch.
 This is best to perfectly control your environment and works magic with Quarkus live reload mode:
 your entity changes or any change to your `import.sql` is immediately picked up and the schema updated without restarting the application!
 
-[NOTE]
+[TIP]
 --
 By default, Hibernate ORM, upon boot, will read and execute the SQL statements in the `/import.sql` file (if present).
 You can change the file name by changing the property `quarkus.hibernate-orm.sql-load-script` in `application.properties`.
@@ -224,18 +267,20 @@ still need to work on a copy of the production data
 or if you want to reproduce a bug that is based on specific database entries.
 `update` is a best effort from Hibernate ORM and will fail in specific situations
 including altering your database structure which could lead to data loss.
-For example if you change structures related to the foreign key, Hibernate ORM might have to bail out.
+For example if you change structures which violate a foreign key constraint, Hibernate ORM might have to bail out.
 But for development, these limitations are acceptable.
 
 The third approach is to use `quarkus.hibernate-orm.database.generation=none`.
 This approach is best when you are working on a copy of the production data but want to fully control the schema evolution.
 Or if you use a database schema migration tool like https://quarkus.io/guides/flyway[Flyway].
-When you make a change to an entity, make sure to adapt the database schema accordingly.
 
-WARNING: Do not use `quarkus.hibernate-orm.database.generation` `drop-and-create` and `update` in your production environment. You have been warned :)
+With this approach when making changes to an entity, make sure to adapt the database schema accordingly;
+you could also use `validate` to have Hibernate verify the schema matches its expectations.
+
+WARNING: Do not use `quarkus.hibernate-orm.database.generation` `drop-and-create` and `update` in your production environment.
 
 
-It becomes really powerful when combined with Quarkus configuration profiles.
+These approaches become really powerful when combined with Quarkus configuration profiles.
 You can define different https://quarkus.io/guides/config#configuration-profiles[configuration profiles]
 to select different behaviors depending on your environment.
 This is great because you can define different combinations of Hibernate ORM properties matching the development style you currently need.
@@ -254,11 +299,12 @@ This is great because you can define different combinations of Hibernate ORM pro
 --
 
 [source,bash]
-
+.Start "dev mode" using a custom profile via Maven
 --
 ./mvnw compile quarkus:dev -Dquarkus.profile=dev-with-data
 --
 
+[[caching]]
 == Caching
 
 Applications that frequently read the same entities can see their performance improved when the Hibernate ORM second-level cache is enabled.
@@ -385,6 +431,85 @@ Finally, the second-level cache can be disabled globally by setting `hibernate.c
 
 When second-level cache is disabled, all cache annotations are ignored and all queries are run ignoring caches; this is generally useful only to diagnose issues.
 
+== Limitations and other things you should know
+
+Quarkus does not modify the libraries it uses; this rule applies to Hibernate ORM as well: when using
+this extension you will mostly have the same experience as using the original library.
+
+But while they share the same code, Quarkus does configure some components automatically and injects custom implementations
+for some extension points; this should be transparent and useful but if you're an expert of Hibernate you might want to
+know what is being done.
+
+=== Automatic build time enhancement
+
+Hibernate ORM can use build time enhanced entities; normally this is not mandatory but it's useful and will have your
+applications perform better.
+
+Typically you would need to adapt your build scripts to include the Hibernate Enhancement plugins; in Quarkus this is
+not necessary as the enhancement step is integrated in the build and analysis of the Quarkus application.
+
+
+=== Automatic integration
+
+Transaction Manager integration::
+You don't need to set this up, Quarkus automatically injects the reference to the Narayana Transaction Manager.
+The dependency is included automatically as a transitive dependency of the Hibernate ORM extension.
+All configuration is optional; for more details see link:transaction[Using Transactions in Quarkus].
+
+Connection pool::
+Don't need to choose one either. Quarkus automatically includes the Agroal connection pool;
+just configure your datasource as in the above examples and it will setup Hibernate ORM to use Agroal.
+More details about this connection pool can be found in link:datasource[Quarkus - Datasources].
+
+Second Level Cache::
+as explained above in section <<caching,Caching>>, you don't need to pick an implementation.
+A suitable implementation based on technologies from link:https://infinispan.org/[Infinispan] and link:https://github.com/ben-manes/caffeine[Caffeine] is included as a transitive dependency of the Hibernate ORM extension, and automatically integrated during the build.
+
+=== Limitations
+
+XML mapping::
+Hibernate ORM allows to map entities using XML files; this capability isn't enabled in Quarkus: use annotations instead
+as Quarkus can handle them very efficiently.
+This limitation could be lifted in the future, if there's a compelling need for it and if someone contributes it.
+
+JMX::
+Management beans are not working in GraalVM native images;
+therefore Hibernate's capability to register statistics and management operations with the JMX bean is disabled when compiling into a native image.
+This limitation is likely permanent, as it's not a goal for native images
+to implement support for JMX. All such metrics can be accessed in other ways.
+
+JACC Integration::
+Hibernate ORM's capability to integrate with JACC is disabled when building GraalVM native images,
+as JACC is not available - nor useful - in native mode.
+
+Binding the Session to ThreadLocal context::
+Essentially using the `ThreadLocalSessionContext` helper of Hibernate ORM is not implemented.
+The team believes this isn't a big deal as it's trivial to inject the Session via CDI instead, or
+handling the binding into a ThreadLocal yourself, making this a legacy feature.
+This limitation might be resolved in the future, if someone opens a ticket for it and provides a reasonable use case to justify the need.
+
+JPA Callbacks::
+Annotations allowing for application callbacks on entity lifecycle events defined by JPA such as `@javax.persistence.PostUpdate`, `@javax.persistence.PostLoad`, `@javax.persistence.PostPersist`, etc... are currently not processed.
+This limitation could be resolved in a future version, depending on user demand.
+
+Single instance::
+It is currently not possible to configure more than one instance of Hibernate ORM.
+This is a temporary limitation, the team is working on it - please be patient!
+
+=== Other notable differences
+
+Format of `import.sql`::
+When importing a `import.sql` to setup your database, keep in mind that Quarkus reconfigures Hibernate ORM so to require a semicolon (';') to terminate each statement.
+The default in Hibernate is to have a statement per line, without requiring a terminator other than newline: remember to convert your scripts to use the ';' terminator character if you're reusing existing scripts.
+This is useful so to allow multi-line statements and human friendly formatting.
+
 == Simplifying Hibernate ORM with Panache
 
-The link:hibernate-orm-panache.html[Hibernate ORM with Panache] extension facilitates the usage of Hibernate ORM by providing active record style entities (and repositories) and focuses on making your entities trivial and fun to write in Quarkus.
+The link:hibernate-orm-panache[Hibernate ORM with Panache] extension facilitates the usage of Hibernate ORM by providing active record style entities (and repositories) and focuses on making your entities trivial and fun to write in Quarkus.
+
+== Configure your datasource
+
+Datasource configuration is extremely simple, but is covered in a different guide as technically
+it's implemented by the Agroal connection pool extension for Quarkus.
+
+Jump over to link:datasource[Quarkus - Datasources] for all details.

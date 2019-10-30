@@ -77,6 +77,8 @@ class RestClientProcessor {
     private static final DotName REST_CLIENT = DotName.createSimple(RestClient.class.getName());
     private static final DotName REGISTER_REST_CLIENT = DotName.createSimple(RegisterRestClient.class.getName());
 
+    private static final DotName SESSION_SCOPED = DotName.createSimple(SessionScoped.class.getName());
+
     private static final DotName PATH = DotName.createSimple(Path.class.getName());
 
     private static final DotName REGISTER_PROVIDER = DotName.createSimple(RegisterProvider.class.getName());
@@ -273,7 +275,7 @@ class RestClientProcessor {
             if (builtinScope != null) { // override default @Dependent scope with user defined one.
                 scopeToUse = builtinScope.getInfo();
             } else if (capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
-                if (scope.toString().equals("javax.enterprise.context.SessionScoped")) {
+                if (scope.equals(SESSION_SCOPED)) {
                     scopeToUse = new ScopeInfo(SessionScoped.class, true);
                 }
             }
@@ -292,7 +294,7 @@ class RestClientProcessor {
                     scopeToUse = builtinScope.getInfo();
                     break;
                 }
-                if (annotationName.toString().equals("javax.enterprise.context.SessionScoped")) {
+                if (annotationName.equals(SESSION_SCOPED)) {
                     scopeToUse = new ScopeInfo(SessionScoped.class, true);
                     break;
                 }

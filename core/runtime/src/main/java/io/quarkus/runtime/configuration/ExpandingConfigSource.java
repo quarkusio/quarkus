@@ -72,7 +72,7 @@ public class ExpandingConfigSource extends AbstractDelegatingConfigSource {
         if (value == null)
             return null;
         final Expression compiled = cache.exprCache.computeIfAbsent(value,
-                str -> Expression.compile(str, Expression.Flag.LENIENT_SYNTAX));
+                str -> Expression.compile(str, Expression.Flag.LENIENT_SYNTAX, Expression.Flag.NO_TRIM));
         return compiled.evaluate(ConfigExpander.INSTANCE);
     }
 

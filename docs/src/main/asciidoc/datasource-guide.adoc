@@ -7,19 +7,24 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-Many projects that use data require connections to a database.
-The main way of obtaining connections to a database is to use a datasource.
+Many projects that use data require connections to a relational database.
 
-In Quarkus, the out of the box datasource and connection pooling implementation is https://agroal.github.io/[Agroal].
+The main way of obtaining connections to a database is to use a datasource and configure a JDBC driver.
+
+In Quarkus, the preferred datasource and connection pooling implementation is https://agroal.github.io/[Agroal].
+
+Agroal is a modern, light weight connection pool implementation designed for very high performance and scalability,
+and features first class integration with the other components in Quarkus, such as security, transaction management components, health metrics.
 
 This guide will explain how to:
 
 * configure a datasource, or multiple datasources
 * how to obtain a reference to those datasources in code
+* which pool tuning configuration properties are available
 
 == Prerequisites
 
-To complete this guide, you need:
+To complete this guide, you will need:
 
 * less than 10 minutes
 * an IDE
@@ -39,14 +44,14 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dpath="/hello"
 ----
 
-It generates:
+This will generate:
 
 * the Maven structure
 * a landing page accessible on `http://localhost:8080`
-* example `Dockerfile` files for both `native` and `jvm` modes
+* an example `Dockerfile` files for both `native` and `jvm` modes
 * the application configuration file
 * an `org.acme.datasource.GreetingResource` resource
-* an associated test
+* an example integration test
 
 == Adding maven dependencies
 
@@ -66,7 +71,7 @@ Agroal comes as a transitive dependency of the Hibernate ORM extension so if you
 you don't need to add the Agroal extension dependency explicitly.
 ====
 
-You will also need to add the database connector library of choice.
+You will also need to choose, and add, the Quarkus extension for your relational database driver.
 
 Quarkus provides driver extensions for:
 
@@ -79,8 +84,9 @@ Quarkus provides driver extensions for:
 
 [NOTE]
 ====
-In JVM mode, simply adding your driver of choice is sufficient.
-Extensions are mostly useful to support GraalVM native images.
+The H2 and Derby databases can normally be configured to run in "embedded mode"; the extension does not support compiling the embedded database engine into native images.
+
+Read <<in-memory-databases,Testing with in-memory databases>> (below) for suggestions regarding integration testing.
 ====
 
 As usual, you can install the extension using `add-extension`.
@@ -258,6 +264,55 @@ If you have multiple datasources, all datasources will be checked and the status
 
 This behavior can be disabled via the property `quarkus.datasource.health.enabled`.
 
+== Narayana Transaction Manager integration
+
+If the Narayana JTA extension is also available, integration is automatic.
+
+You can override this by setting the `transactions` configuration property - see the <<configuration-reference, Configuration Reference>> below.
+
+
+[[in-memory-databases]]
+== Testing with in-memory databases
+
+Some databases like H2 and Derby are commonly used in "embedded mode" as a facility to run quick integration tests.
+
+Our suggestion is to use the real database you intend to use in production; container technologies made this simple enough so you no longer have an excuse. Still, there are sometimes
+good reasons to also want the ability to run quick integration tests using the JVM powered databases,
+so this is possible as well.
+
+It is important to remember that when configuring H2 (or Derby) to use the embedded engine,
+this will work as usual in JVM mode but such an application will not compile into a native image, as the Quarkus extensions only cover for making the JDBC client code compatible with the native compilation step: embedding the whole database engine into a native image is currently not implemented.
+
+If you plan to run such integration tests in the JVM exclusively, it will of course work as usual.
+
+If you want the ability to run such integration test in both JVM and/or native images, we have some cool helpers for you: just add either `@QuarkusTestResource(H2DatabaseTestResource.class)` or `@QuarkusTestResource(DerbyDatabaseTestResource.class)` on any class in your integration tests, this will make sure the testsuite starts (and stops) the embedded database into a separate process as necessary to run your tests.
+
+These additional helpers are provided by the artifacts having Maven coordinates `io.quarkus:quarkus-test-h2:{quarkus-version}` and `io.quarkus:quarkus-test-derby:{quarkus-version}`, respectively for H2 and Derby.
+
+Follows an example for H2:
+
+[source,java]
+----
+package my.app.integrationtests.db;
+
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.h2.H2DatabaseTestResource;
+
+@QuarkusTestResource(H2DatabaseTestResource.class)
+public class TestResources {
+}
+----
+
+This will allow you to test your application even when it's compiled into a native image,
+while the database will run in the JVM as usual.
+
+Connect to it using:
+
+[source]
+----
+quarkus.datasource.url=jdbc:h2:tcp://localhost/mem:test
+quarkus.datasource.driver=org.h2.Driver
+----
 
 [[configuration-reference]]
 == Agroal Configuration Reference

@@ -21,7 +21,7 @@ To complete this guide, you need:
 
 == Creating the Maven project
 
-First, we need a new project that contains the kubernetes extension. This can be done using the following command:
+First, we need a new project that contains the Kubernetes extension. This can be done using the following command:
 
 [source, subs=attributes+]
 ----
@@ -37,7 +37,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 
 Quarkus offers the ability to automatically generate Kubernetes resources based on sane defaults and user supplied configuration. The implementation that takes care
 of generating the actual Kubernetes resources is provided by https://github.com/dekorateio/dekorate/[dekorate]. Currently it supports the generation of resources for
-vanilla Kubernetes and Openshift.
+vanilla Kubernetes and OpenShift.
 
 When we added the `kubernetes` extension to the command line invocation above, the following dependency was added to the `pom.xml`
 
@@ -395,23 +395,23 @@ Below you will find tables describing all available types.
 | auto-build-enabled | boolean |   | false 
 |====
 
-=== Openshift support
+=== OpenShift support
 
-To enable the generation of Openshift resources, you need to include Openshift in the target platforms:
+To enable the generation of OpenShift resources, you need to include OpenShift in the target platforms:
 
 [source]
 ----
 kubernetes.deployment.target=openshift
 ----
 
-If you need to generate resources for both platforms (vanilla kubernetes and opesnhift), then you need to include both (coma separated).
+If you need to generate resources for both platforms (vanilla Kubernetes and OpenShift), then you need to include both (coma separated).
 
 [source]
 ----
 kubernetes.deployment.target=kubernetes, openshift
 ----
 
-The Openshfit resources can be customized in a similar approach with kubernetes.
+The OpenShift resources can be customized in a similar approach with Kubernetes.
 
 .Openshift
 |====

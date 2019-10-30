@@ -16,7 +16,8 @@
     <description>Module that contains Gradle plugin related tests</description>
 
     <properties>
-        <gradle.executable>${project.build.directory}/gradlew</gradle.executable>
+        <gradle.project.directory>${project.build.directory}/foo</gradle.project.directory>
+        <gradle.executable>${gradle.project.directory}/gradlew</gradle.executable>
         <skip.gradle.build>false</skip.gradle.build>
     </properties>
 
@@ -89,7 +90,7 @@
                         <phase>test</phase>
                         <configuration>
                             <executable>${gradle.executable}</executable>
-                            <basedir>${project.build.directory}</basedir>
+                            <basedir>${gradle.project.directory}</basedir>
                             <arguments>
                                 <argument>test</argument>
                                 <argument>-S</argument>
@@ -115,7 +116,7 @@
                 </os>
             </activation>
             <properties>
-                <gradle.executable>${project.build.directory}\gradlew.bat</gradle.executable>
+                <gradle.executable>${gradle.project.directory}\gradlew.bat</gradle.executable>
             </properties>
         </profile>
         <profile>
@@ -136,7 +137,7 @@
                                 <phase>integration-test</phase>
                                 <configuration>
                                     <executable>${gradle.executable}</executable>
-                                    <basedir>${project.build.directory}</basedir>
+                                    <basedir>${gradle.project.directory}</basedir>
                                     <arguments>
                                         <argument>buildNative</argument>
                                         <argument>--docker-build=true</argument>

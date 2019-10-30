@@ -5,6 +5,10 @@ import java.lang.annotation.Inherited;
 import java.util.Objects;
 import org.jboss.jandex.DotName;
 
+/**
+ * {@link ScopeInfo} is used to create a custom scope for use with {@link BeanConfigurator}.
+ * If using built in scopes, use {@link BuiltinScope} instead to get a {@link ScopeInfo} instance.
+ */
 public class ScopeInfo {
 
     private final DotName dotName;
@@ -13,10 +17,10 @@ public class ScopeInfo {
 
     private boolean declaresInherited;
 
-    ScopeInfo(Class<? extends Annotation> clazz, boolean isNormal) {
+    public ScopeInfo(Class<? extends Annotation> clazz, boolean isNormal) {
         this.dotName = DotName.createSimple(clazz.getName());
         this.isNormal = isNormal;
-        declaresInherited = clazz.getAnnotation(Inherited.class) == null ? false : true;
+        declaresInherited = clazz.getAnnotation(Inherited.class) != null;
     }
 
     public DotName getDotName() {

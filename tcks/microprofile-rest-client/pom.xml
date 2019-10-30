@@ -38,9 +38,8 @@
                         <exclude>org.eclipse.microprofile.rest.client.tck.WiremockArquillianTest</exclude>
                         <exclude>org.eclipse.microprofile.rest.client.tck.ssl.AbstractSslTest</exclude>
 
-                        <!-- mp/scope not supported for ConversationScope and SessionScope-->
+                        <!-- ConversationScope not supported in Quarkus -->
                         <exclude>org.eclipse.microprofile.rest.client.tck.cditests.HasConversationScopeTest</exclude>
-                        <exclude>org.eclipse.microprofile.rest.client.tck.cditests.HasSessionScopeTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>
@@ -87,6 +86,10 @@
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-json-binding-provider</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-undertow</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.microprofile.rest.client</groupId>

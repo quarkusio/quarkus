@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import javax.enterprise.context.SessionScoped;
 import javax.ws.rs.Path;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
@@ -47,6 +48,7 @@ import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ScopeInfo;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -74,6 +76,8 @@ class RestClientProcessor {
 
     private static final DotName REST_CLIENT = DotName.createSimple(RestClient.class.getName());
     private static final DotName REGISTER_REST_CLIENT = DotName.createSimple(RegisterRestClient.class.getName());
+
+    private static final DotName SESSION_SCOPED = DotName.createSimple(SessionScoped.class.getName());
 
     private static final DotName PATH = DotName.createSimple(Path.class.getName());
 
@@ -125,6 +129,7 @@ class RestClientProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void processInterfaces(CombinedIndexBuildItem combinedIndexBuildItem,
             SslNativeConfigBuildItem sslNativeConfig,
+            Capabilities capabilities,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
@@ -184,7 +189,7 @@ class RestClientProcessor {
                     configurator.addType(restClientName);
                     configurator.addQualifier(REST_CLIENT);
                     final String configPrefix = computeConfigPrefix(restClientName.toString(), entry.getValue());
-                    final ScopeInfo scope = computeDefaultScope(config, entry, configPrefix);
+                    final ScopeInfo scope = computeDefaultScope(capabilities, config, entry, configPrefix);
                     configurator.scope(scope);
                     configurator.creator(m -> {
                         // return new RestClientBase(proxyType, baseUri).create();
@@ -258,33 +263,46 @@ class RestClientProcessor {
         return interfaceName;
     }
 
-    private ScopeInfo computeDefaultScope(Config config, Map.Entry<DotName, ClassInfo> entry, String configPrefix) {
-        // Initialize a default @Dependent scope as per the spec
-        ScopeInfo scopeInfo = BuiltinScope.DEPENDENT.getInfo();
+    private ScopeInfo computeDefaultScope(Capabilities capabilities, Config config, Map.Entry<DotName, ClassInfo> entry,
+            String configPrefix) {
+        ScopeInfo scopeToUse = null;
         final Optional<String> scopeConfig = config
                 .getOptionalValue(String.format(RestClientBase.REST_SCOPE_FORMAT, configPrefix), String.class);
+
         if (scopeConfig.isPresent()) {
             final DotName scope = DotName.createSimple(scopeConfig.get());
             final BuiltinScope builtinScope = BuiltinScope.from(scope);
             if (builtinScope != null) { // override default @Dependent scope with user defined one.
-                scopeInfo = builtinScope.getInfo();
-            } else {
+                scopeToUse = builtinScope.getInfo();
+            } else if (capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
+                if (scope.equals(SESSION_SCOPED)) {
+                    scopeToUse = new ScopeInfo(SESSION_SCOPED, true);
+                }
+            }
+
+            if (scopeToUse == null) {
                 log.warn(String.format(
                         "Unsupported default scope %s provided for rest client %s. Defaulting to @Dependent.",
                         scope, entry.getKey()));
+                scopeToUse = BuiltinScope.DEPENDENT.getInfo();
             }
         } else {
             final Set<DotName> annotations = entry.getValue().annotations().keySet();
             for (final DotName annotationName : annotations) {
                 final BuiltinScope builtinScope = BuiltinScope.from(annotationName);
                 if (builtinScope != null) {
-                    scopeInfo = builtinScope.getInfo();
+                    scopeToUse = builtinScope.getInfo();
+                    break;
+                }
+                if (annotationName.equals(SESSION_SCOPED)) {
+                    scopeToUse = new ScopeInfo(SESSION_SCOPED, true);
                     break;
                 }
             }
         }
 
-        return scopeInfo;
+        // Initialize a default @Dependent scope as per the spec
+        return scopeToUse != null ? scopeToUse : BuiltinScope.DEPENDENT.getInfo();
     }
 
     private String getAnnotationParameter(ClassInfo classInfo, String parameterName) {

@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
@@ -41,26 +41,17 @@ class PlatformDescriptorLoaderTest {
                 return new ArtifactResolver() {
 
                     @Override
-                    public List<Dependency> getManagedDependencies(String groupId, String artifactId,
-                            String version) {
-                        List<Dependency> lx = new ArrayList<Dependency>();
-
-                        Dependency core = new Dependency();
-                        core.setArtifactId("quarkus-core");
-                        core.setGroupId("io.quarkus");
-                        core.setVersion("I don't care!");
-                        lx.add(core);
-                        return lx;
+                    public <T> T process(String groupId, String artifactId, String classifier, String type, String version,
+                            Function<Path, T> processor) {
+                        throw new UnsupportedOperationException();
                     }
 
                     @Override
-                    public <T> T process(String groupId, String artifactId, String classifier, String type,
-                            String version, Function<Path, T> processor) {
-                        // TODO Auto-generated method stub
-                        return null;
+                    public List<Dependency> getManagedDependencies(String groupId, String artifactId, String classifier,
+                            String type, String version) {
+                        return Collections.emptyList();
                     }
                 };
-
             }
 
             @Override

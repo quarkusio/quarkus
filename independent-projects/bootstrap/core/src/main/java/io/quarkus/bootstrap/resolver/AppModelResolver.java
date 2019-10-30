@@ -113,4 +113,14 @@ public interface AppModelResolver {
      * @throws AppModelResolverException  in case of a failure
      */
     String getLatestVersion(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppModelResolverException;
+
+    /**
+     * Resolves the latest version from the specified range. The version of the artifact is ignored.
+     *
+     * @param appArtifact  the artifact
+     * @param range  the version range
+     * @return  the latest version of the artifact from the range or null, if no version was found for the specified range
+     * @throws AppModelResolverException  in case of a failure
+     */
+    String getLatestVersionFromRange(AppArtifact appArtifact, String range) throws AppModelResolverException;
 }

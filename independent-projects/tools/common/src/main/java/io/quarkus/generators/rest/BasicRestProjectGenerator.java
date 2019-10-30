@@ -100,8 +100,10 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
                     gav = new String[3];
                     for (String buildFile : buildTool.getBuildFiles()) {
                         if (writer.exists(buildFile)) {
-                            ByteArrayInputStream buildFileInputStream = new ByteArrayInputStream(writer.getContent(buildFile));
-                            gav = MojoUtils.readGavFromSettingsGradle(buildFileInputStream, gav);
+                            try (ByteArrayInputStream buildFileInputStream = new ByteArrayInputStream(
+                                    writer.getContent(buildFile))) {
+                                gav = MojoUtils.readGavFromSettingsGradle(buildFileInputStream, gav);
+                            }
                         }
                     }
                 }
@@ -120,7 +122,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
                 final String resourceType)
                 throws IOException {
             if (!writer.exists(outputFilePath)) {
-                String path = templateName;//templateName.startsWith("/") ? templateName : "/" + templateName;
+                String path = templateName;
                 String template = QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor().getTemplate(path);
                 if (template == null) {
                     throw new IOException("Template resource is missing: " + path);

@@ -16,6 +16,7 @@ import org.apache.maven.model.Dependency;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.generators.BuildTool;
+import io.quarkus.maven.utilities.MojoUtils;
 
 public class GradleBuildFile extends BuildFile {
 
@@ -31,16 +32,16 @@ public class GradleBuildFile extends BuildFile {
 
     @Override
     public String getPlatformBomVersionExpression() {
-        return "${quarkusVersion}";
+        return MojoUtils.getBomVersion();
     }
 
     @Override
     public void close() throws IOException {
         write(SETTINGS_GRADLE_PATH, getModel().getSettingsContent());
         write(BUILD_GRADLE_PATH, getModel().getBuildContent());
-        try ( ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-        getModel().getPropertiesContent().store(out, "Gradle properties");
-        write(GRADLE_PROPERTIES_PATH, out.toString(StandardCharsets.UTF_8.toString()));
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            getModel().getPropertiesContent().store(out, "Gradle properties");
+            write(GRADLE_PROPERTIES_PATH, out.toString(StandardCharsets.UTF_8.toString()));
         }
     }
 
@@ -72,7 +73,7 @@ public class GradleBuildFile extends BuildFile {
         if (!containsBOM()) {
             res.append(System.lineSeparator());
             res.append("dependencies {").append(System.lineSeparator());
-            res.append("    implementation enforcedPlatform(\"io.quarkus:quarkus-bom:${quarkusVersion}\")")
+            res.append("    implementation enforcedPlatform(\"${quarkusPlatformBomGroupId}:${quarkusPlatformBomArtifactId}:${quarkusPlatformBomVersion}\")")
                     .append(System.lineSeparator());
             res.append("    implementation 'io.quarkus:quarkus-resteasy'").append(System.lineSeparator());
             res.append("    testImplementation 'io.quarkus:quarkus-junit5'").append(System.lineSeparator());
@@ -122,8 +123,18 @@ public class GradleBuildFile extends BuildFile {
     }
 
     private void completeProperties() throws IOException {
-        if (getModel().getPropertiesContent().getProperty("quarkusVersion") == null) {
-            getModel().getPropertiesContent().setProperty("quarkusVersion", getPluginVersion());
+        Properties props = getModel().getPropertiesContent();
+        if (props.getProperty("quarkusVersion") == null) {
+            props.setProperty("quarkusVersion", getPluginVersion());
+        }
+        if(props.getProperty("quarkusPlatformBomGroupId") == null) {
+            props.setProperty("quarkusPlatformBomGroupId", MojoUtils.getBomGroupId());
+        }
+        if(props.getProperty("quarkusPlatformBomArtifactId") == null) {
+            props.setProperty("quarkusPlatformBomArtifactId", MojoUtils.getBomArtifactId());
+        }
+        if(props.getProperty("quarkusPlatformBomVersion") == null) {
+            props.setProperty("quarkusPlatformBomVersion", MojoUtils.getBomVersion());
         }
     }
 
@@ -181,7 +192,7 @@ public class GradleBuildFile extends BuildFile {
 
     @Override
     protected boolean containsBOM() throws IOException {
-        return getModel().getBuildContent().contains("enforcedPlatform(\"io.quarkus:quarkus-bom:");
+        return getModel().getBuildContent().contains("enforcedPlatform(\"${quarkusPlatformBomGroupId}:${quarkusPlatformBomArtifactId}:");
     }
 
     @Override

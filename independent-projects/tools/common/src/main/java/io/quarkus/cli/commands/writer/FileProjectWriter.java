@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package io.quarkus.cli.commands.writer;
 
@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * ProjectWriter implementation to create direct files in the file system.
@@ -51,13 +50,13 @@ public class FileProjectWriter implements ProjectWriter {
 
     @Override
     public void write(String path, String content) throws IOException {
-        final Path outputPath = Paths.get(root + "/" + path);
+        final Path outputPath = root.toPath().resolve(path);
         Files.write(outputPath, content.getBytes("UTF-8"));
     }
 
     @Override
     public byte[] getContent(String path) throws IOException {
-        return Files.readAllBytes(Paths.get(root + "/" + path));
+        return Files.readAllBytes(root.toPath().resolve(path));
     }
 
     @Override

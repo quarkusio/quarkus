@@ -15,8 +15,9 @@ public class DefaultMessageWriter implements MessageWriter {
         this.out = out;
     }
 
-    public void setDebugEnabled(boolean debugEnabled) {
+    public DefaultMessageWriter setDebugEnabled(boolean debugEnabled) {
         this.debug = debugEnabled;
+        return this;
     }
 
     @Override

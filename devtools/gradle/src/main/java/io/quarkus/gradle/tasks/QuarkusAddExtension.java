@@ -17,7 +17,7 @@ import io.quarkus.cli.commands.writer.FileProjectWriter;
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
  */
-public class QuarkusAddExtension extends QuarkusTask {
+public class QuarkusAddExtension extends QuarkusPlatformTask {
 
     public QuarkusAddExtension() {
         super("Adds Quarkus extensions specified by the user to the project.");
@@ -37,6 +37,9 @@ public class QuarkusAddExtension extends QuarkusTask {
 
     @TaskAction
     public void addExtension() {
+
+        setupPlatformDescriptor();
+
         Set<String> extensionsSet = new HashSet<>(getExtensionsToAdd());
         try {
             new AddExtensions(new GradleBuildFile(new FileProjectWriter(getProject().getProjectDir())))
@@ -45,5 +48,4 @@ public class QuarkusAddExtension extends QuarkusTask {
             throw new GradleException("Failed to add extensions " + getExtensionsToAdd(), e);
         }
     }
-
 }

@@ -1,6 +1,5 @@
 package io.quarkus.gradle.tasks;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.gradle.api.GradleException;
@@ -16,13 +15,13 @@ import io.quarkus.gradle.GradleBuildFileFromConnector;
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
  */
-public class QuarkusListExtensions extends QuarkusTask {
+public class QuarkusListExtensions extends QuarkusPlatformTask {
 
     private boolean all = true;
 
     private String format = "concise";
 
-    private String searchPattern = null;
+    private String searchPattern;
 
     @Optional
     @Input
@@ -63,13 +62,16 @@ public class QuarkusListExtensions extends QuarkusTask {
 
     @TaskAction
     public void listExtensions() {
+
+        setupPlatformDescriptor();
+
         try {
-            new ListExtensions(new GradleBuildFileFromConnector(new FileProjectWriter(new File(getPath())))).listExtensions(
-                    isAll(),
-                    getFormat(), getSearchPattern());
+            new ListExtensions(new GradleBuildFileFromConnector(new FileProjectWriter(getProject().getProjectDir())))
+                    .listExtensions(
+                            isAll(),
+                            getFormat(), getSearchPattern());
         } catch (IOException e) {
             throw new GradleException("Unable to list extensions", e);
         }
     }
-
 }

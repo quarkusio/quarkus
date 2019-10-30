@@ -2,8 +2,6 @@ package io.quarkus.platform.tools.config;
 
 import java.util.Iterator;
 import java.util.ServiceLoader;
-import java.util.concurrent.atomic.AtomicReference;
-
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoader;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoaderContext;
@@ -105,7 +103,7 @@ public class QuarkusPlatformConfig {
         }
     }
 
-    private static final AtomicReference<QuarkusPlatformConfig> defaultConfig = new AtomicReference<>();
+    private static final ThreadLocal<QuarkusPlatformConfig> defaultConfig = new ThreadLocal<>();
 
     private final MessageWriter log;
     private final QuarkusPlatformDescriptor platformDescr;

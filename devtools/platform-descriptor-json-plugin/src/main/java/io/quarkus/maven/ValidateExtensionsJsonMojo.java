@@ -27,6 +27,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
@@ -76,10 +77,8 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
         }
 
         final QuarkusPlatformDescriptor descriptor = QuarkusJsonPlatformDescriptorResolver.newInstance()
-                .setPlatformJsonGroupId(jsonGroupId)
-                .setPlatformJsonArtifactId(jsonArtifactId)
-                .setPlatformJsonVersion(jsonVersion)
-                .setMavenArtifactResolver(mvn)
+                .setJsonVersion(jsonGroupId, jsonArtifactId, jsonVersion)
+                .setArtifactResolver(new BootstrapAppModelResolver(mvn))
                 .resolve();
 
         final DefaultArtifact bomArtifact = new DefaultArtifact(descriptor.getBomGroupId(),

@@ -1,6 +1,9 @@
 package io.quarkus.gradle;
 
+import java.util.Set;
+
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.DependencyArtifact;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.internal.artifacts.DefaultModuleIdentifier;
 import org.gradle.api.internal.artifacts.dependencies.AbstractExternalModuleDependency;
@@ -21,12 +24,23 @@ public class QuarkusExtDependency extends AbstractExternalModuleDependency {
     }
 
     @Override
+    public Set<DependencyArtifact> getArtifacts() {
+        return super.getArtifacts();
+    }
+
+    @Override
     public ExternalModuleDependency copy() {
-        return new QuarkusExtDependency(group, name, version, configuration);
+        QuarkusExtDependency copy = new QuarkusExtDependency(group, name, version, configuration);
+        final Set<DependencyArtifact> artifacts = getArtifacts();
+        for (DependencyArtifact a : artifacts) {
+            copy.addArtifact(a);
+        }
+        return copy;
     }
 
     @Override
     public boolean contentEquals(Dependency arg0) {
+        new Exception("contentEquals " + arg0).printStackTrace();
         return true;
     }
 }

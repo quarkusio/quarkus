@@ -39,6 +39,10 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor 
         bomVersion = bom.version;
     }
 
+    public void setQuarkusCoreVersion(String quarkusVersion) {
+        this.quarkusVersion = quarkusVersion;
+    }
+
     public void setExtensions(List<Extension> extensions) {
         this.extensions = extensions;
     }

@@ -3,32 +3,26 @@ package io.quarkus.platform.descriptor.resolver.json;
 import static io.quarkus.platform.tools.ToolsUtils.getProperty;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.List;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.resolution.ArtifactDescriptorResult;
-import org.eclipse.aether.resolution.VersionRangeResult;
-import org.eclipse.aether.version.Version;
+import org.apache.maven.model.Dependency;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.JsonValue;
-import com.eclipsesource.json.WriterConfig;
-
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.dependencies.Extension;
-import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.loader.json.ArtifactResolver;
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoader;
@@ -55,34 +49,45 @@ public class QuarkusJsonPlatformDescriptorResolver {
     private String jsonArtifactId;
     private String jsonVersionRange;
     private String jsonVersion;
-    private MavenArtifactResolver mvn;
+
+    private String bomGroupId;
+    private String bomArtifactId;
+    private String bomVersion;
+
+    private AppModelResolver artifactResolver;
     private MessageWriter log;
 
     public QuarkusJsonPlatformDescriptorResolver() {
     }
 
-    public QuarkusJsonPlatformDescriptorResolver setPlatformJsonGroupId(String groupId) {
+    public QuarkusJsonPlatformDescriptorResolver setJsonVersion(String groupId, String artifactId, String version) {
         this.jsonGroupId = groupId;
-        return this;
-    }
-
-    public QuarkusJsonPlatformDescriptorResolver setPlatformJsonArtifactId(String artifactId) {
         this.jsonArtifactId = artifactId;
-        return this;
-    }
-
-    public QuarkusJsonPlatformDescriptorResolver setPlatformJsonVersionRange(String versionRange) {
-        this.jsonVersionRange = versionRange;
-        return this;
-    }
-
-    public QuarkusJsonPlatformDescriptorResolver setPlatformJsonVersion(String version) {
         this.jsonVersion = version;
         return this;
     }
 
-    public QuarkusJsonPlatformDescriptorResolver setMavenArtifactResolver(MavenArtifactResolver mvn) {
-        this.mvn = mvn;
+    public QuarkusJsonPlatformDescriptorResolver setJsonVersionRange(String groupId, String artifactId, String versionRange) {
+        this.jsonGroupId = groupId;
+        this.jsonArtifactId = artifactId;
+        this.jsonVersionRange = versionRange;
+        return this;
+    }
+
+    public QuarkusJsonPlatformDescriptorResolver setJsonArtifactId(String artifactId) {
+        this.jsonArtifactId = artifactId;
+        return this;
+    }
+
+    public QuarkusJsonPlatformDescriptorResolver setBomVersion(String groupId, String artifactId, String version) {
+        this.bomGroupId = groupId;
+        this.bomArtifactId = artifactId;
+        this.bomVersion = version;
+        return this;
+    }
+
+    public QuarkusJsonPlatformDescriptorResolver setArtifactResolver(AppModelResolver artifactResolver) {
+        this.artifactResolver = artifactResolver;
         return this;
     }
 
@@ -97,92 +102,100 @@ public class QuarkusJsonPlatformDescriptorResolver {
             log = new DefaultMessageWriter();
         }
 
-        MavenArtifactResolver mvn = this.mvn;
-        if(mvn == null) {
+        AppModelResolver artifactResolver = this.artifactResolver;
+        if(artifactResolver == null) {
             try {
-                mvn = MavenArtifactResolver.builder().build();
+                artifactResolver = new BootstrapAppModelResolver(MavenArtifactResolver.builder().build());
             } catch (AppModelResolverException e) {
                 throw new IllegalStateException("Failed to initialize the Maven artifact resolver", e);
             }
         }
 
         String jsonGroupId = this.jsonGroupId;
-        if(jsonGroupId == null) {
-            jsonGroupId = getProperty(PROP_PLATFORM_JSON_GROUP_ID, ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID);
-        }
         String jsonArtifactId = this.jsonArtifactId;
-        if (jsonArtifactId == null) {
-            jsonArtifactId = getProperty(PROP_PLATFORM_JSON_ARTIFACT_ID, ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID);
-        }
         String jsonVersion = this.jsonVersion;
-        if(jsonVersion == null) {
-            if(jsonVersionRange != null) {
-                // if the range was set using the api, it overrides a possibly set version system property
-                // depending on how this evolves this may or may not be reasonable
-                jsonVersion = resolveLatestJsonVersion(mvn, jsonGroupId, jsonArtifactId, jsonVersionRange);
-            } else {
-                jsonVersion = getProperty(PROP_PLATFORM_JSON_VERSION);
-                if (jsonVersion == null) {
-                    jsonVersion = resolveLatestJsonVersion(mvn, jsonGroupId, jsonArtifactId, jsonVersionRange);
+        AppArtifact jsonArtifact;
+        if(bomArtifactId != null) {
+            String bomGroupId = this.bomGroupId;
+            if(bomGroupId == null) {
+                bomGroupId = ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID;
+            }
+            String bomArtifactId = this.bomArtifactId;
+            String bomVersion = this.bomVersion;
+            if(bomVersion == null) {
+                throw new IllegalStateException("Quarkus Platform BOM version is missing");
+            }
+            // first we are looking for the same GAV as the BOM but with JSON type
+            jsonArtifact = new AppArtifact(bomGroupId, bomArtifactId, null, "json", bomVersion);
+            try {
+                artifactResolver.resolve(jsonArtifact);
+            } catch (Throwable e) {
+                // it didn't work, now we are trying artifactId-descriptor-json
+                jsonArtifact = new AppArtifact(bomGroupId, bomArtifactId + "-descriptor-json", null, "json", bomVersion);
+                try {
+                    artifactResolver.resolve(jsonArtifact);
+                } catch (Throwable e1) {
+                    throw new IllegalStateException("Failed to determine the coordinates of the JSON descriptor artifact for " + bomGroupId + ":" + bomArtifactId + ":" + bomVersion);
                 }
             }
+        } else {
+            if (jsonGroupId == null) {
+                jsonGroupId = getProperty(PROP_PLATFORM_JSON_GROUP_ID, ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID);
+            }
+            if (jsonArtifactId == null) {
+                jsonArtifactId = getProperty(PROP_PLATFORM_JSON_ARTIFACT_ID, ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID);
+            }
+            if (jsonVersion == null) {
+                if (jsonVersionRange != null) {
+                    // if the range was set using the api, it overrides a possibly set version system property
+                    // depending on how this evolves this may or may not be reasonable
+                    jsonVersion = resolveLatestJsonVersion(artifactResolver, jsonGroupId, jsonArtifactId, jsonVersionRange);
+                } else {
+                    jsonVersion = getProperty(PROP_PLATFORM_JSON_VERSION);
+                    if (jsonVersion == null) {
+                        jsonVersion = resolveLatestJsonVersion(artifactResolver, jsonGroupId, jsonArtifactId, jsonVersionRange);
+                    }
+                }
+            }
+            jsonArtifact = new AppArtifact(jsonGroupId, jsonArtifactId, null, "json", jsonVersion);
         }
 
         // Resolve the platform JSON artifact
-        Artifact jsonArtifact = new DefaultArtifact(jsonGroupId, jsonArtifactId, null, "json", jsonVersion);
         log.debug("Platform JSON artifact: %s", jsonArtifact);
-        final File jsonFile;
+        final Path jsonFile;
         try {
-            jsonFile = mvn.resolve(jsonArtifact).getArtifact().getFile();
+            jsonFile = artifactResolver.resolve(jsonArtifact);
         } catch (AppModelResolverException e) {
             throw new IllegalStateException("Failed to resolve the platform json artifact " + jsonArtifact, e);
         }
-        if(!jsonFile.exists()) {
+        if(!Files.exists(jsonFile)) {
             throw new IllegalStateException("Failed to locate extensions JSON file at " + jsonFile);
         }
 
-        // Resolve the platform BOM coordinates
-        final String platformBomGroupId;
-        final String platformBomArtifactId;
-        final String platformBomVersion;
-        try(BufferedReader reader = Files.newBufferedReader(jsonFile.toPath())) {
+        // Resolve the Quarkus version used by the platform
+        final String quarkusCoreVersion;
+        try(BufferedReader reader = Files.newBufferedReader(jsonFile)) {
             JsonObject jsonObject = Json.parse(reader).asObject();
-            JsonValue value = jsonObject.get("bom");
-            if(value == null) {
-                throw new IllegalStateException("Failed to determine the platform BOM behind " + jsonFile);
+            quarkusCoreVersion = jsonObject.getString("quarkus-core-version", null);
+            if(quarkusCoreVersion == null) {
+                throw new IllegalStateException("Failed to determine the Quarkus Core version for " + jsonFile);
             }
-            jsonObject = value.asObject();
-            platformBomGroupId = resolveRequired(jsonObject, Extension.GROUP_ID);
-            platformBomArtifactId = resolveRequired(jsonObject, Extension.ARTIFACT_ID);
-            platformBomVersion = resolveRequired(jsonObject, Extension.VERSION);
         } catch (IOException e) {
-            e.printStackTrace();
             throw new IllegalStateException("Failed to parse extensions JSON file " + jsonFile);
         }
-        log.debug("Platform BOM: %s:%s:%s", platformBomGroupId, platformBomArtifactId, platformBomVersion);
-        
-        // Resolve the Quarkus version used by the platform
-        final ArtifactDescriptorResult platformDescr;
-        final String quarkusCoreVersion;
-        try {
-            platformDescr = mvn.resolveDescriptor(new DefaultArtifact(platformBomGroupId, platformBomArtifactId, null, "pom", platformBomVersion));
-            quarkusCoreVersion = resolveQuarkusCoreVersion(platformDescr);
-        } catch (AppModelResolverException e) {
-            throw new IllegalStateException("Failed to resolve the Quarkus Core version for the target Quarkus Platform", e);
-        }
-        log.debug("Quarkus Core Version: %s", quarkusCoreVersion);
+        log.debug("Quarkus version: %s", quarkusCoreVersion);
 
         // Resolve the JSON platform descriptor loader from the target Quarkus release
-        return loadPlatformDescriptor(mvn, jsonFile, quarkusCoreVersion, platformDescr);
+        return loadPlatformDescriptor(artifactResolver, jsonFile, quarkusCoreVersion);
     }
 
     @SuppressWarnings("rawtypes")
-    private QuarkusPlatformDescriptor loadPlatformDescriptor(MavenArtifactResolver mvn, final File jsonFile,
-            String quarkusCoreVersion, ArtifactDescriptorResult platformDescr) {
-        final DefaultArtifact jsonDescrArtifact = new DefaultArtifact(ToolsConstants.IO_QUARKUS, "quarkus-platform-descriptor-json", null, "jar", quarkusCoreVersion);
+    private QuarkusPlatformDescriptor loadPlatformDescriptor(AppModelResolver mvn, final Path jsonFile,
+            String quarkusCoreVersion) {
+        final AppArtifact jsonDescrArtifact = new AppArtifact(ToolsConstants.IO_QUARKUS, "quarkus-platform-descriptor-json", null, "jar", quarkusCoreVersion);
         final URL jsonDescrUrl;
         try {
-            jsonDescrUrl = mvn.resolve(jsonDescrArtifact).getArtifact().getFile().toURI().toURL();
+            jsonDescrUrl = mvn.resolve(jsonDescrArtifact).toUri().toURL();
         } catch (Exception e) {
             throw new IllegalStateException("Failed to resolve " + jsonDescrArtifact, e);
         }
@@ -198,11 +211,44 @@ public class QuarkusJsonPlatformDescriptorResolver {
             if(i.hasNext()) {
                 throw new IllegalStateException("Located more than one implementation of " + QuarkusJsonPlatformDescriptorLoader.class.getName());
             }
-            final ArtifactResolver loaderResolver = MojoUtils.toJsonArtifactResolver(mvn);
+            log.debug("Using JSON platform descriptor loader %s", jsonDescrLoader);
+            final ArtifactResolver loaderResolver = new ArtifactResolver() {
+
+                @Override
+                public <T> T process(String groupId, String artifactId, String classifier, String type, String version,
+                        Function<Path, T> processor) {
+                    final AppArtifact artifact = new AppArtifact(groupId, artifactId, classifier, type, version);
+                    try {
+                        return processor.apply(artifactResolver.resolve(artifact));
+                    } catch (AppModelResolverException e) {
+                        throw new IllegalStateException("Failed to resolve " + artifact, e);
+                    }
+                }
+
+                @Override
+                public List<Dependency> getManagedDependencies(String groupId, String artifactId, String classifier,
+                        String type, String version) {
+                    if(!"pom".equals(type)) {
+                        throw new IllegalStateException("This implementation expects artifacts of type pom");
+                    }
+                    final Path pom;
+                    final AppArtifact pomArtifact = new AppArtifact(groupId, artifactId, classifier, type, version);
+                    try {
+                        pom = artifactResolver.resolve(pomArtifact);
+                    } catch (AppModelResolverException e) {
+                        throw new IllegalStateException("Failed to resolve " + pomArtifact, e);
+                    }
+                    try {
+                        return ModelUtils.readModel(pom).getDependencyManagement().getDependencies();
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Failed to read model of " + pom, e);
+                    }
+                }};
+
             platform = jsonDescrLoader.load(new QuarkusJsonPlatformDescriptorLoaderContext() {
                 @Override
                 public <T> T parseJson(Function<Path, T> parser) {
-                    return parser.apply(jsonFile.toPath());
+                    return parser.apply(jsonFile);
                 }
 
                 @Override
@@ -224,7 +270,7 @@ public class QuarkusJsonPlatformDescriptorResolver {
         return platform;
     }
 
-    private String resolveLatestJsonVersion(MavenArtifactResolver mvn, String groupId, String artifactId, String versionRange) {
+    private String resolveLatestJsonVersion(AppModelResolver artifactResolver, String groupId, String artifactId, String versionRange) {
         if(versionRange == null) {
             versionRange = getProperty(PROP_PLATFORM_JSON_VERSION_RANGE);
             if(versionRange == null) {
@@ -232,44 +278,20 @@ public class QuarkusJsonPlatformDescriptorResolver {
             }
         }
         try {
-            return resolveLatestFromVersionRange(mvn, groupId, artifactId, null, "json", versionRange);
+            return resolveLatestFromVersionRange(artifactResolver, groupId, artifactId, null, "json", versionRange);
         } catch (AppModelResolverException e) {
             throw new IllegalStateException("Failed to resolve the latest JSON platform version of " + groupId + ":" + artifactId + "::json:" + versionRange);
         }
     }
 
-    private static String resolveQuarkusCoreVersion(ArtifactDescriptorResult platformDescr)
+    private String resolveLatestFromVersionRange(AppModelResolver mvn, String groupId, String artifactId, String classifier, String type, final String versionRange)
             throws AppModelResolverException {
-        for(Dependency dep : platformDescr.getManagedDependencies()) {
-            final Artifact artifact = dep.getArtifact();
-            if(!ToolsConstants.QUARKUS_CORE_ARTIFACT_ID.equals(artifact.getArtifactId())) {
-                continue;
-            }
-            if(!ToolsConstants.QUARKUS_CORE_GROUP_ID.equals(artifact.getGroupId())) {
-                continue;
-            }
-            return artifact.getVersion();
+        final AppArtifact appArtifact = new AppArtifact(groupId, artifactId, classifier, type, versionRange);
+        log.debug("Resolving the latest version of " + appArtifact);
+        final String latestVersion = mvn.getLatestVersionFromRange(appArtifact, versionRange);
+        if(latestVersion == null) {
+            throw new IllegalStateException("Failed to resolve the latest version of " + appArtifact);
         }
-        throw new AppModelResolverException("Failed to locate " + ToolsConstants.QUARKUS_CORE_GROUP_ID + ":" + ToolsConstants.QUARKUS_CORE_ARTIFACT_ID + " among the managed dependencies");
-    }
-
-    private String resolveLatestFromVersionRange(MavenArtifactResolver mvn, String groupId, String artifactId, String classifier, String type, final String versionRange)
-            throws AppModelResolverException {
-        final DefaultArtifact artifact = new DefaultArtifact(groupId, artifactId, classifier, type, versionRange);
-        log.debug("Resolving the latest version of " + artifact);
-        final VersionRangeResult versionRangeResult = mvn.resolveVersionRange(artifact);
-        final Version highestVersion = versionRangeResult.getHighestVersion();
-        if(highestVersion == null) {
-            throw new IllegalStateException("Failed to resolve the latest version of " + artifact);
-        }
-        return highestVersion.toString();
-    }
-
-    private static String resolveRequired(JsonObject json, String name) {
-        final JsonValue value = json.get(name);
-        if(value == null) {
-            throw new IllegalStateException("Failed to locate '" + name + "' in " + json.toString(WriterConfig.PRETTY_PRINT));
-        }
-        return value.asString();
+        return latestVersion;
     }
 }

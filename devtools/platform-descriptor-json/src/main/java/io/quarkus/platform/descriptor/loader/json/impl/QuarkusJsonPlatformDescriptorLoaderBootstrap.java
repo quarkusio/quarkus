@@ -11,7 +11,6 @@ import java.util.Properties;
 import java.util.function.Function;
 
 import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Model;
 
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
@@ -45,6 +44,13 @@ public class QuarkusJsonPlatformDescriptorLoaderBootstrap
             throw new IllegalStateException("Failed to load properties quarkus.properties", e);
         }
 
+        final Path resourceRoot;
+        try {
+            resourceRoot = MojoUtils.getClassOrigin(QuarkusJsonPlatformDescriptorLoaderBootstrap.class);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to determine the resource root for " + getClass().getName(), e);
+        }
+
         final ArtifactResolver resolver = new ArtifactResolver() {
             @Override
             public <T> T process(String groupId, String artifactId, String classifier, String type, String version,
@@ -53,35 +59,18 @@ public class QuarkusJsonPlatformDescriptorLoaderBootstrap
             }
 
             @Override
-            public List<Dependency> getManagedDependencies(String groupId, String artifactId, String version) {
-                if (artifactId.equals("quarkus-bom")
-                        && version.equals(props.get("plugin-version"))
-                        && groupId.equals("io.quarkus")) {
-                    try {
-                        final Model model = MojoUtils.readPom(getResourceStream("quarkus-bom/pom.xml"));
-                        final List<Dependency> deps = model.getDependencyManagement().getDependencies();
-                        for (Dependency d : deps) {
-                            if (d.getVersion().startsWith("${")) {
-                                d.setVersion(model.getProperties()
-                                        .getProperty(d.getVersion().substring(2, d.getVersion().length() - 1)));
-                            }
-                        }
-                        return deps;
-                    } catch (IOException e) {
-                        throw new IllegalStateException(
-                                "Failed to load POM model from " + groupId + ":" + artifactId + ":" + version, e);
-                    }
+            public List<Dependency> getManagedDependencies(String groupId, String artifactId, String classifier, String type,
+                    String version) {
+                if (Files.isDirectory(resourceRoot)) {
+                    return readManagedDeps(resourceRoot.resolve("quarkus-bom/pom.xml"));
                 }
-                throw new IllegalStateException("Unexpected artifact " + groupId + ":" + artifactId + ":" + version);
+                try (FileSystem fs = FileSystems.newFileSystem(resourceRoot, null)) {
+                    return readManagedDeps(fs.getPath("/quarkus-bom/pom.xml"));
+                } catch (Exception e) {
+                    throw new IllegalStateException("Failed to open " + resourceRoot, e);
+                }
             }
         };
-
-        final Path resourceRoot;
-        try {
-            resourceRoot = MojoUtils.getClassOrigin(QuarkusJsonPlatformDescriptorLoaderBootstrap.class);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to determine the resource root for " + getClass().getName(), e);
-        }
 
         return new QuarkusJsonPlatformDescriptorLoaderImpl().load(new QuarkusJsonPlatformDescriptorLoaderContext() {
 
@@ -95,7 +84,6 @@ public class QuarkusJsonPlatformDescriptorLoaderBootstrap
                 if (Files.isDirectory(resourceRoot)) {
                     return doParse(resourceRoot.resolve("quarkus-bom-descriptor/extensions.json"), parser);
                 }
-
                 try (FileSystem fs = FileSystems.newFileSystem(resourceRoot, null)) {
                     return doParse(fs.getPath("/quarkus-bom-descriptor/extensions.json"), parser);
                 } catch (IOException e) {
@@ -108,6 +96,17 @@ public class QuarkusJsonPlatformDescriptorLoaderBootstrap
                 return resolver;
             }
         });
+    }
+
+    private static List<Dependency> readManagedDeps(Path pom) {
+        if (!Files.exists(pom)) {
+            throw new IllegalStateException("Failed to locate " + pom);
+        }
+        try (InputStream is = Files.newInputStream(pom)) {
+            return MojoUtils.readPom(is).getDependencyManagement().getDependencies();
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read model of " + pom, e);
+        }
     }
 
     private static <T> T doParse(Path p, Function<Path, T> parser) {

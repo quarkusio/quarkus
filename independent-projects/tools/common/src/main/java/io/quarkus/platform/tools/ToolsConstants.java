@@ -8,6 +8,6 @@ public interface ToolsConstants {
     String QUARKUS_CORE_ARTIFACT_ID = "quarkus-core";
 
     String DEFAULT_PLATFORM_BOM_GROUP_ID = IO_QUARKUS;
-    String DEFAULT_PLATFORM_BOM_ARTIFACT_ID = "quarkus-platform-bom";
+    String DEFAULT_PLATFORM_BOM_ARTIFACT_ID = "quarkus-universe-bom";
 
 }

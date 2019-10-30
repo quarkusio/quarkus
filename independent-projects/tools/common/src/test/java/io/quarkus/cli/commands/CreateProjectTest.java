@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -105,7 +107,15 @@ public class CreateProjectTest {
                 .containsIgnoringCase("io.quarkus:quarkus-gradle-plugin");
 
         assertThat(contentOf(new File(testDir, "build.gradle"), "UTF-8"))
-                .containsIgnoringCase(getBomArtifactId());
+                .contains("${quarkusPlatformBomGroupId}:${quarkusPlatformBomArtifactId}:${quarkusPlatformBomVersion}");
+
+        final Properties props = new Properties();
+        try(InputStream is = Files.newInputStream(testDir.toPath().resolve("gradle.properties"))) {
+            props.load(is);
+        }
+        Assertions.assertEquals(getBomGroupId(), props.get("quarkusPlatformBomGroupId"));
+        Assertions.assertEquals(getBomArtifactId(), props.get("quarkusPlatformBomArtifactId"));
+        Assertions.assertEquals(getBomVersion(), props.get("quarkusPlatformBomVersion"));
     }
 
     @Test

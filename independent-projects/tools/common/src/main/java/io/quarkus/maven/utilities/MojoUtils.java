@@ -397,31 +397,6 @@ public class MojoUtils {
         return new ArtifactResolver() {
 
             @Override
-            public List<Dependency> getManagedDependencies(String groupId, String artifactId, String version) {
-                final DefaultArtifact artifact = new DefaultArtifact(groupId, artifactId, null, "pom", version);
-                final List<org.eclipse.aether.graph.Dependency> managedDeps;
-                try {
-                    managedDeps = mvn.resolveDescriptor(artifact).getManagedDependencies();
-                } catch (AppModelResolverException e) {
-                    throw new IllegalStateException("Failed to resolve the pom of " + artifact, e);
-                }
-                final List<Dependency> result = new ArrayList<>(managedDeps.size());
-                for(org.eclipse.aether.graph.Dependency dep : managedDeps) {
-                    final Dependency d = new Dependency();
-                    Artifact a = dep.getArtifact();
-                    d.setGroupId(a.getGroupId());
-                    d.setArtifactId(a.getArtifactId());
-                    d.setVersion(a.getVersion());
-                    d.setClassifier(a.getClassifier());
-                    d.setType(a.getExtension());
-                    d.setOptional(d.isOptional());
-                    d.setScope(d.getScope());
-                    result.add(d);
-                }
-                return result;
-            }
-
-            @Override
             public <T> T process(String groupId, String artifactId, String classifier, String type, String version,
                     Function<Path, T> processor) {
                 final DefaultArtifact artifact = new DefaultArtifact(groupId, artifactId, classifier, type, version);
@@ -430,6 +405,31 @@ public class MojoUtils {
                 } catch (AppModelResolverException e) {
                     throw new IllegalStateException("Failed to resolve " + artifact, e);
                 }
+            }
+
+            @Override
+            public List<Dependency> getManagedDependencies(String groupId, String artifactId, String classifier, String type, String version) {
+                final List<org.eclipse.aether.graph.Dependency> deps;
+                Artifact a = new DefaultArtifact(groupId, artifactId, classifier, type, version);
+                try {
+                    deps = mvn.resolveDescriptor(a).getManagedDependencies();
+                } catch (AppModelResolverException e) {
+                    throw new IllegalStateException("Failed to resolve descriptor for " + a, e);
+                }
+                final List<Dependency> result = new ArrayList<>(deps.size());
+                for(org.eclipse.aether.graph.Dependency dep : deps) {
+                    a = dep.getArtifact();
+                    final Dependency d = new Dependency();
+                    d.setGroupId(a.getGroupId());
+                    d.setArtifactId(a.getArtifactId());
+                    d.setClassifier(a.getClassifier());
+                    d.setType(a.getExtension());
+                    d.setVersion(a.getVersion());
+                    d.setOptional(dep.isOptional());
+                    d.setScope(dep.getScope());
+                    result.add(d);
+                }
+                return result;
             }
         };
     }

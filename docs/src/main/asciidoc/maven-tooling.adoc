@@ -348,7 +348,7 @@ To create an executable that will run in a container, use the following:
 
 [source,shell]
 ----
-./mvnw package -Pnative -Dnative-image.docker-build=true
+./mvnw package -Dnative -Dquarkus.native.container-build=true
 ----
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.

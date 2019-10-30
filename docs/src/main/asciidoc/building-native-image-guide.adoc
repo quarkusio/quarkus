@@ -39,7 +39,7 @@ What does having a working C developer environment mean?
 # dnf (rpm-based)
 sudo dnf install gcc glibc-devel zlib-devel
 # Debian-based distributions:
-sudo apt-get install build-essential libz-dev
+sudo apt-get install build-essential libz-dev zlib1g-dev
 ----
 * XCode provides the required dependencies on macOS:
 +

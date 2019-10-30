@@ -3,26 +3,6 @@
 # Add steps that use Docker Compose, tag images, push to a registry, run an image, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker
 
-trigger:
-  batch: true
-  branches:
-    include:
-      - master
-
-pr:
-  branches:
-    include:
-      - master
-  paths:
-    exclude:
-      - docs/src/main/asciidoc/*
-      - docs/src/main/asciidoc/images/*
-      - README.md
-      - CONTRIBUTING.md
-      - LICENSE.txt
-      - dco.txt
-      - .github/ISSUE_TEMPLATE/*.md
-
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository/
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
@@ -60,32 +40,7 @@ stages:
               goals: 'package'
               mavenOptions: $(MAVEN_OPTS)
               options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs'
-      - job: Cache_Windows_Maven_Repo #windows has different line endings so the cache key is different
-        displayName: 'Windows Maven Repo'
-        timeoutInMinutes: 30
-        pool:
-          vmImage: 'vs2017-win2016'
-
-        variables:
-          imageName: 'quarkus-windows:$(build.buildId)'
-
-        steps:
-
-          - task: CacheBeta@0
-            inputs:
-              key: mavenWindows | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
-              path: $(MAVEN_CACHE_FOLDER)
-              securityNamespace: cache
-              cacheHitVar: CACHE_RESTORED
-            displayName: Cache Maven local repo
-
-          - task: Maven@3
-            displayName: 'Maven Build'
-            condition: ne(variables.CACHE_RESTORED, 'true')
-            inputs:
-              goals: 'package'
-              mavenOptions: $(MAVEN_OPTS)
-              options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs'
+     
 
   #This stage builds the Quarkus artifacts needed for native image testing
   - stage: initial_jdk8_stage
@@ -106,29 +61,6 @@ stages:
     displayName: 'Run JVM Tests'
     dependsOn: initial_jdk8_stage
     jobs:
-
-      - job: Windows_Build
-        displayName: 'Windows JVM Build'
-        timeoutInMinutes: 60
-        pool:
-          vmImage: 'vs2017-win2016'
-          MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
-          MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
-        steps:
-          - task: CacheBeta@0 #we know the very first job will have restored or created this, so this will never write built artifacts to the cache
-            inputs:
-              key: mavenWindows | bom/runtime/pom.xml
-              path: $(MAVEN_CACHE_FOLDER)
-              securityNamespace: cache
-            displayName: Restore Maven Cache
-
-          - task: Maven@3
-            displayName: 'Maven Build'
-            inputs:
-              goals: 'install'
-              mavenOptions: $(MAVEN_OPTS)
-              options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
-
       - job: Build_JDK11_Linux
         timeoutInMinutes: 60
         displayName: 'Linux JDK11 Build'

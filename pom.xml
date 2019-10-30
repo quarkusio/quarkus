@@ -8,6 +8,7 @@
         <artifactId>jboss-parent</artifactId>
         <version>36</version>
     </parent>
+         
 
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-parent</artifactId>

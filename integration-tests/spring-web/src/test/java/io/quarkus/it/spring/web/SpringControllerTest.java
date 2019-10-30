@@ -19,6 +19,13 @@ public class SpringControllerTest {
     }
 
     @Test
+    public void testJsonResultFromResponseEntity() {
+        RestAssured.when().get("/greeting/re/json/hello").then()
+                .contentType("application/json")
+                .body(containsString("hello"));
+    }
+
+    @Test
     public void testJsonResult2() {
         RestAssured.when().get("/greeting/json/hello?suffix=000").then()
                 .contentType("application/json")

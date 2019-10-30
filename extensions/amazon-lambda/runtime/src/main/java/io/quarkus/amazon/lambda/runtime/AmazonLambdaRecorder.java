@@ -93,23 +93,26 @@ public class AmazonLambdaRecorder {
         if (config.handler.isPresent()) {
             handlerClass = namedHandlerClasses.get(config.handler.get());
             if (handlerClass == null) {
-                throw new RuntimeException("Unable to find handler class with name " + config.handler.get()
-                        + " make sure there is a handler class in the deployment with the correct @Named annotation");
+                String errorMessage = "Unable to find handler class with name " + config.handler.get()
+                        + " make sure there is a handler class in the deployment with the correct @Named annotation";
+                throw new RuntimeException(errorMessage);
             }
         } else {
-            if (unamedHandlerClasses.isEmpty()) {
-                if (namedHandlerClasses.size() == 1) {
-                    handlerClass = namedHandlerClasses.values().iterator().next();
-                } else {
-                    throw new RuntimeException("Unable to find handler class, make sure your deployment includes a "
-                            + RequestHandler.class.getName() + " implementation");
-                }
-            } else if (unamedHandlerClasses.size() > 1) {
-                throw new RuntimeException(
-                        "Multiple handler classes, either specify the quarkus.lambda.handler property, or make sure there is only a single "
-                                + RequestHandler.class.getName() + " implementation in the deployment");
-            } else {
+            if (unamedHandlerClasses.size() > 1 || namedHandlerClasses.size() > 1
+                    || (unamedHandlerClasses.size() > 0 && namedHandlerClasses.size() > 0)) {
+                String errorMessage = "Multiple handler classes, either specify the quarkus.lambda.handler property, or make sure there is only a single "
+                        + RequestHandler.class.getName() + " implementation in the deployment";
+                throw new RuntimeException(errorMessage);
+            }
+            if (unamedHandlerClasses.isEmpty() && namedHandlerClasses.isEmpty()) {
+                String errorMessage = "Unable to find handler class, make sure your deployment includes a "
+                        + RequestHandler.class.getName() + " implementation";
+                throw new RuntimeException(errorMessage);
+            }
+            if (!unamedHandlerClasses.isEmpty()) {
                 handlerClass = unamedHandlerClasses.get(0);
+            } else {
+                handlerClass = namedHandlerClasses.values().iterator().next();
             }
         }
         setHandlerClass(handlerClass, container);

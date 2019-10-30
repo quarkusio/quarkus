@@ -46,6 +46,9 @@ public class QuarkusStreamHandler implements RequestStreamHandler {
 
     @Override
     public void handleRequest(InputStream inputStream, OutputStream outputStream, Context context) throws IOException {
+        if (!started) {
+            throw new IOException(deploymentStatus);
+        }
         AmazonLambdaRecorder.handle(inputStream, outputStream, context);
     }
 }

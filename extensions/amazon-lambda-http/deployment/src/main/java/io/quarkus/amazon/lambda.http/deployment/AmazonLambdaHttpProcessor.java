@@ -17,9 +17,11 @@ import io.quarkus.amazon.lambda.http.model.MultiValuedTreeMap;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
+import io.vertx.core.file.impl.FileResolver;
 
 public class AmazonLambdaHttpProcessor {
     private static final Logger log = Logger.getLogger(AmazonLambdaHttpProcessor.class);
@@ -48,6 +50,14 @@ public class AmazonLambdaHttpProcessor {
                         ErrorModel.class,
                         Headers.class,
                         MultiValuedTreeMap.class));
+    }
+
+    /**
+     * Lambda provides /tmp for temporary files. Set vertx cache dir
+     */
+    @BuildStep
+    void setTempDir(BuildProducer<SystemPropertyBuildItem> systemProperty) {
+        systemProperty.produce(new SystemPropertyBuildItem(FileResolver.CACHE_DIR_BASE_PROP_NAME, "/tmp"));
     }
 
 }

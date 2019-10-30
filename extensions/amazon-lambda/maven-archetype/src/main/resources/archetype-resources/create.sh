@@ -1,0 +1,1 @@
+aws lambda create-function --function-name my-function --zip-file fileb://target/${artifactId}-${version}-runner.jar --handler io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest --runtime java8 --role arn:aws:iam::1234567:role/lambda-cli-role

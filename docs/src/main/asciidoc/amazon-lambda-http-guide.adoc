@@ -12,7 +12,7 @@ The `quarkus-amazon-lambda-http` extension allows you to write microservices wit
 Undertow (servlet), or Vert.x Web and make these microservices deployable as an Amazon Lambda
 using https://aws.amazon.com/api-gateway/[Amazon's API Gateway] and https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html[Amazon's SAM framework].
 
-You can deploy your Lambda as a pure Java jar, or you can compile your project to a native image (Graal) and deploy that for a smaller
+You can deploy your Lambda as a pure Java jar, or you can compile your project to a native image (GraalVM) and deploy that for a smaller
 memory footprint and startup time.
 
 == Prerequisites
@@ -61,7 +61,7 @@ This will compile the code and run the unit tests included within the generated 
 Unit testing is all regular local Java and does not require running on Amazon.  Quarkus dev-mode is also
 usable.
 
-If you want to build for native too, make sure you have Graal installed correctly and just add a `native` property
+If you want to build for native too, make sure you have GraalVM installed correctly and just add a `native` property
 to the build
 
 [source, subs=attributes+]
@@ -87,7 +87,7 @@ http://127.0.0.1:3000/hello
 In the console you'll see startup messages of the example lambda.  This particular deployment starts a JVM and loads your
 lambda as pure Java.
 
-If you want to deploy a native Graal executable of your lambda, use a different yaml template that is provided in your
+If you want to deploy a native GraalVM executable of your lambda, use a different yaml template that is provided in your
 generated project:
 
 [source, subs=attributes+]
@@ -106,7 +106,8 @@ There are a few steps to get your lambda running on AWS.
 sam package --template-file sam.jvm.yaml --output-template-file packaged.yaml --s3-bucket <YOUR_S3_BUCKET>
 ----
 
-Type the simple name of your S3 bucket you created during.
+Type the simple name of your S3 bucket you created during.  If you've built a native executable, replace
+`sam.jvm.yaml` with `sam.native.yaml`.
 
 === Deploy your package
 
@@ -189,7 +190,7 @@ of things you need to do.  Take a look at the generate example project to get an
 
 1. Include the `quarkus-amazon-lambda-http` extension as a pom dependency
 2. Configure Quarkus build an `uber-jar`
-3. If you are doing a native Graal build, Amazon requires you to rename your executable to `bootstrap` and zip it up.
+3. If you are doing a native GraalVM build, Amazon requires you to rename your executable to `bootstrap` and zip it up.  Notice that the `pom.xml` uses the `maven-assemby-plugin` to perform this requirement.
 
 == Examine sam.yaml
 
@@ -220,6 +221,19 @@ Another thing to note is that for pure Java lambda deployments, do not change th
 
 This particular handler handles all the intricacies of integrating with the Quarkus runtime.  So you must use that
 handler.
+
+Finally, there's an environment variable that must be set for native GraalVM deployments.  If you look at `sam.native.yaml`
+you'll see this:
+
+[source, subs=attributes+]
+----
+        Environment:
+          Variables:
+            DISABLE_SIGNAL_HANDLERS: true
+----
+
+This environment variable resolves some incompatibilites between GraalVM and the Amazon Lambda Custom Runtime environment.
+
 
 
 

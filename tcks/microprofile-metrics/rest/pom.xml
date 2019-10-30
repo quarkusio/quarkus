@@ -31,9 +31,6 @@
                     <environmentVariables>
                         <MP_METRICS_TAGS>tier=integration</MP_METRICS_TAGS>
                     </environmentVariables>
-                    <excludes>
-                        <exclude>org.eclipse.microprofile.metrics.test.MpMetricTest</exclude>
-                    </excludes>
                 </configuration>
             </plugin>
         </plugins>

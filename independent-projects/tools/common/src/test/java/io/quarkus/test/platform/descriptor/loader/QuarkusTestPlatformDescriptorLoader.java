@@ -154,7 +154,7 @@ public class QuarkusTestPlatformDescriptorLoader implements QuarkusPlatformDescr
             throw new IOException("Failed to locate resource " + name + " on the classpath");
         }
         try {
-            return consumer.handle(is);
+            return consumer.consume(is);
         } finally {
             is.close();
         }

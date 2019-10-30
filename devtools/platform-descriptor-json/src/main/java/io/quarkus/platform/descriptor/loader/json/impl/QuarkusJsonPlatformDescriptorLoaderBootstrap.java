@@ -18,8 +18,10 @@ import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoader;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoaderContext;
 import io.quarkus.platform.descriptor.loader.json.ArtifactResolver;
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoaderContext;
-import io.quarkus.platform.tools.MessageWriter;
 
+/**
+ * This class is used to bootstrap the Quarkus platform descriptor from the classpath only.
+ */
 public class QuarkusJsonPlatformDescriptorLoaderBootstrap
         implements QuarkusPlatformDescriptorLoader<QuarkusPlatformDescriptor, QuarkusPlatformDescriptorLoaderContext> {
 
@@ -72,30 +74,20 @@ public class QuarkusJsonPlatformDescriptorLoaderBootstrap
             }
         };
 
-        return new QuarkusJsonPlatformDescriptorLoaderImpl().load(new QuarkusJsonPlatformDescriptorLoaderContext() {
-
-            @Override
-            public MessageWriter getMessageWriter() {
-                return context.getMessageWriter();
-            }
-
-            @Override
-            public <T> T parseJson(Function<Path, T> parser) {
-                if (Files.isDirectory(resourceRoot)) {
-                    return doParse(resourceRoot.resolve("quarkus-bom-descriptor/extensions.json"), parser);
-                }
-                try (FileSystem fs = FileSystems.newFileSystem(resourceRoot, null)) {
-                    return doParse(fs.getPath("/quarkus-bom-descriptor/extensions.json"), parser);
-                } catch (IOException e) {
-                    throw new IllegalStateException("Failed to open " + resourceRoot, e);
-                }
-            }
-
-            @Override
-            public ArtifactResolver getArtifactResolver() {
-                return resolver;
-            }
-        });
+        return new QuarkusJsonPlatformDescriptorLoaderImpl()
+                .load(new QuarkusJsonPlatformDescriptorLoaderContext(resolver, context.getMessageWriter()) {
+                    @Override
+                    public <T> T parseJson(Function<InputStream, T> parser) {
+                        if (Files.isDirectory(resourceRoot)) {
+                            return doParse(resourceRoot.resolve("quarkus-bom-descriptor/extensions.json"), parser);
+                        }
+                        try (FileSystem fs = FileSystems.newFileSystem(resourceRoot, null)) {
+                            return doParse(fs.getPath("/quarkus-bom-descriptor/extensions.json"), parser);
+                        } catch (IOException e) {
+                            throw new IllegalStateException("Failed to open " + resourceRoot, e);
+                        }
+                    }
+                });
     }
 
     private static List<Dependency> readManagedDeps(Path pom) {
@@ -109,10 +101,14 @@ public class QuarkusJsonPlatformDescriptorLoaderBootstrap
         }
     }
 
-    private static <T> T doParse(Path p, Function<Path, T> parser) {
+    private static <T> T doParse(Path p, Function<InputStream, T> parser) {
         if (!Files.exists(p)) {
             throw new IllegalStateException("Path does not exist: " + p);
         }
-        return parser.apply(p);
+        try (InputStream is = Files.newInputStream(p)) {
+            return parser.apply(is);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read " + p, e);
+        }
     }
 }

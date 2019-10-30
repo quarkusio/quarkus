@@ -21,7 +21,7 @@ public interface QuarkusPlatformDescriptor {
     List<Dependency> getManagedDependencies();
 
     List<Extension> getExtensions();
-    
+
     List<Category> getCategories();
 
     String getTemplate(String name);

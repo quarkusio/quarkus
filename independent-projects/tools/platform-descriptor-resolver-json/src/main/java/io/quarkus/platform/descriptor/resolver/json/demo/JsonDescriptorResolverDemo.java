@@ -13,8 +13,7 @@ public class JsonDescriptorResolverDemo {
 
         final QuarkusPlatformDescriptor platform = QuarkusJsonPlatformDescriptorResolver.newInstance()
                 .setMessageWriter(log)
-                .setJsonArtifactId("quarkus-bom-descriptor-json")
-                .resolve();
+                .resolveFromJsonArtifactId("quarkus-bom-descriptor-json");
 
         log.info("Platform BOM: " + platform.getBomGroupId() + ":" + platform.getBomArtifactId() + ":" + platform.getBomVersion());
         log.info("Extensions total: " + platform.getExtensions().size());

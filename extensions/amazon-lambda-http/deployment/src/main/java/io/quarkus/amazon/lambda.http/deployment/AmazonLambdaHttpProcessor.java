@@ -54,13 +54,9 @@ public class AmazonLambdaHttpProcessor {
 
     /**
      * Lambda provides /tmp for temporary files. Set vertx cache dir
-     *
-     * TODO This should only run when building a native image. But I couldn't figure out how
-     * to filter this from JVM builds.
      */
     @BuildStep
     void setTempDir(BuildProducer<SystemPropertyBuildItem> systemProperty) {
-        // lambda custom runtime does not like IPv6
         systemProperty.produce(new SystemPropertyBuildItem(FileResolver.CACHE_DIR_BASE_PROP_NAME, "/tmp"));
     }
 

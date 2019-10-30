@@ -133,7 +133,7 @@ public class TokenSecuredResource {
     public String hello(@Context SecurityContext ctx) { // <4>
         Principal caller =  ctx.getUserPrincipal(); <5>
         String name = caller == null ? "anonymous" : caller.getName();
-        boolean hasJWT = jwt != null;
+        boolean hasJWT = jwt.getClaims() != null;
         String helloReply = String.format("hello + %s, isSecure: %s, authScheme: %s, hasJWT: %s", name, ctx.isSecure(), ctx.getAuthenticationScheme(), hasJWT);
         return helloReply; // <6>
     }
@@ -164,15 +164,15 @@ and you should see output similar to:
 $ ./mvnw compile quarkus:dev
 [INFO] Scanning for projects...
 [INFO]
-[INFO] ----------------------< org.acme:using-jwt-rbac >-----------------------
-[INFO] Building using-jwt-rbac 1.0-SNAPSHOT
+[INFO] ----------------------< org.acme:security-jwt-quickstart >-----------------------
+[INFO] Building security-jwt-quickstart 1.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
 ...
 Listening for transport dt_socket at address: 5005
 2019-03-03 07:23:06,988 INFO  [io.qua.dep.QuarkusAugmentor] (main) Beginning quarkus augmentation
 2019-03-03 07:23:07,328 INFO  [io.qua.dep.QuarkusAugmentor] (main) Quarkus augmentation completed in 340ms
 2019-03-03 07:23:07,493 INFO  [io.quarkus] (main) Quarkus started in 0.769s. Listening on: http://127.0.0.1:8080
-2019-03-03 07:23:07,493 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, smallrye-jwt]
+2019-03-03 07:23:07,493 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, smallrye-jwt, vertx, vertx-web]
 ----
 
 Now that the REST endpoint is running, we can access it using a command line tool like curl:
@@ -243,7 +243,7 @@ public class TokenSecuredResource {
     public String helloRolesAllowed(@Context SecurityContext ctx) {
         Principal caller =  ctx.getUserPrincipal();
         String name = caller == null ? "anonymous" : caller.getName();
-        boolean hasJWT = jwt != null;
+        boolean hasJWT = jwt.getClaimNames() != null;
         String helloReply = String.format("hello + %s, isSecure: %s, authScheme: %s, hasJWT: %s", name, ctx.isSecure(), ctx.getAuthenticationScheme(), hasJWT);
         return helloReply;
     }

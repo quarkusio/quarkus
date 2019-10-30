@@ -26,7 +26,7 @@ public class AgroalBuildTimeConfig {
     public Map<String, DataSourceBuildTimeConfig> namedDataSources;
 
     /**
-     * Whether or not an healtcheck is published in case the smallrye-health extension is present (default to true).
+     * Whether or not an health check is published in case the smallrye-health extension is present
      */
     @ConfigItem(name = "health.enabled", defaultValue = "true")
     public boolean healthEnabled;

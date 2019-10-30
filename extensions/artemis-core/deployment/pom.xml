@@ -30,6 +30,11 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health-spi</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-artemis-core</artifactId>
         </dependency>
     </dependencies>

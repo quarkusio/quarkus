@@ -128,11 +128,9 @@ stages:
           modules:
             - jpa
             - jpa-postgresql
-            - jpa-mysql
-            - reactive-mysql-client
           name: data_2
           postgres: true
-          mysql: true
+          mysql: false
 
       - template: ci-templates/native-build-steps.yaml
         parameters:

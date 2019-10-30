@@ -40,7 +40,7 @@
         <freemarker.version>2.3.28</freemarker.version>
 
         <!-- Arquillian BOM -->
-        <arquillian.version>1.4.1.Final</arquillian.version>
+        <arquillian.version>1.5.0.Final</arquillian.version>
 
         <!-- Enable APT by default for Eclipse -->
         <m2e.apt.activation>jdt_apt</m2e.apt.activation>

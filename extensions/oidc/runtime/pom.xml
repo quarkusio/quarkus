@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx</artifactId>
+            <artifactId>quarkus-vertx-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -55,6 +55,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

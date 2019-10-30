@@ -51,7 +51,7 @@ stages:
         displayName: 'Build JDK8 Linux'
         timeoutInMinutes: 60
         pool:
-          vmImage: 'Ubuntu 16.04'
+          name: 'tsetme'
         steps:
           - template: ci-templates/jvm-build-steps.yaml
           - publish: $(MAVEN_CACHE_FOLDER)
@@ -65,7 +65,7 @@ stages:
         timeoutInMinutes: 60
         displayName: 'Linux JDK11 Build'
         pool:
-          vmImage: 'Ubuntu 16.04'
+          name: 'tsetme'
         steps:
           - template: ci-templates/jvm-build-steps.yaml
             parameters:
@@ -75,7 +75,7 @@ stages:
         timeoutInMinutes: 60
         displayName: 'Linux JDK12 Build'
         pool:
-          vmImage: 'Ubuntu 16.04'
+          name: 'tsetme'
         steps:
           - template: ci-templates/jvm-build-steps.yaml
             parameters:
@@ -84,7 +84,7 @@ stages:
       - job: Run_TCKs
         timeoutInMinutes: 45
         pool:
-          vmImage: 'Ubuntu 16.04'
+          name: 'tsetme'
         steps:
           - task: Maven@3
             displayName: 'Maven Install'

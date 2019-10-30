@@ -1,0 +1,347 @@
+parameters:
+  poolSettings: {}
+  expectUseVMs: true
+  displayPrefix: ''
+
+
+stages:
+  #This stage uses the azure caching feature to reduce the downloads that are performed from central, which greatly speeds up CI
+  #This is it's own stage to prevent Quarkus artifacts produced by the build from being cached
+  - stage: cache_maven_repo_stage${{parameters.expectUseVMs}}
+    displayName: '${{parameters.displayPrefix}} Maven Cache'
+    jobs:
+      - job: Cache_Maven_Repo
+        displayName: 'Linux Maven Repo'
+        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
+        timeoutInMinutes: 30
+        pool: ${{parameters.poolSettings}}
+        workspace:
+          clean: all
+
+        variables:
+          imageName: 'quarkus:$(build.buildId)'
+
+        steps:
+          - script: echo $(Build.Reason); echo $(LINUX_USE_VMS)
+          - script: echo $(Agent.JobStatus)
+            displayName: Debug Stuff
+
+          - task: CacheBeta@0
+            inputs:
+              key: maven | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
+              path: $(MAVEN_CACHE_FOLDER)
+              securityNamespace: cache
+              cacheHitVar: CACHE_RESTORED
+            displayName: Cache Maven local repo
+
+          - task: Maven@3
+            displayName: 'Maven Build'
+            condition: and(ne(variables.CACHE_RESTORED, 'true'), succeeded())
+            inputs:
+              goals: 'package'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs'
+
+      - job: Cache_Windows_Maven_Repo #windows has different line endings so the cache key is different
+        displayName: 'Windows Maven Repo'
+        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
+        timeoutInMinutes: 30
+        pool:
+          vmImage: 'vs2017-win2016'
+
+        variables:
+          imageName: 'quarkus-windows:$(build.buildId)'
+
+        steps:
+          - task: CacheBeta@0
+            inputs:
+              key: mavenWindows | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
+              path: $(MAVEN_CACHE_FOLDER)
+              securityNamespace: cache
+              cacheHitVar: CACHE_RESTORED
+            displayName: Cache Maven local repo
+
+          - task: Maven@3
+            displayName: 'Maven Build'
+            condition: and(ne(variables.CACHE_RESTORED, 'true'), succeeded())
+            inputs:
+              goals: 'package'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs'     
+
+  #This stage builds the Quarkus artifacts needed for native image testing
+  - stage: initial_jdk8_stage${{parameters.expectUseVMs}}
+    displayName: '${{parameters.displayPrefix}} Build for Native'
+    dependsOn: cache_maven_repo_stage${{parameters.expectUseVMs}}
+    jobs:
+      - job: Build_JDK8_Linux
+        displayName: 'Build JDK8 Linux'
+        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
+        timeoutInMinutes: 60
+        pool: ${{parameters.poolSettings}}
+
+        workspace:
+          clean: all
+
+        steps:
+          - template: jvm-build-steps.yaml
+          - publish: $(MAVEN_CACHE_FOLDER)
+            artifact: $(Build.SourceVersion)-BuiltMavenRepo
+
+  - stage: run_jvm_tests_stage${{parameters.expectUseVMs}}
+    displayName: '${{parameters.displayPrefix}} Run JVM Tests'
+    dependsOn: initial_jdk8_stage${{parameters.expectUseVMs}}
+    jobs:
+      - job: Windows_Build
+        displayName: 'Windows JVM Build'
+        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
+        timeoutInMinutes: 60
+        pool:
+          # Always use hosted pool for windows
+          vmImage: 'vs2017-win2016'
+          MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+          MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+        steps:
+          - task: CacheBeta@0 #we know the very first job will have restored or created this, so this will never write built artifacts to the cache
+            inputs:
+              key: mavenWindows | bom/runtime/pom.xml
+              path: $(MAVEN_CACHE_FOLDER)
+              securityNamespace: cache
+            displayName: Restore Maven Cache
+
+          - task: Maven@3
+            displayName: 'Maven Build'
+            inputs:
+              goals: 'install'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
+
+      - job: Build_JDK11_Linux
+        timeoutInMinutes: 60
+        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
+        displayName: 'Linux JDK11 Build'
+        pool: ${{parameters.poolSettings}}
+        workspace:
+          clean: all
+          
+        steps:
+          - template: jvm-build-steps.yaml
+            parameters:
+              jdk: '1.11'
+
+      - job: Build_JDK12_Linux
+        timeoutInMinutes: 60
+        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
+        displayName: 'Linux JDK12 Build'
+        pool: ${{parameters.poolSettings}}
+
+        workspace:
+          clean: all
+
+        steps:
+          - template: jvm-build-steps.yaml
+            parameters:
+              jdk: '1.12'
+
+      - job: Run_TCKs
+        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
+        timeoutInMinutes: 45
+        pool: ${{parameters.poolSettings}}
+        workspace:
+          clean: all
+
+        steps:
+          - task: Maven@3
+            displayName: 'Maven Install'
+            inputs:
+              goals: 'install'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format -DskipTests -Dtcks'
+          - task: Maven@3
+            displayName: 'Maven Verify'
+            inputs:
+              goals: 'verify'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml'
+              mavenPomFile: 'tcks/pom.xml'
+
+
+
+  - stage: run_native_tests_stage${{parameters.expectUseVMs}}
+    displayName: '${{parameters.displayPrefix}} Native Tests'
+    dependsOn: initial_jdk8_stage${{parameters.expectUseVMs}}
+    jobs:
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          modules: main
+          name: main
+          postgres: true
+
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          timeoutInMinutes: 25
+          modules:
+            - jpa-h2
+            - jpa-mariadb
+            - jpa-mssql
+            - jpa-derby
+          name: data_1
+
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          timeoutInMinutes: 25
+          modules:
+            - jpa
+            - jpa-postgresql
+            - jpa-mysql
+            - reactive-mysql-client
+          name: data_2
+          postgres: true
+          mysql: true
+
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          timeoutInMinutes: 15
+          modules:
+            - amazon-dynamodb
+            - amazon-lambda
+            - amazon-lambda-http-it
+          name: amazon
+          dynamodb: true
+
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          timeoutInMinutes: 20
+          modules:
+            - artemis-core
+            - artemis-jms
+            - kafka
+          name: messaging
+
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          timeoutInMinutes: 20
+          modules:
+            - elytron-security-oauth2
+            - elytron-security
+            - elytron-security-jdbc
+            - elytron-undertow
+          name: security_1
+          keycloak: true
+
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          timeoutInMinutes: 45
+          modules:
+            - elytron-resteasy
+            - oidc
+            - oidc-code-flow
+            - vault-app
+            - keycloak-authorization
+          name: security_2
+          keycloak: true
+
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          timeoutInMinutes: 30
+          modules:
+            - flyway
+            - hibernate-orm-panache
+            - reactive-pg-client
+          name: data_3
+          postgres: true
+
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          timeoutInMinutes: 30
+          modules:
+            - mongodb-client
+            - mongodb-panache
+            - neo4j
+          name: data_4
+
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          timeoutInMinutes: 25
+          modules:
+            - infinispan-cache-jpa
+            - infinispan-client
+          name: infinispan
+
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          timeoutInMinutes: 25
+          modules:
+            - resteasy-jackson
+            - vertx
+            - vertx-http
+            - virtual-http
+          name: http
+
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          timeoutInMinutes: 25
+          modules:
+            - jackson
+            - jsonb
+            - jgit
+            - kogito
+            - kubernetes-client
+          name: misc_1
+
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          timeoutInMinutes: 25
+          modules:
+            - tika
+            - hibernate-validator
+            - test-extension
+          name: misc_2
+
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          timeoutInMinutes: 25
+          modules:
+            - spring-di
+            - spring-web
+            - spring-data-jpa
+          name: spring
+
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          timeoutInMinutes: 25
+          modules:
+            - hibernate-search-elasticsearch
+            - narayana-stm
+            - narayana-jta
+          name: data_5

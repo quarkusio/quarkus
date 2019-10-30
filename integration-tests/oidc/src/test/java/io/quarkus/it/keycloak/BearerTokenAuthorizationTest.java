@@ -1,9 +1,11 @@
 package io.quarkus.it.keycloak;
 
 import static io.quarkus.it.keycloak.KeycloakRealmResourceManager.getAccessToken;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.RepeatedTest;
@@ -107,5 +109,16 @@ public class BearerTokenAuthorizationTest {
                 .then()
                 .statusCode(200)
                 .body(equalTo("Hello World"));
+    }
+
+    @Test
+    public void testExpiredBearerToken() throws InterruptedException {
+        String token = getAccessToken("alice");
+
+        await()
+                .pollDelay(3, TimeUnit.SECONDS)
+                .atMost(5, TimeUnit.SECONDS).until(
+                        () -> RestAssured.given().auth().oauth2(token).when()
+                                .get("/api/users/me").thenReturn().statusCode() == 403);
     }
 }

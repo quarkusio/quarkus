@@ -68,6 +68,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         realm.setEnabled(true);
         realm.setUsers(new ArrayList<>());
         realm.setClients(new ArrayList<>());
+        realm.setAccessTokenLifespan(3);
 
         RolesRepresentation roles = new RolesRepresentation();
         List<RoleRepresentation> realmRoles = new ArrayList<>();

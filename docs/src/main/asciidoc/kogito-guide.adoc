@@ -67,7 +67,7 @@ However, you can go right to the complete example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `using-kogito` {quickstarts-tree-url}/using-kogito[directory].
+The solution is located in the `kogito-quickstart` {quickstarts-tree-url}/kogito-quickstart[directory].
 
 == Creating the Maven Project
 
@@ -77,7 +77,7 @@ First, we need a new project. Create a new project with the following command:
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=using-kogito \
+    -DprojectArtifactId=kogito-quickstart \
     -Dextensions="kogito"
 ----
 
@@ -216,7 +216,7 @@ Then run it:
 
 [source,bash]
 ----
-java -jar ./target/using-kogito-runner.jar
+java -jar ./target/kogito-quickstart-runner.jar
 ----
 
 === Running in Native Mode
@@ -239,7 +239,7 @@ After getting a cup of coffee, you'll be able to run this binary directly:
 
 [source,bash]
 ----
-./target/using-kogito-runner
+./target/kogito-quickstart-runner
 ----
 
 == Testing the Application

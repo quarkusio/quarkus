@@ -5,7 +5,7 @@ This approach became very popular in the JavaScript world, with frameworks like 
 Quarkus also offers the possibility to use reactive routes.
 You can implement REST API with routes only or combine them with JAX-RS resources and servlets.
 
-The code presented in this guide is available in this https://github.com/quarkusio/quarkus-quickstarts[Github repository] under the https://github.com/quarkusio/quarkus-quickstarts/tree/master/using-reactive-routes[`using-reactive-routes` directory]
+The code presented in this guide is available in this {quickstarts-base-url}[Github repository] under the {quickstarts-tree-url}/reactive-routes-quickstart[`reactive-routes-quickstart` directory]
 
 == Quarkus HTTP
 
@@ -165,4 +165,4 @@ The second parameter is the priority used to sort the filters Highest priority a
 == Conclusion
 
 This guide has introduced how you can use reactive routes to define an HTTP endpoint.
-It also describes the structure of the Quarkus HTTP layer and how to wr ite filters.
+It also describes the structure of the Quarkus HTTP layer and how to write filters.

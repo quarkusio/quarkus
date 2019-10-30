@@ -22,7 +22,7 @@ and the https://narayana.io//docs/project/index.html#d0e16133[STM annotations gu
 
 There is also a fully worked example in the quickstarts which you may access by cloning the
 Git repository: `git clone {quickstarts-clone-url}`, or by downloading an {quickstarts-archive-url}[archive].
-Look for the `using-stm` example.
+Look for the `software-transactional-memory-quickstart` example.
 
 == Setting it up
 

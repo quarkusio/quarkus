@@ -31,7 +31,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `application-lifecycle-events` directory.
+The solution is located in the `lifecycle-quickstart` {quickstarts-tree-url}/lifecycle-quickstart[directory].
 
 == Creating the Maven project
 
@@ -41,7 +41,7 @@ First, we need a new project. Create a new project with the following command:
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=application-lifecycle-events \
+    -DprojectArtifactId=lifecycle-quickstart \
     -DclassName="org.acme.events.GreetingResource" \
     -Dpath="/hello"
 ----

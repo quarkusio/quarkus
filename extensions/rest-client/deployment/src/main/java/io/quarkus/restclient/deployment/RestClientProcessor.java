@@ -276,7 +276,7 @@ class RestClientProcessor {
                 scopeToUse = builtinScope.getInfo();
             } else if (capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
                 if (scope.equals(SESSION_SCOPED)) {
-                    scopeToUse = new ScopeInfo(SessionScoped.class, true);
+                    scopeToUse = new ScopeInfo(SESSION_SCOPED, true);
                 }
             }
 
@@ -295,7 +295,7 @@ class RestClientProcessor {
                     break;
                 }
                 if (annotationName.equals(SESSION_SCOPED)) {
-                    scopeToUse = new ScopeInfo(SessionScoped.class, true);
+                    scopeToUse = new ScopeInfo(SESSION_SCOPED, true);
                     break;
                 }
             }

@@ -23,6 +23,18 @@ public class ScopeInfo {
         declaresInherited = clazz.getAnnotation(Inherited.class) != null;
     }
 
+    public ScopeInfo(DotName clazz, boolean isNormal) {
+        this.dotName = clazz;
+        this.isNormal = isNormal;
+        declaresInherited = true;
+    }
+
+    public ScopeInfo(DotName clazz, boolean isNormal, boolean declaresInherited) {
+        this.dotName = clazz;
+        this.isNormal = isNormal;
+        this.declaresInherited = declaresInherited;
+    }
+
     public DotName getDotName() {
         return dotName;
     }

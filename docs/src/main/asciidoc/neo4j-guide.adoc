@@ -115,7 +115,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: git clone https://github.com/quarkusio/quarkus-quickstarts.git, or download an archive.
 
-The solution is located in the `neo4j-quickstart` directory.
+The solution is located in the `neo4j-quickstart` {quickstarts-tree-url}/neo4j-quickstart[directory].
 It contains a very simple UI to use the JAX-RS resources created here, too.
 
 == Creating the Maven project

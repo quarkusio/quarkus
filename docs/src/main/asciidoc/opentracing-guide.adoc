@@ -33,7 +33,7 @@ However, you can skip right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `using-opentracing` {quickstarts-tree-url}/using-opentracing[directory].
+The solution is located in the `opentracing-quickstart` {quickstarts-tree-url}/opentracing-quickstart[directory].
 
 == Creating the Maven project
 
@@ -43,7 +43,7 @@ First, we need a new project. Create a new project with the following command:
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=using-opentracing \
+    -DprojectArtifactId=opentracing-quickstart \
     -DclassName="org.acme.opentracing.TracedResource" \
     -Dpath="/hello" \
     -Dextensions="opentracing"

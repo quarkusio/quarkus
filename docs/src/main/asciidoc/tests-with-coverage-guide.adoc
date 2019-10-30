@@ -46,7 +46,8 @@ The service will be tested with JUnit 5 and the endpoint will be annotated via a
 
 We recommend that you follow the instructions in the next sections and create the application step by step. However, you can go right to the completed example.
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
-The solution is located in the `tests-with-coverage` directory.
+
+The solution is located in the `tests-with-coverage-quickstart` {quickstarts-tree-url}/tests-with-coverage-quickstart[directory].
 
 == Starting from a simple project and two tests
 
@@ -54,7 +55,9 @@ Let's start from an empty application created with the Quarkus Maven plugin:
 
 [source,shell,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:create -DprojectGroupId=org.acme -DprojectArtifactId=tests-with-coverage
+mvn io.quarkus:quarkus-maven-plugin:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=tests-with-coverage-quickstart
 ----
 
 Now we'll be adding all the elements necessary to have an application that is properly covered with tests.

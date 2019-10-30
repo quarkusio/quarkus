@@ -39,7 +39,7 @@ First, we need a new project. Create a new project with the following command:
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=agroal-datasources\
+    -DprojectArtifactId=agroal-quickstart \
     -DclassName="org.acme.datasource.GreetingResource" \
     -Dpath="/hello"
 ----

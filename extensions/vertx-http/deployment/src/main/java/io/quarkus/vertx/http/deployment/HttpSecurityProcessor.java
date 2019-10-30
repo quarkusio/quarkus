@@ -88,8 +88,10 @@ public class HttpSecurityProcessor {
             beanProducer
                     .produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(HttpAuthenticator.class)
                             .addBeanClass(HttpAuthorizer.class).build());
-            filterBuildItemBuildProducer.produce(new FilterBuildItem(recorder.authenticationMechanismHandler(), 200));
-            filterBuildItemBuildProducer.produce(new FilterBuildItem(recorder.permissionCheckHandler(), 100));
+            filterBuildItemBuildProducer
+                    .produce(new FilterBuildItem(recorder.authenticationMechanismHandler(), FilterBuildItem.AUTHENTICATION));
+            filterBuildItemBuildProducer
+                    .produce(new FilterBuildItem(recorder.permissionCheckHandler(), FilterBuildItem.AUTHORIZATION));
 
             if (!buildTimeConfig.auth.permissions.isEmpty()) {
                 beanContainerListenerBuildItemBuildProducer

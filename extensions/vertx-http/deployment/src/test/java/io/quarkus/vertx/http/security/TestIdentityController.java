@@ -15,7 +15,7 @@ public class TestIdentityController {
         return new Builder();
     }
 
-    static class Builder {
+    public static class Builder {
         public Builder add(String username, String password, String... roles) {
             idenitities.put(username, new TestIdentity(username, password, roles));
             return this;

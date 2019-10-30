@@ -18,7 +18,7 @@
     <properties>
         <gradle.project.directory>${project.build.directory}/foo</gradle.project.directory>
         <gradle.executable>${gradle.project.directory}/gradlew</gradle.executable>
-        <skip.gradle.build>false</skip.gradle.build>
+        <skip.gradle.build>${skipTests}</skip.gradle.build>
     </properties>
 
     <dependencies>

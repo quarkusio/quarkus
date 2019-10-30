@@ -34,9 +34,9 @@ jobs:
     - ${{ if eq(parameters.mysql, 'true') }}:
         - bash: |
             sudo apt-get update &&
-            sudo apt-get -y install mysql-server libmysqlclient-dev &&
-            sudo mysql -e "create user 'hibernate_orm_test'@'localhost' identified by 'hibernate_orm_test';" -uroot -proot &&
-            sudo mysql -e "create database hibernate_orm_test; grant all on hibernate_orm_test.* to 'hibernate_orm_test'@'localhost';" -uroot -proot
+            sudo apt-get -y install mysql-server libmysqlclient-dev
+            sudo mysql -e "create user 'hibernate_orm_test'@'localhost' identified by 'hibernate_orm_test';" -uroot -proot || echo already exists
+            sudo mysql -e "create database hibernate_orm_test; grant all on hibernate_orm_test.* to 'hibernate_orm_test'@'localhost';" -uroot -proot || echo already exists
           displayName: 'install mysql'
 
     - task: Maven@3

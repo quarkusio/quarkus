@@ -13,7 +13,7 @@ jobs:
     displayName: ${{ join(', ', parameters.modules) }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     pool:
-      vmImage: 'Ubuntu 16.04'
+      name: 'tsetme'
     variables:
       imageName: 'quarkus:$(build.buildId)'
     steps:

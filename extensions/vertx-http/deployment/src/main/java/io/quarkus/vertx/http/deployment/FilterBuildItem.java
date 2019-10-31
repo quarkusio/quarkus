@@ -11,6 +11,11 @@ import io.vertx.ext.web.RoutingContext;
  */
 public final class FilterBuildItem extends MultiBuildItem {
 
+    //predefined system priorities
+    public static final int CORS = 300;
+    public static final int AUTHENTICATION = 200;
+    public static final int AUTHORIZATION = 100;
+
     private final Handler<RoutingContext> handler;
     private final int priority;
 

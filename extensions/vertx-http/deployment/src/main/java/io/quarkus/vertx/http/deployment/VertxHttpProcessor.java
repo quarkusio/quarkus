@@ -48,7 +48,7 @@ class VertxHttpProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     FilterBuildItem cors(CORSRecorder recorder, HttpConfiguration configuration) {
-        return new FilterBuildItem(recorder.corsHandler(configuration), 100);
+        return new FilterBuildItem(recorder.corsHandler(configuration), FilterBuildItem.CORS);
     }
 
     @BuildStep

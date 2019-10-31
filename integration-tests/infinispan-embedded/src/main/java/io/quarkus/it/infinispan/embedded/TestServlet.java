@@ -1,6 +1,7 @@
 package io.quarkus.it.infinispan.embedded;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +45,7 @@ public class TestServlet {
     public String get(@PathParam("cacheName") String cacheName, @PathParam("id") String id) {
         log.info("Retrieving " + id + " from " + cacheName);
         Cache<byte[], byte[]> cache = emc.getCache(cacheName);
-        byte[] result = cache.get(id.getBytes());
+        byte[] result = cache.get(id.getBytes(StandardCharsets.UTF_8));
         return result == null ? "null" : new String(result);
     }
 
@@ -56,7 +57,7 @@ public class TestServlet {
             @QueryParam("shouldFail") String shouldFail) {
         log.info("Putting " + id + " with value: " + value + " into " + cacheName);
         Cache<byte[], byte[]> cache = emc.getCache(cacheName);
-        byte[] result = cache.put(id.getBytes(), value.getBytes());
+        byte[] result = cache.put(id.getBytes(StandardCharsets.UTF_8), value.getBytes(StandardCharsets.UTF_8));
         if (Boolean.parseBoolean(shouldFail)) {
             throw new RuntimeException("Forced Exception!");
         }
@@ -69,7 +70,7 @@ public class TestServlet {
     public String remove(@PathParam("cacheName") String cacheName, @PathParam("id") String id) {
         log.info("Removing " + id + " from " + cacheName);
         Cache<byte[], byte[]> cache = emc.getCache(cacheName);
-        byte[] result = cache.remove(id.getBytes());
+        byte[] result = cache.remove(id.getBytes(StandardCharsets.UTF_8));
         return result == null ? "null" : new String(result);
     }
 

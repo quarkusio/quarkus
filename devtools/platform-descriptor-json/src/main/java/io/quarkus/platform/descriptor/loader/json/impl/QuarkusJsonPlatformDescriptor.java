@@ -3,6 +3,7 @@ package io.quarkus.platform.descriptor.loader.json.impl;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -105,7 +106,7 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor 
         }
         try {
             return resourceLoader.loadResource(name, is -> {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
                     return reader.lines().collect(Collectors.joining("\n"));
                 }
             });

@@ -4,6 +4,7 @@ import static javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
@@ -36,7 +37,7 @@ public class CertificateHelper {
         Matcher matcher = certBundlePattern.matcher(certBundle);
 
         while (matcher.find(start)) {
-            ByteArrayInputStream inStream = new ByteArrayInputStream(matcher.group().getBytes());
+            ByteArrayInputStream inStream = new ByteArrayInputStream(matcher.group().getBytes(StandardCharsets.UTF_8));
             X509Certificate certificate = (X509Certificate) certificateFactory.generateCertificate(inStream);
             keyStore.setCertificateEntry("cert_" + count++, certificate);
             start = matcher.end();

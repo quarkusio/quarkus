@@ -72,7 +72,7 @@ public class PersistentLoginManager {
             byte[] encrypted = new byte[byteBuffer.remaining()];
             byteBuffer.get(encrypted);
             cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(ENC_TAG_LENGTH, iv));
-            String result = new String(cipher.doFinal(encrypted));
+            String result = new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
             int sep = result.indexOf(":");
             if (sep == -1) {
                 return null;

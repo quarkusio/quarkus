@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -123,7 +124,8 @@ public class QuarkusTestPlatformDescriptorLoader implements QuarkusPlatformDescr
                 try {
                     return loadResource(name, is -> {
                         final StringWriter writer = new StringWriter();
-                        try(BufferedReader reader = new BufferedReader(new InputStreamReader(is)); BufferedWriter bw = new BufferedWriter(writer)) {
+                        try(BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+                            BufferedWriter bw = new BufferedWriter(writer)) {
                             String line;
                             while((line = reader.readLine()) != null) {
                                 bw.write(line);

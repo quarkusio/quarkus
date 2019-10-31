@@ -146,7 +146,7 @@ public class GradleBuildFile extends BuildFile {
     }
 
     private void readLineByLine(String content, Consumer<String> lineConsumer) {
-        try (Scanner scanner = new Scanner(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)))) {
+        try (Scanner scanner = new Scanner(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8.name())) {
             while (scanner.hasNextLine()) {
                 String currentLine = scanner.nextLine();
                 lineConsumer.accept(currentLine);

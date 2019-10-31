@@ -26,7 +26,7 @@ stages:
           imageName: 'quarkus:$(build.buildId)'
 
         steps:
-          - script: find .
+          - script: find /home/ubuntu
             displayName: Dump Dir
             
           - task: CacheBeta@0

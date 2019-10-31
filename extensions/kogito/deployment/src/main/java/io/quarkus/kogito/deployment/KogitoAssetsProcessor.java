@@ -254,14 +254,14 @@ public class KogitoAssetsProcessor {
             generatedBeans.produce(bif.apply(className, data));
 
             if (launchMode == LaunchMode.DEVELOPMENT) {
-                Path path = writeFile(fileName, data);
+                Path path = writeFile(Paths.get(projectPath.toString(), fileName).toString(), data);
 
                 String sourceFile = path.toString().replaceFirst("\\.class", ".java");
                 if (sourceFile.contains("$")) {
                     sourceFile = sourceFile.substring(0, sourceFile.indexOf("$")) + ".java";
                 }
-                KogitoCompilationProvider.classToSource.put(Paths.get(projectPath.toString(), path.toString()),
-                        Paths.get(projectPath.toString(), sourceFile));
+                KogitoCompilationProvider.classToSource.put(path,
+                        Paths.get(sourceFile));
             }
         }
     }

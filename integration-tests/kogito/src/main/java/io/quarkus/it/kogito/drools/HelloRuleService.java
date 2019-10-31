@@ -5,14 +5,15 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import org.kie.kogito.rules.RuleUnit;
-import org.kie.kogito.rules.impl.SessionMemory;
+import org.kie.kogito.rules.RuleUnitInstance;
+import org.kie.kogito.rules.impl.SessionData;
 
 @ApplicationScoped
 public class HelloRuleService {
 
     @Inject
     @Named("simpleKS")
-    RuleUnit<SessionMemory> ruleUnit;
+    RuleUnit<SessionData> ruleUnit;
 
     public String run() {
 
@@ -21,13 +22,14 @@ public class HelloRuleService {
         Person edson = new Person("Edson", 35);
         Person mario = new Person("Mario", 40);
 
-        SessionMemory memory = new SessionMemory();
+        SessionData memory = new SessionData();
         memory.add(result);
         memory.add(mark);
         memory.add(edson);
         memory.add(mario);
 
-        ruleUnit.evaluate(memory);
+        RuleUnitInstance<SessionData> instance = ruleUnit.createInstance(memory);
+        instance.fire();
 
         return result.toString();
     }

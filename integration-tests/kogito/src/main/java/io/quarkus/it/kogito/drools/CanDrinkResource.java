@@ -9,26 +9,27 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.kie.kogito.rules.RuleUnit;
-import org.kie.kogito.rules.impl.SessionMemory;
+import org.kie.kogito.rules.RuleUnitInstance;
+import org.kie.kogito.rules.impl.SessionData;
 
 @Path("/candrink/{name}/{age}")
 public class CanDrinkResource {
 
     @Inject
     @Named("canDrinkKS")
-    RuleUnit<SessionMemory> ruleUnit;
+    RuleUnit<SessionData> ruleUnit;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String canDrink(@PathParam("name") String name, @PathParam("age") int age) {
-        SessionMemory memory = new SessionMemory();
+        SessionData memory = new SessionData();
 
         Result result = new Result();
         memory.add(result);
         memory.add(new Person(name, age));
 
-        ruleUnit.evaluate(memory);
-
+        RuleUnitInstance<SessionData> instance = ruleUnit.createInstance(memory);
+        instance.fire();
         return result.toString();
     }
 }

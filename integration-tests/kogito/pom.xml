@@ -30,6 +30,12 @@
         <dependency>
             <groupId>org.kie.kogito</groupId>
             <artifactId>kogito-dmn</artifactId>
+            <exclusions>
+               <exclusion>
+                 <groupId>javax.annotation</groupId>
+                 <artifactId>javax.annotation-api</artifactId>
+               </exclusion>
+             </exclusions>
         </dependency>
         <dependency>
             <groupId>org.kie.kogito</groupId>
@@ -53,7 +59,6 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <version>${project.version}</version>
                 <executions>
                     <execution>
                         <goals>

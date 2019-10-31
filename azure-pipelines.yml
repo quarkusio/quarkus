@@ -61,6 +61,8 @@ stages:
 
         steps:
           - template: ci-templates/jvm-build-steps.yaml
+            parameters:
+              extraf: '-DskipTests'
           - publish: $(MAVEN_CACHE_FOLDER)
             artifact: $(Build.SourceVersion)-BuiltMavenRepo
 

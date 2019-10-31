@@ -124,15 +124,10 @@ stages:
     jobs:
       - template: ci-templates/native-build-steps.yaml
         parameters:
-          timeoutInMinutes: 25
+          timeoutInMinutes: 20
           modules:
-            - jpa
-#            - jpa-postgresql
-            - jpa-mysql
-            - reactive-mysql-client
-          name: data_2
-          postgres: false
-          mysql: true
+            - kafka
+          name: messaging
     
       - template: ci-templates/native-build-steps.yaml
         parameters:
@@ -172,14 +167,14 @@ stages:
           name: amazon
           dynamodb: true
 
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          timeoutInMinutes: 20
-          modules:
-            - artemis-core
-            - artemis-jms
-            - kafka
-          name: messaging
+#       - template: ci-templates/native-build-steps.yaml
+#         parameters:
+#           timeoutInMinutes: 20
+#           modules:
+#             - artemis-core
+#             - artemis-jms
+#             - kafka
+#           name: messaging
 
       - template: ci-templates/native-build-steps.yaml
         parameters:

@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.enterprise.inject.spi.InterceptionType;
 import javax.interceptor.InvocationContext;
 import org.jboss.jandex.AnnotationInstance;
@@ -73,7 +74,7 @@ public class InterceptorGenerator extends BeanGenerator {
 
         // MyInterceptor_Bean implements InjectableInterceptor<T>
         ClassCreator interceptorCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(InjectableInterceptor.class)
+                .interfaces(InjectableInterceptor.class, Supplier.class)
                 .build();
 
         // Fields
@@ -92,6 +93,7 @@ public class InterceptorGenerator extends BeanGenerator {
                 bindings.getFieldDescriptor());
 
         implementGetIdentifier(interceptor, interceptorCreator);
+        implementSupplierGet(interceptorCreator);
         implementCreate(classOutput, interceptorCreator, interceptor, providerTypeName, baseName, injectionPointToProviderField,
                 interceptorToProviderField,
                 reflectionRegistration, targetPackage, isApplicationClass);

@@ -144,7 +144,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(InjectableBean.class).build();
+                .interfaces(InjectableBean.class, Supplier.class).build();
 
         // Fields
         FieldCreator beanTypes = beanCreator.getFieldCreator(FIELD_NAME_BEAN_TYPES, Set.class)
@@ -195,6 +195,7 @@ public class BeanGenerator extends AbstractGenerator {
         constructor.returnValue(null);
 
         implementGetIdentifier(bean, beanCreator);
+        implementSupplierGet(beanCreator);
         if (!bean.hasDefaultDestroy()) {
             implementDestroy(bean, beanCreator, providerTypeName, Collections.emptyMap(), reflectionRegistration,
                     isApplicationClass, baseName);
@@ -246,7 +247,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(InjectableBean.class).build();
+                .interfaces(InjectableBean.class, Supplier.class).build();
 
         // Fields
         FieldCreator beanTypes = beanCreator.getFieldCreator(FIELD_NAME_BEAN_TYPES, Set.class)
@@ -275,6 +276,7 @@ public class BeanGenerator extends AbstractGenerator {
                 annotationLiterals);
 
         implementGetIdentifier(bean, beanCreator);
+        implementSupplierGet(beanCreator);
         if (!bean.hasDefaultDestroy()) {
             implementDestroy(bean, beanCreator, providerTypeName, injectionPointToProviderSupplierField, reflectionRegistration,
                     isApplicationClass, baseName);
@@ -341,7 +343,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(InjectableBean.class).build();
+                .interfaces(InjectableBean.class, Supplier.class).build();
 
         // Fields
         FieldCreator beanTypes = beanCreator.getFieldCreator(FIELD_NAME_BEAN_TYPES, Set.class)
@@ -369,6 +371,7 @@ public class BeanGenerator extends AbstractGenerator {
                 annotationLiterals);
 
         implementGetIdentifier(bean, beanCreator);
+        implementSupplierGet(beanCreator);
         if (!bean.hasDefaultDestroy()) {
             implementDestroy(bean, beanCreator, providerTypeName, injectionPointToProviderField, reflectionRegistration,
                     isApplicationClass, baseName);
@@ -426,7 +429,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(InjectableBean.class).build();
+                .interfaces(InjectableBean.class, Supplier.class).build();
 
         // Fields
         FieldCreator beanTypes = beanCreator.getFieldCreator(FIELD_NAME_BEAN_TYPES, Set.class)
@@ -450,6 +453,7 @@ public class BeanGenerator extends AbstractGenerator {
                 annotationLiterals);
 
         implementGetIdentifier(bean, beanCreator);
+        implementSupplierGet(beanCreator);
         if (!bean.hasDefaultDestroy()) {
             implementDestroy(bean, beanCreator, providerTypeName, null, reflectionRegistration, isApplicationClass, baseName);
         }
@@ -1512,6 +1516,11 @@ public class BeanGenerator extends AbstractGenerator {
                     .setModifiers(ACC_PUBLIC);
             getName.returnValue(getName.load(bean.getName()));
         }
+    }
+
+    protected void implementSupplierGet(ClassCreator beanCreator) {
+        MethodCreator get = beanCreator.getMethodCreator("get", Object.class).setModifiers(ACC_PUBLIC);
+        get.returnValue(get.getThis());
     }
 
     private String getProxyTypeName(BeanInfo bean, String baseName) {

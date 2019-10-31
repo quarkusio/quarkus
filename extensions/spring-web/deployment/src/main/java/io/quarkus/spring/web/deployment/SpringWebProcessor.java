@@ -42,6 +42,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor;
@@ -129,6 +130,15 @@ public class SpringWebProcessor {
                         DotName.createSimple("org.springframework.web.bind.annotation.MatrixVariable"),
                         DotName.createSimple("org.springframework.web.bind.annotation.RequestHeader"),
                         DotName.createSimple("org.springframework.web.bind.annotation.CookieValue")));
+    }
+
+    @BuildStep
+    public void ignoreReflectionHierarchy(BuildProducer<ReflectiveHierarchyIgnoreWarningBuildItem> ignore) {
+        ignore.produce(new ReflectiveHierarchyIgnoreWarningBuildItem(RESPONSE_ENTITY));
+        ignore.produce(
+                new ReflectiveHierarchyIgnoreWarningBuildItem(DotName.createSimple("org.springframework.util.MimeType")));
+        ignore.produce(
+                new ReflectiveHierarchyIgnoreWarningBuildItem(DotName.createSimple("org.springframework.util.MultiValueMap")));
     }
 
     @BuildStep

@@ -2,6 +2,7 @@ package io.quarkus.it.spring.web;
 
 import javax.validation.Valid;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,6 +24,11 @@ public class GreetingController {
     @GetMapping(path = "/json/{message}")
     public Greeting greet(@PathVariable String message, @RequestParam String suffix) {
         return greetingService.greet(message + suffix);
+    }
+
+    @GetMapping(path = "/re/json/{message}")
+    public ResponseEntity<Greeting> responseEntityGreeting(@PathVariable String message, @RequestParam String suffix) {
+        return ResponseEntity.ok(greetingService.greet(message + suffix));
     }
 
     @PostMapping(path = "/person")

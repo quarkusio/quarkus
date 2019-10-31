@@ -150,7 +150,7 @@ stages:
               jdk: '1.12'
 
       - job: Run_TCKs
-        timeoutInMinutes: 45
+        timeoutInMinutes: 60
         pool:
           vmImage: 'Ubuntu 16.04'
         steps:

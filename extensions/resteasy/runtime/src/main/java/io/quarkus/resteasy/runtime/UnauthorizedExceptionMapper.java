@@ -53,7 +53,6 @@ public class UnauthorizedExceptionMapper implements ExceptionMapper<Unauthorized
 
     @Override
     public Response toResponse(UnauthorizedException exception) {
-        SecurityIdentity identity = CurrentIdentityAssociation.current();
         if (HTTP_SERVLET_REQUEST != null) {
             Object httpServletRequest = ResteasyContext.getContextData(HTTP_SERVLET_REQUEST);
             if (httpServletRequest != null) {

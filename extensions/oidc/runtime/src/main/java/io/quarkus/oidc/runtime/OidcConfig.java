@@ -1,5 +1,6 @@
 package io.quarkus.oidc.runtime;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,6 +50,13 @@ public class OidcConfig {
      */
     @ConfigItem
     Optional<String> clientId;
+
+    /**
+     * The maximum amount of time the adapter will try connecting to the currently unavailable OIDC server for.
+     * For example, setting it to '20S' will let the adapter keep requesting the connection for up to 20 seconds.
+     */
+    @ConfigItem
+    public Optional<Duration> connectionDelay;
 
     /**
      * Configuration to find and parse a custom claim containing the roles information.

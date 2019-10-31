@@ -8,22 +8,25 @@ import io.quarkus.annotation.processor.Constants;
 
 final class SummaryTableDocFormatter implements DocFormatter {
     private static final String TABLE_CLOSING_TAG = "\n|===";
+    public static final String SEARCHABLE_TABLE_CLASS = ".searchable"; // a css class indicating if a table is searchable
+    public static final String CONFIGURATION_TABLE_CLASS = ".configuration-reference";
     private static final String TABLE_ROW_FORMAT = "\n\na|%s [[%s]]`link:#%s[%s]`\n\n[.description]\n--\n%s\n--|%s %s\n|%s\n";
     private static final String TABLE_SECTION_ROW_FORMAT = "\n\nh|[[%s]]link:#%s[%s]\nh|Type\nh|Default";
-    private static final String TABLE_HEADER_FORMAT = "[.configuration-legend]%s\n[.configuration-reference, cols=\"80,.^10,.^10\"]\n|===";
+    private static final String TABLE_HEADER_FORMAT = "[.configuration-legend]%s\n[%s, cols=\"80,.^10,.^10\"]\n|===";
     //    private static final String MORE_INFO_ABOUT_SECTION_FORMAT = "link:#%s[icon:plus-circle[], title=More information about %s]";
 
     private String anchorPrefix = "";
 
     /**
-     * Generate configuration keys in table format.
-     * Generated table will contain a key column that points to the long descriptive format.
-     *
-     * @param configDocItems
+     * Generate configuration keys in table format with search engine activated or not.
+     * Useful when we want to optionally activate or deactivate search engine
      */
     @Override
-    public void format(Writer writer, String initialAnchorPrefix, List<ConfigDocItem> configDocItems) throws IOException {
-        final String tableHeaders = String.format(TABLE_HEADER_FORMAT, Constants.CONFIG_PHASE_LEGEND);
+    public void format(Writer writer, String initialAnchorPrefix, boolean activateSearch, List<ConfigDocItem> configDocItems)
+            throws IOException {
+        String searchableClass = activateSearch ? SEARCHABLE_TABLE_CLASS : Constants.EMPTY;
+        String tableClasses = CONFIGURATION_TABLE_CLASS + searchableClass;
+        final String tableHeaders = String.format(TABLE_HEADER_FORMAT, Constants.CONFIG_PHASE_LEGEND, tableClasses);
         writer.append(tableHeaders);
         anchorPrefix = initialAnchorPrefix;
 

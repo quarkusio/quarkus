@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
@@ -66,9 +65,9 @@ import org.jboss.jdeparser.JSources;
 import org.jboss.jdeparser.JType;
 import org.jboss.jdeparser.JTypes;
 
-import io.quarkus.annotation.processor.generate_doc.ConfigDocItem;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocItemScanner;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocWriter;
+import io.quarkus.annotation.processor.generate_doc.ScannedConfigDocsItemHolder;
 
 public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
@@ -236,9 +235,12 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         }
 
         try {
-            final Map<String, List<ConfigDocItem>> extensionConfigurationItems = configDocItemScanner
+            final ScannedConfigDocsItemHolder scannedConfigDocsItemHolder = configDocItemScanner
                     .scanExtensionsConfigurationItems(javaDocProperties);
-            configDocWriter.writeExtensionConfigDocumentation(extensionConfigurationItems);
+
+            configDocWriter.writeExtensionConfigDocumentation(scannedConfigDocsItemHolder.getAllConfigItemsPerExtension(),
+                    true); // generate extension doc with search engine activate
+            configDocWriter.writeExtensionConfigDocumentation(scannedConfigDocsItemHolder.getConfigGroupConfigItems(), false); // generate config group docs with search engine deactivated
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate extension doc: " + e);
             return;

@@ -10,20 +10,23 @@ if(tables){
     var idx = 0;
     for (var table of tables) {
         var caption = table.previousElementSibling;
-        var input = document.createElement("input");
-        input.setAttribute("type", "search");
-        input.setAttribute("placeholder", "filter configuration");
-        input.id = "config-search-"+(idx++);
-        caption.children.item(0).appendChild(input);
-        input.addEventListener("keyup", initiateSearch);
-        input.addEventListener("input", initiateSearch);
-        inputs[input.id] = {"table": table};
-        var descriptions = table.querySelectorAll(".description");
-        if(descriptions){
+        if (table.classList.contains('searchable')) { // activate search engine only when needed
+          var input = document.createElement("input");
+          input.setAttribute("type", "search");
+          input.setAttribute("placeholder", "filter configuration");
+          input.id = "config-search-"+(idx++);
+          caption.children.item(0).appendChild(input);
+          input.addEventListener("keyup", initiateSearch);
+          input.addEventListener("input", initiateSearch);
+          inputs[input.id] = {"table": table};
+          var descriptions = table.querySelectorAll(".description");
+          if(descriptions){
             for (description of descriptions){
-                makeCollapsible(input, description);
+              makeCollapsible(input, description);
             }
+          }
         }
+
         var rowIdx = 0;
         for (var row of table.querySelectorAll("tr")) {
             var heads = row.querySelectorAll("th");
@@ -58,7 +61,7 @@ function highlight(element, text){
         var elementText = n.nodeValue;
         if(elementText == undefined)
             continue;
-        var elementTextLC = elementText.toLowerCase(); 
+        var elementTextLC = elementText.toLowerCase();
         var index = elementTextLC.indexOf(text);
         if(index != -1
            && acceptTextForSearch(n)){
@@ -153,10 +156,10 @@ function reinstallClickHandlers(input, table){
             var decoration = content.lastElementChild;
             var iconDecoration = decoration.children.item(0);
             var collapsibleSpan = decoration.children.item(1);
-            var collapsibleHandler = makeCollapsibleHandler(input, descDiv, td, row, 
-                                                            collapsibleSpan, 
+            var collapsibleHandler = makeCollapsibleHandler(input, descDiv, td, row,
+                                                            collapsibleSpan,
                                                             iconDecoration);
-        
+
             row.addEventListener("click", collapsibleHandler);
         }
     }
@@ -206,7 +209,7 @@ function applySearch(table, search, autoExpand){
         if(!search){
             row.style.removeProperty("display");
             // recollapse when searching is over
-            if(autoExpand 
+            if(autoExpand
                 && row.classList.contains("row-collapsible")
                 && !row.classList.contains("row-collapsed"))
                 row.click();
@@ -268,7 +271,7 @@ function makeCollapsible(input, descDiv){
         collapsibleSpan.appendChild(document.createTextNode("Show more"));
         descDecoration.appendChild(collapsibleSpan);
 
-        var collapsibleHandler = makeCollapsibleHandler(input, descDiv, td, row, 
+        var collapsibleHandler = makeCollapsibleHandler(input, descDiv, td, row,
                                                         collapsibleSpan,
                                                         iconDecoration);
 
@@ -284,10 +287,10 @@ function makeCollapsible(input, descDiv){
 
 };
 
-function makeCollapsibleHandler(input, descDiv, td, row, 
+function makeCollapsibleHandler(input, descDiv, td, row,
     collapsibleSpan,
     iconDecoration) {
-    
+
     return function(event) {
         var target = event.target;
         if( (target.localName == 'a' || getAncestor(target, "a"))) {

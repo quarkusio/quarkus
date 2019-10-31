@@ -61,7 +61,8 @@ interface DocFormatter {
         return string.toLowerCase();
     }
 
-    void format(Writer writer, String initialAnchorPrefix, List<ConfigDocItem> configDocItems) throws IOException;
+    void format(Writer writer, String initialAnchorPrefix, boolean activateSearch, List<ConfigDocItem> configDocItems)
+            throws IOException;
 
     void format(Writer writer, ConfigDocKey configDocKey) throws IOException;
 

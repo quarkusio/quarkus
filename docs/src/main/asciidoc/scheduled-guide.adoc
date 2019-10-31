@@ -49,6 +49,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.scheduling.CountResource" \
     -Dpath="/count" \
     -Dextensions="scheduler"
+cd scheduler-quickstart
 ----
 
 It generates:

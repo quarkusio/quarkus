@@ -74,6 +74,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.quickstart.tika.TikaParserResource" \
     -Dpath="/parse" \
     -Dextensions="tika,resteasy"
+cd tika-quickstart
 ----
 
 This command generates a Maven project, importing the `tika` and `resteasy` extensions.

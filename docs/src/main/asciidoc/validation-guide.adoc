@@ -50,6 +50,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.validation.BookResource" \
     -Dpath="/books" \
     -Dextensions="resteasy-jsonb, hibernate-validator"
+cd validation-quickstart
 ----
 
 This command generates a Maven structure importing the RESTEasy/JAX-RS, JSON-B and Hibernate Validator/Bean Validation extensions.

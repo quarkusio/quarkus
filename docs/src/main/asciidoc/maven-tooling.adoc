@@ -61,8 +61,8 @@ The following table lists the attributes you can pass to the `create` command:
 If you decide to generate a REST resource (using the `className` attribute), the endpoint is exposed at: `http://localhost:8080/$path`.
 If you use the default `path`, the URL is: http://localhost:8080/hello.
 
-The project is either generated in the current directory or in a directory named after the passed artifactId.
-If the current directory is empty, the project is generated in-place.
+The project is generated in a directory named after the passed artifactId.
+If the directory already exists, the generation fails.
 
 A pair of Dockerfiles for native and jvm mode are also generated in `src/main/docker`.
 Instructions to build the image and run the container are written in those Dockerfiles.

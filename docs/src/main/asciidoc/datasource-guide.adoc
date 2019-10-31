@@ -42,6 +42,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=agroal-quickstart \
     -DclassName="org.acme.datasource.GreetingResource" \
     -Dpath="/hello"
+cd agroal-quickstart
 ----
 
 This will generate:

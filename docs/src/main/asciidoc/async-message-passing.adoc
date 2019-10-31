@@ -31,6 +31,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=vertx-quickstart \
     -Dextensions="vertx"
+cd vertx-quickstart
 ----
 
 If you have an already created project, the `vertx` extension can be added to an existing Quarkus project with
@@ -218,8 +219,9 @@ First create a new project using:
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=vertx-quickstart \
+    -DprojectArtifactId=vertx-http-quickstart \
     -Dextensions="vertx"
+cd vertx-http-quickstart
 ----
 
 You can already start the application in _dev mode_ using `./mvnw compile quarkus:dev`.

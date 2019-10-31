@@ -49,6 +49,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kafka-quickstart \
     -Dextensions="kafka"
+cd kafka-quickstart
 ----
 
 This command generates a Maven project, importing the Reactive Messaging and Kafka connector extensions.

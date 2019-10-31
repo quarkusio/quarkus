@@ -37,6 +37,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.oauth2.TokenSecuredResource" \
     -Dpath="/secured" \
     -Dextensions="resteasy-jsonb, security-oauth2"
+cd security-oauth2-quickstart
 ----
 
 This command generates the Maven project with a REST endpoint and imports the `elytron-security-oauth2` extension, which includes the OAuth2 opaque token support.

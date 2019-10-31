@@ -34,6 +34,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.rest.GreetingResource" \
     -Dpath="/greeting" \
     -Dextensions="kotlin,resteasy-jsonb"
+cd kotlin-quickstart
 ----
 
 When adding `kotlin` to the extensions list, the Maven plugin will generate a project that is properly

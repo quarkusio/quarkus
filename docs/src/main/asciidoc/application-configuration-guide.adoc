@@ -39,6 +39,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=config-quickstart \
     -DclassName="org.acme.config.GreetingResource" \
     -Dpath="/greeting"
+cd config-quickstart
 ----
 
 It generates:

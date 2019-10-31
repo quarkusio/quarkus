@@ -43,6 +43,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.restclient.multipart.MultipartClientResource" \
     -Dpath="/client" \
     -Dextensions="rest-client, resteasy"
+cd rest-client-multipart-quickstart
 ----
 
 This command generates the Maven project with a REST endpoint and imports the `rest-client` and `resteasy` extensions.

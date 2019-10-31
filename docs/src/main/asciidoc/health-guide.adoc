@@ -51,6 +51,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=microprofile-health-quickstart \
     -Dextensions="health"
+cd microprofile-health-quickstart
 ----
 
 This command generates a Maven project, importing the `smallrye-health` extension 

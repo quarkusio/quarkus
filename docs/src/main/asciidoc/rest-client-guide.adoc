@@ -40,6 +40,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.restclient.CountriesResource" \
     -Dpath="/country" \
     -Dextensions="rest-client, resteasy-jsonb"
+cd rest-client-quickstart
 ----
 
 This command generates the Maven project with a REST endpoint and imports the `rest-client` and `resteasy-jsonb` extensions.

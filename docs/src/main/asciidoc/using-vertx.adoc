@@ -26,6 +26,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=vertx-quickstart \
     -Dextensions="vertx"
+cd vertx-quickstart
 ----
 
 If you have an already created project, the `vertx` extension can be added to an existing Quarkus project with

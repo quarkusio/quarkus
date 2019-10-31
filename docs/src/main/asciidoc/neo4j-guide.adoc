@@ -128,6 +128,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=neo4j-quickstart \
     -Dextensions="neo4j,resteasy-jsonb"
+cd neo4j-quickstart
 ----
 
 It generates:

@@ -14,4 +14,4 @@ metadata:
     - "web"
     - "reactive"
   status: "stable"
-  guide: https://quarkus.io/guides/reactive-routes-guide
+  guide: https://quarkus.io/guides/reactive-routes

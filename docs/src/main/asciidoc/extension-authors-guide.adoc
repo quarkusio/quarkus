@@ -358,6 +358,7 @@ cd quarkus
 cd extensions
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
     -Dquarkus.artifactIdBase=my-ext \
+    -Dquarkus.artifactIdPrefix=quarkus- \
     -Dquarkus.nameBase="My Extension"
 ----
 
@@ -392,7 +393,6 @@ Note that the parameters of the mojo that will be constant for all the extension
            mvn quarkus:create-extension -N -Dquarkus.artifactIdBase=my-ext -Dquarkus.nameBase="My Extension"
     -->
     <configuration>
-        <artifactIdPrefix>quarkus-</artifactIdPrefix>
         <namePrefix xml:space="preserve">Quarkus - </namePrefix>
         <runtimeBomPath>../bom/runtime/pom.xml</runtimeBomPath>
         <deploymentBomPath>../bom/deployment/pom.xml</deploymentBomPath>

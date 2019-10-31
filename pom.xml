@@ -9,7 +9,6 @@
         <version>36</version>
     </parent>
          
-
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-parent</artifactId>
     <name>Quarkus - Parent pom</name>

@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class QuarkusObjectMapperContextResolver implements ContextResolver<ObjectMapper> {
 
     @Inject
-    private ObjectMapper objectMapper;
+    ObjectMapper objectMapper;
 
     @Override
     public ObjectMapper getContext(Class<?> type) {

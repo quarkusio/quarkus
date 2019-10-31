@@ -35,7 +35,7 @@ public class CDIDelegatingTransactionManager implements TransactionManager, Seri
      */
     @Inject
     @Initialized(TransactionScoped.class)
-    private Event<Transaction> transactionScopeInitialized;
+    Event<Transaction> transactionScopeInitialized;
 
     /**
      * An {@link Event} that can {@linkplain Event#fire(Object) fire}
@@ -43,7 +43,7 @@ public class CDIDelegatingTransactionManager implements TransactionManager, Seri
      */
     @Inject
     @BeforeDestroyed(TransactionScoped.class)
-    private Event<Object> transactionScopeBeforeDestroyed;
+    Event<Object> transactionScopeBeforeDestroyed;
 
     /**
      * An {@link Event} that can {@linkplain Event#fire(Object) fire}
@@ -51,7 +51,7 @@ public class CDIDelegatingTransactionManager implements TransactionManager, Seri
      */
     @Inject
     @Destroyed(TransactionScoped.class)
-    private Event<Object> transactionScopeDestroyed;
+    Event<Object> transactionScopeDestroyed;
 
     /**
      * Delegating transaction manager call to com.arjuna.ats.jta.{@link com.arjuna.ats.jta.TransactionManager}

@@ -14,7 +14,7 @@ import javax.ws.rs.ext.Provider;
 public class QuarkusJsonbContextResolver implements ContextResolver<Jsonb> {
 
     @Inject
-    private Jsonb jsonb;
+    Jsonb jsonb;
 
     @Override
     public Jsonb getContext(Class<?> type) {

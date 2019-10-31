@@ -136,7 +136,7 @@ public class CodecRegistrationTest {
 
     }
 
-    private static class EventBusConsumers {
+    static class EventBusConsumers {
 
         private List<String> address1 = new CopyOnWriteArrayList<>();
         private List<String> address2 = new CopyOnWriteArrayList<>();

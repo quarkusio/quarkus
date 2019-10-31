@@ -6,5 +6,5 @@ metadata:
   - "http"
   categories:
   - "cloud"
-  guide: "https://quarkus.io/guides/azure-functions-http-guide"
+  guide: "https://quarkus.io/guides/azure-functions-http"
   status: "preview"

@@ -64,57 +64,57 @@ stages:
           - publish: $(MAVEN_CACHE_FOLDER)
             artifact: $(Build.SourceVersion)-BuiltMavenRepo
 
-  - stage: run_jvm_tests_stage
-    displayName: 'Run JVM Tests'
-    dependsOn: initial_jdk8_stage
-    jobs:
-      - job: Build_JDK11_Linux
-        timeoutInMinutes: 60
-        displayName: 'Linux JDK11 Build'
-        pool:
-          name: 'tsetme'          
-        workspace:
-          clean: all
+#   - stage: run_jvm_tests_stage
+#     displayName: 'Run JVM Tests'
+#     dependsOn: initial_jdk8_stage
+#     jobs:
+#       - job: Build_JDK11_Linux
+#         timeoutInMinutes: 60
+#         displayName: 'Linux JDK11 Build'
+#         pool:
+#           name: 'tsetme'          
+#         workspace:
+#           clean: all
           
-        steps:
-          - template: ci-templates/jvm-build-steps.yaml
-            parameters:
-              jdk: '1.11'
+#         steps:
+#           - template: ci-templates/jvm-build-steps.yaml
+#             parameters:
+#               jdk: '1.11'
 
-      - job: Build_JDK12_Linux
-        timeoutInMinutes: 60
-        displayName: 'Linux JDK12 Build'
-        pool:
-          name: 'tsetme'
-        workspace:
-          clean: all
+#       - job: Build_JDK12_Linux
+#         timeoutInMinutes: 60
+#         displayName: 'Linux JDK12 Build'
+#         pool:
+#           name: 'tsetme'
+#         workspace:
+#           clean: all
 
-        steps:
-          - template: ci-templates/jvm-build-steps.yaml
-            parameters:
-              jdk: '1.12'
+#         steps:
+#           - template: ci-templates/jvm-build-steps.yaml
+#             parameters:
+#               jdk: '1.12'
 
-      - job: Run_TCKs
-        timeoutInMinutes: 45
-        pool:
-          name: 'tsetme'
-        workspace:
-          clean: all
+#       - job: Run_TCKs
+#         timeoutInMinutes: 45
+#         pool:
+#           name: 'tsetme'
+#         workspace:
+#           clean: all
 
-        steps:
-          - task: Maven@3
-            displayName: 'Maven Install'
-            inputs:
-              goals: 'install'
-              mavenOptions: $(MAVEN_OPTS)
-              options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format -DskipTests -Dtcks'
-          - task: Maven@3
-            displayName: 'Maven Verify'
-            inputs:
-              goals: 'verify'
-              mavenOptions: $(MAVEN_OPTS)
-              options: '-B --settings azure-mvn-settings.xml'
-              mavenPomFile: 'tcks/pom.xml'
+#         steps:
+#           - task: Maven@3
+#             displayName: 'Maven Install'
+#             inputs:
+#               goals: 'install'
+#               mavenOptions: $(MAVEN_OPTS)
+#               options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format -DskipTests -Dtcks'
+#           - task: Maven@3
+#             displayName: 'Maven Verify'
+#             inputs:
+#               goals: 'verify'
+#               mavenOptions: $(MAVEN_OPTS)
+#               options: '-B --settings azure-mvn-settings.xml'
+#               mavenPomFile: 'tcks/pom.xml'
 
 
 
@@ -122,6 +122,18 @@ stages:
     displayName: 'Native Tests'
     dependsOn: initial_jdk8_stage
     jobs:
+      - template: ci-templates/native-build-steps.yaml
+        parameters:
+          timeoutInMinutes: 25
+          modules:
+            - jpa
+#            - jpa-postgresql
+            - jpa-mysql
+            - reactive-mysql-client
+          name: data_2
+          postgres: false
+          mysql: true
+    
       - template: ci-templates/native-build-steps.yaml
         parameters:
           modules: main
@@ -138,17 +150,17 @@ stages:
             - jpa-derby
           name: data_1
 
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          timeoutInMinutes: 25
-          modules:
-            - jpa
-            - jpa-postgresql
-            - jpa-mysql
-            - reactive-mysql-client
-          name: data_2
-          postgres: true
-          mysql: true
+#       - template: ci-templates/native-build-steps.yaml
+#         parameters:
+#           timeoutInMinutes: 25
+#           modules:
+#             - jpa
+#             - jpa-postgresql
+#             - jpa-mysql
+#             - reactive-mysql-client
+#           name: data_2
+#           postgres: true
+#           mysql: true
 
       - template: ci-templates/native-build-steps.yaml
         parameters:

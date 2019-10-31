@@ -37,7 +37,7 @@ jobs:
           displayName: 'start keycloak'
     - ${{ if eq(parameters.mysql, 'true') }}:
       - script: docker run --rm --publish 3306:3306 --name build-mysql -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -d mysql:8 
-          displayName: 'start mysql'
+        displayName: 'start mysql'
 
     - task: Maven@3
       displayName: 'Maven Build'

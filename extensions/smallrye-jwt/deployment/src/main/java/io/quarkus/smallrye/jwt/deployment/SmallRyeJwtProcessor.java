@@ -20,6 +20,7 @@ import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -53,7 +54,7 @@ class SmallRyeJwtProcessor {
      *
      * @param additionalBeans - producer for additional bean items
      */
-    @BuildStep
+    @BuildStep(providesCapabilities = Capabilities.JWT)
     void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         if (config.enabled) {
             AdditionalBeanBuildItem.Builder unremovable = AdditionalBeanBuildItem.builder().setUnremovable();

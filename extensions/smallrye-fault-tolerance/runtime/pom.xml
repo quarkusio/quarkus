@@ -22,12 +22,6 @@
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-fault-tolerance</artifactId>
             <exclusions>
-                <!-- Temporary fix for dependency convergence error -->
-                <!-- Current smallrye-metrics version depends on 1.1 -->
-                <exclusion>
-                    <groupId>org.eclipse.microprofile.metrics</groupId>
-                    <artifactId>microprofile-metrics-api</artifactId>
-                </exclusion>
                 <exclusion>
                     <groupId>commons-logging</groupId>
                     <artifactId>commons-logging</artifactId>

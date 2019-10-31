@@ -1,4 +1,11 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
 = Using Reactive Routes
+
+include::./attributes.adoc[]
 
 Reactive routes propose an alternative approach to implement HTTP endpoints where you declare and chain _routes_.
 This approach became very popular in the JavaScript world, with frameworks like Express.Js or Hapi.
@@ -15,7 +22,7 @@ All the HTTP requests your application receive are handled by _event loops_ (IO 
 Depending on the destination, it can invoke the code managing the request on a worker thread (Servlet, Jax-RS) or use the IO Thread (reactive route).
 Note that because of this, a reactive route must be non-blocking or explicitly declare its blocking nature (which would result by being called on a worker thread).
 
-image::http-architecture.png[alt=Quarkus HTTP Architecture]
+image:http-architecture.png[alt=Quarkus HTTP Architecture]
 
 == Declaring reactive routes
 

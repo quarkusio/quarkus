@@ -57,7 +57,7 @@ public class InjectionEnricher implements TestEnricher {
                     try {
                         Method dataProviderMember = annotation.annotationType().getDeclaredMethod("dataProvider");
                         String value = dataProviderMember.invoke(annotation).toString();
-                        hasNonArquillianDataProvider = !value.equals("") || !value.equals("ARQUILLIAN_DATA_PROVIDER");
+                        hasNonArquillianDataProvider = !value.equals("") && !value.equals("ARQUILLIAN_DATA_PROVIDER");
                         break;
                     } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
                             | InvocationTargetException ignored) {

@@ -147,7 +147,7 @@ public class FruitResource {
 Before we implement the REST endpoint and data management code, we need to setup the database schema.
 It would also be convenient to have some data inserted upfront.
 
-For production we would recommend to use something like the link:flyway-guide.html[Flyway database migration tool].
+For production we would recommend to use something like the link:flyway.html[Flyway database migration tool].
 But for development we can simply drop and create the tables on startup, and then insert a few fruits.
 
 [source,java]

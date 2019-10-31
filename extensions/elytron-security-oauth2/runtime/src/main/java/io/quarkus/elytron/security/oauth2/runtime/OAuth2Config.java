@@ -39,7 +39,7 @@ public class OAuth2Config {
     /**
      * The OAuth2 server certificate file. <em>Warning</em>: this is not supported in native mode where the certificate
      * must be included in the truststore used during the native image generation, see
-     * <a href="native-and-ssl-guide.html">Using SSL With Native Executables</a>.
+     * <a href="native-and-ssl.html">Using SSL With Native Executables</a>.
      */
     @ConfigItem
     public Optional<String> caCertFile;

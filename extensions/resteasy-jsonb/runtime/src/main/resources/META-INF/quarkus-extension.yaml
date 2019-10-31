@@ -9,7 +9,7 @@ metadata:
   - "jaxrs"
   - "json"
   - "jsonb"
-  guide: "https://quarkus.io/guides/rest-json-guide"
+  guide: "https://quarkus.io/guides/rest-json"
   categories:
   - "web"
   - "serialization"

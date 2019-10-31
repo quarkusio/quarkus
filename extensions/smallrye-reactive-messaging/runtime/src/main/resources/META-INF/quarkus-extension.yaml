@@ -5,7 +5,7 @@ metadata:
   - "smallrye-reactive-messaging"
   - "reactive-messaging"
   - "reactive"
-  guide: "https://quarkus.io/guides/async-message-passing"
+  guide: "https://quarkus.io/guides/reactive-messaging"
   categories:
   - "messaging"
   status: "stable"

@@ -4,7 +4,7 @@ metadata:
   keywords:
   - "amqp"
   - "reactive-amqp"
-  guide: "https://quarkus.io/guides/amqp-guide"
+  guide: "https://quarkus.io/guides/amqp"
   categories:
   - "messaging"
   status: "preview"

@@ -53,7 +53,7 @@ This command generates the Maven project with a `/fruits` REST endpoint.
 == Expose a REST Resource
 
 We will create a `Fruit` bean and a `FruitResouce` REST resource
-(feel free to take a look to the link:rest-json-guide.html[Writing JSON REST services guide] if your want more details on how to build a REST API with Quarkus).
+(feel free to take a look to the link:rest-json.html[Writing JSON REST services guide] if your want more details on how to build a REST API with Quarkus).
 
 [source,java]
 ----

@@ -6,7 +6,7 @@ metadata:
   - "jwt"
   - "json-web-token"
   - "rbac"
-  guide: "https://quarkus.io/guides/jwt-guide"
+  guide: "https://quarkus.io/guides/security-jwt"
   categories:
   - "web"
   - "security"

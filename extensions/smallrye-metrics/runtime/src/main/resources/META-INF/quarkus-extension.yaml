@@ -8,7 +8,7 @@ metadata:
   - "metric"
   - "prometheus"
   - "monitoring"
-  guide: "https://quarkus.io/guides/metrics-guide"
+  guide: "https://quarkus.io/guides/microprofile-metrics"
   categories:
   - "observability"
   status: "stable"

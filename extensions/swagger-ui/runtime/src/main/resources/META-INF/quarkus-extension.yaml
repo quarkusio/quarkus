@@ -3,6 +3,7 @@ name: "Swagger UI"
 metadata:
   keywords:
   - "swagger-ui"
-  guide: "https://quarkus.io/guides/openapi-swaggerui-guide"
+  - "openapi"
+  guide: "https://quarkus.io/guides/openapi-swaggerui"
   status: stable
   unlisted: true

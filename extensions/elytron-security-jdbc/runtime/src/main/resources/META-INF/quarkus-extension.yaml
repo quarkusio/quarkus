@@ -4,7 +4,7 @@ metadata:
   keywords:
   - "security"
   - "jdbc"
-  guide: "https://quarkus.io/guides/security-jdbc-guide"
+  guide: "https://quarkus.io/guides/security-jdbc"
   categories:
   - "security"
   status: "stable"

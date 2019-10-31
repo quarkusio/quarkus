@@ -465,7 +465,7 @@ public class CodecFruitService {
 
 == Simplifying MongoDB with Panache
 
-The link:mongodb-panache-guide.html[MongoDB with Panache] extension facilitates the usage of MongoDB by providing active record style entities (and repositories) like you have in link:hibernate-orm-panache-guide.html[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
+The link:mongodb-panache.html[MongoDB with Panache] extension facilitates the usage of MongoDB by providing active record style entities (and repositories) like you have in link:hibernate-orm-panache.html[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
 
 == Building a native executable
 

@@ -6,4 +6,4 @@ metadata:
   categories:
     - "security"
   status: "stable"
-  guide: "https://quarkus.io/guides/elytron-properties-guide"
+  guide: "https://quarkus.io/guides/security-properties"

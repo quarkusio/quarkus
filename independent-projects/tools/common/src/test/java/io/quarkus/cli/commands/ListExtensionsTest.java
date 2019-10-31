@@ -147,7 +147,7 @@ public class ListExtensionsTest {
                 checkGuideInLineAfter = false;
                 assertTrue(
                         line.endsWith(
-                                String.format("%s", "https://quarkus.io/guides/rest-json-guide")),
+                                String.format("%s", "https://quarkus.io/guides/rest-json")),
                         "RESTEasy should list as having an guide: " + line);
             }
         }

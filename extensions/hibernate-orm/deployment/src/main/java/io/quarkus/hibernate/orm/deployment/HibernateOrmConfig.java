@@ -53,7 +53,7 @@ public class HibernateOrmConfig {
      *   Pass an explicit value to force Hibernate ORM to execute the SQL import file.
      *
      * If you need different SQL statements between dev mode, test (`@QuarkusTest`) and in production, use Quarkus
-     * https://quarkus.io/guides/application-configuration-guide#configuration-profiles[configuration profiles facility].
+     * https://quarkus.io/guides/config#configuration-profiles[configuration profiles facility].
      *
      * [source,property]
      * .application.properties

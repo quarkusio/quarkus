@@ -4,7 +4,7 @@ metadata:
   keywords:
   - "spring-di"
   - "spring"
-  guide: "https://quarkus.io/guides/spring-di-guide"
+  guide: "https://quarkus.io/guides/spring-di"
   categories:
   - "compatibility"
   status: "preview"

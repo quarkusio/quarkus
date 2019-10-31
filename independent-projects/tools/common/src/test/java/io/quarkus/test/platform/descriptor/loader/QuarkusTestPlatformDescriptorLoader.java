@@ -67,7 +67,7 @@ public class QuarkusTestPlatformDescriptorLoader implements QuarkusPlatformDescr
         addExtension("quarkus-hibernate-validator", "Hibernate Validator");
         addExtension("quarkus-jdbc-postgresql", "JDBC PostreSQL");
         addExtension("quarkus-jdbc-h2", "JDBC H2");
-        addExtension("quarkus-resteasy", "RESTEasy", "https://quarkus.io/guides/rest-json-guide");
+        addExtension("quarkus-resteasy", "RESTEasy", "https://quarkus.io/guides/rest-json");
 
         addExtension("quarkus-smallrye-reactive-messaging", "SmallRye Reactive Messaging");
         addExtension("quarkus-smallrye-reactive-streams-operators", "SmallRye Reactive Streams Operators");

@@ -99,7 +99,7 @@ NOTE: The methods can access injected beans. Check the {quickstarts-blob-url}/ap
 
 In the JVM mode, there is no real difference, except that `StartupEvent` is always fired *after* `@Initialized(ApplicationScoped.class)` and `ShutdownEvent` is fired *before* `@Destroyed(ApplicationScoped.class)`. 
 For a native executable build, however, `@Initialized(ApplicationScoped.class)` is fired as *part of the native build process*, whereas `StartupEvent` is fired when the native image is executed.
-See <<extension-authors-guide.adoc#bootstrap-three-phases,Three Phases of Bootstrap and Quarkus Philosophy>> for more details.
+See <<writing-extensions.adoc#bootstrap-three-phases,Three Phases of Bootstrap and Quarkus Philosophy>> for more details.
 
 NOTE: In CDI applications, an event with qualifier `@Initialized(ApplicationScoped.class)` is fired when the application context is initialized. See https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#application_context[the spec, window="_blank"] for more info.
 

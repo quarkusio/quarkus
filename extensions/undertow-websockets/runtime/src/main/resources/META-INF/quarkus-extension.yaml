@@ -10,7 +10,7 @@ metadata:
   - "web-socket"
   - "web-sockets"
   - "http"
-  guide: "https://quarkus.io/guides/websocket-guide"
+  guide: "https://quarkus.io/guides/websockets"
   categories:
   - "web"
   status: "stable"

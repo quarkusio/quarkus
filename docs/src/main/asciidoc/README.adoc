@@ -24,8 +24,6 @@ complete list of externalized variables for use is given in the following table:
 |\{quarkus-version}|{quarkus-version}|The current version of the project.
 |\{quarkus-home-url}|{quarkus-home-url}| The location of the project home page.
 |\{quarkus-site-getting-started}|{quarkus-site-getting-started}| The location of the getting started page.
-|\{quarkus-site-live-coding}|{quarkus-site-live-coding}| The location of the live coding page.
-|\{quarkus-site-extension-authors-guide}|{quarkus-site-extension-authors-guide}| The location of the extension authors guide page.
 
 |\{quarkus-org-url}|{quarkus-org-url}| The location of the project github organization.
 |\{quarkus-base-url}|{quarkus-base-url}| Quarkus GitHub URL common base prefix.

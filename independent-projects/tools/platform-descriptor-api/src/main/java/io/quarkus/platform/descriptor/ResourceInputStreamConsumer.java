@@ -5,5 +5,5 @@ import java.io.InputStream;
 
 public interface ResourceInputStreamConsumer<T> {
 
-    T handle(InputStream is) throws IOException;
+    T consume(InputStream is) throws IOException;
 }

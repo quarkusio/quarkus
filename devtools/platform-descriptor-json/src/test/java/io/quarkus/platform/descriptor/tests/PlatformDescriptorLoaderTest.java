@@ -3,7 +3,8 @@ package io.quarkus.platform.descriptor.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -17,8 +18,6 @@ import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorL
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoaderContext;
 import io.quarkus.platform.descriptor.loader.json.impl.QuarkusJsonPlatformDescriptor;
 import io.quarkus.platform.descriptor.loader.json.impl.QuarkusJsonPlatformDescriptorLoaderImpl;
-import io.quarkus.platform.tools.DefaultMessageWriter;
-import io.quarkus.platform.tools.MessageWriter;
 
 class PlatformDescriptorLoaderTest {
 
@@ -27,42 +26,39 @@ class PlatformDescriptorLoaderTest {
 
         QuarkusJsonPlatformDescriptorLoader<QuarkusJsonPlatformDescriptor> qpd = new QuarkusJsonPlatformDescriptorLoaderImpl();
 
-        QuarkusJsonPlatformDescriptorLoaderContext context = new QuarkusJsonPlatformDescriptorLoaderContext() {
-
-            MessageWriter mw = new DefaultMessageWriter();
+        final ArtifactResolver artifactResolver = new ArtifactResolver() {
 
             @Override
-            public MessageWriter getMessageWriter() {
-                return mw;
+            public <T> T process(String groupId, String artifactId, String classifier, String type, String version,
+                    Function<Path, T> processor) {
+                throw new UnsupportedOperationException();
             }
 
             @Override
-            public ArtifactResolver getArtifactResolver() {
-                return new ArtifactResolver() {
-
-                    @Override
-                    public <T> T process(String groupId, String artifactId, String classifier, String type, String version,
-                            Function<Path, T> processor) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public List<Dependency> getManagedDependencies(String groupId, String artifactId, String classifier,
-                            String type, String version) {
-                        return Collections.emptyList();
-                    }
-                };
+            public List<Dependency> getManagedDependencies(String groupId, String artifactId, String classifier,
+                    String type, String version) {
+                return Collections.emptyList();
             }
+        };
 
+        QuarkusJsonPlatformDescriptorLoaderContext context = new QuarkusJsonPlatformDescriptorLoaderContext(artifactResolver) {
             @Override
-            public <T> T parseJson(Function<Path, T> parser) {
+            public <T> T parseJson(Function<InputStream, T> parser) {
                 String resourceName = "fakeextensions.json";
 
-                ClassLoader classLoader = getClass().getClassLoader();
-                File file = new File(classLoader.getResource(resourceName).getFile());
+                final InputStream is = getClass().getClassLoader().getResourceAsStream(resourceName);
+                if (is == null) {
+                    throw new IllegalStateException("Failed to locate " + resourceName + " on the classpath");
+                }
 
-                return parser.apply(file.toPath());
-
+                try {
+                    return parser.apply(is);
+                } finally {
+                    try {
+                        is.close();
+                    } catch (IOException e) {
+                    }
+                }
             }
 
         };

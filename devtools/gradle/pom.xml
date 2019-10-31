@@ -69,7 +69,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-platform-descriptor-resolver-json</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>

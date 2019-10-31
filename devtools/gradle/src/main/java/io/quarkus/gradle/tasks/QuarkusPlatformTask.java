@@ -35,12 +35,11 @@ public class QuarkusPlatformTask extends QuarkusTask {
 
             final QuarkusPlatformDescriptor platform = QuarkusJsonPlatformDescriptorResolver.newInstance()
                     .setArtifactResolver(extension().resolveAppModel())
-                    .setBomVersion(
+                    .setMessageWriter(new GradleMessageWriter(getProject().getLogger()))
+                    .resolveFromBom(
                             getRequiredProperty(props, "quarkusPlatformBomGroupId"),
                             getRequiredProperty(props, "quarkusPlatformBomArtifactId"),
-                            getRequiredProperty(props, "quarkusPlatformBomVersion"))
-                    .setMessageWriter(new GradleMessageWriter(getProject().getLogger()))
-                    .resolve();
+                            getRequiredProperty(props, "quarkusPlatformBomVersion"));
 
             QuarkusPlatformConfig.defaultConfigBuilder().setPlatformDescriptor(platform).build();
 

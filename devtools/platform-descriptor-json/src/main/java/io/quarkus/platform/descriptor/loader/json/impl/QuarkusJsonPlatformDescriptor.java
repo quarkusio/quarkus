@@ -2,7 +2,6 @@ package io.quarkus.platform.descriptor.loader.json.impl;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
@@ -14,6 +13,7 @@ import io.quarkus.dependencies.Category;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.DefaultMessageWriter;
 import io.quarkus.platform.tools.MessageWriter;
 
@@ -103,12 +103,14 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor 
         if (resourceLoader == null) {
             throw new IllegalStateException("Resource loader has not been provided");
         }
-        try (InputStream is = resourceLoader.getResourceAsStream(name)) {
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-                return reader.lines().collect(Collectors.joining("\n"));
-            }
+        try {
+            return resourceLoader.loadResource(name, is -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+                    return reader.lines().collect(Collectors.joining("\n"));
+                }
+            });
         } catch (IOException e) {
-            throw new RuntimeException("Failed to resolve template " + name, e);
+            throw new IllegalStateException("Failed to load " + name, e);
         }
     }
 
@@ -118,9 +120,7 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor 
         if (resourceLoader == null) {
             throw new IllegalStateException("Resource loader has not been provided");
         }
-        try (InputStream is = resourceLoader.getResourceAsStream(name)) {
-            return consumer.handle(is);
-        }
+        return resourceLoader.loadResource(name, consumer);
     }
 
     @Override

@@ -1700,6 +1700,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.rest.json.FruitResource" \
     -Dpath="/fruits" \
     -Dextensions="resteasy-jsonb"
+cd rest-json
 ----
 
 ==== Bean Defining Annotations

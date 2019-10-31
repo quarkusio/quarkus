@@ -44,6 +44,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=lifecycle-quickstart \
     -DclassName="org.acme.events.GreetingResource" \
     -Dpath="/hello"
+cd lifecycle-quickstart
 ----
 
 It generates:

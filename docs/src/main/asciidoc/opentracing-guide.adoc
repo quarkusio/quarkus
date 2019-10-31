@@ -47,6 +47,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.opentracing.TracedResource" \
     -Dpath="/hello" \
     -Dextensions="opentracing"
+cd opentracing-quickstart
 ----
 
 This command generates the Maven project with a REST endpoint and imports the `smallrye-opentracing` extension, which

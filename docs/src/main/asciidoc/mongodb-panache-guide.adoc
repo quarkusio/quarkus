@@ -69,6 +69,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.mongodb.panache.FruitResource" \
     -Dpath="/fruits" \
     -Dextensions="resteasy-jsonb,mongodb-panache"
+cd mongodb-panache-quickstart
 ----
 
 This command generates a Maven structure importing the RESTEasy/JAX-RS, JSON-B and MongoDB with Panache extensions.

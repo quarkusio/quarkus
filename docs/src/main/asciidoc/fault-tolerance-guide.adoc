@@ -52,6 +52,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.faulttolerance.CoffeeResource" \
     -Dpath="/coffee" \
     -Dextensions="smallrye-fault-tolerance, resteasy-jsonb"
+cd microprofile-fault-tolerance-quickstart
 ----
 
 This command generates a Maven structure, importing the extensions for RESTEasy/JAX-RS

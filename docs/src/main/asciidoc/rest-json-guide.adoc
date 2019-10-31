@@ -47,6 +47,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.rest.json.FruitResource" \
     -Dpath="/fruits" \
     -Dextensions="resteasy-jsonb"
+cd rest-json-quickstart
 ----
 
 This command generates a Maven structure importing the RESTEasy/JAX-RS and http://json-b.net/[JSON-B] extensions.
@@ -61,6 +62,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.rest.json.FruitResource" \
     -Dpath="/fruits" \
     -Dextensions="resteasy-jackson"
+cd rest-json-quickstart
 ----
 
 == Creating your first JSON REST service

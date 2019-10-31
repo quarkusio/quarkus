@@ -50,6 +50,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=microprofile-metrics-quickstart \
     -Dextensions="metrics"
+cd microprofile-metrics-quickstart
 ----
 
 This command generates a Maven project, importing the `smallrye-metrics` extension which is an implementation of the MicroProfile Metrics specification used in Quarkus.

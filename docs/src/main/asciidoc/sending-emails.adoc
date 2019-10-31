@@ -35,6 +35,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=sending-email-quickstart \
     -Dextensions="mailer"
+cd sending-email-quickstart
 ----
 
 If you already have an existing project, add the `mailer` extension:

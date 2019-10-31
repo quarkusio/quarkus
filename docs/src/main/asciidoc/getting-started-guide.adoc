@@ -80,6 +80,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=getting-started \
     -DclassName="org.acme.quickstart.GreetingResource" \
     -Dpath="/hello"
+cd getting-started
 ----
 
 It generates the following in  `./getting-started`:

@@ -58,6 +58,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=security-openid-connect-quickstart \
     -Dextensions="oidc, resteasy-jsonb"
+cd security-openid-connect-quickstart
 ----
 
 This command generates a Maven project, importing the `keycloak` extension

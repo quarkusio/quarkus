@@ -45,6 +45,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=jms-quickstart \
     -Dextensions="artemis-jms"
+cd jms-quickstart
 ----
 
 This command generates a Maven project, importing the Artemis JMS extension.

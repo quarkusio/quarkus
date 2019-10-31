@@ -31,6 +31,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.rest.GreetingResource" \
     -Dpath="/greeting" \
     -Dextensions="kubernetes"
+cd kubernetes-quickstart
 ----
 
 == Enable Kubernetes support

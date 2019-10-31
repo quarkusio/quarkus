@@ -58,6 +58,7 @@ Let's start from an empty application created with the Quarkus Maven plugin:
 mvn io.quarkus:quarkus-maven-plugin:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=tests-with-coverage-quickstart
+cd tests-with-coverage-quickstart
 ----
 
 Now we'll be adding all the elements necessary to have an application that is properly covered with tests.

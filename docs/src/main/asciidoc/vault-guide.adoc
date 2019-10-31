@@ -246,6 +246,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.quickstart.GreetingResource" \
     -Dpath="/hello" \
     -Dextensions="vault,hibernate-orm,jdbc-postgresql"
+cd vault-quickstart
 ----
 
 Configure access to vault from the `{config-file}`:

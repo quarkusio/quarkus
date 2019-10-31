@@ -63,6 +63,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.hibernate.search.elasticsearch.LibraryResource" \
     -Dpath="/library" \
     -Dextensions="hibernate-orm-panache, hibernate-search-elasticsearch, resteasy-jsonb, jdbc-postgresql"
+cd hibernate-search-elasticsearch-quickstart
 ----
 
 This command generates a Maven structure importing the following extensions:

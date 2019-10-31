@@ -49,6 +49,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.rest.json.FruitResource" \
     -Dpath="/fruits" \
     -Dextensions="resteasy-jsonb,mongodb-client"
+cd mongodb-quickstart
 ----
 
 This command generates a Maven structure importing the RESTEasy/JAX-RS, JSON-B and MongoDB Client extensions.

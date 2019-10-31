@@ -46,6 +46,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=websockets-quickstart \
     -Dextensions="undertow-websockets"
+cd websockets-quickstart
 ----
 
 This command generates the Maven project (without any classes) and import the `undertow-websockets` extension.

@@ -42,6 +42,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.spring.web.GreetingController" \
     -Dpath="/greeting" \
     -Dextensions="spring-web"
+cd spring-web-quickstart
 ----
 
 This command generates a Maven project with a REST endpoint and imports the `spring-web` extension.

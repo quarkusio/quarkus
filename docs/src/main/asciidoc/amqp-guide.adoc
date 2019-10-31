@@ -48,6 +48,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=amqp-quickstart \
     -Dextensions="amqp"
+cd amqp-quickstart
 ----
 
 This command generates a Maven project, importing the Reactive Messaging and AMQP connector extensions.

@@ -79,6 +79,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kogito-quickstart \
     -Dextensions="kogito"
+cd kogito-quickstart
 ----
 
 This command generates a Maven project, importing the `kogito` extension

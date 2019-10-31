@@ -12,3 +12,4 @@ metadata:
   guide: "https://quarkus.io/guides/transaction-guide"
   categories:
   - "data"
+  status: "stable"

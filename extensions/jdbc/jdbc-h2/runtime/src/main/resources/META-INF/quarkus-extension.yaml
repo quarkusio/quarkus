@@ -7,3 +7,4 @@ metadata:
   - "h2"
   categories:
   - "data"
+  status: "stable"

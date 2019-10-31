@@ -1,0 +1,12 @@
+---
+name: "SmallRye OpenAPI Common"
+metadata:
+  keywords:
+  - "smallrye-openapi"
+  - "openapi"
+  - "open-api"
+  guide: "https://quarkus.io/guides/openapi-swaggerui"
+  categories:
+  - "web"
+  status: "stable"
+  unlisted: true

@@ -11,3 +11,4 @@ metadata:
   guide: "https://quarkus.io/guides/metrics-guide"
   categories:
   - "observability"
+  status: "stable"

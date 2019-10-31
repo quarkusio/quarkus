@@ -6,3 +6,4 @@ metadata:
   guide: "https://quarkus.io/guides/kubernetes-guide"
   categories:
   - "cloud"
+  status: "stable"

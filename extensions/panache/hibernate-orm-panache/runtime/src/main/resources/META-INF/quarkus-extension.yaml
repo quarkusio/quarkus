@@ -9,3 +9,4 @@ metadata:
   guide: "https://quarkus.io/guides/hibernate-orm-panache-guide"
   categories:
   - "data"
+  status: "stable"

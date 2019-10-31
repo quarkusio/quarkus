@@ -9,3 +9,4 @@ metadata:
   guide: "https://quarkus.io/guides/using-vertx"
   categories:
   - "reactive"
+  status: "stable"

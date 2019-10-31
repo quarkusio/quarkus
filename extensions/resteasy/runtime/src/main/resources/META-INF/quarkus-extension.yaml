@@ -10,3 +10,4 @@ metadata:
   guide: "https://quarkus.io/guides/rest-json-guide"
   categories:
   - "web"
+  status: "stable"

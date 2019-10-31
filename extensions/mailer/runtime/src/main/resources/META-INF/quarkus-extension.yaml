@@ -7,3 +7,4 @@ metadata:
   guide: "https://quarkus.io/guides/sending-emails"
   categories:
   - "miscellaneous"
+  status: "stable"

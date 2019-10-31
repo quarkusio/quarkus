@@ -1,0 +1,10 @@
+---
+name: "Azure Functions HTTP"
+metadata:
+  keywords:
+  - "azure"
+  - "http"
+  categories:
+  - "cloud"
+  guide: "https://quarkus.io/guides/azure-functions-http"
+  status: "preview"

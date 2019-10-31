@@ -8,3 +8,4 @@ metadata:
   guide: "https://quarkus.io/guides/async-message-passing"
   categories:
   - "messaging"
+  status: "stable"

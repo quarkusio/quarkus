@@ -6,3 +6,4 @@ metadata:
   - "reactive-mqtt"
   categories:
   - "messaging"
+  status: "preview"

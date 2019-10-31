@@ -6,3 +6,4 @@ metadata:
   - "kafka-streams"
   categories:
   - "messaging"
+  status: "stable"

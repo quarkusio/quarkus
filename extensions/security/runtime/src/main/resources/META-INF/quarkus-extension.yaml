@@ -1,5 +1,8 @@
 ---
-name: "Jaeger"
+name: "Security"
 metadata:
+  unlisted: true
   keywords:
-  - "jaeger"
+  - "security"
+  categories:
+    - "security"

@@ -528,14 +528,6 @@ To launch all the containers, building the `producer` and `aggregator` container
 run `docker-compose up --build`.
 
 You should see log statements from the `producer` application about messages being sent to the "temperature-values" topic.
-Due to an [an issue](https://github.com/smallrye/smallrye-reactive-messaging/issues/128) in the SmallRye Reactive Messaging component it might be that the _producer_ application isn't sending events if it was started before Apache Kafka was up.
-In this case, simply restart the `producer`
-(run from another shell window, keeping the other services running):
-
-[source, subs=attributes+]
-----
-docker-compose stop producer && docker-compose start producer
-----
 
 Now run an instance of the _debezium/tooling_ image, attaching to the same network all the other containers run in.
 This image provides several useful tools such as _kafkacat_ and _httpie_:

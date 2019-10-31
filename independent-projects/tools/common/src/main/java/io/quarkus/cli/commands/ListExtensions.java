@@ -35,6 +35,7 @@ public class ListExtensions {
         final Map<String, Dependency> installed = findInstalled();
 
         Stream<Extension> extensionsStream = loadExtensions().stream();
+        extensionsStream = extensionsStream.filter(e -> filterUnlisted(e));
         if (search != null && !"*".equalsIgnoreCase(search)) {
             final Pattern searchPattern = Pattern.compile(".*" + search + ".*", Pattern.CASE_INSENSITIVE);
             extensionsStream = extensionsStream.filter(e -> filterBySearch(searchPattern, e));
@@ -81,6 +82,10 @@ public class ListExtensions {
                         "pom.xml or use `./mvnw quarkus:add-extension -Dextensions=\"artifactId\"`");
             }
         }
+    }
+
+    private boolean filterUnlisted(Extension e) {
+        return !e.getMetadata().containsKey("unlisted");
     }
 
     public Map<String, Dependency> findInstalled() throws IOException {

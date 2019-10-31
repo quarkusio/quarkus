@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.maven.model.Dependency;
 
@@ -55,7 +56,9 @@ public class AddExtensions {
         if (matchesNameOrArtifactId.size() == 1) {
             return new SelectionResult(matchesNameOrArtifactId, true);
         }
-
+        
+        extensions = extensions.stream().filter(e -> !e.isUnlisted()).collect(Collectors.toList());
+        
         // Try short names
         Set<Extension> matchesShortName = extensions.stream().filter(extension -> matchesShortName(extension, q))
                 .collect(Collectors.toSet());
@@ -192,6 +195,7 @@ public class AddExtensions {
         List<Dependency> dependenciesFromBom = getDependenciesFromBom();
 
         List<Extension> registry = MojoUtils.loadExtensions();
+
         for (String query : extensions) {
 
             if (query.contains(":")) {

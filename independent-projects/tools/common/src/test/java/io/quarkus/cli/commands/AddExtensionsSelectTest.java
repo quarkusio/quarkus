@@ -119,4 +119,29 @@ class AddExtensionsSelectTest {
         Assertions.assertTrue(matches.iterator().next().getArtifactId().equalsIgnoreCase("quarkus-foo"));
     }
 
+    @Test
+    void testListedVsUnlisted() {
+        Extension e1 = new Extension("org.acme", "quarkus-foo-unlisted", "1.0")
+                .setName("some complex seo unaware name")
+                .setShortName("foo")
+                .setKeywords(new String[] { "foo", "bar" }).addMetadata("unlisted", "true");
+        
+        Extension e2 = new Extension("org.acme", "quarkus-foo-bar", "1.0")
+                .setName("some foo bar")
+                .setKeywords(new String[] { "foo", "bar", "baz" }).addMetadata("unlisted", "false");
+        Extension e3 = new Extension("org.acme", "quarkus-foo-baz", "1.0")
+                .setName("unrelated")
+                .setKeywords(new String[] { "foo" });
+
+        List<Extension> extensions = asList(e1, e2, e3);
+        Collections.shuffle(extensions);
+        SelectionResult matches = AddExtensions.select("quarkus-foo", extensions, true);
+        Assertions.assertEquals(2, matches.getExtensions().size());
+
+        matches = AddExtensions.select("quarkus-foo-unlisted", extensions, true);
+        Assertions.assertEquals(1, matches.getExtensions().size());
+
+    }
+    
+    
 }

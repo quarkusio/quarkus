@@ -127,7 +127,7 @@ public class FunctionTest {
         final HttpRequestMessageMock req = new HttpRequestMessageMock();
         req.setUri(URI.create(uri));
         req.setHttpMethod(HttpMethod.POST);
-        req.setBody("Bill".getBytes());
+        req.setBody("Bill".getBytes(StandardCharsets.UTF_8));
         req.getHeaders().put("Content-Type", "text/plain");
 
         // Invoke

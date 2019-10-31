@@ -6,6 +6,7 @@ import static io.quarkus.vault.runtime.config.VaultAuthenticationType.KUBERNETES
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.USERPASS;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicReference;
@@ -118,7 +119,7 @@ public class VaultAuthManager {
     }
 
     private VaultKubernetesAuthAuth loginKubernetes() {
-        String jwt = new String(read(serverConfig.authentication.kubernetes.jwtTokenPath));
+        String jwt = new String(read(serverConfig.authentication.kubernetes.jwtTokenPath), StandardCharsets.UTF_8);
         log.debug("authenticate with jwt at: " + serverConfig.authentication.kubernetes.jwtTokenPath + " => "
                 + serverConfig.logConfidentialityLevel.maskWithTolerance(jwt, LOW));
         return vaultClient.loginKubernetes(serverConfig.authentication.kubernetes.role.get(), jwt).auth;

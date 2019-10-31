@@ -19,6 +19,8 @@ stages:
         timeoutInMinutes: 30
         pool:
           name: 'tsetme' 
+        workspace:
+          clean: all
 
         variables:
           imageName: 'quarkus:$(build.buildId)'
@@ -52,6 +54,9 @@ stages:
         timeoutInMinutes: 60
         pool:
           name: 'tsetme'
+        workspace:
+          clean: all
+
         steps:
           - template: ci-templates/jvm-build-steps.yaml
           - publish: $(MAVEN_CACHE_FOLDER)
@@ -65,7 +70,10 @@ stages:
         timeoutInMinutes: 60
         displayName: 'Linux JDK11 Build'
         pool:
-          name: 'tsetme'
+          name: 'tsetme'          
+        workspace:
+          clean: all
+          
         steps:
           - template: ci-templates/jvm-build-steps.yaml
             parameters:
@@ -76,6 +84,9 @@ stages:
         displayName: 'Linux JDK12 Build'
         pool:
           name: 'tsetme'
+        workspace:
+          clean: all
+
         steps:
           - template: ci-templates/jvm-build-steps.yaml
             parameters:
@@ -85,6 +96,9 @@ stages:
         timeoutInMinutes: 45
         pool:
           name: 'tsetme'
+        workspace:
+          clean: all
+
         steps:
           - task: Maven@3
             displayName: 'Maven Install'

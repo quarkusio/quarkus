@@ -480,11 +480,11 @@ Furthermore, extensions can eliminate possible false positives by producing `Unr
 Finally, Quarkus provides a middle ground for the bean removal optimization where application beans are never removed whether or not they are unused,
 while the optimization proceeds normally for non application classes. To use this mode, set `quarkus.arc.remove-unused-beans` to `fwk` or `framework`.
 
-In order to see more information about which beans are being removed,
-you can enable additional logging via the following line in your `application.properties`.
+When using the dev mode (running `mvn clean compile quarkus:dev`), you can see more information about which beans are being removed
+by enabling additional logging via the following line in your `application.properties`.
 
 ----
-quarkus.log.category."io.quarkus.arc.producer".level=DEBUG
+quarkus.log.category."io.quarkus.arc.processor".level=DEBUG
 ----
 
 [[default_beans]]

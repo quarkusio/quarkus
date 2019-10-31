@@ -65,6 +65,8 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 cd rest-json-quickstart
 ----
 
+To improve user experience, Quarkus registers the three Jackson https://github.com/FasterXML/jackson-modules-java8[Java 8 modules] so you don't need to do it manually.
+
 == Creating your first JSON REST service
 
 In this example, we will create an application to manage a list of fruits.

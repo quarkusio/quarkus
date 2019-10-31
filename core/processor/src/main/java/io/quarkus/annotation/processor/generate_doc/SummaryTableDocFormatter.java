@@ -13,7 +13,6 @@ final class SummaryTableDocFormatter implements DocFormatter {
     private static final String TABLE_ROW_FORMAT = "\n\na|%s [[%s]]`link:#%s[%s]`\n\n[.description]\n--\n%s\n--|%s %s\n|%s\n";
     private static final String TABLE_SECTION_ROW_FORMAT = "\n\nh|[[%s]]link:#%s[%s]\nh|Type\nh|Default";
     private static final String TABLE_HEADER_FORMAT = "[.configuration-legend]%s\n[%s, cols=\"80,.^10,.^10\"]\n|===";
-    //    private static final String MORE_INFO_ABOUT_SECTION_FORMAT = "link:#%s[icon:plus-circle[], title=More information about %s]";
 
     private String anchorPrefix = "";
 
@@ -88,9 +87,6 @@ final class SummaryTableDocFormatter implements DocFormatter {
 
     @Override
     public void format(Writer writer, ConfigDocSection configDocSection) throws IOException {
-        //        final String moreInfoAboutSection = String.format(MORE_INFO_ABOUT_SECTION_FORMAT, getAnchor(configDocSection.getName()),
-        //                configDocSection.getSectionDetailsTitle());
-        //        final String moreInfoAboutSection = configDocSection.getSectionDetailsTitle();
         String anchor = anchorPrefix + getAnchor(configDocSection.getSectionDetailsTitle());
         final String sectionRow = String.format(TABLE_SECTION_ROW_FORMAT, anchor, anchor,
                 configDocSection.getSectionDetailsTitle());

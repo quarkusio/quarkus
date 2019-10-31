@@ -6,3 +6,4 @@ metadata:
   - "database-connection-pool"
   categories:
   - "data"
+  status: "stable"

@@ -10,3 +10,5 @@ metadata:
   - "reactive"
   categories:
   - "reactive"
+  status: "stable"
+  unlisted: true

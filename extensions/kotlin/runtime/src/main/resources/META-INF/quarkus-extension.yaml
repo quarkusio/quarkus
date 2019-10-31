@@ -6,3 +6,4 @@ metadata:
   guide: "https://quarkus.io/guides/kotlin"
   categories:
   - "alt-languages"
+  status: "preview"

@@ -8,3 +8,4 @@ metadata:
   guide: "https://quarkus.io/guides/kogito-guide"
   categories:
   - "business-automation"
+  status: "preview"

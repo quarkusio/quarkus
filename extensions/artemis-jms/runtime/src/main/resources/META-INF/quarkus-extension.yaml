@@ -6,3 +6,4 @@ metadata:
   - "artemis"
   categories:
   - "messaging"
+  status: "preview"

@@ -10,3 +10,4 @@ metadata:
   guide: "https://quarkus.io/guides/opentracing-guide"
   categories:
   - "observability"
+  status: "stable"

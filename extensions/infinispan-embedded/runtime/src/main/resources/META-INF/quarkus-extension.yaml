@@ -1,7 +1,10 @@
 ---
 name: "Infinispan Embedded"
 metadata:
+  unlisted: "true"
+  status: "preview"
   keywords:
   - "infinispan"
   categories:
   - "data"
+  guide: "https://quarkus.io/guides/infinispan-embedded-guide"

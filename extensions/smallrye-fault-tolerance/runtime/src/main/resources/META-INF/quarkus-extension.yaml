@@ -9,3 +9,4 @@ metadata:
   - "bulkhead"
   categories:
   - "cloud"
+  status: "stable"

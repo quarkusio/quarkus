@@ -7,3 +7,9 @@ metadata:
   - "vert.x"
   - "reactive"
   - "vertx-http"
+  - "http"
+  categories:
+    - "web"
+    - "reactive"
+  status: "stable"
+  unlisted: true

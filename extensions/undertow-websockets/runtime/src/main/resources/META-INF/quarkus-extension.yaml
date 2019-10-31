@@ -9,6 +9,8 @@ metadata:
   - "websockets"
   - "web-socket"
   - "web-sockets"
+  - "http"
   guide: "https://quarkus.io/guides/websocket-guide"
   categories:
   - "web"
+  status: "stable"

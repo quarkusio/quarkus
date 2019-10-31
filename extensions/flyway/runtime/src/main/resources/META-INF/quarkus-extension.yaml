@@ -8,3 +8,4 @@ metadata:
   guide: "https://quarkus.io/guides/flyway-guide"
   categories:
   - "data"
+  status: "stable"

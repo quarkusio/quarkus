@@ -4,3 +4,5 @@ metadata:
   keywords:
   - "swagger-ui"
   guide: "https://quarkus.io/guides/openapi-swaggerui-guide"
+  status: stable
+  unlisted: true

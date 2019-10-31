@@ -5,3 +5,4 @@ metadata:
   - "kubernetes-client"
   categories:
   - "cloud"
+  status: "stable"

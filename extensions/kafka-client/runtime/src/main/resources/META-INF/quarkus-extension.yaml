@@ -5,3 +5,4 @@ metadata:
   - "kafka"
   categories:
   - "messaging"
+  status: "stable"

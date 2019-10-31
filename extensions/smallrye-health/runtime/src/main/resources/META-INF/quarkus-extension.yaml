@@ -11,3 +11,4 @@ metadata:
   guide: "https://quarkus.io/guides/health-guide"
   categories:
   - "cloud"
+  status: "stable"

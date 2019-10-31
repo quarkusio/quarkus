@@ -10,3 +10,6 @@ metadata:
   - "fine-grained-permission"
   - "resource-based-authorization"
   guide: "https://quarkus.io/guides/keycloak-authorization-guide"
+  categories:
+    - "security"
+  status: "stable"

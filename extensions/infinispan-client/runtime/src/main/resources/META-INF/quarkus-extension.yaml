@@ -8,3 +8,4 @@ metadata:
   guide: "https://quarkus.io/guides/infinispan-client-guide"
   categories:
   - "data"
+  status: "stable"

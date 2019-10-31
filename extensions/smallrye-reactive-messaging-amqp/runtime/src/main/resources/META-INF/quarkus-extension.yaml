@@ -7,3 +7,4 @@ metadata:
   guide: "https://quarkus.io/guides/amqp-guide"
   categories:
   - "messaging"
+  status: "preview"

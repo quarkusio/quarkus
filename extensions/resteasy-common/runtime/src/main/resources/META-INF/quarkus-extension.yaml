@@ -1,0 +1,12 @@
+---
+name: "RESTEasy JAX-RS Common"
+metadata:
+  keywords:
+  - "resteasy"
+  - "jaxrs"
+  - "web"
+  - "rest"
+  categories:
+  - "web"
+  status: "stable"
+  unlisted: true

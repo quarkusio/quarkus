@@ -1,0 +1,9 @@
+---
+name: "Elasticsearch REST Client"
+metadata:
+  keywords:
+  - "search"
+  categories:
+  - "data"
+  status: "stable"
+  unlisted: "true"

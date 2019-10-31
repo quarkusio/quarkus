@@ -6,3 +6,7 @@ metadata:
   - "vertx"
   - "vert.x"
   - "reactive"
+  categories:
+    - "reactive"
+  status: "stable"
+  unlisted: true

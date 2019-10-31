@@ -7,3 +7,4 @@ metadata:
   - "mariadb"
   categories:
   - "data"
+  status: "stable"

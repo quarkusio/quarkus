@@ -13,3 +13,4 @@ metadata:
   guide: "https://quarkus.io/guides/stm-guide"
   categories:
   - "data"
+  status: "preview"

@@ -6,3 +6,4 @@ metadata:
   - "json"
   categories:
   - "serialization"
+  status: "stable"

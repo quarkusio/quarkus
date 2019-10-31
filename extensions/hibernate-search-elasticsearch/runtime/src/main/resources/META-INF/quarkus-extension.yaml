@@ -10,3 +10,4 @@ metadata:
   guide: "https://quarkus.io/guides/hibernate-search-guide"
   categories:
   - "data"
+  status: "preview"

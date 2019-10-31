@@ -4,8 +4,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.interceptor.InvocationContext;
 
-import io.quarkus.arc.runtime.InterceptorBindings;
-
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
  */
@@ -22,7 +20,7 @@ public class SecurityHandler {
         if (alreadyHandled(ic)) {
             return ic.proceed();
         }
-        constrainer.checkRoles(ic.getMethod(), InterceptorBindings.getInterceptorBindings(ic));
+        constrainer.checkRoles(ic.getMethod());
         return ic.proceed();
     }
 

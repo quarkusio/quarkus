@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,7 @@ import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanProcessor;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.BytecodeTransformer;
 import io.quarkus.arc.processor.ContextConfigurator;
 import io.quarkus.arc.processor.ContextRegistrar;
 import io.quarkus.arc.processor.ReflectionRegistration;
@@ -50,6 +52,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -86,7 +89,7 @@ public class ArcProcessor {
         return new CapabilityBuildItem(Capabilities.CDI_ARC);
     }
 
-    // PHASE 1 - build BeanProcessor, register custom contexts 
+    // PHASE 1 - build BeanProcessor, register custom contexts
     @BuildStep
     public ContextRegistrationPhaseBuildItem initialize(
             ArcConfig arcConfig,
@@ -223,6 +226,7 @@ public class ArcProcessor {
                 }
             });
         }
+        builder.setRemoveFinalFromProxyableMethods(arcConfig.removeFinalForProxyableMethods);
 
         BeanProcessor beanProcessor = builder.build();
         ContextRegistrar.RegistrationContext context = beanProcessor.registerCustomContexts();
@@ -248,7 +252,8 @@ public class ArcProcessor {
     // PHASE 3 - initialize and validate the bean deployment
     @BuildStep
     public ValidationPhaseBuildItem validate(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
-            List<BeanConfiguratorBuildItem> beanConfigurators) {
+            List<BeanConfiguratorBuildItem> beanConfigurators,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer) {
 
         for (BeanConfiguratorBuildItem beanConfigurator : beanConfigurators) {
             for (BeanConfigurator<?> value : beanConfigurator.getValues()) {
@@ -257,7 +262,12 @@ public class ArcProcessor {
             }
         }
 
-        beanRegistrationPhase.getBeanProcessor().initialize();
+        beanRegistrationPhase.getBeanProcessor().initialize(new Consumer<BytecodeTransformer>() {
+            @Override
+            public void accept(BytecodeTransformer t) {
+                bytecodeTransformer.produce(new BytecodeTransformerBuildItem(t.getClassToTransform(), t.getVisitorFunction()));
+            }
+        });
         return new ValidationPhaseBuildItem(beanRegistrationPhase.getBeanProcessor().validate(),
                 beanRegistrationPhase.getBeanProcessor());
     }

@@ -2,13 +2,17 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
+import io.quarkus.gizmo.DescriptorUtils;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -18,6 +22,9 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * 
@@ -115,8 +122,11 @@ final class Methods {
 
     static Set<MethodInfo> addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
             Map<MethodKey, Set<AnnotationInstance>> candidates,
-            List<AnnotationInstance> classLevelBindings) {
-        Set<MethodInfo> finalMethods = new HashSet<>();
+            List<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
+            boolean removeFinalForProxyableMethods) {
+
+        Set<NameAndDescriptor> methodsFromWhichToRemoveFinal = new HashSet<>();
+        Set<MethodInfo> finalMethodsFoundAndNotChanged = new HashSet<>();
         for (MethodInfo method : classInfo.methods()) {
             if (skipForSubclass(method)) {
                 continue;
@@ -134,21 +144,85 @@ final class Methods {
                 }
             }
             if (!merged.isEmpty()) {
+                boolean addToCandidates = true;
                 if (Modifier.isFinal(method.flags())) {
-                    finalMethods.add(method);
-                } else {
+                    if (removeFinalForProxyableMethods) {
+                        methodsFromWhichToRemoveFinal.add(NameAndDescriptor.fromMethodInfo(method));
+                    } else {
+                        addToCandidates = false;
+                        finalMethodsFoundAndNotChanged.add(method);
+                    }
+                }
+                if (addToCandidates) {
                     candidates.computeIfAbsent(new Methods.MethodKey(method), key -> merged);
                 }
             }
         }
+        if (!methodsFromWhichToRemoveFinal.isEmpty()) {
+            bytecodeTransformerConsumer.accept(
+                    new BytecodeTransformer(classInfo.name().toString(), new BiFunction<String, ClassVisitor, ClassVisitor>() {
+                        @Override
+                        public ClassVisitor apply(String s, ClassVisitor classVisitor) {
+                            return new ClassVisitor(Opcodes.ASM7, classVisitor) {
+                                @Override
+                                public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                                        String[] exceptions) {
+                                    if (methodsFromWhichToRemoveFinal.contains(new NameAndDescriptor(name, descriptor))) {
+                                        access = access & (~Opcodes.ACC_FINAL);
+                                        LOGGER.debug("final modifier removed from method " + name + " of class "
+                                                + classInfo.name().toString());
+                                    }
+                                    return super.visitMethod(access, name, descriptor, signature, exceptions);
+                                }
+                            };
+                        }
+                    }));
+        }
         if (classInfo.superClassType() != null) {
             ClassInfo superClassInfo = getClassByName(beanDeployment.getIndex(), classInfo.superName());
             if (superClassInfo != null) {
-                finalMethods
-                        .addAll(addInterceptedMethodCandidates(beanDeployment, superClassInfo, candidates, classLevelBindings));
+                finalMethodsFoundAndNotChanged.addAll(addInterceptedMethodCandidates(beanDeployment, superClassInfo, candidates,
+                        classLevelBindings, bytecodeTransformerConsumer, removeFinalForProxyableMethods));
             }
         }
-        return finalMethods;
+        return finalMethodsFoundAndNotChanged;
+    }
+
+    private static class NameAndDescriptor {
+        private final String name;
+        private final String descriptor;
+
+        public NameAndDescriptor(String name, String descriptor) {
+            this.name = name;
+            this.descriptor = descriptor;
+        }
+
+        public static NameAndDescriptor fromMethodInfo(MethodInfo method) {
+            String returnTypeDesc = DescriptorUtils.objectToDescriptor(method.returnType().name().toString());
+            String[] paramTypesDesc = new String[(method.parameters().size())];
+            for (int i = 0; i < method.parameters().size(); i++) {
+                paramTypesDesc[i] = DescriptorUtils.objectToDescriptor(method.parameters().get(i).name().toString());
+            }
+
+            return new NameAndDescriptor(method.name(),
+                    DescriptorUtils.methodSignatureToDescriptor(returnTypeDesc, paramTypesDesc));
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            NameAndDescriptor that = (NameAndDescriptor) o;
+            return name.equals(that.name) &&
+                    descriptor.equals(that.descriptor);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, descriptor);
+        }
     }
 
     private static boolean skipForSubclass(MethodInfo method) {

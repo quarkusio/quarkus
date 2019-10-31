@@ -398,7 +398,8 @@ public class BeanInfo implements InjectionTargetInfo {
         }
     }
 
-    void init(List<Throwable> errors) {
+    void init(List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
+            boolean removeFinalForProxyableMethods) {
         for (Injection injection : injections) {
             for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
                 Beans.resolveInjectionPoint(beanDeployment, this, injectionPoint, errors);
@@ -407,7 +408,7 @@ public class BeanInfo implements InjectionTargetInfo {
         if (disposer != null) {
             disposer.init(errors);
         }
-        interceptedMethods.putAll(initInterceptedMethods(errors));
+        interceptedMethods.putAll(initInterceptedMethods(errors, bytecodeTransformerConsumer, removeFinalForProxyableMethods));
         if (errors.isEmpty()) {
             lifecycleInterceptors.putAll(initLifecycleInterceptors());
         }
@@ -425,7 +426,8 @@ public class BeanInfo implements InjectionTargetInfo {
         }
     }
 
-    private Map<MethodInfo, InterceptionInfo> initInterceptedMethods(List<Throwable> errors) {
+    private Map<MethodInfo, InterceptionInfo> initInterceptedMethods(List<Throwable> errors,
+            Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean removeFinalForProxyableMethods) {
         if (!isInterceptor() && isClassBean()) {
             Map<MethodInfo, InterceptionInfo> interceptedMethods = new HashMap<>();
             Map<MethodKey, Set<AnnotationInstance>> candidates = new HashMap<>();
@@ -439,7 +441,7 @@ public class BeanInfo implements InjectionTargetInfo {
             }
 
             Set<MethodInfo> finalMethods = Methods.addInterceptedMethodCandidates(beanDeployment, target.get().asClass(),
-                    candidates, classLevelBindings);
+                    candidates, classLevelBindings, bytecodeTransformerConsumer, removeFinalForProxyableMethods);
             if (!finalMethods.isEmpty()) {
                 errors.add(new DeploymentException(String.format(
                         "Intercepted methods of the bean %s may not be declared final:\n\t- %s", getBeanClass(),

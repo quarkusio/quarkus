@@ -59,6 +59,14 @@
             <scope>test</scope>
             <exclusions>
                 <exclusion>
+                    <groupId>org.apache.geronimo.specs</groupId>
+                    <artifactId>geronimo-json_1.0_spec</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.johnzon</groupId>
+                    <artifactId>johnzon-core</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.jboss.logmanager</groupId>
                     <artifactId>jboss-logmanager</artifactId>
                 </exclusion>

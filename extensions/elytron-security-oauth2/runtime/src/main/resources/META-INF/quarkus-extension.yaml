@@ -6,5 +6,5 @@ metadata:
   - "oauth2"
   categories:
   - "security"
-  guide: "https://quarkus.io/guides/oauth2-guide"
+  guide: "https://quarkus.io/guides/security-oauth2"
   status: "preview"

@@ -7,7 +7,6 @@ import java.io.File;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.graalvm.nativeimage.ImageInfo;
@@ -54,8 +53,6 @@ class MainClassBuildStep {
     private static final String JAVA_LIBRARY_PATH = "java.library.path";
     private static final String JAVAX_NET_SSL_TRUST_STORE = "javax.net.ssl.trustStore";
 
-    private static final AtomicInteger COUNT = new AtomicInteger();
-
     @BuildStep
     MainClassBuildItem build(List<StaticBytecodeRecorderBuildItem> staticInitTasks,
             List<ObjectSubstitutionBuildItem> substitutions,
@@ -70,12 +67,11 @@ class MainClassBuildStep {
             LaunchModeBuildItem launchMode,
             ApplicationInfoBuildItem applicationInfo) {
 
-        String appClassName = APP_CLASS + COUNT.incrementAndGet();
-        appClassNameProducer.produce(new ApplicationClassNameBuildItem(appClassName));
+        appClassNameProducer.produce(new ApplicationClassNameBuildItem(APP_CLASS));
 
         // Application class
         GizmoAdaptor gizmoOutput = new GizmoAdaptor(generatedClass, true);
-        ClassCreator file = new ClassCreator(gizmoOutput, appClassName, null,
+        ClassCreator file = new ClassCreator(gizmoOutput, APP_CLASS, null,
                 Application.class.getName());
 
         // Application class: static init
@@ -234,7 +230,7 @@ class MainClassBuildStep {
         mv = file.getMethodCreator("main", void.class, String[].class);
         mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
 
-        final ResultHandle appClassInstance = mv.newInstance(ofConstructor(appClassName));
+        final ResultHandle appClassInstance = mv.newInstance(ofConstructor(APP_CLASS));
 
         // Set the application name
         mv.invokeVirtualMethod(ofMethod(Application.class, "setName", void.class, String.class), appClassInstance,

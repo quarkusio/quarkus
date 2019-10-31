@@ -24,6 +24,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -95,8 +96,12 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             HttpServerResponse response = request.response();
             VertxHttpResponse vertxResponse = new VertxHttpResponse(request, dispatcher.getProviderFactory(),
                     request.method(), allocator, output);
+            // client address may not be available with VirtualHttp
+            SocketAddress socketAddress = request.remoteAddress();
+            String host = socketAddress != null ? socketAddress.host() : null;
+
             VertxHttpRequest vertxRequest = new VertxHttpRequest(ctx, headers, uriInfo, request.rawMethod(),
-                    request.remoteAddress().host(), dispatcher.getDispatcher(), vertxResponse, false);
+                    host, dispatcher.getDispatcher(), vertxResponse, false);
             vertxRequest.setInputStream(is);
             try {
                 ResteasyContext.pushContext(SecurityContext.class, new QuarkusResteasySecurityContext(request));

@@ -50,6 +50,7 @@ import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
@@ -126,6 +127,7 @@ public class JarResultBuildStep {
             OutputTargetBuildItem outputTargetBuildItem,
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            ApplicationInfoBuildItem applicationInfo,
             PackageConfig packageConfig,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
@@ -133,10 +135,10 @@ public class JarResultBuildStep {
             List<GeneratedFileSystemResourceBuildItem> generatedFileSystemResources) throws Exception {
         if (!uberJarRequired.isEmpty() || packageConfig.uberJar) {
             return buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
-                    packageConfig, generatedClasses, generatedResources, generatedFileSystemResources);
+                    packageConfig, applicationInfo, generatedClasses, generatedResources, generatedFileSystemResources);
         } else {
             return buildThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
-                    packageConfig, generatedClasses, generatedResources, generatedFileSystemResources);
+                    packageConfig, applicationInfo, generatedClasses, generatedResources, generatedFileSystemResources);
         }
     }
 
@@ -145,6 +147,7 @@ public class JarResultBuildStep {
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             PackageConfig packageConfig,
+            ApplicationInfoBuildItem applicationInfo,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             List<GeneratedFileSystemResourceBuildItem> generatedFileSystemResources) throws Exception {
@@ -260,7 +263,8 @@ public class JarResultBuildStep {
 
             copyCommonContent(runnerZipFs, services, applicationArchivesBuildItem, transformedClasses, generatedClasses,
                     generatedResources, seen);
-            generateManifest(runnerZipFs, classPath.toString(), packageConfig);
+            AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
+            generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact, applicationInfo);
 
         }
 
@@ -276,6 +280,7 @@ public class JarResultBuildStep {
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             PackageConfig packageConfig,
+            ApplicationInfoBuildItem applicationInfo,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             List<GeneratedFileSystemResourceBuildItem> generatedFileSystemResources) throws Exception {
@@ -291,9 +296,8 @@ public class JarResultBuildStep {
 
             log.info("Building thin jar: " + runnerJar);
 
-            doThinJarGeneration(curateOutcomeBuildItem, transformedClasses, applicationArchivesBuildItem, packageConfig,
-                    generatedResources, libDir, generatedClasses, runnerZipFs);
-
+            doThinJarGeneration(curateOutcomeBuildItem, transformedClasses, applicationArchivesBuildItem, applicationInfo,
+                    packageConfig, generatedResources, libDir, generatedClasses, runnerZipFs);
         }
         runnerJar.toFile().setReadable(true, false);
 
@@ -322,6 +326,7 @@ public class JarResultBuildStep {
             OutputTargetBuildItem outputTargetBuildItem,
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            ApplicationInfoBuildItem applicationInfo,
             PackageConfig packageConfig,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedNativeImageClassBuildItem> nativeImageResources,
@@ -344,18 +349,22 @@ public class JarResultBuildStep {
 
             log.info("Building native image source jar: " + runnerJar);
 
-            doThinJarGeneration(curateOutcomeBuildItem, transformedClasses, applicationArchivesBuildItem, packageConfig,
-                    generatedResources, libDir, allClasses, runnerZipFs);
-
+            doThinJarGeneration(curateOutcomeBuildItem, transformedClasses, applicationArchivesBuildItem, applicationInfo,
+                    packageConfig, generatedResources, libDir, allClasses, runnerZipFs);
         }
         runnerJar.toFile().setReadable(true, false);
         return new NativeImageSourceJarBuildItem(runnerJar, libDir);
     }
 
     private void doThinJarGeneration(CurateOutcomeBuildItem curateOutcomeBuildItem,
-            TransformedClassesBuildItem transformedClasses, ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            PackageConfig packageConfig, List<GeneratedResourceBuildItem> generatedResources, Path libDir,
-            List<GeneratedClassBuildItem> allClasses, FileSystem runnerZipFs)
+            TransformedClassesBuildItem transformedClasses,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            ApplicationInfoBuildItem applicationInfo,
+            PackageConfig packageConfig,
+            List<GeneratedResourceBuildItem> generatedResources,
+            Path libDir,
+            List<GeneratedClassBuildItem> allClasses,
+            FileSystem runnerZipFs)
             throws BootstrapDependencyProcessingException, AppModelResolverException, IOException {
         final AppModelResolver depResolver = curateOutcomeBuildItem.getResolver();
         final Map<String, String> seen = new HashMap<>();
@@ -367,7 +376,8 @@ public class JarResultBuildStep {
         copyLibraryJars(transformedClasses, libDir, depResolver, classPath, appDeps);
         copyCommonContent(runnerZipFs, services, applicationArchivesBuildItem, transformedClasses, allClasses,
                 generatedResources, seen);
-        generateManifest(runnerZipFs, classPath.toString(), packageConfig);
+        AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
+        generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact, applicationInfo);
     }
 
     private void copyLibraryJars(TransformedClassesBuildItem transformedClasses, Path libDir, AppModelResolver depResolver,
@@ -507,7 +517,9 @@ public class JarResultBuildStep {
      * <b>BEWARE</b> this method should be invoked after file copy from target/classes and so on.
      * Otherwise this manifest manipulation will be useless.
      */
-    private void generateManifest(FileSystem runnerZipFs, final String classPath, PackageConfig config) throws IOException {
+    private void generateManifest(FileSystem runnerZipFs, final String classPath, PackageConfig config, AppArtifact appArtifact,
+            ApplicationInfoBuildItem applicationInfo)
+            throws IOException {
         final Path manifestPath = runnerZipFs.getPath("META-INF", "MANIFEST.MF");
         final Manifest manifest = new Manifest();
         if (Files.exists(manifestPath)) {
@@ -530,6 +542,17 @@ public class JarResultBuildStep {
             }
         }
         attributes.put(Attributes.Name.MAIN_CLASS, config.mainClass);
+        if (config.manifest.addImplementationEntries && !attributes.containsKey(Attributes.Name.IMPLEMENTATION_TITLE)) {
+            String name = ApplicationInfoBuildItem.UNSET_VALUE.equals(applicationInfo.getName()) ? appArtifact.getArtifactId()
+                    : applicationInfo.getName();
+            attributes.put(Attributes.Name.IMPLEMENTATION_TITLE, name);
+        }
+        if (config.manifest.addImplementationEntries && !attributes.containsKey(Attributes.Name.IMPLEMENTATION_VERSION)) {
+            String version = ApplicationInfoBuildItem.UNSET_VALUE.equals(applicationInfo.getVersion())
+                    ? appArtifact.getVersion()
+                    : applicationInfo.getVersion();
+            attributes.put(Attributes.Name.IMPLEMENTATION_VERSION, version);
+        }
         try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(manifestPath, DEFAULT_OPEN_OPTIONS))) {
             manifest.write(os);
         }

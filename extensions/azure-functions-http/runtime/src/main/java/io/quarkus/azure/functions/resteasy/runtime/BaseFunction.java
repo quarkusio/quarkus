@@ -38,7 +38,7 @@ public class BaseFunction {
         PrintWriter errorWriter = new PrintWriter(error, true);
         if (Application.currentApplication() == null) { // were we already bootstrapped?  Needed for mock azure unit testing.
             try {
-                Class appClass = Class.forName("io.quarkus.runner.ApplicationImpl1");
+                Class appClass = Class.forName("io.quarkus.runner.ApplicationImpl");
                 String[] args = {};
                 Application app = (Application) appClass.newInstance();
                 app.start(args);

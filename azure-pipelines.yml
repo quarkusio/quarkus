@@ -26,10 +26,9 @@ stages:
           imageName: 'quarkus:$(build.buildId)'
 
         steps:
-          - task:
+          - script: find .
             displayName: Dump Dir
-            script: find .
-
+            
           - task: CacheBeta@0
             inputs:
               key: maven | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect

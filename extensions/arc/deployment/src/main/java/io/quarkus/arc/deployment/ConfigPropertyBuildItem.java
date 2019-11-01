@@ -1,5 +1,7 @@
 package io.quarkus.arc.deployment;
 
+import org.jboss.jandex.Type;
+
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
@@ -9,9 +11,9 @@ public final class ConfigPropertyBuildItem extends MultiBuildItem {
 
     private final String propertyName;
 
-    private final String propertyType;
+    private final Type propertyType;
 
-    public ConfigPropertyBuildItem(String propertyName, String propertyType) {
+    public ConfigPropertyBuildItem(String propertyName, Type propertyType) {
         this.propertyName = propertyName;
         this.propertyType = propertyType;
     }
@@ -20,7 +22,7 @@ public final class ConfigPropertyBuildItem extends MultiBuildItem {
         return propertyName;
     }
 
-    public String getPropertyType() {
+    public Type getPropertyType() {
         return propertyType;
     }
 

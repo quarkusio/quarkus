@@ -301,7 +301,7 @@ final class ClassConfigPropertiesUtil {
 
                     }
                     configPropertyBuildItemCandidates
-                            .add(new ConfigPropertyBuildItemCandidate(field.name(), fullConfigName, fieldTypeStr));
+                            .add(new ConfigPropertyBuildItemCandidate(field.name(), fullConfigName, fieldType));
                 }
             }
         }

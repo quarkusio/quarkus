@@ -155,7 +155,7 @@ final class InterfaceConfigPropertiesUtil {
                             methodCreator.returnValue(value);
                             if (defaultValueStr == null || ConfigProperty.UNCONFIGURED_VALUE.equals(defaultValueStr)) {
                                 configProperties
-                                        .produce(new ConfigPropertyBuildItem(fullConfigName, returnType.name().toString()));
+                                        .produce(new ConfigPropertyBuildItem(fullConfigName, returnType));
                             }
                         }
                     }

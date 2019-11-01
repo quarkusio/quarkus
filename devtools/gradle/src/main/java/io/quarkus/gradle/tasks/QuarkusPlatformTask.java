@@ -37,9 +37,9 @@ public class QuarkusPlatformTask extends QuarkusTask {
                     .setArtifactResolver(extension().resolveAppModel())
                     .setMessageWriter(new GradleMessageWriter(getProject().getLogger()))
                     .resolveFromBom(
-                            getRequiredProperty(props, "quarkusPlatformBomGroupId"),
-                            getRequiredProperty(props, "quarkusPlatformBomArtifactId"),
-                            getRequiredProperty(props, "quarkusPlatformBomVersion"));
+                            getRequiredProperty(props, "quarkusPlatformGroupId"),
+                            getRequiredProperty(props, "quarkusPlatformArtifactId"),
+                            getRequiredProperty(props, "quarkusPlatformVersion"));
 
             QuarkusPlatformConfig.defaultConfigBuilder().setPlatformDescriptor(platform).build();
 

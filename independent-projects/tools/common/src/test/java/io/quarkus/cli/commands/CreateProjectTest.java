@@ -107,15 +107,15 @@ public class CreateProjectTest {
                 .containsIgnoringCase("io.quarkus:quarkus-gradle-plugin");
 
         assertThat(contentOf(new File(testDir, "build.gradle"), "UTF-8"))
-                .contains("${quarkusPlatformBomGroupId}:${quarkusPlatformBomArtifactId}:${quarkusPlatformBomVersion}");
+                .contains("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}");
 
         final Properties props = new Properties();
         try(InputStream is = Files.newInputStream(testDir.toPath().resolve("gradle.properties"))) {
             props.load(is);
         }
-        Assertions.assertEquals(getBomGroupId(), props.get("quarkusPlatformBomGroupId"));
-        Assertions.assertEquals(getBomArtifactId(), props.get("quarkusPlatformBomArtifactId"));
-        Assertions.assertEquals(getBomVersion(), props.get("quarkusPlatformBomVersion"));
+        Assertions.assertEquals(getBomGroupId(), props.get("quarkusPlatformGroupId"));
+        Assertions.assertEquals(getBomArtifactId(), props.get("quarkusPlatformArtifactId"));
+        Assertions.assertEquals(getBomVersion(), props.get("quarkusPlatformVersion"));
     }
 
     @Test

@@ -1,3 +1,3 @@
-quarkusPlatformBomGroupId = ${bom_groupId}
-quarkusPlatformBomArtifactId = ${bom_artifactId}
-quarkusPlatformBomVersion = ${bom_version}
+quarkusPlatformGroupId = ${bom_groupId}
+quarkusPlatformArtifactId = ${bom_artifactId}
+quarkusPlatformVersion = ${bom_version}

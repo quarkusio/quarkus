@@ -18,7 +18,7 @@ stages:
         displayName: 'Linux Maven Repo'
         timeoutInMinutes: 30
         pool:
-          name: "Azure Pipelines"
+          name: ""
           vmImage: 'blah'
         workspace:
           clean: all

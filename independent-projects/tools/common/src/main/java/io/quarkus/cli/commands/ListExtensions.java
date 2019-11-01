@@ -7,12 +7,12 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.Dependency;
 
 import io.quarkus.cli.commands.file.BuildFile;
@@ -133,8 +133,13 @@ public class ListExtensions {
             }
         }
 
-        String guide = StringUtils.defaultString(extension.getGuide(), "");
-        formatter.accept(new String[] { label, extension.getName(), extension.getArtifactId(), version, guide });
+        String[] result = new String[] { label, extension.getName(), extension.getArtifactId(), version, extension.getGuide() };
+        
+        for(int i=0;i<result.length;i++) {
+            result[i] = Objects.toString(result[i], "");
+        }
+        
+        formatter.accept(result);
     }
 
     private String extractVersion(final Dependency dependency) {

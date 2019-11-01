@@ -324,7 +324,7 @@ public class NativeImageMojo extends AbstractMojo {
                 if (addAllCharsets != null) {
                     configs.add("quarkus.native.add-all-charsets", addAllCharsets.toString());
                 }
-                if (additionalBuildArgs != null) {
+                if (additionalBuildArgs != null && !additionalBuildArgs.isEmpty()) {
                     configs.add("quarkus.native.additional-build-args", additionalBuildArgs);
                 }
                 if (autoServiceLoaderRegistration != null) {
@@ -345,10 +345,10 @@ public class NativeImageMojo extends AbstractMojo {
                 if (enableReports != null) {
                     configs.add("quarkus.native.enable-reports", enableReports.toString());
                 }
-                if (containerRuntime != null) {
+                if (containerRuntime != null && !containerRuntime.trim().isEmpty()) {
                     configs.add("quarkus.native.container-runtime", containerRuntime);
-                } else if (dockerBuild != null) {
-                    if (!dockerBuild.isEmpty() && !dockerBuild.toLowerCase().equals("false")) {
+                } else if (dockerBuild != null && !dockerBuild.trim().isEmpty()) {
+                    if (!dockerBuild.toLowerCase().equals("false")) {
                         if (dockerBuild.toLowerCase().equals("true")) {
                             configs.add("quarkus.native.container-runtime", "docker");
                         } else {
@@ -356,7 +356,7 @@ public class NativeImageMojo extends AbstractMojo {
                         }
                     }
                 }
-                if (containerRuntimeOptions != null) {
+                if (containerRuntimeOptions != null && !containerRuntimeOptions.trim().isEmpty()) {
                     configs.add("quarkus.native.container-runtime-options", containerRuntimeOptions);
                 }
                 if (dumpProxies != null) {
@@ -395,13 +395,13 @@ public class NativeImageMojo extends AbstractMojo {
                 if (fullStackTraces != null) {
                     configs.add("quarkus.native.full-stack-traces", fullStackTraces.toString());
                 }
-                if (graalvmHome != null) {
+                if (graalvmHome != null && !graalvmHome.trim().isEmpty()) {
                     configs.add("quarkus.native.graalvm-home", graalvmHome.toString());
                 }
-                if (javaHome != null) {
+                if (javaHome != null && !javaHome.toString().isEmpty()) {
                     configs.add("quarkus.native.java-home", javaHome.toString());
                 }
-                if (nativeImageXmx != null) {
+                if (nativeImageXmx != null && !nativeImageXmx.trim().isEmpty()) {
                     configs.add("quarkus.native.native-image-xmx", nativeImageXmx.toString());
                 }
                 if (reportErrorsAtRuntime != null) {

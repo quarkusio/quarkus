@@ -434,7 +434,7 @@ public class QuarkusNative extends QuarkusTask {
 
                 configs.add("quarkus.native.add-all-charsets", addAllCharsets);
 
-                if (additionalBuildArgs != null) {
+                if (additionalBuildArgs != null && !additionalBuildArgs.isEmpty()) {
                     configs.add("quarkus.native.additional-build-args",
                             additionalBuildArgs.stream()
                                     .map(val -> val.replace("\\", "\\\\"))
@@ -448,9 +448,9 @@ public class QuarkusNative extends QuarkusTask {
 
                 configs.add("quarkus.native.debug-symbols", debugSymbols);
                 configs.add("quarkus.native.enable-reports", enableReports);
-                if (containerRuntime != null) {
+                if (containerRuntime != null && !containerRuntime.trim().isEmpty()) {
                     configs.add("quarkus.native.container-runtime", containerRuntime);
-                } else if (dockerBuild != null) {
+                } else if (dockerBuild != null && !dockerBuild.trim().isEmpty()) {
                     if (!dockerBuild.isEmpty() && !dockerBuild.toLowerCase().equals("false")) {
                         if (dockerBuild.toLowerCase().equals("true")) {
                             configs.add("quarkus.native.container-runtime", "docker");
@@ -459,7 +459,7 @@ public class QuarkusNative extends QuarkusTask {
                         }
                     }
                 }
-                if (containerRuntimeOptions != null) {
+                if (containerRuntimeOptions != null && !containerRuntimeOptions.trim().isEmpty()) {
                     configs.add("quarkus.native.container-runtime-options", containerRuntimeOptions);
                 }
                 configs.add("quarkus.native.dump-proxies", dumpProxies);
@@ -479,10 +479,10 @@ public class QuarkusNative extends QuarkusTask {
 
                 configs.add("quarkus.native.full-stack-traces", fullStackTraces);
 
-                if (graalvmHome != null) {
+                if (graalvmHome != null && !graalvmHome.trim().isEmpty()) {
                     configs.add("quarkus.native.graalvm-home", graalvmHome);
                 }
-                if (nativeImageXmx != null) {
+                if (nativeImageXmx != null && !nativeImageXmx.trim().isEmpty()) {
                     configs.add("quarkus.native.native-image-xmx", nativeImageXmx);
                 }
                 configs.add("quarkus.native.report-errors-at-runtime", reportErrorsAtRuntime);
